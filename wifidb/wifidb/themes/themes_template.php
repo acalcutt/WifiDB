@@ -1,39 +1,49 @@
 <?php
-include('../lib/config.inc.php');
-$theme = (@$_COOKIE['wifidb_theme']!='' ? @$_COOKIE['wifidb_theme'] : $default_theme);
-?>
-<link rel="stylesheet" href="<?php if($root != ''){echo '/'.$root;}?>/<?php echo $theme_page;?>/styles.css">
-<?php
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML", 'extras'=>'');
+include('../lib/init.inc.php');
+
+$theme = (@$_COOKIE['wifidb_theme']!='' ? @$_COOKIE['wifidb_theme'] : $dbcore->theme);
+
 if( !isset($_GET['theme']) ) { $_GET['theme'] = ""; }
-$theme = strip_tags(addslashes($_GET['theme']));
+$theme = filter_input(INPUT_GET, 'theme', FILTER_SANITIZE_STRING);
 $theme_tn = $theme."/thumbnail.PNG";
 $theme_ss = $theme."/screenshot.PNG";
 $theme_details = file($theme.'/details.txt');
-$total = count($theme_details);
-?><table align="center"><tr><th><?php echo $theme;?></th></tr>
-<tr><td align="center"><form action="index.php?func=change" method="post" enctype="multipart/form-data">
-<input type="hidden" name="theme" value="<?php echo $theme; ?>" />
-<INPUT  type="submit" NAME="submit" VALUE="Select This Theme" onclick="this.form.submit(); this.disabled = 1;" >
-<!--
- src="<?php #echo $theme_page;?>/img/submit.gif"
- -->
 
-</form>
-<a href="<?php echo $theme_ss;?>" target="_blank">
-<img src="<?php echo $theme_tn;?>">
-</a><br><br>
-<tr><td><?php echo $theme_details[0];?></td></tr>
-<tr><td><?php 
-			$ws_exp = explode(":", $theme_details[1]);
-			?><?php echo $ws_exp[0];?>: <a href="<?php echo $ws_exp[1];?>" target="_blank"><?php echo $ws_exp[1];?></a>
-			</td></tr>
-<tr><td><?php echo $theme_details[2];?></td></tr>
-<tr><td><?php echo $theme_details[3];?></td></tr>
-<tr><td><?php echo $theme_details[4];?></td></td></tr>
-<tr><td>
-<?php
-echo wordwrap($theme_details[5], 64, "<br />\n");
+$author_exp = explode(":", $theme_details[0]);
+$site_exp = explode(":", $theme_details[1]);
+$version = explode(":", $theme_details[2]);
+$date = explode(":", $theme_details[3]);
 
+$dbcore->smarty->assign('theme', $theme);
+$dbcore->smarty->assign('theme_image_url', $theme_ss);
+$dbcore->smarty->assign('theme_tn', $theme_tn);
+$dbcore->smarty->assign('theme_author', $author_exp[1]);
+$dbcore->smarty->assign('author_url', $site_exp[1]);
+$dbcore->smarty->assign('theme_ver', $version[1]);
+$dbcore->smarty->assign('author_date', $date[1]);
+$dbcore->smarty->assign('theme_details', wordwrap($theme_details[5], 64, "<br />\n"));
+
+$dbcore->smarty->display('themes_template.tpl'); 
 ?>
-</td><tr></table>
-</td></tr></table>

@@ -1,12 +1,26 @@
 <?php
-$ft_start = microtime(1);
-error_reporting(E_ALL|E_STRICT);
-$startdate="1-Oct-2011";
-$lastedit="1-Oct-2011";
-include('../lib/config.inc.php');
-include('../lib/database.inc.php');
-pageheader("Access Point Info Page", "maps");
-$theme = $GLOBALS['theme'];
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'');
+include('../lib/init.inc.php');
 
 $ord	=	@filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_SPECIAL_CHARS);
 $sort	=	@filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -22,76 +36,24 @@ if ($from_==0 or !is_int($from_)){$from_=0;}
 if ($inc==0 or !is_int($inc)){$inc=100;}
 if ($ord=="" or !is_string($ord)){$ord="ASC";}
 if ($sort=="" or !is_string($sort)){$sort="chan";}
-?>
+$sql = "SELECT `username` FROM `wifi`.`live_aps` WHERE lu >= ? ORDER BY `$sort` $ord LIMIT $from, $inc";
+$prep = $dbcore->sql->conn->prepare($sql);
+$prep->execute(array($date));
+$fetch = $prep->fetchAll(2);
+var_dump($fetch);
+die();
 
-<SCRIPT LANGUAGE="JavaScript">
-    // Row Hide function.
-    // by tcadieux
-    function expandcontract(tbodyid,ClickIcon)
-    {
-        if (document.getElementById(ClickIcon).innerHTML == "+")
-        {
-            document.getElementById(tbodyid).style.display = "";
-            document.getElementById(ClickIcon).innerHTML = "-";
-        }else{
-            document.getElementById(tbodyid).style.display = "none";
-            document.getElementById(ClickIcon).innerHTML = "+";
-        }
-    }
-</SCRIPT>
-<h2>Only the Last 30 Minutes worth of APs are shown at a time.</h2>
-<table border="1" width="100%" cellspacing="0">
-    <tr class="style4">
-        <td>
-            Select Window of time to view:
-        </td>
-        <td>
-            <a class="links" href="?sort=<?php echo $sort; ?>&ord=<?php echo $ord; ?>&from=<?php echo $from; ?>&to=<?php echo $to; ?>&view=1800">30 Minutes</a>
-        </td>
-        <td>
-            <a class="links" href="?sort=<?php echo $sort; ?>&ord=<?php echo $ord; ?>&from=<?php echo $from; ?>&to=<?php echo $to; ?>&view=3600">60 Minutes</a>
-        </td>
-        <td>
-            <a class="links" href="?sort=<?php echo $sort; ?>&ord=<?php echo $ord; ?>&from=<?php echo $from; ?>&to=<?php echo $to; ?>&view=7200">2 Hours</a>
-        </td>
-        <td>
-            <a class="links" href="?sort=<?php echo $sort; ?>&ord=<?php echo $ord; ?>&from=<?php echo $from; ?>&to=<?php echo $to; ?>&view=21600">6 Hours</a>
-        </td>
-        <td>
-            <a class="links" href="?sort=<?php echo $sort; ?>&ord=<?php echo $ord; ?>&from=<?php echo $from; ?>&to=<?php echo $to; ?>&view=86400">1 Day</a>
-        </td>
-        <td>
-            <a class="links" href="?sort=<?php echo $sort; ?>&ord=<?php echo $ord; ?>&from=<?php echo $from; ?>&to=<?php echo $to; ?>&view=604800">1 Week</a>
-        </td>
-    </tr>
-</table>
-<table border="1" width="100%" cellspacing="0">
-<tr class="style4">
-    <td>Expand Graph</td>
-    <td>Expand Map</td>
-    <td>SSID<a href="?sort=SSID&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=SSID&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>MAC<a href="?sort=mac&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=mac&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>Chan<a href="?sort=chan&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=chan&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>Radio Type<a href="?sort=radio&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=radio&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>Authentication<a href="?sort=auth&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=auth&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>Encryption<a href="?sort=encry&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=encry&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>First Seen<a href="?sort=fa&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=fa&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>Last Seen<a href="?sort=lu&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=lu&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-    <td>Username<a href="?sort=username&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="../themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=username&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="../themes/<?php echo $theme; ?>/img/up.png"></a></td>
-</tr>
-<?php
 
-##########
 
-$live_aps = "live_aps";
-$live_gps = "live_gps";
+
+
 $row_color = 0;
 date_default_timezone_set('UTC');
 $date = date("Y-m-d H:i:s.u", time()-$view);
-#echo $date;
-$sql = "SELECT id,ssid,mac,radio,chan,auth,encry,sectype,sig,fa,lu,username,Label FROM $db.$live_aps WHERE lu >= '$date' ORDER BY `$sort` $ord LIMIT $from, $inc";
-$result = mysql_query($sql, $conn);
-if(mysql_num_rows($result) != 0)
+$sql = "SELECT id,ssid,mac,radio,chan,auth,encry,sectype,sig,fa,lu,username,Label FROM `wifi`.`live_aps` WHERE lu >= ? ORDER BY `$sort` $ord LIMIT $from, $inc";
+$prep = $dbcore->sql->conn->prepare($sql);
+$prep->execute(array($date));
+if($prep->rowCount() != 0)
 {
     $tablerowid = 0;
     while($array = mysql_fetch_assoc($result))
@@ -128,7 +90,7 @@ if(mysql_num_rows($result) != 0)
             $n++;
             $sig_e = explode("-", $sig);
             $gps_id = $sig_e[1];
-            $sql = "SELECT * FROM `$db`.`$live_gps` WHERE `id`='$gps_id'";
+            $sql = "SELECT * FROM `wifi`.`live_gps` WHERE `id`='$gps_id'";
             #echo $sql;
             $result_gps = mysql_query($sql);
             while($array_gps = mysql_fetch_assoc($result_gps))

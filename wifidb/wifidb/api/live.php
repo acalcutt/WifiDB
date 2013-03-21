@@ -1,285 +1,105 @@
 <?php
-$ft_start = microtime(1);
-error_reporting(E_ALL|E_STRICT);
-$startdate="14-Apr-2011";
-$lastedit="01-Oct-2011";
-$ver = "1.0.0";
+/*
+live.php, The Live AP import API
+Copyright (C) 2013 Phil Ferland
 
-global $screen_output;
-$screen_output = "CLI";
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
 
-include('../lib/config.inc.php');
-#include('../lib/database.inc.php');
-$live_aps = "live_aps";
-$live_gps = "live_gps";
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'API');
+include('../lib/init.inc.php');
 
 // AP Detail Variables
-list($ssid_, $ssids) = make_ssid($_GET['SSID']);
-$mac   =   filter_input(INPUT_GET, 'Mac', FILTER_SANITIZE_ENCODED, array(16,32) );
-if($mac == ""){$mac = "000000000000";}
-#$mac    =   implode(":", str_split($macs, 2));
-$auth   =   filter_input(INPUT_GET, 'Auth', FILTER_SANITIZE_ENCODED, array(16,32) );
-$encry  =   filter_input(INPUT_GET, 'Encry', FILTER_SANITIZE_ENCODED, array(16,32) );
-$radio  =   filter_input(INPUT_GET, 'Rad', FILTER_SANITIZE_ENCODED, array(16,32) );
-$sectype=   filter_input(INPUT_GET, 'SecType', FILTER_SANITIZE_NUMBER_INT)+0;
-$chan   =   filter_input(INPUT_GET, 'Chn', FILTER_SANITIZE_NUMBER_INT)+0;
-$lat    =   filter_input(INPUT_GET, 'Lat', FILTER_SANITIZE_ENCODED, array(16,32) );
-$long   =   filter_input(INPUT_GET, 'Long', FILTER_SANITIZE_ENCODED, array(16,32) );
-$BTx    =   filter_input(INPUT_GET, 'BTx', FILTER_SANITIZE_ENCODED, array(16,32) );
-$OTx    =   filter_input(INPUT_GET, 'OTx', FILTER_SANITIZE_ENCODED, array(16,32) );
-$FA     =   filter_input(INPUT_GET, 'FA', FILTER_SANITIZE_ENCODED, array(16,32) );
-$LU     =   filter_input(INPUT_GET, 'FA', FILTER_SANITIZE_ENCODED, array(16,32) );
-$NT     =   filter_input(INPUT_GET, 'NT', FILTER_SANITIZE_ENCODED, array(16,32) );
-$label  =   filter_input(INPUT_GET, 'Label', FILTER_SANITIZE_ENCODED, array(16,32));
-$sig    =   filter_input(INPUT_GET, 'Sig', FILTER_SANITIZE_STRING, array(4,8));
+$ssid   =   (@$_GET['SSID'] ? html_entity_decode($_GET['SSID'], ENT_QUOTES) : "UNAMED");
+$mac    =   (@$_GET['Mac'] ? $_GET['Mac'] : "00:00:00:00:00:00");
+$radio  =   (@$_GET['Rad'] ? $_GET['Rad'] : "802.11u");
+$sectype=   (@$_GET['SecType'] ? $_GET['SecType'] : 0);
+$chan   =   (@$_GET['Chn'] ? $_GET['Chn'] : 0);
+//Other AP Info
+$auth   =   (@$_GET['Auth'] ? html_entity_decode($_GET['Auth'], ENT_QUOTES) : "Open");
+$encry  =   (@$_GET['Encry'] ? html_entity_decode($_GET['Encry'], ENT_QUOTES) : "None");
+$BTx    =   (@$_GET['BTx'] ? html_entity_decode($_GET['BTx'], ENT_QUOTES) : "0.0");
+$OTx    =   (@$_GET['OTx'] ? html_entity_decode($_GET['OTx'], ENT_QUOTES) : "0.0");
+$NT     =   (@$_GET['NT'] ? $_GET['NT'] : "Unknown");
+$label  =   (@$_GET['Label'] ? html_entity_decode($_GET['Label'], ENT_QUOTES) : "No Label");
+$sig    =   (@$_GET['Sig'] ? $_GET['Sig'] : "0");
 
 // GPS Variables
-$sats           =   filter_input(INPUT_GET, 'Sats', FILTER_SANITIZE_NUMBER_INT);
-$hdp            =   filter_input(INPUT_GET, 'HDP', FILTER_SANITIZE_NUMBER_FLOAT);
-$alt            =   filter_input(INPUT_GET, 'ALT', FILTER_SANITIZE_NUMBER_FLOAT);
-$geo            =   filter_input(INPUT_GET, 'GEO', FILTER_SANITIZE_NUMBER_FLOAT);
-$kmh            =   filter_input(INPUT_GET, 'KMH', FILTER_SANITIZE_NUMBER_FLOAT);
-$mph            =   filter_input(INPUT_GET, 'MPH', FILTER_SANITIZE_NUMBER_FLOAT);
-$track          =   filter_input(INPUT_GET, 'Track', FILTER_SANITIZE_NUMBER_FLOAT);
-$date           =   filter_input(INPUT_GET, 'Date', FILTER_SANITIZE_STRING, array(16,32));
-$time           =   filter_input(INPUT_GET, 'Time', FILTER_SANITIZE_STRING, array(16,32));
+$lat    =   (@$_GET['Lat'] ? html_entity_decode($_GET['Lat'], ENT_QUOTES) : "N 0000.0000");
+$long   =   (@$_GET['Long'] ? html_entity_decode($_GET['Long'], ENT_QUOTES) : "E 0000.0000");
+$sats   =   (@$_GET['Sats'] ? $_GET['Sats'] : 0 );
+$hdp    =   (@$_GET['HDP'] ? $_GET['HDP'] : 0 );
+$alt    =   (@$_GET['ALT'] ? $_GET['ALT'] : 0 );
+$geo    =   (@$_GET['GEO'] ? $_GET['GEO'] : 0 );
+$kmh    =   (@$_GET['KMH'] ? $_GET['KMH'] : 0 );
+$mph    =   (@$_GET['MPH'] ? $_GET['MPH'] : 0 );
+$track  =   (@$_GET['Track'] ? $_GET['Track'] : 0 );
+$date   =   (@$_GET['Date'] ? $_GET['Date'] : date("Y-m-d") );
+$time   =   (@$_GET['Time'] ? $_GET['Time'] : date("H:i:s") );
+$utime = time();
 
-//Username and API Key
-$username   =   ( @$_GET['username'] ? filter_input(INPUT_GET, 'username', FILTER_SANITIZE_STRING, array(16,32)) : "UNKNOWN" );
-#dump($username);
-$apikey     =   ( @$_GET['apikey'] ? filter_input(INPUT_GET, 'apikey', FILTER_SANITIZE_STRING, array(16,32)) : "NONE" );
-
-$returns = array();
-switch(strtolower($radio))
+//Username, API Key, Session ID
+$username   =   (@$_GET['username'] ? $_GET['username'] : die("Unauthorized User.</br>Please register and get an API Key.") );
+$apikey     =   (@$_GET['apikey'] ? $_GET['apikey'] : die("API Key not supplied."));
+$session_id =   (@$_GET['SessionID'] ? $_GET['SessionID'] : "");
+$dbcore->output        =   (@$_GET['output'] ? strtolower($_GET['output']) : "json");
+if($ssid === "UNNAMED" && $mac === "00:00:00:00:00:00" && $chan === 0 && $sectype === 0)
 {
-    case "802.11a":
-        $radios = "a";
-        break;
-    case "802.11b":
-        $radios = "b";
-        break;
-    case "802.11g":
-        $radios = "g";
-        break;
-    case "802.11n":
-        $radios = "n";
-        break;
-    case "802.11u":
-        $radios = "U";
-        break;
+    $this->Dump("You seem to have gotten here accidently or your Access Point does not have enough unique information to be added to the database.");
 }
 
-#$table = $ssid_.$sep.$macs.$sep.$sectype.$sep.$radios.$sep.$chan.$gps_ext;
+//Lets see if we can find a user with this name.
+//If so, lets check to see if the API key they provided is correct.
+$key_result = $dbcore->sec->ValidateAPIKey($username, $apikey);
+if($key_result !== 1){ $dbcore->Dump($key_result); }
 
-$conn = new mysqli($host, $db_user, $db_pwd);
-$sql = "SELECT * FROM `$db`.`$live_aps` where mac = '$mac' AND ssid='$ssids' AND sectype='$sectype' AND radio='$radios' AND chan='$chan' AND username='$username';";
-#echo $sql."<br />";
+$data = array(
+    #ap data
+    'ssid'=>$ssid,
+    'mac'=>$mac,
+    'chan'=>$chan,
+    'radio'=>$radio,
+    'sectype'=>$sectype,
+    'auth'=>$auth,
+    'encry'=>$encry,
+    'NT'=>$NT,
+    'BTx'=>$BTx,
+    'OTx'=>$OTx,
+    'label'=>$label,
+    'sig'=>$sig,
+    
+    #gps data
+    'lat'=>$lat,
+    'long'=>$long,
+    'sats'=>$sats,
+    'hdp'=>$hdp,
+    'kmh'=>$kmh,
+    'mph'=>$mph,
+    'alt'=>$alt,
+    'geo'=>$geo,
+    'track'=>$track,
+    'date'=>$date,
+    'time'=>$time,
+    'utime'=>$utime,
+    
+    #user data
+    'username'=>$username,
+    'session_id'=>$session_id
+);
 
-$result = $conn->query($sql);
-$ap = $result->fetch_array(1);
-
-if($ap['id'])
-{
-    #echo "is old AP<br />Lets add to the GPS history...";
-    #dump($ap);
-
-    $lat_sub = $lat[0];
-    if($lat_sub != "-" && is_numeric($lat_sub))
-    {
-       $lat = "N ".$lat;
-    }else #if(is_int(substr($gps['lat'], 0,1))+0)
-    {
-       $lat = str_replace("-", "S ", $lat);
-    }
-    ######
-    ######
-    ######
-    #var_dump(substr($gps['long'], 0,1));
-    $long_sub = $long[0];
-    if($long_sub != "-" && is_numeric($long_sub))
-    {
-       $long = "E ".$long;
-    }else #if(is_int(substr($gps['long'], 0,1)+0))
-    {
-       $long = str_replace("-", "W ", $long);
-    }
-
-    $sql = "INSERT INTO `$db`.`$live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
-    VALUES ('', '$lat', '$long', '$sats', '$hdp', '$alt', '$geo', '$kmh', '$mph', '$track', '$date', '$time');";
-    #echo str_replace("
-    #","<br />", $sql."<br /><br />");
-
-    if($conn->query($sql))
-    {
-        $ins_sig = $ap['sig'].'|'.$sig.'-'.$conn->insert_id;
-        $id = $ap['id'];
-        $sql = "UPDATE `$db`.`$live_aps` SET sig='$ins_sig', lu = '$date $time' WHERE id='$id'";
-        #echo $sql."</br>";
-        if($conn->query($sql))
-        {
-            $returns[] = "Success!";
-            #echo "Inserted</br>";
-        }else
-        {
-            $returns[] = "Failure!";
-            $returns[] = $conn->error;
-        }
-    }
-}else
-{
-    #echo "add new AP<br />";
-
-    $lat_sub = $lat[0];
-    if($lat_sub != "-" && is_numeric($lat_sub))
-    {
-       $lat = "N ".$lat;
-    }else #if(is_int(substr($gps['lat'], 0,1))+0)
-    {
-       $lat = str_replace("-", "S ", $lat);
-    }
-    ######
-    ######
-    ######
-    #var_dump(substr($gps['long'], 0,1));
-    $long_sub = $long[0];
-    if($long_sub != "-" && is_numeric($long_sub))
-    {
-       $long = "E ".$long;
-    }else #if(is_int(substr($gps['long'], 0,1)+0))
-    {
-       $long = str_replace("-", "W ", $long);
-    }
-
-    $sql = "INSERT INTO `$db`.`$live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
-    VALUES ('', '$lat', '$long', '$sats', '$hdp', '$alt', '$geo', '$kmh', '$mph', '$track', '$date', '$time');";
-    #echo str_replace("
-    #","<br />", $sql."<br /><br />");
-
-    if($conn->query($sql))
-    {
-        $sql = "INSERT INTO  `$db`.`$live_aps` ( `id` , `ssid` , `mac` ,  `chan`, `radio`,`auth`,`encry`, `sectype`, `sig`, `username`, `BTx`, `OTx`, `NT`, `Label`, `fa`, `lu`)
-        VALUES ('', '$ssids', '$mac','$chan', '$radios', '$auth', '$encry', '$sectype', '$sig-$conn->insert_id',  '$username', '$BTx', '$OTx', '$NT', '$label', '$date $time', '$date $time')";
-        #echo str_replace("
-        #","<br />", $sql."<br /><br />");
-        if($conn->query($sql))
-        {
-            $returns[] = "Success!";
-        }else
-        {
-            $returns[] = "Failure!";
-            $returns[] = $conn->error;
-        }
-    }else
-    {
-        $returns[] = "Failure!";
-        $returns[] = $conn->error;
-        #echo $conn->error;
-    }
-}
-foreach($returns as $ret)
-{
-    echo "#-".$ret."\r\n";
-}
-$ft_stop = microtime(1);
-echo "#-time:".($ft_stop-$ft_start);
-
-
-
-function make_ssid($ssid_in = '')
-{
-    $ssid_in = preg_replace('/[\x00-\x1F\x7F]/', '', $ssid_in);
-
-    if($ssid_in == ""){$ssid_in="UNNAMED";}
-    #var_dump($exp)."</br>";
-    #if($ssid_len < 1){$ssid_in="UNNAMED";}
-
-    ###########
-    ## Make File Safe SSID
-    $file_safe_ssid = smart_quotes($ssid_in);
-    ###########
-
-    ###########
-    ## Make Row and HTML safe SSID
-    $ssid_in_dupe = $ssid_in;
-    $ssid_in = htmlentities($ssid_in, ENT_QUOTES);
-    $ssid_safe_full_length = mysql_real_escape_string($ssid_in_dupe);
-    ###########
-
-    ###########
-    ## Make Table safe SSID
-    $ssid_sized = str_split($ssid_in_dupe, 25); //split SSID in two on is 25 char.
-    $replace = array(' ', '`', '.', "'", '"', "/", "\\");
-    #echo $ssid_sized[0];
-    $ssid_table_safe = str_replace($replace,'_',$ssid_sized[0]); //Use the 25 char word for the APs table name, this is due to a limitation in MySQL table name lengths,
-    ###########
-
-    ###########
-    ## Return
-    #echo $ssid_table_safe;
-    $A = array(0=>$ssid_table_safe, 1=>$ssid_safe_full_length , 2=> $ssid_in, 3=>$file_safe_ssid, 4=>$ssid_in_dupe);
-    return $A;
-    ###########
-}
-function smart_quotes($text="") // Used for SSID Sanatization
-{
-	$pattern = '/"((.)*?)"/i';
-	$strip = array(
-			0=>";",
-			1=>"`",
-			2=>"&", #
-			3=>"!", #
-			4=>"/", #
-			5=>"\\", #
-			6=>"'",
-			7=>'"',
-			8=>" "
-			);
-	$text = preg_replace($pattern,"&#147;\\1&#148;",$text);
-	$text = str_replace($strip,"_",$text);
-	return $text;
-}
-function dump($value="" , $level=0)
-{
-  if ($level==-1)
-  {
-    $trans[' ']='&there4;';
-    $trans["\t"]='&rArr;';
-    $trans["\n"]='&para;;';
-    $trans["\r"]='&lArr;';
-    $trans["\0"]='&oplus;';
-    return strtr(htmlspecialchars($value),$trans);
-  }
-  if ($level==0) echo '<pre>';
-  $type= gettype($value);
-  echo $type;
-  if ($type=='string')
-  {
-    echo '('.strlen($value).')';
-    $value= dump($value,-1);
-  }
-  elseif ($type=='boolean') $value= ($value?'true':'false');
-  elseif ($type=='object')
-  {
-    $props= get_class_vars(get_class($value));
-    echo '('.count($props).') <u>'.get_class($value).'</u>';
-    foreach($props as $key=>$val)
-    {
-      echo "\n".str_repeat("\t",$level+1).$key.' => ';
-      dump($value->$key,$level+1);
-    }
-    $value= '';
-  }
-  elseif ($type=='array')
-  {
-    echo '('.count($value).')';
-    foreach($value as $key=>$val)
-    {
-      echo "\n".str_repeat("\t",$level+1).dump($key,-1).' => ';
-      dump($val,$level+1);
-    }
-    $value= '';
-  }
-  echo " <b>$value</b>";
-  if ($level==0) echo '</pre>';
-}
+$dbcore->InsertLiveAP($data);
+$dbcore->Output();
 ?>

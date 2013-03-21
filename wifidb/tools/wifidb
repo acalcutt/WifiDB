@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start/stop WiFiDB server instance
-# WiFiDB v0.20 Build 2.
+# WiFiDB v0.30 Build 1.
 #
 # create as: /etc/init.d/wifidb
 # to activate it, run: chkconfig -add wifidb
@@ -20,10 +20,11 @@
 RETVAL=0
 
 # SCRIPT DEFAULT SETTINGS
-prog="Wifidb Daemons"
+prog="WiFiDBd"
 wifidbpath="/opt/wifidb/tools"
-wdbpid="/var/run/wifidbd/imp_expd.pid"
-lockfile="/var/lock/WiFiDB"
+logpath="/var/log/wifidb/wifidbd_console.log"
+wdbpid="/var/run/wifidbd.pid"
+lockfile="/var/lock/wifidb.loc"
 
 start() {
 	echo $"Starting $prog: "
@@ -34,8 +35,9 @@ start() {
 		echo
 		RETVAL=2
     else
-        output=`php ${wifidbpath}/rund.php start ied`
-        if [ -f $wdbpid ]
+        output=`nohup php ${wifidbpath}/daemon/wifidbd.php > $logpath &`
+		sleep 10s
+        if [ -e $wdbpid ]
         then
 			# success
             touch $lockfile
@@ -54,12 +56,11 @@ start() {
 
 stop() {
     echo $"Stopping $prog: "
-    output=`php ${wifidbpath}/rund.php stop ied`
+    output=`php ${wifidbpath}/rund.php stop`
 	if [ -f $wdbpid ]
 	then
         # failed
         log_failure_msg "$wdbpid still exists. $prog was not stopped properly..."
-		echo		
 		RETVAL=1
     else
         # success

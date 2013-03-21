@@ -1,9 +1,28 @@
 <?php
-global $screen_output;
-$screen_output = "CLI";
-include('../lib/config.inc.php');
-include('../lib/database.inc.php');
-include($GLOBALS['wifidb_tools'].'/daemon/config.inc.php');
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'');
+
+include('../lib/init.inc.php');
 
 $scroll = (@$_COOKIE['console_scroll']!='' ? @$_COOKIE['console_scroll'] : $GLOBALS['console_scroll']);
 $refresh = (@$_COOKIE['console_refresh']!='' ? @$_COOKIE['console_refresh'] : $GLOBALS['console_refresh']);
@@ -85,7 +104,7 @@ $handle = fopen($console_log, "r");
 			}
 		}
 		if($sig_num != 0 && $console_line[0] == "."){$text = $text; $sig_num=0;}
-		
+
 		if($console_line[0] == ":")
 		{
 			$console_exp = explode(":",$console_line);
@@ -96,7 +115,7 @@ $handle = fopen($console_log, "r");
 			}
 		}
 		if($exp_num != 0 && $console_line[0] != ":"){$text = $text."<br>\r\n";$exp_num=0;}
-		
+
 		$sig_num=0;
 		$exp_num=0;
 		if($last5)

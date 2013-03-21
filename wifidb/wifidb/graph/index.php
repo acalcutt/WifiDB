@@ -1,26 +1,40 @@
 <?php
-/////////////////////////////////////////////////////////////////
-//  By: Phillip Ferland (Longbow486)                           //
-//  Email: longbow486@msn.com                                  //
-//  Started on: 10.14.07                                       //
-//  Purpose: To generate a PNG graph of a WAP's signal         //
-//           from URL driven data                              //
-//  Filename: index.php                                        //
-/////////////////////////////////////////////////////////////////
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
 $startdate="14-10-2007";
 $lastedit="03-Jun-2009";
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'');
 
-include('../lib/database.inc.php');
+include('../lib/init.inc.php');
 pageheader("Graph AP Signal History Page");
-include('../lib/config.inc.php');
+
 include('../lib/graph.inc.php');
 ?>
 <form action="genline.php" method="post" enctype="multipart/form-data">
 <?php
 echo '<h1>Graph an Access Points Signal history *Beta*</h1><h4>Bar Graph=>'.$ver_graph['graphs']['wifibar'].'<br>Line Graph=>'.$ver_graph['graphs']['wifiline'].'</h4>';
 
-$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
-$row =  filter_input(INPUT_GET, 'row', FILTER_SANITIZE_NUMBER_INT);
+$id = $_GET['id'];
+$row = $_GET['row'];
 
 mysql_select_db($db,$conn);
 $sql = "SELECT * FROM `$wtable` WHERE `id` = $id";
@@ -102,7 +116,7 @@ $sig = implode("-",$signal);
 		.'<input name="sig" type="hidden" value="'.$sig.'"/>'."\r\n"
 		.'<input name="name" type="hidden" value="'.$name.'"/>'."\r\n";
 	?>
-					Choose Graph Type: 
+					Choose Graph Type:
 					<select name="line" style="height: 22px; width: 139px">
 	<option value="">Bar (Vertical)</option>
 	<option value="line">Line (Horizontal)</option>
@@ -111,7 +125,7 @@ $sig = implode("-",$signal);
 				</tr>
 				<tr>
 					<td class="style2">
-					Choose Text Color: 
+					Choose Text Color:
 					<select name="text" style="height: 22px; width: 147px">
 	<option value="255:000:000">Red</option>
 	<option value="000:255:000">Green</option>
@@ -126,7 +140,7 @@ $sig = implode("-",$signal);
 	<option value="226:012:243">Pink</option>
 	<option value="rand">Random</option>
 	</select>
-					
+
 					</td>
 				</tr>
 				<tr>
@@ -136,10 +150,10 @@ $sig = implode("-",$signal);
 	<option value="000:000:000">Black</option>
 	<option value="255:255:255">White</option>
 	</select>
-					
+
 					</td>
 				</tr>
-	
+
 				<tr>
 					<td class="style2">
 					Choose Line Color:<select name="linec" style="width: 153px">
@@ -156,7 +170,7 @@ $sig = implode("-",$signal);
 	<option value="226:012:243">Pink</option>
 	<option value="rand">Random</option>
 	</select>
-					
+
 					</td>
 				</tr>
 				<tr>

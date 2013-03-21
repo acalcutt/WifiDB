@@ -7,24 +7,48 @@ document.forms['WiFiDB_patch'].elements['httpdgrp'].disabled =! document.forms['
 </script>
 
 <?php
-global $screen_output;
-$screen_output = 'CLI';
-include('../../lib/config.inc.php');
+#Database.inc.php, holds the database interactive functions.
+#Copyright (C) 2011 Phil Ferland
+#
+#This program is free software; you can redistribute it and/or modify it under the terms
+#of the GNU General Public License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with this program;
+#if not, write to the
+#
+#   Free Software Foundation, Inc.,
+#   59 Temple Place, Suite 330,
+#   Boston, MA 02111-1307 USA
+
+define(WIFIDB_SCREEN_OUTPUT, "CLI");
+define(WIFIDB_INSTALL, "installing");
+
+include('../../lib/database.inc.php');
 ?>
 <title>Wireless DataBase *Alpha* --&#60; Upgrade Page</title>
 <link rel="stylesheet" href="../../themes/wifidb/styles.css">
 <body topmargin="10" leftmargin="0" marginwidth="10" marginheight="10" onload="document.forms['WiFiDB_patch'].elements['toolsdir'].disabled=true; document.forms['WiFiDB_patch'].elements['httpduser'].disabled=true; document.forms['WiFiDB_patch'].elements['httpdgrp'].disabled=true;">
 <div align="center">
 <table border="0" width="75%" cellspacing="10" cellpadding="2">
-	<tr>
-		<td bgcolor="#315573">
-		<p align="center"><b><font size="5" face="Arial" color="#FFFFFF">
-		Wireless DataBase Upgrade</font>
-		<font color="#FFFFFF" size="2">
-            <a class="links" href="/">[Root] </a>/ <a class="links" href="/wifidb/">[WifiDB] </a>/
-		</font></b>
-		</td>
-	</tr>
+    <tr>
+        <td bgcolor="#315573">
+            <p align="center">
+                <b>
+                    <font size="5" face="Arial" color="#FFFFFF">
+                        Wireless DataBase Upgrade
+                    </font>
+                    <font color="#FFFFFF" size="2">
+                        <a class="links" href="/">[Root] </a>/ <a class="links" href="/wifidb/">[WifiDB] </a>/
+                    </font>
+                </b>
+            </p>
+        </td>
+    </tr>
 </table>
 </div>
 <div align="center">
@@ -38,7 +62,7 @@ include('../../lib/config.inc.php');
 
 <form name="WiFiDB_patch" action="patch.php" method="post" enctype="multipart/form-data">
   <h2>WiFiDB Settings for Upgrade</h2>
-  <h3>Upgrade DB for all 0.16 Builds <b>--&#60;</b> 0.20 Build 1</h3>
+  <h3>Upgrade DB for all 0.16 Builds <b>--&#60;</b> 0.21 Build 1</h3>
   <h4>Please Read <a class="links" target="_blank" href="notes.html">these notes</a> before installing the Wireless Database</h4>
 <?php
 
@@ -103,26 +127,26 @@ else{ echo '<table><tr class="style4"><td><b><font color=#ff0000>You Do Not Have
   <tr>
     <td>Default Theme</td>
     <td>
-		<select name="theme">
-		<OPTION selected VALUE=""> Select a Theme.
-		<?php
-		$themes = "../../themes";
-		$dh = opendir($themes) or die("couldn't open directory");
-		while (!(($file = readdir($dh)) == false))
-		{
-			if ((is_dir($themes."/".$file))) 
-			{
-				$checked = '';
-				if($file=="."){continue;}
-				if($file==".."){continue;}
-				if($file==".svn"){continue;}
-				if($file === $GLOBALS['default_theme']){$checked = 'selected';}
-				echo '<OPTION VALUE="'.$file.'"> '.$file;
-			}
-		}
-		?>
-		</select>
-	</td>
+        <select name="theme">
+        <OPTION selected VALUE=""> Select a Theme.
+        <?php
+        $themes = "../../themes";
+        $dh = opendir($themes) or die("couldn't open directory");
+        while (!(($file = readdir($dh)) == false))
+        {
+            if ((is_dir($themes."/".$file)))
+            {
+                $checked = '';
+                if($file=="."){continue;}
+                if($file==".."){continue;}
+                if($file==".svn"){continue;}
+                if($file === $GLOBALS['default_theme']){$checked = 'selected';}
+                echo '<OPTION VALUE="'.$file.'"> '.$file;
+            }
+        }
+        ?>
+        </select>
+    </td>
 </TR>
 <tr><th colspan="2" class="style4">WiFiDB Daemon Settings</th></tr>
   <tr>

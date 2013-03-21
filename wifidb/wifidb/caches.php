@@ -1,6 +1,27 @@
 <?php
-include('lib/database.inc.php');
-include('lib/config.inc.php');
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>"");
+include('lib/init.inc.php');
 $theme = $GLOBALS['theme'];
 $func	=	addslashes(@$_GET['func']);
 switch(@$func)
@@ -21,7 +42,7 @@ switch(@$func)
 		if (@$_COOKIE['WiFiDB_page_limit']){$inc = @$_COOKIE['WiFiDB_page_limit'];}else{$inc=100;}
 		if ($ord=="" or !is_string($ord)){$ord="ASC";}
 		if ($sort=="" or !is_string($sort)){$sort="id";}
-		
+
 		?>
 		<b><font size='6'>Shared Geocaches </font></b><br>
 		<table BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 95%">
@@ -38,7 +59,7 @@ switch(@$func)
 				<a href="?func=boeyes&boeye_func=list_all&sort=cat&ord=DESC&from=<?php echo $from;?>&to=<?php echo $inc;?>"><img height="15" width="15" border="0"border="0" src="<?php echo $GLOBALS['UPATH'];?>/themes/<?php echo $theme;?>/img/up.png"></a></th>
 			</tr>
 			<?php
-		
+
 		$sql0 = "SELECT * FROM `$db`.`$share_cache`";
 		if($result = mysql_query($sql0, $conn))
 		{
@@ -109,7 +130,7 @@ switch(@$func)
 						if($I >= ($mid_page - 6) AND $I <= ($mid_page + 4))
 						{
 			#				echo $mid_page." --- ".$I." --- ".$page."<BR>";
-							
+
 							if($mid_page == $page)
 							{
 								$pages_together .= ' <i><u>'.$page.'</u></i> - ';
@@ -141,7 +162,7 @@ switch(@$func)
 		</table>
 		<?php
 	break;
-	
+
 	case "fetch_wpt":
 		include('lib/geocache.inc.php');
 		$id = $_GET['id']+0;

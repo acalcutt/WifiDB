@@ -1,19 +1,14 @@
 <?php
 error_reporting(E_ALL|E_STRICT);
-
-pcntl_signal(SIGTERM, "signal_handler");
-pcntl_signal(SIGINT, "signal_handler");
-pcntl_signal(SIGKILL, "signal_handler");
-
 global $screen_output;
 $screen_output = "CLI";
 
 if(!(require_once 'config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 
-if($wdb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require_once $wdb_install."/lib/database.inc.php";
-require_once $wdb_install."/lib/daemon.inc.php";
-require_once $wdb_install."/lib/config.inc.php";
+if($wifidb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+#require_once $wifidb_install."/lib/database.inc.php";
+require_once $wifidb_install."/lib/daemon.inc.php";
+require_once $wifidb_install."/lib/config.inc.php";
 if(!file_exists($GLOBALS['daemon_log_folder']))
 {
     if(mkdir($GLOBALS['daemon_log_folder']))
@@ -26,25 +21,7 @@ if(!file_exists($GLOBALS['pid_file_loc']))
     {echo "Made WiFiDB PID Folder [".$GLOBALS['pid_file_loc']."]\r\n";}
     else{echo "Could not make PID Folder [".$GLOBALS['pid_file_loc']."]\r\n";}
 }
-if($GLOBALS['colors_setting'] == 0 or PHP_OS == "WINNT")
-{
-    $COLORS = array(
-                    "LIGHTGRAY"	=> "",
-                    "BLUE"		=> "",
-                    "GREEN"		=> "",
-                    "RED"		=> "",
-                    "YELLOW"	=> ""
-                    );
-}else
-{
-    $COLORS = array(
-                    "LIGHTGRAY"	=> "\033[0;37m",
-                    "BLUE"		=> "\033[0;34m",
-                    "GREEN"		=> "\033[0;32m",
-                    "RED"		=> "\033[0;31m",
-                    "YELLOW"	=> "\033[1;33m"
-                    );
-}
+
 $dim = @DIRECTORY_SEPERATOR;
 date_default_timezone_set("UTC");
 ini_set("memory_limit","3072M"); //lots of objects need lots of memory, that and shitty programing from a fucking idiot of a developer
@@ -60,66 +37,66 @@ $pid_file       =   $GLOBALS['pid_file_loc'].'wifidb_lived.pid';
 $fileappend = fopen($pid_file, "w");
 $write_pid = fwrite($fileappend, $This_is_me);
 
-verbosed($GLOBALS['COLORS'][$GOOD_IED_COLOR]."
+verbosed("
 WiFiDB 'Live AP Daemon'
 Version: 1.0.0
- - Daemon Start: 20-Apr-2011
+ - Daemon Start: 14-May-2011
  - Last Daemon File Edit: 2011-Apr-2011
 	(/tools/daemon/wifidb_lived.php)
  - By: Phillip Ferland ( pferland@randomintervals.com )
  - http://www.randomintervals.com
 
-PID: [ $This_is_me ]".$GLOBALS['COLORS'][$OTHER_IED_COLOR], $verbose, $screen_output, 0);
-$daemon = new daemon();
-$conn = new mysqli($host, $db_user, $db_pass);
-$conn->query("SET NAMES 'utf8'");
+PID: [ $This_is_me ]", $verbose, $screen_output, 0);
+$daemon = new daemon($host, $db_user, $db_pwd);
+$daemon->live_timeout = 10;
+$daemon->live_run_timeout = 3600;
+$daemon->sleep_time = 30;
+$i=0;
 while(1)
 {
-    $sql = "SELECT * FROM `$db`.`$live_aps` ORDER BY `username` ASC";
-    $result = $conn->query($sql);
+    echo "Running ($i)\r\n";
+    $i++;
+    $users = array();
+    $sql = "SELECT * FROM `$db`.`$daemon->live_aps` ORDER BY `username` ASC";
+    $result = $daemon->conn->query($sql);
     while($live_table = $result->fetch_array(1))
     {
-        if(strtotime($live_table['LA'])+600 <= time())
+        $users[] = $live_table['username'];
+    }
+    $sql = "SELECT * FROM `$db`.`$daemon->live_stage` ORDER BY `username` ASC";
+    $result1 = $daemon->conn->query($sql);
+    while($stage_table = $result1->fetch_array(1))
+    {
+        $users[] = $stage_table['username'];
+    }
+
+    $users = array_unique($users);
+    foreach($users as $user)
+    {
+        //Find no active APs and move them to the staging tables
+        echo "Checking ($user) Live AP Stage...\r\n";
+        $daemon->live_stage($user);
+        
+        //Check the staging table and see when the last AP for each user was last updated,
+        //if it is more then the defined limit, move it to be imported
+        echo "Running check ($user) Live AP Migrate...\r\n";
+        $sql = "SELECT * FROM `$db`.`$daemon->live_titles` WHERE `username` = '$user' limit 1";
+        $result3 = $daemon->conn->query($sql);
+        $title_table = $result3->fetch_array(1);
+        $id    = $title_table['id'];
+        $title = $title_table['title'];
+        $notes = $title_table['notes'];
+        if($daemon->live_migrate($user, $title, $notes))
         {
-            if($live_table['username'] != "UNKNOWN")
+            $sql = "DELETE FROM `$db`.`$daemon->live_titles` WHERE `id` = '$id'";
+            echo $sql."\r\n";
+            if($daemon->conn->query($sql))
             {
-                $daemon->live_export($live_table['username']);
-                $daemon->live_migrate($live_table['username']);
-            }else
-            {
-                $daemon->live_export("UNKNOWN", $live_table['id']);
-                $daemon->live_migrate("UNKNOWN", $live_table['id']);
+                echo "Failed to remove the Import title from the table. :/ ($id)\r\n";
             }
-        }else
-        {
-            
         }
     }
-    sleep(60);
-}
-
-
-
-
-
-
-
-function signal_handler($signal)
-{
-    switch($signal)
-    {
-        case SIGTERM:
-            print "Caught SIGTERM\n";
-            unlinlk($pid_file);
-            exit;
-        case SIGKILL:
-            print "Caught SIGKILL\n";
-            unlinlk($pid_file);
-            exit;
-        case SIGINT:
-            print "Caught SIGINT\n";
-            unlinlk($pid_file);
-            exit;
-    }
+    echo "Shhhh. The Trolls are Sleeping (sec: $daemon->sleep_time)\r\n";
+    sleep($daemon->sleep_time);
 }
 ?>

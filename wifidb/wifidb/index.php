@@ -1,117 +1,127 @@
 <?php
-include('lib/database.inc.php');
-include('lib/config.inc.php');
-pageheader("Main Page");
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>"");
+include('lib/init.inc.php');
+
 $usersa =  array();
-$sql = "SELECT `id` FROM `$db`.`$wtable`";
-$result0 = mysql_query($sql, $conn);
-$rows = mysql_num_rows($result0);
+$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers`";
+#echo $sql;
+$result = $dbcore->sql->conn->query($sql);
+$rows = $result->fetch(2);
 
-$sql = "SELECT `id` FROM `$db`.`$wtable` WHERE `sectype`='1'";
-$result1 = mysql_query($sql, $conn);
 
-$sql = "SELECT `id` FROM `$db`.`$wtable` WHERE `sectype`='2'";
-$result2 = mysql_query($sql, $conn);
+$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `sectype`='1'";
+$result = $dbcore->sql->conn->query($sql);
+$open = $result->fetch(2);
 
-$sql = "SELECT `id` FROM `$db`.`$wtable` WHERE `sectype`='3'";
-$result3 = mysql_query($sql, $conn);
 
-$sql = "SELECT * FROM `$db`.`$wtable` ORDER BY ID DESC LIMIT 1";
-$result4 = mysql_query($sql, $conn);
+$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `sectype`='2'";
+$result = $dbcore->sql->conn->query($sql);
+$wep = $result->fetch(2);
 
-$sql = "SELECT `username` FROM `$db`.`$users_t`";
-$result5 = mysql_query($sql, $conn);
 
-$row_users = @mysql_num_rows($result5);
-while($user_array = @mysql_fetch_array($result5))
+$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `sectype`='3'";
+$result = $dbcore->sql->conn->query($sql);
+$sec = $result->fetch(2);
+
+$sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY ID DESC LIMIT 1";
+$result = $dbcore->sql->conn->query($sql);
+$last = $result->fetch(2);
+
+$sql = "SELECT `username` FROM `wifi`.`user_imports`";
+$result = $dbcore->sql->conn->query($sql);
+while($user_array = $result->fetch(2))
 {
-	$usersa[]=$user_array['username'];
+    $usersa[]=$user_array['username'];
 }
 $usersa = array_unique($usersa);
 $usercount = count($usersa);
 
-$sql = "SELECT * FROM `$db`.`$users_t` WHERE `id`='$row_users'";
-$result6 = mysql_query($sql, $conn);
-$open = mysql_num_rows($result1);
-$WEP = mysql_num_rows($result2);
-$Sec = mysql_num_rows($result3);
+$sql = "SELECT * FROM `wifi`.`user_imports` order by id desc limit 1";
+$result = $dbcore->sql->conn->query($sql);
+$newest_array = $result->fetch(2);
 
-$lastap_array = mysql_fetch_array($result4);
+$sql = "SELECT `id`,`ap_hash`,`ssid` FROM `wifi`.`wifi_pointers` order by `id` desc limit 1";
+$result = $dbcore->sql->conn->query($sql);
+$lastap_array = $result->fetch(2);
+
 $lastap_id = $lastap_array['id'];
-#echo $lastap_id;
 $lastap_ssid = $lastap_array['ssid'];
-list($ssid_ptb) = make_ssid($lastap_array['ssid']);
-$table = $ssid_ptb.'-'.$lastap_array["mac"].'-'.$lastap_array["sectype"].'-'.$lastap_array["radio"].'-'.$lastap_array['chan'].$gps_ext;
-$sql_gps = "select * from `$db_st`.`$table` where `lat` NOT LIKE '%0.0000' limit 1";
+$ap_hash = $lastap_array['ap_hash'];
+$sql_gps = "select `lat` from `wifi`.`wifi_pointers` WHERE `lat` != 'N 0000.0000' AND `lat` != '' AND `lat` != 'N 0.0000' AND `ap_hash` = '$ap_hash'";
 #echo $sql_gps;
-$resultgps = mysql_query($sql_gps, $conn);
-$lastgps = @mysql_fetch_array($resultgps);
+
+$result = $dbcore->sql->conn->query($sql_gps);
+$lastgps = $result->fetch(2);
 
 $lat_check = explode(" ", $lastgps['lat']);
 $lat_c = @$lat_check[1]+0;
-#var_dump($lat_c);
-if($lat_c != "0"){$gps_yes = 1;}else{$gps_yes = 0;}
-$lastuser = @mysql_fetch_array($result6);
-if(!$result0 OR !$result1 OR !$result2 OR !$result3 OR !$result4 OR !$result5 or !$result6)
+if($lat_c != "0")
 {
-	echo "<br /><p><h2>There is a serious error trying to get data from the Database, check it out.<br />You may need to reinstall.</h2></p>";
-	footer($_SERVER['SCRIPT_FILENAME']);
-	die();
+    $gps_yes = 1;
 }
-
+else
+{
+    $gps_yes = 0;
+}
 
 if ($usercount == NULL)
 {
-	$lastuser['username'] = "No imports have finished yet.";
-	$lastuser['title'] = "No imports have finished yet.";
-	
+    $lastusername = "No users in Database.";
+    $lasttitle = "No imports have finished yet.";
+    $lastdate = date("Y-m-d H:i:s");
+    $usercount = 0;
+    $lastid = 0;
+}else
+{
+    $sql = "SELECT * FROM `wifi`.`user_imports` order by `id` desc limit 1";
+    $result = $dbcore->sql->conn->query($sql);
+    $lastuser = $result->fetch(2);
+    #var_dump($lastuser);
+    $lastusername = $lastuser['username'];
+    $lasttitle = $lastuser['title'];
+    $lastdate = $lastuser['date'];
+    if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
+    $lastid = $lastuser['id'];
 }
-if(!@$lastuser['date'])
-{$lastdate = date("Y-m-d H:i:s");}
-else{$lastdate = $lastuser['date'];}
+if($gps_yes) { $gps = "on"; }else{ $gps = "off"; }
 
+$dbcore->smarty->assign('wifidb_page_label', 'Index Page');
+$dbcore->smarty->assign('total_aps', $rows['count(`id`)']);
+$dbcore->smarty->assign('open_aps', $open['count(`id`)']);
+$dbcore->smarty->assign('wep_aps', $wep['count(`id`)']);
+$dbcore->smarty->assign('sec_aps', $sec['count(`id`)']);
+$dbcore->smarty->assign('total_users', $usercount);
+$dbcore->smarty->assign('new_ap_id', $lastap_id);
 
-?>
-			To View all AP's click <a class="links" href="all.php?sort=SSID&ord=ASC&from=0&to=100">Here</a><br><br>
-<table WIDTH=85% BORDER=1 CELLPADDING=2 CELLSPACING=0>
-	<tr>
-		<td colspan="4" class="style1"><strong><em>Statistics</em></strong></td>
-	</tr>
-	<tr class="style3"><td class="style2" colspan="4" ></td></tr>
-	<tr>
-		<th class="style3" style="width: 100px">Total AP&#39;s</th>
-		<th class="style3">Open AP&#39;s</th>
-		<th class="style3">WEP AP&#39;s</th>
-		<th class="style3">Secure AP&#39;s</th>
-	</tr>
-	<tr class="light">
-		<td align="center" class="style2" style="width: 100px"><?php echo $rows; ?></td>
-		<td align="center" class="style2"><?php echo $open; ?></td>
-		<td align="center" class="style2"><?php echo $WEP; ?></td>
-		<td align="center" class="style2"><?php echo $Sec; ?></td>
-	</tr>
-	<tr class="style3"><td class="style2" colspan="4" ></td></tr>
-	<tr>
-		<th class="style3" style="width: 100px">Total Users</th>
-		<th class="style3">Last user to import</th>
-		<th class="style3">Last AP added</th>
-		<th class="style3">Last Import List</th>
-	</tr>
-	<tr class="dark">
-		<td align="center" class="style2" style="width: 100px"><?php echo $usercount;?></td>
-		<td align="center" class="style2"><?php if ($usercount == NULL){echo "No users in Database.";}else{?><a class="links" href="opt/userstats.php?func=alluserlists&user=<?php echo $lastuser['username'];?>"><?php echo $lastuser['username'];?></a><?php } ?></a></td>
-		<td align="center" class="style2"><p align="center"><table><tr><td align="right" width="100%"><?php if($lastap_ssid==''){echo "No APs imported yet.";}else{?><a class="links" href="opt/fetch.php?id=<?php echo $lastap_id;?>"><?php echo $lastap_ssid;?></a><?php } ?></td><td align="left"><img width="20px" src="img/globe_<?php if($gps_yes){echo "on";}else{echo "off";} ?>.png"></td></tr></table></p></td>
-		<td align="center" class="style2"><?php if($lastap_ssid==''){echo "No imports yet.";}else{?><a class="links" href="opt/userstats.php?func=useraplist&row=<?php echo $lastuser['id'];?>"><?php echo $lastuser['title'];?></a><br>  <?php echo "[".$lastdate."]"; } ?> </td>
-	</tr>
-</table>
-<table width="75%"><td><tr>
-<?php
-if ($_SERVER['HTTP_HOST'] == "rihq.randomintervals.com" or $_SERVER['HTTP_HOST'] == "www.randomintervals.com" or $_SERVER['HTTP_HOST'] == "192.168.1.26" or $_SERVER['HTTP_HOST'] == "randomintervals.com")
-{echo '<b><font size="3">This is one of my Development servers </font><br>
-<font size="2">(which is unstable because I am always working in it)</font><br>
-<font size="3">Go on over to the <i>Vistumbler <a class="links" target="_blank" href="http://www.vistumbler.net/wifidb/">\'Production Server\'</i></a> for a more stable environment</font></b>';}
-?>
-</td></tr></table>
-<?php
-footer($_SERVER['SCRIPT_FILENAME']);
+$dbcore->smarty->assign('globe_status', $gps);
+
+$dbcore->smarty->assign('new_import_user', $lastusername);
+$dbcore->smarty->assign('new_ap_ssid', $lastap_ssid);
+$dbcore->smarty->assign('new_import_date', $lastdate);
+$dbcore->smarty->assign('new_import_title', $lasttitle);
+$dbcore->smarty->assign('new_import_id', $lastid);
+
+$dbcore->smarty->smarty->display('index.tpl');
+
 ?>

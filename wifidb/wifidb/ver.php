@@ -1,7 +1,30 @@
 <?php
-include('lib/config.inc.php');
-include('lib/database.inc.php');
-pageheader("Version Page");
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>"");
+
+include('lib/init.inc.php');
+$dbcore->smarty->assign('wifidb_page_label', 'Version Page');
+$dbcore->smarty->smarty->display('header.tpl');
 ?>
 <font face="Courier New">
 		<div align="left">
@@ -16,24 +39,79 @@ pageheader("Version Page");
 				<td>Project Dev(s)...</td><td><b><a class="links" href="http://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=6">PFerland</a></b></td>
 			</tr>
 			<tr class="light">
-				<td align="center" colspan="2"><b><a class="links" title="You know you want to." href="http://www.randomintervals.com/wifidb/">Download WiFiDB</a></b></td>
+				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="http://www.randomintervals.com/wifidb/">Download WiFiDB</a></b></td>
 			</tr>
 		</table>
-		<BR><H2>Change Log</H2>
-                <table class="light" width="100%" border="2" id="20b2">
-			<TR><td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.21 Build 1</td></tr>
-			<tr><td style="border-style: solid; border-width: 1px" height="26">Date: 2011-Feb-19</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td></tr>
-			<tr><td style="border-style: solid; border-width: 1px" height="26">Changes :</td></tr>
-			<tr><td style="border-style: solid; border-width: 1px" height="26" colspan="3">
-				<OL>
-                                    <LI>Fixed lots of WTF moments in the code, which includes increasing the speed of the imports by, well... alot.</LI>
-                                    <li>Added a globe icon for APs that have GPS, APs that do not have GPS have a greyed out globe.</li>
-                                    <li>Fixed errors with handling UTF8 characters.</li>
-                                    <li>Fixed errors with exporting data for APs with some special characters.</li>
-                                    <LI>Added the ability for the search page to show the first 15 results on the same page as you type. <a href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=" target="_blank"></a></LI>
-                                    <LI>Added Temp File cleanup for Daemon KML generation.</LI>
-				</OL>
-			</td></tr>
+		</ br>
+                <h2>Change Log</h2>
+                <table class="dark" width="100%" border="2" id="21b1">
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30 Build 1</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 2012-Mar-4</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
+                            <ol>
+                                <li>Re-wrote the back end storage, there is no longer 2 tables per Access Point in a seperate database called wifi_st. 
+                                        There are now three tables in the wifi database called; wifi_pointers (Holds the general Information for each AP), 
+                                        wifi_signals (holds all the signal history data with an ID pointer for GPS), wifi_gps (holds all the GPS Coord data).</li>
+                                    
+                                <li>Re-wrote the core of WiFiDB. All pages start off by calling <i>/lib/init.inc.php</i>, this sets up the environment,
+                                        checks to see if the database is in the correct state, and then starts doing what the user asked.</li>
+                                <ol>
+                                    <li><i>$dbcore</i> The main Object that everything gets attached too.</li>
+                                    <ol>
+                                        <li>Core object variables include file system paths to library's, URL paths, and the current theme for the user, and any other system wide items like the manufactures list.</li>
+                                        <li>SQL Object ($dbcore->sql)</li>
+                                            <ol>
+                                                <li>SQL Connection object.</li>
+                                                <li>SQL Host name/IP string.</li>
+                                                <li>WiFiDB DB Name.</li>
+                                            </ol>
+                                        <li>Frontend Class (lib/frontend.inc.php) </li>
+                                            <ol>
+                                                <li>Contains all the functions for interacting with the database and collecting data for output.</li>
+                                                <li>Extends DBCore, Not to be used with the Daemon Class</li>
+                                            </ol>
+                                        <li>Daemon Class (lib/daemon.inc.php) </li>
+                                            <ol>
+                                                <li>Contains all the functions for interacting with the database and collecting data for output.</li>
+                                                <li>Extends DBCore, Not to be used with Frontend Class.</li>
+                                            </ol>
+                                        <li>Export Class (lib/export.inc.php)</li>
+                                            <ol>
+                                                <li>Contains all the functions for interacting with the database and collecting data for output.</li>
+                                                <li>Can be used with either the Daemon or Frontend Classes.</li>
+                                            </ol>
+                                        <li>Security Class (lib/security.inc.php)</li>
+                                            <ol>
+                                                <li>All the functions that involve security and users permissions within WiFiDB.</li>
+                                                <li>Can be used with either the Daemon or Frontend Classes.</li>
+                                            </ol>
+                                    </ol>
+                                </ol>
+                                <li>Fixed lots of WTF moments in the code, which includes increasing the speed of the imports by, well... alot. 
+                                    By no longer checking for duplicate GPS points on import.</li>
+                                <li>Added a globe icon for APs that have GPS, APs that do not have GPS have a grayed out globe.</li>
+                                <li>Fixed errors with handling UTF8 characters.</li>
+                                <li>Fixed errors with exporting data for APs with some special characters.</li>
+                                <li>*BROKEN* Added the ability for the search page to show the first 15 results on the same page as you type. <a href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=" target="_blank"></a></li>
+                                <li>Added Temp File and output cleanup for unneeded Daemon KML files.</li>
+                                <li>Implemented Smarty Templeting across all web pages.</li>
+                                <li>Moved Exporting functions out of the database.inc.php file and into their own export.inc.php and class.</li>
+                                <li>Renamed database.inc.php to frontend.inc.php
+                                <li>Depreciated <i>login_bar()</i>, <i>my_caches()</i>, and <i>user_panel_bar()</i></li>
+                                <li>Moved the <i>header()</i> and <i>footer()</i> functions back from the themes folder and into the mainline code. Themes will just have a header and footer `.tpl` file now.</li>
+                                <li>Implemented PDO prepared statements in all interactions with the SQL Servers.</li>
+                                <li>Removed all HTML elements from the import/export functions.</li>
+                            </ol>
+			</td>
+                    </tr>
 		</table>
                 <table class="light" width="100%" border="2" id="20b1">
 			<tr><td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.20 Build 1</td></tr>
@@ -48,7 +126,7 @@ pageheader("Version Page");
 					<LI>Changed the All APs page to only show a few pages before and after the current page number. </LI>
 					<LI>Added a User based login system. <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=444">KB444</a></LI>
 					<LI>Added User Control Panel. <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=444">KB444</a></LI>
-					<LI>Added Mysticahe support (GPX / LOC / CSV). <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=444">KB444</a></LI>
+					<LI>Added Mysticache support (GPX / LOC / CSV). <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=444">KB444</a></LI>
 					<LI>Added XML Support. </LI>
 					<LI>Fixed a bug with GPS conversions. If one of the Cords has only 2 digits before the decimal the geo-cord was converted wrong. <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=48&t=478">KB478</a></LI>
 					<LI>Fixed in Index and Import page. (This is only ever seen on my domains) Apparently I didn't know how to spell "Environment". </LI>
@@ -84,10 +162,10 @@ pageheader("Version Page");
 							</UL>
 						</UL>
 					<LI>Fixed, Forgot to add the '@' before $lat_exp[1] on line 5583 in database.inc.php. This was causing an unknown variable warning. </LI>
-					<LI>Fixed, There was a problem with importing SSID's that have backslashes (\). This would then parse to read from MySQL and wouldn't find the table. <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=11&t=511">KB511</a></LI> 
+					<LI>Fixed, There was a problem with importing SSID's that have backslashes (\). This would then parse to read from MySQL and wouldn't find the table. <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=11&t=511">KB511</a></LI>
 					<LI>Changed the Install and Upgrade scripts, cleaned up and improved the code layout a little more. </LI>
 					<LI>Added alternating colors to the rows in most if not all tables. This is based per-theme with the .dark, .light, .sub_head, .style4[ha,td] in themes/[theme]/sytles.css</LI>
-					<LI>Changed mail_admin() function to `mail_users(), So Administrators and other users can be updated with new imports and other updates. Based off of <a class="links" href="http://www.XpertMailer.com" target="_blank">XpertMailer</a></LI>
+					<LI>Changed <i>mail_admin()</i> function to <i>mail_users()</i>, So Administrators and other users can be updated with new imports and other updates. Based off of <a class="links" href="http://www.XpertMailer.com" target="_blank">XpertMailer</a></LI>
 					<LI>Added another Daemon called 'geonamed.php'</LI>
 						<UL><LI>Geonaming of Country and Administrative Names of Access Points with GPS. </LI>
 						<LI>Data gathered from this page: http://ws.geonames.org/countrySubdivision?lat=43.5762033&#38;lng=7.02199666</LI>
@@ -129,7 +207,7 @@ pageheader("Version Page");
 					<LI>Added Daemon Generated KML exports. Details <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=49&t=388">here.</a></LI>
 					<LI>Fixed some HTML mode issues. <a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=47&t=385">KB385</a></LI>
 					<LI>Fixed some issues that relate to WiFiDB running on a shared server host.<a class="links" href="http://forum.techidiots.net/forum/viewtopic.php?f=47&t=385">KB385</a></LI>
-					<LI>Forgot to remove a mysql_error() function from a verbose statement, in the update portion of the import_vs1() function</LI>
+					<LI>Forgot to remove a <i>mysql_error()</i> function from a verbose statement, in the update portion of the <i>import_vs1()</i> function</LI>
 					<LI>Added Daemon Console Viewer.</LI>
 					<LI>Fixed the issue with some tables in the 'Vistumbler' theme where not centered. </LI>
 					<LI>Fixed an issue with the user stat page, where the second AP import list was not showing up. </LI>
@@ -149,8 +227,8 @@ pageheader("Version Page");
 			</td></tr>
 		</table>
 		<br>
-		
-		
+
+
 		<table class="light" width="100%" border="2" id="16b3.1">
 			<tr><td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td>
 			<td style="border-style: solid; border-width: 1px" height="26">Version: 0.16 Build 3.1</td></tr>
@@ -166,7 +244,7 @@ pageheader("Version Page");
 					</OL>
 					<LI>Changed the install index page to give a more explicit navigation and what is available for patches. </LI>
 					<LI>Added in locate.php for returning GPS points to Vistumbler based on Mac addresses that are around you. If none are found, it will ask if you want to upload a file. </LI>
-					<LI>Changed the search.php, export.php, usersats.php pages' and apfetch() HTML so that when you customize your theme it keeps the page centered.</LI>
+					<LI>Changed the search.php, export.php, usersats.php pages' and <i>apfetch()</i> HTML so that when you customize your theme it keeps the page centered.</LI>
 					<LI>Fixed some errors in the way the daemon compares the files that are being prepared to import. </LI>
 					<LI>Re-generated manufatures.inc.php to get new manufactures. </LI>
 					<LI>Removed Export Single AP to KML from the exports page, since there is more detailed exports on the APs fetch page, where you can choose what signal history row, or all the history rows, was also causing the page to take forever to load with lots of APs.</LI>
@@ -186,7 +264,7 @@ pageheader("Version Page");
 			</td></tr>
 		</table>
 		<br>
-		
+
 		<table class="dark" width="100%" border="2" id="16b3">
 			<tr><td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td>
 			<td style="border-style: solid; border-width: 1px" height="26">Version: 0.16 Build 3</td></tr>
@@ -227,7 +305,7 @@ pageheader("Version Page");
 							<LI>Refresh time on the scheduling page went to 15 seconds when I set it to 5 seconds. On the next refresh it went back to 30 seconds. </LI>
 						</OL>
 					</LI>
-					<LI>Unified the import_vs1() and importvs1d() functions, added an $out var to import_vs1() and verbose(), valid values are "CLI" and "HTML". </LI>
+					<LI>Unified the <i>import_vs1()</i> and <i>importvs1d()</i> functions, added an $out var to <i>import_vs1()</i> and <i>verbose()</i>, valid values are "CLI" and "HTML". </LI>
 					<LI>Moved the Install folder warning code to the database.inc.php file from config.inc.php.</LI>
 					<LI>All Messages in import_vs1 are in a group of variables in the beginning of the function, for easy editing. </LI>
 					<LI>Added in some code to handle obscure APs that get tagged as new when they are not new. </LI>
@@ -279,7 +357,7 @@ pageheader("Version Page");
 					<LI>Already in Database: </LI>
 				</OL>
 			<LI>Finished AP Fetch Page so that GPS can be hidden. </LI>
-			<LI>Most, if not all pages now have the footer() and pageheader() function to standardize page layout. </LI>
+			<LI>Most, if not all pages now have the <i>footer()</i> and <i>pageheader()</i> function to standardize page layout. </LI>
 			<LI>Fixed an issue where if there is no MAC/Sectype/Chan/Radio it would just be blank, and cause errors on fetch. </LI>
 				<OL>New Defaults:
 					<LI>Mac (00:00:00:00:00:00) </LI>
@@ -320,7 +398,7 @@ pageheader("Version Page");
 					<LI>Would like to have it so the GPS history is hide able via Java-script or something. </LI>
 					<LI>So far the changes are, all the previous separate functions (fetch GPS, fetch associate list, and fetch signal) are all now one function (fetch AP). </LI>
 					<LI>Unfortunately this is going to require a change in the back end. Previous databases will not be compatible with this update. </LI>
-					<LI>Reason being, in the previous versions (0.14 &amp; 0.15[all builds]) did not store the signal history row in the Users table. </LI> 
+					<LI>Reason being, in the previous versions (0.14 &amp; 0.15[all builds]) did not store the signal history row in the Users table. </LI>
 						<OL>
 							<LI>Old way ex <font color="red">1</font>,<font color="Yellow">1</font>-<font color="red">0</font>,<font color="Yellow">2</font>-<font color="red">0</font>,<font color="Yellow">6</font>-<font color="red">1</font>,<font color="Yellow">10</font>-... / <font color="red">0</font>,<font color="Yellow">6</font> : <font color="red">0</font> is the update or new flag <font color="red">1</font> = Updated AP  <font color="red">0</font> = New AP, the <font color="Yellow">6</font> is the AP ID number in the Database</LI>
 							<LI>New way ex <font color="red">1</font>,<font color="Yellow">6</font>:<font color="Green">1</font>-<font color="red">0</font>,<font color="Yellow">2</font>:<font color="Green">2</font>-<font color="red">0</font>,<font color="Yellow">6</font>:<font color="Green">3</font>-<font color="red">1</font>,<font color="Yellow">10</font>:<font color="Green">1</font>-... /<br> <font color="red">0</font>,<font color="Yellow">6</font>:<font color="Green">2</font> ; <font color="red">0</font> is the update or new flag 1 = Updated AP / 0 = New AP, the <font color="Yellow">6</font> is the Unique Access Point ID (UAPID) in the Database, and the <font color="Green">2</font> is the Signal History row number for the access point.)</LI>
@@ -541,19 +619,18 @@ pageheader("Version Page");
 <br>
 <?php
 
-$filename = $_SERVER['SCRIPT_FILENAME'];
-footer($filename);
+$dbcore->smarty->smarty->display('footer.tpl');
 #############
 #   _____   #
 #  |_____|  #
-# /      #\ #   
-#(         )#      
-# \_______/ #   
-#  =======  #    
-#  |  _  |  #     
-#  | /_\ |  #        
-#  | |_| |  #         
-#  )     (  #            
+# /      #\ #
+#(         )#
+# \_______/ #
+#  =======  #
+#  |  _  |  #
+#  | /_\ |  #
+#  | |_| |  #
+#  )     (  #
 # ========= #
 #############
 //  Gypsy : Tom...I dont get you.

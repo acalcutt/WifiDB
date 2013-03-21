@@ -1,19 +1,33 @@
 <?php
-/////////////////////////////////////////////////////////////////
-//  By: Phillip Ferland (Longbow486)                           //
-//  Email: longbow486@msn.com                                  //
-//  Started on: 2007-Oct-14                                    //
-//  Purpose: To generate a PNG graph of a WAP's signals        //
-//           from URL driven data                              //
-//  Filename: genline.php                                      //
-/////////////////////////////////////////////////////////////////
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
 
 $startdate = "14-Oct-2009";
 $lastedit  = "03-Jun-2009";
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'');
 
-include('../lib/database.inc.php');
+include('../lib/init.inc.php');
 pageheader("Graph AP Signal History Page");
-include('../lib/config.inc.php');
+
 include('../lib/graph.inc.php');
 
 ?><form action="genline.php" method="post" enctype="multipart/form-data"><?php
@@ -41,7 +55,7 @@ if($_POST['line']==='line')
 	$text = $_POST['text'];
 	$linec = $_POST['linec'];
 	$bgc = $_POST['bgc'];
-	
+
 	echo "<input name=\"ssid\" type=\"hidden\" value=\"".$ssid."\"/>\r\n"
 	."<input name=\"mac\" type=\"hidden\" value=\"".$mac."\"/>\r\n"
 	."<input name=\"man\" type=\"hidden\" value=\"".$man."\"/>\r\n"
@@ -64,9 +78,9 @@ if($_POST['line']==='line')
 	."<input name=\"name\" type=\"hidden\" value=\"".$name."\"/>\r\n"
 	."<input name=\"line\" type=\"hidden\" value=\"\"/>\r\n"
 	."<input name=\"Genline\" type=\"submit\" value=\"Generate Bar Graph\"/>\r\n</form>\r\n";
-	
+
 	$graphs->wifigraphline($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $btx, $otx, $fa, $lu, $nt, $label, $sig, $name, $bgc, $linec, $text );
-	
+
 	echo 'You can find your Wifi Graph here -> <a class="links" href="'.$GLOBALS['wifidb_install'].'/out/graph/'.$name.'v.png">'.$name.'v.png</a>';
 
 }else
@@ -91,7 +105,7 @@ if($_POST['line']==='line')
 	$text = $_POST['text'];
 	$linec = $_POST['linec'];
 	$bgc = $_POST['bgc'];
-	
+
 	echo "<input name=\"ssid\" type=\"hidden\" value=\"".$ssid."\"/>\r\n"
 	."<input name=\"mac\" type=\"hidden\" value=\"".$mac."\"/>\r\n"
 	."<input name=\"man\" type=\"hidden\" value=\"".$man."\"/>\r\n"
@@ -114,7 +128,7 @@ if($_POST['line']==='line')
 	."<input name=\"name\" type=\"hidden\" value=\"".$name."\"/>\r\n"
 	."<input name=\"line\" type=\"hidden\" value=\"line\"/>\r\n"
 	."<input name=\"Genline\" type=\"submit\" value=\"Generate Line Graph\" />\r\n</form>\r\n";
-	
+
 	$graphs->wifigraphbar($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $btx, $otx, $fa, $lu, $nt, $label, $sig, $name, $bgc, $linec, $text);
 
 	echo 'You can find your Wifi Graph here -> <a class="links" href="'.$GLOBALS['wifidb_install'].'/out/graph/'.$name.'.png">'.$name.'.png</a>';

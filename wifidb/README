@@ -1,11 +1,11 @@
-RanInt -> WiFiDB -> Read-me
-===================
+Random Intervals -> WiFiDB -> Read-me
+=====================================
 
   A set of PHP-scripts to manage a MySQL based Wireless Database over the web.
 
   Project Phase: Alpha
   --------------
-  http://www.randomintervals.com/
+  http://www.wifidb.net/
 
     This program is free software; you can redistribute it and/or modify it under
 	the terms of the GNU General Public License version 2, as published by the 

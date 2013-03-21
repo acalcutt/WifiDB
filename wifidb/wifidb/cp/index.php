@@ -1,7 +1,29 @@
 <?php
-include('../lib/config.inc.php');
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'');
+
+include('../lib/init.inc.php');
 include('../lib/security.inc.php');
-include('../lib/database.inc.php');
 
 include_once($GLOBALS['half_path'].'/lib/security.inc.php');
 
@@ -68,7 +90,7 @@ if($login_check)
 				<?php
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
+
 			case "update_user_profile":
 				pageheader("User Control Panel --> Profile");
 				user_panel_bar("prof", 0);
@@ -77,14 +99,14 @@ if($login_check)
 				<?php
 				$username = addslashes(strtolower($_POST['username']));
 				$user_id = addslashes(strtolower($_POST['user_id']));
-				
+
 				$email = htmlentities(addslashes($_POST['email']),ENT_QUOTES);
 				$h_email = addslashes($_POST['h_email']);
 				if($h_email == "on"){$h_email = 1;}else{$h_email = 0;}
-				
+
 				$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
 				$Vis_ver = htmlentities(addslashes($_POST['Vis_ver']),ENT_QUOTES);
-				
+
 				$sql0 = "SELECT `id` FROM `$db`.`$user_logins_table` WHERE `username` LIKE '".$username."%'";
 				$result = mysql_query($sql0, $conn);
 				$array = mysql_fetch_array($result);
@@ -93,7 +115,7 @@ if($login_check)
 					$sql1 = "UPDATE `$db`.`$user_logins_table` SET `email` = '$email', `h_email` = '$h_email', `website` = '$website', `Vis_ver` = '$Vis_ver' WHERE `id` = '$user_id' LIMIT 1";
 					$result = mysql_query($sql1, $conn);
 					if(@$result)
-					{					
+					{
 						echo "Updated user ($user_id) Profile\r\n<br>";
 					}else
 					{
@@ -112,15 +134,15 @@ if($login_check)
 				<?php
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
-			
+
+
 			##-------------##
 			case 'update_user_pref':
 				pageheader("User Control Panel --> Update Preferences");
 				user_panel_bar("pref", 0);
 				$username = addslashes(strtolower($_POST['username']));
 				$user_id = addslashes(strtolower($_POST['user_id']));
-				
+
 				$mail_updates = ((@$_POST['mail_updates']) == 'on' ? 1 : 0);
 				$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
 				$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
@@ -131,28 +153,28 @@ if($login_check)
 				$geonamed = ((@$_POST['geonamed']) == 'on' ? 1 : 0);
 				$pub_geocache = ((@$_POST['pub_geocache']) == 'on' ? 1 : 0);
 				$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
-				
+
 				$sql0 = "SELECT `id` FROM `$db`.`$user_logins_table` WHERE `username` LIKE '".$username."%'";
 				$result = mysql_query($sql0, $conn);
 				$array = mysql_fetch_array($result);
 				if($array['id']+0 === $user_id+0)
 				{
-					$sql1 = "UPDATE `$db`.`$user_logins_table` SET 
+					$sql1 = "UPDATE `$db`.`$user_logins_table` SET
 																`mail_updates` = '$mail_updates',
 																`schedule`	=	'$schedule',
-																`imports` = '$imports', 
-																`kmz` = '$kmz', 
-																`new_users` = '$new_users', 
-																`statistics` = '$statistics', 
-																`announcements` = '$announcements', 
-																`announce_comment` = '$announce_comment', 
-																`geonamed` = '$geonamed', 
+																`imports` = '$imports',
+																`kmz` = '$kmz',
+																`new_users` = '$new_users',
+																`statistics` = '$statistics',
+																`announcements` = '$announcements',
+																`announce_comment` = '$announce_comment',
+																`geonamed` = '$geonamed',
 																`pub_geocache` = '$pub_geocache'
 																WHERE `id` = '$user_id' LIMIT 1";
 					echo $sql1."<br>";
 					$result = mysql_query($sql1, $conn);
 					if(@$result)
-					{					
+					{
 						echo "Updated $username ($user_id) Preferences\r\n<br>";
 					}else
 					{
@@ -166,10 +188,10 @@ if($login_check)
 				}
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
-			
-			
-			
+
+
+
+
 			##-------------##
 			case 'pref':
 				?>
@@ -209,7 +231,7 @@ if($login_check)
 											<th width="30%" class="style3">New Public Geocaches</th>
 											<td align="center" class="light"><input name="pub_geocache" type="checkbox" <?php if($newArray['pub_geocache']){echo 'checked';}?>></td></td>
 										</tr>
-										<tr>	
+										<tr>
 											<th width="30%" class="style3">New Users</th>
 											<td align="center" class="dark"><input name="new_users" type="checkbox" <?php if($newArray['new_users']){echo 'checked';}?>></td></td>
 										</tr>
@@ -253,17 +275,17 @@ if($login_check)
 				<?php
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
-			
+
+
 			##-------------##
 			case 'boeyes':
-				
+
 				$boeye_func = '';
 				$boeye_func = filter_input(INPUT_GET, 'boeye_func', FILTER_SANITIZE_SPECIAL_CHARS);
-				
+
 				include('../lib/geocache.inc.php');
 				$myscache = new geocache();
-				
+
 				if($boeye_func != "fetch_wpt")
 				{
 					pageheader("User Control Panel --> Mysticache");
@@ -274,7 +296,7 @@ if($login_check)
 						$id = $_GET['id']+0;
 						$myscache->wptfetch($id, 0);
 					break;
-					
+
 					case "list_all":
 						$ord	=	addslashes(@$_GET['ord']);
 						$sort	=	addslashes(@$_GET['sort']);
@@ -374,7 +396,7 @@ if($login_check)
 								$from = 0;
 								$page = 1;
 								$pages = $total_rows/$inc;
-								
+
 								if($total_rows > 0)
 								{
 									$pages_exp = explode(".",$pages);
@@ -394,7 +416,7 @@ if($login_check)
 									if($I >= ($mid_page - 6) AND $I <= ($mid_page + 4))
 									{
 						#				echo $mid_page." --- ".$I." --- ".$page."<BR>";
-										
+
 										if($mid_page == $page)
 										{
 											$pages_together .= ' <i><u>'.$page.'</u></i> - ';
@@ -416,7 +438,7 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
+
 					case "remove_share_wpt_proc":
 						user_panel_bar("myst", 1);
 						?><tr>
@@ -451,7 +473,7 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
+
 					case "remove_wpt":
 						user_panel_bar("myst", 1);
 						?><tr>
@@ -486,7 +508,7 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
+
 					case "share_wpt_proc":
 						user_panel_bar("myst", 1);
 						?><tr>
@@ -521,7 +543,7 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
+
 					case "update_wpt":
 						$id = 0;
 						$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -557,7 +579,7 @@ if($login_check)
 											<tr >
 												<td  align="center" class="style4">Notes</td>
 												<td class="light">
-													<textarea name="notes" tabindex="10" style="width: 481px; height: 216px" ><?php echo $pri_wpt['notes'];?></textarea>            
+													<textarea name="notes" tabindex="10" style="width: 481px; height: 216px" ><?php echo $pri_wpt['notes'];?></textarea>
 												</td>
 											</tr>
 											<tr class="odd">
@@ -617,8 +639,8 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
-					
+
+
 					case "update_wpt_proc":
 						$id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_SPECIAL_CHARS);
 						$name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -662,8 +684,8 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
-					
+
+
 					case "import_switch":
 						user_panel_bar("myst", "import");
 						?><tr>
@@ -684,8 +706,8 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
-					
+
+
 					case "import_gpx":
 						user_panel_bar("myst", "gpx");
 						?><tr>
@@ -704,13 +726,13 @@ if($login_check)
 										<br>Copy and Paste the underlined text into the file location field to import it.<br></h3>";
 									}
 									?>
-									
+
 									<h2>Import Mysticache GPX file</h2>
 										<form action="?func=boeyes&boeye_func=import_gpx_proc" method="post" enctype="multipart/form-data">
 										<TABLE BORDER=1 CELLPADDING=2 CELLSPACING=0>
 											<TR height="40">
 												<TD class="style4">
-													<P>File location: 
+													<P>File location:
 													</P>
 												</TD>
 												<TD class="light">
@@ -720,7 +742,7 @@ if($login_check)
 											<TR class="light">
 												<TD>&nbsp;</TD><TD>
 													<P>
-												<?php	
+												<?php
 													if($rebuild === 0)
 													{
 													echo '<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit" STYLE="width: 0.71in; height: 0.36in"></P>';
@@ -735,9 +757,9 @@ if($login_check)
 							</tr>
 						</table>
 						<?php
-						
+
 					break;
-					
+
 					case "import_gpx_proc":
 						user_panel_bar("myst", "gpx");
 						?><tr>
@@ -745,8 +767,8 @@ if($login_check)
 									<CENTER><?php
 						include('../lib/wdb_xml.inc.php');
 						$wdbxml = new WDB_XML();
-						
-						
+
+
 						$userfolder = getcwd().'/up/'.$username;
 						$uploadfolder = $userfolder."/gpx";
 						if(!(is_dir($userfolder)))
@@ -759,12 +781,12 @@ if($login_check)
 								if(!mkdir($uploadfolder)){echo "Failed to make GPX folder";}
 							}
 						}
-						
+
 						$tmp		=	$_FILES['file']['tmp_name'];
 						$filename	=	$_FILES['file']['name'];
 						$rand		=	rand();
 						$xml_file 	= 	$uploadfolder.$rand.'_'.$filename;
-						
+
 						if (copy($tmp, $xml_file))
 						{
 							$import_rtn = $wdbxml->import_xml($xml_file);
@@ -775,7 +797,7 @@ if($login_check)
 									redirect_page("?func=boeyes&boeye_func=list_all", 2000, "", 0);
 									echo "<h2>Success!<br>User: ".$username."<BR> Filename: ".$filename." <br> Number of Wpts: ".$wpts."</h2>";
 									break;
-									
+
 								case "login":
 									redirect_page("../login.php", 2000, "You are not logged in, please do so.");
 									break;
@@ -795,8 +817,8 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
-					
+
+
 					case "import_loc":
 						user_panel_bar("myst", "loc");
 						?><tr>
@@ -814,7 +836,7 @@ if($login_check)
 										<TABLE BORDER=1 CELLPADDING=2 CELLSPACING=0>
 											<TR height="40" class="style4">
 												<TD class="style4">
-													<P>File location: 
+													<P>File location:
 													</P>
 												</TD>
 												<TD class="light">
@@ -824,7 +846,7 @@ if($login_check)
 											<TR class="light">
 												<TD>&nbsp;</TD><TD>
 													<P>
-												<?php	
+												<?php
 													if($rebuild === 0)
 													{
 													echo '<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit" STYLE="width: 0.71in; height: 0.36in"></P>';
@@ -839,9 +861,9 @@ if($login_check)
 							</tr>
 						</table>
 						<?php
-						
+
 					break;
-					
+
 					case "import_loc_proc":
 						user_panel_bar("myst", "loc");
 						?><tr>
@@ -850,11 +872,11 @@ if($login_check)
 						<?php
 						include('../lib/wdb_xml.inc.php');
 						$wdbxml = new WDB_XML();
-						
+
 						if($_POST["user"] !== ''){$user = addslashes($_POST["user"]);}else{$user="Unknown";}
 						if($_POST["notes"] !== ''){$notes = addslashes($_POST["notes"]);}else{$notes="No Notes";}
 						if($_POST['title'] !== ''){$title = addslashes($_POST['title']);}else{$title="Untitled";}
-						
+
 						$userfolder = getcwd().'/up/'.$username;
 						$uploadfolder = $userfolder."/loc";
 						if(!(is_dir($userfolder)))
@@ -867,16 +889,16 @@ if($login_check)
 								if(!mkdir($uploadfolder)){echo "Failed to make LOC folder";}
 							}
 						}
-						
+
 						$tmp		=	$_FILES['file']['tmp_name'];
 						$filename	=	$_FILES['file']['name'];
 						$rand		=	rand();
 						$xml_file 	= 	$uploadfolder.$rand.'_'.$filename;
-						
+
 						if (copy($tmp, $xml_file))
 						{
 							$import_rtn = $wdbxml->import_xml($xml_file);
-							
+
 							switch($import_rtn)
 							{
 								case is_array($import_rtn):
@@ -904,7 +926,7 @@ if($login_check)
 						</table>
 						<?php
 					break;
-					
+
 					#####################
 					default:
 						$User_cache = 'waypoints_'.$username;
@@ -951,8 +973,8 @@ if($login_check)
 				}
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
-			
+
+
 			##-------------##
 			case 'fandf':
 				pageheader("User Control Panel --> Friends and Foes");
@@ -978,11 +1000,11 @@ if($login_check)
 								$result = mysql_query($sql0, $conn);
 								$friends_array = mysql_fetch_array($result);
 								$frnd_array = explode(":", $friends_array['friends']);
-								
+
 								$del_array = $_POST['del'];
 								foreach($del_array as $key=>$del)
 								{$del = htmlentities($del, ENT_QUOTES);$del_array[$key] = $del;}
-								
+
 								foreach($del_array as $del)
 								{
 									foreach($frnd_array as $key=>$frnd)
@@ -994,7 +1016,7 @@ if($login_check)
 									}
 								}
 								$deled = implode(":", $frnd_array);
-								
+
 								$update_frnd = "UPDATE `$db`.`$user_logins_table` SET `friends` = '$deled' WHERE `username`='$username'";
 								if(mysql_query($update_frnd, $conn))
 								{
@@ -1007,7 +1029,7 @@ if($login_check)
 								</tr>
 							</table><?php
 							break;
-							
+
 							case "add":
 								user_panel_bar("fandf", 0);
 								?>
@@ -1018,16 +1040,16 @@ if($login_check)
 							#	echo $sql0;
 								$result = mysql_query($sql0, $conn);
 								$friends_array = mysql_fetch_array($result);
-								
+
 								$add_array = $_POST['add'];
 								foreach($add_array as $key=>$add)
 								{$add = htmlentities($add, ENT_QUOTES);$add_array[$key] = $add;}
 								if($friends_array['friends'] != '')
 								{$added = $friends_array['friends'].":".implode(":", $add_array);}
 								else{$added = implode(":", $add_array);}
-								
+
 							#	echo $added;
-								
+
 								$update_frnd = "UPDATE `$db`.`$user_logins_table` SET `friends` = '$added' WHERE `username`='$username'";
 								if(mysql_query($update_frnd, $conn))
 								{
@@ -1040,7 +1062,7 @@ if($login_check)
 								</tr>
 							</table><?php
 							break;
-							
+
 							default:
 								$sql0 = "SELECT `friends`, `foes` FROM `$db`.`$user_logins_table` WHERE `username` = '$username'";
 								$result = mysql_query($sql0, $conn);
@@ -1055,7 +1077,7 @@ if($login_check)
 								{
 									if($users['username'] == $username){continue;}
 									foreach($foe_array as $foe){if($foe == $users['username']){continue 2;}}
-									
+
 									foreach($frnd_array as $frnd)
 									{
 										if($frnd == $users['username'])
@@ -1075,7 +1097,7 @@ if($login_check)
 												<th>Users currently in Friends:</th>
 												<th>Users Not In Friends:</th>
 											</tr>
-											<tr>	
+											<tr>
 												<td class="light" align="center" width="50%">
 												<form method="post" action="" name="remove_from_friends_group"  enctype="multipart/form-data">
 													<select name="del[]" multiple size="10" style="width: 100%;">
@@ -1114,7 +1136,7 @@ if($login_check)
 							break;
 						}
 					break;
-					
+
 					case "foes":
 						$mode = htmlentities(@$_GET['mode'], ENT_QUOTES);
 						switch($mode)
@@ -1129,11 +1151,11 @@ if($login_check)
 								$result = mysql_query($sql0, $conn);
 								$foes_array = mysql_fetch_array($result);
 								$foe_array = explode(":", $foes_array['foes']);
-								
+
 								$del_array = $_POST['del'];
 								foreach($del_array as $key=>$del)
 								{$del = htmlentities($del, ENT_QUOTES);$del_array[$key] = $del;}
-								
+
 								foreach($del_array as $del)
 								{
 									foreach($foe_array as $key=>$foe)
@@ -1145,7 +1167,7 @@ if($login_check)
 									}
 								}
 								$deled = implode(":", $foe_array);
-								
+
 								$update_foe = "UPDATE `$db`.`$user_logins_table` SET `foes` = '$deled' WHERE `username`='$username'";
 								if(mysql_query($update_foe, $conn))
 								{
@@ -1158,7 +1180,7 @@ if($login_check)
 								</tr>
 							</table><?php
 							break;
-							
+
 							case "add":
 								user_panel_bar("fandf", 0);
 								?>
@@ -1169,16 +1191,16 @@ if($login_check)
 							#	echo $sql0;
 								$result = mysql_query($sql0, $conn);
 								$foes_array = mysql_fetch_array($result);
-								
+
 								$add_array = $_POST['add'];
 								foreach($add_array as $key=>$add)
 								{$add = htmlentities($add, ENT_QUOTES);$add_array[$key] = $add;}
 								if($foes_array['foes'] != '')
 								{$added = $foes_array['foes'].":".implode(":", $add_array);}
 								else{$added = implode(":", $add_array);}
-								
+
 							#	echo $added;
-								
+
 								$update_foe = "UPDATE `$db`.`$user_logins_table` SET `foes` = '$added' WHERE `username`='$username'";
 								if(mysql_query($update_foe, $conn))
 								{
@@ -1191,25 +1213,25 @@ if($login_check)
 								</tr>
 							</table><?php
 							break;
-							
+
 							default:
 								$sql0 = "SELECT `friends`, `foes` FROM `$db`.`$user_logins_table` WHERE `username` = '$username'";
 								$result = mysql_query($sql0, $conn);
 								$foes_array = mysql_fetch_array($result);
-								
+
 								$frnd_array = explode(":", $foes_array['friends']);
 								$foe_array = explode(":", $foes_array['foes']);
-								
+
 								$inside = array();
 								$outside = array();
-								
+
 								$sql0 = "SELECT `username` FROM `$db`.`$user_logins_table` WHERE `username` NOT LIKE 'admin%'";
 								$result = mysql_query($sql0, $conn);
 								while($users = mysql_fetch_array($result))
 								{
 									if($users['username'] == $username){continue;}
 									foreach($frnd_array as $frnd){if($frnd == $users['username']){continue 2;}}
-									
+
 									foreach($foe_array as $foe)
 									{
 										if($foe == $users['username'])
@@ -1229,7 +1251,7 @@ if($login_check)
 												<th>Users currently in Foes:</th>
 												<th>Users Not In Foes:</th>
 											</tr>
-											<tr>	
+											<tr>
 												<td class="light" align="center" width="50%">
 												<form method="post" action="" name="remove_from_foes_group"  enctype="multipart/form-data">
 													<select name="del[]" multiple size="10" style="width: 100%;">
@@ -1268,7 +1290,7 @@ if($login_check)
 							break;
 						}
 					break;
-					
+
 					default:
 						user_panel_bar("fandf", 0);
 						?>
@@ -1304,7 +1326,7 @@ if($login_check)
 				}
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
+
 			##-------------##
 			case "mailbox":
 				$page = addslashes(strtolower($_get['page']));
@@ -1316,7 +1338,7 @@ if($login_check)
 					<script type="text/javascript">
 
 					/***********************************************
-					* Dynamic Ajax Content- © Dynamic Drive DHTML code library (www.dynamicdrive.com)
+					* Dynamic Ajax Content- ï¿½ Dynamic Drive DHTML code library (www.dynamicdrive.com)
 					* This notice MUST stay intact for legal use
 					* Visit Dynamic Drive at http://www.dynamicdrive.com/ for full source code
 					***********************************************/
@@ -1331,7 +1353,7 @@ if($login_check)
 					else if (window.ActiveXObject){ // if IE
 					try {
 					page_request = new ActiveXObject("Msxml2.XMLHTTP")
-					} 
+					}
 					catch (e){
 					try{
 					page_request = new ActiveXObject("Microsoft.XMLHTTP")
@@ -1389,8 +1411,8 @@ if($login_check)
 				$filename = $_SERVER['SCRIPT_FILENAME'];
 				footer($filename);
 			break;
-			
-			
+
+
 			case "admin_cp":
 				pageheader("Administrator Control Panel --> Re-login");
 				?>
@@ -1416,16 +1438,16 @@ if($login_check)
 				<?php
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
+
 			case "admin_cp_proc":
 				include_once('../lib/security.inc.php');
-				
+
 				$username = filter_input(INPUT_POST, 'admin_user', FILTER_SANITIZE_SPECIAL_CHARS);
 				$password = filter_input(INPUT_POST, 'admin_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-				
+
 				$sec = new security();
 				$login = $sec->login($username, $password, $GLOBALS['login_seed'], 1);
-				
+
 				pageheader("Administrator Control Panel --> Re-login");
 			#	dump($_POST['return']);
 				switch($login)
@@ -1433,7 +1455,7 @@ if($login_check)
 					case "locked":
 						?><h2>This user is locked out. Contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.<br></h2><?php
 					break;
-					
+
 					case is_array($login):
 						$to_go = $login[1];
 						?><p align="center"><font color="red"><h2>Bad Username or Password!</h2></font></p>
@@ -1464,30 +1486,30 @@ if($login_check)
 						</form>
 						<?php
 					break;
-					
+
 					case"u_fail":
 						?><h2>Username does not exsist.</h2><?php
 					break;
-					
+
 					case "u_u_r_fail":
 						echo "failed to update User row";
 					break;
-					
+
 					case "good":
 						redirect_page($GLOBALS['UPATH'].'/cp/admin/', 2000, 'Login Successful!', 2);
 					break;
-					
+
 					case "cookie_fail":
 						echo "Set Cookie fail, check the bottom of the glass, or your browser.";
 					break;
-					
+
 					default:
 						?><h2>Unknown Return.<br>Contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.<br></h2><?php
 					break;
 				}
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
+
 			##-------------##
 			default:
 				$privs_a = $GLOBALS['privs_a'];
@@ -1500,19 +1522,19 @@ if($login_check)
 				$newArray = mysql_fetch_array($result);
 				$last_login = $newArray['last_login'];
 				$join_date = $newArray['join_date'];
-				
+
 				################
 				$sql = "SELECT * FROM `$db`.`$users_t` WHERE `username` LIKE '$username' ORDER BY `id` DESC LIMIT 1";
 				$user_query = mysql_query($sql, $conn) or die(mysql_error($conn));
 				$user_last = mysql_fetch_array($user_query);
-				
+
 				$last_import_id = $user_last['id'];
 				$user_aps = $user_last['aps'];
 				$user_gps = $user_last['gps'];
-				
+
 				$last_import_title = $user_last['title'];
 				$last_import_date = $user_last['date'];
-				
+
 				###########
 				$sql2 = "SELECT * FROM `$db`.`stats_$username` ORDER BY `id` DESC LIMIT 1";
 		#		echo $sql2."<br>";
@@ -1525,7 +1547,7 @@ if($login_check)
 			#		echo $max_gps_array['largest']."---".$max_gps_array['newest']."<BR>";
 					$max_ssid_ = explode(" - ", $max_gps_array['largest']);
 					$newest_ = explode(" - ", $max_gps_array['newest']);
-					
+
 					$max_ssid = '<a href="'.$GLOBALS['UPATH'].'opt/fetch.php?id='.$max_ssid_[1].'">'.$max_ssid_[0].'</a> ('.$max_ssid_[2].')';
 					$newest = '<a href="'.$GLOBALS['UPATH'].'opt/fetch.php?id='.$newest_[1].'">'.$newest[0].'</a> '.$newest_[2];
 				}else
@@ -1533,18 +1555,18 @@ if($login_check)
 					$max_ssid = "No Max AP yet.";
 					$newest = "No Newset AP yet.";
 				}
-				
-				
+
+
 				###########
 				$sql4 = "SELECT * FROM `$db`.`$users_t` WHERE `username` LIKE '$username' ORDER BY `aps` DESC LIMIT 1";
 			#	echo $sql4."<BR>";
 				$user_query = mysql_query($sql4, $conn) or die(mysql_error($conn));
 				$user_largest = mysql_fetch_array($user_query);
 				$large_import_title = $user_last['title'];
-				
-				
+
+
 				if(@$last_import_title == ''){$last_import_title = "No imports";}
-				if(@$large_import_title == ''){$large_import_title = "No imports";}		
+				if(@$large_import_title == ''){$large_import_title = "No imports";}
 				pageheader("User Control Panel --> Overview");
 				user_panel_bar("overview", 0);
 				?>
@@ -1617,16 +1639,16 @@ if($login_check)
 				<?php
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
+
 			case "admin_cp_proc":
 				include_once('../lib/security.inc.php');
-				
+
 				$username = filter_input(INPUT_POST, 'admin_user', FILTER_SANITIZE_SPECIAL_CHARS);
 				$password = filter_input(INPUT_POST, 'admin_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-				
+
 				$sec = new security();
 				$login = $sec->login($username, $password, $GLOBALS['login_seed'], 1);
-				
+
 				pageheader("Administrator Control Panel --> Re-login");
 			#	dump($_POST['return']);
 				switch($login)
@@ -1634,7 +1656,7 @@ if($login_check)
 					case "locked":
 						?><h2>This user is locked out. Contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.<br></h2><?php
 					break;
-					
+
 					case is_array($login):
 						$to_go = $login[1];
 						?><p align="center"><font color="red"><h2>Bad Username or Password!</h2></font></p>
@@ -1665,30 +1687,30 @@ if($login_check)
 						</form>
 						<?php
 					break;
-					
+
 					case"u_fail":
 						?><h2>Username does not exsist.</h2><?php
 					break;
-					
+
 					case "u_u_r_fail":
 						echo "failed to update User row";
 					break;
-					
+
 					case "good":
 						redirect_page($GLOBALS['UPATH'].'/cp/admin/', 2000, 'Login Successful!', 2);
 					break;
-					
+
 					case "cookie_fail":
 						echo "Set Cookie fail, check the bottom of the glass, or your browser.";
 					break;
-					
+
 					default:
 						?><h2>Unknown Return.<br>Contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.<br></h2><?php
 					break;
 				}
 				footer($_SERVER['SCRIPT_FILENAME']);
 			break;
-			
+
 			default:
 				pageheader("User Control Panel");
 				?>

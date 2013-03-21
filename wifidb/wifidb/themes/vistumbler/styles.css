@@ -4,9 +4,6 @@
 .sub_head{
 	background-color:#508FAE;
 }
-.main_bg_color{
-    background-color: #145285;
-}
 #leftcolumn{
 float:left;
 width:90%;
@@ -144,8 +141,8 @@ a:visited {
 .bad
 { 
 	background-color: #F00;
-
 }
+
 .style1 {
 	text-align: center;
 	color: #000000;

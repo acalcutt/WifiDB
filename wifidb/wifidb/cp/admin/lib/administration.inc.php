@@ -1,7 +1,24 @@
 <?php
-##-----------------------------##
-##-----------------------------##
-##-----------------------------##
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
 function recur_del_dir($Folder)
 {
 	$del_dir_file_flag = 1;
@@ -74,7 +91,7 @@ function dirlist($di, $title, $col1 , $wid, $desc)
 {
 	$n=1;
 	$desc_file = file($desc);
-	
+
 	echo '<h1>'.$title.'</h1>';
 	echo '<table border="1" width="'.$wid.'%"><tr><td>'.$col1.'</td><td>Description</td></tr>';
 	$dirname = $di;
@@ -85,7 +102,7 @@ function dirlist($di, $title, $col1 , $wid, $desc)
 		{
 			if ($file == "." or $file == ".." or $file == "tmp")
 			continue;
-			
+
 			echo '<tr><td><a href="'.$file.'/">'.$file.'</a></td>';
 			echo '<td>'.$desc_file[$n].'</td>';
 			$n++;
@@ -98,7 +115,7 @@ function dirlist($di, $title, $col1 , $wid, $desc)
 			echo '<tr><td><a href="'.$file.'">'.$file.'</a></td>';
 			echo '<td>'.$file.'</td>';
 			$n++;
-		} 
+		}
 	}
 	closedir($dh);
 	echo '</tr></table>';
@@ -113,30 +130,30 @@ function dirSize($directory)
 		include_once($GLOBALS['wifidb_install'].'/lib/database.inc.php');
 		$dir_exp = explode("/", $directory);
 		$halfpath_exp = explode("/", $GLOBALS['wifidb_install']);
-		
+
 	#	echo $GLOBALS['wifidb_install']."\r\n";foreach($halfpath_exp as $key=>$val){echo "$key => $val\r\n";}echo "\r\n";foreach( $dir_exp as $key=>$dir){echo $key." => $dir\r\n";}
-		
+
 		$first_dir = 0;
 		$first_half = 0;
 		if($dir_exp[0]==''){ $first_dir = 1;}
 		if($halfpath_exp[0]==''){ $first_half = 1;}
 		if($dir_exp[$first_dir] === $halfpath_exp[$first_half]){$directory = $directory;}
 		else{$directory = $GLOBALS['wifidb_install'].$directory;}
-		
+
 	#	echo $directory."<br>\r\n";
 	}else
 	{
 		include_once($GLOBALS['half_path'].'/lib/database.inc.php');
 		$dir_exp = explode("/", $directory);
 		$halfpath_exp = explode("/", $GLOBALS['half_path']);
-		
+
 		$first_dir = 0;
 		$first_half = 0;
 		if($dir_exp[0]==''){ $first_dir = 1;}
 		if($halfpath_exp[0]==''){ $first_half = 1;}
 		if($dir_exp[$first_dir] === $halfpath_exp[$first_half]){$directory = $directory;}
 		else{$directory = $GLOBALS['wifidb_install'].$directory;}
-		
+
 	#	echo $directory."<br>\r\n";
 	}
 	$size	=	0;
@@ -146,7 +163,7 @@ function dirSize($directory)
 	while(!(($file = readdir($dh)) == false))
 	{
 		if($file == '.svn' or $file == '.' or $file == '..'){continue;}
-		
+
 		$typepath = $directory.$file;
 	#	dump(stat($typepath));
 		$filetype = filetype($typepath);
@@ -237,32 +254,32 @@ function user_alph_row($func, $mode, $first, $data)
 	<tr>
 		<td align="center" colspan="6" class="style3">
 			<?php if($rows_all > 0 ) { ?><a class="links<?php if($first==""){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=&">All</a><?php }else{ ?><i>All</i><?php } ?>&nbsp;
-			<?php if($results["a"] > 0 ) { ?><a class="links<?php if($first=="a"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=a">A</a><?php }else{ ?><i>A</i><?php } ?>&nbsp; 
-			<?php if($results["b"] > 0 ) { ?><a class="links<?php if($first=="b"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=b">B</a><?php }else{ ?><i>B</i><?php } ?>&nbsp; 
-			<?php if($results["c"] > 0 ) { ?><a class="links<?php if($first=="c"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=c">C</a><?php }else{ ?><i>C</i><?php } ?>&nbsp; 
-			<?php if($results["d"] > 0 ) { ?><a class="links<?php if($first=="d"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=d">D</a><?php }else{ ?><i>D</i><?php } ?>&nbsp; 
-			<?php if($results["e"] > 0 ) { ?><a class="links<?php if($first=="e"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=e">E</a><?php }else{ ?><i>E</i><?php } ?>&nbsp; 
-			<?php if($results["f"] > 0 ) { ?><a class="links<?php if($first=="f"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=f">F</a><?php }else{ ?><i>F</i><?php } ?>&nbsp; 
-			<?php if($results["g"] > 0 ) { ?><a class="links<?php if($first=="g"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=g">G</a><?php }else{ ?><i>G</i><?php } ?>&nbsp; 	
+			<?php if($results["a"] > 0 ) { ?><a class="links<?php if($first=="a"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=a">A</a><?php }else{ ?><i>A</i><?php } ?>&nbsp;
+			<?php if($results["b"] > 0 ) { ?><a class="links<?php if($first=="b"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=b">B</a><?php }else{ ?><i>B</i><?php } ?>&nbsp;
+			<?php if($results["c"] > 0 ) { ?><a class="links<?php if($first=="c"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=c">C</a><?php }else{ ?><i>C</i><?php } ?>&nbsp;
+			<?php if($results["d"] > 0 ) { ?><a class="links<?php if($first=="d"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=d">D</a><?php }else{ ?><i>D</i><?php } ?>&nbsp;
+			<?php if($results["e"] > 0 ) { ?><a class="links<?php if($first=="e"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=e">E</a><?php }else{ ?><i>E</i><?php } ?>&nbsp;
+			<?php if($results["f"] > 0 ) { ?><a class="links<?php if($first=="f"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=f">F</a><?php }else{ ?><i>F</i><?php } ?>&nbsp;
+			<?php if($results["g"] > 0 ) { ?><a class="links<?php if($first=="g"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=g">G</a><?php }else{ ?><i>G</i><?php } ?>&nbsp;
 			<?php if($results["h"] > 0 ) { ?><a class="links<?php if($first=="h"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=h">H</a><?php }else{ ?><i>H</i><?php } ?>&nbsp;
-			<?php if($results["i"] > 0 ) { ?><a class="links<?php if($first=="i"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=i">I</a><?php }else{ ?><i>I</i><?php } ?>&nbsp; 
-			<?php if($results["j"] > 0 ) { ?><a class="links<?php if($first=="j"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=j">J</a><?php }else{ ?><i>J</i><?php } ?>&nbsp; 
-			<?php if($results["k"] > 0 ) { ?><a class="links<?php if($first=="k"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=k">K</a><?php }else{ ?><i>K</i><?php } ?>&nbsp; 
-			<?php if($results["l"] > 0 ) { ?><a class="links<?php if($first=="l"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=l">L</a><?php }else{ ?><i>L</i><?php } ?>&nbsp; 
-			<?php if($results["m"] > 0 ) { ?><a class="links<?php if($first=="m"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=m">M</a><?php }else{ ?><i>M</i><?php } ?>&nbsp; 
-			<?php if($results["n"] > 0 ) { ?><a class="links<?php if($first=="n"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=n">N</a><?php }else{ ?><i>N</i><?php } ?>&nbsp; 
-			<?php if($results["o"] > 0 ) { ?><a class="links<?php if($first=="o"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=o">O</a><?php }else{ ?><i>O</i><?php } ?>&nbsp; 
-			<?php if($results["p"] > 0 ) { ?><a class="links<?php if($first=="p"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=p">P</a><?php }else{ ?><i>P</i><?php } ?>&nbsp; 
-			<?php if($results["q"] > 0 ) { ?><a class="links<?php if($first=="q"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=q">Q</a><?php }else{ ?><i>Q</i><?php } ?>&nbsp; 
-			<?php if($results["r"] > 0 ) { ?><a class="links<?php if($first=="r"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=r">R</a><?php }else{ ?><i>R</i><?php } ?>&nbsp; 
-			<?php if($results["s"] > 0 ) { ?><a class="links<?php if($first=="s"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=s">S</a><?php }else{ ?><i>S</i><?php } ?>&nbsp; 
-			<?php if($results["t"] > 0 ) { ?><a class="links<?php if($first=="t"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=t">T</a><?php }else{ ?><i>T</i><?php } ?>&nbsp; 
-			<?php if($results["u"] > 0 ) { ?><a class="links<?php if($first=="u"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=u">U</a><?php }else{ ?><i>U</i><?php } ?>&nbsp;						
-			<?php if($results["v"] > 0 ) { ?><a class="links<?php if($first=="v"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=v">V</a><?php }else{ ?><i>V</i><?php } ?>&nbsp; 
-			<?php if($results["w"] > 0 ) { ?><a class="links<?php if($first=="w"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=w">W</a><?php }else{ ?><i>W</i><?php } ?>&nbsp; 
-			<?php if($results["x"] > 0 ) { ?><a class="links<?php if($first=="x"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=x">X</a><?php }else{ ?><i>X</i><?php } ?>&nbsp; 
-			<?php if($results["y"] > 0 ) { ?><a class="links<?php if($first=="y"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=y">Y</a><?php }else{ ?><i>Y</i><?php } ?>&nbsp; 
-			<?php if($results["z"] > 0 ) { ?><a class="links<?php if($first=="z"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=z">Z</a><?php }else{ ?><i>Z</i><?php } ?>&nbsp; 
+			<?php if($results["i"] > 0 ) { ?><a class="links<?php if($first=="i"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=i">I</a><?php }else{ ?><i>I</i><?php } ?>&nbsp;
+			<?php if($results["j"] > 0 ) { ?><a class="links<?php if($first=="j"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=j">J</a><?php }else{ ?><i>J</i><?php } ?>&nbsp;
+			<?php if($results["k"] > 0 ) { ?><a class="links<?php if($first=="k"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=k">K</a><?php }else{ ?><i>K</i><?php } ?>&nbsp;
+			<?php if($results["l"] > 0 ) { ?><a class="links<?php if($first=="l"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=l">L</a><?php }else{ ?><i>L</i><?php } ?>&nbsp;
+			<?php if($results["m"] > 0 ) { ?><a class="links<?php if($first=="m"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=m">M</a><?php }else{ ?><i>M</i><?php } ?>&nbsp;
+			<?php if($results["n"] > 0 ) { ?><a class="links<?php if($first=="n"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=n">N</a><?php }else{ ?><i>N</i><?php } ?>&nbsp;
+			<?php if($results["o"] > 0 ) { ?><a class="links<?php if($first=="o"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=o">O</a><?php }else{ ?><i>O</i><?php } ?>&nbsp;
+			<?php if($results["p"] > 0 ) { ?><a class="links<?php if($first=="p"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=p">P</a><?php }else{ ?><i>P</i><?php } ?>&nbsp;
+			<?php if($results["q"] > 0 ) { ?><a class="links<?php if($first=="q"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=q">Q</a><?php }else{ ?><i>Q</i><?php } ?>&nbsp;
+			<?php if($results["r"] > 0 ) { ?><a class="links<?php if($first=="r"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=r">R</a><?php }else{ ?><i>R</i><?php } ?>&nbsp;
+			<?php if($results["s"] > 0 ) { ?><a class="links<?php if($first=="s"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=s">S</a><?php }else{ ?><i>S</i><?php } ?>&nbsp;
+			<?php if($results["t"] > 0 ) { ?><a class="links<?php if($first=="t"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=t">T</a><?php }else{ ?><i>T</i><?php } ?>&nbsp;
+			<?php if($results["u"] > 0 ) { ?><a class="links<?php if($first=="u"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=u">U</a><?php }else{ ?><i>U</i><?php } ?>&nbsp;
+			<?php if($results["v"] > 0 ) { ?><a class="links<?php if($first=="v"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=v">V</a><?php }else{ ?><i>V</i><?php } ?>&nbsp;
+			<?php if($results["w"] > 0 ) { ?><a class="links<?php if($first=="w"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=w">W</a><?php }else{ ?><i>W</i><?php } ?>&nbsp;
+			<?php if($results["x"] > 0 ) { ?><a class="links<?php if($first=="x"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=x">X</a><?php }else{ ?><i>X</i><?php } ?>&nbsp;
+			<?php if($results["y"] > 0 ) { ?><a class="links<?php if($first=="y"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=y">Y</a><?php }else{ ?><i>Y</i><?php } ?>&nbsp;
+			<?php if($results["z"] > 0 ) { ?><a class="links<?php if($first=="z"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=z">Z</a><?php }else{ ?><i>Z</i><?php } ?>&nbsp;
 			<?php if($rows_num > 0 ) { ?><a class="links<?php if($first=="num"){echo "_s";}?>" href="?func=<?php echo $func; ?>&mode=<?php echo $mode; ?>&first=num">#</a><?php }else{ ?><i>#</i><?php } ?>
 		</td>
 	</tr>
@@ -289,21 +306,21 @@ function set_flow($func, $mode)
 		</td>
 		<td colspan="1" class="<?php if($func == 'uandp'){echo 'cp_select_column';}else{echo "light";}?>">
 			<font size="2">
-				<a class="links<?php if(($mode == 'man_users' or $mode == 'man_users_edit') and $func == 'uandp'){echo '_s';} ?>" href="?func=uandp&mode=man_users">Users</a> - 
-				<a class="links<?php if(($mode == 'man_groups' or $mode == 'man_grp_edit') and $func == 'uandp'){echo '_s';} ?>" href="?func=uandp&mode=man_groups">Groups</a> - 
+				<a class="links<?php if(($mode == 'man_users' or $mode == 'man_users_edit') and $func == 'uandp'){echo '_s';} ?>" href="?func=uandp&mode=man_users">Users</a> -
+				<a class="links<?php if(($mode == 'man_groups' or $mode == 'man_grp_edit') and $func == 'uandp'){echo '_s';} ?>" href="?func=uandp&mode=man_groups">Groups</a> -
 				<a class="links<?php if(($mode == 'man_titles' or $mode == 'man_titles_edit') and $func == 'uandp'){echo '_s';} ?>" href="?func=uandp&mode=man_titles">Titles</a>
 			</font>
 		</td>
 		<td colspan="1" class="<?php if($func == 'maint'){echo 'cp_select_column';}else{echo "light";}?>">
 			<font size="2">
-				<a class="links<?php if(($mode == 'clean_tmp' or $mode == 'clean_tmp_proc') and $func == 'maint'){echo '_s';} ?>" href="?func=maint&mode=clean_tmp">Temp Folder</a> - 
+				<a class="links<?php if(($mode == 'clean_tmp' or $mode == 'clean_tmp_proc') and $func == 'maint'){echo '_s';} ?>" href="?func=maint&mode=clean_tmp">Temp Folder</a> -
 				<a class="links<?php if(($mode == 'clean_upload' or $mode == 'clean_upload_proc') and $func == 'maint'){echo '_s';} ?>" href="?func=maint&mode=clean_upload">Upload Folder</a><br>
 				<a class="links<?php if(($mode == 'clean_signal' or $mode == 'clean_signal_proc') and $func == 'maint'){echo '_s';} ?>" href="?func=maint&mode=clean_signal">Graphs Folder</a>
 			</font>
 		</td>
 		<td colspan="1" class="<?php if($func == 'system'){echo 'cp_select_column';}else{echo "light";}?>">
 			<font size="2">
-				<a class="links<?php if(($mode == 'daemon' or $mode == 'daemon_proc') and $func == 'system'){echo '_s';} ?>" href="?func=system&mode=daemon">Daemon Ctl</a> - 
+				<a class="links<?php if(($mode == 'daemon' or $mode == 'daemon_proc') and $func == 'system'){echo '_s';} ?>" href="?func=system&mode=daemon">Daemon Ctl</a> -
 				<a class="links<?php if(($mode == 'daemon_config' or $mode == 'daemon_cfgproc') and $func == 'system'){echo '_s';} ?>" href="?func=system&mode=daemon_config">Daemon Cfg</a><br>
 				<a class="links<?php if(($mode == 'db_config' or $mode == 'db_config_proc') and $func == 'system'){echo '_s';} ?>" href="?func=system&mode=db_config">DB Cfg</a> -
 				<a class="links<?php if(($mode == 'updates' or $mode == 'updates_proc') and $func == 'system'){echo '_s';} ?>" href="?func=system&mode=updates">Updates</a>
@@ -326,10 +343,10 @@ class admin
 	##-----------------------------##
 	function overview($mode = '')
 	{
-		
+
 		include_once('../../lib/config.inc.php');
 		include_once('../../lib/database.inc.php');
-		
+
 		$hosturl		= 	$GLOBALS['hosturl'];
 		$conn			= 	$GLOBALS['conn'];
 		$db				= 	$GLOBALS['db'];
@@ -347,7 +364,7 @@ class admin
 		$theme			=	$GLOBALS['theme'];
 		$seed			=	$GLOBALS['login_seed'];
 		$date_format	=	"Y-m-d H:i:s";
-		
+
 		switch($mode)
 		{
 			case "dbhdata":
@@ -376,7 +393,7 @@ class admin
 					if($row == 1)
 					{ $row = 0; $style = "dark";}
 					else{ $row = 1; $style = "light";}
-					
+
 					?>
 					<tr class="<?php echo $style; ?>">
 						<td><?php echo $dbstats_a['id']; ?></td>
@@ -457,7 +474,7 @@ class admin
 						<td><?php echo $dbstats_a['timestamp']; ?></td>
 						<td><a class="links" href="<?php echo $GLOBALS['UPATH']."/opt/fetch.php?id=".$top[0];?>" target="_blank"><?php echo $top[1]; ?></a></td>
 						<td><a class="links" href="<?php echo $GLOBALS['UPATH']."/opt/fetch.php?id=".$most_gps[0];?>" target="_blank"><?php echo $most_gps[1]; ?></a></td>
-						
+
 						<td><a class="links" href="<?php echo $GLOBALS['UPATH']."/opt/userstats.php?user=".$user_most[1];?>" target="_blank"><?php echo $user_most[1]." ( ".$user_most[0]." )"; ?></a></td>
 						<td><?php echo $dbstats_a['total_aps']; ?></td>
 						<td><?php echo $dbstats_a['nuap']; ?></td>
@@ -489,33 +506,33 @@ class admin
 					$ap_gps = $dbstats_a['ap_gps_totals'][0];
 					$user_most_aps = $dbstats_a['user'][0];
 					$user_geocache = $dbstats_a['geos'][0];
-					
+
 					$total_aps = $dbstats_a['total_aps'];
 					$wep_aps = $dbstats_a['wep_aps'];
 					$secure_aps = $dbstats_a['secure_aps'];
 					$open_aps = $dbstats_a['open_aps'];
-					
+
 					$files_sizes_total = $dbstats_a['file_up_totals'];
 					$file_min = $dbstats_a['file_min'];
 					$file_avg = $dbstats_a['file_avg'];
 					$file_max = $dbstats_a['file_max'];
 					$file_num = $dbstats_a['file_num'];
-					
+
 					$kmz_size = $dbstats_a['kmz_total'];
 					$kmz_min = $dbstats_a['kmz_min'];
 					$kmz_avg = $dbstats_a['kmz_avg'];
 					$kmz_max = $dbstats_a['kmz_max'];
 					$kmz_num = $dbstats_a['kmz_num'];
-					
+
 					$graph_size = $dbstats_a['graph_total'];
 					$graph_min = $dbstats_a['graph_min'];
 					$graph_avg = $dbstats_a['graph_avg'];
 					$graph_max = $dbstats_a['graph_max'];
 					$graph_num = $dbstats_a['graph_num'];
-					
+
 					$timestamp = $dbstats_a['timestamp'];
 					$nuap = $dbstats_a['nuap'];
-					
+
 					$sql0 = "SELECT * FROM `$db`.`$files`";
 					$result = mysql_query($sql0, $conn);
 					$files_uploaded = mysql_num_rows($result);
@@ -525,34 +542,34 @@ class admin
 					$ap_gps = "None";
 					$user_most_aps = "None";
 					$user_geocache = "None";
-					
+
 					$total_aps = 0;
 					$wep_aps = 0;
 					$secure_aps = 0;
 					$open_aps = 0;
-					
+
 					$files_sizes_total = 0;
 					$file_min = 0;
 					$file_avg = 0;
 					$file_max = 0;
 					$file_num = 0;
-					
+
 					$kmz_size = 0;
 					$kmz_min = 0;
 					$kmz_avg = 0;
 					$kmz_max = 0;
 					$kmz_num = 0;
-					
+
 					$graph_size = 0;
 					$graph_min = 0;
 					$graph_avg = 0;
 					$graph_max = 0;
 					$graph_num = 0;
-					
+
 					$timestamp = date($date_format);
 					$nuap = 0;
 					$files_uploaded = 0;
-					
+
 				}
 				?>
 				<table WIDTH=85% BORDER=1 CELLPADDING=2 CELLSPACING=0>
@@ -592,7 +609,7 @@ class admin
 				</table>
 				<?php
 			break;
-			
+
 			case "geo":
 				$sql0 = "SELECT * FROM `$db`.`$DB_stats` ORDER BY `id` DESC LIMIT 1";
 				if($result = mysql_query($sql0, $conn))
@@ -672,7 +689,7 @@ class admin
 					if($row == 1)
 					{ $row = 0; $style = "dark";}
 					else{ $row = 1; $style = "light";}
-					
+
 					?>
 					<tr class="<?php echo $style; ?>">
 						<td><?php echo $dbstats_a['id']; ?></td>
@@ -702,10 +719,10 @@ class admin
 				?></table><?php
 			break;
 			###
-			
+
 			case "users":
 				$detailed_user_view = @$_GET['detailed_users']+0;
-				
+
 				$sql0 = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` NOT LIKE 'admin%' ORDER BY `username` ASC";
 				if($result = mysql_query($sql0, $conn))
 				{
@@ -731,7 +748,7 @@ class admin
 							if($row_color){$row_color =0; $style = "light";}else{$row_color = 1; $style = "dark";}
 							$username = $users_a['username'];
 							$user_geos = "waypoints_".$users_a['username'];
-							
+
 							$sql1 = "SELECT * FROM `$db`.`$users_t` WHERE `username` = '$username'";
 							$result1 = mysql_query($sql1, $conn);
 							$Num_aps=0;
@@ -740,7 +757,7 @@ class admin
 								$points = explode("-", $points_a['points']);
 								$Num_aps = $Num_aps+count($points);
 							}
-							
+
 							$sql1 = "SELECT `id` FROM `$db`.`$user_geos`";
 							$result1 = mysql_query($sql1, $conn);
 							$Num_geo = @mysql_num_rows($result1);
@@ -750,7 +767,7 @@ class admin
 							if($users_a["devs"]){$rank .= "<img src=\"$hosturl/$root/themes/$theme/img/devs.gif\" title=\"Piss off a dev and be sure to never see the light of a console again.\" /> \r\n";}
 							if($users_a["mods"]){$rank .= "<img src=\"$hosturl/$root/themes/$theme/img/mods.gif\" title=\"Mods are the KGB of Packet land.\" /> \r\n";}
 							if($users_a["users"]){$rank .= "<img src=\"$hosturl/$root/themes/$theme/img/users.gif\" title=\"Fellow users can be your freind or they can be your enemey, either way keep them close, and keep track of those fuckers, their sneeky\" /> \r\n";}
-							
+
 							if($detailed_user_view)
 							{
 								?>
@@ -771,7 +788,7 @@ class admin
 									{
 										?>
 										<a class="links" href="<?php echo $GLOBALS['hosturl'].$GLOBALS['root']; ?>/opt/userstats.php?func=alluserlists&user=<?php echo $users_a['username'];?>"><?php echo $users_a['username']; ?></a>
-										<?php 
+										<?php
 									}else
 									{
 										echo $users_a['username'];
@@ -818,7 +835,7 @@ class admin
 										{
 											?>
 											<a class="links" href="<?php echo $GLOBALS['hosturl'].$GLOBALS['root']; ?>/opt/userstats.php?func=alluserlists&user=<?php echo $users_a['username'];?>"><?php echo $users_a['username']; ?></a>
-											<?php 
+											<?php
 										}else
 										{
 											echo $users_a['username'];
@@ -848,7 +865,7 @@ class admin
 				}
 				?></table><?php
 			break;
-			
+
 			case "daemon":
 			####################################
 				?><table class="style4" border="1" width="75%"><?php
@@ -856,7 +873,7 @@ class admin
 				if($result = mysql_query($sql0, $conn))
 				{
 					$daemon_a = mysql_fetch_array($result);
-					
+
 					$timestamp = $daemon_a['timestamp'];
 					$pid = $daemon_a['pid'];
 					$runtime = $daemon_a['uptime'];
@@ -888,7 +905,7 @@ class admin
 				}
 				?><tr class="style4"><th colspan="5"><a href="?func=overview&mode=daemon_hist" class="links">Historical Data</a></th></tr>
 				<tr class="style4"><th>TIMESTAMP</th><th>PID</th><th>RUNTIME</th><th>Memory</th><th>CMD</th></tr><?php
-				
+
 				if($pid == 0)
 				{
 					?><tr align="center" bgcolor="red">
@@ -897,7 +914,7 @@ class admin
 					</tr>
 					<?php
 				}else
-				{	
+				{
 					?><tr align="center" bgcolor="green">
 						<td><?php echo $timestamp;?></td>
 						<td><?php echo $pid;?></td>
@@ -907,10 +924,10 @@ class admin
 					</tr>
 					<?php
 				}
-				
+
 				?></table><?php
 			break;
-			
+
 			case "daemon_hist":
 				?><table class="style4" border="1" width="75%"><?php
 				$sql0 = "SELECT * FROM `$db`.`$daemon_perf_table` ORDER BY `id` DESC";
@@ -933,12 +950,12 @@ class admin
 						if($pid == 0)
 						{
 							?><tr align="center" bgcolor="red">
-								<td colspan="2"><?php echo $timestamp;?></td> 
+								<td colspan="2"><?php echo $timestamp;?></td>
 								<td colspan="3"><?php echo $msg;?></td>
 							</tr>
 							<?php
 						}else
-						{	
+						{
 							?><tr align="center" class="<?php echo $style; ?>">
 								<td><?php echo $timestamp?></td>
 								<td><?php echo $pid;?></td>
@@ -961,7 +978,7 @@ class admin
 				}
 				?></table><?php
 			break;
-			
+
 			case "graphs":
 				$data = addslashes(strtolower(@$_GET['data']));
 				$range = addslashes(strtolower(@$_GET['range']));
@@ -972,11 +989,11 @@ class admin
 						case "dbstats":
 							graph_stats('dbstats', $range);
 						break;
-						
+
 						case "apstats":
 							graph_stats('apstats', $range);
 						break;
-						
+
 						case "mcstats":
 							graph_stats('mcstats', $range);
 						break;
@@ -999,10 +1016,10 @@ class admin
 					<?php
 				}
 			break;
-			
+
 			default:
 			####################################
-				
+
 				$sql0 = "SELECT * FROM `$db`.`$DB_stats` ORDER BY `id` DESC LIMIT 1";
 				if($result = mysql_query($sql0, $conn))
 				{
@@ -1011,33 +1028,33 @@ class admin
 					$ap_gps = $dbstats_a['ap_gps_totals'][0];
 					$user_most_aps = $dbstats_a['user'][0];
 					$user_geocache = $dbstats_a['geos'][0];
-					
+
 					$total_aps = $dbstats_a['total_aps'];
 					$wep_aps = $dbstats_a['wep_aps'];
 					$secure_aps = $dbstats_a['secure_aps'];
 					$open_aps = $dbstats_a['open_aps'];
-					
+
 					$files_sizes_total = $dbstats_a['file_up_totals'];
 					$file_min = $dbstats_a['file_min'];
 					$file_avg = $dbstats_a['file_avg'];
 					$file_max = $dbstats_a['file_max'];
 					$file_num = $dbstats_a['file_num'];
-					
+
 					$kmz_size = $dbstats_a['kmz_total'];
 					$kmz_min = $dbstats_a['kmz_min'];
 					$kmz_avg = $dbstats_a['kmz_avg'];
 					$kmz_max = $dbstats_a['kmz_max'];
 					$kmz_num = $dbstats_a['kmz_num'];
-					
+
 					$graph_size = $dbstats_a['graph_total'];
 					$graph_min = $dbstats_a['graph_min'];
 					$graph_avg = $dbstats_a['graph_avg'];
 					$graph_max = $dbstats_a['graph_max'];
 					$graph_num = $dbstats_a['graph_num'];
-					
+
 					$timestamp = $dbstats_a['timestamp'];
 					$nuap = $dbstats_a['nuap'];
-					
+
 					$sql0 = "SELECT * FROM `$db`.`$files`";
 					$result = mysql_query($sql0, $conn);
 					$files_uploaded = mysql_num_rows($result);
@@ -1047,34 +1064,34 @@ class admin
 					$ap_gps = "None";
 					$user_most_aps = "None";
 					$user_geocache = "None";
-					
+
 					$total_aps = 0;
 					$wep_aps = 0;
 					$secure_aps = 0;
 					$open_aps = 0;
-					
+
 					$files_sizes_total = 0;
 					$file_min = 0;
 					$file_avg = 0;
 					$file_max = 0;
 					$file_num = 0;
-					
+
 					$kmz_size = 0;
 					$kmz_min = 0;
 					$kmz_avg = 0;
 					$kmz_max = 0;
 					$kmz_num = 0;
-					
+
 					$graph_size = 0;
 					$graph_min = 0;
 					$graph_avg = 0;
 					$graph_max = 0;
 					$graph_num = 0;
-					
+
 					$timestamp = date($date_format);
 					$nuap = 0;
 					$files_uploaded = 0;
-					
+
 				}
 				?>
 				<table WIDTH=85% BORDER=1 CELLPADDING=2 CELLSPACING=0>
@@ -1128,8 +1145,8 @@ class admin
 			break;
 		}
 	}
-	
-	
+
+
 	##-----------------------------##
 	##-----------------------------##
 	##-----------------------------##
@@ -1137,7 +1154,7 @@ class admin
 	{
 		include_once('../../lib/config.inc.php');
 		include_once('../../lib/database.inc.php');
-		
+
 		$hosturl		= 	$GLOBALS['hosturl'];
 		$conn			= 	$GLOBALS['conn'];
 		$db				= 	$GLOBALS['db'];
@@ -1154,7 +1171,7 @@ class admin
 		$half_path		=	$GLOBALS['half_path'];
 		$theme			=	$GLOBALS['theme'];
 		$date_format	=	"Y-m-d H:i:s";
-		
+
 		switch($mode)
 		{
 			case "man_users_edit":
@@ -1173,13 +1190,13 @@ class admin
 				$sql1 = "UPDATE `$db`.`$user_logins_table` SET `email` = '$email' , `h_email` = '$h_email', `disabled`='$disabled',`locked`='$locked',`login_fails`='$login_fails',`website`='$website',`Vis_ver`='$Vis_ver' WHERE `id` = '$user_id' LIMIT 1";
 			#	echo $sql1;
 				if(mysql_query($sql1, $conn))
-				{					
+				{
 					redirect_page('?func=uandp&mode=man_users&data='.$username, 2000, '<table><tr class="sub_head"><td>Update User Successful!</tr></td></table>');
 				}
-			
+
 			break;
-			
-			
+
+
 			#################
 			case "man_users":
 				$data = addslashes(strtolower(@$_GET['data']));
@@ -1189,7 +1206,7 @@ class admin
 					<tr>
 						<th colspan="25" class="style4"><strong><em>Manage Database Users</em></strong></th>
 					</tr>
-					
+
 				<?php
 				user_alph_row(addslashes(strtolower($_GET['func'])), $mode, $first, $data);
 				?>
@@ -1356,7 +1373,7 @@ class admin
 			#	dump(get_defined_vars());
 			#	dump($_POST['admingrp']);
 			#	dump($_POST['nonadmingrp']);
-				
+
 				$data = addslashes(strtolower(@$_GET['data']));
 				#dump($data);
 				$todo = addslashes(strtolower(@$_GET['todo']));
@@ -1368,26 +1385,26 @@ class admin
 				{
 					switch($data)
 					{
-						case "admins":	
+						case "admins":
 							$sql1 = "UPDATE `$db`.`$user_logins_table` SET `admins` = '$td' WHERE `id` = '$user_id' LIMIT 1";
 						break;
-						
-						case "devs":	
+
+						case "devs":
 							$sql1 = "UPDATE `$db`.`$user_logins_table` SET `devs` = '$td' WHERE `id` = '$user_id' LIMIT 1";
 						break;
-						
-						case "mods":	
+
+						case "mods":
 							$sql1 = "UPDATE `$db`.`$user_logins_table` SET `mods` = '$td' WHERE `id` = '$user_id' LIMIT 1";
 						break;
-						
-						case "users":	
+
+						case "users":
 							$sql1 = "UPDATE `$db`.`$user_logins_table` SET `users` = '$td' WHERE `id` = '$user_id' LIMIT 1";
 						break;
 					}
 				#	echo $sql1."<br>";
 					$result = mysql_query($sql1, $conn);
 					if(@$result)
-					{					
+					{
 						echo "<table><tr class='sub_head'><td>Updated user ($user_id) to ";if(@$in){echo "remove ";}else{echo "have ";} echo "`$data group` permissions</tr></td></table>";
 					}else
 					{
@@ -1443,7 +1460,7 @@ class admin
 												<th>Users currently in Admins:</th>
 												<th>Users Not In Admins:</th>
 											</tr>
-											<tr>	
+											<tr>
 												<td class="light" align="center" width="50%">
 												<form method="post" action="" name="remove_from_admin_group"  enctype="multipart/form-data">
 												<?php
@@ -1492,7 +1509,7 @@ class admin
 												<th>Users currently in Devs:</th>
 												<th>Users Not In Devs:</th>
 											</tr>
-											<tr>	
+											<tr>
 												<td class="light" align="center" width="50%">
 												<form method="post" action="" name="remove_from_dev_group"  enctype="multipart/form-data">
 												<?php
@@ -1541,7 +1558,7 @@ class admin
 												<th>Users currently in Mods:</th>
 												<th>Users Not In Mods:</th>
 											</tr>
-											<tr>	
+											<tr>
 												<td class="light" align="center" width="50%">
 												<form method="post" action="" name="remove_from_mod_group"  enctype="multipart/form-data">
 												<?php
@@ -1590,7 +1607,7 @@ class admin
 												<th>Users currently in Users:</th>
 												<th>Users Not In Users:</th>
 											</tr>
-											<tr>	
+											<tr>
 												<td class="light" align="center" width="50%">
 												<form method="post" action="" name="remove_from_user_group"  enctype="multipart/form-data">
 												<?php
@@ -1642,12 +1659,12 @@ class admin
 				</table>
 				<?php
 			break;
-			
+
 			case "man_titles_edit":
 			#	dump(get_defined_vars());
 			#	dump($_POST['admingrp']);
 			#	dump($_POST['nonadmingrp']);
-				
+
 				$data = addslashes(strtolower($_GET['data']));
 				$rank = addslashes($_POST['rank']);
 				$username = addslashes(strtolower($_POST['username']));
@@ -1660,12 +1677,12 @@ class admin
 				if($array['id'] == $user_id)
 				{
 					$sql1 = "UPDATE `$db`.`$user_logins_table` SET `rank` = '$rank' WHERE `id` = '$user_id' LIMIT 1";
-				
+
 			#		echo $sql1."<br>";
-				
+
 					$result = mysql_query($sql1, $conn);
 					if(@$result)
-					{					
+					{
 						echo "<table><tr class='sub_head'><td>Updated user ($user_id) with new Custom Rank</td></tr></table>";
 					}else
 					{
@@ -1678,7 +1695,7 @@ class admin
 					Echo "<table><tr class='sub_head'><td>User ID's did not match, there was an error, contact the support forums for more help.</tr></td></table>";
 				}
 			break;
-			
+
 			case "man_titles":
 				$data = addslashes(strtolower(@$_GET['data']));
 				$first = addslashes(strtolower(@$_GET['first']));
@@ -1751,7 +1768,7 @@ class admin
 				</table>
 					<?php
 			break;
-			
+
 			default:
 				?>
 				<table>
@@ -1780,8 +1797,8 @@ class admin
 			break;
 		}
 	}
-	
-	
+
+
 	##-----------------------------##
 	##-----------------------------##
 	##-----------------------------##
@@ -1854,7 +1871,7 @@ class admin
 						<th>All Zipped up!</th>
 					</tr>
 					<?php
-					
+
 				}else
 				{
 					$arc_file_flag = 1;
@@ -1864,7 +1881,7 @@ class admin
 					</tr>
 					<?php
 				}
-				
+
 			#	echo '<br><br>$_POST["del_file"]';
 			#	dump($_POST['del_file']);
 				if(count(@$_POST['del_file']) > 0 and $arc_file_flag === 1)
@@ -1978,7 +1995,7 @@ class admin
 					<?php
 					$arc_dir_flag = 1;
 				}
-				
+
 			#	echo '<br><br>$_POST["del_dir"]';
 			#	dump($_POST['del_dir']);
 				if(count(@$_POST['del_dir']) > 0 and $arc_dir_flag === 1)
@@ -2009,8 +2026,8 @@ class admin
 					</tr>
 				</table><?php
 			break;
-			
-###############################################################################################			
+
+###############################################################################################
 			########################
 			case "clean_tmp":
 				$directory = $half_path."/tmp/";
@@ -2045,11 +2062,11 @@ class admin
 					<tr class="style4">
 						<th>
 							Delete<br>
-							
+
 						</th>
 						<th>
 							Archive<br>
-							
+
 						</th><th width="80%">Filename</th><th>Filesize</th>
 					</tr>
 				<?php
@@ -2058,7 +2075,7 @@ class admin
 				$dh	= opendir($directory) or die("couldn't open directory");
 				while(!(($file = readdir($dh)) == false))
 				{
-					
+
 					if($file == '.svn' or $file == '.' or $file == '..'){continue;}
 					if($row){$style="light";$row=0;}else{$style="dark";$row=1;}
 					$typepath = $directory.$file;
@@ -2130,7 +2147,7 @@ class admin
 				</form>
 				<?php
 			break;
-########################################################################################	#		
+########################################################################################	#
 			case "clean_upload_proc":
 				?>
 				<table border="1" width="80%">
@@ -2178,7 +2195,7 @@ class admin
 						<th>All Zipped up!</th>
 					</tr>
 					<?php
-					
+
 				}else
 				{
 					$arc_file_flag = 1;
@@ -2188,7 +2205,7 @@ class admin
 					</tr>
 					<?php
 				}
-				
+
 			#	echo '<br><br>$_POST["del_file"]';
 			#	dump($_POST['del_file']);
 				if(count(@$_POST['del_file']) > 0 and $arc_file_flag === 1)
@@ -2302,7 +2319,7 @@ class admin
 					<?php
 					$arc_dir_flag = 1;
 				}
-				
+
 			#	echo '<br><br>$_POST["del_dir"]';
 			#	dump($_POST['del_dir']);
 				if(count(@$_POST['del_dir']) > 0 and $arc_dir_flag === 1)
@@ -2333,8 +2350,8 @@ class admin
 					</tr>
 				</table><?php
 			break;
-			
-#######################################################################################			
+
+#######################################################################################
 			case "clean_upload":
 			#	echo format_size(dirSize('import/up/'), $round = 2);
 				$directory = $half_path."/import/up/";
@@ -2369,11 +2386,11 @@ class admin
 					<tr class="style4">
 						<th>
 							Delete<br>
-							
+
 						</th>
 						<th>
 							Archive<br>
-							
+
 						</th><th width="80%">Filename</th><th>Filesize</th>
 					</tr>
 				<?php
@@ -2382,7 +2399,7 @@ class admin
 				$dh	= opendir($directory) or die("couldn't open directory");
 				while(!(($file = readdir($dh)) == false))
 				{
-					
+
 					if($file == '.svn' or $file == '.' or $file == '..' or $file == 'index.php' or $file == '.htaccess'){continue;}
 					if($row){$style="light";$row=0;}else{$style="dark";$row=1;}
 					$typepath = $directory.$file;
@@ -2454,7 +2471,7 @@ class admin
 				</form>
 				<?php
 			break;
-			
+
 ######################################################################
 			case "clean_signal_proc":
 				?>
@@ -2503,7 +2520,7 @@ class admin
 						<th>All Zipped up!</th>
 					</tr>
 					<?php
-					
+
 				}else
 				{
 					$arc_file_flag = 1;
@@ -2513,7 +2530,7 @@ class admin
 					</tr>
 					<?php
 				}
-				
+
 			#	echo '<br><br>$_POST["del_file"]';
 			#	dump($_POST['del_file']);
 				if(count(@$_POST['del_file']) > 0 and $arc_file_flag === 1)
@@ -2627,7 +2644,7 @@ class admin
 					<?php
 					$arc_dir_flag = 1;
 				}
-				
+
 			#	echo '<br><br>$_POST["del_dir"]';
 			#	dump($_POST['del_dir']);
 				if(count(@$_POST['del_dir']) > 0 and $arc_dir_flag === 1)
@@ -2658,7 +2675,7 @@ class admin
 					</tr>
 				</table><?php
 			break;
-			
+
 ###################################################################################################
 			case "clean_signal":
 			#	echo format_size(dirSize('out/graph/'), $round = 2);
@@ -2700,7 +2717,7 @@ class admin
 				$dh	= opendir($directory) or die("couldn't open directory");
 				while(!(($file = readdir($dh)) == false))
 				{
-					
+
 					if($file == '.svn' or $file == '.' or $file == '..' or $file == 'index.php' or $file == '.htaccess'){continue;}
 					if($row){$style="light";$row=0;}else{$style="dark";$row=1;}
 					$typepath = $directory.$file;
@@ -2772,7 +2789,7 @@ class admin
 				</form>
 				<?php
 			break;
-			
+
 			default:
 				?>
 				<table>
@@ -2793,8 +2810,8 @@ class admin
 			break;
 		}
 	}
-	
-	
+
+
 	##-----------------------------##
 	##-----------------------------##
 	##-----------------------------##
@@ -2841,9 +2858,9 @@ class admin
 								</th><th></th>
 							</tr>
 							</table>
-							
+
 							<br>
-							
+
 							<table border='1' width="100%">
 							<tr class="style4">
 								<th colspan="4">Import / Export Performance Monitor Daemon</th>
@@ -2872,9 +2889,9 @@ class admin
 								</th><th></th>
 							</tr>
 							</table>
-							
+
 							<br>
-							
+
 							<table border='1' width="100%">
 							<tr class="style4">
 								<th colspan="4">Database Statistics Daemon</th>
@@ -2908,7 +2925,7 @@ class admin
 				</table>
 				<?php
 			break;
-			
+
 			case "daemon_proc":
 				dump(get_defined_vars());
 				dump($_POST);
@@ -2945,17 +2962,17 @@ class admin
 									echo "Import / Export Daemon already running, no need to start again...";
 								}
 							break;
-							
+
 							case "stop":
 								echo "Stopping the Import / Export Daemon<br>";
 							break;
-							
+
 							case "restart":
 								echo "Restarting the Import / Export Daemon<br>";
 							break;
 						}
 					break;
-					
+
 					case "perfmon_daemon":
 						switch($switch)
 						{
@@ -2979,17 +2996,17 @@ class admin
 									echo "Performance Monitor daemon is already running, no need to start it again.";
 								}
 							break;
-							
+
 							case "stop":
 								echo "Stopping the Import / Export Performance Monitor Daemon<br>";
 							break;
-							
+
 							case "restart":
 								echo "Restarting the Import / Export Performance Monitor Daemon<br>";
 							break;
 						}
 					break;
-					
+
 					case "dbstats_daemon":
 						switch($switch)
 						{
@@ -3013,11 +3030,11 @@ class admin
 									echo "Database Statistics Daemon is already running, no need to start it again.";
 								}
 							break;
-							
+
 							case "stop":
 								echo "Stopping the Database Statistics Daemon<br>";
 							break;
-							
+
 							case "restart":
 								echo "Restarting the Database Statistics Daemon<br>";
 							break;
@@ -3026,11 +3043,11 @@ class admin
 				}
 				admin_footer();
 			break;
-			
+
 			case "daemon_cfgproc":
 				$file_ext = 'config.inc.php';
 				$filename = $GLOBALS['wifidb_tools'].'/daemon/'.$file_ext;
-				
+
 				if (!copy($filename, $GLOBALS['wifidb_tools'].'/daemon/edits/'.date("Y-m-d-H:i:s").'_'.$file_ext))
 				{
 					die("Failed to copy $filename...");
@@ -3055,10 +3072,10 @@ class admin
 				$log_interval					= addslashes(strip_tags($_POST['log_interval']));
 				$verbose						= addslashes(strip_tags($_POST['verbose']));
 				if($verbose == 'on'){$verbose = 1;}else{$verbose = 0;}
-				
+
 				$colors_setting					= addslashes(strip_tags($_POST['colors_setting']));
 				if($colors_setting == 'on'){$colors_setting = 1;}else{$colors_setting = 0;}
-				
+
 				$BAD_CT_COLOR					= addslashes(strip_tags($_POST['BAD_CT_COLOR']));
 				$GOOD_CT_COLOR					= addslashes(strip_tags($_POST['GOOD_CT_COLOR']));
 				$OTHER_CT_COLOR					= addslashes(strip_tags($_POST['OTHER_CT_COLOR']));
@@ -3100,7 +3117,7 @@ $"."default_user	= '$default_user';
 $"."default_title	= '$default_title';
 $"."default_notes	= '$default_notes';
 
-//path to the folder that wifidb is installed in default is /var/www/wifidb/ , because I use Debian. fuck windows 
+//path to the folder that wifidb is installed in default is /var/www/wifidb/ , because I use Debian. fuck windows
 $"."wifidb_install		=	'$wifidb_install';
 $"."console_line_limit	=	$console_line_limit;
 $"."console_trim_log	=	$console_trim_log;
@@ -3151,12 +3168,12 @@ $"."BAD_IED_COLOR	=	'$BAD_IED_COLOR';
 $"."GOOD_IED_COLOR	=	'$GOOD_IED_COLOR';
 $"."OTHER_IED_COLOR	=	'$OTHER_IED_COLOR';
 
-//Debug functions turned on, may also include dropping tables and re-createing them 
+//Debug functions turned on, may also include dropping tables and re-createing them
 //so only turn on if you really know what you are doing
 $"."debug = $debug;\r\n?>";
 
 #	echo "<table><tr><td>".str_replace("\n", "<br>", $daemon_config)."</td></tr></table>";
-	
+
 				if(fwrite($fileappend, $daemon_config))
 				{
 					redirect_page('?func=system&mode=daemon_config', 5000, "<b>Daemon Config file has been writen.<br>You will now need to restart the Daemons for the setting changes to take effect.</b>");
@@ -3165,7 +3182,7 @@ $"."debug = $debug;\r\n?>";
 					echo "Failed to write the Daemon config file, check permissions?";
 				}
 			break;
-			
+
 			case "daemon_config":
 				$file_ext = 'config.inc.php';
 				$filename = $GLOBALS['wifidb_tools'].'/daemon/'.$file_ext;
@@ -3312,7 +3329,7 @@ $"."debug = $debug;\r\n?>";
 				</form>
 				<?php
 			break;
-			
+
 			case "db_config_proc":
 				$wifidb_tools		=	addslashes(strip_tags($_POST['wifidb_tools']));
 				$wifidb_install		=	addslashes(strip_tags($_POST['wifidb_install']));
@@ -3435,7 +3452,7 @@ $"."default_theme		= '$default_theme';
 $"."default_refresh 	= $default_refresh;
 $"."default_timezone	= $default_timezone;
 $"."default_dst		= $default_dst;
-$"."timeout			= $timeout; #(86400 [seconds in a day] * 365 [days in a year]) 
+$"."timeout			= $timeout; #(86400 [seconds in a day] * 365 [days in a year])
 
 #-------------Console Viewer Settings--------------#
 $"."console_refresh	= $console_refresh;
@@ -3501,7 +3518,7 @@ $"."tracker	= '$tracker';";
 
 				echo "<table><tr><td>".str_replace("\r\n", "<br>", $DB_Config)."</td></tr></table>";
 			break;
-			
+
 			case "db_config":
 				$file_ext = 'config.inc.php';
 				$filename = $half_path.'/lib/'.$file_ext;
@@ -3575,7 +3592,7 @@ $"."tracker	= '$tracker';";
 						$dh = opendir("../../themes/") or die("couldn't open directory");
 						while (!(($file = readdir($dh)) == false))
 						{
-							if ((is_dir("../../themes/$file"))) 
+							if ((is_dir("../../themes/$file")))
 							{
 								if($file=="."){continue;}
 								if($file==".."){continue;}
@@ -3824,11 +3841,11 @@ $"."tracker	= '$tracker';";
 				</form>
 				<?php
 			break;
-			
+
 			case "updates":
-			
+
 			break;
-			
+
 			default:
 				?>
 				<ul>This area does the background controls and configuration for the database.

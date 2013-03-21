@@ -1,14 +1,37 @@
+<?php
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+?>
 <script type="text/javascript">
-function endisable( ) {
-document.forms['WiFiDB_Install'].elements['toolsdir'].disabled =! document.forms['WiFiDB_Install'].elements['daemon'].checked;
-document.forms['WiFiDB_Install'].elements['httpduser'].disabled =! document.forms['WiFiDB_Install'].elements['daemon'].checked;
-document.forms['WiFiDB_Install'].elements['httpdgrp'].disabled =! document.forms['WiFiDB_Install'].elements['daemon'].checked;
-}
+    function endisable()
+    {
+        document.forms['WiFiDB_Install'].elements['toolsdir'].disabled =! document.forms['WiFiDB_Install'].elements['daemon'].checked;
+        document.forms['WiFiDB_Install'].elements['httpduser'].disabled =! document.forms['WiFiDB_Install'].elements['daemon'].checked;
+        document.forms['WiFiDB_Install'].elements['httpdgrp'].disabled =! document.forms['WiFiDB_Install'].elements['daemon'].checked;
+    }
 </script>
 <?php
-$version = "0.20 Build 2";
-echo '<title>Wireless DataBase *Alpha* '.$version.' --> Install Page</title>';
+
+$version = "0.30 Build 1";
 ?>
+<title>Wireless DataBase *Alpha* <?php echo $version; ?> ==> Install Page</title>
 <link rel="stylesheet" href="../themes/wifidb/styles.css">
 <body topmargin="10" leftmargin="0" marginwidth="10" marginheight="10" onload="document.forms['WiFiDB_Install'].elements['toolsdir'].disabled=true; document.forms['WiFiDB_Install'].elements['httpduser'].disabled=true; document.forms['WiFiDB_Install'].elements['httpdgrp'].disabled=true;">
 <div align="center">
@@ -35,7 +58,7 @@ echo '<title>Wireless DataBase *Alpha* '.$version.' --> Install Page</title>';
 
 <form name="WiFiDB_Install" action="install.php" method="post" enctype="multipart/form-data">
   <h2>WiFiDB Settings for Install</h2>
-  <h3>Version: 0.20 Build 1</h3>
+  <h3>Version: <?php echo $version; ?></h3>
   <h4>Please Read <a class="links" target="_blank" href="notes.html">these notes</a> before installing the Wireless Database</h4>
 <?php
 
@@ -60,9 +83,9 @@ else{ echo '<table><tr class="style4"><td><b><font color=#ff0000>You Do Not Have
   <tr>
     <td>SQL root user Password</td>
     <td><input TYPE=PASSWORD name="root_sql_pwd"></td></tr>
-  <tr> 
   <tr>
-    <td width="100%">WiFiDB Root <font size="1">( The folder you put WiFiDB in, default: 'wifidb')</font></td>
+  <tr>
+    <td width="100%">WiFiDB Root <font size="1">( The folder you put WiFiDB in, default: '/wifidb/')</font></td>
     <td><input name="root"></td></tr>
   <tr>
     <td>Host URL</td>
@@ -109,29 +132,25 @@ else{ echo '<table><tr class="style4"><td><b><font color=#ff0000>You Do Not Have
   <tr>
     <td>Default Theme</td>
     <td>
-		<select name="theme">
-		<OPTION selected VALUE=""> Select a Theme.
-		<?php
-		$dh = opendir("../themes/") or die("couldn't open directory");
-		while (!(($file = readdir($dh)) == false))
-		{
-			if ((is_dir("../themes/$file"))) 
-			{
-				if($file=="."){continue;}
-				if($file==".."){continue;}
-				if($file==".svn"){continue;}
-				echo '<OPTION VALUE="'.$file.'"> '.$file;
-			}
-		}
-		?>
-		</select>
+        <select name="theme">
+        <OPTION selected VALUE=""> Select a Theme.
+        <?php
+        $dh = opendir("../themes/") or die("couldn't open directory");
+        while (!(($file = readdir($dh)) == false))
+        {
+            if ((is_dir("../themes/$file")))
+            {
+                if($file=="."){continue;}
+                if($file==".."){continue;}
+                if($file==".svn"){continue;}
+                echo '<OPTION VALUE="'.$file.'"> '.$file;
+            }
+        }
+        ?>
+        </select>
 	</td>
 </TR>
 <tr><th colspan="2" class="style4">WiFiDB Daemon Settings</th></tr>
-  <tr>
-    <td>Use Daemon?</td>
-    <td><input type="checkbox" name="daemon" onchange="endisable()"></td>
-</TR>
   <tr>
     <td>Tools Directory (if you are using the daemon)</td>
     <td><input name="toolsdir"></td>
@@ -154,32 +173,15 @@ else{ echo '<table><tr class="style4"><td><b><font color=#ff0000>You Do Not Have
 </TR>
 </TABLE>
 </form>
-</p>
 
-<?php
-$timezn = 'Etc/GMT+5';
-date_default_timezone_set($timezn);
+</td>
+</tr>
+<tr>
+<td bgcolor="#315573" height="23"><a href="../img/moon.png"><img border="0" src="../img/moon_tn.png"></a></td>
+<td bgcolor="#315573" width="0" align="center">
 
-
-	$filename = $_SERVER['SCRIPT_FILENAME'];
-	$file_ex = explode("/", $filename);
-	$count = count($file_ex);
-	$file = $file_ex[($count)-1];
-	?>
-	</p>
-	</td>
-	</tr>
-	<tr>
-	<td bgcolor="#315573" height="23"><a href="../img/moon.png"><img border="0" src="../img/moon_tn.png"></a></td>
-	<td bgcolor="#315573" width="0" align="center">
-	<?php
-	if (file_exists($filename)) {?>
-		<h6><i><u><?php echo $file;?></u></i> was last modified:  <?php echo date ("Y F d @ H:i:s", filemtime($filename));?></h6>
-	<?php
-	}
-	?>
-	</td>
-	</tr>
-	</table>
-	</body>
-	</html>
+</td>
+</tr>
+</table>
+</body>
+</html>
