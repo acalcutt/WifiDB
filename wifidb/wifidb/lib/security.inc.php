@@ -76,7 +76,7 @@ class security
     }
     
     
-    function gen_keys($len = 12)
+    function GenerateKey($len = 12)
     {
         // http://snippets.dzone.com/posts/show/3123
         $base           =   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
@@ -86,7 +86,6 @@ class security
         while (strlen($activatecode) < $len+1)
         {
             $activatecode .= $base{mt_rand(0,$max)};
-            //$activatecode .= mt_rand(0,$max);
         }
         return $activatecode;
     }

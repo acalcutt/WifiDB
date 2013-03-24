@@ -35,47 +35,47 @@ if($return == ''){$return = $dbcore->PATH;}
 switch($func)
 {
 	case "login_proc":
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-		$login = $dbcore->login($username, $password, $seed, 0);
-		switch($login)
-		{
-			case "locked":
-                            $message = array('This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.');
-			break;
+            $username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
+            $password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
+            $login = $dbcore->login($username, $password, $seed, 0);
+            switch($login)
+            {
+                case "locked":
+                    $message = array('This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.');
+                break;
 
-			case "validate":
-                            $message = array('This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.');
-			break;
+                case "validate":
+                    $message = array('This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.');
+                break;
 
-			case is_array($login):
-                        $to_go = $login[1];
-                        $message = array(
-                            'Bad Username or Password!',
-                            $to_go
-                        );
-			break;
+                case is_array($login):
+                $to_go = $login[1];
+                $message = array(
+                    'Bad Username or Password!',
+                    $to_go
+                );
+                break;
 
-			case"u_fail":
-                            $message = array('Username does not exsist.');
-			break;
+                case"u_fail":
+                    $message = array('Username does not exsist.');
+                break;
 
-			case "u_u_r_fail":
-                            $message = array("Failed to update User row");
-			break;
+                case "u_u_r_fail":
+                    $message = array("Failed to update User row");
+                break;
 
-			case "good":
-                            $dbcore->redirect_page($return, 2000, 'Login Successful!');
-			break;
+                case "good":
+                    $dbcore->redirect_page($return, 2000, 'Login Successful!');
+                break;
 
-			case "cookie_fail":
-                            $message = array("Set Cookie fail, check the bottom of the glass, or your browser.");
-			break;
+                case "cookie_fail":
+                    $message = array("Set Cookie fail, check the bottom of the glass, or your browser.");
+                break;
 
-			default:
-                            $message = array("Unknown Return.");
-			break;
-		}
+                default:
+                    $message = array("Unknown Return.");
+                break;
+            }
 
 	break;
 
@@ -413,7 +413,7 @@ Your account: $username
 		}
 	break;
 
-	case "reset_password":
+	case "reset_user_pass":
 		$dbcore->smarty->display("reset_password.tpl");
 	break;
     

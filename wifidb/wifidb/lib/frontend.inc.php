@@ -46,7 +46,7 @@ class frontend extends dbcore
             define('SMARTY_DIR', $this->PATH.'/smarty/');
             require_once(SMARTY_DIR.'Smarty.class.php');
             $this->smarty = new Smarty();
-            $this->smarty->setTemplateDir( WWW_DIR.'smarty/templates/'.$this->theme.'/' );
+            $this->smarty->setTemplateDir( WWW_DIR.'themes/'.$this->theme.'/templates/' );
             $this->smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
             $this->smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
             $this->smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
