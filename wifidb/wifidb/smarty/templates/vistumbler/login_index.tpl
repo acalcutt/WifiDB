@@ -36,7 +36,12 @@ if not, write to the
                                                     <td colspan="2"><p align="center"><input type="hidden" name="return" value="{$wifidb_host_url}index.php"><input type="submit" value="Login"></p></td>
                                                 </tr>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br><a class="links" href="{$wifidb_host_url}login.php?func=reset_user_pass">Forgot your password?</a></p></td>
+                                                    <td colspan="2">
+                                                        <p align="center">
+                                                            <a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br>
+                                                            <a class="links" href="{$wifidb_host_url}login.php?func=reset_user_pass_request">Forgot your password?</a>
+                                                        </p>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>
