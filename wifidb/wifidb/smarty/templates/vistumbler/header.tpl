@@ -2,12 +2,12 @@
 <html>
     <head>
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
-        <meta name="description" content="A Wireless Database based off of scans from Vistumbler." />
-        <meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, database, db, php, mysql" />
+        {$wifidb_meta_header}
+        {$redirect_func}
     </head>
-    <body style="background-color: #145285">
+    <body style="background-color: #145285" {$redirect_html}>
         <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
-
+        
         <table style="width: 90%; " class="no_border" align="center"><tr><td><p class='annunc_text'>Well... here we go again.... -phil</p></td></tr></table>
 
         <table style="width: 90%; " class="no_border" align="center">

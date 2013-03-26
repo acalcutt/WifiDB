@@ -384,36 +384,6 @@ class dbcore
         }
     }
 
-    #==============================#
-    #   Redirects the user after   #
-    #   something has happened.    #
-    #==============================#
-    function redirect_page($return = "", $delay = 0, $msg = "no Message", $new_window = 0)
-    {
-        if($return == ''){$return = $this->HOSTURL;}
-        ?>
-            <script type="text/javascript">
-                function reload()
-                {
-                    <?php
-                    switch($new_window)
-                    {
-                        case 1:
-                            ?>window.open('<?php echo $return;?>');<?php
-                        break;
-                        case 2:
-                            ?>window.open('<?php echo $return;?>');
-                            location.href = '<?php echo $this->HOSTURL.'/';?>';<?php
-                        break;
-                        default:
-                            ?>location.href = '<?php echo $return;?>';<?php
-                        break;
-                    }?>
-                }
-            </script>
-            <body onload="setTimeout('reload()', <?php echo $delay;?>)"><?php echo $msg;?></body>
-        <?php
-    }
 
     #===============================#
     #   Smart (filtering for GPS)   #

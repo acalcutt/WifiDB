@@ -237,6 +237,7 @@ class security
                 {
                     $this->privs = $this->check_privs();
                     $this->logged_in_flag = 1;
+                    $this->LoginLabel = $newArray['username'];
                     $this->login_val = $newArray['username'];
                     $this->username = $newArray['username_db'];
                     $this->last_login = $newArray['last_login'];
@@ -245,18 +246,21 @@ class security
                 }else
                 {
                     $this->logged_in_flag = 0;
+                    $this->LoginLabel = "";
                     $this->login_val = "Bad Cookie Password";
                     $this->login_check = 0;
                     return -1;
                 }
             }else
             {
+                $this->LoginLabel = "";
                 $this->login_val = "No Cookie";
                 $this->login_check = 0;
                 return -1;
             }
         }else
         {
+            $this->LoginLabel = "";
             $this->login_val = "No Cookie";
             $this->login_check = 0;
             return -1;

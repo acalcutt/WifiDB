@@ -41,20 +41,21 @@ class frontend extends dbcore
             $this->meta->tracker = $config['tracker'];
             $this->meta->header = $config['header'];
             
-            
             define('WWW_DIR', $this->PATH);
             define('SMARTY_DIR', $this->PATH.'/smarty/');
             require_once(SMARTY_DIR.'Smarty.class.php');
             $this->smarty = new Smarty();
-            $this->smarty->setTemplateDir( WWW_DIR.'themes/'.$this->theme.'/templates/' );
+            $this->smarty->setTemplateDir( WWW_DIR.'smarty/templates/'.$this->theme.'/' );
             $this->smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
             $this->smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
             $this->smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
+            
             $this->smarty->assign('wifidb_host_url', $this->URL_PATH);
+            $this->smarty->assign('wifidb_meta_header', $this->meta->header);
             $this->smarty->assign('wifidb_theme', $this->theme);
             $this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
             $this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
-
+            
             $this->smarty->assign('critical_error_message', '');
             if($this->find_alert_message())
             {
@@ -73,20 +74,12 @@ class frontend extends dbcore
                 $this->smarty->assign('wifidb_alerts_message', '');
             }
             require_once(WWW_DIR."lib/header_footer.inc.php");
-            $header_values = htmlheader($this);
-            $footer_values = htmlfooter($this);
-
-            if($header_values)
-            {
-                $this->smarty->assign('wifidb_login_label', $header_values['wifidb']);
-            }
-            if($footer_values)
-            {
-                $this->smarty->assign('wifidb_login_label', $footer_values['wifidb']);
-            }
+            $this->htmlheader();
+            $this->htmlfooter();
+            $this->smarty->assign('wifidb_login_label', $this->LoginLabel);
+            
         }
         $this->lang                     =   $lang_obj;
-        
         $this->ver_array['Frontend']    =   array(
                                                     "AllUsers"       =>  "1.0",
                                                     "AllUsersAP"     =>  "1.0",
@@ -578,6 +571,22 @@ class frontend extends dbcore
         $this->pages_together = $pages_together;
         return 1;
     }
+    
+    #==============================#
+    #   Redirects the user after   #
+    #   something has happened.    #
+    #==============================#
+    function redirect_page($return = "", $delay = 0)
+    {
+        if($return == ''){$return = $this->HOSTURL;}
+        $this->smarty->assign("redirect_func", "<script type=\"text/javascript\">
+            function reload()
+            {
+                window.open('{$return}')
+                location.href = '{$this->HOSTURL}/';
+            }
+        </script>");
+        $this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
+    }
 }
-#END DATABASE CLASS
 ?>

@@ -109,7 +109,6 @@ if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timez
     switch($GLOBALS['switches']['screen'])
     {
         case "CLI":
-            echo $config['wifidb_tools'].'daemon/wdbcli.inc.php'."\r\n";
             require $config['wifidb_install'].'lib/daemon.inc.php' ;
             require $config['wifidb_tools'].'daemon/config.inc.php';
             require $config['wifidb_tools'].'daemon/wdbcli.inc.php';

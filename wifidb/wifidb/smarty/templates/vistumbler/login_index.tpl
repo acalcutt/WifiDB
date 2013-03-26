@@ -17,12 +17,12 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 -->
-{include file="vistumbler_header.tpl"}
+{include file="header.tpl"}
                                     <form method="post" action="/wifidb/login.php?func=login_proc">
                                         <table align="center">
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><img src="{$wifidb_host_url}themes/wifidb/img/logo.png"></p></td>
+                                                    <td colspan="2"><p align="center"><img src="{$wifidb_host_url}themes/{$wifidb_theme}/img/logo.png"></p></td>
                                                 </tr>
                                                 <tr>
                                                     <td>Username</td>
@@ -41,9 +41,4 @@ if not, write to the
                                             </tbody>
                                         </table>
                                     </form>
-                                    </div>
-                                    <br>
-                                    </td>
-                                    <td class="cell_side_right">&nbsp;</td>
-                                </tr>
-{include file="vistumbler_footer.tpl"}
+{include file="footer.tpl"}

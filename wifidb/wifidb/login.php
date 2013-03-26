@@ -264,161 +264,134 @@ switch($func)
             exit();
 	break;
 
+        case "reset_password_form":
+            $token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_SPECIAL_CHARS);
+            $dbcore->smarty->assign("token", $token);
+            $dbcore->smarty->display("reset_password_form.tpl");
+        break;
+    
 	case "reset_password_proc":
-		pageheader("Security Page");
-		require_once("lib/MAIL5.php");
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_current_pwd', FILTER_SANITIZE_SPECIAL_CHARS);
-		$newpassword = filter_input(INPUT_POST, 'time_new_pwd', FILTER_SANITIZE_SPECIAL_CHARS);
-		$newpassword2 = filter_input(INPUT_POST, 'time_new_pwd_again', FILTER_SANITIZE_SPECIAL_CHARS);
+            $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
+            $token = filter_input(INPUT_POST, 'token', FILTER_SANITIZE_SPECIAL_CHARS);
+            $newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
+            $newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
 
-		$from           =   $GLOBALS['admin_email'];
-		$wifidb_smtp    =   $GLOBALS['wifidb_smtp'];
-		$sender         =   $from;
-		$sender_pass    =   $GLOBALS['wifidb_from_pass'];
-		$mail           =   new MAIL5();
-		$seed           =   $GLOBALS['login_seed'];
+            $from           =   $this->WDBadmin;
+            $wifidb_smtp    =   $this->smtp;
+            $sender         =   $from;
+            $sender_pass    =   $dbcore->smtp_pass;
+            $seed           =   $dbcore->login_seed;
+            $success        =   0;
+            $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+            $prep = $dbcore->sql->conn->prepare($sql0);
+            $prep->bindParam(1, $username, PDO::PARAM_STR);
+            $prep->execute();
+            $err = $dbcore->sql->conn->errorCode();
+            if($err[0] !== "00000")
+            {
+                throw new Exception($this->sql->conn->errorInfo());
+            }
+            $newArray = $prep->fetch(2);
+            $username_db = $newArray['username'];
+            $user_email = $newArray['email'];
+            $password_db = $newArray['password'];
+            if($username_db == '')
+            {
+                $message = "";
+                $dbcore->smarty->display("reset_password_form.tpl");
+                die();
+            }else
+            {
+                if($newpassword === $newpassword2)
+                {
+                    $password = sha1($password.$seed);
+                    if($password === $password_db)
+                    {
+                        $setpassword = sha1($newpassword.$seed);
+                        $update = "UPDATE `wifi`.`user_info` SET `password` = ? WHERE `username` = ?";
+                    #   echo $update."<BR>";
+                        $prep1 = $dbcore->sql->conn->prepare($update);
+                        $prep1->bindParam(1, $setpassword.":sha1", PDO::PARAM_STR);
+                        $prep1->bindParam(2, $username_db, PDO::PARAM_STR);
+                        $prep1->execute();
 
-		$sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
-		$result = mysql_query($sql0, $conn);
-		$newArray = mysql_fetch_array($result);
-		$username_db = $newArray['username'];
-		$user_email = $newArray['email'];
-		$password_db = $newArray['password'];
-		if($username_db == '')
-		{
-			?>
-			<p align='center'><font color='red'><h2>Username was blank, try again.</h2></font></p>
-			<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-			<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_password_proc">
-			<table align="center">
-				<tr>
-					<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-				</tr>
-				<tr>
-					<td>Username</td>
-					<td><input type="text" name="time_user"></td>
-				</tr>
-				<tr>
-					<td>Temp Password</td>
-					<td><input type=PASSWORD name="time_current_pwd"></td>
-				</tr>
-				<tr>
-					<td>New Password</td>
-					<td><input type=PASSWORD name="time_new_pwd"></td>
-				</tr>
-				<tr>
-					<td>Retype New Password</td>
-					<td><input type=PASSWORD name="time_new_pwd_again"></td>
-				</tr>
-				<tr>
-					<td colspan="2"><p align="center"><input type="submit" value="Re-set Password"></p></td>
-				</tr>
-			</table>
-			</form>
-			<?php
-		}else
-		{
-			if($newpassword === $newpassword2)
-			{
-				$password = md5($password.$seed);
-				if($password === $password_db)
-				{
-					$setpassword = md5($newpassword.$seed);
-					$update = "UPDATE `wifi`.`user_info` SET `password` = '$setpassword' WHERE `username` = '$username_db'";
-				#	echo $update."<BR>";
-					if(mysql_query($update, $conn))
-					{
-						if(!$mail->from($from))
-						{die("Failed to add From address\r\n");}
-						if(!$mail->addto($user_email))
-						{die("Failed to add To address\r\n");}
+                        $err = $dbcore->sql->conn->errorCode();
+                        if($err[0] === "00000")
+                        {
+                            #clear the token from the table.
+                            $remove = "DELETE FROM `wifi`.`reset_token` where `token` = ? and `username` = ?";
+                            $prep2 = $dbcore->sql->conn->prepare($remove);
+                            $prep2->bindParam(1, $token, PDO::PARAM_STR);
+                            $prep2->bindParam(2, $username, PDO::PARAM_STR);
+                            $prep2->execute();
+                            $err = $this->sql->conn->errorCode();
+                            if($err[0] !== "00000")
+                            {
+                                $dbcore->logd("Error removing user password reset token from table: ".var_export($dbcore->sql->conn->errorInfo(), 1).var_export($dbcore, 1), "error");
+                            }
+                            if($dbcore->mail->from($from))
+                            {$dbcore->logd("Failed to add From address". var_export($dbcore,1), "error");}
+                            if(!$dbcore->mail->addto($user_email))
+                            {$dbcore->logd("Failed to add To address". var_export($dbcore,1), "error");}
 
-						if(!$mail->subject("WiFiDB User Password Reset"))
-						{die("Failed to add subject\r\n");}
+                            if(!$dbcore->mail->subject("WiFiDB User Password Reset"))
+                            {$dbcore->logd("Failed to add subject". var_export($dbcore,1), "error");}
 
-						$contents = "You have just reset your password, if you did not do this, i would email the admin...
+                            $contents = "You have just reset your password, if you did not do this, I would email the admin...
 
-Your account: $username
+Your account: $username_db
 
 -WiFiDB Service";
 
-						if(!$mail->text($contents))
-						{die("Failed to add message\r\n");}
+                            if(!$dbcore->mail->text($contents))
+                            {$dbcore->logd("Failed to add message". var_export($dbcore,1), "error");}
 
-						$smtp_conn = $mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
-						if ($smtp_conn)
-						{
-							if($mail->send($smtp_conn))
-							{
-								?>
-									<p align='center'><font color='green'><h2>Your password has been reset, you can now go login.</h2></font></p>
-								<?php
-							}else
-							{
-								?>
-									<p align='center'><font color='red'><h2>Your password has been reset, but failed to send email to user.</h2></font></p>
-								<?php
-							}
-						}else
-						{
-							?>
-								<p align='center'><font color='red'><h2>Failed to connect to SMTP Host.</h2></font></p>
-							<?php
-						}
-					}else
-					{
-						?><h2>Mysql Error:</h2><font color='red'> <?php echo mysql_error($conn); ?></font><?php
-					}
-				}else
-				{
-					?>
-					<p align='center'><font color='red'><h2>Password did not match DB.</h2></font></p>
-					<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-					<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_password_proc">
-					<table align="center">
-						<tr>
-							<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-						</tr>
-						<tr>
-							<td>Username</td>
-							<td><input type="text" name="time_user"></td>
-						</tr>
-						<tr>
-							<td>Temp Password</td>
-							<td><input type=PASSWORD name="time_current_pwd"></td>
-						</tr>
-						<tr>
-							<td>New Password</td>
-							<td><input type=PASSWORD name="time_new_pwd"></td>
-						</tr>
-						<tr>
-							<td>Retype New Password</td>
-							<td><input type=PASSWORD name="time_new_pwd_again"></td>
-						</tr>
-						<tr>
-							<td colspan="2"><p align="center"><input type="submit" value="Re-set Password"></p></td>
-						</tr>
-					</table>
-					</form>
-					<?php
-				}
-			}else
-			{
-				$message = array(
-                                                    "New Passwords did not match.",
-                                                    "Reset forgoten password"
-                                                );
-			}
-		}
+                            $smtp_conn = $dbcore->mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
+                            if ($smtp_conn)
+                            {
+                                if($dbcore->mail->send($smtp_conn))
+                                {
+                                    $message = "Your password has been reset, you can now go login.";
+                                }else
+                                {
+                                    $message = "Your password has been reset, but failed to send confirmation email.";
+                                }
+                            }else
+                            {
+                                $dbcore->logd("Failed to connect to SMTP Host". var_export($dbcore,1), "error");
+                                $message = "Failed to connect to SMTP Host.";
+                            }
+                            $success =  1;
+                        }else
+                        {
+                            $message = "There was an error, please try again.";
+                            $dbcore->logd("SQL Error: ". var_export($dbcore->sql->conn->errorInfo(),1). var_export($dbcore, 1));
+                        }
+                    }else
+                    {
+                        $message = "Username or Password did not match.";
+                        $dbcore->logd("User failed to reset password. ". $_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
+                    }
+                }else
+                {
+                    $message = "New Passwords did not match.";
+                }
+            }
+            if($success) $dbcore-redirect_page("", 5);
+            $dbcore->smarty->assign("message", $message);
+            $dbcore->smarty->display("login_results.tpl");
 	break;
 
-	case "reset_user_pass":
-		$dbcore->smarty->display("reset_password.tpl");
+	case "reset_user_pass_request":
+            $dbcore->smarty->display("reset_password_request.tpl");
 	break;
-    
+        
+        case "reset_password_request_proc":
+            
+        break;
+        
 	default :
-		$dbcore->smarty->display("login.tpl");
+            $dbcore->smarty->display("login_index.tpl");
 	break;
 }
 ?>
