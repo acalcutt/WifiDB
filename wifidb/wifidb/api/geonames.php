@@ -22,24 +22,23 @@ global $switches;
 $switches = array('screen'=>"HTML",'extras'=>'API');
 include('../lib/init.inc.php');
 
-$out		=   (@$_GET['output'] ? $_GET['output'] : "json");
-$lat		=   (@$_GET['lat'] ? $_GET['lat'] : 0);
-$long		=   (@$_GET['long'] ? $_GET['long'] : 0);
-$username       =   (@$_GET['username'] ? $_GET['username'] : "" );
-$apikey         =   (@$_GET['apikey'] ? $_GET['apikey'] : "");
+$out		=   (@$_REQUEST['output'] ? $_REQUEST['output'] : "json");
+$lat		=   (@$_REQUEST['lat'] ? $_REQUEST['lat'] : 0);
+$long		=   (@$_REQUEST['long'] ? $_REQUEST['long'] : 0);
+$username       =   (@$_REQUEST['username'] ? $_REQUEST['username'] : "" );
+$apikey         =   (@$_REQUEST['apikey'] ? $_REQUEST['apikey'] : "");
 $dbcore->output = $out;
 
-if($lat == "" OR $long == "")
+if($lat == "" || $long == "")
 {
-    $dbcore->mesg[] = "No lat or long supplied...";
+    $dbcore->mesg = "No lat or long supplied...";
     $dbcore->Output();
 }
 
 $result = $dbcore->sec->ValidateAPIKey($username, $apikey);
-if(is_array($result))
+if(!$result[0])
 {
-    $dbcore->mesg[] = $result[1];
-    $dbcore->Output();
+    $dbcore->Output($result[1]);
 }else
 {
     $dbcore->GeoNames($lat,$long);

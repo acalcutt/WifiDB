@@ -78,15 +78,17 @@ class dbcore
         $this->WDBadmin                 = $config['admin_email'];
         $this->smtp                     = $config['wifidb_smtp'];
         
-        $this->ver_array                = array(
+        $this->ver_array                =   array(
             "wifidb"                    =>  " *Alpha* 0.30 Build 1 *Pre-Release* ",
             "codename"                  =>  "Peabody",
-            "Last_Core_Edit"            =>  "2013-Feb-19"
+            "Last_Core_Edit"            =>  "2013-Apr-01"
             );
         $this->ver_str                  = $this->ver_array['wifidb'];
-        
+        $this->This_is_me               = getmypid();
         $this->sec                      = new security($this);
+        #$this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
+        $this->wdbmail                  = new wdbmail($this);
         
     }
 

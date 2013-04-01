@@ -299,8 +299,33 @@ class security
         }
     }
     
+ /**
+ * (WiFiDB 0.30)<br/>
+ * Checks the Users API key and sees if it is valid or not.
+ * @link http://www.wifidb.net/manual/en/function.security.ValidateAPIKey.php
+ * @param string $username <p>
+ * The Username to be checked
+ * </p>
+ * @param string $apikey <p>
+ * The api key to be checked.
+ * </p>
+ * @return <b>1</b> if the key has been validated, <b>Array</b> and <b>[0]</b> is the code, 
+ * <b>[1]</b> is the message.
+ */
     function ValidateAPIKey($username, $apikey)
     {
+        if($username === "" || $username === "Unknown")
+        {
+            $this->message = "Invalid Username set.";
+            $array = array(0, $this->message);
+            return $array;
+        }
+        if($apikey === "")
+        {
+            $this->message = "Invalid API Key set.";
+            $array = array(0, $this->message);
+            return $array;
+        }
         $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $username, PDO::PARAM_STR);
@@ -309,24 +334,33 @@ class security
         if($err !== "00000")
         {
             $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
-            return array(0, "Error Selecting User API Key");
+            $array =  array(0, "Error Selecting User API Key");
+            return $array;
         }
         $key = $result->fetch(2);
         if($key['apikey'] !== $apikey)
         {
-            return array(0, "Authentication Failed.");
+            $this->message = "Authentication Failed.";
+            $array =  array(0, $this->message);
+            return $array;
         }
         if($key['locked'])
         {
-            return array(0, "Account Locked.");
+            $this->message = "Account Locked.";
+            $array =  array(0, $this->message);
+            return $array;
         }
         if($key['disabled'])
         {
-            return array(0, "Account Disabled.");
+            $this->message = "Account Disabled.";
+            $array =  array(0, $this->message);
+            return $array;
         }
         if($key['validated'])
         {
-            return array(0, "User not validated yet.");
+            $this->message = "User not validated yet.";
+            $array =  array(0, $this->message);
+            return $array;
         }
         return 1;
     }

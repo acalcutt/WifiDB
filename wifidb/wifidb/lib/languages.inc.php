@@ -21,11 +21,12 @@ if not, write to the
 
 class languages
 {
-    function __construct($basepath) {
-        $this->base = $basepath;
-        $this->current_language = null;
-        $this->code = '';
-        $this->supported_languages = $this->FindLanguages();
+    function __construct($basepath)
+    {
+        $this->base                 = $basepath;
+        $this->current_language     = null;
+        $this->code                 = '';
+        $this->supported_languages  = $this->FindLanguages();
     }
     
     function FindLanguageType($string = "")
@@ -39,6 +40,7 @@ class languages
                 return $lang[1]['Info']['LanguageCode'];
             }
         }
+        return 0;
     }
     
     function FindLanguages()

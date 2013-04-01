@@ -20,12 +20,12 @@ if not, write to the
 */
 class api extends dbcore
 {
-    function __construct($config, $lang_obj)
+    function __construct($config)
     {
-        parent::__construct($config, $lang_obj);
+        parent::__construct($config);
         $this->kill_andrew  = 1;
         $this->startdate    = "2011-Apr-14";
-        $this->lastedit     = "2013-Jan-31";
+        $this->lastedit     = "2013-Apr-01";
         $this->vernum       = "1.0";
         $this->Author       = "Phil Ferland";
     }
@@ -55,8 +55,10 @@ class api extends dbcore
         #    echo "Admin1 Code is Numeric, need to query the admin1 table for more information.";
             $admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
 
-            $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
-            $admin1_res = $this->sql->conn->query($sql);
+            $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin1` WHERE `admin1`= ?";
+            $admin1_res = $this->sql->conn->prepare($sql);
+            $admin1_res->bindParam(1, $admin1, PDO::PARAM_STR);
+            $admin1_res->execute();
             $admin1_array = $admin1_res->fetch(1);
             #var_dump($admin1_array);
         }
@@ -64,13 +66,17 @@ class api extends dbcore
         {
         #    echo "Admin2 Code is Numeric, need to query the admin2 table for more information.";
             $admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
-            $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
-            $admin2_res = $this->sql->conn->query($sql);
+            $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin2` WHERE `admin2`= ? ";
+            $admin2_res = $this->sql->conn->prepare($sql);
+            $admin2_res->bindParam(1, $admin2, PDO::PARAM_STR);
+            $admin2_res->execute();
             $admin2_array = $admin2_res->fetch(1);
         }
         #var_dump($admin2_array);
-        $sql = "SELECT `Country` FROM `wifi`.`geonames_country_names` WHERE `ISO` LIKE '{$geo_array['country code']}%' LIMIT 1";
-        $country_res = $this->sql->conn->query($sql);
+        $sql = "SELECT `Country` FROM `wifi`.`geonames_country_names` WHERE `ISO` LIKE ? LIMIT 1";
+        $country_res = $this->sql->conn->prepare($sql);
+        $country_res->bindParam(1, $geo_array['country code']."%", PDO::PARAM_STR);
+        $country_res->execute();
         $country_array = $country_res->fetch(1);
         
         $this->mesg = array('Geonames'=>array(
@@ -249,7 +255,7 @@ class api extends dbcore
                 $this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
                 $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `sig` = ? WHERE `id` = ?";
                 $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $data['utime'], PDO::PARAM_INT);
+                $prep->bindParam(1, $data['date']." ".$data['time'], PDO::PARAM_INT);
                 $prep->bindParam(2, $sig, PDO::PARAM_STR);
                 $prep->bindParam(3, $AP_id, PDO::PARAM_INT);
                 $prep->execute();
@@ -272,8 +278,8 @@ class api extends dbcore
                 if($timecalc > 2)
                 {
                     $this->mesg[] = "Oooo its time is newer o_0, lets go insert it<br />";
-                    $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
-                                                   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
+                                                   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
@@ -287,6 +293,7 @@ class api extends dbcore
                     $prep->bindParam(9, $data['track'], PDO::PARAM_INT);
                     $prep->bindParam(10, $data['date'], PDO::PARAM_STR);
                     $prep->bindParam(11, $data['time'], PDO::PARAM_STR);
+                    $prep->bindParam(12, $data['session_id'], PDO::PARAM_STR);
                     $prep->execute();
                     $err = $this->sql->conn->errorCode();
                     if($err !== "00000")
@@ -433,16 +440,6 @@ class api extends dbcore
             $this->mesg = $mesg;
         }
         if(empty($this->mesg)){return array("Empty Data Set.");}
-        if($this->kill_andrew){
-            $compile = "";
-            $text = "Computer, Kill Andrew...";
-            $exp = str_split($text);
-            foreach($exp as $v)
-            {
-                $compile .= "0x".dechex(ord($v)).";";
-            }
-            $this->mesg['secret message'] = $compile;
-        }
         
         switch(@$this->output)
         {

@@ -64,7 +64,7 @@ if($ssid === "UNNAMED" && $mac === "00:00:00:00:00:00" && $chan === 0 && $sectyp
 //Lets see if we can find a user with this name.
 //If so, lets check to see if the API key they provided is correct.
 $key_result = $dbcore->sec->ValidateAPIKey($username, $apikey);
-if($key_result !== 1){ $dbcore->Dump($key_result); }
+if(!$key_result[0]){ $dbcore->Output($key_result[1]); }
 
 $data = array(
     #ap data
