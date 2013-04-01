@@ -41,11 +41,19 @@ class SQL
     function checkError()
     {
         $err = $this->conn->errorCode();
-        if($err !== "00000")
+        var_dump($err);
+        if($err === "00000")
+        {
+            dbcore::verbosed("There was no error running the SQL");
+            #dbcore::logd("There was no error running the SQL");
+            return 0;
+        }else
         {
             dbcore::verbosed("There was an error running the SQL");
             dbcore::logd("There was an error running the SQL");
+            return $this->conn->errorInfo();
         }
+        
     }
 }
 ?>

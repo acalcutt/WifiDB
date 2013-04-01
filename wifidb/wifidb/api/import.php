@@ -8,6 +8,7 @@ $api_key = (empty($_REQUEST['apikey'])) ? "" : $_REQUEST['apikey'];
 $title = (empty($_REQUEST['title'])) ? "Untitled" : $_REQUEST['title'];
 $notes = (empty($_REQUEST['notes'])) ? "No Notes" : $_REQUEST['notes'];
 $user = (empty($_REQUEST['user'])) ? "Unknown" : $_REQUEST['user'];
+$dbcore->output        =   (@$_REQUEST['output'] ? strtolower($_REQUEST['output']) : "json");
 $date = date("y-m-d H:i:s");
 $otherusers = (empty($_REQUEST['otherusers'])) ? "" : $_REQUEST['otherusers'];
 

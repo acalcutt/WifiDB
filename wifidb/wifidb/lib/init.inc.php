@@ -30,8 +30,6 @@ ini_set("screen.enabled", TRUE);
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 ini_set("memory_limit","2048M"); //lots of objects need lots of memory
 
-
-
 set_exception_handler('exception_handler');
 $error = 0;
 $config = array();
@@ -97,36 +95,58 @@ if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timez
     exit();
 }else
 {
-    require $config['wifidb_install'].'lib/config.inc.php' ;
-    require $config['wifidb_install'].'lib/sql.inc.php';
-    require $config['wifidb_install'].'lib/dbcore.inc.php' ;
-    require $config['wifidb_install'].'/lib/languages.inc.php' ;
-    require $config['wifidb_install'].'lib/manufactures.inc.php' ;
-    require $config['wifidb_install'].'lib/wdbmail.inc.php' ;
-    require $config['wifidb_install'].'lib/wdb_xml.inc.php' ;
-    require $config['wifidb_install'].'lib/security.inc.php';
-    require $config['wifidb_install'].'lib/MAIL5.php';
+    
+    /*
+ * Class autoloader
+ */
+    function __autoload($class)
+    {
+        if(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php')
+        {
+            return 1;
+        }elseif(@include_once $GLOBALS['config']['wifidb_tools'].'daemon/'.$class.'.inc.php')
+        {
+            return 1;
+        }elseif(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php')
+        {
+            return 1;
+        }else
+        {
+            echo "Could not load class `{$class}` from 
+            {$GLOBALS['config']['wifidb_tools']}daemon/{$class}.inc.php
+                Or
+            {$GLOBALS['config']['wifidb_install']}lib/{$class}.inc.php\r\n";
+            return 0;
+        }
+    }
+
+    #require_once $config['wifidb_install'].'lib/config.inc.php' ;
+    #require_once $config['wifidb_install'].'lib/sql.inc.php';
+    #require_once $config['wifidb_install'].'lib/dbcore.inc.php' ;
+    #require_once $config['wifidb_install'].'/lib/languages.inc.php' ;
+    require_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
+    #require_once $config['wifidb_install'].'lib/wdbmail.inc.php' ;
+    #require_once $config['wifidb_install'].'lib/wdb_xml.inc.php' ;
+    #require_once $config['wifidb_install'].'lib/security.inc.php';
     switch($GLOBALS['switches']['screen'])
     {
         case "CLI":
-            require $config['wifidb_install'].'lib/daemon.inc.php' ;
-            require $config['wifidb_tools'].'daemon/config.inc.php';
-            require $config['wifidb_tools'].'daemon/wdbcli.inc.php';
-            
+            #require_once $config['wifidb_install'].'lib/daemon.inc.php' ;
+            require_once $config['wifidb_tools'].'daemon/config.inc.php';
+            #require_once $config['wifidb_tools'].'daemon/wdbcli.inc.php';
+            #require_once($config['wifidb_install'].'/lib/import.inc.php');
+            #require_once($config['wifidb_install'].'/lib/export.inc.php');
+                    
             switch($GLOBALS['switches']['extras'])
             {
                 ####
                 case "export":
-                    require_once($config['wifidb_install'].'/lib/export.inc.php');
                     $dbcore = new export($config, $daemon_config);
                 break;
                 case "import":
-                    require_once($config['wifidb_install'].'/lib/import.inc.php');
                     $dbcore = new import($config, $daemon_config);
                 ####
                 case "daemon":
-                    require_once($config['wifidb_install'].'/lib/import.inc.php');
-                    require_once($config['wifidb_install'].'/lib/export.inc.php');
                     $dbcore = new daemon($config, $daemon_config, new languages($config['wifidb_install']));
                 break;
                 ####
@@ -135,24 +155,25 @@ if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timez
                 break;
 
                 default:
-                    die("Uknown Switch Modifier Set.");
                     break;
             }
-            $dbcore->mail   = new MAIL5();
-            $dbcore->cli = 1;
+            $dbcore->wdbmail    = new wdbmail($dbcore);
+            $dbcore->cli        = 1;
             break;
         ################
         case "HTML":
-            if($GLOBALS['switches']['extras'] !== "API")
+            switch($GLOBALS['switches']['extras'])
             {
-                require $config['wifidb_install'].'lib/frontend.inc.php';
-                $dbcore         = new frontend($config, new languages($config['wifidb_install']));
-                $dbcore->mail   = new MAIL5();
-                $dbcore->sec->LoginCheck();
-            }else
-            {
-                require $config['wifidb_install'].'lib/api.inc.php';
-                $dbcore = new api($config, new languages($config['wifidb_install']));
+                case "API":
+                    #require $config['wifidb_install'].'lib/api.inc.php';
+                    $dbcore = new api($config, new languages($config['wifidb_install']));
+                    break;
+                default:
+                    #require $config['wifidb_install'].'lib/frontend.inc.php';
+                    $dbcore             = new frontend($config, new languages($config['wifidb_install']));
+                    $dbcore->wdbmail    = new wdbmail($dbcore);
+                    $dbcore->sec->LoginCheck();
+                    break;
             }
             $dbcore->cli = 0;
             break;

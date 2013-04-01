@@ -56,7 +56,7 @@ switch($func)
                 );
                 break;
 
-                case"u_fail":
+                case "u_fail":
                     $message = array('Username does not exsist.');
                 break;
 
@@ -125,19 +125,18 @@ switch($func)
 		{
                     $dbcore->smarty->assign('wifidb_create_message', 'Passwords did not match');
                     $dbcore->smarty->display('user_create.tpl');
-                    exit();
 		}else
 		{
-                    $create = $dbcore->sec->create_user($username, $password, $email, $user_array=array(0,0,0,1), $seed);
-                    switch($create)
+                    list($ret, $message) = $dbcore->sec->create_user($username, $password, $email, $user_array=array(0,0,0,1), $seed);
+                    switch($ret)
                     {
                         case 1:
+                            #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
                             if($dbcore->sec->email_validation)
                             {
-                                $message = "User Created! You should be getting a Validation email soon, click on the link to confirm your account and to start you uploads!.";
-                                if($dbcore->mail->mail_validation($email, $username))
+                                if($dbcore->wdbmail->mail_validation($email, $username))
                                 {
-                                    $message = "Email Validation has been enabled, check your email for a link and activate your account first.";
+                                    $message = "User Created! You should be getting a Validation email soon, click on the link to confirm your account and to start you uploads!.";
                                 }else
                                 {
                                     $message = "Email Validation has been enabled, but failed to send the email. Contact the Admins for help.";
@@ -148,38 +147,12 @@ switch($func)
                             }
                             $dbcore->smarty->assign('wifidb_create_message', $message);
                             $dbcore->smarty->display('login_user.tpl');
-                            exit();
                         break;
 
-                        case is_array($create):
-                                list($er, $msg) = $create;
-                                switch($er)
-                                {
-                                    case "create_tb":
-                                        $message = $msg.'<BR>This is a serious error, contact Phil on the <a href="http://forum.techidiots.net/">forums</a><br>MySQL Error Message: '.$msg."<br><br><h1>D'oh!</h1>";
-                                    break;
-
-                                    case "dup_u":
-                                        $message = '<h2><font color="red">There is a user already with that username or email address. Pick another one.</font></h2><BR>';
-                                    break;
-
-                                    case "err_email":
-                                        $message = '<h2><font color="red">The email address you provided is not valid. Please enter a real email.</font></h2><BR>';
-                                    break;
-
-                                    case "un_err":
-                                        $message = '<h2><font color="red">The username you provided is blank. How are you supposed to login?</font></h2><BR>';
-                                    break;
-
-                                    case "pw_err":
-                                        $message = '<h2><font color="red">The password you provided is blank. How are you supposed to login?</font></h2><BR>';
-                                    break;
-                                }
-                                $dbcore->smarty->assign('wifidb_create_message', $message);
-                                $dbcore->smarty->assign('wifidb_create_message', $username);
-                                $dbcore->smarty->assign('wifidb_create_message', $email);
-                                $dbcore->smarty->display('user_create.tpl');
-                                exit();
+                        case 0:
+                            #Failed to create a user for some reason, tell them why.
+                            $dbcore->smarty->assign('wifidb_create_message', $message);
+                            $dbcore->smarty->display('user_create.tpl');
                         break;
                     }
 		}

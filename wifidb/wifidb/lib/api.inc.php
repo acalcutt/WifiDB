@@ -433,8 +433,7 @@ class api extends dbcore
             $this->mesg = $mesg;
         }
         if(empty($this->mesg)){return array("Empty Data Set.");}
-        if($this->kill_andrew)
-        {
+        if($this->kill_andrew){
             $compile = "";
             $text = "Computer, Kill Andrew...";
             $exp = str_split($text);
@@ -444,6 +443,7 @@ class api extends dbcore
             }
             $this->mesg['secret message'] = $compile;
         }
+        
         switch(@$this->output)
         {
             case "json":

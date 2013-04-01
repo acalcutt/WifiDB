@@ -190,17 +190,7 @@ class security extends wdbmail
     }
 
     #######################################
-    function check_user_reserved($username = '')
-    {
-        if($username == ''){return -1;}
-        $reserved = explode(":", $this->reserved_users);
-        foreach($reserved as $resv)
-        {
-            if($username == $resv)
-            {return 1;}
-        }
-        return 0;
-    }
+
     
     function CreateUser($username="", $password="", $email="local@localhost.local", $user_array=array(0,0,0,1), $seed="", $validate_user_flag = 1)
     {

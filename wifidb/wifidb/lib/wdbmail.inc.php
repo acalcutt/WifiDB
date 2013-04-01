@@ -20,23 +20,25 @@ if not, write to the
 */
 
 
-class wdbmail extends dbcore
+class wdbmail
 {
-    function __construct($config)
+    function __construct($dbcore)
     {
         require_once('MAIL5.php');
-        parent::__construct($config);
+        $this->mail     =   new MAIL5();
+        $this->SMTP     =   $dbcore->smtp;
+        $this->WDBadmin =   $dbcore->WDBadmin;
     }
     
-    function mail_user($message = "", $email = 'noone@somewhere.local')
+    function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
     {
         
         ##########################
         $validatecode = $this->gen_keys(12);
         ##########################
-        if(!$this->mail->from($from))
+        if(!$this->mail->from($this->wdbadmin))
         {die("Failed to add From address\r\n");}
-        if(!$this->mail->addto($user_email))
+        if(!$this->mail->addto($Useremail))
         {die("Failed to add To address\r\n");}
 
         if(!$this->mail->subject("WiFiDB User Password Reset"))
@@ -55,7 +57,7 @@ Go here to reset it to one you choose:
         if(!$this->mail->text($contents))
         {die("Failed to add message\r\n");}
 
-        $smtp_conn = $this->mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
+        $smtp_conn = $this->mail->connect($this->smtp, 465, $sender, $sender_pass, 'tls', 10);
         if ($smtp_conn)
         {
             if($this->mail->send($smtp_conn))

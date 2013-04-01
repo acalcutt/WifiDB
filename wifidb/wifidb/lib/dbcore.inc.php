@@ -28,6 +28,7 @@ class dbcore
         $this->sql                      = new SQL($config);
         
         $this->switches                 = $GLOBALS['switches'];
+        $this->reserved_users           = $config['reserved_users'];
         $this->supported_extentions     = array('csv','db3','vsz','vs1','gpx','ns1');
         $this->login_check              = 0;
         $this->alerts_message_flag      = 0;
@@ -44,10 +45,6 @@ class dbcore
         $this->time_format              = "H:i:s";
         $this->datetime_format          = $this->date_format." ".$this->time_format;
         $this->timeout                  = $config['timeout'];
-        
-        $this->sec                      = new security($config, $this->sql,  $this->datetime_format);
-        $this->xml                      = new xml();
-        
         
         $this->TOOLS_PATH               = $config['wifidb_tools'];
         $this->pid_file_loc             = $config['pid_file_loc'];
@@ -87,6 +84,10 @@ class dbcore
             "Last_Core_Edit"            =>  "2013-Feb-19"
             );
         $this->ver_str                  = $this->ver_array['wifidb'];
+        
+        $this->sec                      = new security($this);
+        $this->xml                      = new xml();
+        
     }
 
     ##############################
@@ -349,9 +350,9 @@ class dbcore
     {
         if($this->log_level) # Check to see if logging is turned on.
         {
-            if($GLOBALS['switches']['screen'] === "CLI" && $prefix === "")
+            if($GLOBALS['switches']['screen'] === "CLI" || $prefix === "")
             {
-                $prefix = $dbcore->This_is_me;
+                $prefix = $this->This_is_me;
             }
             if($message == '')
             {
@@ -367,12 +368,17 @@ class dbcore
             
             $sql = "INSERT INTO `wifi`.`log` (`id`, `message`, `level`, `timestamp`, `daemon_pid`) VALUES (NULL, ?, ?, ?, ?)";
             $prep = $this->sql->conn->prepare($sql);
-            $prep->execute(array($message, $type, $datetime, $prefix));
-            $err = $this->sql->conn->errorCode();
-            if($err[0] != "00000")
+            $prep->bindParam(1, $message, PDO::PARAM_STR);
+            $prep->bindParam(2, $type, PDO::PARAM_STR);
+            $prep->bindParam(3, $datetime, PDO::PARAM_STR);
+            $prep->bindParam(4, $prefix, PDO::PARAM_INT);
+            $prep->execute();
+            if($this->sql->checkError())
             {
                 $this->verbosed("Error writing to the Log table 0_o", -1);
             }
+            # Done with the SQL Log, lets write to the file log now.
+            
             $filename = $this->TOOLS_PATH.'log/'.$prefix.'wifidb_'.$date.'.log'; #generate the log file name for today.
             #If it does not exist create the log file.
             if(!is_file($filename)){ fopen($filename, "w");}

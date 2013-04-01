@@ -2,88 +2,120 @@
 
 class security
 {
-    function __construct($config, $sql, $datetime_format)
+    function __construct($dbcore)
     {
-        $this->sql             = $sql;
-        $this->logged_in_flag  = 0;
-        $this->login_val       = "No Cookie";
-        $this->login_check     = 0;
-        $this->activatecode    = "";
-        $this->priv_name       = "AnonCoward";
-        $this->privs           = 0;
-        $this->username        = "AnonCoward";
-        $this->global_seed     = $config['login_seed'];
-        $this->ver             = array(
-                                        "login_check"       => "1.0",
-                                        "ValidateAPIKey"    => "1.0",
-                                    );
-        $this->datetime_format =  $datetime_format;
+        $this->sql                = $dbcore->sql;
+        $this->log_level          = 42;
+        $this->TOOLS_PATH         = $dbcore->TOOLS_PATH;
+        $this->This_is_me         = $dbcore->This_is_me;
+        $this->logged_in_flag     = 0;
+        $this->login_val          = "No Cookie";
+        $this->login_check        = 0;
+        $this->activatecode       = "";
+        $this->priv_name          = "AnonCoward";
+        $this->privs              = 0;
+        $this->username           = "AnonCoward";
+        $this->email_validation   = $dbcore->email_validation;
+        $this->reserved_users     = $dbcore->reserved_users;
+        $this->datetime_format    = $dbcore->datetime_format;
+        $this->PATH               = $dbcore->PATH;
+        $this->theme              = $dbcore->theme;
+    }
+    
+    
+    function logd($message = "", $type = "", $prefix = "")
+    {
+        return dbcore::logd($message, $type, $prefix);
+    }
+            
+    function CheckReservedUser($username = '')
+    {
+        if($username == ''){return -1;}
+        $reserved = explode(":", $this->reserved_users);
+        foreach($reserved as $resv)
+        {
+            if($username == $resv)
+            {return 1;}
+        }
+        return 0;
     }
     
         
-    function CreateUser($username="", $password="", $email="local@localhost.local", $permissions='0001', $seed="", $validate_user_flag = 1)
+    function CreateUser($username = "", $password = "", $email = "local@localhost.local")
     {
         if($username == "")
         {
-            return -1;
+            return array(0, "Username is empty.");
         }
         if($password == "")
         {
-            return -1;
+            return array(0, "Password is empty.");
         }
-        
         if($email == "local@localhost.local")
         {
-            return -1;
+            return array(0, "Email is empty.");
         }
         
-        if($seed == "")
-        {
-            $seed = $this->global_seed;
-        }
+        $password_hashed = crypt($password);
         
-        
+        $uid            = implode(str_split($this->GenerateKey(25), 5), "-");
+        $last_login     = date($this->datetime_format);
+        $last_active    = date($this->datetime_format);
+        $join_date      = date($this->datetime_format);
+        $rank           = $this->GetRanks(0);
+        $api_key        = $this->GenerateKey(64);
         #now lets start creating the users info
-        $sql = "INSERT INTO `wifi`.`users_info` (`id`, `username`, `email`, `password`, `cypher`, `uid`, `validated`, `permissions`, `last_login`, `last_active`,  `join_date`, `rank`, `api_key`)
-                                         VALUES ('',    ?,          ?,       ?,         ?,          ?,      ?,          ?,              ?,              ?,           ?,             ?       ?    )";
+        $sql = "INSERT INTO `wifi`.`users_info` (`id`, `username`, `email`, `password`, `uid`, `validated`, `permissions`, `last_login`, `last_active`,  `join_date`, `rank`, `api_key`)
+                                         VALUES ('',    ?,          ?,       ?,          ?,      0,          '0001',              ?,              ?,           ?,             ?       ?    )";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
-        $prep->bindParam(2, $email, PDO::PARAM__STR);
-        $prep->bindParam(3, $password, PDO::PARAM_STR);
-        $prep->bindParam(4, $cypher, PDO::PARAM_STR);
-        $prep->bindParam(5, $uid, PDO::PARAM_STR);
-        $prep->bindParam(6, 0, PDO::PARAM_INT);
-        $prep->bindParam(7, $permissions, PDO::PARAM_INT);
-        $prep->bindParam(8, $last_login, PDO::PARAM_STR);
-        $prep->bindParam(9, $last_active, PDO::PARAM_STR);
-        $prep->bindParam(10, $join_date, PDO::PARAM_STR);
-        $prep->bindParam(11, $rank, PDO::PARAM_STR);
-        $prep->bindParam(12, $api_key, PDO::PARAM_STR);
+        $prep->bindParam(2, $email, PDO::PARAM_STR);
+        $prep->bindParam(3, $password_hashed, PDO::PARAM_STR);
+        $prep->bindParam(4, $uid, PDO::PARAM_STR);
+        $prep->bindParam(5, $last_login, PDO::PARAM_STR);
+        $prep->bindParam(6, $last_active, PDO::PARAM_STR);
+        $prep->bindParam(7, $join_date, PDO::PARAM_STR);
+        $prep->bindParam(8, $rank, PDO::PARAM_STR);
+        $prep->bindParam(9, $api_key, PDO::PARAM_STR);
         $prep->execute();
-        $err = $this->sql->conn->errorInfo();
         
-        if($err[0] != "00000")
+        if($this->sql->checkError())
         {
-            $this->logd("Failed to create user with error: ".var_export($err, 1), "Error");
-            return -1;
+            $password = "";
+            $this->logd("Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars()), "Error");
+            #echo "Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars());
+            $message = array(0, "Failed to create user :(");
+            return $message;
+        }else
+        {
+            $this->logd("User created! $username : $email : $join_date", "Info");
+            #var_dump(get_defined_vars());
+            $message = array(1, "User created!$username : $email : $join_date", "Info");
+            return $message;
         }
-        
-        if($validate_user_flag == 1)
+    }
+    
+    function GetRanks($rank = NULL)
+    {
+        $ranks = @file($this->PATH."/themes/".$this->theme."/ranks.txt");
+        if($rank === NULL)
         {
-            #Now that the user has been created successfully, we can create the users validation key, insert it into the validation table and email it to the user.
+            return $ranks;
+        }else
+        {
+            return $ranks[$rank];
         }
         
     }
     
-    
-    function GenerateKey($len = 12)
+    function GenerateKey($len = 16)
     {
         // http://snippets.dzone.com/posts/show/3123
         $base           =   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
         $max            =   strlen($base)-1;
         $activatecode	=   '';
         mt_srand((double)microtime()*1000000);
-        while (strlen($activatecode) < $len+1)
+        while( strlen($activatecode) < $len )
         {
             $activatecode .= $base{mt_rand(0,$max)};
         }

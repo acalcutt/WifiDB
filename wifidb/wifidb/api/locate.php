@@ -25,8 +25,8 @@ $switches = array('screen'=>"HTML",'extras'=>'API');
 include('../lib/init.inc.php');
 $ver = "1.0.3";
 
-$list		=   (@$_GET['ActiveBSSIDs'] ? $_GET['ActiveBSSIDs'] : "");
-$dbcore->output =   (@$_GET['output'] ? strtolower($_GET['output']) : "raw");
+$list		=   (@$_REQUEST['ActiveBSSIDs'] ? $_REQUEST['ActiveBSSIDs'] : "");
+$dbcore->output =   (@$_REQUEST['output'] ? strtolower($_REQUEST['output']) : "json");
 if($list == ''){ die("Try feeding me some good bits."); }
 
 $listing        =   array();
@@ -38,27 +38,15 @@ foreach($lists as $key=>$item)
     $listing[$key] = array($t[1],$t[0]);
 }
 
-$listing = $dbcore->subval_sort($listing,1);
+$listings = $dbcore->subval_sort($listing,1);
 
-$dbcore->Locate($listing);
-
-if(!@count($use))
+if(!@count($dbcore->Locate($listings)))
 {
-    echo "\r\n+Import some aps";
-}else{
+    echo "Import some aps";
+}
+else
+{
     $dbcore->Output();
-    /*
-    switch($dbcore->output)
-    {
-	case "xml":
-	    echo "<xml>\r\n\t<locate>\r\n\t\t<lat>".$use['lat']."</lat>\r\n\t\t<long>".$use['long']."</long>\r\n\t\t<sats>".$use['sats']."</sats>\r\n\t\t<date>".$use['date']."</date>\r\n\t\t<time>".$use['time']."</time>\r\n\t</locate>\r\n</xml>";
-	    break;
-	default:
-	    echo $use['lat']."|".$use['long']."|".$use['sats']."|".$use['date']."|".$use['time'];
-	    break;
-    }
-     * 
-     */
 }
 
 
