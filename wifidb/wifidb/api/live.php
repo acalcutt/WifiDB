@@ -23,39 +23,39 @@ $switches = array('screen'=>"HTML",'extras'=>'API');
 include('../lib/init.inc.php');
 
 // AP Detail Variables
-$ssid   =   (@$_GET['SSID'] ? html_entity_decode($_GET['SSID'], ENT_QUOTES) : "UNAMED");
-$mac    =   (@$_GET['Mac'] ? $_GET['Mac'] : "00:00:00:00:00:00");
-$radio  =   (@$_GET['Rad'] ? $_GET['Rad'] : "802.11u");
-$sectype=   (@$_GET['SecType'] ? $_GET['SecType'] : 0);
-$chan   =   (@$_GET['Chn'] ? $_GET['Chn'] : 0);
+$ssid   =   (@$_REQUEST['SSID'] ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "UNAMED");
+$mac    =   (@$_REQUEST['Mac'] ? $_REQUEST['Mac'] : "00:00:00:00:00:00");
+$radio  =   (@$_REQUEST['Rad'] ? $_REQUEST['Rad'] : "802.11u");
+$sectype=   (@$_REQUEST['SecType'] ? $_REQUEST['SecType'] : 0);
+$chan   =   (@$_REQUEST['Chn'] ? $_REQUEST['Chn'] : 0);
 //Other AP Info
-$auth   =   (@$_GET['Auth'] ? html_entity_decode($_GET['Auth'], ENT_QUOTES) : "Open");
-$encry  =   (@$_GET['Encry'] ? html_entity_decode($_GET['Encry'], ENT_QUOTES) : "None");
-$BTx    =   (@$_GET['BTx'] ? html_entity_decode($_GET['BTx'], ENT_QUOTES) : "0.0");
-$OTx    =   (@$_GET['OTx'] ? html_entity_decode($_GET['OTx'], ENT_QUOTES) : "0.0");
-$NT     =   (@$_GET['NT'] ? $_GET['NT'] : "Unknown");
-$label  =   (@$_GET['Label'] ? html_entity_decode($_GET['Label'], ENT_QUOTES) : "No Label");
-$sig    =   (@$_GET['Sig'] ? $_GET['Sig'] : "0");
+$auth   =   (@$_REQUEST['Auth'] ? html_entity_decode($_REQUEST['Auth'], ENT_QUOTES) : "Open");
+$encry  =   (@$_REQUEST['Encry'] ? html_entity_decode($_REQUEST['Encry'], ENT_QUOTES) : "None");
+$BTx    =   (@$_REQUEST['BTx'] ? html_entity_decode($_REQUEST['BTx'], ENT_QUOTES) : "0.0");
+$OTx    =   (@$_REQUEST['OTx'] ? html_entity_decode($_REQUEST['OTx'], ENT_QUOTES) : "0.0");
+$NT     =   (@$_REQUEST['NT'] ? $_REQUEST['NT'] : "Unknown");
+$label  =   (@$_REQUEST['Label'] ? html_entity_decode($_REQUEST['Label'], ENT_QUOTES) : "No Label");
+$sig    =   (@$_REQUEST['Sig'] ? $_REQUEST['Sig'] : "0");
 
 // GPS Variables
-$lat    =   (@$_GET['Lat'] ? html_entity_decode($_GET['Lat'], ENT_QUOTES) : "N 0000.0000");
-$long   =   (@$_GET['Long'] ? html_entity_decode($_GET['Long'], ENT_QUOTES) : "E 0000.0000");
-$sats   =   (@$_GET['Sats'] ? $_GET['Sats'] : 0 );
-$hdp    =   (@$_GET['HDP'] ? $_GET['HDP'] : 0 );
-$alt    =   (@$_GET['ALT'] ? $_GET['ALT'] : 0 );
-$geo    =   (@$_GET['GEO'] ? $_GET['GEO'] : 0 );
-$kmh    =   (@$_GET['KMH'] ? $_GET['KMH'] : 0 );
-$mph    =   (@$_GET['MPH'] ? $_GET['MPH'] : 0 );
-$track  =   (@$_GET['Track'] ? $_GET['Track'] : 0 );
-$date   =   (@$_GET['Date'] ? $_GET['Date'] : date("Y-m-d") );
-$time   =   (@$_GET['Time'] ? $_GET['Time'] : date("H:i:s") );
+$lat    =   (@$_REQUEST['Lat'] ? html_entity_decode($_REQUEST['Lat'], ENT_QUOTES) : "N 0000.0000");
+$long   =   (@$_REQUEST['Long'] ? html_entity_decode($_REQUEST['Long'], ENT_QUOTES) : "E 0000.0000");
+$sats   =   (@$_REQUEST['Sats'] ? $_REQUEST['Sats'] : 0 );
+$hdp    =   (@$_REQUEST['HDP'] ? $_REQUEST['HDP'] : 0 );
+$alt    =   (@$_REQUEST['ALT'] ? $_REQUEST['ALT'] : 0 );
+$geo    =   (@$_REQUEST['GEO'] ? $_REQUEST['GEO'] : 0 );
+$kmh    =   (@$_REQUEST['KMH'] ? $_REQUEST['KMH'] : 0 );
+$mph    =   (@$_REQUEST['MPH'] ? $_REQUEST['MPH'] : 0 );
+$track  =   (@$_REQUEST['Track'] ? $_REQUEST['Track'] : 0 );
+$date   =   (@$_REQUEST['Date'] ? $_REQUEST['Date'] : date("Y-m-d") );
+$time   =   (@$_REQUEST['Time'] ? $_REQUEST['Time'] : date("H:i:s") );
 $utime = time();
 
 //Username, API Key, Session ID
-$username   =   (@$_GET['username'] ? $_GET['username'] : die("Unauthorized User.</br>Please register and get an API Key.") );
-$apikey     =   (@$_GET['apikey'] ? $_GET['apikey'] : die("API Key not supplied."));
-$session_id =   (@$_GET['SessionID'] ? $_GET['SessionID'] : "");
-$dbcore->output        =   (@$_GET['output'] ? strtolower($_GET['output']) : "json");
+$username   =   (@$_REQUEST['username'] ? $_REQUEST['username'] : die("Unauthorized User.</br>Please register and get an API Key.") );
+$apikey     =   (@$_REQUEST['apikey'] ? $_REQUEST['apikey'] : die("API Key not supplied."));
+$session_id =   (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "");
+$dbcore->output        =   (@$_REQUEST['output'] ? strtolower($_REQUEST['output']) : "json");
 if($ssid === "UNNAMED" && $mac === "00:00:00:00:00:00" && $chan === 0 && $sectype === 0)
 {
     $this->Dump("You seem to have gotten here accidently or your Access Point does not have enough unique information to be added to the database.");
