@@ -100,7 +100,7 @@ if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timez
         if(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php')
         {
             return 1;
-        }elseif(@include_once $GLOBALS['config']['wifidb_tools'].'daemon/'.$class.'.inc.php')
+        }elseif(@include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php')
         {
             return 1;
         }elseif(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php')
@@ -139,23 +139,25 @@ if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timez
                 break;
 
                 default:
+                    die("bad cli extras switch.");
                     break;
             }
-            $dbcore->cli        = 1;
+            $dbcore->cli = 1;
             break;
+        
         ################
         case "HTML":
             switch($GLOBALS['switches']['extras'])
             {
                 case "API":
-                    $dbcore     = new api($config);
+                    $dbcore = new api($config);
                     break;
+                
                 default:
-                    $dbcore     = new frontend($config);
-                    $dbcore->sec->LoginCheck();
+                    $dbcore = new frontend($config);
                     break;
             }
-            $dbcore->cli = 0;
+            $dbcore->cli    = 0;
             break;
 
         Default:

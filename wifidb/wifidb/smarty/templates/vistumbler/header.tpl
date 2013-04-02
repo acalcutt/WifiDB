@@ -1,15 +1,15 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
     <head>
+        <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
         {$wifidb_meta_header}
         {$redirect_func}
     </head>
     <body style="background-color: #145285" {$redirect_html}>
-        <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
+        {$install_header}
+        {$wifidb_announce_header}
         
-        <table style="width: 90%; " class="no_border" align="center"><tr><td><p class='annunc_text'>Well... here we go again.... -phil</p></td></tr></table>
-
         <table style="width: 90%; " class="no_border" align="center">
             <tr>
                 <td>
@@ -102,7 +102,7 @@
                                 {$wifidb_login_html|default:""}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
-                                <a class="links" href="{$wifidb_host_url}login.php?{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>
+                                <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>
                             </td>
                             <!-- ---------------------------- -->
                             <td style="width: 10px" class="cell_top_right">

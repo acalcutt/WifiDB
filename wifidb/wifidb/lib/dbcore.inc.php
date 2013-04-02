@@ -85,7 +85,7 @@ class dbcore
             );
         $this->ver_str                  = $this->ver_array['wifidb'];
         $this->This_is_me               = getmypid();
-        $this->sec                      = new security($this);
+        $this->sec                      = new security($this, $config);
         #$this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
         $this->wdbmail                  = new wdbmail($this);
@@ -99,7 +99,7 @@ class dbcore
         if (!ereg("^[^@]{1,64}@[^@]{1,255}$", $email))
         {
             // Email invalid because wrong number of characters in one section, or wrong number of @ symbols.
-            return false;
+            return 0;
         }
         // Split it into sections to make life easier
         $email_array = explode("@", $email);
@@ -108,7 +108,7 @@ class dbcore
         {
             if (!ereg("^(([A-Za-z0-9!#$%&'*+/=?^_`{|}~-][A-Za-z0-9!#$%&'*+/=?^_`{|}~\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$", $local_array[$i]))
             {
-                return false;
+                return 0;
             }
         }
         if (!ereg("^\[?[0-9\.]+\]?$", $email_array[1]))
@@ -117,17 +117,17 @@ class dbcore
             $domain_array = explode(".", $email_array[1]);
             if (sizeof($domain_array) < 2)
             {
-                return false; // Not enough parts to domain
+                return 0; // Not enough parts to domain
             }
             for ($i = 0; $i < sizeof($domain_array); $i++)
             {
                 if (!ereg("^(([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])|([A-Za-z0-9]+))$", $domain_array[$i]))
                 {
-                    return false;
+                    return 0;
                 }
             }
         }
-        return true;
+        return 1;
     }
     
     ###################################
@@ -259,6 +259,20 @@ class dbcore
         }
     }
 
+    
+    function GetRanks($rank = NULL)
+    {
+        $ranks = @file($this->PATH."/themes/".$this->theme."/ranks.txt");
+        if($rank === NULL)
+        {
+            return $ranks;
+        }else
+        {
+            return $ranks[$rank];
+        }
+        
+    }
+    
     # Formats a bit size to Bytes/kB/MB/GB/TB/PB/EB/ZB/YB
     function format_size($size, $round = 2)
     {
@@ -368,7 +382,7 @@ class dbcore
             $datetime = $date." ".$time;
             $message = $datetime."   ->    ".$message."\r\n"; #append the date and time to the log message.
             
-            $sql = "INSERT INTO `wifi`.`log` (`id`, `message`, `level`, `timestamp`, `daemon_pid`) VALUES (NULL, ?, ?, ?, ?)";
+            $sql = "INSERT INTO `wifi`.`log` (`id`, `message`, `level`, `timestamp`, `prefix`) VALUES ('', ?, ?, ?, ?)";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $message, PDO::PARAM_STR);
             $prep->bindParam(2, $type, PDO::PARAM_STR);
@@ -379,16 +393,18 @@ class dbcore
             {
                 $this->verbosed("Error writing to the Log table 0_o", -1);
             }
-            # Done with the SQL Log, lets write to the file log now.
-            
-            $filename = $this->TOOLS_PATH.'log/'.$prefix.'wifidb_'.$date.'.log'; #generate the log file name for today.
-            #If it does not exist create the log file.
-            if(!is_file($filename)){ fopen($filename, "w");}
-            
-            $filehandle = fopen($filename, "a"); # Append to the end of the log file.
-            $write_message = fwrite($filehandle, $message); # Lets write our message.
-            if(!$write_message){echo "The WiFiDB Import/Export Daemon could not write message to the file, thats not good...";} # If there was an error, lets let them know ad the console.
-            fclose($filehandle); # Now we need to close the file, otherwise we might have lock errors.
+            # Done with the SQL Log, lets write to the file log now, if we are on the CLI
+            if($this->cli)
+            {
+                $filename = $this->TOOLS_PATH.'log/'.$prefix.'wifidb_'.$date.'.log'; #generate the log file name for today.
+                #If it does not exist create the log file.
+                if(!is_file($filename)){ fopen($filename, "w");}
+
+                $filehandle = fopen($filename, "a"); # Append to the end of the log file.
+                $write_message = fwrite($filehandle, $message); # Lets write our message.
+                if(!$write_message){echo "The WiFiDB Import/Export Daemon could not write message to the file, thats not good...";} # If there was an error, lets let them know ad the console.
+                fclose($filehandle); # Now we need to close the file, otherwise we might have lock errors.
+            }
         }
     }
 

@@ -2,32 +2,94 @@
 
 class security
 {
-    function __construct($dbcore)
+    function __construct($dbcore, $config)
     {
         $this->sql                = $dbcore->sql;
+        $this->cli                = $dbcore->cli;
         $this->log_level          = 42;
-        $this->TOOLS_PATH         = $dbcore->TOOLS_PATH;
         $this->This_is_me         = $dbcore->This_is_me;
+        $this->datetime_format    = $dbcore->datetime_format;
         $this->logged_in_flag     = 0;
         $this->login_val          = "No Cookie";
         $this->login_check        = 0;
+        $this->LoginLabel         = "AnonCoward";
         $this->activatecode       = "";
         $this->priv_name          = "AnonCoward";
         $this->privs              = 0;
         $this->username           = "AnonCoward";
         $this->email_validation   = $dbcore->email_validation;
         $this->reserved_users     = $dbcore->reserved_users;
-        $this->datetime_format    = $dbcore->datetime_format;
-        $this->PATH               = $dbcore->PATH;
-        $this->theme              = $dbcore->theme;
+        $this->timeout            = $dbcore->timeout;
+        $this->config_fails       = $config['config_fails'];
     }
     
     
     function logd($message = "", $type = "", $prefix = "")
     {
-        return dbcore::logd($message, $type, $prefix);
+        return @dbcore::logd($message, $type, $prefix);
     }
-            
+    
+    function define_priv_name($member)
+    {
+        $groups = explode("," , $member);
+        foreach($groups as $group)
+        {
+            if($group == 'admins')
+            {
+                return "Administrator";
+            }elseif($group == 'devs')
+            {
+                return "Developer";
+            }elseif($group == 'mods')
+            {
+                return "Moderator";
+            }elseif($group == 'users')
+            {
+                return "User";
+            }
+        }
+    }
+    
+    // Only moved, not updated, NEED TO UPDATE!!!!!!!!!
+    // UPDATE THIS YOU LAZY BASTARD.
+    function check_privs($admin = 0)
+    {
+        if($admin == 1)
+        {
+            $cookie_seed = "@LOGGEDIN";
+            list($cookie_pass_seed, $username) = explode(':', $_COOKIE['WiFiDB_admin_login_yes']);
+        }else
+        {
+            $cookie_seed = "@LOGGEDIN!";
+            list($cookie_pass_seed, $username) = explode(':', $_COOKIE['WiFiDB_login_yes']);
+        }
+        $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $result = $this->sql->conn->prepare($sql0);
+        $result->bindParam(1 , $username);
+        $newArray = $result->fetch(2);
+        $table_pass = crypt($newArray['password']);
+        
+        if($table_pass == $cookie_pass_seed)
+        {
+            $groups = array(3=>$newArray['admins'],2=>$newArray['devs'],1=>$newArray['mods'],0=>$newArray['users']);
+            $this->privs = implode("",$groups);
+            $this->privs+0;
+#		echo $privs;
+            if($this->privs >= 1000)
+                {$this->priv_name = "Administrator";}
+            elseif($this->privs >= 100)
+                {$this->priv_name = "Developer";}
+            elseif($this->privs >= 10)
+                {$this->priv_name = "Moderator";}
+            else
+                {$this->priv_name = "User";}
+        }
+        else
+        {
+            $this->check_error = "Wrong pass or no Cookie, go get one.";
+        }
+    }
+    
     function CheckReservedUser($username = '')
     {
         if($username == ''){return -1;}
@@ -39,74 +101,61 @@ class security
         }
         return 0;
     }
-    
         
     function CreateUser($username = "", $password = "", $email = "local@localhost.local")
     {
         if($username == "")
         {
-            return array(0, "Username is empty.");
+            $ret = array(0, "Username is empty.");
+            return $ret;
         }
         if($password == "")
         {
-            return array(0, "Password is empty.");
+            $ret = array(0, "Password is empty.");
+            return $ret;
         }
         if($email == "local@localhost.local")
         {
-            return array(0, "Email is empty.");
+            $ret = array(0, "Email is empty.");
+            return $ret;
         }
+        $salt               = $this->GenerateKey(29);
+        $password_hashed    = crypt($password, '$2x$07$'.$salt.'$');
+        $uid                = implode(str_split($this->GenerateKey(25), 5), "-");
+        $join_date          = date($this->datetime_format);
+        $api_key            = $this->GenerateKey(64);
         
-        $password_hashed = crypt($password);
-        
-        $uid            = implode(str_split($this->GenerateKey(25), 5), "-");
-        $last_login     = date($this->datetime_format);
-        $last_active    = date($this->datetime_format);
-        $join_date      = date($this->datetime_format);
-        $rank           = $this->GetRanks(0);
-        $api_key        = $this->GenerateKey(64);
         #now lets start creating the users info
-        $sql = "INSERT INTO `wifi`.`users_info` (`id`, `username`, `email`, `password`, `uid`, `validated`, `permissions`, `last_login`, `last_active`,  `join_date`, `rank`, `api_key`)
-                                         VALUES ('',    ?,          ?,       ?,          ?,      0,          '0001',              ?,              ?,           ?,             ?       ?    )";
+        $sql = "INSERT INTO `wifi`.`user_info` (`id`, `username`, `password`, `salt`, `uid`, `validated`, 
+                                        `locked`, `permissions`, `email`, `join_date`, `apikey`) 
+                                        VALUES (NULL, ?, ?, ?, ?, ?, '0', '0001', ?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
-        $prep->bindParam(2, $email, PDO::PARAM_STR);
-        $prep->bindParam(3, $password_hashed, PDO::PARAM_STR);
+        $prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
+        $prep->bindParam(3, $salt, PDO::PARAM_STR);
         $prep->bindParam(4, $uid, PDO::PARAM_STR);
-        $prep->bindParam(5, $last_login, PDO::PARAM_STR);
-        $prep->bindParam(6, $last_active, PDO::PARAM_STR);
+        $prep->bindParam(5, $this->email_validation, PDO::PARAM_STR);
+        $prep->bindParam(6, $email, PDO::PARAM_STR);
         $prep->bindParam(7, $join_date, PDO::PARAM_STR);
-        $prep->bindParam(8, $rank, PDO::PARAM_STR);
-        $prep->bindParam(9, $api_key, PDO::PARAM_STR);
+        $prep->bindParam(8, $api_key, PDO::PARAM_STR);
         $prep->execute();
         
-        if($this->sql->checkError())
+        if($this->sql->checkError() !== 0)
         {
             $password = "";
             $this->logd("Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars()), "Error");
-            #echo "Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars());
+            echo "Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars());
             $message = array(0, "Failed to create user :(");
             return $message;
         }else
         {
             $this->logd("User created! $username : $email : $join_date", "Info");
             #var_dump(get_defined_vars());
-            $message = array(1, "User created!$username : $email : $join_date", "Info");
+            $message = array(1, "User created!$username : $email : $join_date");
             return $message;
         }
     }
     
-    function GetRanks($rank = NULL)
-    {
-        $ranks = @file($this->PATH."/themes/".$this->theme."/ranks.txt");
-        if($rank === NULL)
-        {
-            return $ranks;
-        }else
-        {
-            return $ranks[$rank];
-        }
-        
-    }
     
     function GenerateKey($len = 16)
     {
@@ -115,90 +164,98 @@ class security
         $max            =   strlen($base)-1;
         $activatecode	=   '';
         mt_srand((double)microtime()*1000000);
-        while( strlen($activatecode) < $len )
-        {
-            $activatecode .= $base{mt_rand(0,$max)};
-        }
+        while( strlen($activatecode) < $len ){$activatecode .= $base{mt_rand(0,$max)};}
         return $activatecode;
     }
     
-    
-    function Login($username = '', $password = '', $seed = '', $admin = 0, $no_save_login = 0)
+    function Login($username = '', $password = '', $Bender_remember_me = 0, $authoritah = 0 )
     {
-        if($seed === ''){$seed = $this->sec->seed;}
-        if($admin === 1)
-        {
-            $cookie_name = 'WiFiDB_admin_login_yes';
-            $cookie_seed = "@LOGGEDIN";
-
-            if($this->URL_PATH != '')
-            {$path  = '/'.$this->URL_PATH.'/cp/admin/';}
-            else{$path  = '/cp/admin/';}
-            $cookie_timeout = time()-3600;
-        }else
-        {
-            $cookie_name = 'WiFiDB_login_yes';
-            $cookie_seed = "@LOGGEDIN!";
-
-            if($this->URL_PATH != '')
-            {$path  = '/'.$this->URL_PATH.'/';}
-            else{$path  = '/';}
-        }
-        $date = date($this->datetime_format);
-        $pass_seed = md5($password.$seed); // TODO: Needs to be change to BCRYPT
-        $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
-    #   echo $sql0;
+        $sql0 = "SELECT `id`, `validated`, `locked`, `login_fails`, `username`, `password`, `salt` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1 , $username);
         $result->execute();
         
         $newArray = $result->fetch(2);
-        if($newArray['validated'] === 1)
+        if($newArray['validated'] == "1")
         {
-            $this->sec->login_val = 'validate';
-            return -1;
+            $this->login_val = 'validate';
+            $this->login_check = 0;
+            return 0;
         }
-        if($newArray['login_fails'] === $this->config_fails || $newArray['locked'] === 1)
+        if($newArray['locked'] == "1")
         {
-            $this->sec->login_val = 'locked';
-            return -1;
+            $this->login_val = 'locked';
+            $this->login_check = 0;
+            return 0;
         }
         $id = $newArray['id'];
         $db_pass = $newArray['password'];
         $fails = $newArray['login_fails'];
         $username_db = $newArray['username'];
-        if($db_pass === $pass_seed)
+        
+        $pass_hash = crypt($password, '$2x$07$'.$newArray['salt'].'$');
+        if($db_pass === $pass_hash)
         {
-            if($no_save_login === 1)
+            if(!$this->cli)
             {
-                $cookie_timeout = time()-3600;
-            }else
-            {
-                $cookie_timeout = time()+$GLOBALS['timeout'];
-            }
-            if(setcookie($cookie_name, md5($pass_seed.$cookie_seed).":".$username, $cookie_timeout, $path)) // TODO: needs to be changed to BCRYPT
-            {
-                $sql0 = "SELECT `last_active` FROM `wifi`.`user_info` WHERE `id` = :id LIMIT 1";
-                $result = $this->sql->conn->prepare($sql0);
-                $result->bindParam(":id", $id);
-                $result->execute();
-                
-                $array = $result->fetch(2);
-                $last_active = $array['last_active'];
-                $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_active` = '$last_active', `last_login` = '$date' WHERE `$user_logins_table`.`id` = '$id' LIMIT 1";
-                if($this->sql->conn->query($sql1))
+                if(!$Bender_remember_me)
                 {
-                    $this->sec->login_val = "good";
-                    return 1;
+                    $cookie_timeout = time();
                 }else
                 {
-                    $this->sec->login_val = "u_u_r_fail";
-                    return -1;
+                    $cookie_timeout = time()+$this->timeout;
                 }
+                if($authoritah === 1)
+                {
+                    $cookie_name = 'WiFiDB_admin_login_yes';
+                    $cookie_seed = "@LOGGEDIN";
+
+                    if($this->URL_PATH != '')
+                    {$path  = '/'.$this->URL_PATH.'/cp/admin/';}
+                    else{$path  = '/cp/admin/';}
+                    $cookie_timeout = time()-3600;
+                }else
+                {
+                    $cookie_name = 'WiFiDB_login_yes';
+                    $cookie_seed = "@LOGGEDIN!";
+
+                    if($this->URL_PATH != '')
+                    {$path  = '/'.$this->URL_PATH.'/';}
+                    else{$path  = '/';}
+                }
+
+                if(!setcookie($cookie_name, crypt($pass_hash, '$2x$07$'.$this->GenerateKey(22).'$').":".$username, $cookie_timeout, $path))
+                {
+                    $this->login_val = "Bad Cookie";
+                    $this->login_check = 0;
+                    return 0;
+                }
+            }
+            $sql0 = "SELECT `last_active` FROM `wifi`.`user_info` WHERE `id` = ? LIMIT 1";
+            $result = $this->sql->conn->prepare($sql0);
+            $result->bindParam(1, $id, PDO::PARAM_INT);
+            $result->execute();
+            $array = $result->fetch(2);
+            
+            $date = date($this->datetime_format);
+            $last_active = $array['last_active'];
+            $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_active` = ?, `last_login` = ? WHERE `id` = ? LIMIT 1";
+            $prep = $this->sql->conn->prepare($sql1);
+            $prep->bindParam(1, $last_active, PDO::PARAM_STR);
+            $prep->bindParam(2, $date, PDO::PARAM_STR);
+            $prep->bindParam(3, $id, PDO::PARAM_INT);
+            $prep->execute();
+
+            if(!$this->sql->checkError())
+            {
+                $this->login_val = "good";
+                $this->login_check = 1;
+                return 1;
             }else
             {
-                $this->sec->login_val = "cookie_fail";
-                return -1;
+                $this->login_val = "u_u_r_fail";
+                $this->login_check = 0;
+                return 0;
             }
         }else
         {
@@ -206,32 +263,72 @@ class security
             {
                 $fails++;
                 $to_go = $this->config_fails - $fails;
-            #   echo $fails.' - '.$this->config_fails;
                 if($fails >= $this->config_fails)
                 {
                     $sql1 = "UPDATE `wifi`.`user_info` SET `locked` = '1' WHERE `id` = ? LIMIT 1";
                     $prepare = $this->sql->conn->prepare($sql1);
-                    $prepare->bindParam(1, $fails);
-                    $prepare->execite();
-                    $this->sec->login_val = "locked";
-                    return -1;
+                    $prepare->bindParam(1, $id);
+                    $prepare->execute();
+                    $this->login_val = "locked";
+                    $this->login_check = 0;
+                    return 0;
                 }else
                 {
-                    $sql1 = "UPDATE `wifi`.`user_info` = ? WHERE `id` = ? LIMIT 1";
+                    $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = ? WHERE `id` = ? LIMIT 1";
                     $prepare = $this->sql->conn->prepare($sql1);
                     $prepare->bindParam(1, $fails);
                     $prepare->bindParam(2, $id);
-                    $prepare->execite();
-                    $this->sec->login_val = array("p_fail", $to_go);
-                    return -2;
+                    $prepare->execute();
+                    $this->login_val = array("p_fail", $to_go);
+                    $this->login_check = 0;
+                    return 0;
                 }
             }else
             {
-                $this->sec->login_val = "u_fail";
-                return -1;
+                $this->login_val = "u_fail";
+                $this->login_check = 0;
+                return 0;
             }
         }
-        return 0;
+    }
+    
+    function APILoginCheck($username = '', $hash = '', $salt = '',  $admin = 0)
+    {
+        if($username != '')
+        {
+        #   echo $username;
+            $sql0 = "SELECT * FROM `wifi`.`user_login_hash` WHERE `username` = ? LIMIT 1";
+            $result = $this->sql->conn->prepare($sql0);
+            $result->bindParam(1, $username, PDO::PARAM_STR);
+            $result->execute();
+            $newArray = $result->fetch(2);
+            
+            $db_pass = $newArray['password'];
+            if(crypt($db_pass, '$2x$07$'.$salt.'$') === $hash)
+            {
+                $this->privs = $this->check_privs();
+                $this->logged_in_flag = 1;
+                $this->LoginLabel = $newArray['username'];
+                $this->login_val = $newArray['username'];
+                $this->username = $newArray['username_db'];
+                $this->last_login = $newArray['last_login'];
+                $this->login_check = 1;
+                return 1;
+            }else
+            {
+                $this->logged_in_flag = 0;
+                $this->LoginLabel = "";
+                $this->login_val = "Bad Cookie Password";
+                $this->login_check = 0;
+                return -1;
+            }
+        }else
+        {
+            $this->LoginLabel = "";
+            $this->login_val = "No Cookie";
+            $this->login_check = 0;
+            return -1;
+        }
     }
     
     function LoginCheck($admin = 0)
@@ -248,8 +345,8 @@ class security
         
         if($admin && !@isset($_COOKIE[$cookie_name]))
         {
-            $this->sec->login_val = "No Cookie";
-            $this->sec->login_check = 0;
+            $this->login_val = "No Cookie";
+            $this->login_check = 0;
             return -1;
         }
         if(@isset($_COOKIE[$cookie_name]))
@@ -258,14 +355,14 @@ class security
             if($username != '')
             {
             #   echo $username;
-                $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ':username' LIMIT 1";
+                $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
                 $result = $this->sql->conn->prepare($sql0);
-                $result->bindParam(':username', $username, 2);
+                $result->bindParam(1, $username, PDO::PARAM_STR);
                 $result->execute();
                 $newArray = $result->fetch(2);
                 #var_dump($newArray);
                 $db_pass = $newArray['password'];
-                if(md5($db_pass.$cookie_seed) === $cookie_pass_seed)
+                if(crypt($db_pass, '$2x$07$'.$newArray['salt'].'$') === $cookie_pass_seed)
                 {
                     $this->privs = $this->check_privs();
                     $this->logged_in_flag = 1;
@@ -297,6 +394,24 @@ class security
             $this->login_check = 0;
             return -1;
         }
+    }
+    
+    function UnlockUser($id)
+    {
+        if($id === 0)
+        {
+            return 0;
+        }
+        $sql = "UPDATE `wifi`.`user_info` SET `locked` = '0', `login_fails` = '0' WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $id, PDO::PARAM_INT);
+        $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->logd("Error Unlocking user id: $id ". var_export($this->sql->conn->errorInfo(), 1), "error");
+            return 0;
+        }
+        return 1;
     }
     
  /**

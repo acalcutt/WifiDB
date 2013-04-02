@@ -363,7 +363,7 @@ class api extends dbcore
             $sig = $data['sig']."-".$this->sql->conn->lastInsertId();
             $date_time = $data['date']." ".$data['time'];
             $sql = "INSERT INTO  `wifi`.`live_aps` ( `id`, `ssid`, `mac`,  `chan`, `radio`, `auth`, `encry`, `sectype`,
-                `BTx`, `OTx`, `NT`, `label`, `sig`, `username`, `LA`, `lat`, `long`, `session_id`)
+                `BTx`, `OTx`, `NT`, `label`, `sig`, `username`, `FA`, `LA`, `lat`, `long`, `session_id`)
                                             VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) ";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $data['ssid'], PDO::PARAM_STR);
@@ -380,9 +380,10 @@ class api extends dbcore
             $prep->bindParam(12, $sig, PDO::PARAM_STR);
             $prep->bindParam(13, $data['username'], PDO::PARAM_STR);
             $prep->bindParam(14, $date_time, PDO::PARAM_STR);
-            $prep->bindParam(15, $data['lat'], PDO::PARAM_STR);
-            $prep->bindParam(16, $data['long'], PDO::PARAM_STR);
-            $prep->bindParam(17, $data['session_id'], PDO::PARAM_STR);
+            $prep->bindParam(15, $date_time, PDO::PARAM_STR);
+            $prep->bindParam(16, $data['lat'], PDO::PARAM_STR);
+            $prep->bindParam(17, $data['long'], PDO::PARAM_STR);
+            $prep->bindParam(18, $data['session_id'], PDO::PARAM_STR);
             $prep->execute();
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")

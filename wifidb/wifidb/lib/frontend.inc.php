@@ -28,7 +28,7 @@ class frontend extends dbcore
     #===========================#
     #   __construct (default)   #
     #===========================#
-    function __construct($config, $lang_obj)
+    function __construct($config)
     {
         parent::__construct($config);
         if($GLOBALS['switches']['extras'] != "API")
@@ -57,29 +57,16 @@ class frontend extends dbcore
             $this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
             
             $this->smarty->assign('critical_error_message', '');
-            if($this->find_alert_message())
-            {
-                $this->smarty->assign('wifidb_alerts_message', '
-<table style="width: 90%;" class="no_border" align="center">
-    <tr>
-        <td>
-            <p class="annunc_text">
-            '.$this->alerts_message.'
-            </p>
-        </td>
-    </tr>
-</table>');
-            }else
-            {
-                $this->smarty->assign('wifidb_alerts_message', '');
-            }
-            require_once(WWW_DIR."lib/header_footer.inc.php");
+            
+            $this->GetAnnouncement();
+            
+            $this->smarty->assign("redirect_func", "");
+            $this->smarty->assign("redirect_html", "");
+            $this->sec->LoginCheck();
+            $this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
             $this->htmlheader();
             $this->htmlfooter();
-            $this->smarty->assign('wifidb_login_label', $this->LoginLabel);
-            
         }
-        $this->lang                     =   $lang_obj;
         $this->ver_array['Frontend']    =   array(
                                                     "AllUsers"       =>  "1.0",
                                                     "AllUsersAP"     =>  "1.0",
@@ -91,10 +78,23 @@ class frontend extends dbcore
                                                     "UserLists"      =>  "1.0"
                                                 );
     }
-
+    
+    function GetAnnouncement()
+    {
+        $result = $this->sql->conn->query("SELECT * FROM `wifi`.`annunc` WHERE `set` = 1");
+        if(!$this->sql->checkError())
+        {
+            $this->smarty->assign('wifidb_announce_header', '');
+            return 0;
+        }
+        $array = $result->fetch(1);
+        $this->smarty->assign("wifidb_announce_header", '<table style="width: 90%; " class="no_border" align="center"><tr><td><p class="annunc_text">'.$array['message'].'</p></td></tr></table>');
+        return 1;
+    }
+    
     function htmlheader()
     {
-        if(@WIFIDB_INSTALL_FLAG != "installing" && $this->logged_in_flag)
+        if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->logged_in_flag)
         {
             $login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a><font size="1"> (Last Logon: '.$this->sec->last_login.')</font>';
         }else

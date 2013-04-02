@@ -19,12 +19,10 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-
-class daemon extends dbcore
+class daemon extends wdbcli
 {
-    public function __construct($config, $daemon_config, $lang_obj)
+    public function __construct($config, $daemon_config)
     {
-        $this->config               = $daemon_config;
         if($this->config['colors_setting'] == 0 or PHP_OS == "WINNT")
         {
             $this->colors = array(
@@ -46,12 +44,10 @@ class daemon extends dbcore
         }
         parent::__construct($config);
         
-        $this->lang                 = $lang_obj;
-        $this->export               = new export($config, $daemon_config, $lang_obj, $this->colors);
-        $this->import               = new import($config, $daemon_config, $lang_obj, $this->export, $this->colors);
+        $this->export               = new export($config, $daemon_config);
+        $this->import               = new import($config, $daemon_config);
         
         $this->convert_extentions   = array('csv','db3','vsz');
-        $this->This_is_me           =  getmypid();
         $this->ver_array['Daemon']  = array(
                                     "last_edit"             =>  "2013-Jan-18",
                                     "import_vs1"            =>	"3.0",#
