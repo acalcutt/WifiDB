@@ -2,7 +2,7 @@
 
 class security
 {
-    private $hashed_pass;
+    #private $pass_hash;
     public  $username;
     function __construct($dbcore, $config)
     {
@@ -23,7 +23,7 @@ class security
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
-        $this->hashed_pass        = "";
+        $this->pass_hash        = "";
     }
     
     
@@ -194,7 +194,7 @@ class security
         $id = $newArray['id'];
         $db_pass = $newArray['password'];
         $fails = $newArray['login_fails'];
-        $username_db = $newArray['username'];
+        $this->username = $newArray['username'];
         
         $pass_hash = crypt($password, '$2x$07$'.$newArray['salt'].'$');
         if($db_pass === $pass_hash)
@@ -228,36 +228,36 @@ class security
                     else{$path  = '/';}
                 }
 
-                if(!setcookie($cookie_name, crypt($pass_hash, '$2x$07$'.$salt.'$').":".$this->username, $cookie_timeout, $path))
+                if(!setcookie($cookie_name, crypt($this->GenerateKey(64), '$2x$07$'.$salt.'$').":".$this->username, $cookie_timeout, $path))
                 {
                     $this->login_val = "Bad Cookie";
                     $this->login_check = 0;
                     return 0;
                 }
-            }else
-            {
-                $pass_hash = crypt($this->GenerateKey(64), '$2x$07$'.$salt.'$');
-                $sql = "INSERT INTO `wifi`.`user_login_hashes` (`id`, `username`, `hash`, `salt`, `utime`) VALUES ('', ?, ?, ?, ?)";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $this->username, PDO::PARAM_STR);
-                $prep->bindParam(2, $pass_hash, PDO::PARAM_STR);
-                $prep->bindParam(3, $salt, PDO::PARAM_STR);
-                $prep->bindParam(4, time()+$this->timeout, PDO::PARAM_INT);
-                $prep->execute();
-                if($this->sql->checkError())
-                {
-                    $this->login_val    = "Failed to set API login hash to table.";
-                    $this->login_check  = 0;
-                    return 0;
-                }
             }
+            $utime = time()+$this->timeout;
+            $this->pass_hash = crypt($this->GenerateKey(64), '$2x$07$'.$salt.'$');
+            $sql = "INSERT INTO `wifi`.`user_login_hashes` (`id`, `username`, `hash`, `salt`, `utime`) VALUES ('', ?, ?, ?, ?)";
+            $prep = $this->sql->conn->prepare($sql);
+            $prep->bindParam(1, $this->username, PDO::PARAM_STR);
+            $prep->bindParam(2, $this->pass_hash, PDO::PARAM_STR);
+            $prep->bindParam(3, $salt, PDO::PARAM_STR);
+            $prep->bindParam(4, $utime, PDO::PARAM_INT);
+            $prep->execute();
+            if($this->sql->checkError())
+            {
+                $this->login_val    = "Failed to set API login hash to table.";
+                $this->login_check  = 0;
+                return 0;
+            }
+            
             $date = date($this->datetime_format);
             $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
             $prep = $this->sql->conn->prepare($sql1);
             $prep->bindParam(1, $date, PDO::PARAM_STR);
             $prep->bindParam(2, $id, PDO::PARAM_INT);
             $prep->execute();
-
+            
             if(!$this->sql->checkError())
             {
                 $this->login_val = "good";
@@ -271,7 +271,7 @@ class security
             }
         }else
         {
-            if($username_db != '')
+            if($this->username != '' || $this->username != "AnonCoward" || $this->username != "unknown")
             {
                 $fails++;
                 $to_go = $this->config_fails - $fails;
@@ -304,7 +304,7 @@ class security
         }
     }
     
-    function APILoginCheck($username = '', $hash = '', $salt = '',  $admin = 0)
+    function APILoginCheck($username = '', $hash = '', $salt = '', $authoritah = 0)
     {
         # hash is the hashed password + salt from the API.
         # salt is the salt that the API used.
@@ -316,9 +316,10 @@ class security
             $result->bindParam(1, $username, PDO::PARAM_STR);
             $result->execute();
             $newArray = $result->fetch(2);            
-            $db_pass = $newArray['password'];
-            
-            if(crypt($db_pass, '$2x$07$'.$salt.'$') === $hash)
+            $db_pass = $newArray['hash'];
+            $salt = $newArray['salt'];
+            var_dump($newArray);
+            if(crypt($hash, '$2x$07$'.$salt.'$') === $db_pass)
             {
                 $this->privs = $this->check_privs();
                 $this->logged_in_flag = 1;
