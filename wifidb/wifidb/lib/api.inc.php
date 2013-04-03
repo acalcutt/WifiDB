@@ -23,11 +23,24 @@ class api extends dbcore
     function __construct($config)
     {
         parent::__construct($config);
-        $this->kill_andrew  = 1;
         $this->startdate    = "2011-Apr-14";
         $this->lastedit     = "2013-Apr-01";
         $this->vernum       = "1.0";
         $this->Author       = "Phil Ferland";
+        $this->contact      = "pferland@randomintervals.com";
+        $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");
+        $this->username     = (@$_REQUEST['username']  ? $_REQUEST['username'] : "" );
+        $this->apikey       = (@$_REQUEST['apikey']    ? $_REQUEST['apikey'] : "");
+        $this->session_id   = (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "");
+        $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");        
+        //Lets see if we can find a user with this name.
+        //If so, lets check to see if the API key they provided is correct.
+        $this->use_keys = 0; // DEV USE ONLY
+        if($this->use_keys)
+        {
+            $key_result = $this->sec->ValidateAPIKey();
+            if(!$key_result[0]){ $this->Output($key_result[1]); }
+        }
     }
     
     public function GeoNames($lat, $long)
@@ -41,7 +54,7 @@ class api extends dbcore
         $lat_low = ($lat-0.01)."";
         $lat_high = ($lat+0.01)."";
         $long_sql = $long."%";
-        $sql = "select `geonameid`, `country code`, `admin1 code`, `admin2 code`, `asciiname` from wifi.geonames 
+        $sql = "select `geonameid`, `country code`, `admin1 code`, `admin2 code`, `asciiname` from `geonames` 
             where `latitude` >= ? AND `latitude` <= ? AND `longitude` LIKE ?";
         $result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $lat_low);
@@ -398,37 +411,58 @@ class api extends dbcore
         return 1;
     }
     
-    public function Locate($list = array())
+    public function Locate()
     {
-        $sql    =   "SELECT `lat`, `long` FROM `wifi`.`wifi_pointers` WHERE `mac` LIKE ':mac' LIMIT 1";
-        $result =   $this->sql->conn->prepare($sql);
+        $listing        =   array();
+        $lists          =   explode("-", $this->LocateList);
+
+        foreach($lists as $key=>$item)
+        {
+            $t = explode("|", $item);
+            $listing[$key] = array($t[1],$t[0]);
+        }
+
+        $listings = $this->subval_sort($listing, 0);
+        
         $pre_sat = 0;
         $use = array();
-        foreach($list as $macandsig)
+        foreach($listings as $macandsig)
         {
-            $mac    =   str_replace(":" , "" , $macandsig[1]);
-            $result->execute(array(":mac"=>$mac));
-            $err = $this->sql->conn->errorCode();
-            if($err !== "00000")
-            {
-                $this->logd("Error Selecting AP Data.".  var_export($this->sql->conn->errorInfo(), 1));
-                $this->Output(array("Error Selecting AP Data.".  var_export($this->sql->conn->errorInfo(), 1)));
-                
-            }
+            $sql    =   "SELECT `signals` FROM `wifi`.`wifi_pointers` WHERE `mac` LIKE ? LIMIT 1";
+            $result =   $this->sql->conn->prepare($sql);
+            $result->bindParam(1, $macandsig[1]);
+            $result->execute();
+            $this->sql->checkError();
+            
             $array  =   $result->fetch(1);
-            if($array['mac'] === ''){continue;}
-            if($array['long'] === "E 0.0000" || $array['long'] === "E 0000.0000"){continue;}
-            if($array['sats'] > $pre_sat)
+            if($array['signals'] == ""){continue;}
+            $sig_exp = explode("-", $array['signals']);
+            foreach($sig_exp as $exp)
+            {
+                $ids_exp = explode(",", $exp);
+                $gps_id = $ids_exp[0];
+
+                $sql = "SELECT `lat`, `long`, `sats`, `date`, `time` 
+                        FROM  `wifi`.`wifi_gps` WHERE `id` = '$gps_id' ";
+                
+                $result = $this->sql->conn->query($sql);
+                $this->sql->checkError();
+
+                $gpsarray = $result->fetch(2);
+                if($gpsarray['long'] == "E 0.0000" || $gpsarray['long'] == "E 0000.0000" || $gpsarray['long'] == ""){continue;}
+                break;
+            }
+            if($gpsarray['sats'] >= $pre_sat)
             {
                 $use = array(
-                    'lat'	=> $array['lat'],
-                    'long'	=> $array['long'],
-                    'date'	=> $array['date'],
-                    'time'	=> $array['time'],
-                    'sats'	=> $array['sats']
+                    'lat'	=> $gpsarray['lat'],
+                    'long'	=> $gpsarray['long'],
+                    'date'	=> $gpsarray['date'],
+                    'time'	=> $gpsarray['time'],
+                    'sats'	=> $gpsarray['sats']
                     );
             }
-            $pre_sat	=   $array['sats'];
+            $pre_sat	=   $gpsarray['sats']+0;
         }
         $this->mesg = $use;
         return $use;

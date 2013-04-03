@@ -22,12 +22,8 @@ global $switches;
 $switches = array('screen'=>"HTML",'extras'=>'API');
 include('../lib/init.inc.php');
 
-$out		=   (@$_REQUEST['output'] ? $_REQUEST['output'] : "json");
 $lat		=   (@$_REQUEST['lat'] ? $_REQUEST['lat'] : 0);
 $long		=   (@$_REQUEST['long'] ? $_REQUEST['long'] : 0);
-$username       =   (@$_REQUEST['username'] ? $_REQUEST['username'] : "" );
-$apikey         =   (@$_REQUEST['apikey'] ? $_REQUEST['apikey'] : "");
-$dbcore->output = $out;
 
 if($lat == "" || $long == "")
 {
@@ -35,14 +31,7 @@ if($lat == "" || $long == "")
     $dbcore->Output();
 }
 
-$result = $dbcore->sec->ValidateAPIKey($username, $apikey);
-if(!$result[0])
-{
-    $dbcore->Output($result[1]);
-}else
-{
-    $dbcore->GeoNames($lat,$long);
-    $dbcore->Output();
-}
+$dbcore->GeoNames($lat,$long);
+$dbcore->Output();
 
 ?>

@@ -47,7 +47,5 @@ Notes: ".$row['notes']."<br />
 <a href='".$dbcore->URL_PATH."opt/userstats.php?func=useraplist&amp;row=".$row['user_row']."'>Link</a>");
     $TestFeed->addItem($newItem);
 }
-
 $TestFeed->genarateFeed();
-
 ?>

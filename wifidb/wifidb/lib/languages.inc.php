@@ -131,11 +131,7 @@ class INI {
             }
         }
         
-        $buf = get_defined_constants(true);
         $consts = array();
-        foreach($buf['user'] as $key => $val) {
-            $consts['{'.$key.'}'] = $val;
-        }
         array_walk_recursive($ini, array('INI', 'replace_consts'), $consts);
         return $ini;
     }

@@ -3,17 +3,11 @@ global $switches;
 $switches = array('screen'=>"HTML",'extras'=>'API');
 
 include('../lib/init.inc.php');
-$api_key = (empty($_REQUEST['apikey'])) ? "" : $_REQUEST['apikey'];
 $title = (empty($_REQUEST['title'])) ? "Untitled" : $_REQUEST['title'];
 $notes = (empty($_REQUEST['notes'])) ? "No Notes" : $_REQUEST['notes'];
-$user = (empty($_REQUEST['username'])) ? "Unknown" : $_REQUEST['username'];
 
-$dbcore->output = (@$_REQUEST['output'] ? strtolower($_REQUEST['output']) : "json");
 $date = date($dbcore->datetime_format);
 $otherusers = (empty($_REQUEST['otherusers'])) ? "" : $_REQUEST['otherusers'];
-
-$key_check = $dbcore->sec->ValidateAPIKey($user, $api_key);
-if(!$key_check[0]){$dbcore->Output($key_check[1]);}
 
 if(!@$_FILES['file']['tmp_name']){$dbcore->Output("No upload file found :(");}
 
@@ -36,7 +30,7 @@ chmod($uploadfile, 0600);
 
 $details = array(
     'title'=>$title,
-    'user'=>$user,
+    'user'=>$dbcore->username,
     'otherusers'=>$otherusers,
     'size'=>$size,
     'notes'=>$notes,

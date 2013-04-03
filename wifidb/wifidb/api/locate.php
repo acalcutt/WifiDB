@@ -23,24 +23,14 @@ global $switches;
 $switches = array('screen'=>"HTML",'extras'=>'API');
 
 include('../lib/init.inc.php');
-$ver = "1.0.3";
 
-$list		=   (@$_REQUEST['ActiveBSSIDs'] ? $_REQUEST['ActiveBSSIDs'] : "");
-$dbcore->output =   (@$_REQUEST['output'] ? strtolower($_REQUEST['output']) : "json");
-if($list == ''){ die("Try feeding me some good bits."); }
+$dbcore->LocateList     = (@$_REQUEST['ActiveBSSIDs'] ? $_REQUEST['ActiveBSSIDs'] : "");
 
-$listing        =   array();
-$lists          =   explode("-", $list);
+if($dbcore->LocateList == ''){ die("Try feeding me some good bits."); }
 
-foreach($lists as $key=>$item)
-{
-    $t = explode("|", $item);
-    $listing[$key] = array($t[1],$t[0]);
-}
+$locate = $dbcore->Locate();
 
-$listings = $dbcore->subval_sort($listing,1);
-
-if(!@count($dbcore->Locate($listings)))
+if(!@count($locate))
 {
     echo "Import some aps";
 }

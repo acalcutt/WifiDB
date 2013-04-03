@@ -21,6 +21,7 @@ if not, write to the
 
 class dbcore
 {
+    public  $cli;
     function __construct($config = NULL)
     {
         if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
@@ -86,7 +87,7 @@ class dbcore
         $this->ver_str                  = $this->ver_array['wifidb'];
         $this->This_is_me               = getmypid();
         $this->sec                      = new security($this, $config);
-        #$this->lang                     = new languages($config['wifidb_install']);
+        $this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
         $this->wdbmail                  = new wdbmail($this);
         
@@ -617,11 +618,12 @@ class dbcore
         {
             $b[$k] = strtolower($v[$subkey]);
         }
-        asort($b , 6); //SORT_NATURAL (6)
+        arsort($b , 6); //SORT_NATURAL (6)
         foreach($b as $key=>$val)
         {
             $c[] = $a[$key];
         }
+        $c;
         return $c;
     }
     

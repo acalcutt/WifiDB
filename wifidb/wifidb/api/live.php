@@ -49,23 +49,13 @@ $mph    =   (@$_REQUEST['MPH'] ? $_REQUEST['MPH'] : 0 );
 $track  =   (@$_REQUEST['Track'] ? $_REQUEST['Track'] : 0 );
 $date   =   (@$_REQUEST['Date'] ? $_REQUEST['Date'] : date("Y-m-d") );
 $time   =   (@$_REQUEST['Time'] ? $_REQUEST['Time'] : date("H:i:s") );
-$utime = time();
+$utime  =   time();
 
 //Username, API Key, Session ID
-$username   =   (@$_REQUEST['username'] ? $_REQUEST['username'] : die("Unauthorized User.</br>Please register and get an API Key.") );
-$apikey     =   (@$_REQUEST['apikey'] ? $_REQUEST['apikey'] : die("API Key not supplied."));
-$session_id =   (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "");
-$dbcore->output        =   (@$_REQUEST['output'] ? strtolower($_REQUEST['output']) : "json");
 if($ssid === "UNNAMED" && $mac === "00:00:00:00:00:00" && $chan === 0 && $sectype === 0)
 {
     $this->Dump("You seem to have gotten here accidently or your Access Point does not have enough unique information to be added to the database.");
 }
-
-//Lets see if we can find a user with this name.
-//If so, lets check to see if the API key they provided is correct.
-$key_result = $dbcore->sec->ValidateAPIKey($username, $apikey);
-if(!$key_result[0]){ $dbcore->Output($key_result[1]); }
-
 $data = array(
     #ap data
     'ssid'=>$ssid,

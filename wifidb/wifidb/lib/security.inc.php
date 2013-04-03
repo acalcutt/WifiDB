@@ -2,6 +2,8 @@
 
 class security
 {
+    private $hashed_pass;
+    public  $username;
     function __construct($dbcore, $config)
     {
         $this->sql                = $dbcore->sql;
@@ -21,6 +23,7 @@ class security
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
+        $this->hashed_pass        = "";
     }
     
     
@@ -196,6 +199,7 @@ class security
         $pass_hash = crypt($password, '$2x$07$'.$newArray['salt'].'$');
         if($db_pass === $pass_hash)
         {
+            $salt = $this->GenerateKey(22);
             if(!$this->cli)
             {
                 if(!$Bender_remember_me)
@@ -224,26 +228,34 @@ class security
                     else{$path  = '/';}
                 }
 
-                if(!setcookie($cookie_name, crypt($pass_hash, '$2x$07$'.$this->GenerateKey(22).'$').":".$username, $cookie_timeout, $path))
+                if(!setcookie($cookie_name, crypt($pass_hash, '$2x$07$'.$salt.'$').":".$this->username, $cookie_timeout, $path))
                 {
                     $this->login_val = "Bad Cookie";
                     $this->login_check = 0;
                     return 0;
                 }
+            }else
+            {
+                $pass_hash = crypt($this->GenerateKey(64), '$2x$07$'.$salt.'$');
+                $sql = "INSERT INTO `wifi`.`user_login_hashes` (`id`, `username`, `hash`, `salt`, `utime`) VALUES ('', ?, ?, ?, ?)";
+                $prep = $this->sql->conn->prepare($sql);
+                $prep->bindParam(1, $this->username, PDO::PARAM_STR);
+                $prep->bindParam(2, $pass_hash, PDO::PARAM_STR);
+                $prep->bindParam(3, $salt, PDO::PARAM_STR);
+                $prep->bindParam(4, time()+$this->timeout, PDO::PARAM_INT);
+                $prep->execute();
+                if($this->sql->checkError())
+                {
+                    $this->login_val    = "Failed to set API login hash to table.";
+                    $this->login_check  = 0;
+                    return 0;
+                }
             }
-            $sql0 = "SELECT `last_active` FROM `wifi`.`user_info` WHERE `id` = ? LIMIT 1";
-            $result = $this->sql->conn->prepare($sql0);
-            $result->bindParam(1, $id, PDO::PARAM_INT);
-            $result->execute();
-            $array = $result->fetch(2);
-            
             $date = date($this->datetime_format);
-            $last_active = $array['last_active'];
-            $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_active` = ?, `last_login` = ? WHERE `id` = ? LIMIT 1";
+            $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
             $prep = $this->sql->conn->prepare($sql1);
-            $prep->bindParam(1, $last_active, PDO::PARAM_STR);
-            $prep->bindParam(2, $date, PDO::PARAM_STR);
-            $prep->bindParam(3, $id, PDO::PARAM_INT);
+            $prep->bindParam(1, $date, PDO::PARAM_STR);
+            $prep->bindParam(2, $id, PDO::PARAM_INT);
             $prep->execute();
 
             if(!$this->sql->checkError())
@@ -294,16 +306,18 @@ class security
     
     function APILoginCheck($username = '', $hash = '', $salt = '',  $admin = 0)
     {
+        # hash is the hashed password + salt from the API.
+        # salt is the salt that the API used.
+        # admin is for logging into the admin console
         if($username != '')
         {
-        #   echo $username;
             $sql0 = "SELECT * FROM `wifi`.`user_login_hash` WHERE `username` = ? LIMIT 1";
             $result = $this->sql->conn->prepare($sql0);
             $result->bindParam(1, $username, PDO::PARAM_STR);
             $result->execute();
-            $newArray = $result->fetch(2);
-            
+            $newArray = $result->fetch(2);            
             $db_pass = $newArray['password'];
+            
             if(crypt($db_pass, '$2x$07$'.$salt.'$') === $hash)
             {
                 $this->privs = $this->check_privs();
@@ -427,15 +441,15 @@ class security
  * @return <b>1</b> if the key has been validated, <b>Array</b> and <b>[0]</b> is the code, 
  * <b>[1]</b> is the message.
  */
-    function ValidateAPIKey($username, $apikey)
+    function ValidateAPIKey()
     {
-        if($username === "" || $username === "Unknown")
+        if($this->username === "" || $this->username === "Unknown" || $this->username === "AnonCoward")
         {
             $this->message = "Invalid Username set.";
             $array = array(0, $this->message);
             return $array;
         }
-        if($apikey === "")
+        if($this->apikey === "")
         {
             $this->message = "Invalid API Key set.";
             $array = array(0, $this->message);
@@ -443,7 +457,7 @@ class security
         }
         $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql);
-        $result->bindParam(1, $username, PDO::PARAM_STR);
+        $result->bindParam(1, $this->username, PDO::PARAM_STR);
         $result->execute();
         $err = $this->sql->conn->errorCode();
         if($err !== "00000")
@@ -453,7 +467,7 @@ class security
             return $array;
         }
         $key = $result->fetch(2);
-        if($key['apikey'] !== $apikey)
+        if($key['apikey'] !== $this->apikey)
         {
             $this->message = "Authentication Failed.";
             $array =  array(0, $this->message);

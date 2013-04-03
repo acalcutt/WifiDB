@@ -5,9 +5,8 @@ $switches = array('screen'=>"HTML",'extras'=>'API');
 $version   =   (@$_GET['version'] ? filter_input(INPUT_GET, 'version', FILTER_SANITIZE_ENCODED, array(16,32) ) : 0);
 
 include('../lib/init.inc.php');
-$dbcore->output = (@$_GET['output'] ? filter_input(INPUT_GET, 'output', FILTER_SANITIZE_STRING ) : "json");
 
-if($version){$dbcore->Output("WiFiDB Live AP Import API</br>\r\nStart Date: $dbcore->startdate</br>\r\nLast Edit: $dbcore->lastedit</br>\r\nVersion Number: $dbcore->vernum</br>\r\nContact: pferland@randomintervals.com</br>\r\n");}
+if($version){$dbcore->Output("WiFiDB API</br>\r\nStart Date: $dbcore->startdate</br>\r\nLast Edit: $dbcore->lastedit</br>\r\nVersion Number: $dbcore->vernum</br>\r\nContact: $dbcore->contact</br>\r\n");}
 $api = get_class_methods('api');
 $core = get_class_methods('dbcore');
 $API_Methods = array_merge(array_diff($api, $core), array_diff($core, $api));
@@ -23,8 +22,8 @@ foreach($API_Methods as $method)
     }
 }
 $dbcore->Output(array(
-    "WiFiDB API Version"=>"1.0",
-    "WiFiDB API Author"=>"Phil Ferland",
+    "WiFiDB API Version"=>$dbcore->vernum,
+    "WiFiDB API Author"=>$dbcore->Author,
     "WiFiDB API Functions"=>$API_Details
 ))
 
