@@ -13,7 +13,7 @@ if(!@$_FILES['file']['tmp_name']){$dbcore->Output("No upload file found :(");}
 
 $tmp  = $_FILES['file']['tmp_name'];
 $size = $dbcore->format_size($tmp);
-if($size == "0B"){die("Size of file is only 0B, come one man....");}
+if($size == "0B"){$dbcore->Output("Size of file is only 0B, come one man....");}
 
 $hash           =   hash_file('md5', $tmp);
 $prefilename    =   str_replace(" ", "_", $_FILES['file']['name']);
@@ -24,7 +24,8 @@ $uploadfolder   =   $dbcore->PATH.'import/up/';
 $filename       =   'APIupload_'.$rand.'_'.$prefilename;
 $uploadfile     =   $uploadfolder.$filename;
 
-if(!copy($tmp, $uploadfile)){$dbcore->Output('Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permisions if you are using Linux.');}
+if(!copy($tmp, $uploadfile))
+{$dbcore->Output('Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permisions if you are using Linux.');}
 
 chmod($uploadfile, 0600);
 

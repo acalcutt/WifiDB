@@ -18,19 +18,13 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+
 global $switches;
 $switches = array('screen'=>"HTML",'extras'=>'API');
+
 include('../lib/init.inc.php');
 
-$lat    = (@$_REQUEST['lat']  ? $_REQUEST['lat']  : "");
-$long   = (@$_REQUEST['long'] ? $_REQUEST['long'] : "");
+$dbcore->Output($dbcore->GetAnnouncement());
 
-if($lat == "" || $long == "")
-{
-    $dbcore->Output("No lat or long supplied...");
-}
-
-$dbcore->GeoNames($lat,$long);
-$dbcore->Output();
 
 ?>

@@ -11,7 +11,6 @@ class security
         $this->log_level          = 42;
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;
-        $this->logged_in_flag     = 0;
         $this->login_val          = "No Cookie";
         $this->login_check        = 0;
         $this->LoginLabel         = "AnonCoward";
@@ -322,7 +321,6 @@ class security
             if(crypt($hash, '$2x$07$'.$salt.'$') === $db_pass)
             {
                 $this->privs = $this->check_privs();
-                $this->logged_in_flag = 1;
                 $this->LoginLabel = $newArray['username'];
                 $this->login_val = $newArray['username'];
                 $this->username = $newArray['username_db'];
@@ -331,7 +329,6 @@ class security
                 return 1;
             }else
             {
-                $this->logged_in_flag = 0;
                 $this->LoginLabel = "";
                 $this->login_val = "Bad Cookie Password";
                 $this->login_check = 0;
@@ -380,7 +377,6 @@ class security
                 if(crypt($db_pass, '$2x$07$'.$newArray['salt'].'$') === $cookie_pass_seed)
                 {
                     $this->privs = $this->check_privs();
-                    $this->logged_in_flag = 1;
                     $this->LoginLabel = $newArray['username'];
                     $this->login_val = $newArray['username'];
                     $this->username = $newArray['username_db'];
@@ -389,7 +385,6 @@ class security
                     return 1;
                 }else
                 {
-                    $this->logged_in_flag = 0;
                     $this->LoginLabel = "";
                     $this->login_val = "Bad Cookie Password";
                     $this->login_check = 0;

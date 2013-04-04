@@ -50,11 +50,12 @@ $track  =   (@$_REQUEST['Track'] ? $_REQUEST['Track'] : 0 );
 $date   =   (@$_REQUEST['Date'] ? $_REQUEST['Date'] : date("Y-m-d") );
 $time   =   (@$_REQUEST['Time'] ? $_REQUEST['Time'] : date("H:i:s") );
 $utime  =   time();
+$session_id   =   (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "" );
 
 //Username, API Key, Session ID
 if($ssid === "UNNAMED" && $mac === "00:00:00:00:00:00" && $chan === 0 && $sectype === 0)
 {
-    $this->Dump("You seem to have gotten here accidently or your Access Point does not have enough unique information to be added to the database.");
+    $dbcore->Output("You seem to have gotten here accidently or your Access Point does not have enough unique information to be added to the database.");
 }
 $data = array(
     #ap data
@@ -86,7 +87,7 @@ $data = array(
     'utime'=>$utime,
     
     #user data
-    'username'=>$username,
+    'username'=>$dbcore->username,
     'session_id'=>$session_id
 );
 

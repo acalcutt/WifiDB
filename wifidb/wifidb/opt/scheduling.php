@@ -41,7 +41,7 @@ $refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $dbc
 switch($func)
 {
     case 'done':
-        $sql = "SELECT * FROM `{$dbcore->sql->db}`.`{$dbcore->sql->files}` ORDER BY `id` DESC";
+        $sql = "SELECT * FROM `wifi`.`files` ORDER BY `id` DESC";
         #echo $sql;
         $result = $dbcore->sql->conn->query($sql);
         $class_f = 0;
@@ -145,7 +145,7 @@ switch($func)
 
     default:
         #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
-        $sql = "SELECT * FROM `{$dbcore->sql->db}`.`{$dbcore->sql->settings_tb}` WHERE `id` = '1'";
+        $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
         $result = $dbcore->sql->conn->query($sql);
         $file_array = $result->fetch(2);
 
@@ -187,7 +187,7 @@ switch($func)
         }
         $sched_row = array();
         $n=0;
-        $sql = "SELECT * FROM `{$dbcore->sql->db}`.`{$dbcore->sql->files_tmp}` ORDER BY `date` DESC";
+        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` DESC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {

@@ -58,8 +58,6 @@ class frontend extends dbcore
             
             $this->smarty->assign('critical_error_message', '');
             
-            $this->GetAnnouncement();
-            
             $this->smarty->assign("redirect_func", "");
             $this->smarty->assign("redirect_html", "");
             $this->sec->LoginCheck();
@@ -72,6 +70,7 @@ class frontend extends dbcore
                                                     "AllUsersAP"     =>  "1.0",
                                                     "dump"           =>  "1.0",
                                                     "GenPageCount"   =>  "1.0",
+                                                    "GetAnnouncement"=>  "1.0",
                                                     "HTMLFooter"     =>  "1.0",
                                                     "HTMLHeader"     =>  "1.0",
                                                     "UserAPList"     =>  "1.0",
@@ -81,37 +80,41 @@ class frontend extends dbcore
     
     function GetAnnouncement()
     {
-        $result = $this->sql->conn->query("SELECT * FROM `wifi`.`annunc` WHERE `set` = 1");
-        if(!$this->sql->checkError())
+        $result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
+        $array = $result->fetch(2);
+        if($this->sql->checkError() || $array['body'] == "")
         {
-            $this->smarty->assign('wifidb_announce_header', '');
             return 0;
         }
-        $array = $result->fetch(1);
-        $this->smarty->assign("wifidb_announce_header", '<table style="width: 90%; " class="no_border" align="center"><tr><td><p class="annunc_text">'.$array['message'].'</p></td></tr></table>');
-        return 1;
+        return $array;
     }
+    
     
     function htmlheader()
     {
-        if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->logged_in_flag)
+        if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
         {
             $login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a><font size="1"> (Last Logon: '.$this->sec->last_login.')</font>';
+            $wifidb_mysticache_link = 1;
         }else
         {
-            $wifidb_mysticache_link = "";
+            $wifidb_mysticache_link = 0;
             $login_bar = "";
         }
-        $this->install_header = $this->check_install_folder();
-        $this->mysticache = $wifidb_mysticache_link;
+        $this->smarty->assign("install_header", $this->check_install_folder());
+        $announc = $this->GetAnnouncement();
+        
+        $this->smarty->assign("wifidb_announce_header", '<p class="annunc_text">'.$announc['body'].'</p>');
+        $this->smarty->assign("wifidb_mysticache_link", $wifidb_mysticache_link);
         $this->login_bar = $login_bar;
         return 1;
     }
+    
 
     function htmlfooter()
     {
         $out = '';
-        if($this->sec->logged_in_flag)
+        if($this->sec->login_check)
         {
             if($this->sec->privs >= 1000)
             {
@@ -131,11 +134,10 @@ class frontend extends dbcore
         return 1;
     }
     
-    
     #===================================#
     #   Grab the stats for All Users    #
     #===================================#
-    function all_users()
+    function AllUsers()
     {
         $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` ORDER BY `username` ASC";
         $result = $this->sql->conn->query($sql);
@@ -214,7 +216,7 @@ class frontend extends dbcore
     #=======================================#
     #   Grab All the AP's for a given user  #
     #=======================================#
-    function all_users_ap($user="")
+    function AllUsersAPs($user="")
     {
         if($user == ""){return 0;}
         
@@ -291,7 +293,7 @@ class frontend extends dbcore
     #===================================#
     #   Grab all user Import lists      #
     #===================================#
-    function users_lists($username="")
+    function UsersLists($username="")
     {
         if($username == ""){return 0;}
         $total_aps = array();
@@ -385,7 +387,7 @@ class frontend extends dbcore
     #===============================================#
     #   Grab the AP's for a given user's Import     #
     #===============================================#
-    function user_ap_list($row=0)
+    function UserAPList($row=0)
     {
         if(!$row){return 0;}
         $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `id`= ?";
@@ -462,7 +464,7 @@ class frontend extends dbcore
     #======================#
     #   DUMP VAR TO HTML   #
     #======================#
-    function dump($value="" , $level=0)
+    function Dump($value="" , $level=0)
     {
         if ($level==-1)
         {
@@ -508,7 +510,7 @@ class frontend extends dbcore
         return 1;
     }
     
-    function gen_pages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="")
+    function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="")
     {
         if($ssid=="" && $mac=="" && $chan=="" && $radio=="" && $auth=="" && $encry=="")
         {

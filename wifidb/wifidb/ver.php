@@ -31,7 +31,7 @@ $dbcore->smarty->smarty->display('header.tpl');
 		<p align="center"><font size="7"><b>WiFiDB Version History</b></font></p>
 		<table border="0" cellpadding="4" width="100%" border="2" id="details">
 			<tr class="dark">
-				<td>Project Name...</td><td><b>WiFiDB <?php echo $ver['wifidb'];?></b></td>
+				<td>Project Name...</td><td><b>WiFiDB 0.30</b></td>
 			<tr class="light">
 				<td>Project State...</td><td><b>Alpha (planning and early dev)</b></td>
 			</tr>
@@ -49,7 +49,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30 Build 1</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Date: 2012-Mar-4</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 2012-Apr-04</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26">Changes :</td>

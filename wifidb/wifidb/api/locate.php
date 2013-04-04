@@ -32,7 +32,7 @@ $locate = $dbcore->Locate();
 
 if(!@count($locate))
 {
-    echo "Import some aps";
+    $dbcore->Output(array("error"=>"Position Not Found, Import Some APs"));
 }
 else
 {

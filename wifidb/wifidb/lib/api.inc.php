@@ -85,22 +85,36 @@ class api extends dbcore
             $admin2_res->execute();
             $admin2_array = $admin2_res->fetch(1);
         }
-        #var_dump($admin2_array);
         $sql = "SELECT `Country` FROM `wifi`.`geonames_country_names` WHERE `ISO` LIKE ? LIMIT 1";
         $country_res = $this->sql->conn->prepare($sql);
-        $country_res->bindParam(1, $geo_array['country code']."%", PDO::PARAM_STR);
+        $code = $geo_array['country code']."%";
+        $country_res->bindParam(1, $code, PDO::PARAM_STR);
         $country_res->execute();
         $country_array = $country_res->fetch(1);
         
-        $this->mesg = array('Geonames'=>array(
+        $this->mesg = array(
+            #'Geonames'=>array(
                 'Country Code'=>$geo_array['country code'],
                 'Country Name'=>$country_array['Country'],
                 'Admin1 Code'=>$geo_array['admin1 code'],
                 'Admin1 Name'=>(@$admin1_array['asciiname'] ? $admin1_array['asciiname'] : ""),
                 'Admin2 Name'=>(@$admin2_array['asciiname'] ? $admin2_array['asciiname'] : ""),
                 'Area Name'=>$geo_array['asciiname']
-            ));
+            #)
+                );
         return 1;
+    }
+    
+    function GetAnnouncement()
+    {
+        $result = $this->sql->conn->query("SELECT `auth`,`title`,`body`,`date`,`comments` FROM `wifi`.`annunc` WHERE `set` = '1'");
+        $array = $result->fetch(2);
+        if($this->sql->checkError() || $array['body'] == "")
+        {
+            $this->Output(array("error"=>array("details"=>var_dump($this->sql->conn->errorInfo()))));
+            return 0;
+        }
+        return $array;
     }
     
     public function ImportVS1($details = array())
@@ -126,12 +140,12 @@ class api extends dbcore
         $files_ret = $files_prep->fetch(2);
         if($tmp_ret['hash'] != "")
         {
-            $this->mesg[] = "File Hash already waiting for import: $hash";
+            $this->mesg[] = array("error"=>"File Hash already waiting for import: $hash");
             return -1;
         }
         if($files_ret['hash'] != "")
         {
-            $this->mesg[] = "File Hash already exists in WiFiDB:  $hash";
+            $this->mesg[] = array("error"=>"File Hash already exists in WiFiDB:  $hash");
             return -1;
         }
         
@@ -160,11 +174,11 @@ class api extends dbcore
         switch($task)
         {
             case "import":
-                $this->mesg[] = "Title: ".$title;
-                $this->mesg[] = "Imported By: ".$user;
+                $this->mesg["title"] = $title;
+                $this->mesg["user"] = $user;
                 if($otherusers)
                 {
-                    $this->mesg[] = "With help from: ".$otherusers;
+                    $this->mesg['otherusers'] = $otherusers;
                 }
                 $sql = "INSERT INTO `wifi`.`files_tmp` 
                                 ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
@@ -182,15 +196,17 @@ class api extends dbcore
                 $error = $this->sql->conn->errorCode();
                 if($error[0] == "00000")
                 {
-                    $this->mesg[] = "File has been inserted for importing at a scheduled time. Import Number: {$this->sql->conn->lastInsertId()}, File Hash: {$hash}";
+                    $this->mesg["message"] = "File has been inserted for importing at a scheduled time.";
+                    $this->mesg["importnum"] = $this->sql->conn->lastInsertId();
+                    $this->mesg["filehash"] = $hash;
                 }else
                 {
-                    $this->mesg[] = "There was an error inserting file for scheduled import.\r\n".
-                    var_export($this->sql->conn->errorInfo());
+                    $this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
+                    ;
                 }
             break;
             default:
-                $this->mesg[] = "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files";
+                $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files");
             break;
         }
         return 1;
@@ -198,7 +214,7 @@ class api extends dbcore
     
     public function InsertLiveAP($data = array())
     {
-        if(empty($data)){return array("Emtpy data set");}
+        if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
         
         $sql = "SELECT `id`, `ssid`, `mac`, `chan`, `sectype`, `auth`, `encry`, `radio`, `session_id`, `sig`, `lat`, `long` FROM
                 `wifi`.`live_aps`
@@ -222,14 +238,14 @@ class api extends dbcore
         $err = $this->sql->conn->errorCode();
         if($err !== "00000")
         {
-            $this->mesg[] = "Error selecting AP data: ".var_export($this->sql->conn->errorInfo(), 1);
+            $this->mesg = array("error"=>array("desc"=>"Error selecting AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
             return -1;
         }
         $array = $result->fetch(2);
         if(@$array['id'])
         {
             $AP_id = $array['id'];
-            $this->mesg[] = "It's an old AP :/";
+            $this->mesg['message'][] = "It's an old AP :/" ;
 
             $all_sigs = $array['sig'];
 
@@ -255,7 +271,7 @@ class api extends dbcore
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")
             {
-                $this->mesg[] = "Selecting data from Live GPS Table: ".var_export($this->sql->conn->errorInfo(), 1);
+                $this->mesg = array("error"=>array("desc"=>"Error selecting data from Live GPS Table.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
                 return -1;
             }
             $array = $result->fetch(2);
@@ -265,7 +281,7 @@ class api extends dbcore
             if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
             {
                 $sig = $all_sigs."|".$data['sig']."-".$id;
-                $this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
+                $this->mesg['message'][] = "Lat/Long are the same, move a little you lazy bastard.";
                 $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `sig` = ? WHERE `id` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $data['date']." ".$data['time'], PDO::PARAM_INT);
@@ -275,22 +291,22 @@ class api extends dbcore
                 $err = $this->sql->conn->errorCode();
                 if($err !== "00000")
                 {
-                    $this->mesg[] = "Error updating AP data: ".var_export($this->sql->conn->errorInfo(), 1);
+                    $this->mesg = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
                     return -1;
                 }else
                 {
-                    $this->mesg[] = "Updated AP Last Active and Signal.";
+                    $this->mesg["message"][] = "Updated AP Last Active and Signal.";
                 }
             }else
             {
-                $this->mesg[] = "Lat/Long are different, what aboot the Sats and Date/Time, Eh?<br />";
+                $this->mesg[0]["message"] = "Lat/Long are different, what aboot the Sats and Date/Time, Eh?";
                 $url_time   = strtotime($data['date']." ".$data['time']);
                 $wifi_time    = strtotime($array['date']." ".$array['time']);
                 $timecalc   = ($url_time - $wifi_time);
                 #echo $timecalc."<br />";
                 if($timecalc > 2)
                 {
-                    $this->mesg[] = "Oooo its time is newer o_0, lets go insert it<br />";
+                    $this->mesg["message"][] = "Oooo its time is newer o_0, lets go insert it";
                     $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
                                                    VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
@@ -311,11 +327,11 @@ class api extends dbcore
                     $err = $this->sql->conn->errorCode();
                     if($err !== "00000")
                     {
-                        $this->mesg[] = "Error adding GPS data: ".var_export($this->sql->conn->errorInfo(), 1);
+                        $this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
                         return -1;
                     }else
                     {
-                        $this->mesg[] = "Added GPS data.";
+                        $this->mesg["message"][] = "Added GPS data.";
                     }
                     
                     $sig = $all_sigs."|".$data['sig']."-".$this->sql->conn->insert_id;
@@ -332,20 +348,20 @@ class api extends dbcore
                     $err = $this->sql->conn->errorCode();
                     if($err !== "00000")
                     {
-                        $this->mesg[] = "Error updating AP data: ".var_export($this->sql->conn->errorInfo(), 1);
+                        $this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
                         return -1;
                     }else
                     {
-                        $this->mesg[] = "Updated AP data.";
+                        $this->mesg["message"][] = "Updated AP data.";
                     }
                 }else
                 {
-                    $this->mesg[] = "What are you thinking? You cant have more then a second resolution. >:(<br />Give a man some room to breathe.";
+                    $this->mesg["message"][] = "What are you thinking? You cant have more then a second resolution. >:( Give a man some room to breathe.";
                 }
             }
         }else
         {
-            $this->mesg[] = "Add new AP. :]";
+            $this->mesg["message"][] = "Add new AP. :]";
 
             #list($lat, $long) = $this->format_gps($lat, $long);
 
@@ -367,11 +383,11 @@ class api extends dbcore
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")
             {
-                $this->mesg[] = "Error adding GPS data: ".var_export($this->sql->conn->errorInfo(), 1);
+                $this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
                 return -1;
             }else
             {
-                $this->mesg[] = "Added GPS data.";
+                $this->mesg["message"][] = "Added GPS data.";
             }
             $sig = $data['sig']."-".$this->sql->conn->lastInsertId();
             $date_time = $data['date']." ".$data['time'];
@@ -401,11 +417,11 @@ class api extends dbcore
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")
             {
-                $this->mesg[] = "Error adding GPS data: ".var_export($this->sql->conn->errorInfo(), 1);
+                $this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
                 return -1;
             }else
             {
-                $this->mesg[] = "Added AP data.";
+                $this->mesg["message"][] = "Added AP data.";
             }
         }
         return 1;
@@ -446,7 +462,11 @@ class api extends dbcore
                         FROM  `wifi`.`wifi_gps` WHERE `id` = '$gps_id' ";
                 
                 $result = $this->sql->conn->query($sql);
-                $this->sql->checkError();
+                if($this->sql->checkError())
+                {
+                    $this->mesg[] = array("error"=>var_export($this->sql->conn->errorInfo(), 1));
+                    return -1;
+                }
 
                 $gpsarray = $result->fetch(2);
                 if($gpsarray['long'] == "E 0.0000" || $gpsarray['long'] == "E 0000.0000" || $gpsarray['long'] == ""){continue;}
@@ -472,7 +492,13 @@ class api extends dbcore
     {
         if($mesg !== NULL || $mesg[0] !== NULL)
         {
-            $this->mesg = $mesg;
+            if(is_string($mesg))
+            {
+                $this->mesg = array($mesg);
+            }else
+            {
+                $this->mesg = $mesg;
+            }
         }
         if(empty($this->mesg)){return array("Empty Data Set.");}
         

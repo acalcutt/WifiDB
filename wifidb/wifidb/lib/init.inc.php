@@ -242,7 +242,7 @@ function print_js()
             exdate.setDate(exdate.getDate()+expiredays);
             document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : ";expires=" +exdate.toUTCString());
         }
-        location.href = '<?php echo $_SERVER['PHP_SELF'].'?'.$_SERVER['QUERY_STRING'];?>';
+        location.href = '<?php echo $dbcore->URL_PATH.'?'.$_SERVER['QUERY_STRING'];?>';
     }
     </script>
     <body onload = "checkTimeZone();"> </body>

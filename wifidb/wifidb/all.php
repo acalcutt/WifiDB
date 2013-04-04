@@ -38,12 +38,12 @@ $dbcore->smarty->assign('inc', $inputs['to']);
 $dbcore->smarty->assign('ord', $inputs['ord']);
 $dbcore->smarty->assign('sort', $inputs['sort']);
 
-$sql = "SELECT `size` FROM `{$dbcore->sql->db}`.`{$dbcore->sql->settings_tb}` WHERE `table` = 'wifi0'";
+$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'wifi0'";
 $number_aps = $dbcore->sql->conn->query($sql);
 $num_ap_array = $number_aps->fetch(2);
 $total_rows = $num_ap_array['size'];
 
-$sql = "SELECT * FROM `{$dbcore->sql->db}`.`{$dbcore->sql->pointers_table}` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+$sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 $pre_page_list = $dbcore->sql->conn->query($sql);
 
 $row_color = 0;
@@ -96,7 +96,7 @@ while ( $array = $pre_page_list->fetch(2) )
     $n++;
 }
 
-$dbcore->gen_pages($total_rows, $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord']);
+$dbcore->GeneratePages($total_rows, $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord']);
 $dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 $dbcore->smarty->assign('wifidb_aps_all', $wifidb_aps_all);
 $dbcore->smarty->smarty->display('all_aps.tpl');
