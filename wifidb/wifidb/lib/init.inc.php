@@ -87,7 +87,7 @@ if($error)
 }
 if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']) && !($GLOBALS['switches']['screen'] == "CLI" || $GLOBALS['switches']['extras'] == "API"))
 {
-    print_js();
+    print_js($config['hosturl'].$config['root'].'/');
     exit();
 }else
 {
@@ -198,7 +198,7 @@ function exception_handler($err)
 }
 
 
-function print_js()
+function print_js($URL_path)
 {
     ?>
 <script type="text/javascript">
@@ -242,7 +242,7 @@ function print_js()
             exdate.setDate(exdate.getDate()+expiredays);
             document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : ";expires=" +exdate.toUTCString());
         }
-        location.href = '<?php echo $dbcore->URL_PATH.'?'.$_SERVER['QUERY_STRING'];?>';
+        location.href = '<?php echo $URL_path.'?'.$_SERVER['QUERY_STRING'];?>';
     }
     </script>
     <body onload = "checkTimeZone();"> </body>
