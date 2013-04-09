@@ -22,7 +22,10 @@ if not, write to the
                                         <table align="center">
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><img src="{$wifidb_host_url}themes/{$wifidb_theme}/img/logo.png"></p></td>
+                                                    <td colspan="2">
+                                                        <p align="center"><img src="{$wifidb_host_url}themes/{$wifidb_theme}/img/logo.png"></p>
+                                                        {$message}
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <td>Username</td>

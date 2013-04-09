@@ -60,7 +60,7 @@ while ( $array = $pre_page_list->fetch(2) )
     
     $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
 
-    if($array['mac'][2] != ":")
+    if(@$array['mac'][2] != ":")
     {
         $mac_exp = str_split($array['mac'], 2);
         $implode_mac = implode(":",$mac_exp);
@@ -71,8 +71,8 @@ while ( $array = $pre_page_list->fetch(2) )
     }
     $wifidb_aps_all[$n]['chan'] = ($array['chan'] == '' ? '< ? >' : $array['chan']);
 
-    $wifidb_aps_all[$n]['auth'] = ($array['auth'] == '' ? '< ? >' : $array['auth']);
-    $wifidb_aps_all[$n]['encry'] = ($array['encry'] == '' ? '< ? >' : $array['encry']);
+    $wifidb_aps_all[$n]['auth'] = ($array['auth'] == '' ? 'Unknown :(' : $array['auth']);
+    $wifidb_aps_all[$n]['encry'] = ($array['encry'] == '' ? 'Unknown :(' : $array['encry']);
 
     switch(strtolower($array['radio']))
     {

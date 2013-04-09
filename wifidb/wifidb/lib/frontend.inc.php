@@ -60,7 +60,6 @@ class frontend extends dbcore
             
             $this->smarty->assign("redirect_func", "");
             $this->smarty->assign("redirect_html", "");
-            $this->sec->LoginCheck();
             $this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
             $this->htmlheader();
             $this->htmlfooter();
@@ -94,10 +93,12 @@ class frontend extends dbcore
     {
         if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
         {
-            $login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a><font size="1"> (Last Logon: '.$this->sec->last_login.')</font>';
+            $this->smarty->assign("login_val", "1");
+            $login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a>';
             $wifidb_mysticache_link = 1;
         }else
         {
+            $this->smarty->assign("login_val", "0");
             $wifidb_mysticache_link = 0;
             $login_bar = "";
         }
@@ -132,6 +133,132 @@ class frontend extends dbcore
         }
         $this->footer .= $this->meta->tracker.$this->meta->ads;
         return 1;
+    }
+    
+    function APFetch($id = "")
+    {
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $id, PDO::PARAM_INT);
+        $prep->execute();
+        $newArray = $prep->fetch(2);
+        $ap_data = array(
+            'id'=>$newArray['id'],
+            'radio'=>$newArray['radio'],
+            'manuf'=>$newArray['manuf'],
+            'mac'=>$newArray['mac'],
+            'ssid'=>$newArray['ssid'],
+            'chan'=>$newArray['chan'],
+            'encry'=>$newArray['encry'],
+            'auth'=>$newArray['auth'],
+            'btx'=>$newArray["BTx"],
+            'otx'=>$newArray["OTx"],
+            'fa'=>$newArray["FA"],
+            'la'=>$newArray["LA"],
+            'nt'=>$newArray["NT"],
+            'label'=>$newArray["label"],
+            'user'=>$newArray["username"]
+        );
+        
+        $sql_gps = "SELECT * FROM `wifi`.`wifi_gps` WHERE `ap_hash` = ?";# AND `lat` != 'N 0.0000' AND `lat` != '0.0000' AND `lat` != '' LIMIT 1";
+        $prepgps = $this->sql->conn->prepare($sql_gps);
+        $prepgps->bindParam(1, $newArray['ap_hash'], PDO::PARAM_STR);
+        $prepgps->execute();
+        $lastgps = $prepgps->fetchAll();
+        var_dump($lastgps);
+        if($lastgps !== FALSE && $lastgps['lat'] != "N 0.0000")
+        {
+            $lat_check = explode(" ", $lastgps['lat']);
+            $lat_c = $lat_check[1]+0;
+            $gps_globe = ($lat_c == "0" ? "off" : "on")\
+                ;
+        }else
+        {
+            $gps_globe = "off";
+        }
+        
+        $sql = "SELECT  `wifi_signals`.`ap_hash` ,  `signal` ,  `rssi` ,  `username` ,  `lat` ,  `long` ,  `sats` ,  `hdp` ,  `alt` ,  `geo` ,  `kmh` ,  `mph` ,  `track` ,  `date` ,  `time` 
+                FROM  `wifi`.`wifi_signals` ,  `wifi_gps` 
+                WHERE  `wifi_signals`.`ap_hash` =  ?
+                AND  `wifi_gps`.`id` =  `wifi_signals`.`gps_id` 
+                ORDER BY  `wifi_gps`.`date` ASC ,  `wifi_gps`.`time` ASC ";
+        $prep1 = $this->sql->conn->prepare($sql);
+        $prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
+        $prep1->execute();
+        
+        $flip = 0;
+        $prev_date = 0;
+        $date_range = -1;
+        $signal_runs = array();
+        $signals = $prep1->fetchAll(2);
+        var_dump($signals);
+            die();
+            
+        foreach($signals as $field)
+        {
+            if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
+            $sql_gps = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = '{$field['id']}'";
+            $gps_res = $this->sql->conn->query($sql_gps);
+            $gps = $gps_res->fetch(2);
+            if($gps['id']==''){continue;}
+            if($prev_date < strtotime($gps['date']))
+            {
+                $date_range++;
+                $signal_runs[$date_range]['id'] = $date_range;
+                $signal_runs[$date_range]['start'] = $gps['date']." ".$gps['time'];
+                $signal_runs[$date_range]['descstart'] = $gps['time'];
+                $signal_runs[$date_range]['user'] = $field['username'];
+            }else
+            {
+                if($signal_runs[$date_range]['user'] != $field['username'])
+                {
+                    $signal_runs[$date_range]['user'] .= " and ".$field['username'];
+                }
+                $signal_runs[$date_range]['desc'] = $gps['date'].": ".$signal_runs[$date_range]['descstart']." - ".$gps['time'];
+                $signal_runs[$date_range]['stop'] = $gps['date']." ".$gps['time'];
+            }
+
+            $prev_date = strtotime($gps['date']);
+
+            $signal_runs[$date_range]['gps'][] = array(   
+                                    'class'=>$class,
+                                    'lat'=>$gps["lat"],
+                                    'long'=>$gps["long"],
+                                    'sats'=>$gps["sats"],
+                                    'date'=>$gps["date"],
+                                    'time'=>$gps["time"],
+                                    'signal'=>$field["signal"]
+                                );
+        }
+        $list = array();
+        $prep = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ? ");
+        $id_find = "%-{$id}:%";
+        $prep->bindParam(1, $id_find, PDO::PARAM_STR);
+        $flip = 0;
+        while ($field = $prep->fetch(2))
+        {
+            if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
+            preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
+            $list[]= array(
+                            'class'=>$class,
+                            'id'=>$field['id'],
+                            'nu'=>$matches['stat'],
+                            'date'=>$field['date'],
+                            'aps'=>$field['aps'],
+                            'username'=>$field['username'],
+                            'title'=>$field['title'],
+                            'title_id'=>$field['file_id']
+                            );
+
+        }
+        $this->smarty->assign('wifidb_page_label', "Access Point Page ({$newArray['ssid']})");
+        $this->smarty->assign('wifidb_ap_signal_all', $signal_runs);
+        $this->smarty->assign('wifidb_assoc_lists', $list);
+        $this->smarty->assign('wifidb_ap_globe', $gps_globe);
+        $this->smarty->assign('wifidb_ap', $ap_data);
+        #var_dump($ap_data);
+        #$this->smarty->display('ap.tpl');
+        $this->smarty->display('fetch.tpl');
     }
     
     #===================================#
@@ -580,12 +707,12 @@ class frontend extends dbcore
     #==============================#
     function redirect_page($return = "", $delay = 0)
     {
-        if($return == ''){$return = $this->HOSTURL;}
+        if($return == ''){$return = $this->URL_PATH;}
         $this->smarty->assign("redirect_func", "<script type=\"text/javascript\">
             function reload()
             {
-                window.open('{$return}')
-                location.href = '{$this->HOSTURL}/';
+                //window.open('{$return}')
+                location.href = '{$return}';
             }
         </script>");
         $this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");

@@ -1,5 +1,6 @@
 {include file="header.tpl"} 
                                     <font color="green"><h2>Create User</h2></font>
+                                    <h3>{$message}</h3>
                                         <form method="post" action="/wifidb/login.php?func=create_user_proc">
                                             <table align="center">
                                                 <tr>

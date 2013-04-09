@@ -1,6 +1,6 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+index.tpl: The Smarty Index template for WiFiDB.
+Copyright (C) 2013 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either

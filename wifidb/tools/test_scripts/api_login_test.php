@@ -24,11 +24,12 @@ $array = $prep->fetch(2);
 var_dump($array);
 
 $hashed_pass = $array['hash'];
-$salt = $array['salt'];
 
 echo "-----
     Test login check with logged in data\r\n";
-var_dump($dbcore->sec->APILoginCheck($this->username, $hashed_pass, $salt, 0));
+var_dump(crypt($dbcore->sec->pass_hash, $hashed_pass));
+
+var_dump($dbcore->sec->LoginCheck($dbcore->sec->username, $hashed_pass, 0));
 var_dump($dbcore->sec->login_val);
 
 

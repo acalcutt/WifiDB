@@ -67,6 +67,10 @@
                                     <a class="links" href="http://forum.techidiots.net/forum/viewforum.php?f=47">Help / Support</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}ver.php">WiFiDB Version</a></strong></div>
+                                {if $login_val eq "1"}
+                                <div class="inside_text_bold"><strong>
+                                    <a href="{$wifidb_host_url}login.php?func=logout">Log Out</a></strong></div>
+                                {/if}
                                 <br>
                                 <div class="inside_dark_header">[Mysticache]</div>
                                 <div class="inside_text_bold"><a class="links" href="{$wifidb_host_url}caches.php">View shared Caches</a></div>

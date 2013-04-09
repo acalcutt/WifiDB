@@ -1,5 +1,5 @@
 <!--
-Database.inc.php, holds the database interactive functions.
+fetch.tpl: template for a single AP's data results.
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms

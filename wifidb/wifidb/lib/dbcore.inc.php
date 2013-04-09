@@ -90,7 +90,7 @@ class dbcore
         $this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
         $this->wdbmail                  = new wdbmail($this);
-        
+        $this->sec->LoginCheck();
     }
 
     ##############################

@@ -27,63 +27,64 @@ $switches = array('screen'=>"HTML",'extras'=>"");
 include('lib/init.inc.php');
 
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
-$return = filter_input(INPUT_GET, 'return', FILTER_SANITIZE_SPECIAL_CHARS);
+$return = $_REQUEST['return'];
 
-if($return == ''){$return = $dbcore->PATH;}
-
+if($return == ''){$return = $dbcore->root;}
 switch($func)
 {
     case "login_proc":
-        $username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-        $password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-        $Bender_remember_me = filter_input(INPUT_POST, 'Bender_remmeber_me', FILTER_SANITIZE_SPECIAL_CHARS);
-        $login = $dbcore->Login($username, $password, $Bender_remember_me);
-        switch($login)
+        $username = $_POST['time_user'];
+        $password = $_POST['time_pass'];
+        $Bender_remember_me = (@$_POST['Bender_remmeber_me'] == "Yes" ? 1 : 0 );
+        
+        $dbcore->sec->Login($username, $password, $Bender_remember_me);
+        switch($dbcore->sec->login_val)
         {
             case "locked":
-                $message = array('This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.');
+                $message = 'This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.';
             break;
 
             case "validate":
-                $message = array('This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.');
+                $message = 'This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.';
+            break;
+            
+            case "hash_tbl_fail":
+                $message = "Failed to set Hash for the Login Cookie to the table...";
             break;
 
-            case is_array($login):
-            $to_go = $login[1];
-            $message = array(
-                'Bad Username or Password!',
-                $to_go
-            );
+            case "p_fail":
+                $message = 'Bad Username or Password!';
             break;
 
             case "u_fail":
-                $message = array('Username does not exsist.');
+                $message = 'Username does not exsist.';
             break;
 
             case "u_u_r_fail":
-                $message = array("Failed to update User row");
+                $message = "Failed to update User row";
             break;
 
             case "good":
-                $dbcore->redirect_page($return, 2000, 'Login Successful!');
+                $message = 'Login Successful!';
+                $dbcore->redirect_page($return, 2000);
             break;
 
             case "cookie_fail":
-                $message = array("Set Cookie fail, check the bottom of the glass, or your browser.");
+                $message = "Set Cookie fail, check the bottom of the glass, or your browser.";
             break;
 
             default:
-                $message = array("Unknown Return.");
+                $message = "Unknown Return.";
             break;
         }
+        $dbcore->smarty->assign('message', $message);
+        $dbcore->smarty->display('login_result.tpl');
     break;
 
     #---#
-    case "logout_proc":
-        $username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-        $password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-        $admin_cookie = filter_input(INPUT_GET, 'a_c', FILTER_SANITIZE_SPECIAL_CHARS);
-        if($admin_cookie==1)
+    case "logout":
+        $admin_cookie = (int) $_REQUEST['a_c']+0;
+        if($admin_cookie === 1)
         {
             $cookie_name = 'WiFiDB_admin_login_yes';
             $msg = 'Admin Logout Successful!';
@@ -98,14 +99,24 @@ switch($func)
             {$path  = '/'.$dbcore->root.'/';}
             else{$path  = '/';}
         }
-        if(setcookie($cookie_name, md5("@LOGGEDOUT!").":".$username, time()-3600, $path))
+        list($cookie_pass_hash, $username) = explode(":", base64_decode($_COOKIE[$cookie_name]));
+        $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
+        $prep = $dbcore->sql->conn->prepare($sql);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->execute();
+        $dbcore->sql->checkError();
+        
+        if(setcookie($cookie_name, "@LOGGEDOUT!:".$username, time()-3600, $path, $dbcore->sec->domain, $dbcore->sec->ssl))
         {
-            redirect_page($GLOBALS['UPATH'], 2000, $msg);
+            $message = $msg;
+            $dbcore->redirect_page("", 2000);
         }
         else
         {
-            $message = array("Could not log you out.. :-(");
+            $message = "Could not log you out.. :-(";
         }
+        $dbcore->smarty->assign('message', $message);
+        $dbcore->smarty->display('login_result.tpl');
     break;
 
     #---#
@@ -131,13 +142,10 @@ switch($func)
         }else
         {
             $ret = $dbcore->sec->CreateUser($username, $password, $email);
-            #die();
-            var_dump($ret);
-            die();
             $return = $ret[0];
             $message = $ret[1];
 
-            switch($ret)
+            switch($return)
             {
                 case 1:
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
@@ -154,14 +162,14 @@ switch($func)
                     {
                         $message = "User Created! Go ahead and login.";
                     }
-                    $dbcore->smarty->assign('wifidb_create_message', $message);
-                    $dbcore->smarty->display('login_user.tpl');
+                    $dbcore->smarty->assign('message', $message);
+                    $dbcore->smarty->display('login_index.tpl');
                 break;
 
                 case 0:
                     #Failed to create a user for some reason, tell them why.
                     $dbcore->smarty->assign('wifidb_create_message', $message);
-                    $dbcore->smarty->display('user_create.tpl');
+                    $dbcore->smarty->display('create_user.tpl');
                 break;
                 default:
                     die("ummmmm...");
@@ -242,11 +250,11 @@ switch($func)
     break;
 
     case "revalidate":
-
+        ##########################
+        ##########################
         $message = "Resend User Email Validation Code";
-        $dbcore->smarty->assign('wifidb_create_message', $message);
-        $dbcore->smarty->display('login_user.tpl');
-        exit();
+        $dbcore->smarty->assign('message', $message);
+        $dbcore->smarty->display('login_result.tpl');
     break;
 
     case "reset_password_form":
