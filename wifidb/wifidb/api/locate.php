@@ -20,7 +20,7 @@ if not, write to the
 */
 
 global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'API');
+$switches = array('screen'=>"HTML",'extras'=>'api');
 
 include('../lib/init.inc.php');
 

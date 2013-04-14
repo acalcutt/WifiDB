@@ -85,12 +85,15 @@ if($error)
     echo $error_msg;
     die();
 }
-if(strtolower($GLOBALS['switches']['screen']) != "cli" || strtolower($GLOBALS['switches']['extras']) != "api")
+if(strtolower($GLOBALS['switches']['screen']) != "cli")
 {
-    if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
+    if(strtolower($GLOBALS['switches']['extras']) != "api")
     {
-        print_js($config['hosturl'].$config['root'].'/');
-        exit();
+        if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
+        {
+            print_js($config['hosturl'].$config['root'].'/');
+            exit();
+        }
     }
 }    
 /*

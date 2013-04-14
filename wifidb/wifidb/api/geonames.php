@@ -19,7 +19,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'API');
+$switches = array('screen'=>"HTML",'extras'=>'api');
 include('../lib/init.inc.php');
 
 $lat    = (@$_REQUEST['lat']  ? $_REQUEST['lat']  : "");

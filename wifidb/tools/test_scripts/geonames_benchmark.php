@@ -1,6 +1,6 @@
 <?php
 global $switches;
-$switches = array('extras'=>'api','screen'=>"CLI");
+$switches = array('screen'=>"CLI",'extras'=>'api');
 
 require( '../daemon/config.inc.php' );
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
