@@ -160,28 +160,34 @@ class frontend extends dbcore
             'user'=>$newArray["username"]
         );
         
-        $sql_gps = "SELECT * FROM `wifi`.`wifi_gps` WHERE `ap_hash` = ?";# AND `lat` != 'N 0.0000' AND `lat` != '0.0000' AND `lat` != '' LIMIT 1";
-        $prepgps = $this->sql->conn->prepare($sql_gps);
-        $prepgps->bindParam(1, $newArray['ap_hash'], PDO::PARAM_STR);
-        $prepgps->execute();
-        $lastgps = $prepgps->fetchAll();
-        var_dump($lastgps);
-        if($lastgps !== FALSE && $lastgps['lat'] != "N 0.0000")
+        $sql = "SELECT  `lat` FROM `wifi`.`wifi_signals`, `wifi`.`wifi_gps`
+                WHERE `wifi_signals`.`ap_hash` =  ?
+                AND `wifi_gps`.`id` =  `wifi_signals`.`gps_id`
+                AND `wifi_gps`.`lat` != '0.0000' AND `wifi_gps`.`lat` != 'N 0.0000'
+                ORDER BY `wifi_gps`.`date` ASC, `wifi_gps`.`time` DESC LIMIT 1";
+        $ap_hash = $newArray["ap_hash"];
+        $prep1 = $this->sql->conn->prepare($sql);
+        $prep1->bindParam(1, $ap_hash, PDO::PARAM_STR);
+        #var_dump($prep1);
+        $prep1->execute();
+        $lastgps = $prep1->fetch(2);
+        if($lastgps !== FALSE)
         {
             $lat_check = explode(" ", $lastgps['lat']);
             $lat_c = $lat_check[1]+0;
-            $gps_globe = ($lat_c == "0" ? "off" : "on")\
-                ;
+            $gps_globe = ($lat_c == "0" ? "off" : "on");
         }else
         {
             $gps_globe = "off";
         }
         
-        $sql = "SELECT  `wifi_signals`.`ap_hash` ,  `signal` ,  `rssi` ,  `username` ,  `lat` ,  `long` ,  `sats` ,  `hdp` ,  `alt` ,  `geo` ,  `kmh` ,  `mph` ,  `track` ,  `date` ,  `time` 
-                FROM  `wifi`.`wifi_signals` ,  `wifi_gps` 
-                WHERE  `wifi_signals`.`ap_hash` =  ?
-                AND  `wifi_gps`.`id` =  `wifi_signals`.`gps_id` 
-                ORDER BY  `wifi_gps`.`date` ASC ,  `wifi_gps`.`time` ASC ";
+        $sql = "SELECT  `wifi_signals`.`id`, `wifi_signals`.`ap_hash`, `signal`, `rssi`, `username`,
+                `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`,
+                `track`, `date`, `time`
+                FROM `wifi`.`wifi_signals`, `wifi`.`wifi_gps`
+                WHERE `wifi_signals`.`ap_hash` =  ?
+                AND `wifi_gps`.`id` =  `wifi_signals`.`gps_id`
+                ORDER BY `wifi_gps`.`date` ASC, `wifi_gps`.`time` ASC";
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
         $prep1->execute();
@@ -191,22 +197,20 @@ class frontend extends dbcore
         $date_range = -1;
         $signal_runs = array();
         $signals = $prep1->fetchAll(2);
-        var_dump($signals);
-            die();
             
         foreach($signals as $field)
         {
             if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
-            $sql_gps = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = '{$field['id']}'";
-            $gps_res = $this->sql->conn->query($sql_gps);
-            $gps = $gps_res->fetch(2);
-            if($gps['id']==''){continue;}
-            if($prev_date < strtotime($gps['date']))
+            #$sql_gps = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = '{$field['id']}'";
+            #$gps_res = $this->sql->conn->query($sql_gps);
+            #$gps = $gps_res->fetch(2);
+            #if($gps['id']==''){continue;}
+            if($prev_date < strtotime($field['date']))
             {
                 $date_range++;
                 $signal_runs[$date_range]['id'] = $date_range;
-                $signal_runs[$date_range]['start'] = $gps['date']." ".$gps['time'];
-                $signal_runs[$date_range]['descstart'] = $gps['time'];
+                $signal_runs[$date_range]['start'] = $field['date']." ".$field['time'];
+                $signal_runs[$date_range]['descstart'] = $field['time'];
                 $signal_runs[$date_range]['user'] = $field['username'];
             }else
             {
@@ -214,22 +218,23 @@ class frontend extends dbcore
                 {
                     $signal_runs[$date_range]['user'] .= " and ".$field['username'];
                 }
-                $signal_runs[$date_range]['desc'] = $gps['date'].": ".$signal_runs[$date_range]['descstart']." - ".$gps['time'];
-                $signal_runs[$date_range]['stop'] = $gps['date']." ".$gps['time'];
+                $signal_runs[$date_range]['desc'] = $field['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field['time'];
+                $signal_runs[$date_range]['stop'] = $field['date']." ".$field['time'];
             }
 
-            $prev_date = strtotime($gps['date']);
+            $prev_date = strtotime($field['date']);
 
             $signal_runs[$date_range]['gps'][] = array(   
                                     'class'=>$class,
-                                    'lat'=>$gps["lat"],
-                                    'long'=>$gps["long"],
-                                    'sats'=>$gps["sats"],
-                                    'date'=>$gps["date"],
-                                    'time'=>$gps["time"],
+                                    'lat'=>$field["lat"],
+                                    'long'=>$field["long"],
+                                    'sats'=>$field["sats"],
+                                    'date'=>$field["date"],
+                                    'time'=>$field["time"],
                                     'signal'=>$field["signal"]
                                 );
         }
+        
         $list = array();
         $prep = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ? ");
         $id_find = "%-{$id}:%";

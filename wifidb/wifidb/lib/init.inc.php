@@ -1,7 +1,7 @@
 <?php
 /*
-Init.inc.php, Initialization script for WiFiDB both CLI, Daemon, and HTTP
-Copyright (C) 2012 Phil Ferland
+Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
+Copyright (C) 2013 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -85,87 +85,92 @@ if($error)
     echo $error_msg;
     die();
 }
-if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']) && !($GLOBALS['switches']['screen'] == "CLI" || $GLOBALS['switches']['extras'] == "API"))
+if(strtolower($GLOBALS['switches']['screen']) != "cli" || strtolower($GLOBALS['switches']['extras']) != "api")
 {
-    print_js($config['hosturl'].$config['root'].'/');
-    exit();
-}else
-{
-    
-    /*
+    if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
+    {
+        print_js($config['hosturl'].$config['root'].'/');
+        exit();
+    }
+}    
+/*
  * Class autoloader
  */
-    function __autoload($class)
+function __autoload($class)
+{
+    if(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php')
     {
-        if(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php')
-        {
-            return 1;
-        }elseif(@include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php')
-        {
-            return 1;
-        }elseif(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php')
-        {
-            return 1;
-        }else
-        {
-            echo "Could not load class `{$class}` from 
-            {$GLOBALS['config']['wifidb_tools']}daemon/{$class}.inc.php
-                Or
-            {$GLOBALS['config']['wifidb_install']}lib/{$class}.inc.php\r\n";
-            return 0;
-        }
+        return 1;
+    }elseif(@include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php')
+    {
+        return 1;
+    }elseif(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php')
+    {
+        return 1;
+    }else
+    {
+        echo "Could not load class `{$class}` from 
+        {$GLOBALS['config']['wifidb_tools']}daemon/{$class}.inc.php
+            Or
+        {$GLOBALS['config']['wifidb_install']}lib/{$class}.inc.php\r\n";
+        return 0;
     }
-    require_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
-    
-    switch($GLOBALS['switches']['screen'])
-    {
-        case "CLI":
-            require_once $config['wifidb_tools'].'daemon/config.inc.php';
-            switch($GLOBALS['switches']['extras'])
-            {
-                ####
-                case "export":
-                    $dbcore = new export($config, $daemon_config);
+}
+require_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
+
+switch(strtoupper($GLOBALS['switches']['screen']))
+{
+    case "CLI":
+        require_once $config['wifidb_tools'].'daemon/config.inc.php';
+        switch(strtolower($GLOBALS['switches']['extras']))
+        {
+            ####
+            case "export":
+                $dbcore = new export($config, $daemon_config);
+            break;
+            ####
+            case "import":
+                $dbcore = new import($config, $daemon_config);
+            ####
+            case "daemon":
+                $dbcore = new daemon($config, $daemon_config);
+            break;
+            ####
+            case "cli":
+                $dbcore = new wdbcli($config, $daemon_config);
+            break;
+            ####
+            case "api":
+                $dbcore = new api($config);
                 break;
-                case "import":
-                    $dbcore = new import($config, $daemon_config);
-                ####
-                case "daemon":
-                    $dbcore = new daemon($config, $daemon_config);
+            ####
+            default:
+                die("bad cli extras switch.");
                 break;
-                ####
-                case "cli":
-                    $dbcore = new wdbcli($config, $daemon_config);
+        }
+        $dbcore->cli = 1;
+        break;
+
+    ################
+    case "HTML":
+        switch(strtolower($GLOBALS['switches']['extras']))
+        {
+            case "api":
+                $dbcore = new api($config);
                 break;
 
-                default:
-                    die("bad cli extras switch.");
-                    break;
-            }
-            $dbcore->cli = 1;
-            break;
-        
-        ################
-        case "HTML":
-            switch($GLOBALS['switches']['extras'])
-            {
-                case "API":
-                    $dbcore = new api($config);
-                    break;
-                
-                default:
-                    $dbcore = new frontend($config);
-                    break;
-            }
-            $dbcore->cli    = 0;
-            break;
-
-        Default:
-            die("Unknown Switch Set.");
-            break;
+            default:
+                $dbcore = new frontend($config);
+                break;
+        }
+        $dbcore->cli    = 0;
+        break;
+    ################
+    Default:
+        die("Unknown Switch Set.");
+        break;
     }
 #done setting up WiFiDB, weather it be the daemon or the web interface, or just plain failing.
-}
 
 
 
@@ -192,7 +197,7 @@ function exception_handler($err)
             }
         }
     }
-    $trace['main'] = array( 'PDOError' =>strval($err->getCode()), 'Message'=>$err->getMessage(),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
+    $trace['main'] = array( 'Error' =>strval($err->getCode()), 'Message'=>$err->getMessage(),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
     var_dump($trace);
     exit();
 }
@@ -200,26 +205,33 @@ function exception_handler($err)
 
 function print_js($URL_PATH)
 {
+    $ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
+    if($ssl_flag == "https")
+    {
+        $ssl = ";secure";
+    }else
+    {
+        $ssl = "";
+    }
+    $domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
+    $folder = parse_url($URL_PATH, PHP_URL_PATH);
+    $c = strlen($folder);
+    if($folder[$c-1] == "/" && $c > 1)
+    {
+        $root = substr($folder, 0, -1);
+    }else
+    {
+        $root = $folder;
+    }
+    $PATH       = ";path=".$root;
+    if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
+    {
+        $ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
+    }else
+    {
+        $ultimate_path = $URL_PATH;
+    }
     
-        $ssl_flag                = parse_url($URL_PATH, PHP_URL_SCHEME);
-        if($ssl_flag == "https")
-        {
-            $ssl = ";secure";
-        }else
-        {
-            $ssl = "";
-        }
-        $domain     = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
-        $folder = parse_url($URL_PATH, PHP_URL_PATH);
-        $c = strlen($folder);
-        if($folder[$c-1] == "/" && $c > 1)
-        {
-            $root = substr($folder, 0, -1);
-        }else
-        {
-            $root = $folder;
-        }
-        $PATH       = ";path=".$root;
     ?>
 <script type="text/javascript">
     function checkTimeZone()
@@ -262,7 +274,7 @@ function print_js($URL_PATH)
             exdate.setDate(exdate.getDate()+expiredays);
             document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
         }
-        location.href = '<?php echo $URL_PATH.'?'.$_SERVER['QUERY_STRING'];?>';
+        location.href = '<?php echo $ssl_flag.'://'.$ultimate_path; ?>';
     }
     </script>
     <body onload = "checkTimeZone();"> </body>

@@ -611,14 +611,38 @@ class dbcore
         return $manuf;
     }
     
+    function CalcDistance($lat1, $long1, $lat2, $long2)
+    {
+            $pi80 = M_PI / 180;
+            $lat1 *= $pi80;
+            $long1 *= $pi80;
+            $lat2 *= $pi80;
+            $long2 *= $pi80;
+
+            $r = 6372.797; // mean radius of Earth in km
+            $dlat = $lat2 - $lat1;
+            $dlong = $long2 - $long1;
+            $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlong / 2) * sin($dlong / 2);
+            $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+            $km = $r * $c;
+            return array(($km * 0.621371192), $km);
+    }
     
-    function subval_sort($a,$subkey)
+    function subval_sort($a,$subkey, $asc = 0)
     {
         foreach($a as $k=>$v)
         {
             $b[$k] = strtolower($v[$subkey]);
         }
-        arsort($b , 6); //SORT_NATURAL (6)
+        
+        if($asc)
+        {
+            asort($b , 6); //SORT_NATURAL (6)
+        }else
+        {
+            arsort($b , 6); //SORT_NATURAL (6)
+        }
+        
         foreach($b as $key=>$val)
         {
             $c[] = $a[$key];

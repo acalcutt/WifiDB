@@ -32,7 +32,8 @@ class api extends dbcore
         $this->username     = (@$_REQUEST['username']  ? $_REQUEST['username'] : "" );
         $this->apikey       = (@$_REQUEST['apikey']    ? $_REQUEST['apikey'] : "");
         $this->session_id   = (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "");
-        $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");        
+        $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");
+        $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         //Lets see if we can find a user with this name.
         //If so, lets check to see if the API key they provided is correct.
         $this->use_keys = 0; // DEV USE ONLY
@@ -43,29 +44,88 @@ class api extends dbcore
         }
     }
     
+    private function fetch_geoname($lat_low = "", $lat_high = "", $long_low = "", $long_high = "")
+    {
+        #  
+        $sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code`, `asciiname`, `latitude`, `longitude`
+        FROM `wifi`.`geonames` 
+        WHERE `latitude` >= ?
+        AND `latitude` <= ?
+        AND `longitude` <= ?
+        AND `longitude` >= ?";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $lat_low, PDO::PARAM_STR);
+        $result->bindParam(2, $lat_high, PDO::PARAM_STR);
+        $result->bindParam(3, $long_low, PDO::PARAM_STR);
+        $result->bindParam(4, $long_high, PDO::PARAM_STR);
+        $result->execute();
+        $geo_array = $result->fetchall(2);
+        
+        if(@$geo_array[0] == "")
+        {
+            return 0;
+        }else
+        {
+            return $geo_array;
+        }
+    }
+
+
     public function GeoNames($lat, $long)
     {
         $lat_exp = explode(".", $lat);
         $long_exp = explode(".", $long);
-        $lat_alt = substr($lat_exp[1], 0, 2);
-        $lat = $lat_exp[0].".".$lat_alt;
-        $long_alt = substr($long_exp[1], 0, 1);
-        $long = $long_exp[0].".".$long_alt;
-        $lat_low = ($lat-0.01)."";
-        $lat_high = ($lat+0.01)."";
-        $long_sql = $long."%";
-        $sql = "select `geonameid`, `country code`, `admin1 code`, `admin2 code`, `asciiname` from `geonames` 
-            where `latitude` >= ? AND `latitude` <= ? AND `longitude` LIKE ?";
-        $result = $this->sql->conn->prepare($sql);
-        $result->bindParam(1, $lat_low);
-        $result->bindParam(2, $lat_high);
-        $result->bindParam(3, $long_sql);
-        $result->execute();
-        $geo_array = $result->fetch(2);
         
+        $lat_alt = substr($lat_exp[1], 0, 2); //Get the first two decimal places
+        $lat = (float) $lat_exp[0].".".$lat_alt; //Recombine and cast as a float
+        $lat_low = ($lat-0.01); // subtract 0.01 to get the first low Lat for searching
+        $lat_high = ($lat+0.01); // add 0.01 to get the first high Lat for searching
+        
+        $long_alt = substr($long_exp[1], 0, 3); //Get the first three decimal places
+        $long = (float) $long_exp[0].".".$long_alt; // recombine and cast as a float
+        $long_low = ($long-0.001); // subtract 0.001 to get the first low Long for searching
+        $long_high = ($long+0.001); // add 0.001 to get the first high Long fors searching
+        $i =1;
+        
+        do{ //loop till we find a valid geoname, or we hit the wall set by the config.
+            if($i == $this->GeoNamesLoopGiveUp){$this->mesg = "No Geoname found within a respectable area"; return 0;}
+            $geo_array = $this->fetch_geoname($lat_low, $lat_high, $long_low, $long_high);
+            $lat_low = ($lat_low-0.01); //prepare for the next loop if it is going to be needed. we are going to increse the search area a little bit.
+            $lat_high = ($lat_high+0.01);
+            $long_low = ($long_low-0.001);
+            $long_high = ($long_high+0.001);
+            $i++; // increment the search loop key
+        }while($geo_array[0] == "");
+        
+        foreach($geo_array as $key=>$names)
+        {
+            //calculate out the differences between the Supplied Lat/Long and each of the Geonames Lat/Long found.
+            $lat_calc = abs($names['latitude']-$lat);
+            $long_calc = abs($names['longitude']-$long);
+            $calcs[] = array($key, $lat_calc, $long_calc);
+        }
+        $sort = $this->subval_sort($calcs,1, 1); //Sort the Lats from lowest to highest
+        $sort1 = $this->subval_sort($calcs,2, 1); // Sort the Longs from lowset to highest
+        if($sort[0][0] != $sort1[0][0]) //check and see if the id's for each sort is the same, if not, we need to do some comparisons
+        {
+            $dist = $this->CalcDistance($lat, $long, $geo_array[$sort[0][0]]['latitude'], $geo_array[$sort[0][0]]['longitude'], 1); //distance of lowest lat geoname to the supplied lat/long
+            $dist1 = $this->CalcDistance($lat, $long, $geo_array[$sort1[0][0]]['latitude'], $geo_array[$sort1[0][0]]['longitude'], 1); //distance of the lowest long geoname to the supplied lat/long
+            if($dist < $dist1) //which ever one has the lowest distance is used.
+            {
+                $chosen = $sort[0];
+            }else
+            {
+                $chosen = $sort1[0];
+            }
+        }else //lowset lat and lowset long id's match
+        {
+            $chosen = $sort[0];
+        }
+        
+        $dist = $this->CalcDistance($lat, $long, $geo_array[$chosen[0]]['latitude'], $geo_array[$chosen[0]]['longitude']);
+        $geo_array = $geo_array[$chosen[0]];
         if($geo_array['admin1 code'])
         {
-        #    echo "Admin1 Code is Numeric, need to query the admin1 table for more information.";
             $admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
 
             $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin1` WHERE `admin1`= ?";
@@ -73,11 +133,9 @@ class api extends dbcore
             $admin1_res->bindParam(1, $admin1, PDO::PARAM_STR);
             $admin1_res->execute();
             $admin1_array = $admin1_res->fetch(1);
-            #var_dump($admin1_array);
         }
         if(is_numeric($geo_array['admin2 code']))
         {
-        #    echo "Admin2 Code is Numeric, need to query the admin2 table for more information.";
             $admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
             $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin2` WHERE `admin2`= ? ";
             $admin2_res = $this->sql->conn->prepare($sql);
@@ -93,14 +151,15 @@ class api extends dbcore
         $country_array = $country_res->fetch(1);
         
         $this->mesg = array(
-            #'Geonames'=>array(
-                'Country Code'=>$geo_array['country code'],
-                'Country Name'=>$country_array['Country'],
-                'Admin1 Code'=>$geo_array['admin1 code'],
-                'Admin1 Name'=>(@$admin1_array['asciiname'] ? $admin1_array['asciiname'] : ""),
-                'Admin2 Name'=>(@$admin2_array['asciiname'] ? $admin2_array['asciiname'] : ""),
-                'Area Name'=>$geo_array['asciiname']
-            #)
+                    'Country Code'=> str_replace("%20", " ", $geo_array['country code']),
+                    'Country Name'=> str_replace("%20", " ", $country_array['Country']),
+                    'Admin1 Code'=> str_replace("%20", " ", $geo_array['admin1 code']),
+                    'Admin1 Name'=>(@$admin1_array['asciiname'] ? str_replace("%20", " ", $admin1_array['asciiname']) : ""),
+                    'Admin2 Name'=>(@$admin2_array['asciiname'] ? str_replace("%20", " ", $admin2_array['asciiname']) : ""),
+                    'Area Name'=> str_replace("%20", " ", $geo_array['asciiname']),
+                    'miles'=>$dist[0],
+                    'km'=>$dist[1],
+                    'feet'=>$dist[0]*5280
                 );
         return 1;
     }

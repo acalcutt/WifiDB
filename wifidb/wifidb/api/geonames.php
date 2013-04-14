@@ -32,5 +32,4 @@ if($lat == "" || $long == "")
 
 $dbcore->GeoNames($lat,$long);
 $dbcore->Output();
-
 ?>
