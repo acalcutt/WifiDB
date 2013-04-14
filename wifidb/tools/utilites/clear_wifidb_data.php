@@ -13,19 +13,19 @@ if($rep == "y")
 {
     echo "clearing files\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`files`");
-    var_dump($dbcore->sql->conn->errorInfo());
+    #var_dump($dbcore->sql->conn->errorInfo());
     echo "clearing files_tmp\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`files_tmp`");
-    var_dump($dbcore->sql->conn->errorInfo());
+    #var_dump($dbcore->sql->conn->errorInfo());
     echo "clearing user_imports\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`user_imports`");
-    var_dump($dbcore->sql->conn->errorInfo());
+    #var_dump($dbcore->sql->conn->errorInfo());
     echo "clearing wifi_gps\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`wifi_gps`");
-    var_dump($dbcore->sql->conn->errorInfo());
+    #var_dump($dbcore->sql->conn->errorInfo());
     echo "clearing wifi_pointers\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`wifi_pointers`");
-    var_dump($dbcore->sql->conn->errorInfo());
+    #var_dump($dbcore->sql->conn->errorInfo());
     echo "clearing wifi_signals\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`wifi_signals`;");
 }else

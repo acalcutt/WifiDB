@@ -21,11 +21,10 @@ if not, write to the
 
 class import extends dbcore
 {
-    function __construct($config, $daemon_config, $lang_obj, $export_obj, $colors)
+    function __construct($config, $daemon_config, $export_obj, $colors)
     {
         parent::__construct($config, $daemon_config);
         $this->export       = $export_obj;
-        $this->lang         = $lang_obj;
         $this->log_level    = $daemon_config['log_level'];
         $this->log_interval = 1;
         $this->colors       = $colors;

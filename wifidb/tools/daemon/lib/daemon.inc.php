@@ -23,30 +23,14 @@ class daemon extends wdbcli
 {
     public function __construct($config, $daemon_config)
     {
-        if($this->config['colors_setting'] == 0 or PHP_OS == "WINNT")
-        {
-            $this->colors = array(
-                            "LIGHTGRAY"	=> "",
-                            "BLUE"	=> "",
-                            "GREEN"	=> "",
-                            "RED"	=> "",
-                            "YELLOW"	=> ""
-                            );
-        }else
-        {
-            $this->colors = array(
-                            "LIGHTGRAY"	=> "\033[0;37m",
-                            "BLUE"	=> "\033[0;34m",
-                            "GREEN"	=> "\033[0;32m",
-                            "RED"	=> "\033[0;31m",
-                            "YELLOW"	=> "\033[1;33m"
-                            );
-        }
-        parent::__construct($config);
+        parent::__construct($config, $daemon_config);
         
-        $this->export               = new export($config, $daemon_config);
-        $this->import               = new import($config, $daemon_config);
-        
+        $this->export               = new export($config, $daemon_config, $this->colors);
+        $this->import               = new import($config, $daemon_config, $this->export, $this->colors);
+        $this->time_interval_to_check = $daemon_config['time_interval_to_check'];
+        $this->default_user         = $daemon_config['default_user'];
+        $this->default_title        = $daemon_config['default_title'];
+        $this->default_notes        = $daemon_config['default_notes'];
         $this->convert_extentions   = array('csv','db3','vsz');
         $this->ver_array['Daemon']  = array(
                                     "last_edit"             =>  "2013-Jan-18",
@@ -63,8 +47,6 @@ class daemon extends wdbcli
                                     "verbosed"              =>  "1.0",#
                                     "parseArgs"             =>  "1.0"
                                     );
-        
-        $this->verbose = $this->config['verbose'];
     }
 ####################
     public function CheckDaemonKill()
@@ -97,24 +79,15 @@ class daemon extends wdbcli
             $notes = $file_names[$hash]['notes'];
             $date = $file_names[$hash]['date'];
             $hash_ = $file_names[$hash]['hash'];
-            #echo "Is inside Filenames.txt -->$source\r\n";
         }else
         {
-            #echo "Not in filenames.txt -->$source\r\n";
-
-            ### JUST A TRIAL
-            #return 0;
-
-            $user = $this->config['default_user'];
-            $title = $this->config['default_title'];
-            $notes = $this->config['default_notes'];
+            $user = $this->default_user;
+            $title = $this->default_title;
+            $notes = $this->default_notes;
             $date = date("y-m-d H:i:s");
             $hash_ = $hash;
 
         }
-        #echo $user." - ".$title." - ".$notes."\n\t".$hash_.' - '.$hash."\n";
-
-    #	echo "\n".$key."\t->\t################=== Start Daemon prep of ".$file." ===################\n";
         $this->logd("=== Start Daemon Prep of ".$file." ===");
 
         $sql = "INSERT INTO `wifi`.`files_tmp` ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )

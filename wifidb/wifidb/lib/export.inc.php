@@ -21,10 +21,9 @@ if not, write to the
 
 class export extends dbcore
 {
-    public function __construct($config, $daemon_config, $lang_obj, $colors)
+    public function __construct($config, $daemon_config, $colors)
     {
-        parent::__construct($config, $daemon_config);
-        $this->lang         = $lang_obj;
+        parent::__construct($config);
         $this->This_is_me   = getmypid();
         $this->log_level    = $daemon_config['log_level'];
         $this->log_interval = 1;
