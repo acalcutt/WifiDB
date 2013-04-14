@@ -337,10 +337,10 @@ while(1)
                 $dbcore->logd("File is empty or not valid, go and import something.", $dbcore->This_is_me);
                 $dbcore->verbosed("File is empty, go and import something.\n");
                 $del_file_tmp = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
-                $prep = $this->sql->conn->prepare($del_file_tmp);
+                $prep = $dbcore->sql->conn->prepare($del_file_tmp);
                 $prep->bindParam(1, $remove_file, PDO::PARAM_INT);
                 $prep->execute();
-                $err = $this->sql->conn->errorCode();
+                $err = $dbcore->sql->conn->errorCode();
                 #echo $del_file_tmp."\r\n";
                 if(!$dbcore->sql->conn->query($del_file_tmp))
                 {
@@ -375,8 +375,8 @@ while(1)
 	#$dbcore->export->daemon_kml($named = 0);
 
 
-        $nextrun = date("Y-m-d H:i:s", (time()+$dbcore->config['time_interval_to_check']));
-        $sqlup2 = "UPDATE `wifi`.`{$dbcore->sql->settings_tb}` SET `size` = '$nextrun' WHERE `id` = '1'";
+        $nextrun = date("Y-m-d H:i:s", (time()+$dbcore->time_interval_to_check));
+        $sqlup2 = "UPDATE `wifi`.`settings` SET `size` = '$nextrun' WHERE `id` = '1'";
         if($dbcore->sql->conn->query($sqlup2))
         {
             $dbcore->logd("Updated settings table with next run time: ".$nextrun, $dbcore->This_is_me);
@@ -388,8 +388,8 @@ while(1)
             $dbcore->verbosed("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
         }
 
-        $dbcore->logd("File tmp table is empty, go and import something. While your doing that I'm going to sleep for ".($dbcore->config['time_interval_to_check']/60)." minutes.", $dbcore->This_is_me);
-        $dbcore->verbosed("File tmp table is empty, go and import something. While your doing that I'm going to sleep for ".($dbcore->config['time_interval_to_check']/60)." minutes.");
+        $dbcore->logd("File tmp table is empty, go and import something. While your doing that I'm going to sleep for ".($dbcore->time_interval_to_check/60)." minutes.", $dbcore->This_is_me);
+        $dbcore->verbosed("File tmp table is empty, go and import something. While your doing that I'm going to sleep for ".($dbcore->time_interval_to_check/60)." minutes.");
     }else
     {
         #mail_users("_error_looking_for_files:", $subject, "import", 1);
