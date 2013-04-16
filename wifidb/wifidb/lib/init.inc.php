@@ -161,6 +161,10 @@ switch(strtoupper($GLOBALS['switches']['screen']))
             case "api":
                 $dbcore = new api($config);
                 break;
+            case "export":
+                $dbcore = new frontend($config);
+                $dbcore->export = new export($config);
+                break;
 
             default:
                 $dbcore = new frontend($config);

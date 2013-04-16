@@ -26,29 +26,32 @@ if not, write to the
     {foreach name=done_all item=wifidb_done from=$wifidb_done_all_array}
     <tr class="sub_head">
         <th>ID</th>
-        <th>Filename</th>
+        <th>Date</th>
         <th>Title</th>
         <th>User</th>
         <th>Size</th>
-    </tr>
-    <tr class="{$wifidb_done.class}">
-        <td align="center">{$wifidb_done.id}</td>
-        <td align="center"><a class="links" href="../opt/userstats.php?func=useraplist&row={$wifidb_done.user_row}">{$wifidb_done.file}</a></td>
-        <td align="center">{$wifidb_done.title}</td>
-        <td align="center"><a class="links" href ="../opt/userstats.php?func=alluserlists&user={$wifidb_done.user}">{$wifidb_done.user}</a></td>
-        <td align="center">{$wifidb_done.size}</td>
-    </tr>
-    <tr class="sub_head">
-        <th colspan="3">Hash</th>
-        <th>Date</th>
         <th>APs/GPS Count</th>
     </tr>
     <tr class="{$wifidb_done.class}">
-        <td align="center" colspan="3">{$wifidb_done.hash}</td>
+        <td align="center">{$wifidb_done.id}</td>
         <td align="center">{$wifidb_done.date}</td>
+        <td align="center">{$wifidb_done.title}</td>
+        <td align="center"><a class="links" href ="{$wifidb_host_url}/opt/userstats.php?func=alluserlists&user={$wifidb_done.user}">{$wifidb_done.user}</a></td>
+        <td align="center">{$wifidb_done.size}</td>
         <td align="center">{$wifidb_done.aps}/{$wifidb_done.gps}</td>
     </tr>
-    <tr class="sub_head"><td></td></tr>
+    <tr class="sub_head">
+        <th colspan="2">Hash</th>
+        <th colspan="4">Filename</th>
+    </tr>
+    <tr class="{$wifidb_done.class}">
+        <td align="center" colspan="2">{$wifidb_done.hash}</td>
+        <td align="center" colspan="4"><a class="links" href="{$wifidb_host_url}/opt/userstats.php?func=useraplist&row={$wifidb_done.user_row}">{$wifidb_done.file}</a></td>
+        
+    </tr>
+    <tr class="sub_head">
+        <td></td>
+    </tr>
     {foreachelse}
     <tr class="sub_head">
         <td>There are no Imports yet, go get some...</td>

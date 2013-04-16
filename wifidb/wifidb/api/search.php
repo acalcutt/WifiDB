@@ -1,42 +1,83 @@
 <?php
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
 global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'API');
+$switches = array('screen'=>"HTML", 'extras'=>'api');
 
-include('../lib/init.inc.php');
+require '../lib/init.inc.php';
 
-$ssid   =   html_entity_decode(@$_REQUEST['SSID'], ENT_QUOTES);
-$mac    =   @$_REQUEST['Mac'];
-$radio  =   @$_REQUEST['Rad'];
-$sectype=   @$_REQUEST['SecType'];
-$chan   =   @$_REQUEST['Chn'];
-//Other AP Info
-$auth   =   html_entity_decode(@$_REQUEST['Auth'], ENT_QUOTES);
-$encry  =   html_entity_decode(@$_REQUEST['Encry'], ENT_QUOTES);
-$NT     =   @$_REQUEST['NT'];
-$user   =   @$_REQUEST['user'];
-
-// GPS Variables
-$lat    =   html_entity_decode(@$_REQUEST['Lat'], ENT_QUOTES);
-$long   =   html_entity_decode(@$_REQUEST['Long'], ENT_QUOTES);
-
-
-
-$data = array(
-    #ap data
-    'ssid'=>$ssid,
-    'mac'=>$mac,
-    'chan'=>$chan,
-    'radio'=>$radio,
-    'sectype'=>$sectype,
-    'auth'=>$auth,
-    'encry'=>$encry,
-    'NT'=>$NT,
-    'username'=>$user,
-    #gps data
-    'lat'=>$lat,
-    'long'=>$long,
-);
-
-$dbcore->SearchAP($data);
-$dbcore->Output();
+if(@$_REQUEST['ssid'] == "%" || @$_REQUEST['mac'] == "%" || @$_REQUEST['radio'] == "%" || @$_REQUEST['chan'] == "%" || @$_REQUEST['auth'] == "%" || @$_REQUEST['encry'] == "%" )
+{
+    $dbcore->mesg = 'Come on man, you can`t wildcard search for all of something, be more specific...';
+    $dbcore->Output();
+}else
+{
+    if(@$_REQUEST['ssid'])
+    {
+        $ssid   =   $_REQUEST['ssid'];
+    }else
+    {
+        $ssid   =   "";
+    }
+    
+    if(@$_REQUEST['mac'])
+    {
+        $mac    =   $_REQUEST['mac'];
+    }else
+    {
+        $mac    =   "";
+    }
+    
+    if(@$_REQUEST['radio'])
+    {
+        $radio  =   $_REQUEST['radio'];
+    }else
+    {
+        $radio  =   "";
+    }
+    
+    if(@$_REQUEST['chan'])
+    {
+        $chan   =   $_REQUEST['chan'];
+    }else
+    {
+        $chan   =   "";
+    }
+    
+    if(@$_REQUEST['auth'])
+    {
+        $auth   =   $_REQUEST['auth'];
+    }else
+    {
+        $auth   =   "";
+    }
+    
+    if(@$_REQUEST['encry'])
+    {
+        $encry  =   $_REQUEST['encry'];
+    }else
+    {
+        $encry  =   "";
+    }
+    
+    $dbcore->search($ssid, $mac, $radio, $chan, $auth, $encry);
+    $dbcore->Output();
+}
 ?>

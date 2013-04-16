@@ -235,12 +235,25 @@ while(1)
                     $user_ids = implode(":", $ids);
                     
                     $sql_insert_file = "INSERT INTO `wifi`.`files` 
-                        (`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`) 
+                               (`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`) 
                         VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
                     
                     $prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
-                    $prep1->execute(array($file_name, $date, $size, $totalaps, $totalgps, $hash, $user, $notes, $title, $user_ids, $prev_ext['converted'], $prev_ext['prev_ext']));
-                    #var_dump(array($file_name, $date, $size, $totalaps, $totalgps, $hash, $user, $notes, $title, $user_ids, $prev_ext['converted'], $prev_ext['prev_ext']));
+                    $prep1->bindParam(1, $file_name, PDO::PARAM_STR);
+                    $prep1->bindParam(2, $date, PDO::PARAM_STR);
+                    $prep1->bindParam(3, $size, PDO::PARAM_STR);
+                    $prep1->bindParam(4, $totalaps, PDO::PARAM_STR);
+                    $prep1->bindParam(5, $totalgps, PDO::PARAM_STR);
+                    $prep1->bindParam(6, $hash, PDO::PARAM_STR);
+                    $prep1->bindParam(7, $user, PDO::PARAM_STR);
+                    $prep1->bindParam(8, $notes, PDO::PARAM_STR);
+                    $prep1->bindParam(9, $title, PDO::PARAM_STR);
+                    $prep1->bindParam(10, $user_ids, PDO::PARAM_STR);
+                    $prep1->bindParam(11, $prev_ext['converted'], PDO::PARAM_STR);
+                    $prep1->bindParam(12, $prev_ext['prev_ext'], PDO::PARAM_STR);
+                    $prep1->execute();
+                    var_dump(array($file_name, $date, $size, $totalaps, $totalgps, $hash, $user, $notes, $title, $user_ids, $prev_ext['converted'], $prev_ext['prev_ext']));
+                    die();
                     $err1 = $dbcore->sql->conn->errorCode();
                     #var_dump($err1);
                     if($err1[0] == "00000")

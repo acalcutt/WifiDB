@@ -28,6 +28,7 @@ class dbcore
         
         $this->sql                      = new SQL($config);
         
+        $this->mesg                     = "";
         $this->switches                 = $GLOBALS['switches'];
         $this->reserved_users           = $config['reserved_users'];
         $this->supported_extentions     = array('csv','db3','vsz','vs1','gpx','ns1');
@@ -73,6 +74,7 @@ class dbcore
         
         $this->smarty_path              = $config['smarty_path'];
         $this->manufactures             = $GLOBALS['manufactures'];
+        unset($GLOBALS['manufactures']);
         
         $this->wifidb_email_updates     = 0;
         $this->email_validation         = 1;
@@ -177,15 +179,6 @@ class dbcore
         if ($level==0) echo '</pre>';
     }
     
-    #==================================================================#
-    #   Check to see if there is an alerts message to be displayed     #
-    #==================================================================#
-    function find_alert_message()
-    {
-        $this->alerts_message = '';
-        return 1;
-    }
-
     # Gets the status of the Import/Export Daemon, windows/linux
     function getdaemonstats( $daemon_pid = NULL)
     {
@@ -430,26 +423,7 @@ class dbcore
         $text = str_replace($strip,"",$text);
         return $text;
     }
-
-    #=======================================================================#
-    #   dos_filesize (gives file size for either windows or linux machines) #
-    #=======================================================================#
-    function dos_filesize($fn = "")
-    {
-        if(PHP_OS == "WINNT")
-        {
-            if (is_file($fn))
-                return exec('FOR %A IN ("'.$fn.'") DO @ECHO %~zA');
-            else
-            {
-                return '0';
-            }
-        }else
-        {
-            return @filesize($fn);
-        }
-    }
-
+    
     #===========================================================================#
     #   make ssid (makes a DB safe, File safe and Unsan versions of an SSID)    #
     #===========================================================================#
@@ -651,6 +625,21 @@ class dbcore
         return $c;
     }
     
+    public function TarFile($file = "")
+    {
+        if($file == "")
+        {
+            return 0;
+        }
+        $exp_file = explode(".", $file);
+        $filename = $exp_file[0];
+        $tared_file = $filename.".tar";
+        var_dump("tar -zcvf $tared_file $file");
+        $tared = `tar -zcvf $tared_file $file`;
+        var_dump($tared);
+        die();
+        return $tared_file;
+    }
     
 ####################
     /*

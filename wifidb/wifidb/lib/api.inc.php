@@ -33,6 +33,7 @@ class api extends dbcore
         $this->apikey       = (@$_REQUEST['apikey']    ? $_REQUEST['apikey'] : "");
         $this->session_id   = (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "");
         $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");
+        $this->message      = "";
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         //Lets see if we can find a user with this name.
         //If so, lets check to see if the API key they provided is correct.
@@ -69,7 +70,6 @@ class api extends dbcore
             return $geo_array;
         }
     }
-
 
     public function GeoNames($lat, $long)
     {
@@ -164,7 +164,7 @@ class api extends dbcore
         return 1;
     }
     
-    function GetAnnouncement()
+    public function GetAnnouncement()
     {
         $result = $this->sql->conn->query("SELECT `auth`,`title`,`body`,`date`,`comments` FROM `wifi`.`annunc` WHERE `set` = '1'");
         $array = $result->fetch(2);
@@ -579,38 +579,75 @@ class api extends dbcore
         exit();
     }
     
-    public function SearchAP($details = array())
+    public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
     {
-        if($details === NULL){return -1;}
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE ";
-        foreach($details as $key=>$val)
+        $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE 
+                `ssid` LIKE ? AND 
+                `mac` LIKE ? AND 
+                `radio` LIKE ? AND 
+                `chan` LIKE ? AND 
+                `auth` LIKE ? AND 
+                `encry` LIKE ?";
+        $prep2 = $this->sql->conn->prepare($sql2);
+
+        $ssid = $ssid."%";
+        $prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+        $mac = $mac."%";
+        $prep2->bindParam(2, $mac, PDO::PARAM_STR);
+        $radio = $radio."%";
+        $prep2->bindParam(3, $radio, PDO::PARAM_STR);
+        $chan = $chan."%";
+        $prep2->bindParam(4, $chan, PDO::PARAM_STR);
+        $auth = $auth."%";
+        $prep2->bindParam(5, $auth, PDO::PARAM_STR);
+        $encry = $encry."%";
+        $prep2->bindParam(6, $encry, PDO::PARAM_STR);
+        $prep2->execute();
+        $total_rows = $prep2->rowCount();
+        if(!$total_rows)
         {
-            if($val === "" || $val === NULL)
-            {
-                continue;
-                $vals = "%";
-            }
-            $sql .= "`$key` LIKE :$key AND ";
+            $this->mesg = "No AP's Found";
+            return 0;
         }
-        $sql = substr_replace($sql, "", -4);
-        $prep = $this->sql->conn->prepare($sql);
-        foreach($details as $key=>$val)
+        $row_color = 0;
+        $results_all = array();
+        $i=0;
+        while ($newArray = $prep2->fetch(2))
         {
-            if($val === "" || $val === NULL)
+            if($row_color == 1)
             {
-                continue;
-                $vals = "%";
-            }else
-            {
-                $vals = "%".$val."%";
+                $row_color = 0;
+                $results_all[$i]['class'] = "light";    
             }
-            $keys = ":".$key;
-            $data[$keys] = $vals;
-            #$prep->bindParam($keys, $vals, PDO::PARAM_STR);
+            else
+            {
+                $row_color = 1;
+                $results_all[$i]['class'] = "dark";
+            }
+            $results_all[$i]['id'] = $newArray['id'];
+            $results_all[$i]['ssid'] = $newArray['ssid'];
+            $results_all[$i]['mac'] = $newArray['mac'];
+            $results_all[$i]['sectype'] = $newArray['sectype'];
+            $results_all[$i]['chan'] = $newArray['chan'];
+            $results_all[$i]['auth'] = $newArray['auth'];
+            $results_all[$i]['encry'] = $newArray['encry'];
+            $results_all[$i]['radio'] = $newArray['radio'];
+            $results_all[$i]['BTx']=$newArray['BTx'];
+            $results_all[$i]['OTx']=$newArray['OTx'];
+            $results_all[$i]['label']=$newArray['label'];
+            $results_all[$i]['FA']=$newArray['FA'];
+            $results_all[$i]['LA']=$newArray['LA'];
+            $results_all[$i]['NT'] = $newArray['NT'];
+            $results_all[$i]['manuf']=$newArray['manuf'];
+            $results_all[$i]['geonames_id']=$newArray['geonames_id'];
+            $results_all[$i]['admin1_id']=$newArray['admin1_id'];
+            $results_all[$i]['admin2_id']=$newArray['admin2_id'];
+            $results_all[$i]['username']=$newArray['username'];
+            $results_all[$i]['ap_hash'] = $newArray['ap_hash'];
+            $i++;
         }
-        $prep->execute($data);
-        $this->mesg = $prep->fetchAll(2);
-        return 1;
+        $this->mesg = $results_all;
+        return $results_all;
     }
     
     private function recursive_raw($sep = "", $open = "", $close = "", $data = array())

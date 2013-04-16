@@ -46,17 +46,17 @@ if not, write to the
 	</tr>
 	<tr class="dark">
             <td align="center" class="style2" style="width: 100px">{$total_users}</td>
-            <td align="center" class="style2"><a class="links" href="opt/userstats.php?func=alluserlists&amp;user={$new_import_user}">{$new_import_user}</a></td>
+            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}">{$new_import_user}</a></td>
             <td align="center" class="style2">
                 <p align="center">
                 <table>
                     <tbody>
                         <tr>
                             <td align="right" width="100%">
-                                <a class="links" href="opt/fetch.php?id={$new_ap_id}">{$new_ap_ssid}</a>
+                                <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}">{$new_ap_ssid}</a>
                             </td>
                             <td align="left">
-                                <img width="20px" src="img/globe_{$globe_status}.png"/>
+                                <img width="20px" src="{$wifidb_host_url}img/globe_{$globe_status}.png"/>
                             </td>
                         </tr>
                     </tbody>
@@ -64,7 +64,7 @@ if not, write to the
                 </p>
             </td>
             <td align="center" class="style2">
-                <a class="links" href="opt/userstats.php?func=useraplist&amp;row={$new_import_id}">{$new_import_title}</a>
+                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}">{$new_import_title}</a>
                 <br/>  [{$new_import_date}] </td>
 	</tr>
     </tbody>

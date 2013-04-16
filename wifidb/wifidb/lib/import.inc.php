@@ -218,11 +218,16 @@ class import extends dbcore
         
         foreach($vs1data['gpsdata'] as $key=>$gps)
         {
-            if(@$gps['lat'] == '')
+            if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat'] == ''))
             {
                 $gps['lat'] = "N 0000.0000";
                 $gps['long'] = "E 0000.0000";
                 #die("############################################################## NEEDS TO BE REMOVED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            }
+            if(!preg_match("(\d{2})-(\d{2})-(\d{4})", $gps['date']))
+            {
+                $gps['date'] = "1969-01-01";
+                $gps['time'] = "00:00:00";
             }
             $sql = "INSERT INTO `wifi`.`wifi_gps` ( `id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
                     VALUES ('',
@@ -386,20 +391,6 @@ class import extends dbcore
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                    return -1;
-                }
-                
-                $sql = "UPDATE `wifi`.`wifi_gps` SET `aphash` = ? WHERE `id` = ?";
-                $prepg = $this->sql->conn->prepare($sql);
-                $prepg->bindParam(1, $ap_hash, PDO::PARAM_STR);
-                $prepg->bindParam(2, $gps_id, PDO::PARAM_INT);
-                $prepg->execute();
-                
-                $err = $this->sql->conn->errorCode();
-                if($err[0] != "00000")
-                {
-                    $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-                    $this->logd("Error Updating GPS for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     return -1;
                 }
                 

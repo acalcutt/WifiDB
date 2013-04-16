@@ -77,64 +77,6 @@ class frontend extends dbcore
                                                 );
     }
     
-    function GetAnnouncement()
-    {
-        $result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
-        $array = $result->fetch(2);
-        if($this->sql->checkError() || $array['body'] == "")
-        {
-            return 0;
-        }
-        return $array;
-    }
-    
-    
-    function htmlheader()
-    {
-        if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
-        {
-            $this->smarty->assign("login_val", "1");
-            $login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a>';
-            $wifidb_mysticache_link = 1;
-        }else
-        {
-            $this->smarty->assign("login_val", "0");
-            $wifidb_mysticache_link = 0;
-            $login_bar = "";
-        }
-        $this->smarty->assign("install_header", $this->check_install_folder());
-        $announc = $this->GetAnnouncement();
-        
-        $this->smarty->assign("wifidb_announce_header", '<p class="annunc_text">'.$announc['body'].'</p>');
-        $this->smarty->assign("wifidb_mysticache_link", $wifidb_mysticache_link);
-        $this->login_bar = $login_bar;
-        return 1;
-    }
-    
-
-    function htmlfooter()
-    {
-        $out = '';
-        if($this->sec->login_check)
-        {
-            if($this->sec->privs >= 1000)
-            {
-                $out .= '<a class="links" href="'.$this->URL_PATH.'/cp/?func=admin_cp">Admin Control Panel</a>  |-|  ';
-            }
-            if($this->sec->privs >= 10)
-            {
-                $out .= '<a class="links" href="'.$this->URL_PATH.'/cp/?func=mod_cp">Moderator Control Panel</a>  |-|  ';
-            }
-            if($this->sec->privs >= 1)
-            {
-                $out .= '<a class="links" href="'.$this->URL_PATH.'/cp/">User Control Panel</a>';
-            }
-
-        }
-        $this->footer .= $this->meta->tracker.$this->meta->ads;
-        return 1;
-    }
-    
     function APFetch($id = "")
     {
         $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
@@ -236,11 +178,10 @@ class frontend extends dbcore
         }
         
         $list = array();
-        $prep = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ? ");
         $id_find = "%-{$id}:%";
-        $prep->bindParam(1, $id_find, PDO::PARAM_STR);
-        $flip = 0;
-        while ($field = $prep->fetch(2))
+        $prep2 = $this->sql->conn->query("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE '{$id_find}'");
+        
+        while ($field = $prep2->fetch(1))
         {
             if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
             preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
@@ -264,6 +205,64 @@ class frontend extends dbcore
         #var_dump($ap_data);
         #$this->smarty->display('ap.tpl');
         $this->smarty->display('fetch.tpl');
+    }
+    
+    function GetAnnouncement()
+    {
+        $result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
+        $array = $result->fetch(2);
+        if($this->sql->checkError() || $array['body'] == "")
+        {
+            return 0;
+        }
+        return $array;
+    }
+    
+    
+    function htmlheader()
+    {
+        if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
+        {
+            $this->smarty->assign("login_val", "1");
+            $login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a>';
+            $wifidb_mysticache_link = 1;
+        }else
+        {
+            $this->smarty->assign("login_val", "0");
+            $wifidb_mysticache_link = 0;
+            $login_bar = "";
+        }
+        $this->smarty->assign("install_header", $this->check_install_folder());
+        $announc = $this->GetAnnouncement();
+        
+        $this->smarty->assign("wifidb_announce_header", '<p class="annunc_text">'.$announc['body'].'</p>');
+        $this->smarty->assign("wifidb_mysticache_link", $wifidb_mysticache_link);
+        $this->login_bar = $login_bar;
+        return 1;
+    }
+    
+
+    function htmlfooter()
+    {
+        $out = '';
+        if($this->sec->login_check)
+        {
+            if($this->sec->privs >= 1000)
+            {
+                $out .= '<a class="links" href="'.$this->URL_PATH.'/cp/?func=admin_cp">Admin Control Panel</a>  |-|  ';
+            }
+            if($this->sec->privs >= 10)
+            {
+                $out .= '<a class="links" href="'.$this->URL_PATH.'/cp/?func=mod_cp">Moderator Control Panel</a>  |-|  ';
+            }
+            if($this->sec->privs >= 1)
+            {
+                $out .= '<a class="links" href="'.$this->URL_PATH.'/cp/">User Control Panel</a>';
+            }
+
+        }
+        $this->footer .= $this->meta->tracker.$this->meta->ads;
+        return 1;
     }
     
     #===================================#
@@ -721,6 +720,322 @@ class frontend extends dbcore
             }
         </script>");
         $this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
+    }
+    
+    function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc)
+    {
+        $sql1 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE 
+            `ssid` LIKE ? AND 
+            `mac` LIKE ? AND 
+            `radio` LIKE ? AND 
+            `chan` LIKE ? AND 
+            `auth` LIKE ? AND 
+            `encry` LIKE ? ORDER BY `{$sort}` {$ord} LIMIT {$from}, {$inc}";
+        $prep1 = $this->sql->conn->prepare($sql1);
+        
+        $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE 
+                `ssid` LIKE ? AND 
+                `mac` LIKE ? AND 
+                `radio` LIKE ? AND 
+                `chan` LIKE ? AND 
+                `auth` LIKE ? AND 
+                `encry` LIKE ? ORDER BY `{$sort}` {$ord}";
+        $prep2 = $this->sql->conn->prepare($sql2);
+        
+        $save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
+        $export_url = '';
+        if($ssid!='')
+        {
+            $save_url   .= '&ssid='.$ssid;
+            $export_url .= '&ssid='.$ssid;
+        }
+
+        if($mac!='')
+        {
+            $save_url   .= '&mac='.$mac;
+            $export_url .= '&mac='.$mac;
+        }
+
+        if($radio!='')
+        {
+            $save_url   .= '&radio='.$radio;
+            $export_url .= '&radio='.$radio;
+        }
+
+        if($chan!='')
+        {
+            $save_url   .= '&chan='.$chan;
+            $export_url .= '&chan='.$chan;
+        }
+
+        if($auth!='')
+        {
+            $save_url   .= '&auth='.$auth;
+            $export_url .= 'auth='.$auth.'&';
+        }
+
+        if($encry!='')
+        {
+            $save_url   .= '&encry='.$encry;
+            $export_url .= '&encry='.$encry;
+        }
+
+        $ssid = $ssid."%";
+        $prep1->bindParam(1, $ssid, PDO::PARAM_STR);
+        $prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+        $mac = $mac."%";
+        $prep1->bindParam(2, $mac, PDO::PARAM_STR);
+        $prep2->bindParam(2, $mac, PDO::PARAM_STR);
+        $radio = $radio."%";
+        $prep1->bindParam(3, $radio, PDO::PARAM_STR);
+        $prep2->bindParam(3, $radio, PDO::PARAM_STR);
+        $chan = $chan."%";
+        $prep1->bindParam(4, $chan, PDO::PARAM_STR);
+        $prep2->bindParam(4, $chan, PDO::PARAM_STR);
+        $auth = $auth."%";
+        $prep1->bindParam(5, $auth, PDO::PARAM_STR);
+        $prep2->bindParam(5, $auth, PDO::PARAM_STR);
+        $encry = $encry."%";
+        $prep1->bindParam(6, $encry, PDO::PARAM_STR);
+        $prep2->bindParam(6, $encry, PDO::PARAM_STR);
+        $prep1->execute();
+        $prep2->execute();
+        $total_rows = $prep2->rowCount();
+        
+        $row_color = 0;
+        $results_all = array();
+        $i=0;
+        while ($newArray = $prep1->fetch(2))
+        {
+            if($row_color == 1)
+            {
+                $row_color = 0;
+                $results_all[$i]['class'] = "light";    
+            }
+            else
+            {
+                $row_color = 1;
+                $results_all[$i]['class'] = "dark";
+            }
+            $results_all[$i]['id'] = $newArray['id'];
+            $results_all[$i]['ssid'] = $newArray['ssid'];
+            $results_all[$i]['mac'] = $newArray['mac'];
+            $results_all[$i]['chan'] = $newArray['chan'];
+            $results_all[$i]['auth'] = $newArray['auth'];
+            $results_all[$i]['encry'] = $newArray['encry'];
+            $results_all[$i]['radio']=$newArray['radio'];
+            $results_all[$i]['ap_hash']=$newArray['ap_hash'];
+            $i++;
+        }
+        
+        return array($total_rows, $results_all, $save_url, $export_url);
+    }
+    
+    
+    /*
+     * Export to Vistumbler VS1 File
+     */
+    public function search_export($array = "")
+    {
+        if($array === "")
+        {
+            return 0;
+        }
+        $no_gps = 0;
+        $total = count($array);
+        $date = date($this->datetime_format);
+        $rand = rand();
+        $temp_kml = "../tmp/save_".$date."_".$rand."_tmp.kml";
+        
+        fopen($temp_kml, "w");
+        $fileappend = fopen($temp_kml, "a");
+
+        $filename = "save_".$date.'_'.$rand.'.kmz';
+        $moved = $this->PATH.'/out/kmz/lists/'.$filename;
+        
+        fwrite($fileappend, "
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<kml xmlns=\"".$this->KML_SOURCE_URL."\">
+<!--WiFiDB $this->ver_str Search Export-->
+<Document>
+    <name>RanInt WifiDB KML</name>
+    <Style id=\"openStyleDead\">
+        <IconStyle>
+            <scale>0.5</scale>
+            <Icon>
+                <href>".$this->open_loc."</href>
+            </Icon>
+        </IconStyle>
+    </Style>
+    <Style id=\"wepStyleDead\">
+        <IconStyle>
+            <scale>0.5</scale>
+            <Icon>
+                <href>".$this->WEP_loc."</href>
+            </Icon>
+        </IconStyle>
+    </Style>
+    <Style id=\"secureStyleDead\">
+        <IconStyle>
+            <scale>0.5</scale>
+            <Icon>
+                <href>".$this->WPA_loc."</href>
+            </Icon>
+        </IconStyle>
+    </Style>
+    <Style id=\"Location\">
+        <LineStyle>
+            <color>7f0000ff</color>
+            <width>4</width>
+        </LineStyle>
+    </Style>
+    <Folder>
+        <name>WiFiDB Access Points</name>
+        <description>Total Number of APs: $total</description>
+    <Folder>
+        <name>Access Points for WiFiDB Search</name>
+        ");
+        $NN = 0;
+        foreach($array as $aps)
+        {
+            $id = $aps['id'];
+            $ssids_ptb = $this->make_ssid($aps['ssid']);
+            $ssid = $ssids_ptb[0];
+            $mac = $aps['mac'];
+            $sectype = $aps['sectype'];
+            $chan = $aps['chan'];
+            $half_mac = substr(str_replace(":", "", $mac), 0, 6);
+            $manuf = $this->manufactures[$half_mac];
+            switch($sectype)
+            {
+                case 1:
+                    $type = "#openStyleDead";
+                    $auth = "Open";
+                    $encry = "None";
+                    break;
+                case 2:
+                    $type = "#wepStyleDead";
+                    $auth = "Open";
+                    $encry = "WEP";
+                    break;
+                case 3:
+                    $type = "#secureStyleDead";
+                    $auth = "WPA-Personal";
+                    $encry = "TKIP-PSK";
+                    break;
+            }
+            $otx   = $aps["otx"];
+            $btx   = $aps["btx"];
+            $nt    = $aps['nt'];
+            $label = $aps['label'];
+
+            $signal_exp = explode("-", $aps['sig']);
+            
+            $first = explode(",", $signal_exp[0]);
+            $first_gps_id = $first[0];
+            $result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$first_gps_id}'");
+            $first_data = $result->fetch(1);
+            $fa = $first_data["date"]." ".$first_data["time"];
+
+            $sig_c = count($signal_exp);
+            $last = explode(",", $signal_exp[$sig_c-1]);
+            $last_gps_id = $last[0];
+            $result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$last_gps_id}'");
+            $last_data = $result->fetch(1);
+            $fa = $last_data["date"]." ".$last_data["time"];
+            
+            $sql_1 = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
+            $result_1 = $this->sql->conn->prepare($sql_1);
+            foreach($signal_exp as $signal)
+            {
+                $sig_exp = explode(",", $signal);
+                $result_1->bindParam(1, $sig_exp[0], PDO::PARAM_STR);
+                $result_1->execute();
+                $gps = $result_1->fetch(1);
+                
+                if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "N 0.0000" || $gps['lat'] == "N 0000.0000" || $gps['lat'] == "0.00")
+                {
+                    $zero = 1;
+                    continue;
+                }
+                $alt = $gps['alt'];
+                $lat = $this->convert_dm_dd($gps['lat']);
+                $long = $this->convert_dm_dd($gps['long']);
+                $zero = 0;
+                $NN++;
+                break;
+            }
+            if($zero == 1)
+            {
+                $this->mesg[] = 'No GPS Data, Skipping Access Point: '.$aps['ssid'];
+                $zero = 0;
+                $no_gps++;
+                $total++;
+                continue;
+            }
+            fwrite( $fileappend, "
+                <Placemark id=\"{$mac}\">
+                    <name>{$ssid}</name>
+                    <description>
+                        <![CDATA[<b>SSID: </b>{$ssid}<br />
+                            <b>Mac Address: </b>{$mac}<br />
+                            <b>Network Type: </b>{$nt}<br />
+                            <b>Radio Type: </b>{$aps['radio']}<br />
+                            <b>Channel: </b>{$chan}<br />
+                            <b>Authentication: </b>{$auth}<br />
+                            <b>Encryption: </b>{$encry}<br />
+                            <b>Basic Transfer Rates: </b>{$btx}<br />
+                            <b>Other Transfer Rates: </b>{$otx}<br />
+                            <b>First Active: </b>{$fa}<br />
+                            <b>Last Updated: </b>{$la}<br />
+                            <b>Latitude: </b>{$lat}<br />
+                            <b>Longitude: </b>{$long}<br />
+                            <b>Manufacturer: </b>{$manuf}<br />
+                            <b>Label: </b>{$label}<br />
+                            <a href=\"{$this->URL_PATH}/opt/fetch.php?id={$id}\">WiFiDB Link</a>
+                        ]]>
+                    </description>
+                    <styleUrl>{$type}</styleUrl>
+                    <Point id=\"{$mac}_GPS\">
+                        <coordinates>{$long},{$lat},{$alt}</coordinates>
+                    </Point>
+                </Placemark>
+                ");
+        }
+        fwrite( $fileappend, "</Folder>
+        </Folder>
+    </Document>
+</kml>");
+        fclose( $fileappend );
+        if($no_gps < $total)
+        {
+            $this->mesg[] = '<tr><td colspan="2" style="border-style: solid; border-width: 1px">Zipping up the files into a KMZ file.</td></tr>';
+            $zip = new ZipArchive;
+            if ($zip->open($filename, ZipArchive::CREATE) === TRUE)
+            {
+                $zip->addFile($temp_kml, 'doc.kml');
+                $zip->close();
+                unlink($temp_kml);
+            }else
+            {
+                $this->mesg[] = 'Blown up';
+                $this->mesg[] = 'Your Google Earth KML file is not ready.';
+                continue;
+            }
+
+            $this->mesg[] = 'Move KMZ file from its tmp home to its permanent residence';
+            if(copy($filename, $moved))
+            {
+                $this->mesg[] = 'Your Google Earth KML file is ready, you can download it from <a class="links" href="'.$moved.'">Here</a>';
+            }else
+            {
+                $this->mesg[] = 'Your Google Earth KML file is not ready.';
+            }
+            unlink($filename);
+        }else
+        {
+            $this->mesg[] = 'Your Google Earth KML file is not ready.';
+        }
     }
 }
 ?>
