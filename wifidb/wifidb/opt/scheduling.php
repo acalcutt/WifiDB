@@ -16,8 +16,9 @@
 #   Free Software Foundation, Inc.,
 #   59 Temple Place, Suite 330,
 #   Boston, MA 02111-1307 USA
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
+
 
 include('../lib/init.inc.php');
 
@@ -59,7 +60,7 @@ switch($func)
                                     'title'=>$newArray['title'],
                                     'aps'=>$newArray['aps'],
                                     'gps'=>$newArray['gps'],
-                                    'size'=>$dbcore->format_size(($newArray['size']*1024), 2),
+                                    'size'=>$dbcore->format_size($newArray['size']*1024, 2),
                                     'hash'=>$newArray['hash']
                                 );
         }
@@ -79,23 +80,36 @@ switch($func)
             if($file == "."){continue;}
             if($file == ".."){continue;}
             if($file == ".svn"){continue;}
-            if($file == "fulldb.kmz"){continue;}
+            if($file == "history"){continue;}
+            if($file == "full_db.kml"){continue;}
+            if($file == "full_db.kmz"){continue;}
+            if($file == "full_db_label.kml"){continue;}
+            if($file == "full_db_label.kmz"){continue;}
             if($file == "update.kml"){continue;}
+            if($file == "history.kml"){continue;}
             if($file == "newestAP.kml"){continue;}
             if($file == "newestAP_label.kml"){continue;}
-
-            $kmz_file = $daemon_out.$file.'/fulldb.kmz';
+            var_dump($file);
+            $kmz_file = $daemon_out.$file.'/full_db.kmz';
+            var_dump($kmz_file);
+            var_dump(array(
+                "file"     => $file,
+                "file_url" => $url_base.$file.'/full_db.kmz',
+                "time"     => date ("H:i:s", filemtime($kmz_file)),
+                "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
+            ));
             if(file_exists($kmz_file))
             {
                 $kml_all[] = array(
-                                    "file" => $file,
-                                    "file_url" => $url_base.$file.'/fulldb.kmz',
-                                    "time" => date ("H:i:s", filemtime($kmz_file)),
-                                    "size" => $dbcore->format_size($dbcore->dos_filesize($daemon_out.$file."/fulldb.kmz"), 2)
+                                    "file"     => $file,
+                                    "file_url" => $url_base.$file.'/full_db.kmz',
+                                    "time"     => date ("H:i:s", filemtime($kmz_file)),
+                                    "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
                             );
             }
+
         }
-        
+
         if(file_exists($daemon_out."update.kml"))
         {
 
@@ -110,7 +124,7 @@ switch($func)
         if(file_exists($newest))
         {
             $kml_head['newest_date'] = date ("Y-m-d H:i:s", filemtime($newest));
-            $kml_head['newest_size'] = $dbcore->format_size($dbcore->dos_filesize($newest), 2);
+            $kml_head['newest_size'] = $dbcore->format_size(filesize($newest), 2);
         }else
         {
             $kml_head['newest_date'] = "None generated yet";
@@ -121,7 +135,7 @@ switch($func)
         if(file_exists($full))
         {
             $kml_head['full_date'] = date ("Y-m-d H:i:s", filemtime($full));
-            $kml_head['full_size'] = $dbcore->format_size($dbcore->dos_filesize($full), 2);
+            $kml_head['full_size'] = $dbcore->format_size(filesize($full), 2);
         }else
         {
             $kml_head['full_date'] = "None generated for ".$date." yet, <br>be patient young grasshopper.";
@@ -132,7 +146,7 @@ switch($func)
         if(file_exists($daily))
         {
             $kml_head['today_date'] = date ("Y-m-d H:i:s", filemtime($daily));
-            $kml_head['today_size'] = $dbcore->format_size($dbcore->dos_filesize($daily), 2);
+            $kml_head['today_size'] = $dbcore->format_size(filesize($daily), 2);
         }else
         {
             $kml_head['today_date'] = "None generated for ".$date." yet, <br>be patient young grasshopper.";

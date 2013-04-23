@@ -18,11 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-
-ini_set('display_errors', 0);
-error_reporting(E_ALL & E_STRICT);
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>"");
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
 

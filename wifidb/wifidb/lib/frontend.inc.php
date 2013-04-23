@@ -31,7 +31,7 @@ class frontend extends dbcore
     function __construct($config)
     {
         parent::__construct($config);
-        if($GLOBALS['switches']['extras'] != "API")
+        if(strtolower(SWITCH_EXTRAS) != "api")
         {
             require_once($config['wifidb_install'].'/lib/misc.inc.php');
             require_once($config['wifidb_install'].'/lib/manufactures.inc.php');
@@ -63,6 +63,11 @@ class frontend extends dbcore
             $this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
             $this->htmlheader();
             $this->htmlfooter();
+        }
+        if(strtolower(SWITCH_EXTRAS) == "exports")
+        {
+            require_once $config['wifidb_tools'].'daemon/config.inc.php';
+            $this->export = new export($config, $daemon_config);
         }
         $this->ver_array['Frontend']    =   array(
                                                     "AllUsers"       =>  "1.0",
@@ -101,18 +106,17 @@ class frontend extends dbcore
             'label'=>$newArray["label"],
             'user'=>$newArray["username"]
         );
-        
-        $sql = "SELECT  `lat` FROM `wifi`.`wifi_signals`, `wifi`.`wifi_gps`
-                WHERE `wifi_signals`.`ap_hash` =  ?
-                AND `wifi_gps`.`id` =  `wifi_signals`.`gps_id`
-                AND `wifi_gps`.`lat` != '0.0000' AND `wifi_gps`.`lat` != 'N 0.0000'
-                ORDER BY `wifi_gps`.`date` ASC, `wifi_gps`.`time` DESC LIMIT 1";
+        if(@DEBUG){echo "getting GPS globe\r\n";}
+        $sql = "SELECT `lat` FROM `wifi`.`wifi_gps`
+                WHERE `ap_hash` = ?
+                AND `lat` != '0.0000' AND `lat` != 'N 0.0000'
+                ORDER BY `date` DESC LIMIT 1";
         $ap_hash = $newArray["ap_hash"];
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $ap_hash, PDO::PARAM_STR);
-        #var_dump($prep1);
         $prep1->execute();
         $lastgps = $prep1->fetch(2);
+        if(@DEBUG){echo "got GPS globe\r\n";}
         if($lastgps !== FALSE)
         {
             $lat_check = explode(" ", $lastgps['lat']);
@@ -122,37 +126,39 @@ class frontend extends dbcore
         {
             $gps_globe = "off";
         }
-        
-        $sql = "SELECT  `wifi_signals`.`id`, `wifi_signals`.`ap_hash`, `signal`, `rssi`, `username`,
-                `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`,
-                `track`, `date`, `time`
-                FROM `wifi`.`wifi_signals`, `wifi`.`wifi_gps`
-                WHERE `wifi_signals`.`ap_hash` =  ?
-                AND `wifi_gps`.`id` =  `wifi_signals`.`gps_id`
-                ORDER BY `wifi_gps`.`date` ASC, `wifi_gps`.`time` ASC";
+        if(@DEBUG){echo "getting GPS\r\n";}
+        $sql = "SELECT  `signal`, `rssi`, `username`
+                FROM `wifi`.`wifi_signals`
+                WHERE `ap_hash` =  ?
+                ORDER BY `time_stamp` ASC";
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
         $prep1->execute();
-        
+        if(@DEBUG){echo "got GPS\r\n";}
+
         $flip = 0;
         $prev_date = 0;
         $date_range = -1;
         $signal_runs = array();
         $signals = $prep1->fetchAll(2);
-            
+        if(@DEBUG){echo "Signal Loop\r\n";}
+        $sql_gps = "SELECT `lat`, `long`, `sats`, `hdp`, `track`, `date`, `time`, `mph`, `kmh`
+                        FROM `wifi`.`wifi_gps`
+                        WHERE `id` = ?";
+        $prep_gps = $this->sql->conn->prepare($sql_gps);
         foreach($signals as $field)
         {
+            $prep_gps->bindParam(1, $field['gps_id'], PDO::PARAM_INT);
+            $prep_gps->execute();
+            $field_g = $prep_gps->fetch(2);
             if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
-            #$sql_gps = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = '{$field['id']}'";
-            #$gps_res = $this->sql->conn->query($sql_gps);
-            #$gps = $gps_res->fetch(2);
-            #if($gps['id']==''){continue;}
-            if($prev_date < strtotime($field['date']))
+            if($prev_date < strtotime($field_g['date']))
             {
                 $date_range++;
                 $signal_runs[$date_range]['id'] = $date_range;
-                $signal_runs[$date_range]['start'] = $field['date']." ".$field['time'];
-                $signal_runs[$date_range]['descstart'] = $field['time'];
+                $signal_runs[$date_range]['start'] = $field_g['date']." ".$field_g['time'];
+                $signal_runs[$date_range]['descstart'] = $field_g['time'];
+                $signal_runs[$date_range]['desc'] = $field_g['time'];
                 $signal_runs[$date_range]['user'] = $field['username'];
             }else
             {
@@ -160,27 +166,29 @@ class frontend extends dbcore
                 {
                     $signal_runs[$date_range]['user'] .= " and ".$field['username'];
                 }
-                $signal_runs[$date_range]['desc'] = $field['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field['time'];
-                $signal_runs[$date_range]['stop'] = $field['date']." ".$field['time'];
+                $signal_runs[$date_range]['desc'] = $field_g['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field_g['time'];
+                $signal_runs[$date_range]['stop'] = $field_g['date']." ".$field_g['time'];
             }
 
-            $prev_date = strtotime($field['date']);
+            $prev_date = strtotime($field_g['date']);
 
-            $signal_runs[$date_range]['gps'][] = array(   
-                                    'class'=>$class,
-                                    'lat'=>$field["lat"],
-                                    'long'=>$field["long"],
-                                    'sats'=>$field["sats"],
-                                    'date'=>$field["date"],
-                                    'time'=>$field["time"],
-                                    'signal'=>$field["signal"]
-                                );
+            $signal_runs[$date_range]['gps'][] = array(
+                                                        'class'=>$class,
+                                                        'lat'=>$field_g["lat"],
+                                                        'long'=>$field_g["long"],
+                                                        'sats'=>$field_g["sats"],
+                                                        'date'=>$field_g["date"],
+                                                        'time'=>$field_g["time"],
+                                                        'signal'=>$field["signal"]
+                                                    );
         }
-        
+        if(@DEBUG){echo "get Similar Lists\r\n";}
         $list = array();
         $id_find = "%-{$id}:%";
-        $prep2 = $this->sql->conn->query("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE '{$id_find}'");
-        
+        $prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ?");
+        $prep2->bindParam(1, $id_find, PDO::PARAM_STR);
+        $prep2->execute();
+        if(@DEBUG){echo "got similar Lists and now looping\r\n";}
         while ($field = $prep2->fetch(1))
         {
             if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
@@ -197,14 +205,13 @@ class frontend extends dbcore
                             );
 
         }
-        $this->smarty->assign('wifidb_page_label', "Access Point Page ({$newArray['ssid']})");
-        $this->smarty->assign('wifidb_ap_signal_all', $signal_runs);
-        $this->smarty->assign('wifidb_assoc_lists', $list);
-        $this->smarty->assign('wifidb_ap_globe', $gps_globe);
-        $this->smarty->assign('wifidb_ap', $ap_data);
-        #var_dump($ap_data);
-        #$this->smarty->display('ap.tpl');
-        $this->smarty->display('fetch.tpl');
+        return array(
+                        $newArray['ssid'],
+                        $signal_runs,
+                        $list,
+                        $gps_globe,
+                        $ap_data
+                    );
     }
     
     function GetAnnouncement()
@@ -268,41 +275,38 @@ class frontend extends dbcore
     #===================================#
     #   Grab the stats for All Users    #
     #===================================#
-    function AllUsers()
+    Public function AllUsers()
     {
-        $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` ORDER BY `username` ASC";
+        $sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username` ASC";
         $result = $this->sql->conn->query($sql);
-        $users = array();
-        while ($user_array = $result->fetch(2))
+
+        $users_all = $result->fetchAll(2);
+        foreach($users_all as $user)
         {
-            $users[] = $user_array["username"];
+            $user_all[] = $user['username'];
         }
-        $users = array_unique($users);
-        
+
+        $users = array_unique($user_all);
+        $tablerowid = 0;
         $row_color = 0;
         $this->all_users_data = array();
+        $prev_id = 0;
         foreach($users as $user)
         {
-            $this->all_users_data[$user] = array();
+            $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username`= ? ORDER BY `id` ASC";
+            $prep = $this->sql->conn->prepare($sql);
+            $prep->bindParam(1, $user, PDO::PARAM_STR);
+            $prep->execute();
 
-            if($row_color == 1)
-            {$row_color = 0; $color = "light";}
-            else{$row_color = 1; $color = "dark";}
-            
-            $tablerowid = 0;
+            $imports = (int) $prep->rowCount();
+            if($imports === 0){continue;}
+
             $row_color2 = 1;
             $pre_user = 1;
-            
-            $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `username`= ? ORDER BY `id` ASC";
-            $result = $this->sql->conn->prepare($sql);
-            $result->execute(array($user));
-            
-            $imports = $result->rowCount();
-            while ($user_array = $result->fetch(2))
+            $tablerowid++;
+            while ($user_array = $prep->fetch(2))
             {
                 if($user_array['points'] === ""){continue;}
-                
-                $tablerowid++;
                 $username = $user_array['username'];
                 
                 if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
@@ -316,38 +320,62 @@ class frontend extends dbcore
                 $points = explode("-",$user_array['points']);
                 $pc = count($points);
                 
-                if($row_color2 == 1)
-                {$row_color2 = 0; $color2 = "light";}
-                else{$row_color2 = 1; $color2 = "dark";}
-
                 if($pre_user)
                 {
+                    if($prev_id == $user_array['id'] )
+                    {$prev_id = $user_array['id'];continue 2;}
+                    else{$prev_id = $user_array['id'];}
+
+                    if($row_color2 == 1)
+                    {$row_color2 = 0; $color2 = "light";}
+                    else{$row_color2 = 1; $color2 = "dark";}
+
+                    if($row_color == 1)
+                    {$row_color = 0; $color = "light";}
+                    else{$row_color = 1; $color = "dark";}
+
                     $this->all_users_data[$user] = array(
-                                'rowid' => $tablerowid,
-                                'class' => $color,
-                                'id' => $user_array['id'],
-                                'imports' => $imports,
+                                'rowid'    => $tablerowid,
+                                'class'    => $color,
+                                'id'       => $user_array['id'],
+                                'imports'  => $imports,
                                 'username' => $username,
+                                'data'     => array(
+                                                    array(
+                                                        'id'    => $user_array['id'],
+                                                        'class' => $color2,
+                                                        'title' => $user_array['title'],
+                                                        'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+                                                        'aps'   => $pc,
+                                                        'date'  => $user_array['date']
+                                                    ),
+                                                ),
                             );
                     $pre_user = 0;
-                }
-                $this->all_users_data[$user]['data'][] = array(
+                }else
+                {
+                    if($row_color2 == 1)
+                    {$row_color2 = 0; $color2 = "light";}
+                    else{$row_color2 = 1; $color2 = "dark";}
+
+                    $this->all_users_data[$user]['data'][] = array(
+                                'id'    => $user_array['id'],
                                 'class' => $color2,
                                 'title' => $user_array['title'],
-                                'notes' => wordwrap($notes, 56, "<br />\n"),
-                                'aps' => $pc,
-                                'date' => $user_array['date']
+                                'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+                                'aps'   => $pc,
+                                'date'  => $user_array['date']
                             );
-                
+                }
             }
-            return 1;
         }
+        return 1;
     }
 
     #=======================================#
     #   Grab All the AP's for a given user  #
     #=======================================#
-    function AllUsersAPs($user="")
+    function AllUsersAPs($user = "")
     {
         if($user == ""){return 0;}
         
@@ -370,7 +398,7 @@ class frontend extends dbcore
         $prep['allaps'] = array();
         $prep['username'] = $user;
         
-        $sql = "SELECT count(`id`) FROM `{$this->sql->db}`.`{$this->sql->pointers_table}` WHERE `username` = ?";
+        $sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` = ?";
         $result = $this->sql->conn->prepare($sql);
         $result->execute(array($user));
         $rows = $result->fetch(1);
@@ -378,9 +406,9 @@ class frontend extends dbcore
         
         $flip = 0;
         $sql = "SELECT `id`,`ssid`,`mac`,`radio`,`auth`,`encry`,`chan`,`lat`, `FA`,`LA` FROM 
-                `{$this->sql->db}`.`{$this->sql->pointers_table}` 
-                WHERE `username` = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
-        
+                `wifi`.`wifi_pointers` 
+                WHERE `username` = ? ORDER BY `".$inputs['ord']."` LIMIT ".$inputs['from'].", ".$inputs['to'];
+
         $result = $this->sql->conn->prepare($sql);
         $result->execute(array($user));
         
@@ -417,32 +445,35 @@ class frontend extends dbcore
         }
         $prep['allaps'] = $apprep;
         $this->all_users_aps = $prep;
-        $this->gen_pages($prep['total_aps'], $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord'], 'allap', $user);
+        $this->GeneratePages($prep['total_aps'], $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord'], 'allap', $user);
         return 1;
     }
 
     #===================================#
     #   Grab all user Import lists      #
     #===================================#
-    function UsersLists($username="")
+    function UsersLists($username = "")
     {
         if($username == ""){return 0;}
         $total_aps = array();
-        $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
-        $user_query = $this->sql->conn->prepare($sql);
-        $user_query->execute(array($username));
-        $user_last = $user_query->fetch(2);
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+        $prep1 = $this->sql->conn->prepare($sql);
+        $prep1->bindParam(1, $username, PDO::PARAM_STR);
+        $prep1->execute();
+        $user_last = $prep1->fetch(2);
         
-        $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
-        $user_query = $this->sql->conn->prepare($sql);
-        $user_query->execute(array($username));
-        $user_first = $user_query->fetch(2);
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+        $prep2 = $this->sql->conn->prepare($sql);
+        $prep2->bindParam(1, $username, PDO::PARAM_STR);
+        $prep2->execute();
+        $user_first = $prep2->fetch(2);
         
-        $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `username` LIKE ? ORDER BY `id` ASC";
-        $user_query = $this->sql->conn->prepare($sql);
-        $user_query->execute(array($username));
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC";
+        $prep3 = $this->sql->conn->prepare($sql);
+        $prep3->bindParam(1, $username, PDO::PARAM_STR);
+        $prep3->execute();
         
-        while($imports = $user_query->fetch(2))
+        while($imports = $prep3->fetch(2))
         {
             if($imports['points'] == ""){continue;}
             $points = explode("-",$imports['points']);
@@ -466,19 +497,19 @@ class frontend extends dbcore
                 $total += $totals;
             }
             
-            $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+            $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
             #echo $sql."\r\n";
             $other_imports = $this->sql->conn->prepare($sql);
             $other_imports->execute(array($username, $user_first['id']));
             $other_rows = $other_imports->rowCount();
             
             #var_dump($other_rows);
-            
+
+            $other_imports_array = array();
             if($other_rows > 0)
             {
                 #var_dump($other_rows);
                 $flip = 0;
-                $other_imports_array = array();
                 while($imports = $other_imports->fetch(2))
                 {
                     #var_dump($imports);
@@ -521,7 +552,7 @@ class frontend extends dbcore
     function UserAPList($row=0)
     {
         if(!$row){return 0;}
-        $sql = "SELECT * FROM `{$this->sql->db}`.`{$this->sql->users_t}` WHERE `id`= ?";
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id`= ?";
         $result = $this->sql->conn->prepare($sql);
         $result->execute(array($row));
         $user_array = $result->fetch(2);
@@ -535,7 +566,7 @@ class frontend extends dbcore
         
         $points = explode("-", $user_array['points']);
         $flip = 0;
-        $sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `{$this->sql->db}`.`{$this->sql->pointers_table}` WHERE `id`= ?";
+        $sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi`.`wifi_pointers` WHERE `id`= ?";
         $result = $this->sql->conn->prepare($sql);
         $count = 0;
         foreach($points as $ap)
@@ -730,7 +761,7 @@ class frontend extends dbcore
             `radio` LIKE ? AND 
             `chan` LIKE ? AND 
             `auth` LIKE ? AND 
-            `encry` LIKE ? ORDER BY `{$sort}` {$ord} LIMIT {$from}, {$inc}";
+            `encry` LIKE ? ORDER BY `".$sort."` ".$ord." LIMIT ".$from.", ".$inc;
         $prep1 = $this->sql->conn->prepare($sql1);
         
         $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE 
@@ -739,7 +770,7 @@ class frontend extends dbcore
                 `radio` LIKE ? AND 
                 `chan` LIKE ? AND 
                 `auth` LIKE ? AND 
-                `encry` LIKE ? ORDER BY `{$sort}` {$ord}";
+                `encry` LIKE ? ORDER BY `".$sort."` ".$ord;
         $prep2 = $this->sql->conn->prepare($sql2);
         
         $save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
@@ -833,7 +864,7 @@ class frontend extends dbcore
     
     
     /*
-     * Export to Vistumbler VS1 File
+     * Export Search to KML File
      */
     public function search_export($array = "")
     {
@@ -852,88 +883,35 @@ class frontend extends dbcore
 
         $filename = "save_".$date.'_'.$rand.'.kmz';
         $moved = $this->PATH.'/out/kmz/lists/'.$filename;
-        
-        fwrite($fileappend, "
-<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<kml xmlns=\"".$this->KML_SOURCE_URL."\">
-<!--WiFiDB $this->ver_str Search Export-->
-<Document>
-    <name>RanInt WifiDB KML</name>
-    <Style id=\"openStyleDead\">
-        <IconStyle>
-            <scale>0.5</scale>
-            <Icon>
-                <href>".$this->open_loc."</href>
-            </Icon>
-        </IconStyle>
-    </Style>
-    <Style id=\"wepStyleDead\">
-        <IconStyle>
-            <scale>0.5</scale>
-            <Icon>
-                <href>".$this->WEP_loc."</href>
-            </Icon>
-        </IconStyle>
-    </Style>
-    <Style id=\"secureStyleDead\">
-        <IconStyle>
-            <scale>0.5</scale>
-            <Icon>
-                <href>".$this->WPA_loc."</href>
-            </Icon>
-        </IconStyle>
-    </Style>
-    <Style id=\"Location\">
-        <LineStyle>
-            <color>7f0000ff</color>
-            <width>4</width>
-        </LineStyle>
-    </Style>
-    <Folder>
-        <name>WiFiDB Access Points</name>
-        <description>Total Number of APs: $total</description>
-    <Folder>
-        <name>Access Points for WiFiDB Search</name>
-        ");
+        $this->smarty->assign("KML_SOURCE_LOC", $this->KML_SOURCE_URL);
+        $this->smarty->assign("wifidb_ver_str", $this->ver_str);
+        $this->smarty->assign("OPEN_LOC", $this->open_loc);
+        $this->smarty->assign("WEP_LOC", $this->WEP_loc);
+        $this->smarty->assign("WPA_LOC", $this->WPA_loc);
+        $this->smarty->assign("Total_aps", $total);
         $NN = 0;
         foreach($array as $aps)
         {
-            $id = $aps['id'];
             $ssids_ptb = $this->make_ssid($aps['ssid']);
             $ssid = $ssids_ptb[0];
-            $mac = $aps['mac'];
-            $sectype = $aps['sectype'];
-            $chan = $aps['chan'];
-            $half_mac = substr(str_replace(":", "", $mac), 0, 6);
+            $half_mac = substr(str_replace(":", "", $aps['mac']), 0, 6);
             $manuf = $this->manufactures[$half_mac];
-            switch($sectype)
+            switch($aps['sectype'])
             {
                 case 1:
                     $type = "#openStyleDead";
-                    $auth = "Open";
-                    $encry = "None";
                     break;
                 case 2:
                     $type = "#wepStyleDead";
-                    $auth = "Open";
-                    $encry = "WEP";
                     break;
                 case 3:
                     $type = "#secureStyleDead";
-                    $auth = "WPA-Personal";
-                    $encry = "TKIP-PSK";
                     break;
             }
-            $otx   = $aps["otx"];
-            $btx   = $aps["btx"];
-            $nt    = $aps['nt'];
-            $label = $aps['label'];
-
             $signal_exp = explode("-", $aps['sig']);
-            
             $first = explode(",", $signal_exp[0]);
-            $first_gps_id = $first[0];
-            $result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$first_gps_id}'");
+            $first_gps_id = ;
+            $result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$first_gps_id}'");
             $first_data = $result->fetch(1);
             $fa = $first_data["date"]." ".$first_data["time"];
 
@@ -942,7 +920,7 @@ class frontend extends dbcore
             $last_gps_id = $last[0];
             $result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$last_gps_id}'");
             $last_data = $result->fetch(1);
-            $fa = $last_data["date"]." ".$last_data["time"];
+            $la = $last_data["date"]." ".$last_data["time"];
             
             $sql_1 = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
             $result_1 = $this->sql->conn->prepare($sql_1);
@@ -958,7 +936,6 @@ class frontend extends dbcore
                     $zero = 1;
                     continue;
                 }
-                $alt = $gps['alt'];
                 $lat = $this->convert_dm_dd($gps['lat']);
                 $long = $this->convert_dm_dd($gps['long']);
                 $zero = 0;
@@ -973,43 +950,32 @@ class frontend extends dbcore
                 $total++;
                 continue;
             }
-            fwrite( $fileappend, "
-                <Placemark id=\"{$mac}\">
-                    <name>{$ssid}</name>
-                    <description>
-                        <![CDATA[<b>SSID: </b>{$ssid}<br />
-                            <b>Mac Address: </b>{$mac}<br />
-                            <b>Network Type: </b>{$nt}<br />
-                            <b>Radio Type: </b>{$aps['radio']}<br />
-                            <b>Channel: </b>{$chan}<br />
-                            <b>Authentication: </b>{$auth}<br />
-                            <b>Encryption: </b>{$encry}<br />
-                            <b>Basic Transfer Rates: </b>{$btx}<br />
-                            <b>Other Transfer Rates: </b>{$otx}<br />
-                            <b>First Active: </b>{$fa}<br />
-                            <b>Last Updated: </b>{$la}<br />
-                            <b>Latitude: </b>{$lat}<br />
-                            <b>Longitude: </b>{$long}<br />
-                            <b>Manufacturer: </b>{$manuf}<br />
-                            <b>Label: </b>{$label}<br />
-                            <a href=\"{$this->URL_PATH}/opt/fetch.php?id={$id}\">WiFiDB Link</a>
-                        ]]>
-                    </description>
-                    <styleUrl>{$type}</styleUrl>
-                    <Point id=\"{$mac}_GPS\">
-                        <coordinates>{$long},{$lat},{$alt}</coordinates>
-                    </Point>
-                </Placemark>
-                ");
+            $KML_data[] = array(
+                "id"=>$aps["id"],
+                "ssid"=>$ssid,
+                "mac"=>$aps["mac"],
+                "nt"=>$aps["nt"],
+                "radio"=>$aps["radio"],
+                "chan"=>$aps["chan"],
+                "auth"=>$aps["auth"],
+                "encry"=>$aps["encry"],
+                "sectype"=>$aps["sectype"],
+                "type"=>$type,
+                "btx"=>$aps["btx"],
+                "otx"=>$aps["otx"],
+                "fa"=>$fa,
+                "la"=>$la,
+                "lat"=>$lat,
+                "long"=>$long,
+                "alt"=>$gps["alt"],
+                "manuf"=>$manuf,
+                "label"=>$aps["label"]
+            );
         }
-        fwrite( $fileappend, "</Folder>
-        </Folder>
-    </Document>
-</kml>");
-        fclose( $fileappend );
+        $this->smarty->assign("KML_data", $KML_data);
         if($no_gps < $total)
         {
-            $this->mesg[] = '<tr><td colspan="2" style="border-style: solid; border-width: 1px">Zipping up the files into a KMZ file.</td></tr>';
+            $this->mesg[] = 'Zipping up the files into a KMZ file.';
             $zip = new ZipArchive;
             if ($zip->open($filename, ZipArchive::CREATE) === TRUE)
             {
@@ -1020,22 +986,24 @@ class frontend extends dbcore
             {
                 $this->mesg[] = 'Blown up';
                 $this->mesg[] = 'Your Google Earth KML file is not ready.';
-                continue;
+                return 0;
             }
 
             $this->mesg[] = 'Move KMZ file from its tmp home to its permanent residence';
             if(copy($filename, $moved))
             {
-                $this->mesg[] = 'Your Google Earth KML file is ready, you can download it from <a class="links" href="'.$moved.'">Here</a>';
+                $this->mesg[] = 'Your Google Earth KML file is ready, you can download it from here: '.$moved;
+                return 1;
             }else
             {
                 $this->mesg[] = 'Your Google Earth KML file is not ready.';
+                return 0;
             }
             unlink($filename);
         }else
         {
             $this->mesg[] = 'Your Google Earth KML file is not ready.';
+            return 0;
         }
     }
 }
-?>

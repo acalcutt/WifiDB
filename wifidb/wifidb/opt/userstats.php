@@ -18,9 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
 require '../lib/init.inc.php';
 
@@ -40,13 +39,13 @@ else
 switch($func)
 {
         case "allusers":
-            $dbcore->all_users();
+            $dbcore->AllUsers();
             $dbcore->smarty->assign('wifidb_imports_all' , $dbcore->all_users_data);
             $dbcore->smarty->display('users_index.tpl');
             break;
         #-------------
         case "alluserlists":
-            $dbcore->users_lists($user);
+            $dbcore->UsersLists($user);
             $dbcore->smarty->assign('wifidb_user_details', $dbcore->user_all_imports_data);
             $dbcore->smarty->display('user_overview.tpl');
             break;
@@ -58,7 +57,7 @@ switch($func)
             break;
         #-------------
         case "allap":
-            $dbcore->all_users_ap($user);
+            $dbcore->AllUsersAPs($user);
             $dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->all_users_aps);
             $dbcore->smarty->assign('pages_together', $dbcore->pages_together);
             $dbcore->smarty->display('user_all_aps.tpl');

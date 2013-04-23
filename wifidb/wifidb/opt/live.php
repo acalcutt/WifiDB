@@ -18,8 +18,9 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
+
 include('../lib/init.inc.php');
 
 $ord	=	@filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -30,6 +31,7 @@ $from_	=	$from+0;
 $inc	=	@filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT)+0;
 $inc	=	$inc+0;
 $view	=	@filter_input(INPUT_GET, 'view', FILTER_SANITIZE_NUMBER_INT)+0;
+$date   =       date($dbcore->datetime_format, time()-3600);
 if ($view==0 or !is_int($view)){$view=1800;}
 if ($from==0 or !is_int($from)){$from=0;}
 if ($from_==0 or !is_int($from_)){$from_=0;}
@@ -38,6 +40,7 @@ if ($ord=="" or !is_string($ord)){$ord="ASC";}
 if ($sort=="" or !is_string($sort)){$sort="chan";}
 $sql = "SELECT `username` FROM `wifi`.`live_aps` WHERE lu >= ? ORDER BY `$sort` $ord LIMIT $from, $inc";
 $prep = $dbcore->sql->conn->prepare($sql);
+$prep->bindParam(1, $date, PDO::PARAM_INT);
 $prep->execute(array($date));
 $fetch = $prep->fetchAll(2);
 var_dump($fetch);

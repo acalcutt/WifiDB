@@ -19,15 +19,14 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-class export extends dbcore
+class export extends wdbcli
 {
-    public function __construct($config, $daemon_config, $colors)
+    public function __construct($config, $daemon_config)
     {
-        parent::__construct($config);
+        parent::__construct($config, $daemon_config);
         $this->This_is_me   = getmypid();
         $this->log_level    = $daemon_config['log_level'];
         $this->log_interval = 1;
-        $this->colors       = $colors;
         $this->verbose      = $daemon_config['verbose'];
         
         $this->month_names  = array(

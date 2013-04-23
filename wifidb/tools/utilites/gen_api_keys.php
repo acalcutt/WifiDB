@@ -1,4 +1,7 @@
 <?php
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
+
 $parm = parseArgs($argv);
 $all_users = @$parm['all_users'];
 $user = @$parm['user'];
@@ -67,18 +70,13 @@ function gen_key()
 }
 function prep()
 {
-    #error_reporting(E_ALL|E_STRICT);
-    ini_set("memory_limit", "1024M");
-    global $screen_output, $dim, $COLORS, $daemon_ver, $sep, $gps_ext;
-    $screen_output = "CLI";
-    #$starts = microtime(1);
     if(!(@require_once 'daemon/config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
     if($GLOBALS['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-    #require_once $GLOBALS['wifidb_install']."lib/database.inc.php";
     require_once $GLOBALS['wifidb_install']."lib/config.inc.php";
     $conn =   new mysqli($host, $db_user, $db_pwd);
     return $conn;
 }
+
 function parseArgs($argv){
     array_shift($argv);
     $out = array();

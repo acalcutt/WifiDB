@@ -1,5 +1,6 @@
 <?php
-$switches = array('screen'=>"CLI");
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
 
 if(!(require('daemon/config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 $wdb_install = $daemon_config['wifidb_install'];

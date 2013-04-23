@@ -18,36 +18,23 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-
-global $switches, $theme;
-$switches = array('screen'=>"HTML",'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
-if(!isset($_SESSION['token']) or !isset($_GET['token']))
-{
-    $token = md5(uniqid(rand(), true));
-    $_SESSION['token'] = $token;
-}else
-{
-    $token = $_SESSION['token'];
-}
 
 $func = '';
 $theme_post = '';
 
-if( !isset($_GET['func']) ) { $_GET['func'] = ""; }
-$func = strip_tags(addslashes($_GET['func']));
-
+$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
 if($func == 'change')
 {
     $theme_post = @filter_input(INPUT_POST, 'theme', FILTER_SANITIZE_STRING);
     $cookie_path = (@$dbcore->root != '' ? '/'.$dbcore->root : '/');
-    setcookie( 'wifidb_theme' , $theme_post , (time()+(86400 * 7)), $cookie_path ); // 86400 = 1 day * 7 (for one week)
+    setcookie('wifidb_theme', $theme_post, (time()+(86400 * 7)), $cookie_path, $dbcore->sec->domain, $dbcore->sec->ssl);// 86400 = 1 day * 7 (for one week)
     echo "'wifidb_theme' , $theme_post , (time()+(86400 * 7)), $cookie_path\r\n";
-    header('Location: ?');
+    #header('Location: ?');
 }
-$theme = (@$_COOKIE['wifidb_theme']!='' ? @$_COOKIE['wifidb_theme'] : $dbcore->default_theme);
-
 $themes_array = array();
 $dh = opendir(".") or die("couldn't open directory");
 while (($file = readdir($dh)) == true)

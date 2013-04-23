@@ -18,9 +18,9 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>"");
 include('lib/init.inc.php');
 $theme = $GLOBALS['theme'];
 $func	=	addslashes(@$_GET['func']);

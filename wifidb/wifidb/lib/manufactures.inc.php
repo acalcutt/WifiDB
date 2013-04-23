@@ -19,7 +19,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-global $manufactures;
+#global $manufactures;
 
 $manufactures = array(
 "000000"=>"XEROX CORPORATION",

@@ -1,6 +1,6 @@
 <?php
-global $screen_output;
-$screen_output = "CLI";
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
 require 'daemon/config.inc.php';
 require $GLOBALS['wifidb_install']."/lib/database.inc.php";
 

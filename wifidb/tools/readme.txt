@@ -24,17 +24,8 @@ CONTENTS:
 1  -> WiFiDB Daemon (daemon folder in the tools dir)
 2  -> Convert Txt to VS1 (Converter.exe[win only] | converter.php).
 3  -> Manufactures Generation script (manufmac.exe[win only] | manufmac.php).
-
-***DEFUNCT***
-4 -> Wireless Database Batch Import script [command line only]. 
-***DEFUNCT*** replaced by #1, #5, and #6
-
-5  -> Filenames recovery script [filenames_create.php].
-6  -> Deamon Prep Script [daemon_prep.php].
-7  -> Clean up duplicate files in the upload folder [cleanup.php].
-8  -> Clean up erronious files that where imported [rbr.php].
-9  -> Repair Channel number in Pointers table [chan_poitners.php].
-10 -> Repair German Language sectype in pointers table and storage tables. [german_repair.php]. 
+4  -> Filenames recovery script [filenames_create.php].
+5  -> Deamon Prep Script [daemon_prep.php].
 
 
 
@@ -351,115 +342,11 @@ Initial release, was just WiFiDB generation, no Vistumbler yet.
 ==============================
 
 
-~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~
- ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT***
-~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~ 
---------------------------------------------------------------
---------------------------------------------------------------
-4		Wireless Database Batch Import script [command line only]
---------------------------------------------------------------
---------------------------------------------------------------
-~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~
- ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT***
- ~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~
-Usage: 
-	import.php --wifidb="/var/www/wifidb" --user="admin" --notes="These, are the notes!" --title="Import"
-
-	--wifidb	-	The folder that is where WiFiDB is installed
-					this is so that we can use the config file to
-					connect to MySQL and import the Access points
-	--user		-	The User name that will show up as importing
-					the all the access points into the database
-					for a batch import.
-	--notes		-	This will be put in each list that is imported
-					into the database.
-	--title		-	This will give a title to the batch import,
-					each list will have a title of 'Batch: *title*'
-
-All the options are needed, except for the notes and possibly the title if you want 
-all your titles to be "Batch: ". Otherwise they will be "Batch: Import", or whatever 
-you put as the Batch Import title name that will replace 'Import' in this example.
-
- 
-----------------------------------------
-----------------------------------------
-VERSION HISTORY
-----------------------------------------
-----------------------------------------
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.0
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1-> Initial release
-==============================
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.2
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1-> Changed layout so it is more readable
-2-> Fixed a few bugs with the switches
-3-> Added in bad character stripping.
-==============================
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.3
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1-> Skipped, was an experimental version
-==============================
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.4
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1-> Forgot to add Change log for 1.4, 
-    logging was added, but not to SVN yet
-==============================
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.5
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1-> Added in Support to Skip files if they have already been imported, 
-    the comparison is based off the file name and file size. all data 
-    is stored in `wifi`.`files`. the only data that is kept is filename, 
-    size, and date/time of import.
-2-> Fixed up the Loging some more. had some formating issues. 
-		There are two logging levels: 
-		  1) is just what was updated/imported, 
-		  2) is all the details of what was imported/updated
-==============================
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.5.1
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1-> The GPS Table for each AP was still being created with the MySQL 
-	default storage engine (MyISAM in most cases). The Default is now
-	hard coded as InnoDB.
-2-> Minor code changes to try something new.
-
-
-******HAS BEEN REPLACED BY WIFIDB DAEMON AND DEAMON_PREP.PHP AND FILENAMES_CREATE.PHP******
-
-~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~
- ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT*** ***DEFUNCT***
-~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~_~+~
-==============================
-
 
 
 --------------------------------------------------------------
 --------------------------------------------------------------
-5		Filenames recovery script [filenames_create.php]
+4		Filenames recovery script [filenames_create.php]
 --------------------------------------------------------------
 --------------------------------------------------------------
 
@@ -495,7 +382,7 @@ Initial release.
 
 --------------------------------------------------------------
 --------------------------------------------------------------
-6		Deamon Prep Script [daemon_prep.php]
+5		Deamon Prep Script [daemon_prep.php]
 --------------------------------------------------------------
 --------------------------------------------------------------
 
@@ -535,93 +422,6 @@ Initial release.
   
   Useage: 
   bash:/# php cleanup.php
-
-----------------------------------------
-----------------------------------------
-VERSION HISTORY
-----------------------------------------
-----------------------------------------
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.0
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-Initial release.
-==============================
-
-
---------------------------------------------------------------
---------------------------------------------------------------
-8		Clean up erronious files that where imported [rbr.php]
---------------------------------------------------------------
---------------------------------------------------------------
-
-  In the rbrconfig.php file define the start ID and end ID for the files 
-  in the `wifi`.`files` table that you want removed from the database.
-  
-  Useage:
-  bash:/# php rbr.php
-
-----------------------------------------
-----------------------------------------
-VERSION HISTORY
-----------------------------------------
-----------------------------------------
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.0
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-Initial release.
-==============================
-
---------------------------------------------------------------
---------------------------------------------------------------
-9		Repair Channel number in Pointers table [chan_poitners.php]
---------------------------------------------------------------
---------------------------------------------------------------
-
-  Some people may have experienced an issue where the channel field in the 
-  pointers table is only accepting 2 characters instead of 3 which it is 
-  supposed to support for 82.11a and n networks that have channels in the 
-  100's.
-  
-  Useage:
-  bash:/# php chan_poitners.php
-
-----------------------------------------
-----------------------------------------
-VERSION HISTORY
-----------------------------------------
-----------------------------------------
-
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-1.0
-~~~~~~~~~~~~
-~~~~~~~~~~~~
-Initial release.
-==============================
-
---------------------------------------------------------------
---------------------------------------------------------------
-10		Repair German Language sectype in pointers table and storage tables. [german_repair.php]
---------------------------------------------------------------
---------------------------------------------------------------
-
-  In early versions of vistumbler, German language Access points, that
-  are Open/None {Offen/Keine} where set to sectype 2 instead of the proper
-  sectype of 1. this script goes through the entire database looking for 
-  any german language AP (APs that have Offen/Keine in them.) Checks to see
-  if they have the proper sectype for their auth and encry settings. if so, 
-  it leaves it alone, if not, it alters the pointers table to reflect the 
-  correct setting, and renames the APs storage table, so ou will beable to 
-  see it after the change.
-  
-  Useage:
-  bash:/# php german_repair.php
 
 ----------------------------------------
 ----------------------------------------

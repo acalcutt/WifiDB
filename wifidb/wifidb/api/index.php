@@ -1,11 +1,10 @@
 <?php
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'API');
-
-$version   =   (@$_GET['version'] ? filter_input(INPUT_GET, 'version', FILTER_SANITIZE_ENCODED, array(16,32) ) : 0);
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
+$version   =   (@$_GET['version'] ? filter_input(INPUT_GET, 'version', FILTER_SANITIZE_ENCODED, array(16,32) ) : 0);
 if($version){$dbcore->Output("WiFiDB API</br>\r\nStart Date: $dbcore->startdate</br>\r\nLast Edit: $dbcore->lastedit</br>\r\nVersion Number: $dbcore->vernum</br>\r\nContact: $dbcore->contact</br>\r\n");}
 $api = get_class_methods('api');
 $core = get_class_methods('dbcore');

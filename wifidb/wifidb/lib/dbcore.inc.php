@@ -25,11 +25,10 @@ class dbcore
     function __construct($config = NULL)
     {
         if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
-        
         $this->sql                      = new SQL($config);
         
         $this->mesg                     = "";
-        $this->switches                 = $GLOBALS['switches'];
+        $this->switches                 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
         $this->reserved_users           = $config['reserved_users'];
         $this->supported_extentions     = array('csv','db3','vsz','vs1','gpx','ns1');
         $this->login_check              = 0;
@@ -73,8 +72,9 @@ class dbcore
         $this->KML_SOURCE_URL           = $config['KML_SOURCE_URL'];
         
         $this->smarty_path              = $config['smarty_path'];
-        $this->manufactures             = $GLOBALS['manufactures'];
-        unset($GLOBALS['manufactures']);
+        require_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
+        $this->manufactures             = $manufactures;
+        #unset($GLOBALS['manufactures']);
         
         $this->wifidb_email_updates     = 0;
         $this->email_validation         = 1;
@@ -271,14 +271,12 @@ class dbcore
     function format_size($size, $round = 2)
     {
         //Size must be bytes!
-        $size = $this->dos_filesize($size);
         $sizes = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
 
         for ($i=0; $size > 1024 && $i < (count($sizes)-1); $i++)
         {
             $size = $size/1024;
         }
-        #echo $size."<BR>";
         return round($size,$round).$sizes[$i];
     }
 
@@ -526,11 +524,8 @@ class dbcore
     #===============================#
     function &convert_dd_dm($geocord_in="")
     {
-        //	GPS Convertion :
-    #echo $geocord_in."\r\n";
         $neg=FALSE;
         $geocord_exp = explode(".", $geocord_in);
-        
         if($geocord_exp[0][0] == "S" or $geocord_exp[0][0] == "W"){$neg = TRUE;}
         $pattern[0] = '/N /';
         $pattern[1] = '/E /';
@@ -538,29 +533,39 @@ class dbcore
         $pattern[3] = '/W /';
         $replacements = "";
         $geocord_exp[0] = preg_replace($pattern, $replacements, $geocord_exp[0]);
-
         if($geocord_exp[0][0] === "-"){$geocord_exp[0] = 0 - $geocord_exp[0];$neg = TRUE;}
+        if(strlen($geocord_exp[0]) >= 4)
+        {
+            if($neg)
+            {
+                $out = "-".$geocord_exp[0].'.'.$geocord_exp[1];
+                return $out;
+            }else
+            {
+                $out = $geocord_exp[0].'.'.$geocord_exp[1];
+                return $out;
+            }
+        }
         // 4.146255 ---- 4 - 146255
-    #echo $geocord_exp[1]."\r\n";
         $geocord_dec = "0.".$geocord_exp[1];
         // 4.146255 ---- 4 - 0.146255
-    #echo $geocord_dec."\r\n";
         $geocord_mult = $geocord_dec*60;
         // 4.146255 ---- 4 - (0.146255)*60 = 8.7753
-    #echo $geocord_mult."\r\n";
         $mult = explode(".",$geocord_mult);
-    
+
         if( strlen($mult[0]) < 2 )
         {
             $geocord_mult = "0".$geocord_mult;
         }
         // 4.146255 ---- 4 - 08.7753
         $geocord_out = $geocord_exp[0].$geocord_mult;
-    #echo $geocord_out."\r\n";
         // 4.146255 ---- 408.7753
         $geocord_o = explode(".", $geocord_out);
-        if( strlen($geocord_o[1]) > 4 ){ $geocord_o[1] = substr($geocord_o[1], 0 , 4); $geocord_out = implode('.', $geocord_o); }
-
+        if( strlen($geocord_o[1]) > 4 )
+        {
+            $geocord_o[1] = substr($geocord_o[1], 0 , 4);
+            $geocord_out = implode('.', $geocord_o);
+        }
         if($neg === TRUE){$geocord_out = "-".$geocord_out;}
         return $geocord_out;
     }

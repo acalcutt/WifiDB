@@ -18,9 +18,9 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "export");
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'export');
 include('../lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'Export Page');
 
@@ -88,9 +88,8 @@ switch($func)
             {
                 $usernames[]=$user_array["username"];
             }
-            array_unique(&$usernames);
-            
-            '<input type="submit" value="Export This Users Access points">';
+            $usernames = array_unique($usernames);
+
             $dbcore->smarty->assign('wifidb_export_imports_all', $imports);
             $dbcore->smarty->assign('wifidb_export_users_all', $usernames);
             $dbcore->smarty->display('export_index.tpl');

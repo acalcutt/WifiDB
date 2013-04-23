@@ -19,8 +19,8 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'API');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 require "../lib/init.inc.php";
 
 $ssid = filter_input(INPUT_GET, 'ssid', FILTER_SANITIZE_STRING);

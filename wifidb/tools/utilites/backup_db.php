@@ -1,7 +1,7 @@
 <?php
 error_reporting(E_ALL|E_STRICT);
-global $switches;
-$switches = array('screen'=>"CLI",'extras'=>'cli');
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
 require( '../daemon/config.inc.php' );
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 require( $daemon_config['wifidb_install']."/lib/config.inc.php" );

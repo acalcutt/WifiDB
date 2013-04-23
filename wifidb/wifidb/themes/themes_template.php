@@ -18,14 +18,11 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
-global $switches;
-$switches = array('screen'=>"HTML", 'extras'=>'');
 include('../lib/init.inc.php');
 
-$theme = (@$_COOKIE['wifidb_theme']!='' ? @$_COOKIE['wifidb_theme'] : $dbcore->theme);
-
-if( !isset($_GET['theme']) ) { $_GET['theme'] = ""; }
 $theme = filter_input(INPUT_GET, 'theme', FILTER_SANITIZE_STRING);
 $theme_tn = $theme."/thumbnail.PNG";
 $theme_ss = $theme."/screenshot.PNG";
@@ -35,6 +32,13 @@ $author_exp = explode(":", $theme_details[0]);
 $site_exp = explode(":", $theme_details[1]);
 $version = explode(":", $theme_details[2]);
 $date = explode(":", $theme_details[3]);
+$details = "";
+$count = count($theme_details)-1;
+foreach($theme_details as $key=>$detail)
+{
+    if($key < 5){continue;}
+    $details .= $detail;
+}
 
 $dbcore->smarty->assign('theme', $theme);
 $dbcore->smarty->assign('theme_image_url', $theme_ss);
@@ -43,7 +47,7 @@ $dbcore->smarty->assign('theme_author', $author_exp[1]);
 $dbcore->smarty->assign('author_url', $site_exp[1]);
 $dbcore->smarty->assign('theme_ver', $version[1]);
 $dbcore->smarty->assign('author_date', $date[1]);
-$dbcore->smarty->assign('theme_details', wordwrap($theme_details[5], 64, "<br />\n"));
+$dbcore->smarty->assign('theme_details', str_replace("\r\n", "<br />", $details));
 
 $dbcore->smarty->display('themes_template.tpl'); 
 ?>

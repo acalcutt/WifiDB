@@ -1,6 +1,6 @@
 <?php
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'API');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 $title = (empty($_REQUEST['title'])) ? "Untitled" : $_REQUEST['title'];

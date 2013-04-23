@@ -19,8 +19,8 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
 function max_string_len($My_Array)
 	{

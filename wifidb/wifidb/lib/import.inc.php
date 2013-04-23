@@ -19,15 +19,21 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-class import extends dbcore
+class import extends wdbcli
 {
-    function __construct($config, $daemon_config, $export_obj, $colors)
+    function __construct($config, $daemon_config, $export_obj = NULL)
     {
         parent::__construct($config, $daemon_config);
-        $this->export       = $export_obj;
+        if($export_obj != NULL)
+        {
+            $this->export = $export_obj;
+        }else
+        {
+            $this->export = new export($config, $daemon_config);
+        }
+
         $this->log_level    = $daemon_config['log_level'];
         $this->log_interval = 1;
-        $this->colors       = $colors;
         $this->verbose      = $daemon_config['verbose'];
     }
     
@@ -68,8 +74,10 @@ class import extends dbcore
         $prep->execute();
         $file_tmp_array = $prep->fetch(2);
         $file_tmp_id = $file_tmp_array['id'];
-        foreach($File_return as $key => $file_line_alt)
+        foreach($File_return as $key => $file_line)
         {
+            $encoding = mb_detect_encoding($file_line);
+            $file_line_alt = iconv($encoding, 'UTF-8//TRANSLIT', $file_line);
             if($key == 0)
             {
                 $file_line_alt = str_replace("?","",$file_line_alt);
@@ -280,7 +288,6 @@ class import extends dbcore
                 if($r===70){echo "\\\r";$r=0;}
                 $r++;
             }
-#echo $vs1data['gpsdata'][$key]['import_id']."\r\n";
         }
         
         $this->verbosed("Importing AP Data [$ap_count]:");
@@ -375,15 +382,22 @@ class import extends dbcore
                 if(!$FA){$FA = $gps_id;}
                 $LA = $gps_id;
                 
-                $sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`) VALUES (NULL, ?, ?, ?, ?)";
-                
+                $sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
+                $time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
                 $preps = $this->sql->conn->prepare($sql);
                 $preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
                 $preps->bindParam(2, $signal, PDO::PARAM_INT);
                 $preps->bindParam(3, $rssi, PDO::PARAM_INT);
                 $preps->bindParam(4, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_INT);
+                $preps->bindParam(5, $time_stamp, PDO::PARAM_INT);
                 $preps->execute();
-                
+
+                $sql = "UPDATE `wifi`.`wifi_gps` SET `ap_hash` = ? WHERE `id` = ?";
+                $prepg = $this->sql->conn->prepare($sql);
+                $prepg->bindParam(1, $ap_hash, PDO::PARAM_STR);
+                $prepg->bindParam(2, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_STR);
+                $prepg->execute();
+
                 $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
                 
                 $err = $this->sql->conn->errorCode();

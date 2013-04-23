@@ -1,5 +1,6 @@
 <?php
-$switches = array('screen'=>"CLI",'extras'=>'export');
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
 date_default_timezone_set("UTC");
 
 if(!(require('daemon/config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}

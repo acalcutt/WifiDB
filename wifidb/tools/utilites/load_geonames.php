@@ -1,4 +1,7 @@
 <?php
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
+
 echo "Load Geonames Tables Information.\r\n";
 
 if(!@$argv[2])

@@ -1,7 +1,7 @@
 <?php
 error_reporting(E_ALL|E_STRICT);
-global $screen_output;
-$screen_output = "CLI";
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
 $start = microtime(1);
 $table_error = array();
 

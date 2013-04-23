@@ -16,6 +16,8 @@
 #   Free Software Foundation, Inc.,
 #   59 Temple Place, Suite 330,
 #   Boston, MA 02111-1307 USA
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "api");
 
 include('lib/init.inc.php');
 include("lib/FeedWriter.php");

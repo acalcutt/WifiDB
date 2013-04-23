@@ -18,11 +18,18 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
 $id = $_GET['id'];
 
-$dbcore->APFetch($id);
+$results = $dbcore->APFetch($id);
+$dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
+$dbcore->smarty->assign('wifidb_ap_signal_all', $results[1]);
+$dbcore->smarty->assign('wifidb_assoc_lists', $results[2]);
+$dbcore->smarty->assign('wifidb_ap_globe', $results[3]);
+$dbcore->smarty->assign('wifidb_ap', $results[4]);
+$dbcore->smarty->display('fetch.tpl');
+
 ?>

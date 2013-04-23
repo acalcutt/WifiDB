@@ -30,8 +30,6 @@ class wdbcli extends dbcore
                             "YELLOW"	=> "\033[1;33m"
                             );
         }
-        
-        
     }
     
     

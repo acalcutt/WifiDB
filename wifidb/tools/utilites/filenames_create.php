@@ -1,4 +1,7 @@
 <?php
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
+
 include('daemon/config.inc.php');
 $dbconfig = $GLOBALS['wifidb_install'].$dim.'lib'.$dim.'config.inc.php';
 echo $dbconfig."\n";

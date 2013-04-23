@@ -23,8 +23,8 @@ if not, write to the
 error_reporting(E_ALL | E_STRICT); 
 ini_set("screen.enabled", TRUE);
 //
+
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
-ini_set("memory_limit","2048M"); //lots of objects need lots of memory
 
 set_exception_handler('exception_handler');
 $error = 0;
@@ -42,7 +42,7 @@ if(!require('config.inc.php'))
 {
     if(@WIFIDB_INSTALL_FLAG != "installing")
     {
-        if($GLOBALS['switches']['screen'] == "CLI")
+        if(strtolower(SWITCH_SCREEN) == "cli")
         {
             require $daemon_config['wifidb_install'].'/lib/config.inc.php' ;
         }else
@@ -85,9 +85,10 @@ if($error)
     echo $error_msg;
     die();
 }
-if(strtolower($GLOBALS['switches']['screen']) != "cli")
+
+if(strtolower(SWITCH_SCREEN) != "cli")
 {
-    if(strtolower($GLOBALS['switches']['extras']) != "api")
+    if(strtolower(SWITCH_EXTRAS) != "api")
     {
         if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
         {
@@ -119,13 +120,12 @@ function __autoload($class)
         return 0;
     }
 }
-require_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
 
-switch(strtoupper($GLOBALS['switches']['screen']))
+switch(strtolower(SWITCH_SCREEN))
 {
-    case "CLI":
+    case "cli":
         require_once $config['wifidb_tools'].'daemon/config.inc.php';
-        switch(strtolower($GLOBALS['switches']['extras']))
+        switch(strtolower(SWITCH_EXTRAS))
         {
             ####
             case "export":
@@ -147,6 +147,10 @@ switch(strtoupper($GLOBALS['switches']['screen']))
                 $dbcore = new api($config);
                 break;
             ####
+            case "frontend_prep":
+                $dbcore = new frontend($config);
+                break;
+            ####
             default:
                 die("bad cli extras switch.");
                 break;
@@ -155,15 +159,14 @@ switch(strtoupper($GLOBALS['switches']['screen']))
         break;
 
     ################
-    case "HTML":
-        switch(strtolower($GLOBALS['switches']['extras']))
+    case "html":
+        switch(strtolower(SWITCH_EXTRAS))
         {
             case "api":
                 $dbcore = new api($config);
                 break;
             case "export":
                 $dbcore = new frontend($config);
-                $dbcore->export = new export($config);
                 break;
 
             default:

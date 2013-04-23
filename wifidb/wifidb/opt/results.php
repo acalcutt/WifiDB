@@ -18,12 +18,12 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-
-$func    =   filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
-global $switches;
-$switches = array('screen'=>"HTML", 'extras'=>'');
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
 require '../lib/init.inc.php';
+
+$func    =   filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
 
 if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'] === "%" or @$_REQUEST['chan'] === "%" or @$_REQUEST['auth'] === "%" or @$_REQUEST['encry'] === "%" )
 {
