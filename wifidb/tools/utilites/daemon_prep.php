@@ -1,36 +1,33 @@
 <?php
 define("SWITCH_SCREEN", "CLI");
-define("SWITCH_EXTRAS", "cli");
+define("SWITCH_EXTRAS", "daemon");
 
 if(!(require('../daemon/config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-$wdb_install = $daemon_config['wifidb_install'];
-if($wdb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require($wdb_install)."/lib/init.inc.php";
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit="2011.02.16";
+$lastedit="2013.04.28";
 $start="2008.05.23";
-$ver="1.1";
-$localtimezone = date("T");
-echo $localtimezone."\n";
-global $not, $is;
-$not = 0;
-$is = 0;
+$ver="2.0";
 $i=0;
 
 $TOTAL_START = date("Y-m-d H:i:s");
 
-echo "\n==-=-=-=-=-=- WiFiDB VS1 Daemon Prep Script -=-=-=-=-=-==\nVersion: ".$ver."\nLast Edit: ".$lastedit."\n";
+echo "\n==-=-=-=-=-=- WiFiDB VS1 Daemon Prep Script -=-=-=-=-=-==
+Version: ".$ver."
+Last Edit: ".$lastedit."\n";
 $vs1dir = $dbcore->PATH."import/up/";
 
 if (!file_exists($vs1dir))
 {
-    echo "You need to put some files in a folder named 'vs1' first.\nPlease do this first then run this again.\nDir:".$vs1dir;
+    echo "You need to put some files in a folder named 'vs1' first.
+Please do this first then run this again.
+    Dir:".$vs1dir;
     die();
 }
 // self aware of Script location and where to search for Txt files
 
 echo "Directory: ".$vs1dir."\r\n";
-
 #Lets parse out the filenames file.
 echo "Parsing Filenames.txt\r\n";
 $filenames = @file("filenames.txt");
@@ -56,39 +53,35 @@ $ii = 0;
 while (!(($file = readdir($dh)) == false))
 {
     $ii++;
-    #echo $ii."\r\n";
     if ((is_file("$vs1dir/$file")))
     {
-	if($file == '.'){continue;}
-	if($file == '..'){continue;}
-	$file_e = explode('.',$file);
-	$file_max = count($file_e);
-	$fileext = strtolower($file_e[$file_max-1]);
-	if ($fileext=='vs1' or $fileext=="tmp" or $fileext=="db3")
-	{
-	    if($dbcore->insert_file($file,@$file_names))
+        if($file == '.'){continue;}
+        if($file == '..'){continue;}
+        $file_e = explode('.',$file);
+        $file_max = count($file_e);
+        $fileext = strtolower($file_e[$file_max-1]);
+        if ($fileext=='vs1' or $fileext=="tmp" or $fileext=="db3")
+        {
+            if($dbcore->insert_file($file,@$file_names))
             {
                 $file_a[] = $file; //if Filename is valid, throw it into an array for later use
             }else
             {
                 $dbcore->verbosed("No good... Blehk.\r\n");
             }
-	}else
-	{
-	    $dbcore->verbosed("EXT: ".$fileext."\r\n");
-	    $dbcore->verbosed("File not supported -->$file\r\n");
+        }else
+        {
+            $dbcore->verbosed("EXT: ".$fileext."\r\n");
+            $dbcore->verbosed("File not supported -->$file\r\n");
             $dbcore->logd("( ".$file." ) is not a supported file extention of ".$file_e[$file_max-1]."\r\n If the file is a txt file run it through the converter first.\r\n\r\n");
             continue;
         }
-    }else{continue;}
-    if($i==3)
+    }else
     {
-     #   die();
+        continue;
     }
     $i++;
 }
-$dbcore->verbosed("Is: $is\r\nNot: $not");
 $TOTAL_END = date("Y-m-d H:i:s");
 $dbcore->verbosed("TOTAL Running time::\n\nStart: ".$TOTAL_START."\nStop : ".$TOTAL_END."\n");
 closedir($dh);
-?>

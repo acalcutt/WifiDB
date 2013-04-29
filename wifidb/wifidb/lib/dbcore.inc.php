@@ -72,9 +72,9 @@ class dbcore
         $this->KML_SOURCE_URL           = $config['KML_SOURCE_URL'];
         
         $this->smarty_path              = $config['smarty_path'];
-        require_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
-        $this->manufactures             = $manufactures;
-        #unset($GLOBALS['manufactures']);
+        include_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
+        $this->manufactures             = @$GLOBALS['manufactures'];
+        unset($GLOBALS['manufactures']);
         
         $this->wifidb_email_updates     = 0;
         $this->email_validation         = 1;
@@ -283,7 +283,7 @@ class dbcore
     #=========================================#
     #   Recureivly chown and chgrp a folder   #
     #=========================================#
-    function recurse_chown_chgrp($mypath, $uid, $gid)
+    private function recurse_chown_chgrp($mypath, $uid, $gid)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)
@@ -305,7 +305,7 @@ class dbcore
     #================================#
     #   Recureivly chmod a folder    #
     #================================#
-    function recurse_chmod($mypath, $mod)
+    private function recurse_chmod($mypath, $mod)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)

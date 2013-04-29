@@ -63,6 +63,7 @@ class frontend extends dbcore
             $this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
             $this->htmlheader();
             $this->htmlfooter();
+            $this->users_import_aps = array();
         }
         if(strtolower(SWITCH_EXTRAS) == "exports")
         {
@@ -623,55 +624,7 @@ class frontend extends dbcore
         return 1;
     }
 
-    #======================#
-    #   DUMP VAR TO HTML   #
-    #======================#
-    function Dump($value="" , $level=0)
-    {
-        if ($level==-1)
-        {
-            $trans[' ']='&there4;';
-            $trans["\t"]='&rArr;';
-            $trans["\n"]='&para;;';
-            $trans["\r"]='&lArr;';
-            $trans["\0"]='&oplus;';
-            return strtr(htmlspecialchars($value),$trans);
-        }
-        if ($level==0) echo '<pre>';
-        $type= gettype($value);
-        echo $type;
-        if ($type=='string')
-        {
-            echo '('.strlen($value).')';
-            $value= dump($value,-1);
-        }
-        elseif ($type=='boolean') $value= ($value?'true':'false');
-        elseif ($type=='object')
-        {
-            $props= get_class_vars(get_class($value));
-            echo '('.count($props).') <u>'.get_class($value).'</u>';
-            foreach($props as $key=>$val)
-            {
-                echo "\n".str_repeat("\t",$level+1).$key.' => ';
-                dump($value->$key,$level+1);
-            }
-            $value= '';
-        }
-        elseif ($type=='array')
-        {
-            echo '('.count($value).')';
-            foreach($value as $key=>$val)
-            {
-                echo "\n".str_repeat("\t",$level+1).dump($key,-1).' => ';
-                dump($val,$level+1);
-            }
-            $value= '';
-        }
-        echo " <b>$value</b>";
-        if ($level==0) echo '</pre>';
-        return 1;
-    }
-    
+
     function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="")
     {
         if($ssid=="" && $mac=="" && $chan=="" && $radio=="" && $auth=="" && $encry=="")
@@ -910,7 +863,7 @@ class frontend extends dbcore
             }
             $signal_exp = explode("-", $aps['sig']);
             $first = explode(",", $signal_exp[0]);
-            $first_gps_id = ;
+            $first_gps_id = $first[1];
             $result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$first_gps_id}'");
             $first_data = $result->fetch(1);
             $fa = $first_data["date"]." ".$first_data["time"];

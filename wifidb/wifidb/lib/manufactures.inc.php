@@ -19,9 +19,9 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-#global $manufactures;
+global $manufactures;
 
-$manufactures = array(
+$GLOBALS['manufactures'] = array(
 "000000"=>"XEROX CORPORATION",
 "000001"=>"XEROX CORPORATION",
 "000002"=>"XEROX CORPORATION",

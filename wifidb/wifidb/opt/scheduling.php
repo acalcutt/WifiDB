@@ -95,7 +95,7 @@ switch($func)
             var_dump(array(
                 "file"     => $file,
                 "file_url" => $url_base.$file.'/full_db.kmz',
-                "time"     => date ("H:i:s", filemtime($kmz_file)),
+                "time"     => date ("H:i:s", filectime($kmz_file)),
                 "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
             ));
             if(file_exists($kmz_file))
@@ -103,7 +103,7 @@ switch($func)
                 $kml_all[] = array(
                                     "file"     => $file,
                                     "file_url" => $url_base.$file.'/full_db.kmz',
-                                    "time"     => date ("H:i:s", filemtime($kmz_file)),
+                                    "time"     => date ("H:i:s", filectime($kmz_file)),
                                     "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
                             );
             }

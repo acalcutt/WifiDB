@@ -25,14 +25,14 @@ the daemon on and off. But it is a php script that is running
 perpetually in the background. I am hoping to get a C++ version working
 sometime soon, until then I am using php.
 */
-$lastedit  = "2013-01-06";
-global $switches;
-$switches = array('screen'=>"CLI",'extras'=>'daemon');
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "daemon");
 
 if(!(require('config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require($daemon_config['wifidb_install']."/lib/init.inc.php");
+
+$lastedit  = "2013-01-06";
 
 $arguments = $dbcore->parseArgs($argv);
 
@@ -147,6 +147,7 @@ while(1)
                 {
                     $dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
                     $dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
+                    Throw new ErrorException;
                 }
 
                 //check to see if this file has aleady been imported into the DB
@@ -181,7 +182,7 @@ while(1)
                         {
                             $dbcore->logd("Failed to insert Preliminary user information into the Imports table. :(");
                             $dbcore->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-                            return -1;
+                            Throw new ErrorException;
                         }
                         $user_import_row = $dbcore->sql->conn->lastInsertId();# Lets get the ID of that insert so we know where to put the rest of the imports info later.
                         $dbcore->logd("User ($muser) import row: ".$user_import_row);
@@ -224,6 +225,7 @@ while(1)
                     {
                         $dbcore->logd("Error Fetching the row ID's for the user imports.\r\n".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
                         $dbcore->verbosed("Error Adding $source ($remove_file) to the Files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
+                        Throw new ErrorException;
                     }
                     $ids = array();
                     
@@ -253,7 +255,7 @@ while(1)
                     $prep1->bindParam(12, $prev_ext['prev_ext'], PDO::PARAM_STR);
                     $prep1->execute();
                     var_dump(array($file_name, $date, $size, $totalaps, $totalgps, $hash, $user, $notes, $title, $user_ids, $prev_ext['converted'], $prev_ext['prev_ext']));
-                    die();
+
                     $err1 = $dbcore->sql->conn->errorCode();
                     #var_dump($err1);
                     if($err1[0] == "00000")
@@ -293,6 +295,7 @@ while(1)
                             {
                                 $dbcore->verbosed("Failed to update import row.({$muser} $hash : $row})", -1);
                                 $dbcore->logd("Failed to update import row. ({$muser} $hash : $row}) ".var_export($dbcore->sql->conn->errorInfo()), $dbcore->This_is_me);
+                                Throw new ErrorException;
                             }
                         }
                         
@@ -306,6 +309,7 @@ while(1)
                             #mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
                             $dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
                             $dbcore->verbosed("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
+                            Throw new ErrorException;
                         }else
                         {
                             $sel_new = "SELECT `id` FROM `wifi`.`user_imports` ORDER BY `id` DESC LIMIT 1";
@@ -324,6 +328,7 @@ while(1)
                         #mail_users("Error Adding file to finished table: ".$source, $subject, "import", 1);
                         $dbcore->logd("Error Adding $source ($remove_file) to the Files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
                         $dbcore->verbosed("Error Adding $source ($remove_file) to the Files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
+                        Throw new ErrorException;
                     }
                     $finished = 1;
                 }else
@@ -338,6 +343,7 @@ while(1)
                         #mail_users("_error_removing_file_tmp:".$remove_file, $subject, "import", 1);
                         $dbcore->logd("Error removing ".$remove_file." from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
                         $dbcore->verbosed("Error removing ".$remove_file." from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
+                        Throw new ErrorException;
                     }else
                     {
                         $dbcore->logd("Removed ".$remove_file." from the Temp files table");
@@ -360,6 +366,7 @@ while(1)
                     #mail_users("_error_removing_file_tmp:".$remove_file, $subject, "import", 1);
                     $dbcore->logd("Error removing ".$remove_file." from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
                     $dbcore->verbosed("Error removing ".$remove_file." from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1)."\n");
+                    Throw new ErrorException;
                 }else
                 {
                     $dbcore->logd("Removed empty ".$remove_file." from the Temp files table.", $dbcore->This_is_me);
@@ -370,7 +377,7 @@ while(1)
             if(!$result)
             {
                 $dbcore->verbosed("Failed to update the File table query so that we know what files have already been imported.", -1);
-                die();
+                Throw new ErrorException;
             }else
             {
                 $dbcore->verbosed("Updated the File table query so that we know what files have already been imported.", 3);
@@ -399,6 +406,7 @@ while(1)
             #mail_users("_error_updating_settings_table:".$remove_file, $subject, "import", 1);
             $dbcore->logd("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
             $dbcore->verbosed("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
+            Throw new ErrorException;
         }
 
         $dbcore->logd("File tmp table is empty, go and import something. While your doing that I'm going to sleep for ".($dbcore->time_interval_to_check/60)." minutes.", $dbcore->This_is_me);
@@ -408,15 +416,12 @@ while(1)
         #mail_users("_error_looking_for_files:", $subject, "import", 1);
         $dbcore->logd("There was an error trying to look into the files_tmp table.\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
         $dbcore->verbosed("There was an erroer trying to look into the files_tmp table.\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
-        die();#########################################################################################################################################
+        Throw new ErrorException;
+        #########################################################################################################################################
     }
-#    die("*******************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! *******************************************************************************************************************************************************************************************************************************************************THIS NEEDS TO BE REMOVED YOU DUMBASSS!!!!!!!!!!!!!!!!!! ************************************************************************************************************************************************************************************");
-    if(@$arguments['d'])
-    {
+    if(@$arguments['d']){
         sleep($dbcore->time_interval_to_check);
-    }else
-    {
+    }else{
         break;
     }
 }
-?>

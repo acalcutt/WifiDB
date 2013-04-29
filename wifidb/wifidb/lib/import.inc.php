@@ -49,13 +49,13 @@ class import extends wdbcli
         {
             $this->logd("The file that needs to be imported was not included in the import public function.");
             $this->verbosed("The file that needs to be imported was not included in the import public function", -1);
-            return -1;
+            throw new ErrorException;
         }
         $this->logd("Source File Path: ".$source);
 
         # Open the file and dump its contents into an array.
         
-        $File_return	 = explode("\r\n", utf8_decode(file_get_contents($source)));
+        $File_return     = explode("\r\n", utf8_decode(file_get_contents($source)));
         
         # count how many rows in the file. If it is less than or equal to 8, it is a blank file.
         $this->logd("First row of file: ".$File_return[1]);
@@ -232,7 +232,7 @@ class import extends wdbcli
                 $gps['long'] = "E 0000.0000";
                 #die("############################################################## NEEDS TO BE REMOVED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             }
-            if(!preg_match("(\d{2})-(\d{2})-(\d{4})", $gps['date']))
+            if(!preg_match('/(\d{2})-(\d{2})-(\d{4})/', $gps['date']))
             {
                 $gps['date'] = "1969-01-01";
                 $gps['time'] = "00:00:00";
@@ -272,9 +272,8 @@ class import extends wdbcli
             }else
             {
                 $this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
-                die();
                 $this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
-                return -1;
+                throw new ErrorException;
             }
             if($this->verbose)
             {
@@ -304,7 +303,7 @@ class import extends wdbcli
             {
                 $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                 $this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                return -1;
+                throw new ErrorException;
             }
 
             $ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
@@ -405,7 +404,7 @@ class import extends wdbcli
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                    return -1;
+                    throw new ErrorException;
                 }
                 
                 if($this->verbose)
@@ -470,7 +469,7 @@ class import extends wdbcli
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error Updating AP Pointer. ".var_export($this->sql->conn->errorInfo(),1));
-                    return -1;
+                    throw new ErrorException;
                 }
                 else
                 {
@@ -522,7 +521,7 @@ class import extends wdbcli
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
-                    return -1;
+                    throw new ErrorException;
                 }
                 else
                 {

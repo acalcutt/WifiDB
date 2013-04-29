@@ -24,7 +24,7 @@ class daemon extends wdbcli
     public function __construct($config, $daemon_config)
     {
         parent::__construct($config, $daemon_config);
-        
+
         $this->export               = new export($config, $daemon_config);
         $this->import               = new import($config, $daemon_config, $this->export);
         $this->time_interval_to_check = $daemon_config['time_interval_to_check'];
@@ -69,9 +69,9 @@ class daemon extends wdbcli
     public function insert_file($file, $file_names)
     {
         $source = $this->PATH.'import/up/'.$file;
-
+        echo $source."\r\n";
         $hash = hash_file('md5', $source);
-        $size1 = $this->format_size($this->dos_filesize($source));
+        $size1 = $this->format_size(filesize($source));
         if(@is_array($file_names[$hash]))
         {
             $user = $file_names[$hash]['user'];
@@ -102,17 +102,18 @@ class daemon extends wdbcli
         $prep->bindParam(7, $hash, PDO::PARAM_STR);
         $prep->execute();
         
-        $err = $this->sql->conn->errorCode();
-        if($err[0] === "00000")
+        $err = $this->sql->conn->errorInfo();
+        if($err[0] == "00000")
         {
             $this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
             $this->logd("File Inserted into Files_tmp.".$sql);
             return 1;
         }else
         {
+
             $this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
             $this->logd("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo(),1));
-            return 0;
+            throw new ErrorException;
         }
     }
 ####################

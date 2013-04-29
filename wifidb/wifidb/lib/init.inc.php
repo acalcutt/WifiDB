@@ -18,7 +18,7 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-// Show all erorrs with strict santex
+// Show all error's with strict santex
 //***DEV USE ONLY***
 error_reporting(E_ALL | E_STRICT); 
 ini_set("screen.enabled", TRUE);
@@ -114,74 +114,78 @@ function __autoload($class)
     }else
     {
         echo "Could not load class `{$class}` from 
-        {$GLOBALS['config']['wifidb_tools']}daemon/{$class}.inc.php
+        {$GLOBALS['config']['wifidb_tools']}daemon/lib/{$class}.inc.php
             Or
         {$GLOBALS['config']['wifidb_install']}lib/{$class}.inc.php\r\n";
         return 0;
     }
 }
-
-switch(strtolower(SWITCH_SCREEN))
+try
 {
-    case "cli":
-        require_once $config['wifidb_tools'].'daemon/config.inc.php';
-        switch(strtolower(SWITCH_EXTRAS))
-        {
-            ####
-            case "export":
-                $dbcore = new export($config, $daemon_config);
-            break;
-            ####
-            case "import":
-                $dbcore = new import($config, $daemon_config);
-            ####
-            case "daemon":
-                $dbcore = new daemon($config, $daemon_config);
-            break;
-            ####
-            case "cli":
-                $dbcore = new wdbcli($config, $daemon_config);
-            break;
-            ####
-            case "api":
-                $dbcore = new api($config);
+    switch(strtolower(SWITCH_SCREEN))
+    {
+        case "cli":
+            require_once $config['wifidb_tools'].'daemon/config.inc.php';
+            switch(strtolower(SWITCH_EXTRAS))
+            {
+                ####
+                case "export":
+                    $dbcore = new export($config, $daemon_config);
                 break;
-            ####
-            case "frontend_prep":
-                $dbcore = new frontend($config);
+                ####
+                case "import":
+                    $dbcore = new import($config, $daemon_config);
+                ####
+                case "daemon":
+                    $dbcore = new daemon($config, $daemon_config);
                 break;
-            ####
-            default:
-                die("bad cli extras switch.");
+                ####
+                case "cli":
+                    $dbcore = new wdbcli($config, $daemon_config);
                 break;
-        }
-        $dbcore->cli = 1;
-        break;
+                ####
+                case "api":
+                    $dbcore = new api($config);
+                    break;
+                ####
+                case "frontend_prep":
+                    $dbcore = new frontend($config);
+                    break;
+                ####
+                default:
+                    die("bad cli extras switch.");
+                    break;
+            }
+            $dbcore->cli = 1;
+            break;
 
-    ################
-    case "html":
-        switch(strtolower(SWITCH_EXTRAS))
-        {
-            case "api":
-                $dbcore = new api($config);
-                break;
-            case "export":
-                $dbcore = new frontend($config);
-                break;
+        ################
+        case "html":
+            switch(strtolower(SWITCH_EXTRAS))
+            {
+                case "api":
+                    $dbcore = new api($config);
+                    break;
+                case "export":
+                    $dbcore = new frontend($config);
+                    break;
 
-            default:
-                $dbcore = new frontend($config);
-                break;
-        }
-        $dbcore->cli    = 0;
-        break;
-    ################
-    Default:
-        die("Unknown Switch Set.");
-        break;
+                default:
+                    $dbcore = new frontend($config);
+                    break;
+            }
+            $dbcore->cli = 0;
+            break;
+        ################
+        Default:
+            die("Unknown Switch Set.");
+            break;
     }
-#done setting up WiFiDB, weather it be the daemon or the web interface, or just plain failing.
-
+    #done setting up WiFiDB, weather it be the daemon or the web interface, or just plain failing.
+}
+catch (Exception $e) {
+    exception_handler($e);
+}
 
 
 function exception_handler($err)
@@ -208,7 +212,7 @@ function exception_handler($err)
         }
     }
     $trace['main'] = array( 'Error' =>strval($err->getCode()), 'Message'=>$err->getMessage(),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
-    var_dump($trace);
+    #var_dump($trace);
     exit();
 }
 
