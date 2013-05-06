@@ -36,7 +36,7 @@ if not, write to the
         <td align="center">{$wifidb_done.id}</td>
         <td align="center">{$wifidb_done.date}</td>
         <td align="center">{$wifidb_done.title}</td>
-        <td align="center"><a class="links" href ="{$wifidb_host_url}/opt/userstats.php?func=alluserlists&user={$wifidb_done.user}">{$wifidb_done.user}</a></td>
+        <td align="center"><a class="links" href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$wifidb_done.user}">{$wifidb_done.user}</a></td>
         <td align="center">{$wifidb_done.size}</td>
         <td align="center">{$wifidb_done.aps}/{$wifidb_done.gps}</td>
     </tr>
@@ -46,7 +46,7 @@ if not, write to the
     </tr>
     <tr class="{$wifidb_done.class}">
         <td align="center" colspan="2">{$wifidb_done.hash}</td>
-        <td align="center" colspan="4"><a class="links" href="{$wifidb_host_url}/opt/userstats.php?func=useraplist&row={$wifidb_done.user_row}">{$wifidb_done.file}</a></td>
+        <td align="center" colspan="4"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.user_row}">{$wifidb_done.file}</a></td>
         
     </tr>
     <tr class="sub_head">

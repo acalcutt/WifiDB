@@ -16,7 +16,7 @@
                     <table>
                         <tr>
                             <td style="width: 228px">
-                                <a href="http://www.randomintervals.com">
+                                <a href="http://www.wifidb.net">
                                 <img alt="Random Intervals Logo" src="{$wifidb_host_url}themes/vistumbler/img/logo.png" class="no_border" /></a>
                             </td>
                         </tr>

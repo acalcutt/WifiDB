@@ -92,7 +92,6 @@ class dbcore
         $this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
         $this->wdbmail                  = new wdbmail($this);
-        $this->sec->LoginCheck();
     }
 
     ##############################
@@ -283,7 +282,7 @@ class dbcore
     #=========================================#
     #   Recureivly chown and chgrp a folder   #
     #=========================================#
-    private function recurse_chown_chgrp($mypath, $uid, $gid)
+    public function recurse_chown_chgrp($mypath, $uid, $gid)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)
@@ -305,7 +304,7 @@ class dbcore
     #================================#
     #   Recureivly chmod a folder    #
     #================================#
-    private function recurse_chmod($mypath, $mod)
+    public function recurse_chmod($mypath, $mod)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)

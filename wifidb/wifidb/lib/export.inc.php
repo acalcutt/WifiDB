@@ -48,6 +48,7 @@ class export extends wdbcli
             "last_edit"             =>  "2013-Jan-18",
             "ExportAll"             =>  "2.0",
             "ExportAllDaily"        =>  "1.0",
+            "ExportSingleAP"        =>  "1.0",
             "CreateKMZ"             =>  "1.0",
             "ExportCurrentAPkml"    =>  "1.0",
             "GenerateDaemonKMLData" =>  "1.0",
@@ -214,7 +215,7 @@ class export extends wdbcli
 <kml xmlns=\"$this->KML_SOURCE_URL\">
 <!--exp_all_db_kml-->
     <Document>
-        <name>WiFiDB Fulle DB Export (".date($this->date_format).")</name>
+        <name>WiFiDB Full DB Export (".date($this->date_format).")</name>
         <Style id=\"openStyleDead\">
             <IconStyle>
                 <scale>0.5</scale>
@@ -277,7 +278,12 @@ class export extends wdbcli
             $this->verbosed("Failed to Zip up the KML to a KMZ file :/");
         }
         @link($daily_folder.'/full_db'.$labeled.'.kmz', $this->PATH.'out/daemon/full_db'.$labeled.'.kmz');
-        
+
+        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0664);
+        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kml', 0664);
+        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kmz', 0664);
+        chmod($daily_folder.'/full_db'.$labeled.'.kmz', 0664);
+
         return $daily_folder;
     }
     
@@ -508,9 +514,154 @@ class export extends wdbcli
             $this->verbosed("Failed to compress the Daily KMZ file :(");
         }
         @link($daily_folder.'/daily_db'.$labeled.'.kmz', $this->PATH.'out/daemon/daily_db'.$labeled.'.kmz');
+
+
+        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0750);
+        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kml', 0750);
+
         return $daily_folder;
     }
-    
+
+    /*
+     * Export All Daily Aps to KML
+     */
+    public function ExportSingleAP($id=0, $from =0, $limit = 0)
+    {
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $id, PDO::PARAM_INT);
+        $prep->execute();
+        if($this->sql->checkError() !== 0)
+        {
+            throw new ErrorException("Could not select ID from pointers Table.");
+        }
+        $fetch = $prep->fetch(2);
+        switch($fetch['sectype'])
+        {
+            case "1":
+                $type = "openStyleDead";
+            break;
+
+            case "2":
+                $type = "wepStyleDead";
+            break;
+
+            case "3":
+                $type = "secureStyleDead";
+            break;
+        }
+        $sql = "SELECT * FROM `wifi`.`wifi_signal` WHERE `ap_hash` = ?";
+        $prep2 = $this->sql->conn->prepare($sql);
+        $prep2->bindParam(1, $fetch['ap_hash'], PDO::PARAM_STR);
+        $prep2->execute();
+        if($this->sql->checkError() !== 0)
+        {
+            throw new ErrorException("Could not select from Signals Table.");
+        }
+        $signals = $prep2->fetchAll(2);
+        $SignalData = "";
+        $sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
+        $prep3 = $this->sql->conn->prepare($sql);
+        foreach($signals as $signal)
+        {
+            $prep3->bindParam(1, $signal['gps_id'], PDO::PARAM_INT);
+            $prep3->execute();
+            if($this->sql->checkError() !== 0)
+            {
+                throw new ErrorException("Could not select from GPS Table.");
+            }
+            $gps = $prep3->fetch(2);
+            $SignalData .= "<Placemark id=\"".$signal['id']."\">
+    ".$signal['id']."
+    <description>
+        <![CDATA[
+            <b>Signal Percent: </b>".$signal['signal']."<br />
+            <b>RSSI Signal: </b>".$signal['rssi']."<br />
+            <b>Date: </b>".$gps['date']."<br />
+            <b>Time: </b>".$gps['time']."<br />
+        ]]>
+    </description>
+    <styleUrl>secureStyleDead</styleUrl>
+    <Point id=\"".$fetch['mac']."_GPS\">
+        <coordinates>".$this->convert_dm_dd($gps['long']).",".$this->convert_dm_dd($gps['lat']).",".$gps['alt']."</coordinates>
+    </Point>
+</Placemark>
+";
+        }
+        $kml_file = $this->PATH."out/kml/single/".$fetch['ap_hash']."_".str_pad(rand(0, 999999), 6, "0").".kml";
+        file_put_contents($kml_file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<kml xmlns=\"$this->KML_SOURCE_URL\">
+<!--export single ap kml-->
+    <Document>
+        <name>".htmlentities($fetch['ssid'], ENT_QUOTES)." (".date($this->date_format).")</name>
+        <Style id=\"openStyleDead\">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>".$this->open_loc."</href>
+                </Icon>
+            </IconStyle>
+        </Style>
+        <Style id=\"wepStyleDead\">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>".$this->WEP_loc."</href>
+                </Icon>
+            </IconStyle>
+        </Style>
+        <Style id=\"secureStyleDead\">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>".$this->WPA_loc."</href>
+                </Icon>
+            </IconStyle>
+        </Style>
+        <Style id=\"Location\">
+            <LineStyle>
+                <color>7f0000ff</color>
+                <width>4</width>
+            </LineStyle>
+        </Style>
+        <Folder>
+            <name>Access Point Center</name>
+            <description>Best Signal For All AP History</description>
+            <Placemark id=\"".$fetch['mac']."\">
+                ".htmlentities($fetch['ssid'], ENT_QUOTES)."
+                <description>
+                    <![CDATA[<b>SSID: </b>".htmlentities($fetch['ssid'], ENT_QUOTES)."<br />
+                        <b>Mac Address: </b>".$fetch['mac']."<br />
+                        <b>Network Type: </b>".$fetch['NT']."<br />
+                        <b>Radio Type: </b>".$fetch['radio']."<br />
+                        <b>Channel: </b>".$fetch['chan']."<br />
+                        <b>Authentication: </b>".$fetch['auth']."<br />
+                        <b>Encryption: </b>".$fetch['encry']."<br />
+                        <b>Basic Transfer Rates: </b>".$fetch['BTx']."<br />
+                        <b>Other Transfer Rates: </b>".$fetch['OTx']."<br />
+                        <b>First Active: </b>".$fetch['FA']."<br />
+                        <b>Last Updated: </b>".$fetch['LA']."<br />
+                        <b>Latitude: </b>".$fetch['lat']."<br />
+                        <b>Longitude: </b>".$fetch['long']."<br />
+                        <b>Manufacturer: </b>".$fetch['manuf']."<br />
+                        <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$fetch['id']."\">WiFiDB Link</a>
+                    ]]>
+                </description>
+                <styleUrl>$type</styleUrl>
+                <Point id=\"".$fetch['mac']."_GPS\">
+                    <coordinates>".$fetch['long'].",".$fetch['lat'].",".$fetch['alt']."</coordinates>
+                </Point>
+            </Placemark>
+            <Folder>
+                <name>Signal Points</name>
+                <description>Selected Export History for AP's signal points</description>
+                ".$SignalData."
+            </Folder>
+        </Folder>
+     </Document>
+</kml>");
+    }
+
     /*
      * Create a compressed file from a filename and the destination extention
      */
@@ -551,7 +702,12 @@ class export extends wdbcli
         
         foreach($aparray_all as $aparray)
         {
-            $file_data  = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>\r\n<gpx xmlns=\"http://www.topografix.com/GPX/1/1\" creator=\"WiFiDB 0.16 Build 2\" version=\"1.1\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd\">";
+            $file_data  = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>
+<gpx xmlns=\"http://www.topografix.com/GPX/1/1\"
+    creator=\"WiFiDB 0.16 Build 2\"
+    version=\"1.1\"
+    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
+    xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1\">";
             // write file header buffer var
             
             $type = $aparray['sectype'];
@@ -631,9 +787,11 @@ class export extends wdbcli
             return -1;
         }
         $fileappend = fopen($filename, "a");
-        
         fwrite($fileappend, $file_data);
         fclose($fileappend);
+
+        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0750);
+
         return 1;
     }
 
@@ -704,23 +862,23 @@ class export extends wdbcli
         $test = $lat_exp[1];
 
         if($test == "0000")
-            {$zero = 1;}
+        {$zero = 1;}
         else
+        {
+            if(strlen($test) > 4)
             {
-                if(strlen($test) > 4)
-                {
-                    $lat = $ap_array['lat'];
-                    $long = $ap_array['long'];
-                }else
-                {
-                    $lat = $this->convert_dm_dd($ap_array['lat']);
-                    $long = $this->convert_dm_dd($ap_array['long']);
-                }
-                $fa = $ap_array["FA"];
-                $la = $ap_array["LA"];
-                $alt = $ap_array['alt'];
-                $zero = 0;
+                $lat = $ap_array['lat'];
+                $long = $ap_array['long'];
+            }else
+            {
+                $lat = $this->convert_dm_dd($ap_array['lat']);
+                $long = $this->convert_dm_dd($ap_array['long']);
             }
+            $fa = $ap_array["FA"];
+            $la = $ap_array["LA"];
+            $alt = $ap_array['alt'];
+            $zero = 0;
+        }
         if($zero == 1)
         {
             $this->verbosed('Didnt Find any, not writing AP to file.', $verbose, "CLI");
@@ -770,8 +928,9 @@ class export extends wdbcli
                 $this->verbosed('Could not write Placer file ('.$filename_label.'), check permissions.', $verbose, "CLI");
             }
             $this->recurse_chown_chgrp($KML_folder, $this->apache_user, $this->apache_group);
-            $this->recurse_chmod($KML_folder, 0600);
-            $this->verbosed('File has been writen and is ready.', $verbose, "CLI");
+            $this->recurse_chmod($KML_folder, 0750);
+
+            $this->verbosed('File has been written and is ready.', $verbose, "CLI");
         }
     }
     

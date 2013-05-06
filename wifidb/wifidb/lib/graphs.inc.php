@@ -19,121 +19,28 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-$lastedit = "2009-Mar-15";
-$ver_graph=array(
-			"graphs"=>array(
-							"wifiline"			=> "2.0.4",
-							"wifibar" 			=> "2.0.4",
-							"imagegrid"			=> "1.0",
-							"genboth"			=> "1.0"
-							),
-			);
-
 class graphs
 {
-	function genboth()
-	{
-		include('../lib/config.php');
-	echo "Got include_onces<br>";
-		mysql_select_db($db,$conn);
-	echo "Connected to Wifi<br>";
-		$this->sql = "SELECT `id` FROM $wtable";
-		$this->results = mysql_query($this->sql, $conn) or die(mysql_error());
-	echo "Queried Pointer Table<br>";
-		$n=0;
-		while ($newArray = mysql_fetch_array($this->results))
-		{
-			$id_p[$n]=$newArray['id'];
-			$n++;
-		}
-	echo "Built array of AP ID's<br>";
-		#Start line graph
-		foreach($id_p as $val)
-		{
-			mysql_select_db($db,$conn);
-		echo "Start for ID: ".$val."<br>";
-			$this->sql = "SELECT * FROM `$wtable` WHERE `id`='$val'";
-			$this->results = mysql_query($this->sql, $conn) or die(mysql_error());
-		echo "Queried Pointer table for Info<br>";
+    public function __construct($PATH, $URL_PATH)
+    {
+        $this->PATH         =   $PATH;
+        $this->URL_PATH     =   $URL_PATH;
+        $this->lastedit     =   "05-05-2013";
+        $this->ver_graph    =   array(
+                                    "graphs" => array(
+                                                    "wifiline"  =>  "2.0.4",
+                                                    "wifibar"   =>  "2.0.4",
+                                                    "imagegrid" =>  "1.0",
+                                                    ),
+                                    );
 
-			$newArray = mysql_fetch_array($this->results);
-
-			$this->ssid = $newArray['ssid'];
-			$this->mac = $newArray['mac'];
-			$this->man = $newArray['manuf'];
-			$this->sectype = $newArray['sectype'];
-			$this->radio = $newArray['radio'];
-			$this->chan = $newArray['chan'];
-
-			if ($this->sectype == "1"){$this->auth = "Open";$this->encry="None";}
-			elseif($this->sectype == "2"){$this->auth = "Open";$this->encry="WEP";}
-			elseif($this->sectype == "3"){$this->auth = "WPA-Personal";$this->encry="TKIP";}
-		echo "Created Auth and Encry info from Sectype<br>";
-			$source = $this->ssid."-".$this->mac."-".$this->sectype."-".$this->radio."-".$this->chan;
-
-			mysql_select_db($db_st,$conn);
-		echo "Connected to Wifi_ST<br>";
-			$this->result = mysql_query("SELECT * FROM `$source`", $conn) or die(mysql_error());
-			$n=1;
-			while ($this->field = mysql_fetch_array($this->result))
-			{
-				$id[$n]=$this->field['id'];
-				$btx[$n]=$this->field['btx'];
-				$otx[$n]=$this->field['otx'];
-				$nt[$n]=$this->field['nt'];
-				$label[$n]=$this->field['label'];
-				$sig[$n]=$this->field['sig'];
-				$user[$n]=$this->field['user'];
-			echo "Got data from ST table<br>";
-				$tmp=explode("-",$sig[$n]);
-				$this->sigtmp=$sig[$n];
-
-				$sig[$n]="";
-				foreach($tmp as $val)
-				{
-					$tm=explode(",",$val);
-					$sig[$n].=$tm[1]."-";
-				}
-			echo "Cleaned up Signal data for use in 2D graph<br>	[".$sig[$n]."]";
-			$n++;
-			}
-			$n=0;
-			foreach($id as $val)
-			{
-			echo "Start graph gen for Row ID: ".$val."<br>";
-			$source_row = $this->ssid."-".$this->mac."-".$this->sectype."-".$this->radio."-".$this->chan."-row-".$val;
-			echo $source_row."<br>";
-			$file_b="../graph/waps/".$source_row.".png";
-			$file_v="../graph/waps/".$source_row."v.png";
-			if (file_exists($file_v) and file_exists($file_b))
-			{
-				echo "File exists, not generating Line graph for this AP's Row<br>";
-				continue;
-			}
-			else{
-				if (!file_exists($file_v)){
-				graphs::wifigraphline($this->ssid, $this->mac, $this->man, $this->auth, $this->encry, $this->radio, $this->chan, $lat[$n], $long[$n], $btx[$n], $otx[$n], $fa[$n], $lu[$n], $nt[$n], $label[$n], $sig[$n], $source_row );
-				echo "Generated Line Graph<br>";
-				}
-				if(!file_exists($file_b)){
-				graphs::wifigraphbar($this->ssid, $this->mac, $this->man, $this->auth, $this->encry, $this->radio, $this->chan, $lat[$n], $long[$n], $btx[$n], $otx[$n], $fa[$n], $lu[$n], $nt[$n], $label[$n], $sig[$n], $source_row );
-				echo "Generated Bar Graph<br>";
-				}
-			}
-				unset($this->results);
-				unset($this->sql);
-				unset($sig);
-			$n++;
-			}
-		}
-	#end gen graph
-	}
+    }
 
 #==============================================================================================================================================================#
 #													Image Grid Function												         #
 #==============================================================================================================================================================#
 
-	function imagegrid($image, $w, $h, $s, $color)
+	private function imagegrid($image, $w, $h, $s, $color)
 	{
 		$ws = $w/$s;
 		$hs = $h/$s;
@@ -151,10 +58,29 @@ class graphs
 #													WiFi Graph Linegraph												         #
 #==============================================================================================================================================================#
 
-	function wifigraphline($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $bgc, $linec="rand", $text="rand")
+	public function wifigraphline($apdata)
 	{
-		$n=0;
-		$nn=1;
+        $ssid = $apdata['ssid'];
+        $mac = $apdata['mac'];
+        $man = $apdata['man'];
+        $auth = $apdata['auth'];
+        $encry = $apdata['encry'];
+        $radio = $apdata['radio'];
+        $chan = $apdata['chan'];
+        $lat = $apdata['lat'];
+        $long = $apdata['long'];
+        $BTx = $apdata['btx'];
+        $OTx = $apdata['otx'];
+        $FA = $apdata['fa'];
+        $LU = $apdata['lu'];
+        $NT = $apdata['nt'];
+        $label = $apdata['label'];
+        $sig = $apdata['sig'];
+        $name = $apdata['name'];
+        $bgc = $apdata['bgc'];
+        $linec = $apdata['linec'];
+        $text = $apdata['text'];
+
 		$y=20;
 		$yy=21;
 		$u=20;
@@ -183,40 +109,30 @@ class graphs
 			$g=$line_color[1];
 			$b=$line_color[2];
 		}
-		if ($ssid==""or$ssid==" " )
+		if($ssid == "" || $ssid == " ")
 		{
 			$ssid="UNNAMED";
 		}
-			$signal = explode("-", $sig);
-			$count = count($signal);
-			$c1 = 'SSID: '.$ssid.'   Channel: '.$chan.'   Radio: '.$radio.'   Network: '.$NT.'   OTx: '.$OTx;
-			$check = strlen($c1);
-			$c2 = 'Mac: '.$mac.'   Auth: '.$auth.' '.$encry.'   BTx: '.$BTx.'   Lat: '.$lat.'   Long: '.$long;
-			$check2 = strlen($c2);
-			$c3 = 'Manuf: '.$man.'   Label: '.$label.'   First: '.$FA.'   Last: '.$LU;
-			$check3 = strlen($c3);
-			#FIND OUT IF THE IMG NEEDS TO BE WIDER
+        $signal = explode("-", $sig);
+        $count = count($signal);
+        $c1 = 'SSID: '.$ssid.'   Channel: '.$chan.'   Radio: '.$radio.'   Network: '.$NT.'   OTx: '.$OTx;
+        $check[] = strlen($c1);
+        $c2 = 'Mac: '.$mac.'   Auth: '.$auth.' '.$encry.'   BTx: '.$BTx.'   Lat: '.$lat.'   Long: '.$long;
+        $check[] = strlen($c2);
+        $c3 = 'Manuf: '.$man.'   Label: '.$label.'   First: '.$FA.'   Last: '.$LU;
+        $check[] = strlen($c3);
+        #FIND OUT IF THE IMG NEEDS TO BE WIDER
+        rsort($check);
 		if(900 < ($count*6.2))
 		{
 			$Height = 480;
 			$wid    = ($count*6.2)+40;
-		}
-		elseif(900 < ($check3*6))
-		{
-			$Height = 480;
-			$wid    = ($check3*6)+40;
-		}
-		elseif(900 < ($check2*6.2))
-		{
-			$Height = 480;
-			$wid    = ($check2*6.2)+40;
-		}
-		elseif(900 < ($check*6))
-		{
-			$Height = 480;
-			$wid    = ($check*6)+40;
-		}
-		else
+
+		}elseif(900 < ($check[0]*6.2))
+        {
+            $Height = 480;
+            $wid    = ($check[0]*6.2)+40;
+        }else
 		{
 			$wid    = 900;
 			$Height = 480;
@@ -233,7 +149,7 @@ class graphs
 		}
 		$tcolor = imagecolorallocate($img, $tr, $tg, $tb);
 		$col = imagecolorallocate($img, $r, $g, $b);
-		imagefill($img,0,0,$bg); #PUT HERE SO THAT THE TEXT DOESNT HAVE BLACK FILLINGS (eww)
+		imagefill($img,0,0,$bg); #PUT HERE SO THAT THE TEXT DOESN'T HAVE BLACK FILLINGS (eww)
 		imagestring($img, 4, 21, 3, $c1, $tcolor);
 		imagestring($img, 4, 21, 23, $c2, $tcolor);
 		imagestring($img, 4, 21, 43, $c3, $tcolor);
@@ -248,35 +164,58 @@ class graphs
 		}
 		#end signal strenth numbers--
 		imagesetstyle($img, array($bg, $grid));
-		$counting=$count-1;
 		$n=0;
 		$nn=1;
 		imagesetstyle($img,array($bg,$grid));
-		graphs::imagegrid($img,$wid,$Height,19.99,$grid);
+		$this->imagegrid($img,$wid,$Height,19.99,$grid);
 		while($count>0)
 		{
-			#if($nn==$counting+1){break;}
-			imageline($img, $y ,459-($signal[$n]*4), $y=$y+6 ,459-($signal[$nn]*4) ,$col);
-			imageline($img, $u ,460-($signal[$n]*4), $u=$u+6 ,460-($signal[$nn]*4) ,$col);
-			imageline($img, $yy ,459-($signal[$n]*4), $yy=$yy+6 ,459-($signal[$nn]*4) ,$col);
-			imageline($img, $uu ,460-($signal[$n]*4), $uu=$uu+6 ,460-($signal[$nn]*4) ,$col);
+			imageline($img, $y, 459-(@$signal[$n]*4), $y=$y+6, 459-(@$signal[$nn]*4), $col);
+			imageline($img, $u, 460-(@$signal[$n]*4), $u=$u+6, 460-(@$signal[$nn]*4), $col);
+			imageline($img, $yy, 459-(@$signal[$n]*4), $yy=$yy+6, 459-(@$signal[$nn]*4), $col);
+			imageline($img, $uu, 460-(@$signal[$n]*4), $uu=$uu+6, 460-(@$signal[$nn]*4), $col);
 			$n++;
 			$nn++;
 			$count--;
 		}
-		$name= $GLOBALS['wifidb_install'].'/out/graph/'.$date.'v.png';
-		echo '<h1>'.$ssid.'</h1><br>';
-		echo '<img src="'.$name.'"><br />';
-		ImagePNG($img, $name);
-		ImageDestroy($img);
+        $date = date("m-d-y");
+        $file = '/out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'_v.png';
+        $filepath = $this->PATH.$file;
+        $file_url = $this->URL_PATH.$file;
+        ImagePNG($img, $filepath);
+        ImageDestroy($img);
+        $array = array( $ssid,
+            $file,
+            $file_url);
+        return $array;
 	}
 
 	#==============================================================================================================================================================#
 	#													WiFi Graph Bargraph													         #
 	#==============================================================================================================================================================#
-	function wifigraphbar($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $bgc, $linec="rand", $text="rand")
+	public function wifigraphbar($apdata = array())
 	{
-		$p=460;
+        $ssid = $apdata['ssid'];
+        $mac = $apdata['mac'];
+        $man = $apdata['man'];
+        $auth = $apdata['auth'];
+        $encry = $apdata['encry'];
+        $radio = $apdata['radio'];
+        $chan = $apdata['chan'];
+        $lat = $apdata['lat'];
+        $long = $apdata['long'];
+        $BTx = $apdata['btx'];
+        $OTx = $apdata['otx'];
+        $FA = $apdata['fa'];
+        $LU = $apdata['lu'];
+        $NT = $apdata['nt'];
+        $label = $apdata['label'];
+        $sig = $apdata['sig'];
+        $name = $apdata['name'];
+        $bgc = $apdata['bgc'];
+        $linec = $apdata['linec'];
+        $text = $apdata['text'];
+        $p=460;
 		$I=0;
 
 		if ($text == 'rand' or $text == '')
@@ -310,33 +249,22 @@ class graphs
 		$signal = explode("-", $sig);
 		$count = (count($signal)-1);
 		$c1 = 'SSID: '.$ssid.'   Channel: '.$chan.'   Radio: '.$radio.'   Network: '.$NT.'   OTx: '.$OTx;
-		$check = strlen($c1);
+		$check[] = strlen($c1);
 		$c2 = 'Mac: '.$mac.'   Auth: '.$auth.' '.$encry.'   BTx: '.$BTx.'   Lat: '.$lat.'   Long: '.$long;
-		$check2 = strlen($c2);
+		$check[] = strlen($c2);
 		$c3 = 'Manuf: '.$man.'   Label: '.$label.'   First: '.$FA.'   Last: '.$LU;
-		$check3 = strlen($c3);
+		$check[] = strlen($c3);
 		#FIND OUT IF THE IMG NEEDS TO BE WIDER
 		if(900 < ($count*3))
 		{
 			$Height = 480;
 			$wid    = ($count*3)+38;
-		}
-		elseif(900 < ($check3*8))
+
+        }elseif(900 < ($check[0]*8))
 		{
 			$Height = 480;
-			$wid    = ($check3*8)+40;
-		}
-		elseif(900 < ($check2*8))
-		{
-			$Height = 480;
-			$wid    = ($check2*8)+40;
-		}
-		elseif(900 < ($check*8))
-		{
-			$Height = 480;
-			$wid    = ($check*8)+40;
-		}
-		else
+			$wid    = ($check[0]*8)+40;
+		}else
 		{
 			$wid    = 900;
 			$Height = 480;
@@ -369,10 +297,9 @@ class graphs
 		$X=20;
 		$n=0;
 		imagesetstyle($img,array($bg,$grid));
-		graphs::imagegrid($img,$wid,$Height,19.99,$grid);
+		$this->imagegrid($img,$wid,$Height,19.99,$grid);
 		while($count>=0)
 		{
-			#if($n==$count+1){break;}
 			if ($signal[$n]==0)
 			{
 				$signal[$n]=1;
@@ -391,14 +318,19 @@ class graphs
 			$n++;
 			$count--;
 		}
-		$name = $GLOBALS['wifidb_install'].'/out/graph/'.$date.'.png';
-		echo '<h1>'.$ssid.'</h1><br>';
-		echo '<img src="'.$name.'"><br />';
-		ImagePNG($img, $name);
+        $date = date("m-d-y");
+        $file = '/out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'.png';
+        $filepath = $this->PATH.$file;
+        $file_url = $this->URL_PATH.$file;
+		ImagePNG($img, $filepath);
 		ImageDestroy($img);
+        $array = array( $ssid,
+            $file,
+            $file_url);
+        return $array;
 	}
 
-	function timeline($bgcolor = "",$lcolor = "", $start = "", $end = "")
+	public function timeline($bgcolor = "", $lcolor = "", $start = "", $end = "")
 	{
 		if ($text == 'rand')
 		{

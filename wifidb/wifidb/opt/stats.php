@@ -365,7 +365,7 @@ error_reporting(E_ALL|E_STRICT);
 
 $switches = array('screen'=>"HTML");
 include('../lib/init.inc.php');
-#include('../lib/graph.inc.php');
+#include('../lib/graphs.inc.php');
 
 $aps = array();
 $gps = array();

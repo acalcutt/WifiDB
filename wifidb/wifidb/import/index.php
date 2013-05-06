@@ -60,29 +60,39 @@ $dbcore->smarty->assign('import_username_field', $import_username_field);
 switch($func)
 {
     case 'import': //Import file that has been uploaded
-        var_dump($_REQUEST);
+        #var_dump($_REQUEST);
         #die();
+        if($_FILES['file']['tmp_name'] === "")
+        {
+            $mesg .= "Failure... File not supplied. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
+            break;
+        }
         $title = (empty($_POST['title'])) ? "Untitled" : $_POST['title'];
         $notes = (empty($_POST['notes'])) ? "No Notes" : $_POST['notes'];
         $user = (empty($_POST['user'])) ? "Unknown" : $_POST['user'];
         $otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
-        $sql = "SELECT `username` FROM `".$dbcore->sql->db."`.`".$dbcore->sql->user_logins_table."` WHERE `username` LIKE ?";
+        $sql = "SELECT `username` FROM `wifi`.`user_info` WHERE `username` LIKE ?";
         $stmt = $dbcore->sql->conn->prepare($sql);
-        $stmt->execute(array($user));
+        $stmt->bindParam(1, $user, PDO::PARAM_STR);
+        $stmt->execute();
+        if($dbcore->sql->checkError() !== 0)
+        {
+            $mesg = "Failure to select users from table.";
+            break;
+        }
         $array = $stmt->fetch(2);
         if($array['username'] == $dbcore->sec->username and $dbcore->login_check)
         {
             $mesg .= "<h2>You need to be logged in to import to a user that has a login.<br> Go <a class='links' href='".$GLOBALS['hosturl']."login.php?return=/import/'>login</a> and then import again.</h2>";
         }else
         {
-            var_dump($_FILES);
-            $tmp        =   $_FILES['file']['tmp_name'];
-            $upfilename   =   $_FILES['file']['name'];
-            $prefilename       =   str_replace( " ", "_", $upfilename);
-            $file_ext   =   explode('.', $prefilename);
-            $ext        =   strtolower($file_ext[1]);
-            $rand       =   rand(00000000, 99999999);
-            $filename   =   $rand.'_'.$prefilename;
+            $tmp            =   $_FILES['file']['tmp_name'];
+            $upfilename     =   $_FILES['file']['name'];
+            $prefilename    =   str_replace( " ", "_", $upfilename);
+            $file_ext       =   explode('.', $prefilename);
+            $ext            =   strtolower($file_ext[1]);
+            $rand           =   rand(00000000, 99999999);
+            $filename       =   $rand.'_'.$prefilename;
             $uploadfolder   =   getcwd().'/up/';
             $uploadfile     =   $uploadfolder.$filename;
             
@@ -125,13 +135,13 @@ switch($func)
                     {
                         $mesg .= 'Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permisions if you are using Linux.<BR>';
                         $message = "Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permisions if you are using Linux.\r\nUser: $user\r\nTitle: $title\r\nFile: /import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
-                        $dbcore->mail->mail_users($message, $subject, $type, 1);
+                        #$dbcore->mail->mail_admins($message, $subject, $type);
                     }
                     else
                     {
                         chmod($uploadfile, 0600);
                         $hash = hash_file('md5', $uploadfile);
-                        $size = $dbcore->format_size($uploadfile);
+                        $size = $dbcore->format_size(filesize($uploadfile));
                         $mesg .= "<h1>Title: ".$title."</h1>";
                         $mesg .= "<h1>Imported By: ".$user."<BR></h1>";
                         if($otherusers)
@@ -143,7 +153,7 @@ switch($func)
                         //that runs and imports all of them at once into the DB
                         //in order that they where uploaded
                         $date = date("y-m-d H:i:s");
-                        $sql = "INSERT INTO `".$dbcore->sql->db."`.`".$dbcore->sql->files_tmp."` 
+                        $sql = "INSERT INTO `wifi`.`files_tmp`
                                         ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
                                 VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
                         $result = $dbcore->sql->conn->prepare( $sql );
@@ -156,12 +166,11 @@ switch($func)
                         $result->bindValue(6, $size, PDO::PARAM_STR);
                         $result->bindValue(7, $hash, PDO::PARAM_STR);
                         $result->execute();
-                        $error = $dbcore->sql->conn->errorCode();
-                        if($error[0] == "00000")
+                        if($dbcore->sql->checkError() === 0)
                         {
                             $mesg .= "<h2>File has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
                             $message = "File has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
-                            #if($dbcore->mail_users($message, $subject, $type, 0))
+                            #if($dbcore->mail_users($message, $subject, $type))
                             #{
                                 #echo "mailed";
                             #}else
@@ -172,13 +181,13 @@ switch($func)
                         {
                             $mesg .= "<h2>There was an error inserting file for scheduled import.</h2>".var_export($dbcore->sql->conn->errorInfo());
                             $message = "New Import Failed!\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->PATH."/import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
-                            $dbcore->mail_users($message, $subject, $type, 1);
+                            #$dbcore->mail_admins($message, $subject, $type);
                         }
                     }
                 break;
 
                 default:
-                    $mesg .= "Failure.... File is not supported. Try one of the <a href=\"http://\" >supported file types.</a>";
+                    $mesg .= "Failure.... File is not supported. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
                 break;
             }
         }

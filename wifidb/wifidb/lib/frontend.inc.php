@@ -35,7 +35,7 @@ class frontend extends dbcore
         {
             require_once($config['wifidb_install'].'/lib/misc.inc.php');
             require_once($config['wifidb_install'].'/lib/manufactures.inc.php');
-            
+            $this->sec->LoginCheck();
             $this->meta = new stdClass();
             $this->meta->ads = $config['ads'];
             $this->meta->tracker = $config['tracker'];
@@ -65,6 +65,7 @@ class frontend extends dbcore
             $this->htmlfooter();
             $this->users_import_aps = array();
         }
+
         if(strtolower(SWITCH_EXTRAS) == "exports")
         {
             require_once $config['wifidb_tools'].'daemon/config.inc.php';
@@ -107,50 +108,61 @@ class frontend extends dbcore
             'label'=>$newArray["label"],
             'user'=>$newArray["username"]
         );
-        if(@DEBUG){echo "getting GPS globe\r\n";}
+
         $sql = "SELECT `lat` FROM `wifi`.`wifi_gps`
                 WHERE `ap_hash` = ?
-                AND `lat` != '0.0000' AND `lat` != 'N 0.0000'
+                AND `lat` != '0.0000'
                 ORDER BY `date` DESC LIMIT 1";
         $ap_hash = $newArray["ap_hash"];
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $ap_hash, PDO::PARAM_STR);
         $prep1->execute();
+        if($this->sql->checkError() !== 0)
+        {
+            throw new Exception("Error getting GPS for colored globe.");
+        }
         $lastgps = $prep1->fetch(2);
-        if(@DEBUG){echo "got GPS globe\r\n";}
+
         if($lastgps !== FALSE)
         {
-            $lat_check = explode(" ", $lastgps['lat']);
-            $lat_c = $lat_check[1]+0;
+            $lat_c = $lastgps['lat']+0;
             $gps_globe = ($lat_c == "0" ? "off" : "on");
         }else
         {
             $gps_globe = "off";
         }
-        if(@DEBUG){echo "getting GPS\r\n";}
-        $sql = "SELECT  `signal`, `rssi`, `username`
+
+        $sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
                 FROM `wifi`.`wifi_signals`
                 WHERE `ap_hash` =  ?
                 ORDER BY `time_stamp` ASC";
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
         $prep1->execute();
-        if(@DEBUG){echo "got GPS\r\n";}
+        if($this->sql->checkError() !== 0)
+        {
+            throw new Exception("Error getting Signal History.");
+        }
 
         $flip = 0;
         $prev_date = 0;
         $date_range = -1;
         $signal_runs = array();
         $signals = $prep1->fetchAll(2);
-        if(@DEBUG){echo "Signal Loop\r\n";}
+
         $sql_gps = "SELECT `lat`, `long`, `sats`, `hdp`, `track`, `date`, `time`, `mph`, `kmh`
                         FROM `wifi`.`wifi_gps`
                         WHERE `id` = ?";
         $prep_gps = $this->sql->conn->prepare($sql_gps);
+        $from = 0;
         foreach($signals as $field)
         {
             $prep_gps->bindParam(1, $field['gps_id'], PDO::PARAM_INT);
             $prep_gps->execute();
+            if($this->sql->checkError() !== 0)
+            {
+                throw new Exception("Error getting GPS");
+            }
             $field_g = $prep_gps->fetch(2);
             if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
             if($prev_date < strtotime($field_g['date']))
@@ -161,6 +173,8 @@ class frontend extends dbcore
                 $signal_runs[$date_range]['descstart'] = $field_g['time'];
                 $signal_runs[$date_range]['desc'] = $field_g['time'];
                 $signal_runs[$date_range]['user'] = $field['username'];
+                $signal_runs[$date_range]['start_id'] = $field['id'];
+                $signal_runs[$date_range]['from'] = $from;
             }else
             {
                 if($signal_runs[$date_range]['user'] != $field['username'])
@@ -169,8 +183,9 @@ class frontend extends dbcore
                 }
                 $signal_runs[$date_range]['desc'] = $field_g['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field_g['time'];
                 $signal_runs[$date_range]['stop'] = $field_g['date']." ".$field_g['time'];
+                $signal_runs[$date_range]['limit'] = $from+1;
             }
-
+            $from++;
             $prev_date = strtotime($field_g['date']);
 
             $signal_runs[$date_range]['gps'][] = array(
@@ -180,16 +195,21 @@ class frontend extends dbcore
                                                         'sats'=>$field_g["sats"],
                                                         'date'=>$field_g["date"],
                                                         'time'=>$field_g["time"],
-                                                        'signal'=>$field["signal"]
+                                                        'signal'=>$field["signal"],
+                                                        'rssi'=>$field["rssi"]
                                                     );
         }
-        if(@DEBUG){echo "get Similar Lists\r\n";}
+
         $list = array();
         $id_find = "%-{$id}:%";
         $prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ?");
         $prep2->bindParam(1, $id_find, PDO::PARAM_STR);
         $prep2->execute();
-        if(@DEBUG){echo "got similar Lists and now looping\r\n";}
+        if($this->sql->checkError() !== 0)
+        {
+            throw new Exception("Error getting associated lists");
+        }
+
         while ($field = $prep2->fetch(1))
         {
             if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
@@ -206,6 +226,8 @@ class frontend extends dbcore
                             );
 
         }
+        $ap_data['from'] = $signals[0]['id'];
+        $ap_data['limit'] = $prep1->rowCount();
         return array(
                         $newArray['ssid'],
                         $signal_runs,
@@ -399,21 +421,23 @@ class frontend extends dbcore
         $prep['allaps'] = array();
         $prep['username'] = $user;
         
-        $sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` = ?";
+        $sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
         $result = $this->sql->conn->prepare($sql);
-        $result->execute(array($user));
+        $result->bindParam(1, $user, PDO::PARAM_STR);
+        $result->execute();
         $rows = $result->fetch(1);
         $prep['total_aps'] = $rows[0];
         
         $flip = 0;
         $sql = "SELECT `id`,`ssid`,`mac`,`radio`,`auth`,`encry`,`chan`,`lat`, `FA`,`LA` FROM 
                 `wifi`.`wifi_pointers` 
-                WHERE `username` = ? ORDER BY `".$inputs['ord']."` LIMIT ".$inputs['from'].", ".$inputs['to'];
+                WHERE `username` = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 
-        $result = $this->sql->conn->prepare($sql);
-        $result->execute(array($user));
-        
-        while($array = $result->fetch(2))
+        $result1 = $this->sql->conn->prepare($sql);
+        $result1->bindParam(1, $user, PDO::PARAM_STR);
+        $result1->execute();
+
+        while($array = $result1->fetch(2))
         {
             if($flip)
                 {$style = "dark";$flip=0;}
@@ -590,7 +614,8 @@ class frontend extends dbcore
             {
                 $update_or_new = "New";
             }
-            $result->execute(array($apid));
+            $result->bindParam(1, $apid, PDO::PARAM_STR);
+            $result->execute();
             $ap_array = $result->fetch(2);
             
             if($ap_array['lat'] == "N 0.0000")

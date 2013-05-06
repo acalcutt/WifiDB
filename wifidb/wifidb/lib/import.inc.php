@@ -1,4 +1,4 @@
-<?php
+<?PHP
 /*
 import.inc.php, holds the WiFiDB Importing functions.
 Copyright (C) 2011 Phil Ferland
@@ -200,7 +200,7 @@ class import extends wdbcli
                     echo "--------------------------------\r\n";
                     $this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1));
                     $this->verbosed($file_line_exp_count."\r\nummm.... thats not supposed to happen... :/\r\n", -1);
-                    #$this->mail->mail();
+                    #$this->mail->mail_admins();
                     break;
             }
             if($this->verbose)
@@ -226,34 +226,25 @@ class import extends wdbcli
         
         foreach($vs1data['gpsdata'] as $key=>$gps)
         {
-            if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat'] == ''))
-            {
-                $gps['lat'] = "N 0000.0000";
-                $gps['long'] = "E 0000.0000";
-                #die("############################################################## NEEDS TO BE REMOVED!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            }
-            if(!preg_match('/(\d{2})-(\d{2})-(\d{4})/', $gps['date']))
-            {
-                $gps['date'] = "1969-01-01";
-                $gps['time'] = "00:00:00";
-            }
+            $lat = $this->convert_dd_dm($gps['lat']);
+            $long = $this->convert_dd_dm($gps['long']);
             $sql = "INSERT INTO `wifi`.`wifi_gps` ( `id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
                     VALUES ('',
-                            '{$gps['lat']}',
-                            '{$gps['long']}',
-                            '{$gps['sats']}',
-                            '{$gps['hdp']}',
-                            '{$gps['alt']}',
-                            '{$gps['geo']}',
-                            '{$gps['kmh']}',
-                            '{$gps['mph']}',
-                            '{$gps['track']}',
-                            '{$gps['date']}',
-                            '{$gps['time']}'
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?,
+                            ?
                            )";
             $prep = $this->sql->conn->prepare($sql);
-            $prep->bindParam(1,$gps['lat'], PDO::PARAM_STR);
-            $prep->bindParam(2,$gps['long'], PDO::PARAM_STR);
+            $prep->bindParam(1,$lat, PDO::PARAM_STR);
+            $prep->bindParam(2,$long, PDO::PARAM_STR);
             $prep->bindParam(3,$gps['sats'],PDO::PARAM_INT);
             $prep->bindParam(4,$gps['hdp'],PDO::PARAM_STR);
             $prep->bindParam(5,$gps['alt'],PDO::PARAM_STR);
@@ -264,11 +255,9 @@ class import extends wdbcli
             $prep->bindParam(10,$gps['date'],PDO::PARAM_STR);
             $prep->bindParam(11,$gps['time'],PDO::PARAM_STR);
             $prep->execute();
-            
-            $err = $this->sql->conn->errorCode();
-            if($err[0] == "00000")
+            if($this->sql->checkError() === 0)
             {
-                $vs1data['gpsdata'][$gps['id']]['import_id'] = $this->sql->conn->lastInsertId();
+                $vs1data['gpsdata'][$key]['import_id'] = $this->sql->conn->lastInsertId();
             }else
             {
                 $this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
@@ -295,11 +284,13 @@ class import extends wdbcli
         
         foreach($vs1data['apdata'] as $key=>$aps)
         {
+            $calc = $key-$ap_count;
             $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ? WHERE `id` = ?";
             $prep = $this->sql->conn->prepare($sql);
-            $prep->execute(array($key-$ap_count,$file_tmp_id));
-            $err = $this->sql->conn->errorCode();
-            if($err[0] != "00000")
+            $prep->bindParam(1, $calc, PDO::PARAM_STR);
+            $prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
+            $prep->execute();
+            if($this->sql->checkError() !== 0)
             {
                 $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                 $this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
@@ -361,10 +352,11 @@ class import extends wdbcli
             $rssi_high = 0;
             $gps_center = 0;
             $FA = 0;
-            
 
             $this->verbosed("Starting Import of Wifi Signal... ", 1);
             $this->logd("Starting Import of Wifi Signal... ");
+            $sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
+            $preps = $this->sql->conn->prepare($sql);
 
             foreach($ap_sig_exp as $key=>$sig_gps_id)
             {
@@ -376,20 +368,42 @@ class import extends wdbcli
                 
                 if(!@$vs1data['gpsdata'][$gps_id]){continue;}
                 
-                if($signal >= $sig_high){$sig_high = $signal; $gps_center = $gps_id;}else{$sig_high = $signal; $gps_center = $gps_id;}
-                if($rssi >= $rssi_high){$rssi_high = $rssi; $gps_center = $gps_id;}else{$rssi_high = $rssi; $gps_center = $gps_id;}
-                if(!$FA){$FA = $gps_id;}
+                if($signal >= $sig_high)
+                {
+                    $sig_high = $signal;
+                    $gps_center = $gps_id;
+                }
+                else
+                {
+                    $sig_high = $signal;
+                    $gps_center = $gps_id;
+                }
+                if($rssi >= $rssi_high)
+                {
+                    $rssi_high = $rssi;
+                    $gps_center = $gps_id;
+                }
+                else
+                {
+                    $rssi_high = $rssi;
+                    $gps_center = $gps_id;
+                }
+                if($FA === 0){$FA = $gps_id;}
                 $LA = $gps_id;
-                
-                $sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
                 $time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
-                $preps = $this->sql->conn->prepare($sql);
+
                 $preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
                 $preps->bindParam(2, $signal, PDO::PARAM_INT);
                 $preps->bindParam(3, $rssi, PDO::PARAM_INT);
                 $preps->bindParam(4, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_INT);
                 $preps->bindParam(5, $time_stamp, PDO::PARAM_INT);
                 $preps->execute();
+                if($this->sql->checkError() !== 0)
+                {
+                    $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+                    $this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                    throw new ErrorException;
+                }
 
                 $sql = "UPDATE `wifi`.`wifi_gps` SET `ap_hash` = ? WHERE `id` = ?";
                 $prepg = $this->sql->conn->prepare($sql);
@@ -397,15 +411,13 @@ class import extends wdbcli
                 $prepg->bindParam(2, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_STR);
                 $prepg->execute();
 
-                $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
-                
-                $err = $this->sql->conn->errorCode();
-                if($err[0] != "00000")
+                if($this->sql->checkError() !== 0)
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-                    $this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                    $this->logd("Error Updating GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     throw new ErrorException;
                 }
+                $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
                 
                 if($this->verbose)
                 {
@@ -454,6 +466,12 @@ class import extends wdbcli
                     $prep->bindParam(1, $aps['signals'], PDO::PARAM_STR);
                     $prep->bindParam(2, $ap_hash, PDO::PARAM_STR);
                     $prep->execute();
+                    if($this->sql->checkError() !== 0)
+                    {
+                        $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+                        $this->logd("Error Updating AP Pointer Signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                        throw new ErrorException;
+                    }
                 }else
                 {
                     $sql = "UPDATE `wifi`.`wifi_pointers` SET `LA` = ?, `signals` = ? WHERE `ap_hash` = ?";
@@ -462,21 +480,15 @@ class import extends wdbcli
                     $prep->bindParam(2, $aps['signals'], PDO::PARAM_STR);
                     $prep->bindParam(3, $ap_hash, PDO::PARAM_STR);
                     $prep->execute();
+                    if($this->sql->checkError() !== 0)
+                    {
+                        $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+                        $this->logd("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                        throw new ErrorException;
+                    }
                 }
-                
-                $err = $this->sql->conn->errorCode();
-                if($err != "00000")
-                {
-                    $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-                    $this->logd("Error Updating AP Pointer. ".var_export($this->sql->conn->errorInfo(),1));
-                    throw new ErrorException;
-                }
-                else
-                {
-                    $imported_aps[] = $prev_id.":1";
-                    $this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
-                    $this->logd("Updated AP Pointer. {".$prev_id."}");
-                }
+                $this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
+                $this->logd("Updated AP Pointer. {".$prev_id."}");
                 $imported_aps[] = $prev_id.":1";
             }else
             {
@@ -490,7 +502,11 @@ class import extends wdbcli
                 }
 ######################################################################################################
 
-                $sql = "INSERT INTO `wifi`.`wifi_pointers` ( `id`, `ssid`, `mac`,`chan`,`sectype`,`radio`,`auth`,`encry`,`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,`username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`) VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
+                $sql = "INSERT INTO `wifi`.`wifi_pointers`
+            ( `id`, `ssid`, `mac`,`chan`,`sectype`,`radio`,`auth`,`encry`,
+            `manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
+            `username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`)
+            VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
                 
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $aps['ssid'], PDO::PARAM_STR);

@@ -69,51 +69,69 @@ switch($func)
     break;
 #######################################################################
     case 'daemon_kml':
-        $date = date("Y-m-d");
         $kml_head = array();
         $daemon_out = $dbcore->PATH."out/daemon/";
         $url_base = $dbcore->URL_PATH."out/daemon/";;
         $kml_all = array();
         $dh = opendir($daemon_out) or die("couldn't open directory");
+        $files = array();
         while ($file = readdir($dh))
         {
-            if($file == "."){continue;}
-            if($file == ".."){continue;}
-            if($file == ".svn"){continue;}
-            if($file == "history"){continue;}
-            if($file == "full_db.kml"){continue;}
-            if($file == "full_db.kmz"){continue;}
-            if($file == "full_db_label.kml"){continue;}
-            if($file == "full_db_label.kmz"){continue;}
-            if($file == "update.kml"){continue;}
-            if($file == "history.kml"){continue;}
-            if($file == "newestAP.kml"){continue;}
-            if($file == "newestAP_label.kml"){continue;}
-            var_dump($file);
-            $kmz_file = $daemon_out.$file.'/full_db.kmz';
-            var_dump($kmz_file);
-            var_dump(array(
-                "file"     => $file,
-                "file_url" => $url_base.$file.'/full_db.kmz',
-                "time"     => date ("H:i:s", filectime($kmz_file)),
-                "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
-            ));
-            if(file_exists($kmz_file))
-            {
-                $kml_all[] = array(
-                                    "file"     => $file,
-                                    "file_url" => $url_base.$file.'/full_db.kmz',
-                                    "time"     => date ("H:i:s", filectime($kmz_file)),
-                                    "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
-                            );
-            }
+            if($file === "."){continue;}
+            if($file === ".."){continue;}
+            if($file === "history"){continue;}
+            if($file === "full_db.kml"){continue;}
+            if($file === "full_db.kmz"){continue;}
+            if($file === "full_db_label.kml"){continue;}
+            if($file === "full_db_label.kmz"){continue;}
+            if($file === "newestAP_label.kml"){continue;}
+            if($file === "newestAP.kml"){continue;}
+            if($file === "update.kml"){continue;}
+            if($file === "history.kml"){continue;}
+            #var_dump(array(
+            #    "file"     => $file,
+            #    "file_url" => $url_base.$file.'/full_db.kmz',
+            #    "time"     => date ("H:i:s", filectime($kmz_file)),
+            #    "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
+            #));
 
+            $files[] = $file;
+        }
+        rsort($files);
+        $flip = 0;
+        foreach ($files as $file)
+        {
+            if($flip)
+            {
+                $class="dark";
+                $flip=0;
+            }else
+            {
+                $class="light";
+                $flip=1;
+            }
+            $kml_all[] = array(
+                "class"             => $class,
+                "file"              => $file,
+                "daily_name"        => "daily_db.kmz",
+                "daily_label_name"  => "daily_db_label.kmz",
+                "file_name"         => "full_db.kmz",
+                "file_label_name"   => "full_db_label.kmz",
+                "daily_label_url"   => $url_base.$file.'/daily_db_label.kmz',
+                "daily_url"         => $url_base.$file.'/daily_db.kmz',
+                "file_label_url"    => $url_base.$file.'/full_db_label.kmz',
+                "file_url"          => $url_base.$file.'/full_db.kmz',
+                "full_size"         => $dbcore->format_size(@filesize($daemon_out.$file."/full_db.kmz"), 2),
+                "full_size_label"   => $dbcore->format_size(@filesize($daemon_out.$file."/full_db_label.kmz"), 2),
+                "daily_size"        => $dbcore->format_size(@filesize($daemon_out.$file."/daily_db.kmz"), 2),
+                "daily_size_label"  => $dbcore->format_size(@filesize($daemon_out.$file."/daily_db_label.kmz"), 2)
+            );
         }
 
         if(file_exists($daemon_out."update.kml"))
         {
 
-            $kml_head['update_kml'] = '<a class="links" href="../out/daemon/update.kml">Current WiFiDB Network Link</a>';
+            $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'out/daemon/update.kml">Download!</a>';
 
         }else
         {
@@ -125,32 +143,78 @@ switch($func)
         {
             $kml_head['newest_date'] = date ("Y-m-d H:i:s", filemtime($newest));
             $kml_head['newest_size'] = $dbcore->format_size(filesize($newest), 2);
+            $kml_head['newest_link'] = $dbcore->URL_PATH."out/daemon/newestAP.kml";
         }else
         {
             $kml_head['newest_date'] = "None generated yet";
             $kml_head['newest_size'] = "0.00 kb";
+            $kml_head['newest_link'] = "#";
         }
 
-        $full = $daemon_out.$date.'full_db.kml';
+        $newest_label = $daemon_out.'newestAP_label.kml';
+        if(file_exists($newest_label))
+        {
+            $kml_head['newest_labeled_date'] = date ("Y-m-d H:i:s", filemtime($newest_label));
+            $kml_head['newest_labeled_size'] = $dbcore->format_size(filesize($newest_label), 2);
+            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."out/daemon/newestAP_label.kml";
+        }else
+        {
+            $kml_head['newest_labeled_date'] = "None generated yet";
+            $kml_head['newest_labeled_size'] = "0.00 kb";
+            $kml_head['newest_labeled_link'] = "#";
+        }
+
+        $date = date("Y-m-d");
+        $full = $daemon_out.$files[0].'/full_db.kmz';
         if(file_exists($full))
         {
             $kml_head['full_date'] = date ("Y-m-d H:i:s", filemtime($full));
             $kml_head['full_size'] = $dbcore->format_size(filesize($full), 2);
+            $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'full_db.kmz';
         }else
         {
-            $kml_head['full_date'] = "None generated for ".$date." yet, <br>be patient young grasshopper.";
+            $kml_head['full_date'] = "None generated for ".$files[0]." yet.";
             $kml_head['full_size'] = "0.00 kb";
+            $kml_head['full_link'] = "#";
         }
 
-        $daily = $daemon_out.$date.'daily_db.kml';
-        if(file_exists($daily))
+        $full_label = $daemon_out.$files[0].'/full_db_label.kmz';
+        if(file_exists($full_label))
         {
-            $kml_head['today_date'] = date ("Y-m-d H:i:s", filemtime($daily));
-            $kml_head['today_size'] = $dbcore->format_size(filesize($daily), 2);
+            $kml_head['full_labeled_date'] = date ("Y-m-d H:i:s", filemtime($full_label));
+            $kml_head['full_labeled_size'] = $dbcore->format_size(filesize($full_label), 2);
+            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'full_db_labeled.kmz';
         }else
         {
-            $kml_head['today_date'] = "None generated for ".$date." yet, <br>be patient young grasshopper.";
-            $kml_head['today_size'] = "0.00 kb";
+            $kml_head['full_labeled_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['full_labeled_size'] = "0.00 kb";
+            $kml_head['full_labeled_link'] = "#";
+        }
+
+        $daily_label = $daemon_out.$files[0].'/daily_db_label.kmz';
+        if(file_exists($daily_label))
+        {
+            $kml_head['daily_labeled_date'] = date ("Y-m-d H:i:s", filemtime($daily_label));
+            $kml_head['daily_labeled_size'] = $dbcore->format_size(filesize($daily_label), 2);
+            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'daily_db_labeled.kmz';
+        }else
+        {
+            $kml_head['daily_labeled_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['daily_labeled_size'] = "0.00 kb";
+            $kml_head['daily_labeled_link'] = "#";
+        }
+
+        $daily = $daemon_out.$files[0].'/daily_db.kmz';
+        if(file_exists($daily))
+        {
+            $kml_head['daily_date'] = date ("Y-m-d H:i:s", filemtime($daily));
+            $kml_head['daily_size'] = $dbcore->format_size(filesize($daily), 2);
+            $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'daily_db.kmz';
+        }else
+        {
+            $kml_head['daily_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['daily_size'] = "0.00 kb";
+            $kml_head['daily_link'] = "#";
         }
         $dbcore->smarty->assign('wifidb_kml_head', $kml_head);
         $dbcore->smarty->assign('wifidb_kml_all_array', $kml_all);

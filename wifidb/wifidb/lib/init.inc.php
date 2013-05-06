@@ -166,12 +166,13 @@ try
                 case "api":
                     $dbcore = new api($config);
                     break;
-                case "export":
-                    $dbcore = new frontend($config);
-                    break;
-
                 default:
                     $dbcore = new frontend($config);
+                    if(strtolower(SWITCH_EXTRAS) == "graph")
+                    {
+                        require_once $dbcore->PATH.'lib/graphs.inc.php';
+                        $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
+                    }
                     break;
             }
             $dbcore->cli = 0;

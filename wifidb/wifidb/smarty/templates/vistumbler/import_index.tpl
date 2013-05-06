@@ -20,9 +20,10 @@ if not, write to the
 {include file="header.tpl"}
                                     <h2>{$mesg}</h2>
                                     <h2>Import Access Points</h2>
-                                    <br><a class="links" href="http://sourceforge.net/apps/mediawiki/vistumbler/index.php?title=VS1_Format" target="_blank">VS1</a> and
-                                    <a class="links" href="http://code.google.com/p/wardrive-android/" target="_blank">Wardrive for Android</a> are Supported.<br>
-                                    Username is optional, but it helps keep track of who has imported what Access Points<br><br>
+                                    <br><a class="links" href="https://github.com/RIEI/Vistumbler/wiki/Vistumbler-VS1-Format" target="_blank">VS1</a>,
+                                    <a class="links" href="https://github.com/RIEI/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>,
+                                    <a class="links" href="https://play.google.com/store/apps/details?id=ki.wardrive4&hl=en" target="_blank">Wardrive for Android 4+</a>, and <a class="links" href="https://play.google.com/store/apps/details?id=ki.wardrive&hl=en" target="_blank">Old Wardrive</a> are Supported.<br>
+                                    Username is optional, but it helps keep track of who has imported what Access Points<br>
                                     <center>
                                         <form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">
                                             <table border="1" cellpadding="2" cellspacing="0">
@@ -60,7 +61,7 @@ if not, write to the
                                                 <tr>
                                                 <tr height="40">
                                                     <td class="style4">
-                                                        <p>Other Users:<br>
+                                                        <p>Other Users:<br/>
                                                             <font size=1>(seperate by a semicolon ";" )</font>
                                                         </p>
                                                     </td>

@@ -1,11 +1,10 @@
 <?php
 define("SWITCH_SCREEN", "CLI");
-define("SWITCH_EXTRAS", "cli");
+define("SWITCH_EXTRAS", "daemon");
 
 if(!(require('../daemon/config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-$wdb_install = $daemon_config['wifidb_install'];
-if($wdb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require($wdb_install)."/lib/init.inc.php";
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $dbcore->verbose = 1;
 $dbcore->named = 1;
@@ -17,7 +16,7 @@ while ($file = readdir($dir))
     if($file === "." || $file === ".." || $file === ".svn" || $file === "history"){continue;}
     if(is_dir($daemon_export.$file))
     {
-        echo "---------------------------------------------\r\n";
+        echo "---------------------------------------------\r\n\t$daemon_export.$file:\r\n";
         $dir2 = opendir($daemon_export.$file);
         while ($file2 = readdir($dir2))
         {
@@ -42,16 +41,16 @@ while ($file = readdir($dir))
                 $file_exp = explode(".", $file2);
                 if(!file_exists($daemon_export.$file.'/'.$file_exp[0].'.kmz'))
                 {
-                    if(!$dbcore->CreateKMZ($daemon_export.$file.'/'.$file2))
+                    if(!$dbcore->export->CreateKMZ($daemon_export.$file.'/'.$file2))
                     {
                         $dbcore->verbosed("Created KMZ for ".$file2);
                     }else
                     {
                         $dbcore->verbosed("Failed to create KMZ for ".$file2);
+                        die();
                     }
                 }
             }
         }
     }
 }
-?>

@@ -37,7 +37,7 @@ class api extends dbcore
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         //Lets see if we can find a user with this name.
         //If so, lets check to see if the API key they provided is correct.
-        $this->use_keys = 0; // DEV USE ONLY
+        $this->use_keys = 0; // 0 = DEV USE ONLY SET TO 1 for PRODUCTION USE, other wise bad things happen.
         if($this->use_keys)
         {
             $key_result = $this->sec->ValidateAPIKey();
@@ -332,7 +332,7 @@ class api extends dbcore
                 $time_stamp = strtotime($data['date']." ".$data['time']);
                 $prep_sig = $this->sql->conn->prepare($sql_sig);
                 $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
-                $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
+                $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
                 $prep_sig->bindParam(3, $id, PDO::PARAM_INT);
                 $prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
                 $prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
@@ -347,7 +347,7 @@ class api extends dbcore
                     $this->mesg[] = "Added Signal data.";
                 }
 
-                $sig = $all_sigs."|".$this->sql->conn->lastInsertId()."-".$id;
+                $sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$id;
                 $date_time = strtotime($data['date']." ".$data['time']);
                 $this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
                 $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `sig` = ? WHERE `id` = ?";
@@ -447,8 +447,8 @@ class api extends dbcore
         }else
         {
             $this->mesg[] = "Add new AP. :]";
-            $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
-                                                   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
+                                                   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
             $prep->bindParam(2, $data['long'], PDO::PARAM_STR);
@@ -461,8 +461,11 @@ class api extends dbcore
             $prep->bindParam(9, $data['track'], PDO::PARAM_STR);
             $prep->bindParam(10, $data['date'], PDO::PARAM_STR);
             $prep->bindParam(11, $data['time'], PDO::PARAM_STR);
+            $prep->bindParam(12, $data['session_id'], PDO::PARAM_STR);
             $prep->execute();
+
             $gps_id = $this->sql->conn->lastInsertId();
+            var_dump($gps_id);
 
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")
@@ -479,7 +482,7 @@ class api extends dbcore
                         VALUES ('', ?, ?, ?, ?, ?)";
             $prep_sig = $this->sql->conn->prepare($sql_sig);
             $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
-            $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
+            $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
             $prep_sig->bindParam(3, $data['gps_id'], PDO::PARAM_INT);
             $prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
             $prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);

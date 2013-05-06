@@ -62,8 +62,8 @@ switch($func)
             break;
         #--------------------------
         case "exp_single_ap":
-            $user ="";
-            $dbcore->exp_kml($export="exp_single_ap",$user,$row, $named=0);
+            $id = $_REQUEST['id'];
+            $dbcore->ExportSingleAP($id, $from, $limit);
             break;
         #--------------------------
         default:
@@ -82,7 +82,7 @@ switch($func)
                              );
             }
             
-            $sql = "SELECT `username` FROM `wifi`.`user_imports";
+            $sql = "SELECT `username` FROM `wifi`.`user_imports`";
             $result = $dbcore->sql->conn->query($sql);
             while($user_array = $result->fetch(2))
             {
