@@ -50,7 +50,7 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap.limit}&amp;from=0&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_all_signal,{$wifidb_ap.id}">KML</a></td>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap.limit}&amp;from=0&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_all_signal&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KML</a></td>
                                         </tr>
                                     </tbody>
                                 </table>

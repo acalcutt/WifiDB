@@ -27,7 +27,7 @@ $daemon_config = array(
     'DBSTATS_time_interval_to_check' => 86400,
 
     //The level that you want the log file to write, off (0), Errors only (1), Detailed Errors [when available] (2). That is all for now.
-    'log_level'	=>	0,
+    'log_level'	=>	1,
 
     //0, no out put STUF; 1, let me see the world.
     'verbose'	=>	1,
@@ -35,6 +35,8 @@ $daemon_config = array(
     //if you want the CLI output to be color coded 1 => ON, 0 => OFF
     //if you ware running windows, this is disabled for you, so even if you turn it on, its not going to work :-p
     'colors_setting'	=>	1,
+
+    
 
     //Default colors for the CLI
     //Allowed colors:

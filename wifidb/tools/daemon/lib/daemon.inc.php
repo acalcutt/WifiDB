@@ -24,9 +24,6 @@ class daemon extends wdbcli
     public function __construct($config, $daemon_config)
     {
         parent::__construct($config, $daemon_config);
-
-        $this->export               = new export($config, $daemon_config);
-        $this->import               = new import($config, $daemon_config, $this->export);
         $this->time_interval_to_check = $daemon_config['time_interval_to_check'];
         $this->default_user         = $daemon_config['default_user'];
         $this->default_title        = $daemon_config['default_title'];

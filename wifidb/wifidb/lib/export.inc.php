@@ -19,16 +19,11 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-class export extends wdbcli
+class export extends dbcore
 {
-    public function __construct($config, $daemon_config)
+    public function __construct($config)
     {
-        parent::__construct($config, $daemon_config);
-        $this->This_is_me   = getmypid();
-        $this->log_level    = $daemon_config['log_level'];
-        $this->log_interval = 1;
-        $this->verbose      = $daemon_config['verbose'];
-        
+        parent::__construct($config);
         $this->month_names  = array(
             1=>'January',
             2=>'February',
@@ -43,9 +38,8 @@ class export extends wdbcli
             11=>'November',
             12=>'December',
         );
-        $this->ver = "1.0";
-        $this->ver_array['export_class'] = array(
-            "last_edit"             =>  "2013-Jan-18",
+        $this->ver_array['export'] = array(
+            "last_edit"             =>  "06-05-2013",
             "ExportAll"             =>  "2.0",
             "ExportAllDaily"        =>  "1.0",
             "ExportSingleAP"        =>  "1.0",
@@ -62,6 +56,7 @@ class export extends wdbcli
             );
     }
 
+
     /*
      * Export to Google KML File
      */
@@ -72,8 +67,9 @@ class export extends wdbcli
         $err = $this->sql->conn->errorCode();
         if($err !== "00000")
         {
-            var_dump($err);
+
             $this->verbosed("There was an error running the SQL");
+            throw new ErrorException("There was an error running the SQL".var_export($err, 1));
         }
         $NN = $result->rowCount();
         $this->verbosed("APs with GPS: ".$NN);
@@ -117,7 +113,8 @@ class export extends wdbcli
             if($this->named)
             {
                 $place_label = "<name>".$ssid_name."</name>";
-            }  else {
+            }else
+            {
                 $place_label = "";
             }
             switch($array['sectype'])
@@ -525,7 +522,7 @@ class export extends wdbcli
     /*
      * Export All Daily Aps to KML
      */
-    public function ExportSingleAP($id=0, $from =0, $limit = 0)
+    public function ExportSingleAP( $id = 0, $from = 0, $limit = 0)
     {
         $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
@@ -550,7 +547,8 @@ class export extends wdbcli
                 $type = "secureStyleDead";
             break;
         }
-        $sql = "SELECT * FROM `wifi`.`wifi_signal` WHERE `ap_hash` = ?";
+
+        $sql = "SELECT * FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? LIMIT $from, $limit";
         $prep2 = $this->sql->conn->prepare($sql);
         $prep2->bindParam(1, $fetch['ap_hash'], PDO::PARAM_STR);
         $prep2->execute();
@@ -559,11 +557,13 @@ class export extends wdbcli
             throw new ErrorException("Could not select from Signals Table.");
         }
         $signals = $prep2->fetchAll(2);
+
         $SignalData = "";
         $sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
         $prep3 = $this->sql->conn->prepare($sql);
         foreach($signals as $signal)
         {
+
             $prep3->bindParam(1, $signal['gps_id'], PDO::PARAM_INT);
             $prep3->execute();
             if($this->sql->checkError() !== 0)
@@ -571,24 +571,27 @@ class export extends wdbcli
                 throw new ErrorException("Could not select from GPS Table.");
             }
             $gps = $prep3->fetch(2);
-            $SignalData .= "<Placemark id=\"".$signal['id']."\">
-    ".$signal['id']."
-    <description>
-        <![CDATA[
-            <b>Signal Percent: </b>".$signal['signal']."<br />
-            <b>RSSI Signal: </b>".$signal['rssi']."<br />
-            <b>Date: </b>".$gps['date']."<br />
-            <b>Time: </b>".$gps['time']."<br />
-        ]]>
-    </description>
-    <styleUrl>secureStyleDead</styleUrl>
-    <Point id=\"".$fetch['mac']."_GPS\">
-        <coordinates>".$this->convert_dm_dd($gps['long']).",".$this->convert_dm_dd($gps['lat']).",".$gps['alt']."</coordinates>
-    </Point>
-</Placemark>
+            $SignalData .= "
+                    <Placemark id=\"".$signal['id']."\">
+                        ".$signal['id']."
+                        <description>
+                            <![CDATA[
+                                <b>Signal Percent: </b>".$signal['signal']."<br />
+                                <b>RSSI Signal: </b>".$signal['rssi']."<br />
+                                <b>Date: </b>".$gps['date']."<br />
+                                <b>Time: </b>".$gps['time']."<br />
+                            ]]>
+                        </description>
+                        <styleUrl>$type</styleUrl>
+                        <Point id=\"".$fetch['mac']."_GPS\">
+                            <coordinates>".$this->convert_dm_dd($gps['long']).",".$this->convert_dm_dd($gps['lat']).",".$gps['alt']."</coordinates>
+                        </Point>
+                    </Placemark>
 ";
+            $alt = $gps['alt'];
         }
-        $kml_file = $this->PATH."out/kml/single/".$fetch['ap_hash']."_".str_pad(rand(0, 999999), 6, "0").".kml";
+        $file = $fetch['ap_hash']."_".str_pad(rand(0, 999999), 6, "0").".kml";
+        $kml_file = $this->PATH."out/kml/single/".$file;
         file_put_contents($kml_file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
 <kml xmlns=\"$this->KML_SOURCE_URL\">
 <!--export single ap kml-->
@@ -649,7 +652,7 @@ class export extends wdbcli
                 </description>
                 <styleUrl>$type</styleUrl>
                 <Point id=\"".$fetch['mac']."_GPS\">
-                    <coordinates>".$fetch['long'].",".$fetch['lat'].",".$fetch['alt']."</coordinates>
+                    <coordinates>".$this->convert_dm_dd($fetch['long']).",".$this->convert_dm_dd($fetch['lat']).",".$alt."</coordinates>
                 </Point>
             </Placemark>
             <Folder>
@@ -660,6 +663,12 @@ class export extends wdbcli
         </Folder>
      </Document>
 </kml>");
+        $ret = array(
+            'mesg' => "Export for AP: ".$fetch['ssid']." was Successful.",
+            'link' => $this->URL_PATH."out/kml/single/".$file,
+            'name' => $file
+        );
+        return $ret;
     }
 
     /*

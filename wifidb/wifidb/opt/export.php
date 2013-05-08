@@ -62,8 +62,13 @@ switch($func)
             break;
         #--------------------------
         case "exp_single_ap":
-            $id = $_REQUEST['id'];
-            $dbcore->ExportSingleAP($id, $from, $limit);
+            $id = (int) $_REQUEST['id'];
+            $from = (int) $_REQUEST['from'];
+            $limit = (int) $_REQUEST['limit'];
+            $results = $dbcore->ExportSingleAP($id, $from, $limit);
+            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->display('export_results.tpl');
+
             break;
         #--------------------------
         default:
@@ -86,7 +91,7 @@ switch($func)
             $result = $dbcore->sql->conn->query($sql);
             while($user_array = $result->fetch(2))
             {
-                $usernames[]=$user_array["username"];
+                $usernames[] = $user_array["username"];
             }
             $usernames = array_unique($usernames);
 
@@ -95,5 +100,3 @@ switch($func)
             $dbcore->smarty->display('export_index.tpl');
         break;
 }
-
-?>

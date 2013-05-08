@@ -66,12 +66,7 @@ class frontend extends dbcore
             $this->users_import_aps = array();
         }
 
-        if(strtolower(SWITCH_EXTRAS) == "exports")
-        {
-            require_once $config['wifidb_tools'].'daemon/config.inc.php';
-            $this->export = new export($config, $daemon_config);
-        }
-        $this->ver_array['Frontend']    =   array(
+        $this->ver_array['frontend']    =   array(
                                                     "AllUsers"       =>  "1.0",
                                                     "AllUsersAP"     =>  "1.0",
                                                     "dump"           =>  "1.0",

@@ -138,6 +138,10 @@ try
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
+                    __autoload('export');
+                    $dbcore->export = new export($config, $daemon_config);
+                    __autoload('import');
+                    $dbcore->import = new import($config, $daemon_config, $dbcore->export);
                 break;
                 ####
                 case "cli":
@@ -165,15 +169,21 @@ try
             {
                 case "api":
                     $dbcore = new api($config);
-                    break;
+                break;
+
+                case "export":
+                    $dbcore = new export($config);
+                break;
+
+                case "graph":
+                    $dbcore = new frontend($config);
+                    __autoload('graphs');
+                    $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
+                break;
+
                 default:
                     $dbcore = new frontend($config);
-                    if(strtolower(SWITCH_EXTRAS) == "graph")
-                    {
-                        require_once $dbcore->PATH.'lib/graphs.inc.php';
-                        $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
-                    }
-                    break;
+                break;
             }
             $dbcore->cli = 0;
             break;

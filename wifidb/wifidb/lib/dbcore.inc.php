@@ -21,8 +21,8 @@ if not, write to the
 
 class dbcore
 {
-    public  $cli;
-    function __construct($config = NULL)
+    public $cli;
+    public function __construct($config = NULL)
     {
         if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
         $this->sql                      = new SQL($config);
@@ -80,22 +80,40 @@ class dbcore
         $this->email_validation         = 1;
         $this->WDBadmin                 = $config['admin_email'];
         $this->smtp                     = $config['wifidb_smtp'];
-        
+        if($config['colors_setting'] == 0 or PHP_OS != "Linux")
+        {
+            $this->colors = array(
+                "LIGHTGRAY"	=> "",
+                "BLUE"		=> "",
+                "GREEN"		=> "",
+                "RED"		=> "",
+                "YELLOW"	=> ""
+            );
+        }else
+        {
+            $this->colors = array(
+                "LIGHTGRAY"	=> "\033[0;37m",
+                "BLUE"		=> "\033[0;34m",
+                "GREEN"		=> "\033[0;32m",
+                "RED"		=> "\033[0;31m",
+                "YELLOW"	=> "\033[1;33m"
+            );
+        }
+
         $this->ver_array                =   array(
             "wifidb"                    =>  " *Alpha* 0.30 Build 1 *Pre-Release* ",
             "codename"                  =>  "Peabody",
-            "Last_Core_Edit"            =>  "2013-Apr-01"
+            "Last_Core_Edit"            =>  "06-05-2013"
             );
         $this->ver_str                  = $this->ver_array['wifidb'];
         $this->This_is_me               = getmypid();
         $this->sec                      = new security($this, $config);
         $this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
-        $this->wdbmail                  = new wdbmail($this);
     }
 
     ##############################
-    function checkEmail($email)
+    private function checkEmail($email)
     {
         // First, we check that there's one @ symbol, and that the lengths are right
         if (!ereg("^[^@]{1,64}@[^@]{1,255}$", $email))
@@ -133,7 +151,7 @@ class dbcore
     }
     
     ###################################
-    function dump($value="" , $level=0)
+    public function dump($value="" , $level=0)
     {
         if ($level==-1)
         {
@@ -179,7 +197,7 @@ class dbcore
     }
     
     # Gets the status of the Import/Export Daemon, windows/linux
-    function getdaemonstats( $daemon_pid = NULL)
+    public function getdaemonstats( $daemon_pid = NULL)
     {
         if($daemon_pid == NULL ) {$ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);return ;} # Test to see if a PID file was passed, if not fail.
 
@@ -253,7 +271,7 @@ class dbcore
     }
 
     
-    function GetRanks($rank = NULL)
+    public function GetRanks($rank = NULL)
     {
         $ranks = @file($this->PATH."/themes/".$this->theme."/ranks.txt");
         if($rank === NULL)
@@ -267,7 +285,7 @@ class dbcore
     }
     
     # Formats a bit size to Bytes/kB/MB/GB/TB/PB/EB/ZB/YB
-    function format_size($size, $round = 2)
+    public function format_size($size, $round = 2)
     {
         //Size must be bytes!
         $sizes = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
@@ -325,7 +343,7 @@ class dbcore
     #=================================#
     #   Install Folder Warning Code   #
     #=================================#
-    function check_install_folder()
+    public function check_install_folder()
     {
         $install_folder_remove = "";
         if(@$this->bypass_check){return 0;}
@@ -353,11 +371,11 @@ class dbcore
     #=====================================#
     #   When Enabled, logs a file a day.  #
     #=====================================#
-    function logd($message = '', $type = "message", $prefix = "")
+    public function logd($message = '', $type = "message", $prefix = "")
     {
         if($this->log_level) # Check to see if logging is turned on.
         {
-            if($GLOBALS['switches']['screen'] === "CLI" || $prefix === "")
+            if(@SWITCH_SCREEN === "CLI" || $prefix === "")
             {
                 $prefix = $this->This_is_me;
             }
@@ -403,7 +421,7 @@ class dbcore
     #===============================#
     #   Smart (filtering for GPS)   #
     #===============================#
-    function GPSFilter($text="") // Used for GPS
+    public function GPSFilter($text="") // Used for GPS
     {
         $pattern = '/"((.)*?)"/i';
         $strip = array(
@@ -424,7 +442,7 @@ class dbcore
     #===========================================================================#
     #   make ssid (makes a DB safe, File safe and Unsan versions of an SSID)    #
     #===========================================================================#
-    function make_ssid($ssid_in = '')
+    public function make_ssid($ssid_in = '')
     {
         $ssid_in = preg_replace('/[\x00-\x1F\x7F]/', '', $ssid_in); #remove any hidden chars
         if($ssid_in == "") # check to see if the ssid is blank,
@@ -450,7 +468,7 @@ class dbcore
     #===============================#
     #   Convert GeoCord DM to DD    #
     #===============================#
-    function &convert_dm_dd($geocord_in = "")
+    public function &convert_dm_dd($geocord_in = "")
     {
         $geocord_in_exp = explode(".", $geocord_in);
         if(strlen($geocord_in_exp[1]) > 4){return $geocord_in;}
@@ -521,18 +539,26 @@ class dbcore
     #===============================#
     #   Convert GeoCord DecDeg to DegMin    #
     #===============================#
-    function &convert_dd_dm($geocord_in="")
+    public function &convert_dd_dm($geocord_in="")
     {
-        $neg=FALSE;
+        $neg = FALSE;
         $geocord_exp = explode(".", $geocord_in);
-        if($geocord_exp[0][0] == "S" or $geocord_exp[0][0] == "W"){$neg = TRUE;}
+
+        if($geocord_exp[0][0] == "S" or $geocord_exp[0][0] == "W")
+        {
+            $neg = TRUE;
+        }
         $pattern[0] = '/N /';
         $pattern[1] = '/E /';
         $pattern[2] = '/S /';
         $pattern[3] = '/W /';
         $replacements = "";
         $geocord_exp[0] = preg_replace($pattern, $replacements, $geocord_exp[0]);
-        if($geocord_exp[0][0] === "-"){$geocord_exp[0] = 0 - $geocord_exp[0];$neg = TRUE;}
+        if($geocord_exp[0][0] === "-")
+        {
+            $geocord_exp[0] = 0 - $geocord_exp[0];
+            $neg = TRUE;
+        }
         if(strlen($geocord_exp[0]) >= 4)
         {
             if($neg)
@@ -547,6 +573,12 @@ class dbcore
         }
         // 4.146255 ---- 4 - 146255
         $geocord_dec = "0.".$geocord_exp[1];
+        if($geocord_dec == "0.0000")
+        {
+            $ret = ($neg ? "-0000.0000" : "0000.0000");
+            return $ret;
+        }
+
         // 4.146255 ---- 4 - 0.146255
         $geocord_mult = $geocord_dec*60;
         // 4.146255 ---- 4 - (0.146255)*60 = 8.7753
@@ -569,9 +601,9 @@ class dbcore
         return $geocord_out;
     }
 
-    
-    
-    function &manufactures($mac="")
+
+
+    public function &manufactures($mac="")
     {
         if(count(explode(":", $mac)) > 1)
         {
@@ -588,8 +620,8 @@ class dbcore
         }
         return $manuf;
     }
-    
-    function CalcDistance($lat1, $long1, $lat2, $long2)
+
+    public function CalcDistance($lat1, $long1, $lat2, $long2)
     {
             $pi80 = M_PI / 180;
             $lat1 *= $pi80;
@@ -605,8 +637,8 @@ class dbcore
             $km = $r * $c;
             return array(($km * 0.621371192), $km);
     }
-    
-    function subval_sort($a,$subkey, $asc = 0)
+
+    public function subval_sort($a,$subkey, $asc = 0)
     {
         foreach($a as $k=>$v)
         {
@@ -628,7 +660,7 @@ class dbcore
         $c;
         return $c;
     }
-    
+
     public function TarFile($file = "")
     {
         if($file == "")
@@ -641,7 +673,6 @@ class dbcore
         var_dump("tar -zcvf $tared_file $file");
         $tared = `tar -zcvf $tared_file $file`;
         var_dump($tared);
-        die();
         return $tared_file;
     }
     
@@ -688,4 +719,3 @@ class dbcore
         }
     }
 }
-?>

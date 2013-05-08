@@ -35,8 +35,17 @@ class import extends wdbcli
         $this->log_level    = $daemon_config['log_level'];
         $this->log_interval = 1;
         $this->verbose      = $daemon_config['verbose'];
+        $this->dBmMaxSignal = -30;
+        $this->dBmDissociationSignal = -85;
     }
-    
+
+    private function convertSig2RSSI($sig_in = 0)
+    {
+        $SIG = 100 - 80 * ($this->dBmMaxSignal - $sig_in) / ($this->dBmMaxSignal - $this->dBmDissociationSignal);
+        if($SIG < 0){$SIG = 0;}
+        return (round($SIG, 2));
+    }
+
 ####################
     public function import_vs1($source="" , $user="Unknown")
     {
@@ -200,6 +209,7 @@ class import extends wdbcli
                     echo "--------------------------------\r\n";
                     $this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1));
                     $this->verbosed($file_line_exp_count."\r\nummm.... thats not supposed to happen... :/\r\n", -1);
+                    throw new ErrorException("Error parsing File.\r\n".var_export($file_line_alt, 1));
                     #$this->mail->mail_admins();
                     break;
             }
@@ -262,7 +272,7 @@ class import extends wdbcli
             {
                 $this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
                 $this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
-                throw new ErrorException;
+                throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
             }
             if($this->verbose)
             {
@@ -292,9 +302,9 @@ class import extends wdbcli
             $prep->execute();
             if($this->sql->checkError() !== 0)
             {
-                $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+                $this->verbosed("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
                 $this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                throw new ErrorException;
+                throw new ErrorException("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
             }
 
             $ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
@@ -364,8 +374,13 @@ class import extends wdbcli
                 
                 $gps_id = $sig_gps_exp[0];
                 $signal = $sig_gps_exp[1];
-                $rssi   =  (@$sig_gps_exp[2] ? $sig_gps_exp[2] : 0);
-                
+                if(!@$sig_gps_exp[2])
+                {
+                    $rssi   =  $this->convertSig2RSSI($sig_gps_exp[1]);
+                }else
+                {
+                    $rssi = $sig_gps_exp[2];
+                }
                 if(!@$vs1data['gpsdata'][$gps_id]){continue;}
                 
                 if($signal >= $sig_high)
@@ -378,16 +393,7 @@ class import extends wdbcli
                     $sig_high = $signal;
                     $gps_center = $gps_id;
                 }
-                if($rssi >= $rssi_high)
-                {
-                    $rssi_high = $rssi;
-                    $gps_center = $gps_id;
-                }
-                else
-                {
-                    $rssi_high = $rssi;
-                    $gps_center = $gps_id;
-                }
+
                 if($FA === 0){$FA = $gps_id;}
                 $LA = $gps_id;
                 $time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
@@ -402,7 +408,7 @@ class import extends wdbcli
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                    throw new ErrorException;
+                    throw new ErrorException("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
                 }
 
                 $sql = "UPDATE `wifi`.`wifi_gps` SET `ap_hash` = ? WHERE `id` = ?";
@@ -415,7 +421,7 @@ class import extends wdbcli
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error Updating GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                    throw new ErrorException;
+                    throw new ErrorException("Error Updating GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
                 }
                 $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
                 
@@ -470,7 +476,7 @@ class import extends wdbcli
                     {
                         $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                         $this->logd("Error Updating AP Pointer Signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                        throw new ErrorException;
+                        throw new ErrorException("Error Updating AP Pointer Signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     }
                 }else
                 {
@@ -484,7 +490,7 @@ class import extends wdbcli
                     {
                         $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                         $this->logd("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                        throw new ErrorException;
+                        throw new ErrorException("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     }
                 }
                 $this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
@@ -537,17 +543,13 @@ class import extends wdbcli
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
-                    throw new ErrorException;
+                    throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
                 }
                 else
                 {
                     $imported_aps[] = $this->sql->conn->lastInsertId().":0";
-                    
                     $this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()." of $ap_count}.", 2);
                     $this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
-                    
-                    $sql = "UPDATE `wifi`.`settings` SET `size` = '".$this->sql->conn->lastInsertId()."' WHERE `id`='2'";
-                    $this->sql->conn->query($sql);
                 }
             }
             $this->export->exportCurrentAPkml();
@@ -567,5 +569,3 @@ class import extends wdbcli
         return $ret;
     }
 }
-
-?>
