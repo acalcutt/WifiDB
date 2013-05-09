@@ -82,8 +82,15 @@ if(!require('config.inc.php'))
 }
 if($error)
 {
-    echo $error_msg;
-    die();
+    define('WWW_DIR', $this->PATH);
+    define('SMARTY_DIR', $this->PATH.'/smarty/');
+    $smarty = new Smarty();
+    $smarty->setTemplateDir( WWW_DIR.'smarty/templates/wifidb/' );
+    $smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
+    $smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
+    $smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
+    $this->smarty->assign('wifidb_error_mesg', $error_msg);
+    $smarty->display("error.tpl");
 }
 
 if(strtolower(SWITCH_SCREEN) != "cli")
@@ -92,7 +99,7 @@ if(strtolower(SWITCH_SCREEN) != "cli")
     {
         if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
         {
-            print_js($config['hosturl'].$config['root'].'/');
+            create_base_cookies($config['hosturl'].$config['root'].'/');
             exit();
         }
     }
@@ -120,6 +127,7 @@ function __autoload($class)
         return 0;
     }
 }
+
 try
 {
     switch(strtolower(SWITCH_SCREEN))
@@ -134,7 +142,8 @@ try
                 break;
                 ####
                 case "import":
-                    $dbcore = new import($config, $daemon_config);
+                    __autoload('import');
+                    $dbcore = new import($config, $daemon_config, new stdClass() );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
@@ -228,7 +237,7 @@ function exception_handler($err)
 }
 
 
-function print_js($URL_PATH)
+function create_base_cookies($URL_PATH)
 {
     $ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
     if($ssl_flag == "https")
@@ -304,5 +313,6 @@ function print_js($URL_PATH)
     </script>
     <body onload = "checkTimeZone();"> </body>
     <?php
+    exit();
 }
 ?>

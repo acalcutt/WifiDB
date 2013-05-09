@@ -24,26 +24,29 @@ class import extends wdbcli
     function __construct($config, $daemon_config, $export_obj = NULL)
     {
         parent::__construct($config, $daemon_config);
-        if($export_obj != NULL)
-        {
-            $this->export = $export_obj;
-        }else
-        {
-            $this->export = new export($config, $daemon_config);
-        }
 
-        $this->log_level    = $daemon_config['log_level'];
+        $this->export = $export_obj;
+
+        $this->log_level    = $config['log_level'];
         $this->log_interval = 1;
-        $this->verbose      = $daemon_config['verbose'];
+        $this->verbose      = $config['verbose'];
         $this->dBmMaxSignal = -30;
         $this->dBmDissociationSignal = -85;
     }
 
-    private function convertSig2RSSI($sig_in = 0)
+    public function convertSig2dBm($sig_in = 0)
+    {
+        $dBm = ((($this->dBmMaxSignal - $this->dBmDissociationSignal) * $sig_in) - (20 * $this->dBmMaxSignal) + (100 * $this->dBmDissociationSignal)) / 80;
+        $dbm_out =  round($dBm);
+        return $dbm_out;
+    }
+
+    public function convertdBm2Sig($sig_in = 0)
     {
         $SIG = 100 - 80 * ($this->dBmMaxSignal - $sig_in) / ($this->dBmMaxSignal - $this->dBmDissociationSignal);
         if($SIG < 0){$SIG = 0;}
-        return (round($SIG, 2));
+        $round = round($SIG, 2);
+        return $round;
     }
 
 ####################
@@ -450,10 +453,10 @@ class import extends wdbcli
                 $sig_imp = implode("-", $compile_sig);
                 if($prev_signals != "")
                 {
-                    $aps['signals'] = $prev_signals."-".$sig_imp;
+                    $new_signals = $prev_signals."-".$sig_imp;
                 }else
                 {
-                    $aps['signals'] = $sig_imp;
+                    $new_signals = $sig_imp;
                 }
                 
                 $LA_time = $vs1data['gpsdata'][$LA]['date'].' '.$vs1data['gpsdata'][$LA]['time'];
@@ -469,7 +472,7 @@ class import extends wdbcli
                 {
                     $sql = "UPDATE `wifi`.`wifi_pointers` SET `signals` = ? WHERE `ap_hash` = ?";
                     $prep = $this->sql->conn->prepare($sql);
-                    $prep->bindParam(1, $aps['signals'], PDO::PARAM_STR);
+                    $prep->bindParam(1, $new_signals, PDO::PARAM_STR);
                     $prep->bindParam(2, $ap_hash, PDO::PARAM_STR);
                     $prep->execute();
                     if($this->sql->checkError() !== 0)
@@ -483,7 +486,7 @@ class import extends wdbcli
                     $sql = "UPDATE `wifi`.`wifi_pointers` SET `LA` = ?, `signals` = ? WHERE `ap_hash` = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $LA_time, PDO::PARAM_STR);
-                    $prep->bindParam(2, $aps['signals'], PDO::PARAM_STR);
+                    $prep->bindParam(2, $new_signals, PDO::PARAM_STR);
                     $prep->bindParam(3, $ap_hash, PDO::PARAM_STR);
                     $prep->execute();
                     if($this->sql->checkError() !== 0)
@@ -534,7 +537,7 @@ class import extends wdbcli
                 $prep->bindParam(17, $FA_time, PDO::PARAM_STR);
                 $prep->bindParam(18, $user, PDO::PARAM_STR);
                 $prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
-                $prep->bindParam(20, $aps['signals'], PDO::PARAM_STR);
+                $prep->bindParam(20, $new_signals, PDO::PARAM_STR);
                 $prep->bindParam(21, $rssi_high, PDO::PARAM_INT);
                 $prep->bindParam(22, $sig_high, PDO::PARAM_INT);
                 $prep->execute();
