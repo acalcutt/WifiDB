@@ -124,6 +124,7 @@ function __autoload($class)
         {$GLOBALS['config']['wifidb_tools']}daemon/lib/{$class}.inc.php
             Or
         {$GLOBALS['config']['wifidb_install']}lib/{$class}.inc.php\r\n";
+        die();
         return 0;
     }
 }

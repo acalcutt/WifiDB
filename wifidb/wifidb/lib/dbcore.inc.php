@@ -113,8 +113,13 @@ class dbcore
     }
 
     ##############################
-    private function checkEmail($email)
+    /**
+     * @param string $email
+     * @return int
+     */
+    private function checkEmail($email = "")
     {
+        if($email == ""){return 0;}
         // First, we check that there's one @ symbol, and that the lengths are right
         if (!ereg("^[^@]{1,64}@[^@]{1,255}$", $email))
         {
@@ -151,7 +156,12 @@ class dbcore
     }
     
     ###################################
-    public function dump($value="" , $level=0)
+    /**
+     * @param string $value
+     * @param int $level
+     * @return string
+     */
+    public function dump($value = "", $level = 0)
     {
         if ($level==-1)
         {
@@ -197,10 +207,17 @@ class dbcore
     }
     
     # Gets the status of the Import/Export Daemon, windows/linux
+    /**
+     * @param null $daemon_pid
+     * @return array|int
+     */
     public function getdaemonstats( $daemon_pid = NULL)
     {
-        if($daemon_pid == NULL ) {$ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);return ;} # Test to see if a PID file was passed, if not fail.
-
+        if($daemon_pid == NULL ) # Test to see if a PID file was passed, if not fail.
+        {
+            $ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
+            return $ret;
+        }
         $WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
         $os = PHP_OS; #find out what OS we are running under.
         if ( $os[0] == 'L') #Linux :)
@@ -265,12 +282,15 @@ class dbcore
             }
         }else
         {
-            $ret = array('OS'=>'Unknow','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'OS not supported.','color'=>'red','errc'=>-1);
             return -1; #OS not supported.
         }
     }
 
-    
+
+    /**
+     * @param null $rank
+     * @return array
+     */
     public function GetRanks($rank = NULL)
     {
         $ranks = @file($this->PATH."/themes/".$this->theme."/ranks.txt");
@@ -285,6 +305,11 @@ class dbcore
     }
     
     # Formats a bit size to Bytes/kB/MB/GB/TB/PB/EB/ZB/YB
+    /**
+     * @param $size
+     * @param int $round
+     * @return string
+     */
     public function format_size($size, $round = 2)
     {
         //Size must be bytes!
@@ -300,6 +325,11 @@ class dbcore
     #=========================================#
     #   Recureivly chown and chgrp a folder   #
     #=========================================#
+    /**
+     * @param $mypath
+     * @param $uid
+     * @param $gid
+     */
     public function recurse_chown_chgrp($mypath, $uid, $gid)
     {
         $d = opendir ($mypath) ;
@@ -322,6 +352,10 @@ class dbcore
     #================================#
     #   Recureivly chmod a folder    #
     #================================#
+    /**
+     * @param $mypath
+     * @param $mod
+     */
     public function recurse_chmod($mypath, $mod)
     {
         $d = opendir ($mypath) ;
@@ -343,6 +377,9 @@ class dbcore
     #=================================#
     #   Install Folder Warning Code   #
     #=================================#
+    /**
+     * @return int|string
+     */
     public function check_install_folder()
     {
         $install_folder_remove = "";
@@ -371,17 +408,25 @@ class dbcore
     #=====================================#
     #   When Enabled, logs a file a day.  #
     #=====================================#
+    /**
+     * @param string $message
+     * @param string $type
+     * @param string $prefix
+     * @return int
+     */
     public function logd($message = '', $type = "message", $prefix = "")
     {
         if($this->log_level) # Check to see if logging is turned on.
         {
-            if(@SWITCH_SCREEN === "CLI" || $prefix === "")
+            if(@strtoupper(SWITCH_SCREEN) === "CLI" && $prefix === "")
             {
                 $prefix = $this->This_is_me;
+            }else{
+                $prefix = "httpd";
             }
-            if($message == '')
+            if($message === "")
             {
-                echo "Logd was told to write a blank string.\r\n Message has NOT been logged and this will NOT be allowed!\n";
+                $this->verbosed("Logd was told to write a blank string.\r\n Message has NOT been logged and this will NOT be allowed!", -1);
                 return 0;
             }
             
@@ -421,6 +466,10 @@ class dbcore
     #===============================#
     #   Smart (filtering for GPS)   #
     #===============================#
+    /**
+     * @param string $text
+     * @return mixed
+     */
     public function GPSFilter($text="") // Used for GPS
     {
         $pattern = '/"((.)*?)"/i';
@@ -442,6 +491,10 @@ class dbcore
     #===========================================================================#
     #   make ssid (makes a DB safe, File safe and Unsan versions of an SSID)    #
     #===========================================================================#
+    /**
+     * @param string $ssid_in
+     * @return array
+     */
     public function make_ssid($ssid_in = '')
     {
         $ssid_in = preg_replace('/[\x00-\x1F\x7F]/', '', $ssid_in); #remove any hidden chars
@@ -468,6 +521,10 @@ class dbcore
     #===============================#
     #   Convert GeoCord DM to DD    #
     #===============================#
+    /**
+     * @param string $geocord_in
+     * @return int|string
+     */
     public function &convert_dm_dd($geocord_in = "")
     {
         $geocord_in_exp = explode(".", $geocord_in);
@@ -539,6 +596,10 @@ class dbcore
     #===============================#
     #   Convert GeoCord DecDeg to DegMin    #
     #===============================#
+    /**
+     * @param string $geocord_in
+     * @return string
+     */
     public function &convert_dd_dm($geocord_in="")
     {
         $neg = FALSE;
@@ -602,7 +663,10 @@ class dbcore
     }
 
 
-
+    /**
+     * @param string $mac
+     * @return string
+     */
     public function &manufactures($mac="")
     {
         if(count(explode(":", $mac)) > 1)
@@ -621,6 +685,13 @@ class dbcore
         return $manuf;
     }
 
+    /**
+     * @param $lat1
+     * @param $long1
+     * @param $lat2
+     * @param $long2
+     * @return array
+     */
     public function CalcDistance($lat1, $long1, $lat2, $long2)
     {
             $pi80 = M_PI / 180;
@@ -638,6 +709,12 @@ class dbcore
             return array(($km * 0.621371192), $km);
     }
 
+    /**
+     * @param $a
+     * @param $subkey
+     * @param int $asc
+     * @return array
+     */
     public function subval_sort($a,$subkey, $asc = 0)
     {
         foreach($a as $k=>$v)
@@ -661,6 +738,10 @@ class dbcore
         return $c;
     }
 
+    /**
+     * @param string $file
+     * @return int|string
+     */
     public function TarFile($file = "")
     {
         if($file == "")
@@ -687,6 +768,11 @@ class dbcore
            3   -   Blue
            4   -   Yellow
     */
+    /**
+     * @param string $message
+     * @param int $color
+     * @return int
+     */
     public function verbosed($message = "", $color = 1)
     {
         $datetime = date("Y-m-d H:i:s");
@@ -694,20 +780,20 @@ class dbcore
         {
             switch($color)
             {
-                case -1:
-                    $message = $this->colors['RED'].$datetime.$this->colors['YELLOW']."   ->    ".$this->colors['RED'].$message.$this->colors['LIGHTGRAY'];
+                case -1: #Error
+                    $message = $this->colors['RED']. $datetime .$this->colors['YELLOW']."   ->    ".$this->colors['RED'].$message.$this->colors['LIGHTGRAY'];
                     break;
-                case 1:
-                    $message = $this->colors['YELLOW'].$datetime.$this->colors['LIGHTGRAY']."   ->    ".$this->colors['LIGHTGRAY'].$message.$this->colors['LIGHTGRAY'];
+                case 1: #normal message
+                    $message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->    ".$this->colors['LIGHTGRAY'].$message.$this->colors['LIGHTGRAY'];
                     break;
-                case 2:
-                    $message = $this->colors['YELLOW'].$datetime.$this->colors['LIGHTGRAY']."   ->    ".$this->colors['GREEN'].$message.$this->colors['LIGHTGRAY'];
+                case 2: #good / header message
+                    $message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->    ".$this->colors['GREEN'].$message.$this->colors['LIGHTGRAY'];
                     break;
-                case 3:
-                    $message = $this->colors['YELLOW'].$datetime.$this->colors['LIGHTGRAY']."   ->    ".$this->colors['BLUE'].$message.$this->colors['LIGHTGRAY'];
+                case 3: #different good/header message
+                    $message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->    ".$this->colors['BLUE'].$message.$this->colors['LIGHTGRAY'];
                     break;
-                default:
-                    $message = $this->colors['YELLOW'].$datetime.$this->colors['LIGHTGRAY']."   ->    ".$this->colors['YELLOW'].$message.$this->colors['LIGHTGRAY'];
+                default: #normal message
+                    $message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->    ".$this->colors['YELLOW'].$message.$this->colors['LIGHTGRAY'];
                     break;
             }
             echo $message."\r\n";

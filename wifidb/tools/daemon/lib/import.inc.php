@@ -34,14 +34,22 @@ class import extends wdbcli
         $this->dBmDissociationSignal = -85;
     }
 
-    public function convertSig2dBm($sig_in = 0)
+    /**
+     * @param int $sig_in
+     * @return float
+     */
+    private function convertSig2dBm($sig_in = 0)
     {
         $dBm = ((($this->dBmMaxSignal - $this->dBmDissociationSignal) * $sig_in) - (20 * $this->dBmMaxSignal) + (100 * $this->dBmDissociationSignal)) / 80;
         $dbm_out =  round($dBm);
         return $dbm_out;
     }
 
-    public function convertdBm2Sig($sig_in = 0)
+    /**
+     * @param int $sig_in
+     * @return float
+     */
+    private function convertdBm2Sig($sig_in = 0)
     {
         $SIG = 100 - 80 * ($this->dBmMaxSignal - $sig_in) / ($this->dBmMaxSignal - $this->dBmDissociationSignal);
         if($SIG < 0){$SIG = 0;}
@@ -49,7 +57,40 @@ class import extends wdbcli
         return $round;
     }
 
+    /**
+     * @param string $signals
+     * @return mixed
+     */
+    private function FindHighestSig($signals = "")
+    {
+        $signals_exp = explode("-", $signals);
+        $signals_all = array();
+        foreach($signals_exp as $signal)
+        {
+            $sig_exp = explode(",", $signal);
+            $signals_all[] = $sig_exp[1];
+        }
+        rsort($signals_all);
+        return $signals_all[0];
+    }
+
+    /**
+     * @param string $mac
+     * @return bool
+     */
+    private function validateMacAddress($mac = "")
+    {
+        return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $mac) == 1);
+    }
+
+
 ####################
+    /**
+     * @param string $source
+     * @param string $user
+     * @return array
+     * @throws ErrorException
+     */
     public function import_vs1($source="" , $user="Unknown")
     {
         $r = 0;
@@ -105,23 +146,17 @@ class import extends wdbcli
                 case 6:
                     #This is from an older version of the VS1 GPS data, sanatize and order it into an array.
                     $gps_line = $file_line_exp;
-                    $date_exp = explode("-",$gps_line[4]);
-                    if(strlen($date_exp[0]) <= 2)
-                    {
-                        $gpsdate = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
-                    }else
-                    {
-                        $gpsdate = $gps_line[4];
-                    }
+                    $gpsdate = date($this->date_format, strtotime($gps_line[10]));
+
                     if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
                     if($gps_line[0] == 0){$increment_ids = 1;}
                     if($increment_ids){$gps_line[0]++;}
 
                     $gdata[$gps_line[0]] = array(
-                                'id'    =>  $gps_line[0],
+                                'id'    =>  (int) $gps_line[0],
                                 'lat'	=>  $gps_line[1],
                                 'long'	=>  $gps_line[2],
-                                'sats'	=>  $gps_line[3],
+                                'sats'	=>  (int) $gps_line[3],
                                 'hdp'   =>  '0',
                                 'alt'   =>  '0',
                                 'geo'   =>  '0',
@@ -135,28 +170,22 @@ class import extends wdbcli
                 case 12:
                     #This is the current version of the VS1 export, sanatize and order it into an array.
                     $gps_line = $file_line_exp;
-                    $date_exp = explode("-", $gps_line[10]);
-                    if(strlen($date_exp[0]) <= 2)
-                    {
-                        $gpsdate = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
-                    }else
-                    {
-                        $gpsdate = $gps_line[10];
-                    }
+                    $gpsdate = date($this->date_format, strtotime($gps_line[10]));
+
                     if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
                     if($gps_line[0] == 0){$increment_ids = 1;}
                     if($increment_ids){$gps_line[0]++;}
                     $gdata[$gps_line[0]] = array(
-                                'id'    =>  $gps_line[0],
+                                'id'    =>  (int) $gps_line[0],
                                 'lat'	=>  $gps_line[1],
                                 'long'	=>  $gps_line[2],
-                                'sats'	=>  $gps_line[3],
-                                'hdp'	=>  $gps_line[4],
-                                'alt'	=>  $gps_line[5],
-                                'geo'	=>  $gps_line[6],
-                                'kmh'	=>  $gps_line[7],
-                                'mph'	=>  $gps_line[8],
-                                'track'	=>  $gps_line[9],
+                                'sats'	=>  (int) $gps_line[3],
+                                'hdp'	=>  (float) $gps_line[4],
+                                'alt'	=>  (float) $gps_line[5],
+                                'geo'	=>  (float) $gps_line[6],
+                                'kmh'	=>  (float) $gps_line[7],
+                                'mph'	=>  (float) $gps_line[8],
+                                'track'	=>  (float) $gps_line[9],
                                 'date'	=>  $gpsdate,
                                 'time'	=>  $gps_line[11]
                             );
@@ -164,21 +193,29 @@ class import extends wdbcli
                 case 13:
                     #This is to generate a sanitized and ordered array for each AP.
                     $ap_line = $file_line_exp;
+                    if(!$this->validateMacAddress($ap_line[1]))
+                    {
+                        $this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.");
+                        break;
+                    }
+
+                    $highestSignal = $this->FindHighestSig($ap_line[12]);
+                    $highestRSSI = $this->ConvertSig2dBm($highestSignal);
                     $apdata[] = array(
                                 'ssid'      =>  $ap_line[0],
                                 'mac'       =>  $ap_line[1],
                                 'manuf'     =>  $ap_line[2],
                                 'auth'      =>  $ap_line[3],
                                 'encry'     =>  $ap_line[4],
-                                'sectype'   =>  $ap_line[5],
+                                'sectype'   =>  (int) $ap_line[5],
                                 'radio'     =>  $ap_line[6],
                                 'manuf'     =>  $this->manufactures($ap_line[1]),
-                                'chan'      =>  $ap_line[7],
+                                'chan'      =>  (int) $ap_line[7],
                                 'btx'       =>  $ap_line[8],
                                 'otx'       =>  $ap_line[9],
                                 'nt'        =>  $ap_line[10],
-                                'HighSig'   =>  0,
-                                'HighRSSI'  =>  0,
+                                'HighSig'   =>  $highestSignal,
+                                'HighRSSI'  =>  $highestRSSI,
                                 'label'     =>  $ap_line[11],
                                 'signals'   =>  $ap_line[12]
                             );
@@ -187,16 +224,21 @@ class import extends wdbcli
                 case 15:
                     #This is to generate a sanitized and ordered array for each AP.
                     $ap_line = $file_line_exp;
+                    if(!$this->validateMacAddress($ap_line[1]))
+                    {
+                        $this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.");
+                        break;
+                    }
                     $apdata[] = array(
                                 'ssid'      =>  $ap_line[0],
                                 'mac'       =>  $ap_line[1],
                                 'manuf'     =>  $ap_line[2],
                                 'auth'      =>  $ap_line[3],
                                 'encry'     =>  $ap_line[4],
-                                'sectype'   =>  $ap_line[5],
+                                'sectype'   =>  (int) $ap_line[5],
                                 'radio'     =>  $ap_line[6],
                                 'manuf'     =>  $this->manufactures($ap_line[1]),
-                                'chan'      =>  $ap_line[7],
+                                'chan'      =>  (int) $ap_line[7],
                                 'btx'       =>  $ap_line[8],
                                 'otx'       =>  $ap_line[9],
                                 'nt'        =>  $ap_line[10],
@@ -205,7 +247,7 @@ class import extends wdbcli
                                 'label'     =>  $ap_line[13],
                                 'signals'   =>  $ap_line[14]
                             );
-                            $this->rssi_signals_flag = 1;
+                    $this->rssi_signals_flag = 1;
                     break;
                 
                 default:
@@ -216,18 +258,7 @@ class import extends wdbcli
                     #$this->mail->mail_admins();
                     break;
             }
-            if($this->verbose)
-            {
-                if($r===0){echo "|\r";}
-                if($r===10){echo "/\r";}
-                if($r===20){echo "-\r";}
-                if($r===30){echo "\\\r";}
-                if($r===40){echo "|\r";}
-                if($r===50){echo "/\r";}
-                if($r===60){echo "-\r";}
-                if($r===70){echo "\\\r";$r=0;}
-                $r++;
-            }
+            $r = $this->RotateSpinner($r);
         }
         $vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);
         $ap_count = count($vs1data['apdata']);
@@ -242,19 +273,7 @@ class import extends wdbcli
             $lat = $this->convert_dd_dm($gps['lat']);
             $long = $this->convert_dd_dm($gps['long']);
             $sql = "INSERT INTO `wifi`.`wifi_gps` ( `id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
-                    VALUES ('',
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?,
-                            ?
-                           )";
+                    VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1,$lat, PDO::PARAM_STR);
             $prep->bindParam(2,$long, PDO::PARAM_STR);
@@ -277,18 +296,7 @@ class import extends wdbcli
                 $this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
                 throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
             }
-            if($this->verbose)
-            {
-                if($r===0){echo "|\r";}
-                if($r===10){echo "/\r";}
-                if($r===20){echo "-\r";}
-                if($r===30){echo "\\\r";}
-                if($r===40){echo "|\r";}
-                if($r===50){echo "/\r";}
-                if($r===60){echo "-\r";}
-                if($r===70){echo "\\\r";$r=0;}
-                $r++;
-            }
+            $r = $this->RotateSinner($r);
         }
         
         $this->verbosed("Importing AP Data [$ap_count]:");
@@ -428,18 +436,7 @@ class import extends wdbcli
                 }
                 $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
                 
-                if($this->verbose)
-                {
-                    if($r===0){echo "|\r";}
-                    if($r===10){echo "/\r";}
-                    if($r===20){echo "-\r";}
-                    if($r===30){echo "\\\r";}
-                    if($r===40){echo "|\r";}
-                    if($r===50){echo "/\r";}
-                    if($r===60){echo "-\r";}
-                    if($r===70){echo "\\\r";$r=0;}
-                    $r++;
-                }
+                $r = $this->RotateSpinner($r);
             }
             
             if(count($compile_sig) < 1 )
@@ -570,5 +567,22 @@ class import extends wdbcli
                 'gps'=>$gps_count
             );
         return $ret;
+    }
+
+    private function RotateSpinner($r = 0)
+    {
+        if(!$this->verbose)
+        {return 0;}
+
+        if($r===0){echo "|\r";}
+        if($r===10){echo "/\r";}
+        if($r===20){echo "-\r";}
+        if($r===30){echo "\\\r";}
+        if($r===40){echo "|\r";}
+        if($r===50){echo "/\r";}
+        if($r===60){echo "-\r";}
+        if($r===70){echo "\\\r";$r=0;}
+        $r++;
+        return $r;
     }
 }
