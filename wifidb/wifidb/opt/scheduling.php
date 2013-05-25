@@ -49,6 +49,8 @@ switch($func)
         $files_all = array();
         while ($newArray = $result->fetch(2))
         {
+            $users_array = explode(";", $newArray["user"]);
+            $users_array = array_filter($users_array);
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
             $files_all[] = array(
                                     'class'=>$class,
@@ -56,7 +58,7 @@ switch($func)
                                     'user_row'=>$newArray["user_row"],
                                     'file'=>html_entity_decode($newArray['file']),
                                     'date'=>$newArray['date'],
-                                    'user'=>$newArray["user"],
+                                    'user'=>$users_array,
                                     'title'=>$newArray['title'],
                                     'aps'=>$newArray['aps'],
                                     'gps'=>$newArray['gps'],
@@ -84,6 +86,10 @@ switch($func)
             if($file === "full_db.kmz"){continue;}
             if($file === "full_db_label.kml"){continue;}
             if($file === "full_db_label.kmz"){continue;}
+            if($file === "daily_db_label.kmz"){continue;}
+            if($file === "daily_db_label.kml"){continue;}
+            if($file === "daily_db.kmz"){continue;}
+            if($file === "daily_db.kml"){continue;}
             if($file === "newestAP_label.kml"){continue;}
             if($file === "newestAP.kml"){continue;}
             if($file === "update.kml"){continue;}

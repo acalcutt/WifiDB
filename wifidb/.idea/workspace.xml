@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="b9f36ce2-ea44-40f5-9d29-90fbef04d403" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/wifidb/lib/dbcore.inc.php" afterPath="$PROJECT_DIR$/wifidb/lib/dbcore.inc.php" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/daemon/lib/import.inc.php" afterPath="$PROJECT_DIR$/tools/daemon/lib/import.inc.php" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/wifidb/lib/init.inc.php" afterPath="$PROJECT_DIR$/wifidb/lib/init.inc.php" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="b9f36ce2-ea44-40f5-9d29-90fbef04d403" name="Default" comment="" />
     <ignored path="wifidb.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path=".idea/modules.xml" />
@@ -19,14 +14,14 @@
     <ignored path=".idea/.name" />
     <ignored path=".idea/scopes/scope_settings.xml" />
     <ignored path=".idea/dictionaries/sysferland.xml" />
-    <file path="/Dummy.txt" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367773220496" ignored="false" />
-    <file path="/init.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368214006889" ignored="false" />
+    <file path="/Dummy.txt" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369247625874" ignored="false" />
+    <file path="/init.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369247691229" ignored="false" />
     <file path="/wdbcli.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367168127347" ignored="false" />
-    <file path="/export.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367891988421" ignored="false" />
-    <file path="/import.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368217555848" ignored="false" />
-    <file path="/dbcore.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368217698935" ignored="false" />
+    <file path="/export.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368805327711" ignored="false" />
+    <file path="/import.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368496286836" ignored="false" />
+    <file path="/dbcore.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369167397298" ignored="false" />
     <file path="/frontend.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367801011064" ignored="false" />
-    <file path="/scheduling.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367374901739" ignored="false" />
+    <file path="/scheduling.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369178692105" ignored="false" />
     <file path="/export.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367882974929" ignored="false" />
     <file path="/index.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367800569152" ignored="false" />
     <file path="/details.txt" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1366563887308" ignored="false" />
@@ -42,10 +37,10 @@
     <file path="/a.dummy" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367773341747" ignored="false" />
     <file path="/api_server.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1366690507853" ignored="false" />
     <file path="/api_client.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1366691052263" ignored="false" />
-    <file path="/daemon.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367176704474" ignored="false" />
-    <file path="/imp_expd.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367178134962" ignored="false" />
+    <file path="/daemon.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368487872203" ignored="false" />
+    <file path="/imp_expd.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369166777039" ignored="false" />
     <file path="/manufactures.inc.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367185604023" ignored="false" />
-    <file path="/scheduling_kml.tpl" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367374511164" ignored="false" />
+    <file path="/scheduling_kml.tpl" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369510021013" ignored="false" />
     <file path="/convert_daemon_exports.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367367323432" ignored="false" />
     <file path="/header.tpl" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367376824658" ignored="false" />
     <file path="/import_index.tpl" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367531667363" ignored="false" />
@@ -59,6 +54,8 @@
     <file path="/export_results.tpl" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1367881108466" ignored="false" />
     <file path="/Test_convertSig2RSSI.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368132320394" ignored="false" />
     <file path="/Test_FindHighestSig.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1368214911353" ignored="false" />
+    <file path="/scheduling_done.tpl" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369182623621" ignored="false" />
+    <file path="/ver.php" changelist="b9f36ce2-ea44-40f5-9d29-90fbef04d403" time="1369181572463" ignored="false" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -86,67 +83,61 @@
       <file leaf-file-name="init.inc.php" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/wifidb/lib/init.inc.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="125" column="66" selection-start="4391" selection-end="4395" vertical-scroll-proportion="-15.692307">
+            <state line="265" column="5" selection-start="8520" selection-end="8520" vertical-scroll-proportion="-9.5">
               <folding>
-                <marker date="1368214007397" expanded="true" signature="1989:2043" placeholder="SELECT `tabl..settings..." />
+                <marker date="1369254438376" expanded="true" signature="1849:1903" placeholder="SELECT `tabl..settings..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="dbcore.inc.php" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/wifidb/lib/dbcore.inc.php">
+      <file leaf-file-name="export.inc.php" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/lib/export.inc.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="795" column="66" selection-start="28758" selection-end="28758" vertical-scroll-proportion="0.6530612">
+            <state line="527" column="66" selection-start="20998" selection-end="20998" vertical-scroll-proportion="0.0">
               <folding>
-                <element signature="e#6#775#0" expanded="true" />
-                <marker date="1368217793743" expanded="true" signature="16706:16804" placeholder="INSERT INTO ..." />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="daemon.inc.php" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tools/daemon/lib/daemon.inc.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="25" column="53" selection-start="925" selection-end="925" vertical-scroll-proportion="-2.6153846">
-              <folding>
-                <marker date="1367887053536" expanded="true" signature="2397:2459" placeholder="SELECT * FRO..settings..." />
-                <marker date="1367887053536" expanded="true" signature="3662:3903" placeholder="INSERT INTO ..." />
-                <marker date="1367887053536" expanded="true" signature="5280:5415" placeholder="UPDATE `wifi..." />
-                <marker date="1367887053536" expanded="true" signature="6369:6448" placeholder="UPDATE `wifi..." />
-                <marker date="1367887053536" expanded="true" signature="17809:17831" placeholder="SELECT * FRO..networks..." />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="frontend.inc.php" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/wifidb/lib/frontend.inc.php">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="52" column="70" selection-start="2191" selection-end="2249" vertical-scroll-proportion="-12.423077">
-              <folding>
-                <marker date="1367879469920" expanded="true" signature="3863:3914" placeholder="SELECT * FRO..wifi_pointers..." />
-                <marker date="1367879469920" expanded="true" signature="4707:4861" placeholder="SELECT `lat`..wifi_gps..." />
-                <marker date="1367879469920" expanded="true" signature="5433:5607" placeholder="SELECT `id`,..wifi_signals..." />
-                <marker date="1367879469920" expanded="true" signature="6047:6207" placeholder="SELECT `lat`..wifi_gps..." />
-                <marker date="1367879469920" expanded="true" signature="8768:8825" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="10158:10210" placeholder="SELECT `body..annunc..." />
-                <marker date="1367879469920" expanded="true" signature="12192:12260" placeholder="SELECT `user..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="12676:12749" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="17264:17334" placeholder="SELECT count..wifi_pointers..." />
-                <marker date="1367879469920" expanded="true" signature="17588:17829" placeholder="SELECT `id`,..wifi_pointers..." />
-                <marker date="1367879469920" expanded="true" signature="19521:19607" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="19808:19894" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="20096:20173" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="21035:21127" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="23630:23679" placeholder="SELECT * FRO..user_imports..." />
-                <marker date="1367879469920" expanded="true" signature="24182:24303" placeholder="SELECT `id`,..wifi_pointers..." />
-                <marker date="1367879469920" expanded="true" signature="29437:29601" placeholder="..." />
-                <marker date="1367879469920" expanded="true" signature="29481:29584" placeholder="{...}" />
-                <marker date="1367879469920" expanded="true" signature="35043:35117" placeholder="SELECT `date..wifi_gps..." />
-                <marker date="1367879469920" expanded="true" signature="35412:35485" placeholder="SELECT `date..wifi_gps..." />
-                <marker date="1367879469920" expanded="true" signature="35629:35675" placeholder="SELECT * FRO..wifi_gps..." />
+                <marker date="1368805467196" expanded="true" signature="2084:2238" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="11295:11393" placeholder="SELECT `id` ..user_imports..." />
+                <marker date="1368805467196" expanded="true" signature="12296:12425" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="21675:21726" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="22353:22428" placeholder="SELECT * FRO..wifi_signals..." />
+                <marker date="1368805467196" expanded="true" signature="22797:22843" placeholder="SELECT * FRO..wifi_gps..." />
+                <marker date="1368805467196" expanded="true" signature="28367:28521" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="29196:29373" placeholder="..." />
+                <marker date="1368805467196" expanded="true" signature="31866:31920" placeholder="SELECT * FRO..wifi_gps..." />
+                <marker date="1368805467196" expanded="true" signature="33694:33757" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="50121:50189" placeholder="..." />
+                <marker date="1368805467196" expanded="true" signature="50130:50189" placeholder="..." />
+                <marker date="1368805467196" expanded="true" signature="53689:53807" placeholder="SELECT * FRO.._users_t..." />
+                <marker date="1368805467196" expanded="true" signature="54075:54113" placeholder="..." />
+                <marker date="1368805467196" expanded="true" signature="54184:54260" placeholder="SELECT * FRO.._users_t..." />
+                <marker date="1368805467196" expanded="true" signature="54874:54932" placeholder="SELECT * FRO.._wtable..." />
+                <marker date="1368805467196" expanded="true" signature="55526:55591" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="58318:58370" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="59188:59241" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="61609:61667" placeholder="SELECT * FRO.._table_gps..." />
+                <marker date="1368805467196" expanded="true" signature="62267:62326" placeholder="SELECT * FRO.._table_gps..." />
+                <marker date="1368805467196" expanded="true" signature="64166:64224" placeholder="SELECT * FRO.._users_t..." />
+                <marker date="1368805467196" expanded="true" signature="64674:64733" placeholder="SELECT * FRO.._users_t..." />
+                <marker date="1368805467196" expanded="true" signature="65285:65323" placeholder="..." />
+                <marker date="1368805467196" expanded="true" signature="65416:65474" placeholder="SELECT * FRO.._wtable..." />
+                <marker date="1368805467196" expanded="true" signature="65922:65981" placeholder="SELECT * FRO.._wtable..." />
+                <marker date="1368805467196" expanded="true" signature="65922:65987" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="68417:68469" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="69199:69252" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="71413:71471" placeholder="SELECT * FRO.._table_gps..." />
+                <marker date="1368805467196" expanded="true" signature="72139:72198" placeholder="SELECT * FRO.._table_gps..." />
+                <marker date="1368805467196" expanded="true" signature="74017:74046" placeholder="SELECT * FRO.._wtable..." />
+                <marker date="1368805467196" expanded="true" signature="74472:74510" placeholder="..." />
+                <marker date="1368805467196" expanded="true" signature="74590:74620" placeholder="SELECT * FRO.._wtable..." />
+                <marker date="1368805467196" expanded="true" signature="74590:74626" placeholder="SELECT * FRO..wifi_pointers..." />
+                <marker date="1368805467196" expanded="true" signature="76756:76787" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="77015:77067" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="77569:77601" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="77806:77859" placeholder="SELECT * FRO.._table..." />
+                <marker date="1368805467196" expanded="true" signature="79954:80012" placeholder="SELECT * FRO.._table_gps..." />
+                <marker date="1368805467196" expanded="true" signature="80515:80574" placeholder="SELECT * FRO.._table_gps..." />
+                <marker date="1368805467196" expanded="true" signature="86794:86832" placeholder="..." />
               </folding>
             </state>
           </provider>
@@ -155,39 +146,127 @@
       <file leaf-file-name="import.inc.php" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tools/daemon/lib/import.inc.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="21" column="6" selection-start="788" selection-end="788" vertical-scroll-proportion="-1.9615384">
+            <state line="552" column="56" selection-start="26863" selection-end="26863" vertical-scroll-proportion="-5.3846154">
               <folding>
-                <marker date="1368217608199" expanded="true" signature="3989:4048" placeholder="SELECT `id` ..files_tmp..." />
-                <marker date="1368217608199" expanded="true" signature="11833:12019" placeholder="INSERT INTO ..." />
-                <marker date="1368217608199" expanded="true" signature="13606:13660" placeholder="UPDATE `wifi..." />
-                <marker date="1368217608199" expanded="true" signature="15305:15389" placeholder="SELECT `id`,..wifi_pointers..." />
-                <marker date="1368217608199" expanded="true" signature="16525:16647" placeholder="INSERT INTO ..." />
-                <marker date="1368217608199" expanded="true" signature="18569:18626" placeholder="UPDATE `wifi..." />
-                <marker date="1368217608199" expanded="true" signature="20813:20880" placeholder="UPDATE `wifi..." />
-                <marker date="1368217608199" expanded="true" signature="21634:21711" placeholder="UPDATE `wifi..." />
-                <marker date="1368217608199" expanded="true" signature="23333:23662" placeholder="INSERT INTO ..." />
+                <marker date="1368497208024" expanded="true" signature="3625:3684" placeholder="SELECT `id` ..files_tmp..." />
+                <marker date="1368497208024" expanded="true" signature="12323:12509" placeholder="INSERT INTO ..." />
+                <marker date="1368497208024" expanded="true" signature="14028:14082" placeholder="UPDATE `wifi..." />
+                <marker date="1368497208024" expanded="true" signature="15737:15821" placeholder="SELECT `id`,..wifi_pointers..." />
+                <marker date="1368497208024" expanded="true" signature="17492:17614" placeholder="INSERT INTO ..." />
+                <marker date="1368497208024" expanded="true" signature="19535:19592" placeholder="UPDATE `wifi..." />
+                <marker date="1368497208024" expanded="true" signature="21780:21847" placeholder="UPDATE `wifi..." />
+                <marker date="1368497208024" expanded="true" signature="22601:22678" placeholder="UPDATE `wifi..." />
+                <marker date="1368497208024" expanded="true" signature="24301:24630" placeholder="INSERT INTO ..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Test_FindHighestSig.php" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tools/test_scripts/Test_FindHighestSig.php">
+      <file leaf-file-name="daemon.inc.php" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/daemon/lib/daemon.inc.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="37" selection-start="54867" selection-end="54867" vertical-scroll-proportion="-12.423077">
+            <state line="86" column="51" selection-start="3781" selection-end="3781" vertical-scroll-proportion="0.0">
               <folding>
-                <element signature="e#6#166#0" expanded="true" />
+                <marker date="1368487883231" expanded="true" signature="2432:2494" placeholder="SELECT * FRO..settings..." />
+                <marker date="1368487883231" expanded="true" signature="3307:3416" placeholder="INSERT INTO ..." />
+                <marker date="1368487883231" expanded="true" signature="4586:4633" placeholder="DELETE FROM ..." />
+                <marker date="1368487883231" expanded="true" signature="5260:5310" placeholder="DELETE FROM ..." />
+                <marker date="1368487883231" expanded="true" signature="6909:7150" placeholder="INSERT INTO ..." />
+                <marker date="1368487883231" expanded="true" signature="8612:8747" placeholder="UPDATE `wifi..." />
+                <marker date="1368487883231" expanded="true" signature="9701:9780" placeholder="UPDATE `wifi..." />
+                <marker date="1368487883231" expanded="true" signature="21409:21431" placeholder="SELECT * FRO..networks..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="Test_convertSig2RSSI.php" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/tools/test_scripts/Test_convertSig2RSSI.php">
+      <file leaf-file-name="dbcore.inc.php" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/lib/dbcore.inc.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="17" column="0" selection-start="342" selection-end="389" vertical-scroll-proportion="-11.115385">
+            <state line="479" column="21" selection-start="18176" selection-end="18176" vertical-scroll-proportion="0.0">
               <folding>
-                <element signature="e#6#165#0" expanded="true" />
+                <marker date="1369167396824" expanded="true" signature="17440:17538" placeholder="INSERT INTO ..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="scheduling.php" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/opt/scheduling.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="91" column="38" selection-start="4203" selection-end="4203" vertical-scroll-proportion="-12.423077">
+              <folding>
+                <marker date="1369509328969" expanded="true" signature="1867:1914" placeholder="SELECT * FRO..files..." />
+                <marker date="1369509328969" expanded="true" signature="10441:10489" placeholder="SELECT * FRO..settings..." />
+                <marker date="1369509328969" expanded="true" signature="11706:11759" placeholder="SELECT * FRO..files_tmp..." />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="scheduling_kml.tpl" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/scheduling_kml.tpl">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="100" column="110" selection-start="7282" selection-end="7282" vertical-scroll-proportion="-16.346153">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="header.tpl" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/header.tpl">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="94" column="55" selection-start="6189" selection-end="6189" vertical-scroll-proportion="-10.461538">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="newhtml.tpl" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/newhtml.tpl">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="21" column="0" selection-start="814" selection-end="814" vertical-scroll-proportion="0.6307421">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="scheduling_done.tpl" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/scheduling_done.tpl">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="60" column="12" selection-start="2671" selection-end="2671" vertical-scroll-proportion="-30.307692">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="userstats.php" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/wifidb/opt/userstats.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="59" column="24" selection-start="2078" selection-end="2078" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="imp_expd.php" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/daemon/imp_expd.php">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="308" column="170" selection-start="16063" selection-end="16063" vertical-scroll-proportion="0.0">
+              <folding>
+                <marker date="1369167161025" expanded="true" signature="3326:3402" placeholder="SELECT * FRO..files_tmp..." />
+                <marker date="1369167161025" expanded="true" signature="5400:5492" placeholder="UPDATE `wifi..." />
+                <marker date="1369167161025" expanded="true" signature="6290:6351" placeholder="SELECT `hash..files..." />
+                <marker date="1369167161025" expanded="true" signature="7504:7575" placeholder="SELECT `conv..files_tmp..." />
+                <marker date="1369167161025" expanded="true" signature="7941:8012" placeholder="SELECT `conv..files_tmp..." />
+                <marker date="1369167161025" expanded="true" signature="9577:9676" placeholder="INSERT INTO ..." />
+                <marker date="1369167161025" expanded="true" signature="9869:10118" placeholder="INSERT INTO ..." />
+                <marker date="1369167161025" expanded="true" signature="11171:11313" placeholder="UPDATE `wifi..." />
+                <marker date="1369167161025" expanded="true" signature="11722:11864" placeholder="UPDATE `wifi..." />
+                <marker date="1369167161025" expanded="true" signature="12862:12907" placeholder="DELETE FROM ..." />
+                <marker date="1369167161025" expanded="true" signature="13346:13391" placeholder="DELETE FROM ..." />
+                <marker date="1369167161025" expanded="true" signature="16582:16638" placeholder="UPDATE `wifi..." />
+                <marker date="1369167161025" expanded="true" signature="16870:16926" placeholder="UPDATE `wifi..." />
               </folding>
             </state>
           </provider>
@@ -210,28 +289,25 @@
       <MyDateState />
     </option>
   </component>
-  <component name="HighlightingSettingsPerFile">
-    <setting file="mock:///dummy.txt" root0="SKIP_INSPECTION" />
-  </component>
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/graph_index.tpl" />
-        <option value="$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/graph_results.tpl" />
-        <option value="$PROJECT_DIR$/wifidb/lib/graphs.inc.php" />
-        <option value="$PROJECT_DIR$/wifidb/lib/frontend.inc.php" />
-        <option value="$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/export_results.tpl" />
-        <option value="$PROJECT_DIR$/wifidb/opt/export.php" />
-        <option value="$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/fetch.tpl" />
-        <option value="$PROJECT_DIR$/tools/daemon/lib/daemon.inc.php" />
-        <option value="$PROJECT_DIR$/wifidb/lib/export.inc.php" />
-        <option value="$PROJECT_DIR$/tools/daemon/config.inc.php" />
         <option value="$PROJECT_DIR$/tools/daemon/lib/wdbmail.inc.php" />
         <option value="$PROJECT_DIR$/tools/test_scripts/Test_convertSig2RSSI.php" />
-        <option value="$PROJECT_DIR$/wifidb/lib/init.inc.php" />
         <option value="$PROJECT_DIR$/tools/test_scripts/Test_FindHighestSig.php" />
+        <option value="$PROJECT_DIR$/wifidb/lib/SQL.inc.php" />
+        <option value="$PROJECT_DIR$/tools/daemon/lib/daemon.inc.php" />
         <option value="$PROJECT_DIR$/tools/daemon/lib/import.inc.php" />
+        <option value="$PROJECT_DIR$/tools/test_scripts/export_test.php" />
+        <option value="$PROJECT_DIR$/tools/test_scripts/create_user_test.php" />
+        <option value="$PROJECT_DIR$/wifidb/lib/export.inc.php" />
+        <option value="$PROJECT_DIR$/tools/daemon/imp_expd.php" />
         <option value="$PROJECT_DIR$/wifidb/lib/dbcore.inc.php" />
+        <option value="$PROJECT_DIR$/wifidb/ver.php" />
+        <option value="$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/scheduling_done.tpl" />
+        <option value="$PROJECT_DIR$/wifidb/lib/init.inc.php" />
+        <option value="$PROJECT_DIR$/wifidb/opt/scheduling.php" />
+        <option value="$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/scheduling_kml.tpl" />
       </list>
     </option>
   </component>
@@ -250,8 +326,8 @@
   <component name="ProjectFrameBounds">
     <option name="x" value="-8" />
     <option name="y" value="-8" />
-    <option name="width" value="1936" />
-    <option name="height" value="1056" />
+    <option name="width" value="1296" />
+    <option name="height" value="776" />
   </component>
   <component name="ProjectInspectionProfilesVisibleTreeState">
     <entry key="Project Default">
@@ -301,6 +377,7 @@
       <sortByType />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -607,16 +684,15 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="true" />
-    <property name="options.lastSelected" value="editor.preferences.tabs" />
+    <property name="options.lastSelected" value="preferences.keymap" />
     <property name="recentsLimit" value="5" />
     <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/wifidb" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/tools" />
     <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
     <property name="Database.TableEditor.Splitter" value="0.9" />
     <property name="WebServerToolWindowFactoryState" value="true" />
@@ -630,7 +706,12 @@
   <component name="PublishConfig" serverName="DEV HTTP" serverId="79206d67-cf98-4bbe-a0bd-7895a3a313d2">
     <servers>
       <server id="79206d67-cf98-4bbe-a0bd-7895a3a313d2">
-        <serverdata />
+        <serverdata>
+          <mappings>
+            <mapping deploy="/var/www/wifidb" local="$PROJECT_DIR$/wifidb" web="/" />
+            <mapping deploy="/opt/wifidb/tools" local="$PROJECT_DIR$/tools" web="/" />
+          </mappings>
+        </serverdata>
       </server>
     </servers>
   </component>
@@ -717,30 +798,30 @@
     </servers>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="false" />
+    <frame x="-8" y="-8" width="1296" height="776" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.09223301" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.093851134" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.83964366" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32847896" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.19529983" sideWeight="0.671521" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.15368196" sideWeight="0.907767" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.14621131" sideWeight="0.671521" order="4" side_tool="false" content_ui="tabs" x="1497" y="98" width="382" height="995" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.15208112" sideWeight="0.671521" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.15640195" sideWeight="0.90614885" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.09605123" sideWeight="0.9376392" order="4" side_tool="false" content_ui="tabs" x="1497" y="98" width="382" height="995" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.21474878" sideWeight="0.90614885" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3986711" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32847896" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32827735" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Command Line Tools Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32847896" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32962137" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Database Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32847896" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32847896" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Command Line Tools Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32847896" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="VcsContentAnnotationSettings">
@@ -801,213 +882,204 @@
     <option name="FILE_HISTORY_SPLITTER_PROPORTION" value="0.6" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager />
+    <breakpoint-manager>
+      <option name="time" value="1" />
+    </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/tools/test_scripts/export_test.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="3" column="0" selection-start="6" selection-end="73" vertical-scroll-proportion="-1.9615384">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/test_scripts/create_user_test.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="2" column="31" selection-start="69" selection-end="69" vertical-scroll-proportion="-1.3076923">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/wifidb/lib/export.inc.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="41" column="53" selection-start="1347" selection-end="1347" vertical-scroll-proportion="0.46938777">
+        <state line="527" column="66" selection-start="20998" selection-end="20998" vertical-scroll-proportion="0.0">
           <folding>
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT `id`,..user_imports..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_signals..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_gps..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_gps..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="false" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._users_t..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._wtable..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table_gps..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._users_t..." />
-            <marker date="1367892065237" expanded="false" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._wtable..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table_gps..." />
-            <marker date="1367892065237" expanded="false" signature="-1:-1" placeholder="..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._wtable..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table..." />
-            <marker date="1367892065237" expanded="true" signature="-1:-1" placeholder="SELECT * FRO.._table_gps..." />
-            <marker date="1367892065237" expanded="false" signature="-1:-1" placeholder="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/test_scripts/unlock_user_test.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="3" column="0" selection-start="76" selection-end="181" vertical-scroll-proportion="0.060283687">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/test_scripts/unit_test_live.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="26" column="25" selection-start="1227" selection-end="1227" vertical-scroll-proportion="0.53061223">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wifidb/opt/export.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="23" column="31" selection-start="787" selection-end="887" vertical-scroll-proportion="0.34160757">
-          <folding>
-            <marker date="1367882975673" expanded="true" signature="-1:-1" placeholder="SELECT `id`,..user_imports..." />
-            <marker date="1367882975673" expanded="true" signature="-1:-1" placeholder="SELECT `user..user_imports..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wifidb/lib/graphs.inc.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="27" column="45" selection-start="986" selection-end="986" vertical-scroll-proportion="0.30141845">
-          <folding>
-            <element signature="e#6#786#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/daemon/lib/wdbcli.inc.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="7" column="27" selection-start="90" selection-end="90" vertical-scroll-proportion="0.14066194">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/graph_index.tpl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="78" column="21" selection-start="4361" selection-end="4361" vertical-scroll-proportion="-7.8461537">
-          <folding>
-            <element signature="e#978#998#0" expanded="true" />
-            <element signature="e#2571#2605#0" expanded="true" />
-            <element signature="e#2982#3016#0" expanded="true" />
-            <element signature="e#4101#4135#0" expanded="true" />
-            <element signature="e#4487#4507#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wifidb/graph/index.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="74" column="27" selection-start="2221" selection-end="2221" vertical-scroll-proportion="-36.615383">
-          <folding>
-            <marker date="1367800767761" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367800767761" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_signals..." />
-            <marker date="1367800767761" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_signals..." />
-            <marker date="1367800767761" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_signals..." />
-            <marker date="1367800767761" expanded="true" signature="-1:-1" placeholder="SELECT * FRO..wifi_signals..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/daemon/config.inc.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="38" column="4" selection-start="1577" selection-end="1577" vertical-scroll-proportion="0.6182033">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wifidb/lib/frontend.inc.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="52" column="70" selection-start="2191" selection-end="2249" vertical-scroll-proportion="-12.423077">
-          <folding>
-            <marker date="1367879469920" expanded="true" signature="3863:3914" placeholder="SELECT * FRO..wifi_pointers..." />
-            <marker date="1367879469920" expanded="true" signature="4707:4861" placeholder="SELECT `lat`..wifi_gps..." />
-            <marker date="1367879469920" expanded="true" signature="5433:5607" placeholder="SELECT `id`,..wifi_signals..." />
-            <marker date="1367879469920" expanded="true" signature="6047:6207" placeholder="SELECT `lat`..wifi_gps..." />
-            <marker date="1367879469920" expanded="true" signature="8768:8825" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="10158:10210" placeholder="SELECT `body..annunc..." />
-            <marker date="1367879469920" expanded="true" signature="12192:12260" placeholder="SELECT `user..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="12676:12749" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="17264:17334" placeholder="SELECT count..wifi_pointers..." />
-            <marker date="1367879469920" expanded="true" signature="17588:17829" placeholder="SELECT `id`,..wifi_pointers..." />
-            <marker date="1367879469920" expanded="true" signature="19521:19607" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="19808:19894" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="20096:20173" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="21035:21127" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="23630:23679" placeholder="SELECT * FRO..user_imports..." />
-            <marker date="1367879469920" expanded="true" signature="24182:24303" placeholder="SELECT `id`,..wifi_pointers..." />
-            <marker date="1367879469920" expanded="true" signature="29437:29601" placeholder="..." />
-            <marker date="1367879469920" expanded="true" signature="29481:29584" placeholder="{...}" />
-            <marker date="1367879469920" expanded="true" signature="35043:35117" placeholder="SELECT `date..wifi_gps..." />
-            <marker date="1367879469920" expanded="true" signature="35412:35485" placeholder="SELECT `date..wifi_gps..." />
-            <marker date="1367879469920" expanded="true" signature="35629:35675" placeholder="SELECT * FRO..wifi_gps..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/wifidb/lib/init.inc.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="125" column="66" selection-start="4391" selection-end="4395" vertical-scroll-proportion="-15.692307">
-          <folding>
-            <marker date="1368214007397" expanded="true" signature="1989:2043" placeholder="SELECT `tabl..settings..." />
+            <marker date="1368805467196" expanded="true" signature="2084:2238" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="11295:11393" placeholder="SELECT `id` ..user_imports..." />
+            <marker date="1368805467196" expanded="true" signature="12296:12425" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="21675:21726" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="22353:22428" placeholder="SELECT * FRO..wifi_signals..." />
+            <marker date="1368805467196" expanded="true" signature="22797:22843" placeholder="SELECT * FRO..wifi_gps..." />
+            <marker date="1368805467196" expanded="true" signature="28367:28521" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="29196:29373" placeholder="..." />
+            <marker date="1368805467196" expanded="true" signature="31866:31920" placeholder="SELECT * FRO..wifi_gps..." />
+            <marker date="1368805467196" expanded="true" signature="33694:33757" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="50121:50189" placeholder="..." />
+            <marker date="1368805467196" expanded="true" signature="50130:50189" placeholder="..." />
+            <marker date="1368805467196" expanded="true" signature="53689:53807" placeholder="SELECT * FRO.._users_t..." />
+            <marker date="1368805467196" expanded="true" signature="54075:54113" placeholder="..." />
+            <marker date="1368805467196" expanded="true" signature="54184:54260" placeholder="SELECT * FRO.._users_t..." />
+            <marker date="1368805467196" expanded="true" signature="54874:54932" placeholder="SELECT * FRO.._wtable..." />
+            <marker date="1368805467196" expanded="true" signature="55526:55591" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="58318:58370" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="59188:59241" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="61609:61667" placeholder="SELECT * FRO.._table_gps..." />
+            <marker date="1368805467196" expanded="true" signature="62267:62326" placeholder="SELECT * FRO.._table_gps..." />
+            <marker date="1368805467196" expanded="true" signature="64166:64224" placeholder="SELECT * FRO.._users_t..." />
+            <marker date="1368805467196" expanded="true" signature="64674:64733" placeholder="SELECT * FRO.._users_t..." />
+            <marker date="1368805467196" expanded="true" signature="65285:65323" placeholder="..." />
+            <marker date="1368805467196" expanded="true" signature="65416:65474" placeholder="SELECT * FRO.._wtable..." />
+            <marker date="1368805467196" expanded="true" signature="65922:65981" placeholder="SELECT * FRO.._wtable..." />
+            <marker date="1368805467196" expanded="true" signature="65922:65987" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="68417:68469" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="69199:69252" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="71413:71471" placeholder="SELECT * FRO.._table_gps..." />
+            <marker date="1368805467196" expanded="true" signature="72139:72198" placeholder="SELECT * FRO.._table_gps..." />
+            <marker date="1368805467196" expanded="true" signature="74017:74046" placeholder="SELECT * FRO.._wtable..." />
+            <marker date="1368805467196" expanded="true" signature="74472:74510" placeholder="..." />
+            <marker date="1368805467196" expanded="true" signature="74590:74620" placeholder="SELECT * FRO.._wtable..." />
+            <marker date="1368805467196" expanded="true" signature="74590:74626" placeholder="SELECT * FRO..wifi_pointers..." />
+            <marker date="1368805467196" expanded="true" signature="76756:76787" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="77015:77067" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="77569:77601" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="77806:77859" placeholder="SELECT * FRO.._table..." />
+            <marker date="1368805467196" expanded="true" signature="79954:80012" placeholder="SELECT * FRO.._table_gps..." />
+            <marker date="1368805467196" expanded="true" signature="80515:80574" placeholder="SELECT * FRO.._table_gps..." />
+            <marker date="1368805467196" expanded="true" signature="86794:86832" placeholder="..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tools/daemon/lib/daemon.inc.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="25" column="53" selection-start="925" selection-end="925" vertical-scroll-proportion="-2.6153846">
+        <state line="86" column="51" selection-start="3781" selection-end="3781" vertical-scroll-proportion="0.0">
           <folding>
-            <marker date="1367887053536" expanded="true" signature="2397:2459" placeholder="SELECT * FRO..settings..." />
-            <marker date="1367887053536" expanded="true" signature="3662:3903" placeholder="INSERT INTO ..." />
-            <marker date="1367887053536" expanded="true" signature="5280:5415" placeholder="UPDATE `wifi..." />
-            <marker date="1367887053536" expanded="true" signature="6369:6448" placeholder="UPDATE `wifi..." />
-            <marker date="1367887053536" expanded="true" signature="17809:17831" placeholder="SELECT * FRO..networks..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/test_scripts/Test_convertSig2RSSI.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="17" column="0" selection-start="342" selection-end="389" vertical-scroll-proportion="-11.115385">
-          <folding>
-            <element signature="e#6#165#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/test_scripts/Test_FindHighestSig.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="19" column="37" selection-start="54867" selection-end="54867" vertical-scroll-proportion="-12.423077">
-          <folding>
-            <element signature="e#6#166#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/daemon/lib/import.inc.php">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="21" column="6" selection-start="788" selection-end="788" vertical-scroll-proportion="-1.9615384">
-          <folding>
-            <marker date="1368217608199" expanded="true" signature="3989:4048" placeholder="SELECT `id` ..files_tmp..." />
-            <marker date="1368217608199" expanded="true" signature="11833:12019" placeholder="INSERT INTO ..." />
-            <marker date="1368217608199" expanded="true" signature="13606:13660" placeholder="UPDATE `wifi..." />
-            <marker date="1368217608199" expanded="true" signature="15305:15389" placeholder="SELECT `id`,..wifi_pointers..." />
-            <marker date="1368217608199" expanded="true" signature="16525:16647" placeholder="INSERT INTO ..." />
-            <marker date="1368217608199" expanded="true" signature="18569:18626" placeholder="UPDATE `wifi..." />
-            <marker date="1368217608199" expanded="true" signature="20813:20880" placeholder="UPDATE `wifi..." />
-            <marker date="1368217608199" expanded="true" signature="21634:21711" placeholder="UPDATE `wifi..." />
-            <marker date="1368217608199" expanded="true" signature="23333:23662" placeholder="INSERT INTO ..." />
+            <marker date="1368487883231" expanded="true" signature="2432:2494" placeholder="SELECT * FRO..settings..." />
+            <marker date="1368487883231" expanded="true" signature="3307:3416" placeholder="INSERT INTO ..." />
+            <marker date="1368487883231" expanded="true" signature="4586:4633" placeholder="DELETE FROM ..." />
+            <marker date="1368487883231" expanded="true" signature="5260:5310" placeholder="DELETE FROM ..." />
+            <marker date="1368487883231" expanded="true" signature="6909:7150" placeholder="INSERT INTO ..." />
+            <marker date="1368487883231" expanded="true" signature="8612:8747" placeholder="UPDATE `wifi..." />
+            <marker date="1368487883231" expanded="true" signature="9701:9780" placeholder="UPDATE `wifi..." />
+            <marker date="1368487883231" expanded="true" signature="21409:21431" placeholder="SELECT * FRO..networks..." />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/wifidb/lib/dbcore.inc.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="795" column="66" selection-start="28758" selection-end="28758" vertical-scroll-proportion="0.6530612">
+        <state line="479" column="21" selection-start="18176" selection-end="18176" vertical-scroll-proportion="0.0">
           <folding>
-            <element signature="e#6#775#0" expanded="true" />
-            <marker date="1368217793743" expanded="true" signature="16706:16804" placeholder="INSERT INTO ..." />
+            <marker date="1369167396824" expanded="true" signature="17440:17538" placeholder="INSERT INTO ..." />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/daemon/imp_expd.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="308" column="170" selection-start="16063" selection-end="16063" vertical-scroll-proportion="0.0">
+          <folding>
+            <marker date="1369167161025" expanded="true" signature="3326:3402" placeholder="SELECT * FRO..files_tmp..." />
+            <marker date="1369167161025" expanded="true" signature="5400:5492" placeholder="UPDATE `wifi..." />
+            <marker date="1369167161025" expanded="true" signature="6290:6351" placeholder="SELECT `hash..files..." />
+            <marker date="1369167161025" expanded="true" signature="7504:7575" placeholder="SELECT `conv..files_tmp..." />
+            <marker date="1369167161025" expanded="true" signature="7941:8012" placeholder="SELECT `conv..files_tmp..." />
+            <marker date="1369167161025" expanded="true" signature="9577:9676" placeholder="INSERT INTO ..." />
+            <marker date="1369167161025" expanded="true" signature="9869:10118" placeholder="INSERT INTO ..." />
+            <marker date="1369167161025" expanded="true" signature="11171:11313" placeholder="UPDATE `wifi..." />
+            <marker date="1369167161025" expanded="true" signature="11722:11864" placeholder="UPDATE `wifi..." />
+            <marker date="1369167161025" expanded="true" signature="12862:12907" placeholder="DELETE FROM ..." />
+            <marker date="1369167161025" expanded="true" signature="13346:13391" placeholder="DELETE FROM ..." />
+            <marker date="1369167161025" expanded="true" signature="16582:16638" placeholder="UPDATE `wifi..." />
+            <marker date="1369167161025" expanded="true" signature="16870:16926" placeholder="UPDATE `wifi..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/opt/userstats.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="59" column="24" selection-start="2078" selection-end="2078" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/ver.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="187" column="131" selection-start="13777" selection-end="13880" vertical-scroll-proportion="5.6181817">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/daemon/lib/import.inc.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="552" column="56" selection-start="26863" selection-end="26863" vertical-scroll-proportion="-5.3846154">
+          <folding>
+            <marker date="1368497208024" expanded="true" signature="3625:3684" placeholder="SELECT `id` ..files_tmp..." />
+            <marker date="1368497208024" expanded="true" signature="12323:12509" placeholder="INSERT INTO ..." />
+            <marker date="1368497208024" expanded="true" signature="14028:14082" placeholder="UPDATE `wifi..." />
+            <marker date="1368497208024" expanded="true" signature="15737:15821" placeholder="SELECT `id`,..wifi_pointers..." />
+            <marker date="1368497208024" expanded="true" signature="17492:17614" placeholder="INSERT INTO ..." />
+            <marker date="1368497208024" expanded="true" signature="19535:19592" placeholder="UPDATE `wifi..." />
+            <marker date="1368497208024" expanded="true" signature="21780:21847" placeholder="UPDATE `wifi..." />
+            <marker date="1368497208024" expanded="true" signature="22601:22678" placeholder="UPDATE `wifi..." />
+            <marker date="1368497208024" expanded="true" signature="24301:24630" placeholder="INSERT INTO ..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/scheduling_done.tpl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="60" column="12" selection-start="2671" selection-end="2671" vertical-scroll-proportion="-30.307692">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/lib/init.inc.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="265" column="5" selection-start="8520" selection-end="8520" vertical-scroll-proportion="-9.5">
+          <folding>
+            <marker date="1369254438376" expanded="true" signature="1849:1903" placeholder="SELECT `tabl..settings..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/opt/scheduling.php">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="91" column="38" selection-start="4203" selection-end="4203" vertical-scroll-proportion="-12.423077">
+          <folding>
+            <marker date="1369509328969" expanded="true" signature="1867:1914" placeholder="SELECT * FRO..files..." />
+            <marker date="1369509328969" expanded="true" signature="10441:10489" placeholder="SELECT * FRO..settings..." />
+            <marker date="1369509328969" expanded="true" signature="11706:11759" placeholder="SELECT * FRO..files_tmp..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/scheduling_kml.tpl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="100" column="110" selection-start="7282" selection-end="7282" vertical-scroll-proportion="-16.346153">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/header.tpl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="94" column="55" selection-start="6189" selection-end="6189" vertical-scroll-proportion="-10.461538">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/navigation.tpl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="47" column="38" selection-start="3575" selection-end="3575" vertical-scroll-proportion="1.4448463">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/wifidb/smarty/templates/vistumbler/newhtml.tpl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="21" column="0" selection-start="814" selection-end="814" vertical-scroll-proportion="0.6307421">
+          <folding />
         </state>
       </provider>
     </entry>

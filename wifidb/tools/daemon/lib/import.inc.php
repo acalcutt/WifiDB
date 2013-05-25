@@ -100,31 +100,28 @@ class import extends wdbcli
         # We need to check and see if the file location was passed, if not fail gracefully.
         if ($source == NULL)
         {
-            $this->logd("The file that needs to be imported was not included in the import public function.");
-            $this->verbosed("The file that needs to be imported was not included in the import public function", -1);
+            $this->logd("The file that needs to be imported was not included in the import function.", "Error");
+            $this->verbosed("The file that needs to be imported was not included in the import function", -1);
             throw new ErrorException;
         }
-        $this->logd("Source File Path: ".$source);
-
-        # Open the file and dump its contents into an array.
-        
+        # Open the file and dump its contents into an array. probably should re think this part...
         $File_return     = explode("\r\n", utf8_decode(file_get_contents($source)));
-        
-        # count how many rows in the file. If it is less than or equal to 8, it is a blank file.
-        $this->logd("First row of file: ".$File_return[1]);
-        $file_rows = count($File_return);
-        $this->logd("Number of rows in file: ".$file_rows);
-        
         # get the MD5 hash for the file data.
         $hash = hash_file('md5', $source);
         
         # Now lets loop through the file and see what we have.
         $this->verbosed("Compiling data from file to array:", 3);
-        $this->logd("Compiling data from file to array:");
         $sql = "SELECT `id` FROM `wifi`.`files_tmp` WHERE `hash`= ? LIMIT 1";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $hash, PDO::PARAM_STR);
         $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->verbosed("Failed to Select The current imports ID from the temp table.".var_export($this->sql->conn->errorInfo(),1), -1);
+            $this->logd("Failed to Select The current imports ID from the temp table.".var_export($this->sql->conn->errorInfo(),1), "Error");
+            throw new ErrorException("Failed to Select The current imports ID from the temp table.".var_export($this->sql->conn->errorInfo(),1));
+        }
+
         $file_tmp_array = $prep->fetch(2);
         $file_tmp_id = $file_tmp_array['id'];
         foreach($File_return as $key => $file_line)
@@ -144,18 +141,15 @@ class import extends wdbcli
             switch($file_line_exp_count)
             {
                 case 6:
-                    #This is from an older version of the VS1 GPS data, sanatize and order it into an array.
+                    #This is from an older version of the VS1 GPS data, sanitize and order it into an array.
                     $gps_line = $file_line_exp;
-                    $gpsdate = date($this->date_format, strtotime($gps_line[10]));
-
                     if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
                     if($gps_line[0] == 0){$increment_ids = 1;}
                     if($increment_ids){$gps_line[0]++;}
-
                     $gdata[$gps_line[0]] = array(
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $gps_line[1],
-                                'long'	=>  $gps_line[2],
+                                'lat'	=>  $this->convert_dd_dm($gps_line[1]),
+                                'long'	=>  $this->convert_dd_dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'   =>  '0',
                                 'alt'   =>  '0',
@@ -163,22 +157,20 @@ class import extends wdbcli
                                 'kmh'   =>  '0',
                                 'mph'   =>  '0',
                                 'track' =>  '0',
-                                'date'	=>  $gpsdate,
+                                'date'	=>  $gps_line[4],
                                 'time'	=>  $gps_line[5]
                     );
                     break;
                 case 12:
-                    #This is the current version of the VS1 export, sanatize and order it into an array.
+                    #This is the current version of the VS1 export, sanitize and order it into an array.
                     $gps_line = $file_line_exp;
-                    $gpsdate = date($this->date_format, strtotime($gps_line[10]));
-
                     if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
                     if($gps_line[0] == 0){$increment_ids = 1;}
                     if($increment_ids){$gps_line[0]++;}
                     $gdata[$gps_line[0]] = array(
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $gps_line[1],
-                                'long'	=>  $gps_line[2],
+                                'lat'	=>  $this->convert_dd_dm($gps_line[1]),
+                                'long'	=>  $this->convert_dd_dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'	=>  (float) $gps_line[4],
                                 'alt'	=>  (float) $gps_line[5],
@@ -186,16 +178,16 @@ class import extends wdbcli
                                 'kmh'	=>  (float) $gps_line[7],
                                 'mph'	=>  (float) $gps_line[8],
                                 'track'	=>  (float) $gps_line[9],
-                                'date'	=>  $gpsdate,
+                                'date'	=>  $gps_line[10],
                                 'time'	=>  $gps_line[11]
                             );
                     break;
                 case 13:
-                    #This is to generate a sanitized and ordered array for each AP.
+                    #This is to generate a sanitized and ordered array for each AP from the old VS1 format.
                     $ap_line = $file_line_exp;
                     if(!$this->validateMacAddress($ap_line[1]))
                     {
-                        $this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.");
+                        $this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.", -1);
                         break;
                     }
 
@@ -222,11 +214,11 @@ class import extends wdbcli
                     $this->rssi_signals_flag = 0;
                     break;
                 case 15:
-                    #This is to generate a sanitized and ordered array for each AP.
+                    #This is to generate a sanitized and ordered array for each AP from the new VS1 format.
                     $ap_line = $file_line_exp;
                     if(!$this->validateMacAddress($ap_line[1]))
                     {
-                        $this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.");
+                        $this->verbosed("MAC Address for the AP SSID of `{$ap_line[0]}` was not valid, dropping AP.");
                         break;
                     }
                     $apdata[] = array(
@@ -252,7 +244,7 @@ class import extends wdbcli
                 
                 default:
                     echo "--------------------------------\r\n";
-                    $this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1));
+                    $this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1), "Error");
                     $this->verbosed($file_line_exp_count."\r\nummm.... thats not supposed to happen... :/\r\n", -1);
                     throw new ErrorException("Error parsing File.\r\n".var_export($file_line_alt, 1));
                     #$this->mail->mail_admins();
@@ -260,23 +252,32 @@ class import extends wdbcli
             }
             $r = $this->RotateSpinner($r);
         }
+        if(count($apdata) === 0)
+        {
+            $this->verbosed("File did not have an valid AP data, dropping file. $source from user: $user.", -1);
+            $this->logd("File did not have an valid AP data, dropping file. $source from user: $user.", "Warning");
+            return -1;
+        }
+        if(count($gdata) === 0)
+        {
+            $this->verbosed("File did not have an valid GPS data, dropping file. $source from user: $user.", -1);
+            $this->logd("File did not have an valid GPS data, dropping file. $source from user: $user.", "Warning");
+            return -1;
+        }
+
         $vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);
         $ap_count = count($vs1data['apdata']);
         $gps_count = count($vs1data['gpsdata']);
         
-        $this->verbosed("Importing GPS data [$gps_count]:");
-        $this->logd("Importing GPS data [$gps_count].");
-        $this->logd("GPS: ".$gps_count." | APS: ".$ap_count);
-        
+        $this->verbosed("Importing GPS data [$gps_count]", 2);
         foreach($vs1data['gpsdata'] as $key=>$gps)
         {
-            $lat = $this->convert_dd_dm($gps['lat']);
-            $long = $this->convert_dd_dm($gps['long']);
             $sql = "INSERT INTO `wifi`.`wifi_gps` ( `id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
                     VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
             $prep = $this->sql->conn->prepare($sql);
-            $prep->bindParam(1,$lat, PDO::PARAM_STR);
-            $prep->bindParam(2,$long, PDO::PARAM_STR);
+
+            $prep->bindParam(1,$gps['lat'], PDO::PARAM_STR);
+            $prep->bindParam(2,$gps['long'], PDO::PARAM_STR);
             $prep->bindParam(3,$gps['sats'],PDO::PARAM_INT);
             $prep->bindParam(4,$gps['hdp'],PDO::PARAM_STR);
             $prep->bindParam(5,$gps['alt'],PDO::PARAM_STR);
@@ -287,20 +288,17 @@ class import extends wdbcli
             $prep->bindParam(10,$gps['date'],PDO::PARAM_STR);
             $prep->bindParam(11,$gps['time'],PDO::PARAM_STR);
             $prep->execute();
-            if($this->sql->checkError() === 0)
-            {
-                $vs1data['gpsdata'][$key]['import_id'] = $this->sql->conn->lastInsertId();
-            }else
+            if($this->sql->checkError())
             {
                 $this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
-                $this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
+                $this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
                 throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
             }
-            $r = $this->RotateSinner($r);
+            $vs1data['gpsdata'][$key]['import_id'] = $this->sql->conn->lastInsertId();
+            $r = $this->RotateSpinner($r);
         }
         
-        $this->verbosed("Importing AP Data [$ap_count]:");
-        $this->logd("Importing AP Data [$ap_count]");
+        $this->verbosed("Importing AP Data [$ap_count]:", 2);
         $imported_aps = array();
         
         foreach($vs1data['apdata'] as $key=>$aps)
@@ -314,7 +312,7 @@ class import extends wdbcli
             if($this->sql->checkError() !== 0)
             {
                 $this->verbosed("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
-                $this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                $this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
                 throw new ErrorException("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
             }
 
@@ -338,12 +336,18 @@ class import extends wdbcli
             CHAN:  {$chan} | SECTYPE: {$aps['sectype']}
             RADIO: {$radio}| AUTH: {$aps['auth']}
             ENCRY: {$encry}| APHASH:".$ap_hash, 1);
-            $this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
+            #$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
 
             $sql = "SELECT `id`, `signals`, `LA` FROM `wifi`.`wifi_pointers` WHERE `ap_hash` = ? LIMIT 1";
             $res = $this->sql->conn->prepare($sql);
             $res->bindParam(1, $ap_hash, PDO::PARAM_STR);
             $res->execute();
+            if($this->sql->checkError() !== 0)
+            {
+                $this->verbosed("Failed to select previous signals list, last active time and id from the pointers table".var_export($this->sql->conn->errorInfo(),1), -1);
+                $this->logd("Failed to select previous signals list, last active time and id from the pointers table.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                throw new ErrorException("Failed to select previous signals list, last active time and id from the pointers table.\r\n".var_export($this->sql->conn->errorInfo(),1));
+            }
             $fetch = $res->fetch(2);
             if($fetch['id'])
             {
@@ -375,7 +379,6 @@ class import extends wdbcli
             $FA = 0;
 
             $this->verbosed("Starting Import of Wifi Signal... ", 1);
-            $this->logd("Starting Import of Wifi Signal... ");
             $sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
             $preps = $this->sql->conn->prepare($sql);
 
@@ -387,7 +390,7 @@ class import extends wdbcli
                 $signal = $sig_gps_exp[1];
                 if(!@$sig_gps_exp[2])
                 {
-                    $rssi   =  $this->convertSig2RSSI($sig_gps_exp[1]);
+                    $rssi   =  $this->convertSig2dBm($sig_gps_exp[1]);
                 }else
                 {
                     $rssi = $sig_gps_exp[2];
@@ -442,7 +445,7 @@ class import extends wdbcli
             if(count($compile_sig) < 1 )
             {
                 $this->verbosed("This AP has No vaild GPS in the file, this means a corrupted file. APs with corrupted data will not have signal data until there is valid GPS data.", -1);
-                $this->logd("This AP has No vaild GPS in the file, this means a corrupted file. APs with corrupted data will not have signal data until there is valid GPS data.");
+                #$this->logd("This AP has No vaild GPS in the file, this means a corrupted file. APs with corrupted data will not have signal data until there is valid GPS data.");
                 $FA_time = date("Y-m-d H:i:s");
                 $LA_time = date("Y-m-d H:i:s");
             }else
@@ -494,7 +497,7 @@ class import extends wdbcli
                     }
                 }
                 $this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
-                $this->logd("Updated AP Pointer. {".$prev_id."}");
+                #$this->logd("Updated AP Pointer. {".$prev_id."}");
                 $imported_aps[] = $prev_id.":1";
             }else
             {
@@ -538,8 +541,7 @@ class import extends wdbcli
                 $prep->bindParam(21, $rssi_high, PDO::PARAM_INT);
                 $prep->bindParam(22, $sig_high, PDO::PARAM_INT);
                 $prep->execute();
-                $err = $this->sql->conn->errorCode();
-                if($err != "00000")
+                if($this->sql->checkError())
                 {
                     $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
                     $this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
@@ -548,8 +550,8 @@ class import extends wdbcli
                 else
                 {
                     $imported_aps[] = $this->sql->conn->lastInsertId().":0";
-                    $this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()." of $ap_count}.", 2);
-                    $this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
+                    $this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
+                    #$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
                 }
             }
             $this->export->exportCurrentAPkml();

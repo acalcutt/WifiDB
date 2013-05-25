@@ -39,7 +39,7 @@ class export extends dbcore
             12=>'December',
         );
         $this->ver_array['export'] = array(
-            "last_edit"             =>  "06-05-2013",
+            "last_edit"             =>  "12-05-2013",
             "ExportAll"             =>  "2.0",
             "ExportAllDaily"        =>  "1.0",
             "ExportSingleAP"        =>  "1.0",
@@ -64,12 +64,11 @@ class export extends dbcore
     {
         $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `lat` != 'N 00' ORDER by `id` ASC";
         $result = $this->sql->conn->query($sql);
-        $err = $this->sql->conn->errorCode();
-        if($err !== "00000")
-        {
 
+        if($this->sql->checkError())
+        {
             $this->verbosed("There was an error running the SQL");
-            throw new ErrorException("There was an error running the SQL".var_export($err, 1));
+            throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
         }
         $NN = $result->rowCount();
         $this->verbosed("APs with GPS: ".$NN);
@@ -290,15 +289,18 @@ class export extends dbcore
     public function ExportAllDaily()
     {
         $date = date($this->date_format);
-        $select_daily = "SELECT `id`,`points` FROM `wifi`.`user_imports` WHERE `date` LIKE ?";
+        $date_search = $date."%";
+        $select_daily = "SELECT `id` , `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `date` LIKE ?";
         $prep = $this->sql->conn->prepare($select_daily);
-        $prep->execute(array(date("Y-m-d")));
-        $err = $this->sql->conn->errorCode();
-        if($err !== "00000")
+        $prep->bindParam(1, $date_search, PDO::PARAM_STR);
+        $prep->execute();
+
+        if($this->sql->checkError())
         {
-            $this->verbosed("There was an error running the SQL");
+            $this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
+            Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
         }
-        if(!$prep->rowCount())
+        if($prep->rowCount() < 1)
         {
             return -1;
         }
@@ -313,25 +315,35 @@ class export extends dbcore
             $labeled = "";
         }
         $fetch_imports = $prep->fetchAll();
+
         $NN = 0;
+        $imports = array();
+
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `id` = ?";
+        $result = $this->sql->conn->prepare($sql);
         foreach($fetch_imports as $import)
         {
-            $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `id` = ?";
-            $result = $this->sql->conn->prepare($sql);
-            $result->execute(array($import['id']));
-            $fetch = $result->fetchAll();
-            
-            $NN =+ $result->rowCount();
-
-            $Odata = "";
-            $Wdata = "";
-            $Sdata = "";
             $open_count = 0;
             $wep_count = 0;
             $sec_count = 0;
+            $Odata = "";
+            $Wdata = "";
+            $Sdata = "";
 
-            foreach($fetch as $array)
+            $stage_pts = explode("-", $import['points']);
+            foreach($stage_pts as $point)
             {
+                $data = explode(":", $point);
+                $result->bindParam(1, $data[1], PDO::PARAM_INT);
+                $result->execute();
+
+                if($this->sql->checkError())
+                {
+                    $this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
+                    Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
+                }
+                $array = $result->fetch();
+                $NN++;
                 $ssid = preg_replace('/[\x00-\x1F\x7F]/', '', $array['ssid']);
 
                 $lat = $this->convert_dm_dd($array['lat']);
@@ -433,7 +445,29 @@ class export extends dbcore
                         break;
                 }
             }
+
+            $imports[] = "<Folder>
+                <name>$usernam - $title</name>
+                    <Folder>
+                        <name>Open Access Points</name>
+                        <description>APs: ".$open_count."</description>
+                            ".$Odata."
+                    </Folder>
+                    <Folder>
+                        <name>WEP Access Points</name>
+                        <description>APs: ".$wep_count."</description>
+                            ".$Wdata."
+                    </Folder>
+                    <Folder>
+                        <name>Secure Access Points</name>
+                        <description>APs: ".$sec_count."</description>
+                            ".$Sdata."
+                    </Folder>
+            </Folder>";
+
         }
+
+        $all_imports = implode("\r\n\t\t\t", $imports);
         $daily_folder = $this->PATH.'out/daemon/'.date($this->date_format);
         if(!@file_exists($daily_folder))
         {
@@ -441,8 +475,11 @@ class export extends dbcore
             if(!@mkdir($daily_folder))
             {
                 $this->verbosed("Error making new daily export folder...", -1);
+                Throw new ErrorException("Error Making new Daily Export Folder. - ".$php_errormsg." - ".$daily_folder);
             }
         }
+
+
         $full_kml_file = $daily_folder."/daily_db".$labeled.".kml";
         $this->verbosed("Writing the Daily KML File: ".$full_kml_file);
         file_put_contents($full_kml_file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
@@ -480,26 +517,9 @@ class export extends dbcore
             </LineStyle>
         </Style>
         <Folder>
-            <name>Access Points</name>
+            <name>WiFiDB Daily Imports</name>
             <description>APs: ".$NN."</description>
-            <Folder>
-                <name>WiFiDB Access Points</name>
-                    <Folder>
-                        <name>Open Access Points</name>
-                        <description>APs: ".$open_count."</description>
-                            ".$Odata."
-                    </Folder>
-                    <Folder>
-                        <name>WEP Access Points</name>
-                        <description>APs: ".$wep_count."</description>
-                            ".$Wdata."
-                    </Folder>
-                    <Folder>
-                        <name>Secure Access Points</name>
-                        <description>APs: ".$sec_count."</description>
-                            ".$Sdata."
-                    </Folder>
-            </Folder>
+            $all_imports
         </Folder>
      </Document>
 </kml>");
@@ -508,13 +528,14 @@ class export extends dbcore
         $this->verbosed("Starting to compress the KML to a KMZ.");
         if($this->CreateKMZ($daily_folder.'/daily_db'.$labeled.'.kml'))
         {
-            $this->verbosed("Failed to compress the Daily KMZ file :(");
+            $this->verbosed("Failed to compress the Daily KMZ file :(", -1);
+            Throw New ErrorException("Failed to compress the Daily KMZ file :(");
         }
         @link($daily_folder.'/daily_db'.$labeled.'.kmz', $this->PATH.'out/daemon/daily_db'.$labeled.'.kmz');
 
 
-        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0750);
-        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kml', 0750);
+        chmod($daily_folder.'/daily_db'.$labeled.'.kml', 0750);
+        chmod($this->PATH.'out/daemon/daily_db'.$labeled.'.kml', 0750);
 
         return $daily_folder;
     }
@@ -799,7 +820,7 @@ class export extends dbcore
         fwrite($fileappend, $file_data);
         fclose($fileappend);
 
-        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0750);
+        #chmod($daily_folder.'/full_db'.$labeled.'.kml', 0750);
 
         return 1;
     }
@@ -1279,6 +1300,8 @@ class export extends dbcore
 
     /*
      * Export to Vistumbler VS1 File
+     *
+     * TODO: NEEDS TO BE RE-WRITTEN
      */
     public function exp_vs1($export = "", $user = "", $row = 0, $screen = "HTML")
     {
@@ -1288,7 +1311,7 @@ class export extends dbcore
         {
                 case "exp_user_all":
                         if($screen == "HTML"){echo '<table><tr class="style4"><th style="border-style: solid; border-width: 1px">Start Export Of $user</th></tr>';}
-                        $sql_		= "SELECT * FROM `$db`.`$users_t` WHERE `username` = '$user' ORDER by `id` ASC";
+                        $sql_		= "SELECT * FROM `wifi`.`$users_t` WHERE `username` = '$user' ORDER by `id` ASC";
                         $result_2	= mysql_query($sql_, $conn) or die(mysql_error($conn));
                         echo "Rows: ".mysql_num_rows($result_2)."\r\n";
                         $username = $list_array['username'];
@@ -1308,7 +1331,7 @@ class export extends dbcore
                                         $pnt = explode(":", $point_exp[1]);
                                         $rows = $pnt[1];
                                         $APID = $pnt[0];
-                                        $sql_1	= "SELECT * FROM `$db`.`$wtable` WHERE `id` = '$APID' LIMIT 1";
+                                        $sql_1	= "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$APID' LIMIT 1";
                                         $result_1	= mysql_query($sql_1, $conn) or die(mysql_error($conn));
                                         $ap_array = mysql_fetch_array($result_1);
                                         #var_dump($ap_array);
@@ -1356,7 +1379,7 @@ class export extends dbcore
                                 #	$ssid_f = $ssid_array[1];
                                 #	$ssid = $ssid_array[2];
                                         $table	=	$ssid_t.'-'.$ap_array['mac'].'-'.$ap_array['sectype'].'-'.$ap_array['radio'].'-'.$ap_array['chan'];
-                                        $sql1 = "SELECT * FROM `$db_st`.`$table` WHERE `id` = '$rows'";
+                                        $sql1 = "SELECT * FROM `wifi_st`.`$table` WHERE `id` = '$rows'";
                                         $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
                                         $newArray = mysql_fetch_array($result1);
 #					echo $nn."<BR>";
@@ -1394,7 +1417,7 @@ class export extends dbcore
                                                 $sig_exp = explode(",", $val);
                                                 $gps_id	= $sig_exp[0];
 
-                                                $sql1 = "SELECT * FROM `$db_st`.`$table_gps` WHERE `id` = '$gps_id'";
+                                                $sql1 = "SELECT * FROM `wifi_st`.`$table_gps` WHERE `id` = '$gps_id'";
                                                 $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
                                                 $gps_table = mysql_fetch_array($result1);
                                                 $gps_array[$n]	=	array(
@@ -1422,7 +1445,7 @@ class export extends dbcore
                 break;
 
                 case "exp_user_list":
-                        $sql_		= "SELECT * FROM `$db`.`$users_t` WHERE `id` = '$row' LIMIT 1";
+                        $sql_		= "SELECT * FROM `wifi`.`$users_t` WHERE `id` = '$row' LIMIT 1";
                         $result_1	= mysql_query($sql_, $conn) or die(mysql_error($conn));
                         $list_array = mysql_fetch_array($result_1);
                         if($list_array["points"] == ''){$return = array(0=>0, 1=>"Empty return"); return $return;}
@@ -1441,7 +1464,7 @@ class export extends dbcore
                                 $pnt = explode(":", $point_exp[1]);
                                 $rows = $pnt[1];
                                 $APID = $pnt[0];
-                                $sql_1	= "SELECT * FROM `$db`.`$wtable` WHERE `id` = '$APID' LIMIT 1";
+                                $sql_1	= "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$APID' LIMIT 1";
                                 $result_1	= mysql_query($sql_1, $conn) or die(mysql_error($conn));
                                 $ap_array = mysql_fetch_array($result_1);
                                 #var_dump($ap_array);
@@ -1489,7 +1512,7 @@ class export extends dbcore
                         #	$ssid_f = $ssid_array[1];
                         #	$ssid = $ssid_array[2];
                                 $table	=	$ssid_t.'-'.$ap_array['mac'].'-'.$ap_array['sectype'].'-'.$ap_array['radio'].'-'.$ap_array['chan'];
-                                $sql1 = "SELECT * FROM `$db_st`.`$table` WHERE `id` = '$rows'";
+                                $sql1 = "SELECT * FROM `wifi_st`.`$table` WHERE `id` = '$rows'";
                                 $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
                                 $newArray = mysql_fetch_array($result1);
 #					echo $nn."<BR>";
@@ -1528,7 +1551,7 @@ class export extends dbcore
                                         $sig_exp = explode(",", $val);
                                         $gps_id	= $sig_exp[0];
 
-                                        $sql1 = "SELECT * FROM `$db_st`.`$table_gps` WHERE `id` = '$gps_id'";
+                                        $sql1 = "SELECT * FROM `wifi_st`.`$table_gps` WHERE `id` = '$gps_id'";
                                         $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
                                         $gps_table = mysql_fetch_array($result1);
                                         $gps_array[$n]	=	array(
@@ -1558,7 +1581,7 @@ class export extends dbcore
                         $n	=	1;
                         $nn	=	1; # AP Array key
                         if($screen == "HTML"){echo '<table><tr class="style4"><th style="border-style: solid; border-width: 1px">Start of WiFi DB export to VS1</th></tr>';}
-                        $sql_		= "SELECT * FROM `$db`.`$wtable`";
+                        $sql_		= "SELECT * FROM `wifi`.`wifi_pointers`";
                         $result_	= mysql_query($sql_, $conn) or die(mysql_error($conn));
                         while($ap_array = mysql_fetch_array($result_))
                         {
@@ -1602,11 +1625,11 @@ class export extends dbcore
                                 $ssid_edit = html_entity_decode($ap_array['ssid']);
                                 list($ssid_t, $ssid_f, $ssid)  = make_ssid($ssid_edit);
                                 $table	=	$ssid_t.'-'.$ap_array['mac'].'-'.$ap_array['sectype'].'-'.$ap_array['radio'].'-'.$ap_array['chan'];
-                                $sql	=	"SELECT * FROM `$db_st`.`$table`";
+                                $sql	=	"SELECT * FROM `wifi_st`.`$table`";
                                 $result	=	mysql_query($sql, $conn) or die(mysql_error($conn));
                                 $rows	=	mysql_num_rows($result);
 
-                                $sql1 = "SELECT * FROM `$db_st`.`$table` WHERE `id` = '$rows'";
+                                $sql1 = "SELECT * FROM `wifi_st`.`$table` WHERE `id` = '$rows'";
                                 $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
                                 $newArray = mysql_fetch_array($result1);
 #					echo $nn."<BR>";
@@ -1643,7 +1666,7 @@ class export extends dbcore
                                         $sig_exp = explode(",", $sign);
                                         $gps_id	= $sig_exp[0];
 
-                                        $sql1 = "SELECT * FROM `$db_st`.`$table_gps` WHERE `id` = '$gps_id'";
+                                        $sql1 = "SELECT * FROM `wifi_st`.`$table_gps` WHERE `id` = '$gps_id'";
                                         $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
                                         $gps_table = mysql_fetch_array($result1);
                                         $gps_array[$n]	=	array(

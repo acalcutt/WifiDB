@@ -91,14 +91,14 @@ if not, write to the
                                                         {$wifidb_kml.file}
                                                     </td>
                                                     <td width="33%">
-                                                        <a class="links" href="{$wifidb_kml.file_url}">{$wifidb_kml.file_name}</a> - {$wifidb_kml.full_size}
+                                                        <a class="links" href="{$wifidb_kml.file_url}">Non-Labeled SSIDs</a> - {$wifidb_kml.full_size}
                                                         <br/>
-                                                        <a class="links" href="{$wifidb_kml.file_label_url}">{$wifidb_kml.file_label_name}</a> - {$wifidb_kml.full_size_label}
+                                                        <a class="links" href="{$wifidb_kml.file_label_url}">Labeled SSIDs</a> - {$wifidb_kml.full_size_label}
                                                     </td>
                                                     <td width="33%">
-                                                        <a class="links" href="{$wifidb_kml.daily_url}">{$wifidb_kml.daily_name}</a> - {$wifidb_kml.daily_size}
+                                                        <a class="links" href="{$wifidb_kml.daily_url}">Non-Labeled SSIDs</a> - {$wifidb_kml.daily_size}
                                                         <br/>
-                                                        <a class="links" href="{$wifidb_kml.daily_label_url}">{$wifidb_kml.daily_label_name}</a> - {$wifidb_kml.daily_size_label}
+                                                        <a class="links" href="{$wifidb_kml.daily_label_url}">Labeled SSIDs</a> - {$wifidb_kml.daily_size_label}
                                                     </td>
                                                 </tr>
                                             </table>

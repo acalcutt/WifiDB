@@ -49,7 +49,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30 Build 1</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Date: 2012-Apr-04</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 05-21-2013</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26">Changes :</td>
@@ -64,7 +64,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                                 <li>Re-wrote the core of WiFiDB. All pages start off by calling <i>/lib/init.inc.php</i>, this sets up the environment,
                                         checks to see if the database is in the correct state, and then starts doing what the user asked.</li>
                                 <ol>
-                                    <li><i>$dbcore</i> The main Object that everything gets attached too.</li>
+                                    <li><i>$dbcore</i> The main Object that everything gets attached to.</li>
                                     <ol>
                                         <li>Core object variables include file system paths to library's, URL paths, and the current theme for the user, and any other system wide items like the manufactures list.</li>
                                         <li>SQL Object ($dbcore->sql)</li>
@@ -95,7 +95,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                                             </ol>
                                     </ol>
                                 </ol>
-                                <li>Fixed lots of WTF moments in the code, which includes increasing the speed of the imports by, well... alot. 
+                                <li>Fixed lots of WTF moments in the code, which includes increasing the speed of the imports by, well... a whole lot. I can not import all 240k AP's in just over 8hrs, versus the 5 days it was taking on the old code.
                                     By no longer checking for duplicate GPS points on import.</li>
                                 <li>Added a globe icon for APs that have GPS, APs that do not have GPS have a grayed out globe.</li>
                                 <li>Fixed errors with handling UTF8 characters.</li>
@@ -185,7 +185,7 @@ $dbcore->smarty->smarty->display('header.tpl');
 						<LI>Fixed an error in the converter function, was not telling it the location to write the file, resulted in a file being imported, but not saved to the disc.</LI>
 						<LI>Fixed a bug in the import page, when there was an unsupported file being uploaded an Email was sent out. This is no longer done.</li>
 						<LI>The Last import date on the main page was changing even when the import had finished.</LI>
-						<LI>The console viewer had an error with some modifications that i made, and didnt fix before the release.</LI>
+						<LI>The console viewer had an error with some modifications that I made, and didn't fix before the release.</LI>
 						<LI>Some small HTML tag issues are fixed.</LI>
 					</OL>
 					</LI>

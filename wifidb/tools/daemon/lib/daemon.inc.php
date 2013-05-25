@@ -46,6 +46,9 @@ class daemon extends wdbcli
                                     );
     }
 ####################
+    /**
+     * @return int
+     */
     public function CheckDaemonKill()
     {
         $D_SQL = "SELECT * FROM `wifi`.`settings` WHERE `table` = 'daemon_state'";
@@ -62,7 +65,84 @@ class daemon extends wdbcli
             return 0;
         }
     }
+
+    function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "")
+    {
+        if($user === "")
+        {
+            throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
+        }
+        $multi_user = explode(";", $user);
+        $rows = array();
+        $n = 0;
+        # Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
+        $sql = "INSERT INTO `wifi`.`user_imports` ( `id` , `username` , `notes` , `title`, `hash`) VALUES ( NULL, ?, ?, ?, ?)";
+        $prep = $this->sql->conn->prepare($sql);
+        foreach($multi_user as $muser)
+        {
+            if ($muser === ""){continue;}
+            $prep->bindParam(1, $muser, PDO::PARAM_STR);
+            $prep->bindParam(2, $notes, PDO::PARAM_STR);
+            $prep->bindParam(3, $title, PDO::PARAM_STR);
+            $prep->bindParam(4, $hash, PDO::PARAM_STR);
+            $prep->execute();
+
+            if($this->sql->checkError())
+            {
+                $this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
+                $this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
+                Throw new ErrorException;
+            }
+            $n++;
+            $rows[$n] = $this->sql->conn->lastInsertId();
+            $this->logd("User ($muser) import row: ".$rows[$n]);
+            $this->verbosed("User ($muser) import row: ".$rows[$n]);
+        }
+        return $rows;
+    }
+
+    /**
+     * @param int $row
+     * @param string $username
+     */
+    function cleanBadImport($hash = "")
+    {
+        $sql1 = "DELETE FROM `wifi`.`files_tmp` WHERE `hash` = ?";
+        $prep = $this->sql->conn->prepare($sql1);
+        $prep->bindParam(1, $hash, PDO::PARAM_STR);
+        $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->verbosed("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1), -1);
+            $this->logd("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1));
+            throw new ErrorException("Failed to remove bad file from the tmp table.");
+        }else
+        {
+            $this->verbosed("Cleaned file from the Temp table.");
+        }
+
+        $sql1 = "DELETE FROM `wifi`.`user_imports` WHERE `hash` = ?";
+        $prep = $this->sql->conn->prepare($sql1);
+        $prep->bindParam(1, $hash, PDO::PARAM_STR);
+        $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->verbosed("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1), -1);
+            $this->logd("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1));
+            throw new ErrorException("Failed to remove bad file from the tmp table.");
+        }else
+        {
+            $this->verbosed("Cleaned file from the User Import table.");
+        }
+    }
+
 ####################
+    /**
+     * @param $file
+     * @param $file_names
+     * @return int
+     * @throws ErrorException
+     */
     public function insert_file($file, $file_names)
     {
         $source = $this->PATH.'import/up/'.$file;
@@ -115,7 +195,12 @@ class daemon extends wdbcli
     }
 ####################
 
-    
+
+    /**
+     * @param $file
+     * @param $remove_file
+     * @return int|string
+     */
     public function convert_logic($file, $remove_file)
     {
         $source = $this->PATH.'import/up/'.str_replace("%20", " ", $file);
@@ -162,7 +247,11 @@ class daemon extends wdbcli
         }
         return $dest_name;
     }
-    
+
+    /**
+     * @param string $source
+     * @return bool|string
+     */
     public function convert2vs1($source='')
     {
         if($source == ''){return FALSE;}
@@ -196,7 +285,11 @@ class daemon extends wdbcli
             return $data;
         }
     }
-    
+
+    /**
+     * @param $source
+     * @return string
+     */
     public function extractVSZ($source)
     {
         $dir = $this->PATH."import/up/";
@@ -219,7 +312,10 @@ class daemon extends wdbcli
         rename($extract_path."/data.vs1", $extract_path."/$folder.vs1");
         return $folder."/$folder.vs1";
     }
-    
+
+    /**
+     * @param $source
+     */
     public function txt2vs1($source)
     {
         $apdata = array();
@@ -327,7 +423,11 @@ class daemon extends wdbcli
             }
         }
     }
-    
+
+    /**
+     * @param $source
+     * @return array
+     */
     public function csv2vs1($source)
     {
         $apdata = array();
@@ -408,7 +508,11 @@ class daemon extends wdbcli
         $data = array($apdata1, $gpsdata);
         return $data;
     }
-    
+
+    /**
+     * @param $source
+     * @return array
+     */
     public function db32vs1($source)
     {
         $apdata = array();
@@ -602,7 +706,12 @@ class daemon extends wdbcli
         $data = array($apdata, $gpsdata);
         return $data;
     }
-    
+
+    /**
+     * @param $converted
+     * @param $data
+     * @return string
+     */
     public function WriteConvertFile($converted, $data)
     {
         $dir = $this->PATH.'import/up/convert/';
@@ -683,7 +792,11 @@ class daemon extends wdbcli
         return $filename;
     }
 ####################
-    
+
+    /**
+     * @param $argv
+     * @return array
+     */
     function parseArgs($argv)
     {
         array_shift($argv);

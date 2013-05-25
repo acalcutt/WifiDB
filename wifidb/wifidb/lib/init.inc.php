@@ -20,7 +20,8 @@ if not, write to the
 */
 // Show all error's with strict santex
 //***DEV USE ONLY***
-error_reporting(E_ALL | E_STRICT); 
+ini_set('display_errors', 1);
+error_reporting(E_ALL && E_STRICT && E_WARNING && E_NOTICE);
 ini_set("screen.enabled", TRUE);
 //
 
@@ -32,54 +33,50 @@ $config = array();
 
 if(!require('config.inc.php'))
 {
-    if(@WIFIDB_INSTALL_FLAG != "installing")
-    {
-        $error = 1;
-        $error_msg = 'There was no config file found. You will need to install WiFiDB first.<br>
-            Please go to /[WiFiDB ROOT]/install/index2.php (The install page) to do that.';
-    }
+    $error = 1;
+    $error_msg = 'There was no config file found. You will need to install WiFiDB first.<br>
+Please go to /[WiFiDB ROOT]/install/index2.php (The install page) to do that.';
+
 }else
 {
-    if(@WIFIDB_INSTALL_FLAG != "installing")
+    if(strtolower(SWITCH_SCREEN) == "cli")
     {
-        if(strtolower(SWITCH_SCREEN) == "cli")
-        {
-            require $daemon_config['wifidb_install'].'/lib/config.inc.php' ;
-        }else
-        {
-            require 'config.inc.php' ;
-        }
-        $dsn = $config['srvc'].':host='.$config['host'];
-        $options = array(
-            PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
-        );
-        
-        $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-        
-        $sql = "SELECT `table` FROM `wifi`.`settings` WHERE `id` = '1'";
-        $res = $conn->query($sql);
-        $fetch = $res->fetch(2);
-
-        unset($res);
-        unset($conn);
-        if($fetch['table'] != 'nextruntime')
-        {
-            $cwd = getcwd().'/';
-            $gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
-            if($cwd != $gen_cwd)
-            {
-                $error =1;
-                $error_msg = 'The database is still in an old format, you will need to do an upgrade first.<br>
-                    If this database is older than Version 0.20 I would do a <a href="/'.$config['hosturl'].$config['root'].'/install/">Full Fresh Install</a>, After making a backup of all your data.</br>
-                    Please go <a href="/'.$config['hosturl'].$config['root'].'/install/upgrade/index.php">/[WiFiDB]/install/upgrade/index.php</a> to do that.';
-            }
-        }
-        unset($fetch);
-        unset($gen_cwd);
-        unset($cwd);
-        unset($sql);
+        require $daemon_config['wifidb_install'].'/lib/config.inc.php' ;
+    }else
+    {
+        require 'config.inc.php' ;
     }
+    $dsn = $config['srvc'].':host='.$config['host'];
+    $options = array(
+        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+    );
+
+    $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+
+    $sql = "SELECT `table` FROM `wifi`.`settings` WHERE `id` = '1'";
+    $res = $conn->query($sql);
+    $fetch = $res->fetch(2);
+
+    unset($res);
+    unset($conn);
+    if($fetch['table'] != 'nextruntime')
+    {
+        $cwd = getcwd().'/';
+        $gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
+        if($cwd != $gen_cwd)
+        {
+            $error =1;
+            $error_msg = 'The database is still in an old format, you will need to do an upgrade first.<br>
+                If this database is older than Version 0.20 I would do a <a href="/'.$config['hosturl'].$config['root'].'/install/">Full Fresh Install</a>, After making a backup of all your data.</br>
+                Please go <a href="/'.$config['hosturl'].$config['root'].'/install/upgrade/index.php">/[WiFiDB]/install/upgrade/index.php</a> to do that.';
+        }
+    }
+    unset($fetch);
+    unset($gen_cwd);
+    unset($cwd);
+    unset($sql);
 }
+
 if($error)
 {
     define('WWW_DIR', $this->PATH);
@@ -109,14 +106,17 @@ if(strtolower(SWITCH_SCREEN) != "cli")
  */
 function __autoload($class)
 {
-    if(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php')
+    if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
     {
+        include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
         return 1;
-    }elseif(@include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php')
+    }elseif(file_exists($GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php'))
     {
+        include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php';
         return 1;
-    }elseif(@include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php')
+    }elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
     {
+        include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
         return 1;
     }else
     {
@@ -208,7 +208,6 @@ catch (Exception $e) {
     exception_handler($e);
 }
 
-
 function exception_handler($err)
 { 
     $trace = array();
@@ -225,7 +224,6 @@ function exception_handler($err)
                     {
                         $trace[$a] = array(strval($a), $e, $f);
                     }
-
                 }
             } else {
                 $trace[$a] = array(strval($a),$c,$d);
@@ -233,7 +231,7 @@ function exception_handler($err)
         }
     }
     $trace['main'] = array( 'Error' =>strval($err->getCode()), 'Message'=>$err->getMessage(),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
-    #var_dump($trace);
+    var_dump($trace);
     exit();
 }
 

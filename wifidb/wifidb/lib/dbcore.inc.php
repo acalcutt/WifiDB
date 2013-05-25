@@ -435,34 +435,59 @@ class dbcore
             $time = date("H:i:s.").$utime[1];
             $datetime = $date." ".$time;
             $message = $datetime."   ->    ".$message."\r\n"; #append the date and time to the log message.
-            
-            $sql = "INSERT INTO `wifi`.`log` (`id`, `message`, `level`, `timestamp`, `prefix`) VALUES ('', ?, ?, ?, ?)";
-            $prep = $this->sql->conn->prepare($sql);
-            $prep->bindParam(1, $message, PDO::PARAM_STR);
-            $prep->bindParam(2, $type, PDO::PARAM_STR);
-            $prep->bindParam(3, $datetime, PDO::PARAM_STR);
-            $prep->bindParam(4, $prefix, PDO::PARAM_INT);
-            $prep->execute();
-            if($this->sql->checkError())
+            switch($this->Log_Type)
             {
-                $this->verbosed("Error writing to the Log table 0_o", -1);
+                case "SQL":
+                    $this->log_sql($message, $type, $prefix, $datetime);
+                    break;
+                case "File":
+                    $this->log_file($message, $type, $prefix, $datetime);
+                    break;
+                case "Both":
+                    $this->log_sql($message, $type, $prefix, $datetime);
+                    $this->log_file($message, $type, $prefix, $datetime);
             }
-            # Done with the SQL Log, lets write to the file log now, if we are on the CLI
-            if($this->cli)
-            {
-                $filename = $this->TOOLS_PATH.'log/'.$prefix.'wifidb_'.$date.'.log'; #generate the log file name for today.
-                #If it does not exist create the log file.
-                if(!is_file($filename)){ fopen($filename, "w");}
 
-                $filehandle = fopen($filename, "a"); # Append to the end of the log file.
-                $write_message = fwrite($filehandle, $message); # Lets write our message.
-                if(!$write_message){echo "The WiFiDB Import/Export Daemon could not write message to the file, thats not good...";} # If there was an error, lets let them know ad the console.
-                fclose($filehandle); # Now we need to close the file, otherwise we might have lock errors.
-            }
+
+                # Done with the SQL Log, lets write to the file log now, if we are on the CLI
+                if($this->cli)
+                {
+
+                }
         }
     }
 
+    private function log_sql($message, $type, $prefix, $datetime)
+    {
+        $sql = "INSERT INTO `wifi`.`log` (`id`, `message`, `level`, `timestamp`, `prefix`) VALUES ('', ?, ?, ?, ?)";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $message, PDO::PARAM_STR);
+        $prep->bindParam(2, $type, PDO::PARAM_STR);
+        $prep->bindParam(3, $datetime, PDO::PARAM_STR);
+        $prep->bindParam(4, $prefix, PDO::PARAM_INT);
+        $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->verbosed("Error writing to the Log table 0_o", -1);
+            throw new ErrorException("Error writing to the Log table. ".var_export($this->sql->conn->errorInfo() ,1));
+            return 0;
+        }else
+        {
+            return 1;
+        }
+    }
 
+    private function log_file($message = "", $type = "", $prefix = 0, $datetime = "")
+    {
+        $filename = $this->TOOLS_PATH.'log/'.$prefix.'wifidbd_'.$date.'.log'; #generate the log file name for today.
+        #If it does not exist create the log file.
+        if(!is_file($filename)){ fopen($filename, "w");}
+
+        $filehandle = fopen($filename, "a"); # Append to the end of the log file.
+        $write_message = fwrite($filehandle, $message); # Lets write our message.
+        if(!$write_message){echo "The WiFiDB Import/Export Daemon could not write message to the file, thats not good...";} # If there was an error, lets let them know ad the console.
+        fclose($filehandle); # Now we need to close the file, otherwise we might have lock errors.
+    }
     #===============================#
     #   Smart (filtering for GPS)   #
     #===============================#
@@ -560,22 +585,31 @@ class dbcore
         // 428.7753 ---- 4 - 28.7753
         $geocord_div = $geocord_min/60;
         // 428.7753 ---- 4 - (28.7753)/60 = 0.4795883
-        if($len == 3)
+        switch($len)
         {
+            case 2:
+                $geocord_deg = 0;
+                #			echo $geocord_deg.'<br>';
+                break;
+
+            case 3:
             $geocord_deg = substr($geocord_exp[0], 0,1);
         #			echo $geocord_deg.'<br>';
-        }elseif($len == 4)
-        {
+                break;
+
+            case 4:
             $geocord_deg = substr($geocord_exp[0], 0,2);
         #			echo $geocord_deg.'<br>';
-        }elseif($len == 5)
-        {
+                break;
+
+            case 5:
             $geocord_deg = substr($geocord_exp[0], 0,3);
         #			echo $geocord_deg.'<br>';
-        }elseif($len <= 2)
-        {
-            $geocord_deg = 0;
-        #			echo $geocord_deg.'<br>';
+                break;
+
+            default:
+                throw new ErrorException("Unexpected Geocord front length encountered in dm2dd");
+                break;
         }
         if(!isset($geocord_deg))
         {
@@ -604,61 +638,63 @@ class dbcore
     {
         $neg = FALSE;
         $geocord_exp = explode(".", $geocord_in);
+        $geo_front = $geocord_exp[0];
+        $geo_back = $geocord_exp[1];
 
-        if($geocord_exp[0][0] == "S" or $geocord_exp[0][0] == "W")
-        {
-            $neg = TRUE;
-        }
         $pattern[0] = '/N /';
         $pattern[1] = '/E /';
-        $pattern[2] = '/S /';
-        $pattern[3] = '/W /';
-        $replacements = "";
-        $geocord_exp[0] = preg_replace($pattern, $replacements, $geocord_exp[0]);
-        if($geocord_exp[0][0] === "-")
+        $replacement = "";
+        $geo_front = preg_replace($pattern, $replacement, $geo_front);
+
+        $pattern_neg[0] = '/S /';
+        $pattern_neg[1] = '/W /';
+        $replacement_neg = "-";
+        $geo_front = preg_replace($pattern_neg, $replacement_neg, $geo_front);
+
+        if($geo_front[0] == "-")
         {
-            $geocord_exp[0] = 0 - $geocord_exp[0];
             $neg = TRUE;
         }
-        if(strlen($geocord_exp[0]) >= 4)
+        #var_dump($geo_front);
+        if(strlen($geo_front) >= 4)
         {
-            if($neg)
-            {
-                $out = "-".$geocord_exp[0].'.'.$geocord_exp[1];
-                return $out;
-            }else
-            {
-                $out = $geocord_exp[0].'.'.$geocord_exp[1];
-                return $out;
-            }
+            $out = $geo_front.'.'.$geo_back;
+            return $out;
         }
-        // 4.146255 ---- 4 - 146255
-        $geocord_dec = "0.".$geocord_exp[1];
+
+        // 4.146255 |----| 4 || 146255
+        $geocord_dec = "0.".$geo_back;
         if($geocord_dec == "0.0000")
         {
             $ret = ($neg ? "-0000.0000" : "0000.0000");
             return $ret;
         }
 
-        // 4.146255 ---- 4 - 0.146255
+        // 4.146255 |----| 4 || 0.146255
         $geocord_mult = $geocord_dec*60;
-        // 4.146255 ---- 4 - (0.146255)*60 = 8.7753
+        // 4.146255 |----| 4 || (0.146255)*60 = 8.7753
         $mult = explode(".",$geocord_mult);
 
         if( strlen($mult[0]) < 2 )
         {
             $geocord_mult = "0".$geocord_mult;
         }
-        // 4.146255 ---- 4 - 08.7753
-        $geocord_out = $geocord_exp[0].$geocord_mult;
-        // 4.146255 ---- 408.7753
+        // 4.146255 |----| 4 || 08.7753
+        $geocord_out = $geo_front.$geocord_mult;
+        // 4.146255 |----| 408.7753
+
         $geocord_o = explode(".", $geocord_out);
-        if( strlen($geocord_o[1]) > 4 )
+        if(!@$geocord_o[1])
         {
-            $geocord_o[1] = substr($geocord_o[1], 0 , 4);
-            $geocord_out = implode('.', $geocord_o);
+            var_dump($geocord_in);
+            var_dump($php_errormsg);
+            die();
         }
-        if($neg === TRUE){$geocord_out = "-".$geocord_out;}
+        if( strlen($geocord_o[1]) > 4 ) //undefined offset ??? wtf...
+        {
+            $geocord_out = $geocord_o[0].".".substr($geocord_o[1], 0 , 4);
+        }
+        #var_dump($geocord_in, $geocord_out);
         return $geocord_out;
     }
 

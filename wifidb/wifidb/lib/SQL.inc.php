@@ -29,14 +29,12 @@ class SQL
         #var_dump($err);
         if($err === "00000")
         {
-            #dbcore::verbosed("There was no error running the SQL");
-            #dbcore::logd("There was no error running the SQL");
             return 0;
         }else
         {
             @dbcore::verbosed("There was an error running the SQL");
             @dbcore::logd("There was an error running the SQL");
-            return $this->conn->errorInfo();
+            return 1;
         }
         
     }

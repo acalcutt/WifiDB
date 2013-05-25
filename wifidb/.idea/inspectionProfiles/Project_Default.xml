@@ -2,7 +2,7 @@
   <profile version="1.0" is_locked="false">
     <option name="myName" value="Project Default" />
     <option name="myLocal" value="false" />
-    <inspection_tool class="PhpUndefinedVariableInspection" enabled="true" level="WARNING" enabled_by_default="true">
+    <inspection_tool class="PhpUndefinedVariableInspection" enabled="true" level="INFO" enabled_by_default="true">
       <option name="ENABLE_IN_FILE_SCOPE" value="false" />
     </inspection_tool>
   </profile>
