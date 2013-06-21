@@ -31,11 +31,10 @@ set_exception_handler('exception_handler');
 $error = 0;
 $config = array();
 
-if(!require('config.inc.php'))
+if(!file_exists('config.inc.php'))
 {
     $error = 1;
-    $error_msg = 'There was no config file found. You will need to install WiFiDB first.<br>
-Please go to /[WiFiDB ROOT]/install/index2.php (The install page) to do that.';
+    $error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
 
 }else
 {
@@ -76,18 +75,9 @@ Please go to /[WiFiDB ROOT]/install/index2.php (The install page) to do that.';
     unset($cwd);
     unset($sql);
 }
-
 if($error)
 {
-    define('WWW_DIR', $this->PATH);
-    define('SMARTY_DIR', $this->PATH.'/smarty/');
-    $smarty = new Smarty();
-    $smarty->setTemplateDir( WWW_DIR.'smarty/templates/wifidb/' );
-    $smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
-    $smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
-    $smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
-    $this->smarty->assign('wifidb_error_mesg', $error_msg);
-    $smarty->display("error.tpl");
+    #throw new ErrorException($error_msg);
 }
 
 if(strtolower(SWITCH_SCREEN) != "cli")
@@ -104,6 +94,7 @@ if(strtolower(SWITCH_SCREEN) != "cli")
 /*
  * Class autoloader
  */
+
 function __autoload($class)
 {
     if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
@@ -117,6 +108,14 @@ function __autoload($class)
     }elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
     {
         include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
+        return 1;
+    }elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
+    {
+        include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
+        return 1;
+    }elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
+    {
+        include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
         return 1;
     }else
     {
@@ -211,16 +210,19 @@ try
     #done setting up WiFiDB, weather it be the daemon or the web interface, or just plain failing.
 }
 catch (Exception $e) {
-    exception_handler($e);
+    throw new ErrorException($e);
 }
 
 function exception_handler($err)
 { 
     $trace = array();
+    /*
     foreach ($err->getTrace() as $a => $b)
+    {
+        foreach ($b as $c => $d)
         {
-        foreach ($b as $c => $d) {
-            if ($c == 'args') {
+            if ($c == 'args')
+            {
                 foreach ($d as $e => $f)
                 {
                     if($a === 2)
@@ -231,13 +233,25 @@ function exception_handler($err)
                         $trace[$a] = array(strval($a), $e, $f);
                     }
                 }
-            } else {
+            }else
+            {
                 $trace[$a] = array(strval($a),$c,$d);
             }
         }
     }
-    $trace['main'] = array( 'Error' =>strval($err->getCode()), 'Message'=>$err->getMessage(),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
-    var_dump($trace);
+    */
+
+    $trace = array( 'Error' =>strval($err->getCode()), 'Message'=>str_replace("\n", "</br>\r\n", $err->getMessage()),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
+
+    define('WWW_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/");
+    define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/smarty/");
+    $smarty = new Smarty();
+    $smarty->setTemplateDir( WWW_DIR.'smarty/templates/wifidb/' );
+    $smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
+    $smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
+    $smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
+    $smarty->smarty->assign('wifidb_error_mesg', $trace);
+    $smarty->display("error.tpl");
     exit();
 }
 

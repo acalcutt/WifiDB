@@ -18,13 +18,13 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-
 class export extends dbcore
 {
     public function __construct($config, $convert)
     {
         parent::__construct($config);
         $this->convert = $convert;
+        $this->createKML = new createKML($this->URL_PATH, $convert);
         $this->month_names  = array(
             1=>'January',
             2=>'February',
@@ -1818,21 +1818,21 @@ class export extends dbcore
         foreach($points as $point)
         {
             list($id, $new_old) = explode(":", $point);
-            #var_dump($id,$new_old);
-
             $prep2->bindParam(1, $id, PDO::PARAM_INT);
             $prep2->execute();
             $this->sql->checkError();
             $ap_fetch = $prep2->fetch(2);
-            $data[$ap_fetch['ap_hash']]['apdata'] = $ap_fetch;
+            $data[$ap_fetch['ap_hash']] = $ap_fetch;
             $prep3->bindParam(1, $ap_fetch['ap_hash']);
             $prep3->execute();
             $sig_gps_data = $prep3->fetchAll(2);
-            #var_dump($sig_gps_data);
             $data[$ap_fetch['ap_hash']]['gdata'] = $sig_gps_data;
-            var_dump($data);
-            die();
         }
+        $this->createKML->LoadData($data);
+        $date = date("Y-m-d H:i:s");
+        $folder_data = $this->createKML->createFolder($this->createKML->PlotAllAPs(1), $fetch['title']);
+        $kml_data = $this->createKML->createFolder($folder_data, "WiFiDB Export on ".$date);
+        $this->createKML->createKML("UserImport_".$date."_".rand(000000,999999));
         return $data;
     }
 }
