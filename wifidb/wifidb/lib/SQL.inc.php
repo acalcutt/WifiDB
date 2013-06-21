@@ -32,9 +32,9 @@ class SQL
             return 0;
         }else
         {
-            @dbcore::verbosed("There was an error running the SQL");
-            @dbcore::logd("There was an error running the SQL");
-            return 1;
+            @dbcore::verbosed("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1));
+            @dbcore::logd("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1));
+            throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1));
         }
         
     }

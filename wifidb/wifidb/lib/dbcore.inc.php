@@ -73,7 +73,7 @@ class dbcore
         
         $this->smarty_path              = $config['smarty_path'];
         include_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
-        $this->manufactures             = @$GLOBALS['manufactures'];
+        $this->manuf_array             = @$GLOBALS['manufactures'];
         unset($GLOBALS['manufactures']);
         
         $this->wifidb_email_updates     = 0;
@@ -479,6 +479,7 @@ class dbcore
 
     private function log_file($message = "", $type = "", $prefix = 0, $datetime = "")
     {
+        $date = date($this->date_format);
         $filename = $this->TOOLS_PATH.'log/'.$prefix.'wifidbd_'.$date.'.log'; #generate the log file name for today.
         #If it does not exist create the log file.
         if(!is_file($filename)){ fopen($filename, "w");}
@@ -543,176 +544,22 @@ class dbcore
         #---------#
     }
 
-    #===============================#
-    #   Convert GeoCord DM to DD    #
-    #===============================#
-    /**
-     * @param string $geocord_in
-     * @return int|string
-     */
-    public function &convert_dm_dd($geocord_in = "")
-    {
-        $geocord_in_exp = explode(".", $geocord_in);
-        if(strlen($geocord_in_exp[1]) > 4){return $geocord_in;}
-        
-        $start = microtime(true);
-        //	GPS Convertion :
-        $neg=FALSE;
-        $geocord_exp = explode(".", $geocord_in);//replace any Letter Headings with Numeric Headings
-        if($geocord_exp[0][0] === "S" or $geocord_exp[0][0] === "W"){$neg = TRUE;}
-        $patterns[0] = '/N /';
-        $patterns[1] = '/E /';
-        $patterns[2] = '/S /';
-        $patterns[3] = '/W /';
-        $replacements = "";
-        $geocord_in = preg_replace($patterns, $replacements, $geocord_in);
-        $geocord_exp = explode(".", $geocord_in);
-        if($geocord_exp[0][0] === "-"){$geocord_exp[0] = 0 - $geocord_exp[0];$neg = TRUE;}
-
-        if(!@$geocord_exp[1])
-        {
-            var_dump($geocord_in);
-        }
-        // 428.7753 ---- 428 - 7753
-        $geocord_dec = "0.".$geocord_exp[1];
-        // 428.7753 ---- 428 - 0.7753
-        $len = strlen($geocord_exp[0]);
-        #		echo $len.'<BR>';
-        $geocord_min = substr($geocord_exp[0],-2,3);
-        #		echo $geocord_min.'<BR>';
-        // 428.7753 ---- 4 - 28 - 0.7753
-        $geocord_min = $geocord_min+$geocord_dec;
-        // 428.7753 ---- 4 - 28.7753
-        $geocord_div = $geocord_min/60;
-        // 428.7753 ---- 4 - (28.7753)/60 = 0.4795883
-        switch($len)
-        {
-            case 2:
-                $geocord_deg = 0;
-                #			echo $geocord_deg.'<br>';
-                break;
-
-            case 3:
-            $geocord_deg = substr($geocord_exp[0], 0,1);
-        #			echo $geocord_deg.'<br>';
-                break;
-
-            case 4:
-            $geocord_deg = substr($geocord_exp[0], 0,2);
-        #			echo $geocord_deg.'<br>';
-                break;
-
-            case 5:
-            $geocord_deg = substr($geocord_exp[0], 0,3);
-        #			echo $geocord_deg.'<br>';
-                break;
-
-            default:
-                throw new ErrorException("Unexpected Geocord front length encountered in dm2dd");
-                break;
-        }
-        if(!isset($geocord_deg))
-        {
-            echo $geocord_in."\r\n";
-            return -1;
-        }
-        $geocord_out = $geocord_deg + $geocord_div;
-        // 428.7753 ---- 4.4795883
-        if($neg === TRUE){$geocord_out = "-".$geocord_out;}
-        $end = microtime(true);
-
-        $geocord_out = substr($geocord_out, 0,10);
-        #var_dump($geocord_out);
-        return $geocord_out;
-    }
-
-
-    #===============================#
-    #   Convert GeoCord DecDeg to DegMin    #
-    #===============================#
-    /**
-     * @param string $geocord_in
-     * @return string
-     */
-    public function &convert_dd_dm($geocord_in="")
-    {
-        $neg = FALSE;
-        $geocord_exp = explode(".", $geocord_in);
-        $geo_front = $geocord_exp[0];
-        $geo_back = $geocord_exp[1];
-
-        $pattern[0] = '/N /';
-        $pattern[1] = '/E /';
-        $replacement = "";
-        $geo_front = preg_replace($pattern, $replacement, $geo_front);
-
-        $pattern_neg[0] = '/S /';
-        $pattern_neg[1] = '/W /';
-        $replacement_neg = "-";
-        $geo_front = preg_replace($pattern_neg, $replacement_neg, $geo_front);
-
-        if($geo_front[0] == "-")
-        {
-            $neg = TRUE;
-        }
-        #var_dump($geo_front);
-        if(strlen($geo_front) >= 4)
-        {
-            $out = $geo_front.'.'.$geo_back;
-            return $out;
-        }
-
-        // 4.146255 |----| 4 || 146255
-        $geocord_dec = "0.".$geo_back;
-        if($geocord_dec == "0.0000")
-        {
-            $ret = ($neg ? "-0000.0000" : "0000.0000");
-            return $ret;
-        }
-
-        // 4.146255 |----| 4 || 0.146255
-        $geocord_mult = $geocord_dec*60;
-        // 4.146255 |----| 4 || (0.146255)*60 = 8.7753
-        $mult = explode(".",$geocord_mult);
-
-        if( strlen($mult[0]) < 2 )
-        {
-            $geocord_mult = "0".$geocord_mult;
-        }
-        // 4.146255 |----| 4 || 08.7753
-        $geocord_out = $geo_front.$geocord_mult;
-        // 4.146255 |----| 408.7753
-
-        $geocord_o = explode(".", $geocord_out);
-        if(!@$geocord_o[1])
-        {
-            var_dump($geocord_in);
-            var_dump($php_errormsg);
-            die();
-        }
-        if( strlen($geocord_o[1]) > 4 ) //undefined offset ??? wtf...
-        {
-            $geocord_out = $geocord_o[0].".".substr($geocord_o[1], 0 , 4);
-        }
-        #var_dump($geocord_in, $geocord_out);
-        return $geocord_out;
-    }
-
-
     /**
      * @param string $mac
      * @return string
      */
-    public function &manufactures($mac="")
+    public function findManuf($mac="")
     {
         if(count(explode(":", $mac)) > 1)
         {
             $mac = str_replace(":", "", $mac);
         }
-        $man_mac = str_split($mac,6);
-        if(isset($this->manufactures[$man_mac[0]]))
+        $man_mac = str_split($mac , 6);
+        #var_dump($man_mac[0]);
+        #var_dump($this->manuf_array[$man_mac[0]]);
+        if($this->manuf_array[$man_mac[0]] !== NULL)
         {
-            $manuf = $this->manufactures[$man_mac[0]];
+            $manuf = $this->manuf_array[$man_mac[0]];
         }
         else
         {

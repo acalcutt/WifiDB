@@ -32,22 +32,31 @@ if(!(require('config.inc.php'))){die("You need to create and configure your conf
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require($daemon_config['wifidb_install']."/lib/init.inc.php");
 
-$lastedit  = "2013-05-12";
+$lastedit  = "2013-05-27";
 
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
     echo "Usage: imp_expd.php [args...]
-  -v               Run Verbosly (SHOW EVERTHING!)
+  -v               Run Verbosely (SHOW EVERYTHING!)
   -c               Location of the config file you want to load. *
-  -l               Log Daemon output to a file.
+  -L               Log Daemon output to a file. *
   -i               Version Info.
   -d               Run continuously without stop (as a daemon) *
   -h               Show this screen.
+  -l               Show License Information.
   
 * = Not working yet.
 ";
+    exit();
+}
+
+if(@$arguments['i'])
+{
+    $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+Codename: ".$dbcore->ver_array['codename']."
+Import/Export Daemon 3.0, {$lastedit}, GPLv2 Random Intervals");
     exit();
 }
 
@@ -55,9 +64,26 @@ if(@$arguments['l'])
 {
     $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-Import/Export Daemon 3.0, {$lastedit}, GPLv2 Random Intervals");
+Import/Export Daemon 3.0, {$lastedit}, GPLv2 Random Intervals
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+");
     exit();
 }
+
 
 if(@$arguments['v'])
 {
@@ -73,11 +99,20 @@ if(!file_exists($dbcore->pid_file_loc))
     mkdir($dbcore->pid_file_loc);
 }
 $dbcore->pid_file = $dbcore->pid_file_loc.'wdb_imp_exp.pid';
-fopen($dbcore->pid_file, "w");
-$fileappend = fopen($dbcore->pid_file, "a");
-$write_pid = fwrite($fileappend, "$dbcore->This_is_me");
-if(!$write_pid){die("Could not write pid file, thats not good... >:[");}
-$dbcore->verbosed("Have writen the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
+
+if(!file_exists($dbcore->pid_file_loc))
+{
+    if(!mkdir($dbcore->pid_file_loc))
+    {
+        throw new ErrorException("Could not make WiFiDB PID folder. ($dbcore->pid_file_loc)");
+    }
+}
+if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
+{
+    die("Could not write pid file ($dbcore->pid_file), that's not good... >:[");
+}
+
+$dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
 
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
@@ -101,8 +136,9 @@ while(1)
     if($dbcore->sql->checkError())
     {
         $dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-        ########$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
-        Throw new ErrorException;
+        $dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1),
+            "Error", $dbcore->This_is_me);
+        Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
     }
 
     if($result->rowCount() > 0)//Check to see if I can successfully look at the file_tmp folder
@@ -125,11 +161,49 @@ while(1)
             #Lets check and see if it is has a valid VS1 file header.
             if(in_array($file_type, $dbcore->convert_extentions))
             {
-                $ret_file_name = $dbcore->convert_logic($files_a['file'], $remove_file);
+                $source = $this->PATH.'import/up/'.str_replace("%20", " ", $file);
+                $this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
+                $file_src = explode(".", $file);
+                $update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '0', `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
+                $prep = $this->sql->conn->prepare($update_tmp);
+                $prep->execute(array($files_a['file'], $remove_file));
+                $err = $this->sql->conn->errorCode();
+                if($err[0] != "00000")
+                {
+                    $this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
+                    $this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+                    throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
+                }
+                $ret_file_name = $dbcore->convert->main($files_a['file']);
                 if($ret_file_name === -1)
                 {
-                    Throw new ErrorException;
-                    continue;
+                    Throw new ErrorException("Error Converting File. $source");
+                }
+
+                $dest_name = 'convert/'.str_replace(" ", "_", $dest_file);
+                $dest = $this->PATH.'import/up/'.$dest_name;
+                $hash1 = hash_file('md5', $dest);
+                $size1 = $this->format_size($dest);
+
+                $update = "UPDATE `wifi`.`files_tmp` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+                $data = array(
+                    $dest_name,
+                    $hash1,
+                    $size1,
+                    $remove_file
+                );
+                $prep = $this->sql->conn->prepare($update);
+                $prep->execute($data);
+                $err = $this->sql->conn->errorCode();
+                if($err[0] == "00000")
+                {
+                    $this->verbosed("Conversion completed.", 1);
+                    $this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest, $this->This_is_me);
+                }else
+                {
+                    $this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
+                    $this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+                    throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($this->sql->conn->errorInfo(),1));
                 }
                 $file_name = $ret_file_name;
                 $source = $dbcore->PATH.'import/up/'.$file_name;
@@ -147,9 +221,11 @@ while(1)
                 $prep4->execute();
                 if($dbcore->sql->checkError())
                 {
-                    $dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-                    ########$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
-                    Throw new ErrorException;
+                    $dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.",
+                                    -1);
+                    $dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1),
+                                "Error", $dbcore->This_is_me);
+                    Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
                 }
 
                 //check to see if this file has already been imported into the DB
@@ -160,9 +236,10 @@ while(1)
 
                 if($dbcore->sql->checkError())
                 {
-                    $dbcore->logd("Failed to select file hash from files table. :(");
+                    $dbcore->logd("Failed to select file hash from files table. :(",
+                        "Error", $dbcore->This_is_me);
                     $dbcore->verbosed("Failed to select file hash from files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-                    Throw new ErrorException;
+                    Throw new ErrorException("Failed to select file hash from files table. :(");
                 }
 
                 $fileqq = $prep->fetch(2);
@@ -172,12 +249,10 @@ while(1)
                     if(count(explode(";", $files_a['notes'])) === 1)
                     {
                         $user = str_replace(";", "", $files_a['user']);
-                        #########$dbcore->logd("Start Import of : (".$files_a['id'].") from User: $user File: ".$file_name, $dbcore->This_is_me);
                         $dbcore->verbosed("Start Import of : (".$files_a['id'].") ".$file_name, 1);
                     }else
                     {
                         $user = $files_a['user'];
-                        #########$dbcore->logd("Start Import of : (".$files_a['id'].") from Users: $user File: ".$file_name, $dbcore->This_is_me);
                         $dbcore->verbosed("Start Import of : (".$files_a['id'].") ".$file_name, 1);
                     }
                     $notes = $files_a['notes'];
@@ -190,24 +265,23 @@ while(1)
                     $prep_ext->execute();
                     if($dbcore->sql->checkError())
                     {
-                        $dbcore->logd("Failed to select previous convert extension. :(");
+                        $dbcore->logd("Failed to select previous convert extension. :(",
+                            "Error", $dbcore->This_is_me);
                         $dbcore->verbosed("Failed to select previous convert extension. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-                        Throw new ErrorException;
+                        Throw new ErrorException("Failed to select previous convert extension. :(");
                     }
                     $prev_ext = $prep_ext->fetch(2);
                     $tmp = $dbcore->import->import_vs1( $source, $user);
                     if($tmp == -1)
                     {
-                        $dbcore->logd("Skipping Import of :".$file_name, $dbcore->This_is_me);
+                        $dbcore->logd("Skipping Import of :".$file_name,
+                            "Warning", $dbcore->This_is_me);
                         $dbcore->verbosed("Skipping Import of :".$file_name, -1);
                         //remove files_tmp row and user_imports row
                         $dbcore->cleanBadImport($remove_file, $user);
                         continue;
                     }
-
-                    ########$dbcore->logd("Finished Import of : ".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], $dbcore->This_is_me);
                     $dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
-
                     $import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $hash);
                     
                     $totalaps = $tmp['aps'];
@@ -237,9 +311,10 @@ while(1)
                     $prep1->execute();
                     if($dbcore->sql->checkError())
                     {
-                        ########$dbcore->logd("Failed to Insert the results of the new Import into the files table. :(");
+                        $dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
+                            "Error", $dbcore->This_is_me);
                         $dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-                        Throw new ErrorException;
+                        Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
                     }
                     $file_row = $dbcore->sql->conn->lastInsertID();
                     $dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
@@ -259,7 +334,8 @@ while(1)
                         $prep3->execute();
                         if($dbcore->sql->checkError())
                         {
-                            $dbcore->logd("Failed to update user import row. :(");
+                            $dbcore->logd("Failed to update user import row. :(",
+                                "Error", $dbcore->This_is_me);
                             $dbcore->verbosed("Failed to update user import row. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
                             Throw new ErrorException("Failed to update user import row. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1));
                         }else
@@ -276,7 +352,8 @@ while(1)
                     if($dbcore->sql->checkError())
                     {
                         #mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
-                        $dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
+                        $dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1),
+                            "Error", $dbcore->This_is_me);
                         $dbcore->verbosed("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1), -1);
                         Throw new ErrorException("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
                     }else
@@ -289,7 +366,8 @@ while(1)
                     $finished = 1;
                 }else
                 {
-                    ########$dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)", $dbcore->This_is_me);
+                    $dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
+                        "Warning", $dbcore->This_is_me);
                     $dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
                     unlink($source);
                     $dbcore->cleanBadImport($hash);
@@ -297,7 +375,8 @@ while(1)
             }else
             {
                 $finished = 0;
-                $dbcore->logd("File is empty or not valid. $source ($remove_file)", $dbcore->This_is_me);
+                $dbcore->logd("File is empty or not valid. $source ($remove_file)",
+                    "Warning", $dbcore->This_is_me);
                 $dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
                 unlink($source);
                 $dbcore->cleanBadImport($hash);
@@ -306,7 +385,8 @@ while(1)
             $result = $dbcore->sql->conn->query($daemon_sql);
             if($dbcore->sql->checkError())
             {
-                $dbcore->logd("Failed to update the File table query so that we know what files have already been imported.".var_export($dbcore->sql->conn->errorInfo(),1), $dbcore->This_is_me);
+                $dbcore->logd("Failed to update the File table query so that we know what files have already been imported.".var_export($dbcore->sql->conn->errorInfo(),1),
+                    "Error", $dbcore->This_is_me);
                 $dbcore->verbosed("Failed to update the File table query so that we know what files have already been imported.", -1);
                 Throw new ErrorException("Failed to update the File table query so that we know what files have already been imported.".var_export($dbcore->sql->conn->errorInfo(),1));
             }else
@@ -326,12 +406,12 @@ while(1)
         $prep6->execute();
         if(!$dbcore->sql->checkError())
         {
-            ########$dbcore->logd("Updated settings table with next run time: ".$nextrun, $dbcore->This_is_me);
             $dbcore->verbosed("Updated settings table with next run time: ".$nextrun);
         }else
         {
             #mail_admins("_error_updating_settings_table:".$remove_file, $subject, "import", 1);
-            $dbcore->logd("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
+            $dbcore->logd("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun,
+                "Error", $dbcore->This_is_me);
             $dbcore->verbosed("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
             Throw new ErrorException;
         }

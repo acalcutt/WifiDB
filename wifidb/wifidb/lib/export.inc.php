@@ -21,9 +21,10 @@ if not, write to the
 
 class export extends dbcore
 {
-    public function __construct($config)
+    public function __construct($config, $convert)
     {
         parent::__construct($config);
+        $this->convert = $convert;
         $this->month_names  = array(
             1=>'January',
             2=>'February',
@@ -105,8 +106,8 @@ class export extends dbcore
         {
             $ssid = preg_replace('/[\x00-\x1F\x7F]/', '', $array['ssid']);
             
-            $lat = $this->convert_dm_dd($array['lat']);
-            $long = $this->convert_dm_dd($array['long']);
+            $lat = $this->convert->dm2dd($array['lat']);
+            $long = $this->convert->dm2dd($array['long']);
             
             $ssid_name = str_replace("", "", htmlentities($ssid, ENT_QUOTES));
             if($this->named)
@@ -346,9 +347,9 @@ class export extends dbcore
                 $NN++;
                 $ssid = preg_replace('/[\x00-\x1F\x7F]/', '', $array['ssid']);
 
-                $lat = $this->convert_dm_dd($array['lat']);
+                $lat = $this->convert->dm2dd($array['lat']);
 
-                $long = $this->convert_dm_dd($array['long']);
+                $long = $this->convert->dm2dd($array['long']);
 
                 $ssid_name = str_replace("", "", htmlentities($ssid, ENT_QUOTES));
                 if($this->named)
@@ -447,7 +448,7 @@ class export extends dbcore
             }
 
             $imports[] = "<Folder>
-                <name>$usernam - $title</name>
+                <name>".$import['username']." - ".$import['title']."</name>
                     <Folder>
                         <name>Open Access Points</name>
                         <description>APs: ".$open_count."</description>
@@ -605,7 +606,7 @@ class export extends dbcore
                         </description>
                         <styleUrl>$type</styleUrl>
                         <Point id=\"".$fetch['mac']."_GPS\">
-                            <coordinates>".$this->convert_dm_dd($gps['long']).",".$this->convert_dm_dd($gps['lat']).",".$gps['alt']."</coordinates>
+                            <coordinates>".$this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']).",".$gps['alt']."</coordinates>
                         </Point>
                     </Placemark>
 ";
@@ -673,7 +674,7 @@ class export extends dbcore
                 </description>
                 <styleUrl>$type</styleUrl>
                 <Point id=\"".$fetch['mac']."_GPS\">
-                    <coordinates>".$this->convert_dm_dd($fetch['long']).",".$this->convert_dm_dd($fetch['lat']).",".$alt."</coordinates>
+                    <coordinates>".$this->convert->dm2dd($fetch['long']).",".$this->convert->dm2dd($fetch['lat']).",".$alt."</coordinates>
                 </Point>
             </Placemark>
             <Folder>
@@ -684,6 +685,7 @@ class export extends dbcore
         </Folder>
      </Document>
 </kml>");
+
         $ret = array(
             'mesg' => "Export for AP: ".$fetch['ssid']." was Successful.",
             'link' => $this->URL_PATH."out/kml/single/".$file,
@@ -759,8 +761,8 @@ class export extends dbcore
             $date = $aparray["date"];
             $time = $aparray["time"];
             $alt = $aparray['alt'] * 3.28;
-            $lat = $this->convert_dm_dd($aparray['lat']);
-            $long = $this->convert_dm_dd($aparray['long']);
+            $lat = $this->convert->dm2dd($aparray['lat']);
+            $long = $this->convert->dm2dd($aparray['long']);
 
             $file_data .= "<wpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
                                             ."<ele>".$alt."</ele>\r\n"
@@ -794,9 +796,9 @@ class export extends dbcore
                 
                 $alt = $gps['alt'] * 3.28;
 
-                $lat =& $this->convert_dm_dd($gps['lat']);
+                $lat =& $this->convert->dm2dd($gps['lat']);
 
-                $long =& $this->convert_dm_dd($gps['long']);
+                $long =& $this->convert->dm2dd($gps['long']);
                 $file_data .= "<trkpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
                                         ."<ele>".$alt."</ele>\r\n"
                                         ."<time>".$date."T".$time."Z</time>\r\n"
@@ -901,8 +903,8 @@ class export extends dbcore
                 $long = $ap_array['long'];
             }else
             {
-                $lat = $this->convert_dm_dd($ap_array['lat']);
-                $long = $this->convert_dm_dd($ap_array['long']);
+                $lat = $this->convert->dm2dd($ap_array['lat']);
+                $long = $this->convert->dm2dd($ap_array['long']);
             }
             $fa = $ap_array["FA"];
             $la = $ap_array["LA"];
@@ -963,7 +965,7 @@ class export extends dbcore
             $this->verbosed('File has been written and is ready.', $verbose, "CLI");
         }
     }
-    
+
     /*
      * Generate the Daily Daemon KML files
      */
@@ -1230,11 +1232,11 @@ class export extends dbcore
         $kml_data = '<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
 <Folder>
-	<name>WiFiDB Network Link</name>
-	<open>1</open>
-	<Folder>
-		<name>Newest Data</name>
-		<visibility>0</visibility>
+    <name>WiFiDB Network Link</name>
+    <open>1</open>
+    <Folder>
+        <name>Newest Data</name>
+        <visibility>0</visibility>
                 <Folder>
                         <name>Newest AP</name>
                         <open>1</open>
@@ -1258,23 +1260,23 @@ class export extends dbcore
                                 </Link>
                         </NetworkLink>
                 </Folder>
-		<NetworkLink>
-			<name>Full DataBase</name>
-			<visibility>0</visibility>
-			<Link>
-				<href>'.$this->URL_PATH.'out/daemon/full_db.kml</href>
-				<refreshMode>onInterval</refreshMode>
-				<refreshInterval>86404</refreshInterval>
-			</Link>
-		</NetworkLink>
-		<NetworkLink>
-			<name>Daily DataBase</name>
-			<visibility>0</visibility>
-			<Link>
-				<href>'.$this->URL_PATH.'out/daemon/daily_db.kml</href>
-				<refreshMode>onInterval</refreshMode>
-				<refreshInterval>3604</refreshInterval>
-			</Link>
+        <NetworkLink>
+            <name>Full DataBase</name>
+            <visibility>0</visibility>
+            <Link>
+                <href>'.$this->URL_PATH.'out/daemon/full_db.kml</href>
+                <refreshMode>onInterval</refreshMode>
+                <refreshInterval>86404</refreshInterval>
+            </Link>
+        </NetworkLink>
+        <NetworkLink>
+            <name>Daily DataBase</name>
+            <visibility>0</visibility>
+            <Link>
+                <href>'.$this->URL_PATH.'out/daemon/daily_db.kml</href>
+                <refreshMode>onInterval</refreshMode>
+                <refreshInterval>3604</refreshInterval>
+            </Link>
                 </NetworkLink>
         </Folder>
         <NetworkLink>
@@ -1335,7 +1337,7 @@ class export extends dbcore
                                         $result_1	= mysql_query($sql_1, $conn) or die(mysql_error($conn));
                                         $ap_array = mysql_fetch_array($result_1);
                                         #var_dump($ap_array);
-                                        $manuf = @database::manufactures($ap_array['mac']);
+                                        $manuf = $this->findManuf($ap_array['mac']);
                                         switch($ap_array['sectype'])
                                                 {
                                                         case 1:
@@ -1468,7 +1470,7 @@ class export extends dbcore
                                 $result_1	= mysql_query($sql_1, $conn) or die(mysql_error($conn));
                                 $ap_array = mysql_fetch_array($result_1);
                                 #var_dump($ap_array);
-                                $manuf = database::manufactures($ap_array['mac']);
+                                $manuf = $this->findManuf($ap_array['mac']);
                                 switch($ap_array['sectype'])
                                         {
                                                 case 1:
@@ -1585,7 +1587,7 @@ class export extends dbcore
                         $result_	= mysql_query($sql_, $conn) or die(mysql_error($conn));
                         while($ap_array = mysql_fetch_array($result_))
                         {
-                                $manuf = database::manufactures($ap_array['mac']);
+                                $manuf = $this->findManuf($ap_array['mac']);
                                 switch($ap_array['sectype'])
                                         {
                                                 case 1:
@@ -1782,5 +1784,55 @@ class export extends dbcore
         }
         return $return;
     }
+
+
+
+
+
+
+
+    public function UserList($row = 0)
+    {
+        if($row === 0)
+        {
+            throw new ErrorException("Row value for export::UserList() is empty.");
+            return 0;
+        }
+        $data = array();
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $row, PDO::PARAM_INT);
+        $prep->execute();
+        $fetch = $prep->fetch();
+
+        $points = explode("-", $fetch['points']);
+        $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+        $prep2 = $this->sql->conn->prepare($sql2);
+
+        $sql3 = "SELECT `wifi_signals`.*, `wifi_gps`.*
+                FROM `wifi`.`wifi_signals`
+                LEFT JOIN `wifi`.`wifi_gps`
+                ON `wifi_gps`.`ap_hash` = `wifi_signals`.`ap_hash`
+                WHERE `wifi_signals`.`id` = ?";
+        $prep3 = $this->sql->conn->prepare($sql3);
+        foreach($points as $point)
+        {
+            list($id, $new_old) = explode(":", $point);
+            #var_dump($id,$new_old);
+
+            $prep2->bindParam(1, $id, PDO::PARAM_INT);
+            $prep2->execute();
+            $this->sql->checkError();
+            $ap_fetch = $prep2->fetch(2);
+            $data[$ap_fetch['ap_hash']]['apdata'] = $ap_fetch;
+            $prep3->bindParam(1, $ap_fetch['ap_hash']);
+            $prep3->execute();
+            $sig_gps_data = $prep3->fetchAll(2);
+            #var_dump($sig_gps_data);
+            $data[$ap_fetch['ap_hash']]['gdata'] = $sig_gps_data;
+            var_dump($data);
+            die();
+        }
+        return $data;
+    }
 }
-?>

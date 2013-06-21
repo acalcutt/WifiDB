@@ -10,7 +10,8 @@ class wdbcli extends dbcore
     function __construct($config, $daemon_config)
     {
         parent::__construct($config);
-        $this->cli          = 1;
+        $this->pid_file =   "";
+        $this->cli      =   1;
         if($daemon_config['colors_setting'] == 0 or PHP_OS == "WINNT")
         {
             $this->colors = array(

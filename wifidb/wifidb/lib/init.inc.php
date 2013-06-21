@@ -148,10 +148,12 @@ try
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
+                    __autoload('convert');
+                    $dbcore->convert = new convert($config, $daemon_config, $dbcore);
                     __autoload('export');
                     $dbcore->export = new export($config, $daemon_config);
                     __autoload('import');
-                    $dbcore->import = new import($config, $daemon_config, $dbcore->export);
+                    $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
                 break;
                 ####
                 case "cli":
@@ -182,7 +184,11 @@ try
                 break;
 
                 case "export":
-                    $dbcore = new export($config);
+                    $dbcore = new frontend($config);
+                    __autoload('convert');
+                    $dbcore->convert = new convert($config, $daemon_config, $dbcore);
+                    __autoload('export');
+                    $dbcore->export = new export($config, $dbcore->convert);
                 break;
 
                 case "graph":

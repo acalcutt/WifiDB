@@ -26,46 +26,42 @@ $dbcore->smarty->assign('wifidb_page_label', 'Export Page');
 
 $func=$_GET['func'];
 
-if(isset($_GET['user'])){$user=$_GET['user'];}
-elseif(isset($_POST['user'])){$user = $_POST['user'];}
-
-if(isset($_GET['row'])){$row=$_GET['row'];}
-elseif(isset($_POST['row'])){$row = $_POST['row'];}
-
 switch($func)
 {
         #--------------------------
         case "exp_user_all_kml":
             $row = 0;
-            $dbcore->exp_kml($export="exp_user_all_kml", $user,$row, $named=0);
+            $dbcore->export->exp_kml($export="exp_user_all_kml", $user,$row);
             break;
         #--------------------------
         case "exp_all_db_kml":
             $user ='';
             $row = 0;
-            $dbcore->exp_kml($export="exp_all_db_kml",$user,$row, $named=0);
+            $dbcore->export->exp_kml($export="exp_all_db_kml",$user,$row);
             break;
         #--------------------------
         case "exp_user_list":
-            $user ="";
-            $dbcore->exp_kml($export="exp_user_list",$user,$row, $named=0);
-            break;
-        #--------------------------
-        case "exp_all_signal_gpx":
-            $user ="";
-            $dbcore->exp_kml($export="exp_all_signal_gpx",$user,$row, $named=0);
+            $row = ($_REQUEST['row'] ? $_REQUEST['row']: 0);
+            var_dump($row);
+            $result = $dbcore->export->UserList($row);
+            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
         case "exp_all_signal":
-            $user ="";
-            $dbcore->exp_kml($export="exp_all_signal",$user,$row, $named=0);
+            $id = ($_REQUEST['id'] ? $_REQUEST['id'] : 0);
+            $from = ($_REQUEST['from'] ? $_REQUEST['from'] : 0);
+            $limit = ($_REQUEST['limit'] ? $_REQUEST['limit'] : 0);
+            $results = $dbcore->export->ExportSingleAP($id, $from, $limit);
+            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
         case "exp_single_ap":
-            $id = (int) $_REQUEST['id'];
-            $from = (int) $_REQUEST['from'];
-            $limit = (int) $_REQUEST['limit'];
-            $results = $dbcore->ExportSingleAP($id, $from, $limit);
+            $id = ($_REQUEST['id'] ? $_REQUEST['id'] : 0);
+            $from = ($_REQUEST['from'] ? $_REQUEST['from'] : 0);
+            $limit = ($_REQUEST['limit'] ? $_REQUEST['limit'] : 0);
+            $results = $dbcore->export->ExportSingleAP($id, $from, $limit);
             $dbcore->smarty->assign('results', $results);
             $dbcore->smarty->display('export_results.tpl');
 

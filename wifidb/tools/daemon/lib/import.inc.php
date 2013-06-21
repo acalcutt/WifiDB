@@ -21,41 +21,20 @@ if not, write to the
 
 class import extends wdbcli
 {
-    function __construct($config, $daemon_config, $export_obj = NULL)
+    function __construct($config, $daemon_config, $export_obj = NULL, $convert_obj = NULL)
     {
         parent::__construct($config, $daemon_config);
 
         $this->export = $export_obj;
-
+        $this->convert = $convert_obj;
         $this->log_level    = $config['log_level'];
         $this->log_interval = 1;
         $this->verbose      = $config['verbose'];
         $this->dBmMaxSignal = -30;
         $this->dBmDissociationSignal = -85;
+
     }
 
-    /**
-     * @param int $sig_in
-     * @return float
-     */
-    private function convertSig2dBm($sig_in = 0)
-    {
-        $dBm = ((($this->dBmMaxSignal - $this->dBmDissociationSignal) * $sig_in) - (20 * $this->dBmMaxSignal) + (100 * $this->dBmDissociationSignal)) / 80;
-        $dbm_out =  round($dBm);
-        return $dbm_out;
-    }
-
-    /**
-     * @param int $sig_in
-     * @return float
-     */
-    private function convertdBm2Sig($sig_in = 0)
-    {
-        $SIG = 100 - 80 * ($this->dBmMaxSignal - $sig_in) / ($this->dBmMaxSignal - $this->dBmDissociationSignal);
-        if($SIG < 0){$SIG = 0;}
-        $round = round($SIG, 2);
-        return $round;
-    }
 
     /**
      * @param string $signals
@@ -148,8 +127,8 @@ class import extends wdbcli
                     if($increment_ids){$gps_line[0]++;}
                     $gdata[$gps_line[0]] = array(
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $this->convert_dd_dm($gps_line[1]),
-                                'long'	=>  $this->convert_dd_dm($gps_line[2]),
+                                'lat'	=>  $this->convert->dd2dm($gps_line[1]),
+                                'long'	=>  $this->convert->dd2dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'   =>  '0',
                                 'alt'   =>  '0',
@@ -169,8 +148,8 @@ class import extends wdbcli
                     if($increment_ids){$gps_line[0]++;}
                     $gdata[$gps_line[0]] = array(
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $this->convert_dd_dm($gps_line[1]),
-                                'long'	=>  $this->convert_dd_dm($gps_line[2]),
+                                'lat'	=>  $this->convert->dd2dm($gps_line[1]),
+                                'long'	=>  $this->convert->dd2dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'	=>  (float) $gps_line[4],
                                 'alt'	=>  (float) $gps_line[5],
@@ -192,16 +171,15 @@ class import extends wdbcli
                     }
 
                     $highestSignal = $this->FindHighestSig($ap_line[12]);
-                    $highestRSSI = $this->ConvertSig2dBm($highestSignal);
+                    $highestRSSI = $this->convert->Sig2dBm($highestSignal);
                     $apdata[] = array(
                                 'ssid'      =>  $ap_line[0],
                                 'mac'       =>  $ap_line[1],
-                                'manuf'     =>  $ap_line[2],
                                 'auth'      =>  $ap_line[3],
                                 'encry'     =>  $ap_line[4],
                                 'sectype'   =>  (int) $ap_line[5],
                                 'radio'     =>  $ap_line[6],
-                                'manuf'     =>  $this->manufactures($ap_line[1]),
+                                'manuf'     =>  $this->findManuf($ap_line[1]),
                                 'chan'      =>  (int) $ap_line[7],
                                 'btx'       =>  $ap_line[8],
                                 'otx'       =>  $ap_line[9],
@@ -229,7 +207,7 @@ class import extends wdbcli
                                 'encry'     =>  $ap_line[4],
                                 'sectype'   =>  (int) $ap_line[5],
                                 'radio'     =>  $ap_line[6],
-                                'manuf'     =>  $this->manufactures($ap_line[1]),
+                                'manuf'     =>  $this->findManuf($ap_line[1]),
                                 'chan'      =>  (int) $ap_line[7],
                                 'btx'       =>  $ap_line[8],
                                 'otx'       =>  $ap_line[9],
@@ -390,7 +368,7 @@ class import extends wdbcli
                 $signal = $sig_gps_exp[1];
                 if(!@$sig_gps_exp[2])
                 {
-                    $rssi   =  $this->convertSig2dBm($sig_gps_exp[1]);
+                    $rssi   =  $this->convert->Sig2dBm($sig_gps_exp[1]);
                 }else
                 {
                     $rssi = $sig_gps_exp[2];
@@ -571,7 +549,7 @@ class import extends wdbcli
         return $ret;
     }
 
-    private function RotateSpinner($r = 0)
+    public function RotateSpinner($r = 0)
     {
         if(!$this->verbose)
         {return 0;}
