@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>PHP</ID>
+  <OriginalElement>\dbcore</OriginalElement>
+  <nodes>
+    <node x="1938.0" y="2355.0">\languages</node>
+    <node x="665.0" y="2355.0">\convert</node>
+    <node x="1406.0" y="2355.0">\wdbmail</node>
+    <node x="2192.0" y="2355.0">\xml</node>
+    <node x="1117.0" y="2355.0">\graphs</node>
+    <node x="31.875" y="2060.0">\import</node>
+    <node x="2476.0" y="2355.0">\SQL</node>
+    <node x="1230.875" y="1590.0">\frontend</node>
+    <node x="-8.0" y="2355.0">\createKML</node>
+    <node x="0.0" y="0.0">\dbcore</node>
+    <node x="100.875" y="1720.5">\wdbcli</node>
+    <node x="1685.875" y="0.0">\security</node>
+    <node x="1667.0" y="2355.0">\geocache</node>
+    <node x="272.875" y="1600.0">\export</node>
+    <node x="687.875" y="1540.0">\api</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="\api" target="\dbcore">
+      <point x="0.0" y="-235.0" />
+      <point x="957.375" y="1515.0" />
+      <point x="951.875" y="1515.0" />
+      <point x="190.375" y="745.0" />
+    </edge>
+    <edge source="\import" target="\wdbcli">
+      <point x="0.0" y="-125.0" />
+      <point x="0.0" y="54.5" />
+    </edge>
+    <edge source="\wdbcli" target="\dbcore">
+      <point x="0.0" y="-54.5" />
+      <point x="184.875" y="1515.0" />
+      <point x="190.375" y="1515.0" />
+      <point x="-571.125" y="745.0" />
+    </edge>
+    <edge source="\export" target="\dbcore">
+      <point x="0.0" y="-175.0" />
+      <point x="478.375" y="1515.0" />
+      <point x="571.125" y="1515.0" />
+      <point x="-190.375" y="745.0" />
+    </edge>
+    <edge source="\frontend" target="\dbcore">
+      <point x="0.0" y="-185.0" />
+      <point x="1439.875" y="1515.0" />
+      <point x="1332.625" y="1515.0" />
+      <point x="571.125" y="745.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="0.38471986417657045" x="1322.6328331862312" y="2322.0079435127977" />
+  <SelectedNodes />
+  <Categories>
+    <Category>Methods</Category>
+    <Category>Constructors</Category>
+    <Category>Fields</Category>
+  </Categories>
+  <VISIBILITY>private</VISIBILITY>
+</Diagram>
+
