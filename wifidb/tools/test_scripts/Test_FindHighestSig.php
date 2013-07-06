@@ -11,7 +11,7 @@ define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "import");
 
 
-require( '../daemon/config.inc.php' );
+require('../daemon/config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 
 

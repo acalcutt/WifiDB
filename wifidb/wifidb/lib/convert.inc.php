@@ -202,7 +202,6 @@ class convert
         $geocord_in_exp = explode(".", $geocord_in);
         if(strlen($geocord_in_exp[1]) > 4){return $geocord_in;}
 
-        $start = microtime(true);
         //	GPS Convertion :
         $neg=FALSE;
         $geocord_exp = explode(".", $geocord_in);//replace any Letter Headings with Numeric Headings
@@ -220,11 +219,12 @@ class convert
         {
             var_dump($geocord_in);
         }
+#var_dump($geocord_in);
         // 428.7753 ---- 428 - 7753
         $geocord_dec = "0.".$geocord_exp[1];
         // 428.7753 ---- 428 - 0.7753
         $len = strlen($geocord_exp[0]);
-        #		echo $len.'<BR>';
+#var_dump($len);
         $geocord_min = substr($geocord_exp[0],-2,3);
         #		echo $geocord_min.'<BR>';
         // 428.7753 ---- 4 - 28 - 0.7753

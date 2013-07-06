@@ -9,7 +9,7 @@ define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "frontend_prep");
 define("DEBUG", 1);
 
-require( '../daemon/config.inc.php' );
+require('../daemon/config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 require( $daemon_config['wifidb_install']."/lib/config.inc.php" );
 

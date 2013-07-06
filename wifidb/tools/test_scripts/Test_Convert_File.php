@@ -8,7 +8,7 @@ define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
 
-require( '../daemon/config.inc.php' );
+require('../daemon/config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 
 $dbcore->verbosed("Testing Wardrive 4 SQLite file.");

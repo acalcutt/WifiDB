@@ -20,11 +20,12 @@ if not, write to the
 */
 class export extends dbcore
 {
-    public function __construct($config, $convert)
+    public function __construct($config)
     {
         parent::__construct($config);
-        $this->convert = $convert;
-        $this->createKML = new createKML($this->URL_PATH, $convert);
+        $this->convert = new convert($this);
+        $this->createKML = new createKML($this->URL_PATH, $this->convert, $config['timetilldead']);
+
         $this->month_names  = array(
             1=>'January',
             2=>'February',
@@ -1711,7 +1712,7 @@ class export extends dbcore
                         $file_ext	=	$date."_FULL_DB.vs1";
                 }
                 $filename	=	$vs1_out.$file_ext;
-        #	echo $filename."\r\n";
+                #echo $filename."\r\n";
                 // define initial write and appends
                 fopen($filename, "w");
                 $fileappend	=	fopen($filename, "a");
@@ -1764,9 +1765,9 @@ class export extends dbcore
                         fwrite($fileappend, $apd);
                 }
                 fclose($fileappend);
-                $end 	=	date("H:i:s");
-                $GPSS	=	count($gps_array);
-                $APSS	=	count($aps);
+                $end    =   date("H:i:s");
+                $GPSS   =   count($gps_array);
+                $APSS   =   count($aps);
                 $return = array(0=>1, 1=>$file_ext);
                 if($screen == "HTML")
                 {
@@ -1791,13 +1792,14 @@ class export extends dbcore
 
 
 
-    public function UserList($row = 0)
+    public function UserList($row = 0, $trail_type = 3)
     {
         if($row === 0)
         {
             throw new ErrorException("Row value for export::UserList() is empty.");
             return 0;
         }
+        $r = 0;
         $data = array();
         $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
@@ -1806,33 +1808,49 @@ class export extends dbcore
         $fetch = $prep->fetch();
 
         $points = explode("-", $fetch['points']);
-        $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
-        $prep2 = $this->sql->conn->prepare($sql2);
+        #$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+        #$prep2 = $this->sql->conn->prepare($sql2);
 
-        $sql3 = "SELECT `wifi_signals`.*, `wifi_gps`.*
-                FROM `wifi`.`wifi_signals`
-                LEFT JOIN `wifi`.`wifi_gps`
-                ON `wifi_gps`.`ap_hash` = `wifi_signals`.`ap_hash`
-                WHERE `wifi_signals`.`id` = ?";
-        $prep3 = $this->sql->conn->prepare($sql3);
+        #$sql3 = "SELECT `wifi_signals`.*, `wifi_gps`.*
+        #        FROM `wifi`.`wifi_signals`
+        #        LEFT JOIN `wifi`.`wifi_gps`
+        #        ON `wifi_gps`.`ap_hash` = `wifi_signals`.`ap_hash`
+        #        WHERE `wifi_signals`.`id` = ? AND `wifi_gps`.`lat` != '0000.0000'";
+        #$prep3 = $this->sql->conn->prepare($sql3);
+echo "Gathering List...\r\n";
         foreach($points as $point)
         {
             list($id, $new_old) = explode(":", $point);
-            $prep2->bindParam(1, $id, PDO::PARAM_INT);
-            $prep2->execute();
+            $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = $id";
+
+            $sql3 = "SELECT `wifi_signals`.*, `wifi_gps`.*
+                FROM `wifi`.`wifi_signals`
+                LEFT JOIN `wifi`.`wifi_gps`
+                ON `wifi_gps`.`ap_hash` = `wifi_signals`.`ap_hash`
+                WHERE `wifi_signals`.`id` = $id AND `wifi_gps`.`lat` != '0000.0000'";
+            #$prep2->bindParam(1, $id, PDO::PARAM_INT);
+            #$prep2->execute();
+            $prep2 = $this->sql->conn->query($sql2);
             $this->sql->checkError();
             $ap_fetch = $prep2->fetch(2);
+
             $data[$ap_fetch['ap_hash']] = $ap_fetch;
-            $prep3->bindParam(1, $ap_fetch['ap_hash']);
-            $prep3->execute();
+            $data[$ap_fetch['ap_hash']]['new_old'] = $new_old;
+            $prep3 = $this->sql->conn->query($sql3);
+            #$prep3->bindParam(1, $ap_fetch['ap_hash']);
+            #$prep3->execute();
             $sig_gps_data = $prep3->fetchAll(2);
             $data[$ap_fetch['ap_hash']]['gdata'] = $sig_gps_data;
+            $r = dbcore::RotateSpinner($r);
         }
+echo "Data gathered, Generating the KML File...\r\n";
+echo "Plotting the AP's\r\n";
         $this->createKML->LoadData($data);
-        $date = date("Y-m-d H:i:s");
-        $folder_data = $this->createKML->createFolder($this->createKML->PlotAllAPs(1), $fetch['title']);
+        $date = date("Y-m-d_H-i-s");
+
+        $folder_data = $this->createKML->createFolder($this->createKML->PlotAllAPs($trail_type), $fetch['title']);
         $kml_data = $this->createKML->createFolder($folder_data, "WiFiDB Export on ".$date);
-        $this->createKML->createKML("UserImport_".$date."_".rand(000000,999999));
+        $this->createKML->createKML("UserImport_".$date."_".rand(000000,999999), $kml_data);
         return $data;
     }
 }

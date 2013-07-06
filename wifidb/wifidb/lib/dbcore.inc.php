@@ -513,35 +513,16 @@ class dbcore
         $text = str_replace($strip,"",$text);
         return $text;
     }
-    
-    #===========================================================================#
-    #   make ssid (makes a DB safe, File safe and Unsan versions of an SSID)    #
-    #===========================================================================#
-    /**
-     * @param string $ssid_in
-     * @return array
-     */
-    public function make_ssid($ssid_in = '')
-    {
-        $ssid_in = preg_replace('/[\x00-\x1F\x7F]/', '', $ssid_in); #remove any hidden chars
-        if($ssid_in == "") # check to see if the ssid is blank,
-        {
-            $ssid_out = "UNNAMED";  #if so lets set it to UNNAMED
-            $A = array($ssid_out, $ssid_out, $ssid_out); # Assign it to everything!!!
-            return $A; # and lets return it
-        }
 
-        # Make File Safe SSID
-        $file_safe_ssid = $this->smart_quotes($ssid_in);
-        # Make HTML safe SSID
-        $ssid_html = htmlentities($ssid_in, ENT_QUOTES);
-        # Make SQL Table Name safe SSID from HTML safe SSID
-        $ssid_sized = str_split($ssid_html,25); //split SSID in two on is 25 char.
-        $ssid_table_safe = $ssid_sized[0]; //Use the 25 char word for the APs table name, this is due to a limitation in MySQL table name lengths,
-        # Return
-        $A = array($ssid_html, $ssid_table_safe, $file_safe_ssid);
-        return $A;
-        #---------#
+
+    function normalize_ssid($string)
+    {
+        $string = htmlentities($string, ENT_QUOTES, 'UTF-8');
+        $string = preg_replace('~&([a-z]{1,2})(acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml);~i', '$1', $string);
+        $string = html_entity_decode($string, ENT_QUOTES, 'UTF-8');
+        $string = preg_replace(array('~[^0-9a-z]~i', '~[ -]+~'), ' ', $string);
+
+        return trim($string, ' -');
     }
 
     /**
@@ -619,6 +600,21 @@ class dbcore
         }
         $c;
         return $c;
+    }
+
+
+    public function RotateSpinner($r = 0)
+    {
+        if($r===0){echo "|\r";}
+        if($r===10){echo "/\r";}
+        if($r===20){echo "-\r";}
+        if($r===30){echo "\\\r";}
+        if($r===40){echo "|\r";}
+        if($r===50){echo "/\r";}
+        if($r===60){echo "-\r";}
+        if($r===70){echo "\\\r";$r=0;}
+        $r++;
+        return $r;
     }
 
     /**

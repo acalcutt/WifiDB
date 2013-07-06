@@ -548,21 +548,4 @@ class import extends wdbcli
             );
         return $ret;
     }
-
-    public function RotateSpinner($r = 0)
-    {
-        if(!$this->verbose)
-        {return 0;}
-
-        if($r===0){echo "|\r";}
-        if($r===10){echo "/\r";}
-        if($r===20){echo "-\r";}
-        if($r===30){echo "\\\r";}
-        if($r===40){echo "|\r";}
-        if($r===50){echo "/\r";}
-        if($r===60){echo "-\r";}
-        if($r===70){echo "\\\r";$r=0;}
-        $r++;
-        return $r;
-    }
 }

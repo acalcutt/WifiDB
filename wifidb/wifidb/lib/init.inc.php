@@ -20,65 +20,57 @@ if not, write to the
 */
 // Show all error's with strict santex
 //***DEV USE ONLY***
-ini_set('display_errors', 1);
-error_reporting(E_ALL && E_STRICT && E_WARNING && E_NOTICE);
-ini_set("screen.enabled", TRUE);
-//
+ini_set('display_errors', 1);//***DEV USE ONLY***
+error_reporting(E_ALL && E_STRICT && E_WARNING && E_NOTICE);//***DEV USE ONLY***
+ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
+//***DEV USE ONLY***
 
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 
 set_exception_handler('exception_handler');
-$error = 0;
-$config = array();
 
-if(!file_exists('config.inc.php'))
+
+if(strtolower(SWITCH_SCREEN) == "cli")
 {
-    $error = 1;
-    $error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
-
+    if(!file_exists('../config.inc.php'))
+    {
+        $error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
+        throw new ErrorException($error_msg);
+    }
+    require '../config.inc.php';
+    require $daemon_config['wifidb_install'].'/lib/config.inc.php';
 }else
 {
-    if(strtolower(SWITCH_SCREEN) == "cli")
-    {
-        require $daemon_config['wifidb_install'].'/lib/config.inc.php' ;
-    }else
-    {
-        require 'config.inc.php' ;
-    }
-    $dsn = $config['srvc'].':host='.$config['host'];
-    $options = array(
-        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
-    );
-
-    $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-
-    $sql = "SELECT `table` FROM `wifi`.`settings` WHERE `id` = '1'";
-    $res = $conn->query($sql);
-    $fetch = $res->fetch(2);
-
-    unset($res);
-    unset($conn);
-    if($fetch['table'] != 'nextruntime')
-    {
-        $cwd = getcwd().'/';
-        $gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
-        if($cwd != $gen_cwd)
-        {
-            $error =1;
-            $error_msg = 'The database is still in an old format, you will need to do an upgrade first.<br>
-                If this database is older than Version 0.20 I would do a <a href="/'.$config['hosturl'].$config['root'].'/install/">Full Fresh Install</a>, After making a backup of all your data.</br>
-                Please go <a href="/'.$config['hosturl'].$config['root'].'/install/upgrade/index.php">/[WiFiDB]/install/upgrade/index.php</a> to do that.';
-        }
-    }
-    unset($fetch);
-    unset($gen_cwd);
-    unset($cwd);
-    unset($sql);
+    require 'config.inc.php';
 }
-if($error)
+$dsn = $config['srvc'].':host='.$config['host'];
+$options = array(
+    PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+);
+
+$conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+
+$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'version'";
+$res = $conn->query($sql);
+$fetch = $res->fetch(2);
+
+unset($res);
+unset($conn);
+if($fetch['size'] != '0.30 b1')
 {
-    #throw new ErrorException($error_msg);
+    $cwd = getcwd().'/';
+    $gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
+    if($cwd != $gen_cwd)
+    {
+        throw new ErrorException('The database is still in an old format, you will need to do an upgrade first.<br>
+                If this database is older than Version 0.20 I would do a Full Fresh Install, After making a backup of all your data.
+                Please go '.$config['hosturl'].$config['root'].'/install/ to do that.');
+    }
 }
+unset($fetch);
+unset($gen_cwd);
+unset($cwd);
+unset($sql);
 
 if(strtolower(SWITCH_SCREEN) != "cli")
 {
@@ -90,11 +82,12 @@ if(strtolower(SWITCH_SCREEN) != "cli")
             exit();
         }
     }
-}    
+}
+
+
 /*
  * Class autoloader
  */
-
 function __autoload($class)
 {
     if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
@@ -119,12 +112,7 @@ function __autoload($class)
         return 1;
     }else
     {
-        echo "Could not load class `{$class}` from 
-        {$GLOBALS['config']['wifidb_tools']}daemon/lib/{$class}.inc.php
-            Or
-        {$GLOBALS['config']['wifidb_install']}lib/{$class}.inc.php\r\n";
-        die();
-        return 0;
+        throw new errorexception("Could not load class `{$class}`");
     }
 }
 
@@ -133,7 +121,6 @@ try
     switch(strtolower(SWITCH_SCREEN))
     {
         case "cli":
-            require_once $config['wifidb_tools'].'daemon/config.inc.php';
             switch(strtolower(SWITCH_EXTRAS))
             {
                 ####
@@ -142,16 +129,12 @@ try
                 break;
                 ####
                 case "import":
-                    __autoload('import');
                     $dbcore = new import($config, $daemon_config, new stdClass() );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
-                    __autoload('convert');
                     $dbcore->convert = new convert($config, $daemon_config, $dbcore);
-                    __autoload('export');
                     $dbcore->export = new export($config, $daemon_config);
-                    __autoload('import');
                     $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
                 break;
                 ####
@@ -214,45 +197,30 @@ catch (Exception $e) {
 }
 
 function exception_handler($err)
-{ 
-    $trace = array();
-    /*
-    foreach ($err->getTrace() as $a => $b)
-    {
-        foreach ($b as $c => $d)
-        {
-            if ($c == 'args')
-            {
-                foreach ($d as $e => $f)
-                {
-                    if($a === 2)
-                    {
-                        $trace[$a] = array(strval($a), "*********", $f);
-                    }else
-                    {
-                        $trace[$a] = array(strval($a), $e, $f);
-                    }
-                }
-            }else
-            {
-                $trace[$a] = array(strval($a),$c,$d);
-            }
-        }
-    }
-    */
-
+{
     $trace = array( 'Error' =>strval($err->getCode()), 'Message'=>str_replace("\n", "</br>\r\n", $err->getMessage()),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
+    switch(strtolower(SWITCH_SCREEN))
+    {
+        case "html":
+            define('WWW_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/");
+            define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/smarty/");
+            $smarty = new Smarty();
+            $smarty->setTemplateDir( WWW_DIR.'smarty/templates/wifidb/' );
+            $smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
+            $smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
+            $smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
+            $smarty->smarty->assign('wifidb_error_mesg', $trace);
+            $smarty->display("error.tpl");
+            break;
 
-    define('WWW_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/");
-    define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/smarty/");
-    $smarty = new Smarty();
-    $smarty->setTemplateDir( WWW_DIR.'smarty/templates/wifidb/' );
-    $smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
-    $smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
-    $smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
-    $smarty->smarty->assign('wifidb_error_mesg', $trace);
-    $smarty->display("error.tpl");
-    exit();
+        case "cli":
+            var_dump($trace);
+            break;
+
+        default:
+            echo "Unknown screen switch, here is a raw dump of the error...\r\n".var_export($trace, 1);
+            break;
+    }
 }
 
 
