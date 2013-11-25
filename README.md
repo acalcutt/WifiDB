@@ -5,9 +5,9 @@ RanInt -> WiFiDB -> Read-me
 
   Project Phase: Alpha
   --------------
-  http://www.randomintervals.com/
+  http://www.wifidb.net/
 
-    This program is free software; you can redistribute it and/or modify it under
+	This program is free software; you can redistribute it and/or modify it under
 	the terms of the GNU General Public License version 2, as published by the 
 	Free Software Foundation.   This program is distributed in the hope that it 
 	will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
@@ -15,9 +15,9 @@ RanInt -> WiFiDB -> Read-me
 	Public License for more details. You should have received a copy of the GNU 
 	General Public License along with this program; if not, you can get it at: 
 		
-		Free Software Foundation, Inc.,
-		51 Franklin St, Fifth Floor
-		Boston, MA  02110-1301 USA
+	Free Software Foundation, Inc.,
+	51 Franklin St, Fifth Floor
+	Boston, MA  02110-1301 USA
 		
 	Or go here:  http://www.gnu.org/licenses/gpl-2.0.txt
 		
