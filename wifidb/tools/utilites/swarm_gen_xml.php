@@ -8,7 +8,7 @@ $header = '<?xml version="1.0"?>
 ';
 $footer = "</file_events>";
 $events = "";
-$conn = new mysqli("192.168.1.18", "root", "saNsui20si", "wifi");
+$conn = new mysqli($server, $sql_user, $sql_pwd, $db);
 $result = $conn->query("SELECT `points`,`title`,`username`,`date`,`aps` FROM `wifi`.`users_imports` order by `id` DESC");
 #$array = $result->fetch_row();
 #var_dump($array);
@@ -33,7 +33,7 @@ while($array = $result->fetch_row())
             break;
         default:
             $i = 0;
-            $conn2 = new mysqli("192.168.1.18", "root", "saNsui20si", "wifi");
+            $conn2 = new mysqli($server, $sql_user, $sql_pwd, $db);
             $points_explode = explode("-", $array[0]);
             echo "User: ".$array[2]."\r\nDate: ".$array[3]."\r\nTitle: ".$array[1]."\r\n";
             foreach($points_explode as $key=>$point)
