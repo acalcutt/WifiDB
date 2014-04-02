@@ -243,7 +243,7 @@ class export extends dbcore {
 FROM `wifi`.`wifi_signals`
   LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
 WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
-      AND `wifi_gps`.`lat` != '0000.0000'";
+      AND `wifi_gps`.`lat` != '0.0000'";
         if(!empty($limit))
         {
             $sql3 .= " LIMIT $limit";
