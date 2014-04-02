@@ -130,152 +130,100 @@ class convert
      * @param string $geocord_in
      * @return string
      */
+    # 4-1-2014 : Re-written as All to DMM by acalcutt. Based on Vistumbler _Format_GPS_All_to_DMM() function.
     public function dd2dm($geocord_in="")
     {
-        $neg = FALSE;
-        $geocord_exp = explode(".", $geocord_in);
-        $geo_front = $geocord_exp[0];
-        $geo_back = $geocord_exp[1];
+		$return = "0.0000";
+	
+		var_dump($geocord_in);
+	
+		$pattern[0] = '/N /';
+		$pattern[1] = '/E /';
+		$replacement = "";
+		$geocord_in = preg_replace($pattern, $replacement, $geocord_in);
 
-        $pattern[0] = '/N /';
-        $pattern[1] = '/E /';
-        $replacement = "";
-        $geo_front = preg_replace($pattern, $replacement, $geo_front);
-
-        $pattern_neg[0] = '/S /';
-        $pattern_neg[1] = '/W /';
-        $replacement_neg = "-";
-        $geo_front = preg_replace($pattern_neg, $replacement_neg, $geo_front);
-
-        if($geo_front[0] == "-")
-        {
-            $neg = TRUE;
-        }
-        #var_dump($geo_front);
-        if(strlen($geo_front) >= 4)
-        {
-            $out = $geo_front.'.'.$geo_back;
-            return $out;
-        }
-
-        // 4.146255 |----| 4 || 146255
-        $geocord_dec = "0.".$geo_back;
-        if($geocord_dec == "0.0000")
-        {
-            $ret = ($neg ? "-0000.0000" : "0000.0000");
-            return $ret;
-        }
-
-        // 4.146255 |----| 4 || 0.146255
-        $geocord_mult = $geocord_dec*60;
-        // 4.146255 |----| 4 || (0.146255)*60 = 8.7753
-        $mult = explode(".",$geocord_mult);
-
-        if( strlen($mult[0]) < 2 )
-        {
-            $geocord_mult = "0".$geocord_mult;
-        }
-        // 4.146255 |----| 4 || 08.7753
-        $geocord_out = $geo_front.$geocord_mult;
-        // 4.146255 |----| 408.7753
-
-        $geocord_o = explode(".", $geocord_out);
-        if(!@$geocord_o[1])
-        {
-            var_dump($geocord_in);
-            var_dump($php_errormsg);
-            die();
-        }
-        if( strlen($geocord_o[1]) > 4 ) //undefined offset ??? wtf...
-        {
-            $geocord_out = $geocord_o[0].".".substr($geocord_o[1], 0 , 4);
-        }
-        #var_dump($geocord_in, $geocord_out);
-        return $geocord_out;
+		$pattern_neg[0] = '/S /';
+		$pattern_neg[1] = '/W /';
+		$replacement_neg = "-";
+		$geocord_in = preg_replace($pattern_neg, $replacement_neg, $geocord_in);
+		
+		$sign = ($geocord_in[0] == "-") ? "-" : "";
+		$geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
+		
+		$geocord_exp = explode(" ", $geocord_in);
+		$sections = count($geocord_exp);
+		
+		if ($sections == 1)
+		{
+			$latlon_exp = explode(".", $geocord_exp[0]);
+			if (strlen($latlon_exp[1]) == 4)
+			{	
+				#DMM to DMM
+				echo "already dmm\r\n";
+				$return = $sign.$latlon_exp[0].".".$latlon_exp[1];
+			}
+			elseif (strlen($latlon_exp[1]) == 7)
+			{
+				#DDD to DMM
+				echo "dd to dmm\r\n";
+				$DD = $latlon_exp[0] * 100;
+				$MM = ((float)".".$latlon_exp[1]) * 60;
+				$return = $sign.number_format($DD + $MM, 4);
+			}
+		}
+		elseif ($sections == 3)
+		{
+			#DDMMSS to DMM
+			echo "ddmmss to dmm\r\n";
+			$DDSTR = substr($sections[0], 0, -1);
+			$MMSTR = substr($sections[1], 0, -1);
+			$SSSTR = substr($sections[2], 0, -1);
+			
+			$DD = $DDSTR * 100;
+			$MM = $MMSTR + ($SSSTR / 60);
+			$return = $sign.number_format($DD + $MM, 4);
+		}
+		
+		#pad number so it matches phils dumb format of ####.####
+		#$format_exp = explode(".", $return);
+		#$return = sprintf('%+04d', $format_exp[0]).".".$format_exp[1];
+		#$return = str_replace('+', '', $return);
+		
+		var_dump($sections);
+		var_dump($return);
+		return $return;
     }
 
+    
     /**
      * @param string $geocord_in
      * @return int|string
      * @throws ErrorException
      */
+    # 4-1-2014 : Re-written by acalcutt. Based on Vistumbler _Format_GPS_DMM_to_DDD() function.
     public function dm2dd($geocord_in = "")
     {
-        if($geocord_in == "")
-        {
-            return FALSE;
-        }
-        $geocord_in_exp = explode(".", $geocord_in);
-        if(strlen($geocord_in_exp[1]) > 4){return $geocord_in;}
+		#echo "dm2dd in\r\n";
+		#var_dump($geocord_in);
+		
+		$return="0.0000000";
+		
+		$sign = ($geocord_in[0] == "-") ? "-" : "";
+		$geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
 
-        //	GPS Convertion :
-        $neg=FALSE;
-        $geocord_exp = explode(".", $geocord_in);//replace any Letter Headings with Numeric Headings
-        if($geocord_exp[0][0] === "S" or $geocord_exp[0][0] === "W"){$neg = TRUE;}
-        $patterns[0] = '/N /';
-        $patterns[1] = '/E /';
-        $patterns[2] = '/S /';
-        $patterns[3] = '/W /';
-        $replacements = "";
-        $geocord_in = preg_replace($patterns, $replacements, $geocord_in);
-        $geocord_exp = explode(".", $geocord_in);
-        if($geocord_exp[0][0] === "-"){$geocord_exp[0] = 0 - $geocord_exp[0];$neg = TRUE;}
-
-        if(!@$geocord_exp[1])
-        {
-            var_dump($geocord_in);
-        }
-#var_dump($geocord_in);
-        // 428.7753 ---- 428 - 7753
-        $geocord_dec = "0.".$geocord_exp[1];
-        // 428.7753 ---- 428 - 0.7753
-        $len = strlen($geocord_exp[0]);
-#var_dump($len);
-        $geocord_min = substr($geocord_exp[0],-2,3);
-        #		echo $geocord_min.'<BR>';
-        // 428.7753 ---- 4 - 28 - 0.7753
-        $geocord_min = $geocord_min+$geocord_dec;
-        // 428.7753 ---- 4 - 28.7753
-        $geocord_div = $geocord_min/60;
-        // 428.7753 ---- 4 - (28.7753)/60 = 0.4795883
-        switch($len)
-        {
-            case 2:
-                $geocord_deg = 0;
-                #			echo $geocord_deg.'<br>';
-                break;
-
-            case 3:
-                $geocord_deg = substr($geocord_exp[0], 0,1);
-                #			echo $geocord_deg.'<br>';
-                break;
-
-            case 4:
-                $geocord_deg = substr($geocord_exp[0], 0,2);
-                #			echo $geocord_deg.'<br>';
-                break;
-
-            case 5:
-                $geocord_deg = substr($geocord_exp[0], 0,3);
-                #			echo $geocord_deg.'<br>';
-                break;
-
-            default:
-                var_export($geocord_exp, 1);
-                throw new ErrorException("Unexpected Geocord front length encountered in dm2dd");
-                break;
-        }
-        if(!isset($geocord_deg))
-        {
-            echo $geocord_in."\r\n";
-            return -1;
-        }
-        $geocord_out = $geocord_deg + $geocord_div;
-        // 428.7753 ---- 4.4795883
-        if($neg === TRUE){$geocord_out = "-".$geocord_out;}
-        $geocord_out = substr($geocord_out, 0,10);
-        #var_dump($geocord_in, $geocord_out);
-        return $geocord_out;
+		$latlon_exp = explode(".", $geocord_in);
+		$sections = count($latlon_exp);
+		if ($sections == 2)
+		{
+			$latlonleft = substr($latlon_exp[0], 0, -2);
+			$latlonright = ((float)(substr($latlon_exp[0], (strlen($latlon_exp[0])-2)) . '.' . $latlon_exp[1])) / 60;
+			$return = $sign.number_format($latlonleft + $latlonright , 7);
+			
+		}
+		
+		#echo "dm2dd out\r\n";
+		#var_dump($return);
+		return $return;
     }
 
     /**
