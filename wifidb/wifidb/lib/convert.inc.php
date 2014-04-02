@@ -12,6 +12,8 @@ class convert
     {
         $this->languages = $dbcore->lang;
         $this->core = $dbcore;
+        $this->dBmMaxSignal = -30;
+        $this->dBmDissociationSignal = -85;
     }
 
     /**
