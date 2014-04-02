@@ -73,7 +73,7 @@ class daemon extends wdbcli
         {
             throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
         }
-        $multi_user = explode(";", $user);
+        $multi_user = explode("|", $user);
         $rows = array();
         $n = 0;
         # Now lets insert some preliminary data into the User Import table as a place holder for the finished product.

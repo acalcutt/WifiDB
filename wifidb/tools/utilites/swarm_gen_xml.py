@@ -9,7 +9,8 @@ daemon_config = daemon_cfg_obj.ConfigMap("daemon")
 www_config_obj = Config( daemon_config['wifidb_install']+"/lib/config.ini")
 www_config = www_config_obj.ConfigMap("sql")
 
-conn = cymysql.connect(host=www_config['sql_host'], user=www_config['db_user'], passwd=www_config['db_pwd'], db=www_config['db'])
+conn = cymysql.connect(host='172.16.1.18', user='root', passwd='saNsui20si', db='wifi')
+#conn = cymysql.connect(host=www_config['sql_host'], user=www_config['db_user'], passwd=www_config['db_pwd'], db=www_config['db'])
 
 header = "<?xml version=\"1.0\"?>\r\n<file_events>\r\n"
 footer = "</file_events>"

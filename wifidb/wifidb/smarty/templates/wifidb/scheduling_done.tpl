@@ -28,7 +28,7 @@ if not, write to the
         <th>ID</th>
         <th>Filename</th>
         <th>Title</th>
-        <th>User</th>
+        <th>User(s)</th>
         <th>Size</th>
     </tr>
     <tr class="{$wifidb_done.class}">

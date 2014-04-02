@@ -49,7 +49,7 @@ switch($func)
         $files_all = array();
         while ($newArray = $result->fetch(2))
         {
-            $users_array = explode(";", $newArray["user"]);
+            $users_array = explode("|", $newArray["user"]);
             $users_array = array_filter($users_array);
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
             $files_all[] = array(

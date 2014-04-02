@@ -199,6 +199,10 @@ class convert
      */
     public function dm2dd($geocord_in = "")
     {
+        if($geocord_in == "")
+        {
+            return FALSE;
+        }
         $geocord_in_exp = explode(".", $geocord_in);
         if(strlen($geocord_in_exp[1]) > 4){return $geocord_in;}
 
@@ -255,6 +259,7 @@ class convert
                 break;
 
             default:
+                var_export($geocord_exp, 1);
                 throw new ErrorException("Unexpected Geocord front length encountered in dm2dd");
                 break;
         }
@@ -267,7 +272,7 @@ class convert
         // 428.7753 ---- 4.4795883
         if($neg === TRUE){$geocord_out = "-".$geocord_out;}
         $geocord_out = substr($geocord_out, 0,10);
-        #var_dump($geocord_out);
+        #var_dump($geocord_in, $geocord_out);
         return $geocord_out;
     }
 

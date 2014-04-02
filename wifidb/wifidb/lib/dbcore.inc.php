@@ -80,7 +80,7 @@ class dbcore
         $this->email_validation         = 1;
         $this->WDBadmin                 = $config['admin_email'];
         $this->smtp                     = $config['wifidb_smtp'];
-        if($config['colors_setting'] == 0 or PHP_OS != "Linux")
+        if(empty($config['colors_setting']) or PHP_OS != "Linux")
         {
             $this->colors = array(
                 "LIGHTGRAY"	=> "",
@@ -121,7 +121,7 @@ class dbcore
     {
         if($email == ""){return 0;}
         // First, we check that there's one @ symbol, and that the lengths are right
-        if (!ereg("^[^@]{1,64}@[^@]{1,255}$", $email))
+        if (!preg_match("^[^@]{1,64}@[^@]{1,255}$", $email))
         {
             // Email invalid because wrong number of characters in one section, or wrong number of @ symbols.
             return 0;
@@ -131,12 +131,12 @@ class dbcore
         $local_array = explode(".", $email_array[0]);
         for ($i = 0; $i < sizeof($local_array); $i++)
         {
-            if (!ereg("^(([A-Za-z0-9!#$%&'*+/=?^_`{|}~-][A-Za-z0-9!#$%&'*+/=?^_`{|}~\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$", $local_array[$i]))
+            if (!preg_match("^(([A-Za-z0-9!#$%&'*+/=?^_`{|}~-][A-Za-z0-9!#$%&'*+/=?^_`{|}~\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$", $local_array[$i]))
             {
                 return 0;
             }
         }
-        if (!ereg("^\[?[0-9\.]+\]?$", $email_array[1]))
+        if (!preg_match("^\[?[0-9\.]+\]?$", $email_array[1]))
         {
             // Check if domain is IP. If not, it should be valid domain name
             $domain_array = explode(".", $email_array[1]);
@@ -146,7 +146,7 @@ class dbcore
             }
             for ($i = 0; $i < sizeof($domain_array); $i++)
             {
-                if (!ereg("^(([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])|([A-Za-z0-9]+))$", $domain_array[$i]))
+                if (!preg_match("^(([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])|([A-Za-z0-9]+))$", $domain_array[$i]))
                 {
                     return 0;
                 }
@@ -154,7 +154,16 @@ class dbcore
         }
         return 1;
     }
-    
+
+    function GetAPhash($id)
+    {
+        $sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+        $result = $this->sql->conn->query($sql);
+        $ret = $result->fetch(2);
+        $hash = $ret['ap_hash'];
+        return $hash;
+    }
+
     ###################################
     /**
      * @param string $value
@@ -178,7 +187,7 @@ class dbcore
         if ($type=='string')
         {
             echo '('.strlen($value).')';
-            $value= $this->dump($value,-1);
+            $value = dbcore::dump($value,-1);
         }
         elseif ($type=='boolean') $value= ($value?'true':'false');
         elseif ($type=='object')
@@ -197,8 +206,8 @@ class dbcore
             echo '('.count($value).')';
             foreach($value as $key=>$val)
             {
-                echo "\n".str_repeat("\t",$level+1).$this->dump($key,-1).' => ';
-                $this->dump($val,$level+1);
+                echo "\n".str_repeat("\t",$level+1).dbcore::dump($key,-1).' => ';
+                dbcore::dump($val,$level+1);
             }
             $value= '';
         }
@@ -310,7 +319,7 @@ class dbcore
      * @param int $round
      * @return string
      */
-    public function format_size($size, $round = 2)
+    public static function format_size($size, $round = 2)
     {
         //Size must be bytes!
         $sizes = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
@@ -330,7 +339,7 @@ class dbcore
      * @param $uid
      * @param $gid
      */
-    public function recurse_chown_chgrp($mypath, $uid, $gid)
+    public static function recurse_chown_chgrp($mypath, $uid, $gid)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)
@@ -341,7 +350,7 @@ class dbcore
                 //print $typepath. " : " . filetype ($typepath). "<BR>" ;
                 if (filetype ($typepath) == 'dir')
                 {
-                    $this->recurse_chown_chgrp ($typepath, $uid, $gid);
+                    dbcore::recurse_chown_chgrp ($typepath, $uid, $gid);
                 }
                 chown($typepath, $uid);
                 chgrp($typepath, $gid);
@@ -356,7 +365,7 @@ class dbcore
      * @param $mypath
      * @param $mod
      */
-    public function recurse_chmod($mypath, $mod)
+    public static function recurse_chmod($mypath, $mod)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)
@@ -367,7 +376,7 @@ class dbcore
                 //print $typepath. " : " . filetype ($typepath). "<BR>" ;
                 if (filetype ($typepath) == 'dir')
                 {
-                    $this->recurse_chmod($typepath, $mod);
+                    dbcore::recurse_chmod($typepath, $mod);
                 }
                 chmod($typepath, $mod);
             }
@@ -496,7 +505,7 @@ class dbcore
      * @param string $text
      * @return mixed
      */
-    public function GPSFilter($text="") // Used for GPS
+    public static function GPSFilter($text="") // Used for GPS
     {
         $pattern = '/"((.)*?)"/i';
         $strip = array(
@@ -515,7 +524,7 @@ class dbcore
     }
 
 
-    function normalize_ssid($string)
+    public static function normalize_ssid($string)
     {
         $string = htmlentities($string, ENT_QUOTES, 'UTF-8');
         $string = preg_replace('~&([a-z]{1,2})(acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml);~i', '$1', $string);
@@ -556,7 +565,7 @@ class dbcore
      * @param $long2
      * @return array
      */
-    public function CalcDistance($lat1, $long1, $lat2, $long2)
+    public static function CalcDistance($lat1, $long1, $lat2, $long2, $return_type = "m")
     {
             $pi80 = M_PI / 180;
             $lat1 *= $pi80;
@@ -570,7 +579,14 @@ class dbcore
             $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlong / 2) * sin($dlong / 2);
             $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
             $km = $r * $c;
-            return array(($km * 0.621371192), $km);
+            if($return_type === "m")
+            {
+                return array((($km * 0.621371192)*5280), $km*1000);#feet, meters
+            }elseif($return_type === "km")
+            {
+                return array(($km * 0.621371192), $km);#Miles, KM
+            }
+
     }
 
     /**
@@ -579,7 +595,7 @@ class dbcore
      * @param int $asc
      * @return array
      */
-    public function subval_sort($a,$subkey, $asc = 0)
+    public static function subval_sort($a,$subkey, $asc = 0)
     {
         foreach($a as $k=>$v)
         {
@@ -603,7 +619,8 @@ class dbcore
     }
 
 
-    public function RotateSpinner($r = 0)
+
+    public static function RotateSpinner($r = 0)
     {
         if($r===0){echo "|\r";}
         if($r===10){echo "/\r";}
@@ -621,7 +638,7 @@ class dbcore
      * @param string $file
      * @return int|string
      */
-    public function TarFile($file = "")
+    public static function TarFile($file = "")
     {
         if($file == "")
         {

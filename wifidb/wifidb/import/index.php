@@ -122,6 +122,10 @@ switch($func)
                     $ext_fail = 0;
                     $task = "import";
                 break;
+                case "db":
+                    $ext_fail = 0;
+                    $task = "import";
+                    break;
                 default:
                     $ext_fail = 1;
                     $task = "";
@@ -157,10 +161,10 @@ switch($func)
                                         ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
                                 VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
                         $result = $dbcore->sql->conn->prepare( $sql );
-
+                        $all_users = $user."|".$otherusers;
                         $result->bindValue(1, $filename, PDO::PARAM_STR);
                         $result->bindValue(2, $date, PDO::PARAM_STR);
-                        $result->bindValue(3, $user.";".$otherusers, PDO::PARAM_STR);
+                        $result->bindValue(3, $all_users, PDO::PARAM_STR);
                         $result->bindValue(4, $notes, PDO::PARAM_STR);
                         $result->bindValue(5, $title, PDO::PARAM_STR);
                         $result->bindValue(6, $size, PDO::PARAM_STR);

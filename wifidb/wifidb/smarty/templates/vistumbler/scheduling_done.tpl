@@ -32,7 +32,7 @@ if not, write to the
                     <th>Date</th>
                     <th>APs/GPS Count</th>
                     <th>Title</th>
-                    <th>User</th>
+                    <th>User(s)</th>
                 </tr>
                 <tr class="{$wifidb_done.class}">
                     <td align="center">{$wifidb_done.id}</td>

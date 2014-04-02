@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+        <name>WiFiDB *ALPHA* Auto KMZ Generation</name>
+        
+        <Style id="openStyleDead">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png</href>
+                </Icon>
+            </IconStyle>
+        </Style>
+        <Style id="wepStyleDead">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png</href>
+                </Icon>
+            </IconStyle>
+        </Style>
+        <Style id="secureStyleDead">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png</href>
+                </Icon>
+            </IconStyle>
+        </Style>
+        <Style id="Location">
+            <LineStyle>
+                <color>7f0000ff</color>
+                <width>4</width>
+            </LineStyle>
+        </Style>
+	<Style id="SigCat1">
+		<IconStyle>
+			<scale>1.2</scale>
+		</IconStyle>
+		<LineStyle>
+			<color>ff0000ff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>bf0000ff</color>
+			<outline>0</outline>
+			<opacity>75</opacity>
+		</PolyStyle>
+	</Style>
+	<Style id="SigCat2">
+		<IconStyle>
+			<scale>1.2</scale>
+		</IconStyle>
+		<LineStyle>
+			<color>ff0055ff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>bf0055ff</color>
+			<outline>0</outline>
+			<opacity>75</opacity>
+		</PolyStyle>
+	</Style>
+	<Style id="SigCat3">
+		<IconStyle>
+			<scale>1.2</scale>
+		</IconStyle>
+		<LineStyle>
+			<color>ff00ffff</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>bf00ffff</color>
+			<outline>0</outline>
+			<opacity>75</opacity>
+		</PolyStyle>
+	</Style>
+	<Style id="SigCat4">
+		<IconStyle>
+			<scale>1.2</scale>
+		</IconStyle>
+		<LineStyle>
+			<color>ff01ffc8</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>bf01ffc8</color>
+			<outline>0</outline>
+			<opacity>75</opacity>
+		</PolyStyle>
+	</Style>
+	<Style id="SigCat5">
+		<IconStyle>
+			<scale>1.2</scale>
+		</IconStyle>
+		<LineStyle>
+			<color>ff70ff48</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>bf70ff48</color>
+			<outline>0</outline>
+			<opacity>75</opacity>
+		</PolyStyle>
+	</Style>
+	<Style id="SigCat6">
+		<IconStyle>
+			<scale>1.2</scale>
+		</IconStyle>
+		<LineStyle>
+			<color>ff3d8c27</color>
+			<width>2</width>
+		</LineStyle>
+		<PolyStyle>
+			<color>bf3d8c27</color>
+			<outline>0</outline>
+			<opacity>75</opacity>
+		</PolyStyle>
+	</Style>
+        
+        <Folder>
+            <name>Newest Access Point</name>
+            <open>1</open>
+            
+        <NetworkLink>
+                <name>Newest AP (No Label)</name>
+                <visibility>0</visibility>
+                <flyToView>1</flyToView>
+                <Link>
+                        <href>https://dev01.wifidb.net/wifidb/out/daemon/newestAP.kml</href>
+                        <refreshMode>onInterval</refreshMode>
+                        <refreshInterval>2</refreshInterval>
+                </Link>
+        </NetworkLink>
+        <NetworkLink>
+                <name>Newest AP (Labeled)</name>
+                <visibility>0</visibility>
+                <flyToView>1</flyToView>
+                <Link>
+                        <href>https://dev01.wifidb.net/wifidb/out/daemon/newestAP_label.kml</href>
+                        <refreshMode>onInterval</refreshMode>
+                        <refreshInterval>2</refreshInterval>
+                </Link>
+        </NetworkLink>
+        </Folder>
+        <Folder>
+            <name>Daily KMZ</name>
+            <open>1</open>
+            
+        <NetworkLink>
+                <name>Full Daily Database Export</name>
+                <visibility>0</visibility>
+                <flyToView>1</flyToView>
+                <Link>
+                        <href>https://dev01.wifidb.net/wifidb/out/daemon/fulldb.kmz</href>
+                        <refreshMode>onInterval</refreshMode>
+                        <refreshInterval>2</refreshInterval>
+                </Link>
+        </NetworkLink>
+        </Folder>
+        <Folder>
+            <name>Historical Archives</name>
+            <open>1</open>
+            
+        <NetworkLink>
+                <name>Archived History</name>
+                <visibility>0</visibility>
+                <flyToView>1</flyToView>
+                <Link>
+                        <href>https://dev01.wifidb.net/wifidb/out/daemon/history.kml</href>
+                        <refreshMode>onInterval</refreshMode>
+                        <refreshInterval>2</refreshInterval>
+                </Link>
+        </NetworkLink>
+        </Folder>
+    </Document>
+</kml>

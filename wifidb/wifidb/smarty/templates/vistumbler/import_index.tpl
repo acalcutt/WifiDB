@@ -62,7 +62,7 @@ if not, write to the
                                                 <tr height="40">
                                                     <td class="style4">
                                                         <p>Other Users:<br/>
-                                                            <font size=1>(seperate by a semicolon ";" )</font>
+                                                            <font size=1>(Separate by a pipe "|" )</font>
                                                         </p>
                                                     </td>
                                                     <td class="light">
