@@ -176,6 +176,7 @@ switch($func)
         {
             $kml_head['full_date'] = date ("Y-m-d H:i:s", filemtime($full));
             $kml_head['full_size'] = $dbcore->format_size(filesize($full), 2);
+
             $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'full_db.kmz';
         }else
         {
@@ -318,7 +319,7 @@ switch($func)
         $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
         $dbcore->smarty->assign('wifidb_next_run', array('utc'=>$file_array['size'],'local'=>$next_run));
         $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
-        $dbcore->smarty->assign('wifidb_daemon', $dbcore->getdaemonstats('imp_expd.pid'));
+        $dbcore->smarty->assign('wifidb_daemon', $dbcore->getdaemonstats('wdb_imp_exp.pid'));
         $dbcore->smarty->assign('wifidb_done_all', $sched_row);
         $dbcore->smarty->display('scheduling_waiting.tpl');
     break;
