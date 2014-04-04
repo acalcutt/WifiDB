@@ -155,35 +155,38 @@ while(1)
 
             $source = $dbcore->PATH.'import/up/'.$files_a['file'];
             
+			echo $files_a['file']."\r\n";
             $file_src = explode(".",$files_a['file']);
             $file_type = strtolower($file_src[1]);
             $file_name = $files_a['file'];
+			#$dest_file = $file_src[0].".VS1";
             #Lets check and see if it is has a valid VS1 file header.
             if(in_array($file_type, $dbcore->convert_extentions))
             {
-                $source = $this->PATH.'import/up/'.str_replace("%20", " ", $file);
-                $this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-                $file_src = explode(".", $file);
+                $source = $dbcore->PATH.'import/up/'.str_replace("%20", " ", $file_name);
+				
+                $dbcore->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
+                //$file_src = explode(".", $file_name);
                 $update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '0', `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
-                $prep = $this->sql->conn->prepare($update_tmp);
+                $prep = $dbcore->sql->conn->prepare($update_tmp);
                 $prep->execute(array($files_a['file'], $remove_file));
-                $err = $this->sql->conn->errorCode();
+                $err = $dbcore->sql->conn->errorCode();
                 if($err[0] != "00000")
                 {
-                    $this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-                    $this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-                    throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
+                    $dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
+                    $dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
+                    throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($daemon->sql->conn->errorInfo(),1));
                 }
-                $ret_file_name = $dbcore->convert->main($files_a['file']);
+                $ret_file_name = $dbcore->convert->main($source);
                 if($ret_file_name === -1)
                 {
                     Throw new ErrorException("Error Converting File. $source");
                 }
-
-                $dest_name = 'convert/'.str_replace(" ", "_", $dest_file);
-                $dest = $this->PATH.'import/up/'.$dest_name;
-                $hash1 = hash_file('md5', $dest);
-                $size1 = $this->format_size($dest);
+				echo "ret_file_name:".$ret_file_name;
+                #$dest_name = 'convert/'.str_replace(" ", "_", $dest_file);
+                #$dest = $dbcore->PATH.'import/up/'.$ret_file_name;
+                $hash1 = hash_file('md5', $ret_file_name);
+                $size1 = $dbcore->format_size($ret_file_name);
 
                 $update = "UPDATE `wifi`.`files_tmp` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
                 $data = array(
@@ -192,18 +195,18 @@ while(1)
                     $size1,
                     $remove_file
                 );
-                $prep = $this->sql->conn->prepare($update);
+                $prep = $dbcore->sql->conn->prepare($update);
                 $prep->execute($data);
-                $err = $this->sql->conn->errorCode();
+                $err = $dbcore->sql->conn->errorCode();
                 if($err[0] == "00000")
                 {
-                    $this->verbosed("Conversion completed.", 1);
-                    $this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest, $this->This_is_me);
+                    $dbcore->verbosed("Conversion completed.", 1);
+                    $dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest, $daemon->This_is_me);
                 }else
                 {
-                    $this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-                    $this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-                    throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($this->sql->conn->errorInfo(),1));
+                    $dbcore->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
+                    $dbcore->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
+                    throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1));
                 }
                 $file_name = $ret_file_name;
                 $source = $dbcore->PATH.'import/up/'.$file_name;

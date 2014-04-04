@@ -6,14 +6,17 @@
  *
  */
 
-class convert
+class convert extends dbcore
 {
-    public function __construct($dbcore)
+    public function __construct($config, $daemon_config, $dbcore)
     {
-        $this->languages = $dbcore->lang;
-        $this->core = $dbcore;
-        $this->dBmMaxSignal = -30;
-        $this->dBmDissociationSignal = -85;
+		parent::__construct($config, $daemon_config);
+		#$this->core = $dbcore;
+		$this->languages = $dbcore->lang;
+        	$this->dBmMaxSignal 			= -30;
+        	$this->dBmDissociationSignal 	= -85;
+	
+		echo "-------CPATH-------".$this->PATH."\r\n";
     }
 
     /**
@@ -73,8 +76,8 @@ class convert
                     $line[8]);
                 $gpsdata[$n] = array(
                     "id"=>$n,
-                    "lat"=>$this->dd2dm($line[15]),
-                    "long"=>$this->dd2dm($line[16]),
+                    "lat"=>$this->all2dm(number_format($line[15], 7)),
+                    "long"=>$this->all2dm(number_format($line[16], 7)),
                     "sats"=>$line[17],
                     "hdp"=> $line[18],
                     "alt"=> $line[19],
@@ -131,7 +134,7 @@ class convert
      * @return string
      */
     # 4-1-2014 : Re-written as All to DMM by acalcutt. Based on Vistumbler _Format_GPS_All_to_DMM() function.
-    public function dd2dm($geocord_in="")
+    public function all2dm($geocord_in="")
     {
 		$return = "0.0000";
 	
@@ -160,15 +163,17 @@ class convert
 			{	
 				#DMM to DMM
 				echo "already dmm\r\n";
-				$return = $sign.$latlon_exp[0].".".$latlon_exp[1];
+				$return = $sign.((int)$latlon_exp[0]).".".$latlon_exp[1];
 			}
 			elseif (strlen($latlon_exp[1]) == 7)
 			{
 				#DDD to DMM
 				echo "dd to dmm\r\n";
 				$DD = $latlon_exp[0] * 100;
-				$MM = ((float)".".$latlon_exp[1]) * 60;
-				$return = $sign.number_format($DD + $MM, 4);
+				$MM = ((float)(".".$latlon_exp[1])) * 60;
+				echo $DD."\r\n";
+				echo $MM."\r\n";
+				$return = $sign.number_format($DD + $MM, 4, ".", "");
 			}
 		}
 		elseif ($sections == 3)
@@ -181,7 +186,7 @@ class convert
 			
 			$DD = $DDSTR * 100;
 			$MM = $MMSTR + ($SSSTR / 60);
-			$return = $sign.number_format($DD + $MM, 4);
+			$return = $sign.number_format($DD + $MM, 4, ".", "");
 		}
 		
 		#pad number so it matches phils dumb format of ####.####
@@ -583,8 +588,8 @@ class convert
                 $sig=$n.",".$wifi[3];
                 $gpsdata[$n]=array(
                     "id"=>$n,
-                    "lat"=>$this->dd2dm($wifi[8]),
-                    "long"=>$this->dd2dm($wifi[9]),
+                    "lat"=>$this->all2dm(number_format($wifi[8], 7)),
+                    "long"=>$this->all2dm(number_format($wifi[9], 7)),
                     "sats"=>'0',
                     "hdp"=> '0.0',
                     "alt"=> '0.0',
@@ -648,8 +653,8 @@ class convert
             $n++;
             $gpsdata[$n]=array(
                 "id"=>$n,
-                "lat"=>$this->dd2dm($row['lat']),
-                "long"=>$this->dd2dm($row['lon']),
+                "lat"=>$this->all2dm(number_format($row['lat'], 7)),
+                "long"=>$this->all2dm(number_format($row['lon'], 7)),
                 "sats"=>'0',
                 "hdp"=> '0.0',
                 "alt"=> $row['alt'],
@@ -663,7 +668,7 @@ class convert
             $apdata[$n]=array(
                 "ssid"=>$row['ssid'],
                 "mac"=>$row['bssid'],
-                "man"=>$this->core->findManuf($row['bssid']),
+                "man"=>$this->findManuf($row['bssid']),
                 "auth"=>$authen,
                 "encry"=>$encry,
                 "sectype"=>$sectype,
@@ -709,7 +714,7 @@ class convert
             $apdata[$ap['_id']] = array(
                 'ssid'=>$ap['ssid'],
                 'mac'=>$ap['bssid'],
-                'man'=>$this->core->findManuf($ap['bssid']),
+                'man'=>$this->findManuf($ap['bssid']),
                 'auth'=>$authen,
                 'encry'=>$encry,
                 'sectype'=>$sectype,
@@ -735,8 +740,8 @@ class convert
                 $apdata[$ap['_id']]['sig'][] = $point['_id'].",".$this->dBm2Sig($point['level']).",".$point['level'];
                 $gdata[$point['_id']] = array(
                     "id"=>$n,
-                    'lat' => $this->dd2dm($point['lat']),
-                    'long'=> $this->dd2dm($point['lon']),
+                    'lat' => $this->all2dm(number_format($point['lat'], 7)),
+                    'long'=> $this->all2dm(number_format($point['lon'], 7)),
                     'sats'=> 0,
                     "hdp"=> '0.0',
                     'alt' => $point['alt'],
@@ -764,6 +769,7 @@ class convert
         if($data[1] == NULL){return 0;}
         if($source == ""){return 0;}
         $dir = $this->PATH.'import/up/convert/';
+		echo "Write VS1".$dir."\r\n";
         $file_parts = pathinfo($source);
         $filename = rand(000000,999999).'_'.$file_parts['filename'].'.vs1';
         $fullfile = $dir.$filename;
@@ -779,43 +785,8 @@ class convert
         $n=1;
         foreach( $data[1] as $gps )
         {
-            //GPS Convertion  if needed, check for ddmm.mmmm and leave it alone, otherwise i am guessing its DD.mmmmm and that needs to be converted to ddmm.mmmm:
-            if($gps['lat'] != "0.0000000" || $gps['lat'] != "N 0.00000" ||$gps['lat'] != "N 0000.0000")
-            {
-                $exp = explode(".", $gps['lat']);
-
-                if(strlen($exp[1]) > 4)
-                {
-                    $lat  = $gps['lat'];
-                    $long = $gps['long'];
-                }else
-                {
-                    $lat  = $this->dd2dm($gps['lat']);
-                    $long = $this->dd2dm($gps['long']);
-                }
-                #echo $gps['lat']." - ".$lat."\r\n";
-                #echo $gps['long']." - ".$long."\r\n---------------------------\r\n";
-                if(substr($lat,0,1) == "-")
-                {
-                    $lat = "S ".str_replace("-", "", $lat);
-                }else
-                {
-                    $lat = "N ".$lat;
-                }
-                if(substr($long,0,1) == "-")
-                {
-                    $long = "W ".str_replace("-", "", $long);
-                }else
-                {
-                    $long = "E ".$long;
-                }
-                //END GPS convert
-            }
-            else
-            {
-                $lat = $gps['lat'];
-                $long = $gps['long'];
-            }
+			$lat = $gps['lat'];
+			$long = $gps['long'];
             $gpsd .= $n."|".$lat."|".$long."|".$gps["sats"]."|".$gps["hdp"]."|".$gps["alt"]."|".$gps["geo"]."|".$gps["kmh"]."|".$gps["mph"]."|".$gps["track"]."|".$gps["date"]."|".$gps["time"]."\r\n";
             $n++;
         }

@@ -128,8 +128,8 @@ class import extends wdbcli
                     $gdata[$gps_line[0]] = array(
                                 'import_id' => 0,
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $this->convert->dd2dm($gps_line[1]),
-                                'long'	=>  $this->convert->dd2dm($gps_line[2]),
+                                'lat'	=>  $this->convert->all2dm($gps_line[1]),
+                                'long'	=>  $this->convert->all2dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'   =>  '0',
                                 'alt'   =>  '0',
@@ -150,8 +150,8 @@ class import extends wdbcli
                     $gdata[$gps_line[0]] = array(
                                 'import_id' => 0,
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $this->convert->dd2dm($gps_line[1]),
-                                'long'	=>  $this->convert->dd2dm($gps_line[2]),
+                                'lat'	=>  $this->convert->all2dm($gps_line[1]),
+                                'long'	=>  $this->convert->all2dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'	=>  (float) $gps_line[4],
                                 'alt'	=>  (float) $gps_line[5],

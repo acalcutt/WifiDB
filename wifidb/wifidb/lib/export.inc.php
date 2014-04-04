@@ -23,7 +23,7 @@ class export extends dbcore {
     public function __construct($config) {
         parent::__construct($config);
 
-        $this->convert = new convert($this);
+        $this->convert = new convert($config);
         $this->createKML = new createKML($this, $config['timetilldead']);
         $this->daemon_folder_stats = array();
         $this->named = 0;
@@ -64,7 +64,7 @@ class export extends dbcore {
      */
     public function ExportAllkml()
     {
-        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `lat` != 'N 00' ORDER by `id` ASC";
+        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `lat` != '0000.0000' ORDER by `id` ASC";
         $result = $this->sql->conn->query($sql);
 
         if($this->sql->checkError(__LINE__, __FILE__))
@@ -100,6 +100,7 @@ class export extends dbcore {
         $data = array();
         while($array = $result->fetch(2))
         {
+		$this->verbosed("APID:".(int)$array['id']);
             $ret = $this->ExportSingleAP((int)$array['id']);
             if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
