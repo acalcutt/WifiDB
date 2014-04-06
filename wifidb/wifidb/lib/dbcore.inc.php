@@ -249,15 +249,18 @@ class dbcore
                     preg_match_all("/(\d+)(\:)(\d+)/", $start, $mat); # get the uptime of the daemon.
                     $time = $mat[0][0];
 
-                    $patterns[1] = '/  /';
-                    $patterns[2] = '/ /';
-                    $ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
-                    $ps_Sta_exp = explode("|", $ps_stats);
+                    //$patterns[1] = '/  /';
+                    //$patterns[2] = '/ /';
+                    //$ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
+                    //$ps_Sta_exp = explode("|", $ps_stats);
 
-                    $returns = array(  # lets now throw all this
-                        $mem,$CMD,$time,$ps_Sta_exp # into one array
-                    );
-                    return $returns; # and return it
+                    //$returns = array(  # lets now throw all this
+                    //    $mem,$CMD,$time,$ps_Sta_exp # into one array
+                    //);
+					//var_dump($returns);
+					
+					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.' bytes','cmd'=>$CMD,'color'=>'green','errc'=>-5);
+                    return $ret; # and return it
                 }else
                 {
                     $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
