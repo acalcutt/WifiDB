@@ -285,7 +285,7 @@ class import extends wdbcli
         
         foreach($vs1data['apdata'] as $key=>$aps)
         {
-            $calc = $key." / ".$ap_count;
+            $calc = ($key+1)." / ".$ap_count;
             $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $calc, PDO::PARAM_STR);
