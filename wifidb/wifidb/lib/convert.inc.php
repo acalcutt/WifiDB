@@ -8,15 +8,12 @@
 
 class convert extends dbcore
 {
-    public function __construct($config, $daemon_config, $dbcore)
+    public function __construct($config, $daemon_config)
     {
-		parent::__construct($config, $daemon_config);
-		#$this->core = $dbcore;
-		$this->languages = $dbcore->lang;
-        	$this->dBmMaxSignal 			= -30;
-        	$this->dBmDissociationSignal 	= -85;
-	
-		echo "-------CPATH-------".$this->PATH."\r\n";
+        parent::__construct($config, $daemon_config);
+        $this->languages = $this->lang;
+        $this->dBmMaxSignal = $config['dBmMaxSignal'];
+        $this->dBmDissociationSignal = $config['dBmDissociationSignal'];
     }
 
     /**
@@ -38,7 +35,7 @@ class convert extends dbcore
     {
         $SIG = 100 - 80 * ($this->dBmMaxSignal - $sig_in) / ($this->dBmMaxSignal - $this->dBmDissociationSignal);
         if($SIG < 0){$SIG = 0;}
-        $round = round($SIG, 2);
+        $round = round($SIG);
         return $round;
     }
 
@@ -136,67 +133,67 @@ class convert extends dbcore
     # 4-1-2014 : Re-written as All to DMM by acalcutt. Based on Vistumbler _Format_GPS_All_to_DMM() function.
     public function all2dm($geocord_in="")
     {
-		$return = "0.0000";
-	
-		var_dump($geocord_in);
-	
-		$pattern[0] = '/N /';
-		$pattern[1] = '/E /';
-		$replacement = "";
-		$geocord_in = preg_replace($pattern, $replacement, $geocord_in);
+        $return = "0.0000";
+    
+        var_dump($geocord_in);
+    
+        $pattern[0] = '/N /';
+        $pattern[1] = '/E /';
+        $replacement = "";
+        $geocord_in = preg_replace($pattern, $replacement, $geocord_in);
 
-		$pattern_neg[0] = '/S /';
-		$pattern_neg[1] = '/W /';
-		$replacement_neg = "-";
-		$geocord_in = preg_replace($pattern_neg, $replacement_neg, $geocord_in);
-		
-		$sign = ($geocord_in[0] == "-") ? "-" : "";
-		$geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
-		
-		$geocord_exp = explode(" ", $geocord_in);
-		$sections = count($geocord_exp);
-		
-		if ($sections == 1)
-		{
-			$latlon_exp = explode(".", $geocord_exp[0]);
-			if (strlen($latlon_exp[1]) == 4)
-			{	
-				#DMM to DMM
-				echo "already dmm\r\n";
-				$return = $sign.((int)$latlon_exp[0]).".".$latlon_exp[1];
-			}
-			elseif (strlen($latlon_exp[1]) == 7)
-			{
-				#DDD to DMM
-				echo "dd to dmm\r\n";
-				$DD = $latlon_exp[0] * 100;
-				$MM = ((float)(".".$latlon_exp[1])) * 60;
-				echo $DD."\r\n";
-				echo $MM."\r\n";
-				$return = $sign.number_format($DD + $MM, 4, ".", "");
-			}
-		}
-		elseif ($sections == 3)
-		{
-			#DDMMSS to DMM
-			echo "ddmmss to dmm\r\n";
-			$DDSTR = substr($sections[0], 0, -1);
-			$MMSTR = substr($sections[1], 0, -1);
-			$SSSTR = substr($sections[2], 0, -1);
-			
-			$DD = $DDSTR * 100;
-			$MM = $MMSTR + ($SSSTR / 60);
-			$return = $sign.number_format($DD + $MM, 4, ".", "");
-		}
-		
-		#pad number so it matches phils dumb format of ####.####
-		#$format_exp = explode(".", $return);
-		#$return = sprintf('%+04d', $format_exp[0]).".".$format_exp[1];
-		#$return = str_replace('+', '', $return);
-		
-		var_dump($sections);
-		var_dump($return);
-		return $return;
+        $pattern_neg[0] = '/S /';
+        $pattern_neg[1] = '/W /';
+        $replacement_neg = "-";
+        $geocord_in = preg_replace($pattern_neg, $replacement_neg, $geocord_in);
+        
+        $sign = ($geocord_in[0] == "-") ? "-" : "";
+        $geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
+        
+        $geocord_exp = explode(" ", $geocord_in);
+        $sections = count($geocord_exp);
+        
+        if ($sections == 1)
+        {
+            $latlon_exp = explode(".", $geocord_exp[0]);
+            if (strlen($latlon_exp[1]) == 4)
+            {    
+                #DMM to DMM
+                echo "already dmm\r\n";
+                $return = $sign.((int)$latlon_exp[0]).".".$latlon_exp[1];
+            }
+            elseif (strlen($latlon_exp[1]) == 7)
+            {
+                #DDD to DMM
+                echo "dd to dmm\r\n";
+                $DD = $latlon_exp[0] * 100;
+                $MM = ((float)(".".$latlon_exp[1])) * 60;
+                echo $DD."\r\n";
+                echo $MM."\r\n";
+                $return = $sign.number_format($DD + $MM, 4, ".", "");
+            }
+        }
+        elseif ($sections == 3)
+        {
+            #DDMMSS to DMM
+            echo "ddmmss to dmm\r\n";
+            $DDSTR = substr($sections[0], 0, -1);
+            $MMSTR = substr($sections[1], 0, -1);
+            $SSSTR = substr($sections[2], 0, -1);
+            
+            $DD = $DDSTR * 100;
+            $MM = $MMSTR + ($SSSTR / 60);
+            $return = $sign.number_format($DD + $MM, 4, ".", "");
+        }
+        
+        #pad number so it matches phils dumb format of ####.####
+        #$format_exp = explode(".", $return);
+        #$return = sprintf('%+04d', $format_exp[0]).".".$format_exp[1];
+        #$return = str_replace('+', '', $return);
+        
+        var_dump($sections);
+        var_dump($return);
+        return $return;
     }
 
     
@@ -208,27 +205,27 @@ class convert extends dbcore
     # 4-1-2014 : Re-written by acalcutt. Based on Vistumbler _Format_GPS_DMM_to_DDD() function.
     public function dm2dd($geocord_in = "")
     {
-		#echo "dm2dd in\r\n";
-		#var_dump($geocord_in);
-		
-		$return="0.0000000";
-		
-		$sign = ($geocord_in[0] == "-") ? "-" : "";
-		$geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
+        #echo "dm2dd in\r\n";
+        #var_dump($geocord_in);
+        
+        $return="0.0000000";
+        
+        $sign = ($geocord_in[0] == "-") ? "-" : "";
+        $geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
 
-		$latlon_exp = explode(".", $geocord_in);
-		$sections = count($latlon_exp);
-		if ($sections == 2)
-		{
-			$latlonleft = substr($latlon_exp[0], 0, -2);
-			$latlonright = ((float)(substr($latlon_exp[0], (strlen($latlon_exp[0])-2)) . '.' . $latlon_exp[1])) / 60;
-			$return = $sign.number_format($latlonleft + $latlonright , 7);
-			
-		}
-		
-		#echo "dm2dd out\r\n";
-		#var_dump($return);
-		return $return;
+        $latlon_exp = explode(".", $geocord_in);
+        $sections = count($latlon_exp);
+        if ($sections == 2)
+        {
+            $latlonleft = substr($latlon_exp[0], 0, -2);
+            $latlonright = ((float)(substr($latlon_exp[0], (strlen($latlon_exp[0])-2)) . '.' . $latlon_exp[1])) / 60;
+            $return = $sign.number_format($latlonleft + $latlonright , 7);
+            
+        }
+        
+        #echo "dm2dd out\r\n";
+        #var_dump($return);
+        return $return;
     }
 
     /**
@@ -648,7 +645,7 @@ class convert extends dbcore
         foreach ($all_aps as $row)
         {
             list($authen, $encry, $sectype, $nt) = $this->findCapabilities($row["capabilities"]);
-            list($chan, $radio) = $this->findFreq($row['Frequency']);
+            list($chan, $radio) = $this->findFreq($row['frequency']);
             #echo "$timestamp - - $man\r\n$nt - $authen - $encry - $sectype - $lat - $long\r\n----------\r\n\r\n";
             $n++;
             $gpsdata[$n]=array(
@@ -785,10 +782,17 @@ class convert extends dbcore
         $n=1;
         foreach( $data[1] as $gps )
         {
-			$lat = $gps['lat'];
-			$long = $gps['long'];
-            $gpsd .= $n."|".$lat."|".$long."|".$gps["sats"]."|".$gps["hdp"]."|".$gps["alt"]."|".$gps["geo"]."|".$gps["kmh"]."|".$gps["mph"]."|".$gps["track"]."|".$gps["date"]."|".$gps["time"]."\r\n";
-            $n++;
+        #Add N/S to latitude
+        $lat = $gps['lat'];
+        $sign = ($lat == "-") ? "S " : "N ";
+        $lat = $sign.str_replace("-", "", $lat);
+        #Add E/W to longitude
+        $long = $gps['long'];
+        $sign = ($long == "-") ? "W " : "E ";
+        $long = $sign.str_replace("-", "", $long);        
+        #Write VS1 GPS line
+        $gpsd .= $n."|".$lat."|".$long."|".$gps["sats"]."|".$gps["hdp"]."|".$gps["alt"]."|".$gps["geo"]."|".$gps["kmh"]."|".$gps["mph"]."|".$gps["track"]."|".$gps["date"]."|".$gps["time"]."\r\n";
+        $n++;
         }
         $ap_head = "#------------------------------------------------------------------------------------------------------------------------------------------------------------------- #
 # SSID|BSSID|MANUFACTURER|Authentication|Encryption|Security Type|Radio Type|Channel|Basic Transfer Rates|Other Transfer Rates|Network Type|High Signal|High RSSI|Label|GID,SIGNAL,RSSI
@@ -797,7 +801,8 @@ class convert extends dbcore
         $apd = $gpsd.$ap_head;
         foreach($data[0] as $ap)
         {
-            $apd .= $ap["ssid"]."|".$ap["mac"]."|".$ap["man"]."|".$ap["auth"]."|".$ap["encry"]."|".$ap["sectype"]."|".$ap["radio"]."|".$ap["chan"]."|".$ap["btx"]."|".$ap["otx"]."|".$ap['highsig']."|".$ap['highRSSI']."|".$ap["nt"]."|".$ap["label"]."|".implode("\\", $ap["sig"])."\r\n";
+            #Write VS1 AP line
+            $apd .= $ap["ssid"]."|".$ap["mac"]."|".$ap["man"]."|".$ap["auth"]."|".$ap["encry"]."|".$ap["sectype"]."|".$ap["radio"]."|".$ap["chan"]."|".$ap["btx"]."|".$ap["otx"]."|".$ap['highsig']."|".$ap['highRSSI']."|".$ap["nt"]."|".$ap["label"]."|".implode(",", $ap["sig"])."\r\n";
         }
         file_put_contents($fullfile, $apd);
         return $fullfile;

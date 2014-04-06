@@ -272,7 +272,7 @@ switch($func)
         }
         $sched_row = array();
         $n=0;
-        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` DESC";
+        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -299,8 +299,8 @@ switch($func)
                 case "":
                     $ssid = "<td colspan='2' align='center'>Not being imported</td>";
                     break;
-                case "Preping for Import":
-                    $ssid = "<td colspan='2' align='center'>Preping for Import...</td>";
+                case "Preparing for Import":
+                    $ssid = "<td colspan='2' align='center'>Preparing for Import...</td>";
                     break;
                 case "File is already in table array (":
                     $ssid = "<td colspan='2' align='center'>File is already in table...</td>";

@@ -41,6 +41,9 @@ $config = array
     'wifidb_email_updates'  =>   0,
     'GeoNamesLoopGiveUp'    =>   5000,
     'reserved_users'        =>   'WiFiDB::wifidb:Recovery:root:system',
+    'dBmMaxSignal'          =>   '-30',
+    'dBmDissociationSignal' =>   '-85',
+    'verbose'               =>   1,
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
@@ -89,9 +92,9 @@ $config = array
 
     #---------------- SQL Info ----------------#
     'srvc'                  =>   'mysql',
-    'host'                  =>   '172.16.1.76',
+    'host'                  =>   '192.168.1.100',
     'db_user'               =>   'root',
-    'db_pwd'                =>   'dev_server',
+    'db_pwd'                =>   'supersecretpw',
     'collate'               =>   'utf8_bin',
     'engine'                =>   'innodb',
 

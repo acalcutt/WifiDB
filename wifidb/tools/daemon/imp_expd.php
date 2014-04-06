@@ -159,14 +159,10 @@ while(1)
             $file_src = explode(".",$files_a['file']);
             $file_type = strtolower($file_src[1]);
             $file_name = $files_a['file'];
-			#$dest_file = $file_src[0].".VS1";
             #Lets check and see if it is has a valid VS1 file header.
             if(in_array($file_type, $dbcore->convert_extentions))
             {
-                $source = $dbcore->PATH.'import/up/'.str_replace("%20", " ", $file_name);
-				
                 $dbcore->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-                //$file_src = explode(".", $file_name);
                 $update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '0', `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
                 $prep = $dbcore->sql->conn->prepare($update_tmp);
                 $prep->execute(array($files_a['file'], $remove_file));
@@ -182,9 +178,9 @@ while(1)
                 {
                     Throw new ErrorException("Error Converting File. $source");
                 }
-				echo "ret_file_name:".$ret_file_name;
-                #$dest_name = 'convert/'.str_replace(" ", "_", $dest_file);
-                #$dest = $dbcore->PATH.'import/up/'.$ret_file_name;
+
+                $parts = pathinfo($ret_file_name);
+                $dest_name = $parts['basename'];
                 $hash1 = hash_file('md5', $ret_file_name);
                 $size1 = $dbcore->format_size($ret_file_name);
 
@@ -201,15 +197,15 @@ while(1)
                 if($err[0] == "00000")
                 {
                     $dbcore->verbosed("Conversion completed.", 1);
-                    $dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest, $daemon->This_is_me);
+                    $dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $dbcore->This_is_me);
                 }else
                 {
                     $dbcore->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
                     $dbcore->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
                     throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1));
                 }
-                $file_name = $ret_file_name;
-                $source = $dbcore->PATH.'import/up/'.$file_name;
+                $file_name = $dest_name;
+                $source = $ret_file_name;
             }
 
             $return  = file($source);
@@ -218,7 +214,7 @@ while(1)
             if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a valid file in the field
             {
                 $dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
-                $update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '1', `ap` = 'Prepping for Import' WHERE `id` = ?";
+                $update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '1', `ap` = 'Preparing for Import' WHERE `id` = ?";
                 $prep4 = $dbcore->sql->conn->prepare($update_tmp);
                 $prep4->bindParam(1, $remove_file, PDO::PARAM_INT);
                 $prep4->execute();
@@ -281,7 +277,7 @@ while(1)
                             "Warning", $dbcore->This_is_me);
                         $dbcore->verbosed("Skipping Import of :".$file_name, -1);
                         //remove files_tmp row and user_imports row
-                        $dbcore->cleanBadImport($remove_file, $user);
+                        $dbcore->cleanBadImport($hash);
                         continue;
                     }
                     $dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);

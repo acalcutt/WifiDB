@@ -28,10 +28,10 @@ class import extends wdbcli
         $this->export = $export_obj;
         $this->convert = $convert_obj;
         $this->log_level    = $config['log_level'];
-        $this->log_interval = 1;
+        $this->log_interval = $config['log_interval'];
         $this->verbose      = $config['verbose'];
-        $this->dBmMaxSignal = -30;
-        $this->dBmDissociationSignal = -85;
+        $this->dBmMaxSignal      = $config['dBmMaxSignal'];
+        $this->dBmDissociationSignal      = $config['dBmDissociationSignal'];
         $this->rssi_signals_flag = 0;
     }
 
@@ -285,11 +285,12 @@ class import extends wdbcli
         
         foreach($vs1data['apdata'] as $key=>$aps)
         {
-            $calc = "AP's to go: ".$ap_count-$key;
-            $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ? WHERE `id` = ?";
+            $calc = $key." / ".$ap_count;
+            $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $calc, PDO::PARAM_STR);
-            $prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
+            $prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
+            $prep->bindParam(3, $file_tmp_id, PDO::PARAM_INT);
             $prep->execute();
             if($this->sql->checkError() !== 0)
             {
