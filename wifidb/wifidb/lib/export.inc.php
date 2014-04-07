@@ -97,23 +97,25 @@ class export extends dbcore {
             if(file_exists($daily_folder."/full_db".$labeled.".kml") && file_exists($daily_folder."/full_db".$labeled.".kmz")){$this->verbosed("Full DB Export for (".date($this->date_format).") already exists."); return -1;}
         }
         $this->verbosed("Compiling Data for Export.");
-        $data = array();
+		$KML_data="";
         while($array = $result->fetch(2))
         {
-		$this->verbosed("APID:".(int)$array['id']);
+			echo $array['id']."\r\n";
             $ret = $this->ExportSingleAP((int)$array['id']);
             if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
-                $data = array_merge($data, $ret );
+				$this->createKML->LoadData($ret);
+				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
             }
+			
         }
 
         $full_kml_file = $daily_folder."/full_db".$labeled.".kml";
         $this->verbosed("Writing the Full KML File. ($NN APs) : ".$full_kml_file);
 
         #####
-        $this->createKML->LoadData($data);
-        $KML_data = $this->createKML->PlotAllAPs(1, 1, $this->named);
+        
+        
         $KML_data = $this->createKML->createFolder("Full Database Export", $KML_data, 0);
         #var_dump($full_kml_file);
         $this->createKML->createKML($full_kml_file, "WiFiDB Full Database Export", $KML_data, 1);
