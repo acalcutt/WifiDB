@@ -97,46 +97,55 @@ class export extends dbcore {
             if(file_exists($daily_folder."/full_db".$labeled.".kml") && file_exists($daily_folder."/full_db".$labeled.".kmz")){$this->verbosed("Full DB Export for (".date($this->date_format).") already exists."); return -1;}
         }
         $this->verbosed("Compiling Data for Export.");
-		$KML_data="";
+        $KML_data="";
         while($array = $result->fetch(2))
         {
-			echo $array['id']."\r\n";
+            //$this->verbosed($array['id']);
             $ret = $this->ExportSingleAP((int)$array['id']);
             if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
-				$this->createKML->LoadData($ret);
-				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+                $this->createKML->ClearData();
+                $this->createKML->LoadData($ret);
+                $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
             }
-			
+            
         }
-
         $full_kml_file = $daily_folder."/full_db".$labeled.".kml";
         $this->verbosed("Writing the Full KML File. ($NN APs) : ".$full_kml_file);
-
-        #####
-        
-        
         $KML_data = $this->createKML->createFolder("Full Database Export", $KML_data, 0);
-        #var_dump($full_kml_file);
-        $this->createKML->createKML($full_kml_file, "WiFiDB Full Database Export", $KML_data, 1);
-
         ###
-        #var_dump($this->PATH.'out/daemon/full_db'.$labeled.'.kml');
-        symlink($full_kml_file, $this->PATH.'out/daemon/full_db'.$labeled.'.kml');
-
+        $this->createKML->createKML($full_kml_file, "WiFiDB Full Database Export", $KML_data, 1);
+        chmod($full_kml_file, 0664);
+        ###
+        $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kml';
+        $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
+        unlink($link);
+        symlink($full_kml_file, $link);
+        chmod($link, 0664);
         #####################
         $this->verbosed("Starting to compress the KML to a KMZ.");
-        if($this->createKML->CreateKMZ($daily_folder.'/full_db'.$labeled.'.kml'))
-        {
-            $this->verbosed("Failed to Zip up the KML to a KMZ file :/");
-        }
-        #var_dump($daily_folder.'/full_db'.$labeled.'.kmz', $this->PATH.'out/daemon/full_db'.$labeled.'.kmz');
-        symlink($daily_folder.'/full_db'.$labeled.'.kmz', $this->PATH.'out/daemon/full_db'.$labeled.'.kmz');
 
-        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0664);
-        chmod($daily_folder.'/full_db'.$labeled.'.kmz', 0664);
-        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kml', 0664);
-        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kmz', 0664);
+        $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+        if($ret_kmz_name == -1)
+        {
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+        }
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+            ###
+            $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kmz';
+            $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
+            unlink($link);
+            symlink($ret_kmz_name, $link);
+            chmod($link, 0664);
+        }
+        
         return $daily_folder;
     }
     
@@ -208,18 +217,35 @@ class export extends dbcore {
         $full_kml_file = $daily_folder."/daily_db".$labeled.".kml";
         $this->verbosed("Writing the Daily KML File: ".$full_kml_file);
         $this->createKML->createKML($full_kml_file, "WiFiDB Daily Export ($date)", $KML_data);
-        
-        symlink($full_kml_file, $this->daemon_out.'daily_db'.$labeled.'.kml');
+        ##
+        $link = $this->daemon_out.'daily_db'.$labeled.'.kml';
+        $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
+        unlink($link);
+        symlink($full_kml_file, $link);
+        chmod($link, 0664);        
+        #####################
         $this->verbosed("Starting to compress the KML to a KMZ.");
-        if($this->createKML->CreateKMZ($daily_folder.'/daily_db'.$labeled.'.kml'))
-        {
-            $this->verbosed("Failed to compress the Daily KMZ file :(", -1);
-            Throw New ErrorException("Failed to compress the Daily KMZ file :(");
-        }
-        symlink($daily_folder.'/daily_db'.$labeled.'.kmz', $this->daemon_out.'daily_db'.$labeled.'.kmz');
 
-        chmod($daily_folder.'/daily_db'.$labeled.'.kml', 0750);
-        chmod($this->daemon_out.'daily_db'.$labeled.'.kml', 0750);
+        $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+        if($ret_kmz_name == -1)
+        {
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+        }
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+            ##
+            $link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
+            $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
+            unlink($link);
+            symlink($ret_kmz_name, $link);
+            chmod($link, 0664);
+        }        
 
         return $daily_folder;
     }

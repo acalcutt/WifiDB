@@ -55,90 +55,90 @@ class createKML
             </LineStyle>
         </Style>';
         $this->SignalLevelStyle = '
-	<Style id="SigCat1">
-		<IconStyle>
-			<scale>1.2</scale>
-		</IconStyle>
-		<LineStyle>
-			<color>ff0000ff</color>
-			<width>2</width>
-		</LineStyle>
-		<PolyStyle>
-			<color>bf0000ff</color>
-			<outline>0</outline>
-			<opacity>75</opacity>
-		</PolyStyle>
-	</Style>
-	<Style id="SigCat2">
-		<IconStyle>
-			<scale>1.2</scale>
-		</IconStyle>
-		<LineStyle>
-			<color>ff0055ff</color>
-			<width>2</width>
-		</LineStyle>
-		<PolyStyle>
-			<color>bf0055ff</color>
-			<outline>0</outline>
-			<opacity>75</opacity>
-		</PolyStyle>
-	</Style>
-	<Style id="SigCat3">
-		<IconStyle>
-			<scale>1.2</scale>
-		</IconStyle>
-		<LineStyle>
-			<color>ff00ffff</color>
-			<width>2</width>
-		</LineStyle>
-		<PolyStyle>
-			<color>bf00ffff</color>
-			<outline>0</outline>
-			<opacity>75</opacity>
-		</PolyStyle>
-	</Style>
-	<Style id="SigCat4">
-		<IconStyle>
-			<scale>1.2</scale>
-		</IconStyle>
-		<LineStyle>
-			<color>ff01ffc8</color>
-			<width>2</width>
-		</LineStyle>
-		<PolyStyle>
-			<color>bf01ffc8</color>
-			<outline>0</outline>
-			<opacity>75</opacity>
-		</PolyStyle>
-	</Style>
-	<Style id="SigCat5">
-		<IconStyle>
-			<scale>1.2</scale>
-		</IconStyle>
-		<LineStyle>
-			<color>ff70ff48</color>
-			<width>2</width>
-		</LineStyle>
-		<PolyStyle>
-			<color>bf70ff48</color>
-			<outline>0</outline>
-			<opacity>75</opacity>
-		</PolyStyle>
-	</Style>
-	<Style id="SigCat6">
-		<IconStyle>
-			<scale>1.2</scale>
-		</IconStyle>
-		<LineStyle>
-			<color>ff3d8c27</color>
-			<width>2</width>
-		</LineStyle>
-		<PolyStyle>
-			<color>bf3d8c27</color>
-			<outline>0</outline>
-			<opacity>75</opacity>
-		</PolyStyle>
-	</Style>';
+    <Style id="SigCat1">
+        <IconStyle>
+            <scale>1.2</scale>
+        </IconStyle>
+        <LineStyle>
+            <color>ff0000ff</color>
+            <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+            <color>bf0000ff</color>
+            <outline>0</outline>
+            <opacity>75</opacity>
+        </PolyStyle>
+    </Style>
+    <Style id="SigCat2">
+        <IconStyle>
+            <scale>1.2</scale>
+        </IconStyle>
+        <LineStyle>
+            <color>ff0055ff</color>
+            <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+            <color>bf0055ff</color>
+            <outline>0</outline>
+            <opacity>75</opacity>
+        </PolyStyle>
+    </Style>
+    <Style id="SigCat3">
+        <IconStyle>
+            <scale>1.2</scale>
+        </IconStyle>
+        <LineStyle>
+            <color>ff00ffff</color>
+            <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+            <color>bf00ffff</color>
+            <outline>0</outline>
+            <opacity>75</opacity>
+        </PolyStyle>
+    </Style>
+    <Style id="SigCat4">
+        <IconStyle>
+            <scale>1.2</scale>
+        </IconStyle>
+        <LineStyle>
+            <color>ff01ffc8</color>
+            <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+            <color>bf01ffc8</color>
+            <outline>0</outline>
+            <opacity>75</opacity>
+        </PolyStyle>
+    </Style>
+    <Style id="SigCat5">
+        <IconStyle>
+            <scale>1.2</scale>
+        </IconStyle>
+        <LineStyle>
+            <color>ff70ff48</color>
+            <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+            <color>bf70ff48</color>
+            <outline>0</outline>
+            <opacity>75</opacity>
+        </PolyStyle>
+    </Style>
+    <Style id="SigCat6">
+        <IconStyle>
+            <scale>1.2</scale>
+        </IconStyle>
+        <LineStyle>
+            <color>ff3d8c27</color>
+            <width>2</width>
+        </LineStyle>
+        <PolyStyle>
+            <color>bf3d8c27</color>
+            <outline>0</outline>
+            <opacity>75</opacity>
+        </PolyStyle>
+    </Style>';
         $this->style_data = $this->openstyle.$this->wepstyle.$this->securestyle.$this->tracklinestyle.$this->SignalLevelStyle;
         $this->title = "Untitled";
         $this->users = "WiFiDB";
@@ -279,8 +279,7 @@ class createKML
             <Point id=\"".$this->data->apdata[$hash]['mac']."_signal_gps\">
                 <coordinates>".$this->convert->dm2dd($this->data->apdata[$hash]['gdata'][$gps_center]['long']).",".$this->convert->dm2dd($this->data->apdata[$hash]['gdata'][$gps_center]['lat']).",".$this->data->apdata[$hash]['gdata'][$gps_center]['alt']."</coordinates>
             </Point>
-        </Placemark>
-        ";
+        </Placemark>";
         return $tmp;
     }
 
@@ -534,10 +533,15 @@ class createKML
      */
     public function CreateKMZ($file = "")
     {
-        if($file === ""){return 1;}
-        $file_exp = explode(".", $file);
-        $file_create = $file_exp[0].'.kmz';
+        if($file === ""){return -1;}
 
+        #create new kmz filename
+        $parts = pathinfo($file);
+        $parts_base = $parts['dirname'];
+        $parts_name = $parts['filename'];
+        $file_create = $parts_base."/".$parts_name.".kmz";
+
+        #Create KMZ zip file
         $zip = new ZipArchive;
         $zip->open($file_create, ZipArchive::CREATE);
         #var_dump($zip->getStatusString());
@@ -546,7 +550,12 @@ class createKML
         #var_dump($zip->getStatusString());
 
         $zip->close();
-        return 0;
+
+        if (file_exists($file_create)) {
+            return $file_create;
+        } else {
+            return -2;
+        }
     }
 
 }
