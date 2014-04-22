@@ -159,24 +159,19 @@ class convert extends dbcore
             if (strlen($latlon_exp[1]) == 4)
             {    
                 #DMM to DMM
-                echo "already dmm\r\n";
                 $return = $sign.((int)$latlon_exp[0]).".".$latlon_exp[1];
             }
             elseif (strlen($latlon_exp[1]) == 7)
             {
                 #DDD to DMM
-                echo "dd to dmm\r\n";
                 $DD = $latlon_exp[0] * 100;
                 $MM = ((float)(".".$latlon_exp[1])) * 60;
-                echo $DD."\r\n";
-                echo $MM."\r\n";
                 $return = $sign.number_format($DD + $MM, 4, ".", "");
             }
         }
         elseif ($sections == 3)
         {
             #DDMMSS to DMM
-            echo "ddmmss to dmm\r\n";
             $DDSTR = substr($sections[0], 0, -1);
             $MMSTR = substr($sections[1], 0, -1);
             $SSSTR = substr($sections[2], 0, -1);
@@ -185,11 +180,6 @@ class convert extends dbcore
             $MM = $MMSTR + ($SSSTR / 60);
             $return = $sign.number_format($DD + $MM, 4, ".", "");
         }
-        
-        #pad number so it matches phils dumb format of ####.####
-        #$format_exp = explode(".", $return);
-        #$return = sprintf('%+04d', $format_exp[0]).".".$format_exp[1];
-        #$return = str_replace('+', '', $return);
         
         var_dump($sections);
         var_dump($return);
