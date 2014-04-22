@@ -127,6 +127,10 @@ $finished = 0;
 //Main loop
 while(1)
 {
+    if(is_null($dbcore->sql))
+    {
+        $this->sql = new SQL($config);
+    }
     if($dbcore->checkDaemonKill())
     {
         exit($dbcore->exit_msg);
@@ -420,6 +424,7 @@ while(1)
     }
     if(@$arguments['d']){
         $dbcore->verbosed("Next check in T+ ".$dbcore->time_interval_to_check."s");
+        $dbcore->sql = NULL;
         sleep($dbcore->time_interval_to_check);
     }else{
         break;
