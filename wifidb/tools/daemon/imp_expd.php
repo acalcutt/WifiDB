@@ -129,7 +129,7 @@ while(1)
 {
     if(is_null($dbcore->sql))
     {
-        $this->sql = new SQL($config);
+        $dbcore->sql = new SQL($config);
     }
     if($dbcore->checkDaemonKill())
     {
