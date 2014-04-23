@@ -117,47 +117,47 @@ switch($func)
                 $flip=1;
             }
 
-			$daily_label = $daemon_out.$file."/daily_db_label.kmz";
-			if(file_exists($daily_label))
-			{
-				$daily_label_url = $url_base.$file.'/daily_db_label.kmz';
-				$daily_label_size = $dbcore->format_size(@filesize($daily_label), 2);
-			}else
-			{
-				$daily_label_url = "#";
-				$daily_label_size = "0.00 kB";
-			}
-			$daily = $daemon_out.$file."/daily_db.kmz";
-			if(file_exists($daily))
-			{
-				$daily_url = $url_base.$file.'/daily_db.kmz';
-				$daily_size = $dbcore->format_size(@filesize($daily), 2);
-			}else
-			{
-				$daily_url = "#";
-				$daily_size = "0.00 kB";
-			}
-			$full_label = $daemon_out.$file."/full_db_label.kmz";
-			if(file_exists($full_label))
-			{
-				$full_label_url = $url_base.$file.'/full_db_label.kmz';
-				$full_label_size = $dbcore->format_size(@filesize($full_label), 2);
-			}else
-			{
-				$full_label_url = "#";
-				$full_label_size = "0.00 kB";
-			}
-			$full = $daemon_out.$file."/full_db.kmz";
-			if(file_exists($full))
-			{
-				$full_url = $url_base.$file.'/full_db.kmz';
-				$full_size = $dbcore->format_size(@filesize($full), 2);
-			}else
-			{
-				$full_url = "#";
-				$full_size = "0.00 kB";
-			}
-			
+            $daily_label = $daemon_out.$file."/daily_db_label.kmz";
+            if(file_exists($daily_label))
+            {
+                $daily_label_url = $url_base.$file.'/daily_db_label.kmz';
+                $daily_label_size = $dbcore->format_size(@filesize($daily_label), 2);
+            }else
+            {
+                $daily_label_url = "#";
+                $daily_label_size = "0.00 kB";
+            }
+            $daily = $daemon_out.$file."/daily_db.kmz";
+            if(file_exists($daily))
+            {
+                $daily_url = $url_base.$file.'/daily_db.kmz';
+                $daily_size = $dbcore->format_size(@filesize($daily), 2);
+            }else
+            {
+                $daily_url = "#";
+                $daily_size = "0.00 kB";
+            }
+            $full_label = $daemon_out.$file."/full_db_label.kmz";
+            if(file_exists($full_label))
+            {
+                $full_label_url = $url_base.$file.'/full_db_label.kmz';
+                $full_label_size = $dbcore->format_size(@filesize($full_label), 2);
+            }else
+            {
+                $full_label_url = "#";
+                $full_label_size = "0.00 kB";
+            }
+            $full = $daemon_out.$file."/full_db.kmz";
+            if(file_exists($full))
+            {
+                $full_url = $url_base.$file.'/full_db.kmz';
+                $full_size = $dbcore->format_size(@filesize($full), 2);
+            }else
+            {
+                $full_url = "#";
+                $full_size = "0.00 kB";
+            }
+            
             $kml_all[] = array(
                 "class"             => $class,
                 "file"              => $file,
