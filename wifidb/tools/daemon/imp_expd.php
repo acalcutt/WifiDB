@@ -260,7 +260,6 @@ while(1)
                     }
                     $notes = $files_a['notes'];
                     $title = $files_a['title'];
-                    
 
                     $sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
                     $prep_ext = $dbcore->sql->conn->prepare($sql_select_tmp_file_ext);
