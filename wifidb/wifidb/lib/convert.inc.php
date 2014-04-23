@@ -135,8 +135,6 @@ class convert extends dbcore
     {
         $return = "0.0000";
     
-        var_dump($geocord_in);
-    
         $pattern[0] = '/N /';
         $pattern[1] = '/E /';
         $replacement = "";
@@ -180,9 +178,7 @@ class convert extends dbcore
             $MM = $MMSTR + ($SSSTR / 60);
             $return = $sign.number_format($DD + $MM, 4, ".", "");
         }
-        
-        var_dump($sections);
-        var_dump($return);
+
         return $return;
     }
 
