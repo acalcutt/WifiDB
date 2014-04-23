@@ -1,19 +1,20 @@
 <?php
-global $log, $debug, $screen_output;
-$screen_output = "CLI";
-require './daemon/config.inc.php';
-require $GLOBALS['wifidb_install']."lib/database.inc.php";
-require $GLOBALS['wifidb_install']."lib/config.inc.php";
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "export");
+
+if(!(require('../daemon/config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+$wdb_install = $daemon_config['wifidb_install'];
+if($wdb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require($wdb_install)."/lib/init.inc.php";
 
 error_reporting(E_ALL && E_STRICT);
 date_default_timezone_set('EST');
 $placemarks = '';
 $points = array();
 
-
-$conn = new mysqli("172.16.1.18", "root", "saNsui20si", "wifi");
 $sql = "SELECT * FROM `wifi`.`live_gps` WHERE `lat` != 'N 0000.0000' AND `lat` != '' ORDER BY `date` ASC, `time` ASC";
-$result = $conn->query($sql);
+
+$result = $dbcore->sql->conn->query($sql);
 $prev_lat = "";
 $prev_long = "";
 

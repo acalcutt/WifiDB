@@ -1,15 +1,18 @@
 <?php
-$details = 0;
-error_reporting(E_ALL|E_STRICT);
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "export");
 
+if(!(require('../daemon/config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+$wdb_install = $daemon_config['wifidb_install'];
+if($wdb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require($wdb_install)."/lib/init.inc.php";
 
 $header = '<?xml version="1.0"?>
 <file_events>
 ';
 $footer = "</file_events>";
 $events = "";
-$conn = new mysqli("192.168.1.18", "root", "saNsui20si", "wifi");
-$result = $conn->query("SELECT `points`,`title`,`username`,`date`,`aps` FROM `wifi`.`users_imports` order by `id` DESC");
+$result = $dbcore->sql->conn->query("SELECT `points`,`title`,`username`,`date`,`aps` FROM `wifi`.`users_imports` order by `id` DESC");
 #$array = $result->fetch_row();
 #var_dump($array);
 #die();
