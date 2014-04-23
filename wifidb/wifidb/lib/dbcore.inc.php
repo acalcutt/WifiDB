@@ -224,7 +224,7 @@ class dbcore
     {
         if($daemon_pid == NULL ) # Test to see if a PID file was passed, if not fail.
         {
-            $ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
+            $ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
             return $ret;
         }
         $WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
@@ -259,16 +259,16 @@ class dbcore
                     //);
 					//var_dump($returns);
 					
-					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.' bytes','cmd'=>$CMD,'color'=>'green','errc'=>-5);
+					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
                     return $ret; # and return it
                 }else
                 {
-                    $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
+                    $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
                     return $ret; # There was no data in the PS return.
                 }
             }else
             {
-                $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
+                $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
                 return $ret; # PID File could not be found.
             }
         }elseif( $os[0] == 'W')
@@ -284,12 +284,12 @@ class dbcore
                     return $ps_stats;
                 }else
                 {
-                    $ret = array('Windows'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'no data returned from tasklist','color'=>'red','errc'=>-3);
+                    $ret = array('Windows'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'no data returned from tasklist','color'=>'red','errc'=>-3);
                     return $ret; #no data returned from tasklist
                 }
             }else
             {
-                $ret = array('OS'=>'Windows','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'PID File did not exsist','color'=>'red','errc'=>-2);
+                $ret = array('OS'=>'Windows','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File did not exsist','color'=>'red','errc'=>-2);
                 return $ret; #PID File did not exsist
             }
         }else
