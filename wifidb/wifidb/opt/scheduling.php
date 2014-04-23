@@ -116,6 +116,48 @@ switch($func)
                 $class="light";
                 $flip=1;
             }
+
+			$daily_label = $daemon_out.$file."/daily_db_label.kmz";
+			if(file_exists($daily_label))
+			{
+				$daily_label_url = $url_base.$file.'/daily_db_label.kmz';
+				$daily_label_size = $dbcore->format_size(@filesize($daily_label), 2);
+			}else
+			{
+				$daily_label_url = "#";
+				$daily_label_size = "0.00 kB";
+			}
+			$daily = $daemon_out.$file."/daily_db.kmz";
+			if(file_exists($daily))
+			{
+				$daily_url = $url_base.$file.'/daily_db.kmz';
+				$daily_size = $dbcore->format_size(@filesize($daily), 2);
+			}else
+			{
+				$daily_url = "#";
+				$daily_size = "0.00 kB";
+			}
+			$full_label = $daemon_out.$file."/full_db_label.kmz";
+			if(file_exists($full_label))
+			{
+				$full_label_url = $url_base.$file.'/full_db_label.kmz';
+				$full_label_size = $dbcore->format_size(@filesize($full_label), 2);
+			}else
+			{
+				$full_label_url = "#";
+				$full_label_size = "0.00 kB";
+			}
+			$full = $daemon_out.$file."/full_db.kmz";
+			if(file_exists($full))
+			{
+				$full_url = $url_base.$file.'/full_db.kmz';
+				$full_size = $dbcore->format_size(@filesize($full), 2);
+			}else
+			{
+				$full_url = "#";
+				$full_size = "0.00 kB";
+			}
+			
             $kml_all[] = array(
                 "class"             => $class,
                 "file"              => $file,
@@ -123,14 +165,14 @@ switch($func)
                 "daily_label_name"  => "daily_db_label.kmz",
                 "file_name"         => "full_db.kmz",
                 "file_label_name"   => "full_db_label.kmz",
-                "daily_label_url"   => $url_base.$file.'/daily_db_label.kmz',
-                "daily_url"         => $url_base.$file.'/daily_db.kmz',
-                "file_label_url"    => $url_base.$file.'/full_db_label.kmz',
-                "file_url"          => $url_base.$file.'/full_db.kmz',
-                "full_size"         => $dbcore->format_size(@filesize($daemon_out.$file."/full_db.kmz"), 2),
-                "full_size_label"   => $dbcore->format_size(@filesize($daemon_out.$file."/full_db_label.kmz"), 2),
-                "daily_size"        => $dbcore->format_size(@filesize($daemon_out.$file."/daily_db.kmz"), 2),
-                "daily_size_label"  => $dbcore->format_size(@filesize($daemon_out.$file."/daily_db_label.kmz"), 2)
+                "daily_label_url"   => $daily_label_url,
+                "daily_url"         => $daily_url,
+                "file_label_url"    => $full_label_url,
+                "file_url"          => $full_url,
+                "full_size"         => $full_size,
+                "full_size_label"   => $full_label_size,
+                "daily_size"        => $daily_size,
+                "daily_size_label"  => $daily_label_size
             );
         }
 
@@ -153,7 +195,7 @@ switch($func)
         }else
         {
             $kml_head['newest_date'] = "None generated yet";
-            $kml_head['newest_size'] = "0.00 kb";
+            $kml_head['newest_size'] = "0.00 kB";
             $kml_head['newest_link'] = "#";
         }
 
@@ -166,7 +208,7 @@ switch($func)
         }else
         {
             $kml_head['newest_labeled_date'] = "None generated yet";
-            $kml_head['newest_labeled_size'] = "0.00 kb";
+            $kml_head['newest_labeled_size'] = "0.00 kB";
             $kml_head['newest_labeled_link'] = "#";
         }
 
@@ -177,11 +219,11 @@ switch($func)
             $kml_head['full_date'] = date ("Y-m-d H:i:s", filemtime($full));
             $kml_head['full_size'] = $dbcore->format_size(filesize($full), 2);
 
-            $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'full_db.kmz';
+            $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/full_db.kmz';
         }else
         {
             $kml_head['full_date'] = "None generated for ".$files[0]." yet.";
-            $kml_head['full_size'] = "0.00 kb";
+            $kml_head['full_size'] = "0.00 kB";
             $kml_head['full_link'] = "#";
         }
 
@@ -190,11 +232,11 @@ switch($func)
         {
             $kml_head['full_labeled_date'] = date ("Y-m-d H:i:s", filemtime($full_label));
             $kml_head['full_labeled_size'] = $dbcore->format_size(filesize($full_label), 2);
-            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'full_db_labeled.kmz';
+            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/full_db_label.kmz';
         }else
         {
             $kml_head['full_labeled_date'] = "None generated for ".$files[0]." yet.";
-            $kml_head['full_labeled_size'] = "0.00 kb";
+            $kml_head['full_labeled_size'] = "0.00 kB";
             $kml_head['full_labeled_link'] = "#";
         }
 
@@ -203,11 +245,11 @@ switch($func)
         {
             $kml_head['daily_labeled_date'] = date ("Y-m-d H:i:s", filemtime($daily_label));
             $kml_head['daily_labeled_size'] = $dbcore->format_size(filesize($daily_label), 2);
-            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'daily_db_labeled.kmz';
+            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/daily_db_label.kmz';
         }else
         {
             $kml_head['daily_labeled_date'] = "None generated for ".$files[0]." yet.";
-            $kml_head['daily_labeled_size'] = "0.00 kb";
+            $kml_head['daily_labeled_size'] = "0.00 kB";
             $kml_head['daily_labeled_link'] = "#";
         }
 
@@ -216,11 +258,11 @@ switch($func)
         {
             $kml_head['daily_date'] = date ("Y-m-d H:i:s", filemtime($daily));
             $kml_head['daily_size'] = $dbcore->format_size(filesize($daily), 2);
-            $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'daily_db.kmz';
+            $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/daily_db.kmz';
         }else
         {
             $kml_head['daily_date'] = "None generated for ".$files[0]." yet.";
-            $kml_head['daily_size'] = "0.00 kb";
+            $kml_head['daily_size'] = "0.00 kB";
             $kml_head['daily_link'] = "#";
         }
         $dbcore->smarty->assign('wifidb_kml_head', $kml_head);
