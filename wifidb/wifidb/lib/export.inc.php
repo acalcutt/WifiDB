@@ -42,12 +42,12 @@ class export extends dbcore {
             12=>'December',
         );
         $this->ver_array['export'] = array(
-            "last_edit"             =>  "12-Aug-2013",
-            "ExportAllkml"          =>  "2.0",
-            "ExportDailykml"        =>  "1.0",
+            "last_edit"             =>  "22-Apr-2014",
+            "ExportAllkml"          =>  "2.1",
+            "ExportDailykml"        =>  "1.1",
             "ExportSingleAP"        =>  "1.0",
             "ExportCurrentAPkml"    =>  "1.0",
-            "GenerateDaemonKMLData" =>  "1.0",
+            "GenerateDaemonKMLData" =>  "1.1",
             "GenerateDaemonKMLLinks"=>  "1.0",
             "HistoryKMLLink"        =>  "1.0",
             "FulldbKMLLink"         =>  "1.0",
@@ -62,8 +62,12 @@ class export extends dbcore {
     /*
      * Export to Google KML File
      */
-    public function ExportAllkml()
+    public function ExportAllkml($date = NULL)
     {
+        if($date === NULL)
+        {
+            $date = date($this->date_format);
+        }
         $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `lat` != '0000.0000' ORDER by `id` ASC";
         $result = $this->sql->conn->query($sql);
 
@@ -84,7 +88,7 @@ class export extends dbcore {
             $this->verbosed("Starting Export of Non-Labeled Full KML.");
             $labeled = "";
         }
-        $daily_folder = $this->PATH.'out/daemon/'.date($this->date_format);
+        $daily_folder = $this->PATH.'out/daemon/'.$date;
         if(!@file_exists($daily_folder))
         {
             $this->verbosed("Need to make a daily export folder...", 1);
@@ -94,7 +98,7 @@ class export extends dbcore {
             }
         }else
         {
-            if(file_exists($daily_folder."/full_db".$labeled.".kml") && file_exists($daily_folder."/full_db".$labeled.".kmz")){$this->verbosed("Full DB Export for (".date($this->date_format).") already exists."); return -1;}
+            if(file_exists($daily_folder."/full_db".$labeled.".kml") && file_exists($daily_folder."/full_db".$labeled.".kmz")){$this->verbosed("Full DB Export for (".$date.") already exists."); return -1;}
         }
         $this->verbosed("Compiling Data for Export.");
         $KML_data="";
@@ -203,7 +207,7 @@ class export extends dbcore {
             $KML_data = $this->createKML->createFolder($import['username']." - ".$import['title'], $KML_data, 0);
         }
 
-        $daily_folder = $this->daemon_out.date($this->date_format);
+        $daily_folder = $this->daemon_out.$date;
         if(!@file_exists($daily_folder))
         {
             $this->verbosed("Need to make a daily export folder...", 1);
@@ -450,15 +454,16 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
      */
     public function GenerateDaemonKMLData()
     {
+        $date = date($this->date_format);
         $this->named = 0;
-        $this->ExportAllkml();
+        $this->ExportAllkml($date);
         $this->named = 1;
-        $this->ExportAllkml();
+        $this->ExportAllkml($date);
         
         $this->named = 0;
-        $this->ExportDailykml();
+        $this->ExportDailykml($date);
         $this->named = 1;
-        $this->ExportDailykml();
+        $this->ExportDailykml($date);
         
         if($this->HistoryKMLLink() === -1)
         {
