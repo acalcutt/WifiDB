@@ -54,13 +54,15 @@ class frontend extends dbcore
             $this->smarty->assign('wifidb_meta_header', $this->meta->header);
             $this->smarty->assign('wifidb_theme', $this->theme);
             $this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
-            $this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
             
             $this->smarty->assign('critical_error_message', '');
             
             $this->smarty->assign("redirect_func", "");
             $this->smarty->assign("redirect_html", "");
             $this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
+            $this->smarty->assign('wifidb_login_html', $this->sec->LoginHtml);
+            $this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
+            #$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
             $this->htmlheader();
             $this->htmlfooter();
             $this->users_import_aps = array();

@@ -374,6 +374,8 @@ class security
         if(!@isset($_COOKIE[$cookie_name]))
         {
             $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.$_SERVER['PHP_SELF'];
             $this->login_val = "No Cookie";
             $this->login_check = 0;
             return -1;
@@ -383,6 +385,8 @@ class security
         {
             # Username Fail.
             $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.$_SERVER['PHP_SELF'];
             $this->login_val = "u_fail";
             $this->login_check = 0;
             return 0;
@@ -397,7 +401,9 @@ class security
         if(crypt($cookie_pass, $db_pass) == $db_pass)
         {
             $this->privs = $this->check_privs();
-            $this->LoginLabel = $newArray['username'];
+            $this->LoginLabel = "Logout";
+			$this->LoginHtml = 'Welcome, <a class="links" href="'.$dbcore->HOSTURL.'cp/">'.$newArray['username'].'</a>';
+			$this->LoginUri = '?func=logout';
             $this->login_val = $newArray['username'];
             $this->username = $newArray['username'];
             $this->login_check = 1;
@@ -405,6 +411,8 @@ class security
         }else
         {
             $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.$_SERVER['PHP_SELF'];
             $this->login_val = "Bad Cookie Password";
             $this->login_check = 0;
             return -1;
