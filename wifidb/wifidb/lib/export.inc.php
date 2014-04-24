@@ -751,7 +751,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
             list($id, $new_old) = explode(":", $point);
 
             $ap_hash = $this->GetAPhash($id);
-            $data[$ap_hash]['gdata'] = $this->ExportSingleAP($id, $new_old);
+            $data[$ap_hash]['gdata'] = $this->ExportSingleAP((int)$id, $new_old);
         }
         $data1 = $this->subval_sort($data, 'ssid', 0);
         $this->createKML->LoadData($data1);
@@ -789,7 +789,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
             list($id, $new_old) = explode(":", $point);
 
             $ap_hash = $this->GetAPhash($id);
-            $data[$ap_hash]['gdata'] = $this->ExportSingleAP($id, $new_old);
+            $data[$ap_hash]['gdata'] = $this->ExportSingleAP((int)$id, $new_old);
         }
         $data1 = $this->subval_sort($data, 'ssid', 0);
         $this->createKML->LoadData($data1);
