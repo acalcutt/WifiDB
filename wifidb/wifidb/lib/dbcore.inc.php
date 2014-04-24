@@ -58,10 +58,15 @@ class dbcore
         $this->URL_PATH                 = $this->HOSTURL.$this->root.'/';
         $this->PATH                     = $config['wifidb_install'];
         $this->gpx_out                  = $this->PATH.$config['gpx_out'];
+        $this->gpx_htmlpath             = $this->URL_PATH.$config['gpx_out'];
         $this->daemon_out               = $this->PATH.$config['daemon_out'];
+        $this->daemon_htmlpath          = $this->URL_PATH.$config['daemon_out'];
         $this->vs1_out                  = $this->PATH.$config['vs1_out'];
+        $this->vs1_htmlpath             = $this->URL_PATH.$config['vs1_out'];
         $this->kml_out                  = $this->PATH.$config['kml_out'];
+        $this->kml_htmlpath             = $this->URL_PATH.$config['kml_out'];
         $this->csv_out                  = $this->PATH.$config['csv_out'];
+        $this->csv_htmlpath             = $this->URL_PATH.$config['csv_out'];
         
         $this->theme                    = (@$_REQUEST['wifidb_theme']!='' ? @$_REQUEST['wifidb_theme'] : $config['default_theme']);
         $this->PATH_THEMES              = $this->PATH.'themes/'.$this->theme;

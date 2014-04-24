@@ -30,8 +30,10 @@ switch($func)
 {
         #--------------------------
         case "exp_user_all_kml":
-            $row = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-            $dbcore->export->UserAll($user);
+            $user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+            $results = $dbcore->export->UserAll($user);
+            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
         case "exp_user_list":

@@ -15,7 +15,7 @@ class createKML
         $this->URL_BASE     =   $core->URL_PATH;
         $this->convert      =   $core->convert;
         $this->kml_out      =   $core->kml_out;
-        $this->daemon_out      =   $core->daemon_out;
+        $this->daemon_out   =   $core->daemon_out;
         $this->open_path    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
