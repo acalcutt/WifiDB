@@ -735,7 +735,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
             return 0;
         }
         $data = array();
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `username` = ?";
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $user, PDO::PARAM_STR);
         $prep->execute();
