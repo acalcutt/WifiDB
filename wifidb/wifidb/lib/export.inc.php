@@ -727,6 +727,36 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
         return $ret;
     }
 
+    public function UserAll($user)
+    {
+        if(!is_string($user))
+        {
+            throw new ErrorException("Row value for export::UserAll() is not a string");
+            return 0;
+        }
+        $r = 0;
+        $data = array();
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `username` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $user, PDO::PARAM_STR);
+        $prep->execute();
+        $this->sql->checkError(__LINE__, __FILE__);
+        $fetch = $prep->fetch();
+        if($fetch['points'] == "")
+        {
+            throw new ErrorException("User selected is empty, try again.");
+        }
+        $points = explode("-", $fetch['points']);
+        foreach($points as $point)
+        {
+            list($id, $new_old) = explode(":", $point);
+
+            $ap_hash = $this->GetAPhash($id);
+            $data[$ap_hash]['gdata'] = $this->ExportSingleAP($id, $new_old);
+        }
+        $data1 = $this->subval_sort($data, 'ssid', 0);
+        return $data1;
+    }
 
     public function UserList($row)
     {
@@ -754,8 +784,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
 
             $ap_hash = $this->GetAPhash($id);
             $data[$ap_hash]['gdata'] = $this->ExportSingleAP($id, $new_old);
-
-            $r = dbcore::RotateSpinner($r);
         }
         $data1 = $this->subval_sort($data, 'ssid', 0);
         return $data1;

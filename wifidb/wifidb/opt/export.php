@@ -30,14 +30,8 @@ switch($func)
 {
         #--------------------------
         case "exp_user_all_kml":
-            $row = 0;
-            $dbcore->export->exp_kml($export="exp_user_all_kml", $user,$row);
-            break;
-        #--------------------------
-        case "exp_all_db_kml":
-            $user ='';
-            $row = 0;
-            $dbcore->export->exp_kml($export="exp_all_db_kml",$user,$row);
+            $row = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+            $dbcore->export->UserAll($user);
             break;
         #--------------------------
         case "exp_user_list":
@@ -46,25 +40,6 @@ switch($func)
             $result = $dbcore->export->UserList($row);
             $dbcore->smarty->assign('results', $results);
             $dbcore->smarty->display('export_results.tpl');
-            break;
-        #--------------------------
-        case "exp_all_signal":
-            $id = ($_REQUEST['id'] ? $_REQUEST['id'] : 0);
-            $from = ($_REQUEST['from'] ? $_REQUEST['from'] : 0);
-            $limit = ($_REQUEST['limit'] ? $_REQUEST['limit'] : 0);
-            $results = $dbcore->export->ExportSingleAP($id, $from, $limit);
-            $dbcore->smarty->assign('results', $results);
-            $dbcore->smarty->display('export_results.tpl');
-            break;
-        #--------------------------
-        case "exp_single_ap":
-            $id = ($_REQUEST['id'] ? $_REQUEST['id'] : 0);
-            $from = ($_REQUEST['from'] ? $_REQUEST['from'] : 0);
-            $limit = ($_REQUEST['limit'] ? $_REQUEST['limit'] : 0);
-            $results = $dbcore->export->ExportSingleAP($id, $from, $limit);
-            $dbcore->smarty->assign('results', $results);
-            $dbcore->smarty->display('export_results.tpl');
-
             break;
         #--------------------------
         default:
