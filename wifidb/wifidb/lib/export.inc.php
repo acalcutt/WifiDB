@@ -1,4 +1,5 @@
 <?php
+require_once("createKML.inc.php");
 /*
 Export.inc.php, holds the WiFiDB exporting functions.
 Copyright (C) 2012 Phil Ferland
@@ -23,7 +24,7 @@ class export extends dbcore
     public function __construct($config, $daemon_config) {
         parent::__construct($config, $daemon_config);
 
-        $this->convert = new convert($config, $daemon_config);
+        $this->convert = new convert($config);
         $this->createKML = new createKML($this, $config['timetilldead']);
         $this->daemon_folder_stats = array();
         $this->named = 0;

@@ -8,12 +8,9 @@
 
 class convert extends dbcore
 {
-    public function __construct($config, $daemon_config)
+    public function __construct($config)
     {
-        parent::__construct($config, $daemon_config);
-        $this->languages = $this->lang;
-        $this->dBmMaxSignal = $config['dBmMaxSignal'];
-        $this->dBmDissociationSignal = $config['dBmDissociationSignal'];
+        parent::__construct($config);
     }
 
     /**

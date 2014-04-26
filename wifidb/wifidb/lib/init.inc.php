@@ -134,7 +134,7 @@ try
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
-                    $dbcore->convert = new convert($config, $daemon_config, $dbcore);
+                    $dbcore->convert = new convert($config);
                     $dbcore->export = new export($config, $daemon_config);
                     $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
                 break;
@@ -169,7 +169,7 @@ try
                 case "export":
                     $dbcore = new frontend($config);
                     __autoload('convert');
-                    $dbcore->convert = new convert($config, $daemon_config, $dbcore);
+                    $dbcore->convert = new convert($config);
                     __autoload('export');
                     $dbcore->export = new export($config, $dbcore->convert);
                 break;

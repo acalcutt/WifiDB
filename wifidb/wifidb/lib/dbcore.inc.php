@@ -115,6 +115,9 @@ class dbcore
         $this->sec                      = new security($this, $config);
         $this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
+        $this->languages = $this->lang;
+        $this->dBmMaxSignal = $config['dBmMaxSignal'];
+        $this->dBmDissociationSignal = $config['dBmDissociationSignal'];
     }
 
     ##############################
