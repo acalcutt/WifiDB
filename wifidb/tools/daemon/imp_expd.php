@@ -163,6 +163,7 @@ while(1)
             $file_src = explode(".",$files_a['file']);
             $file_type = strtolower($file_src[1]);
             $file_name = $files_a['file'];
+			$file_hash = $files_a['hash'];
             #Lets check and see if it is has a valid VS1 file header.
             if(in_array($file_type, $dbcore->convert_extentions))
             {
@@ -214,7 +215,7 @@ while(1)
 
             $return  = file($source);
             $count = count($return);
-            $hash = hash_file('md5', $source);
+            $hash = $file_hash;
             if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a valid file in the field
             {
                 $dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
@@ -236,7 +237,6 @@ while(1)
                 $prep = $dbcore->sql->conn->prepare($sql_check);
                 $prep->bindParam(1, $hash, PDO::PARAM_STR);
                 $prep->execute();
-
                 if($dbcore->sql->checkError())
                 {
                     $dbcore->logd("Failed to select file hash from files table. :(",
