@@ -105,7 +105,6 @@ class export extends dbcore
         $KML_data="";
         while($array = $result->fetch(2))
         {
-            //$this->verbosed($array['id']);
             $ret = $this->ExportSingleAP((int)$array['id']);
             if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
@@ -735,33 +734,41 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
             throw new ErrorException('$user value for export::UserAll() is not a string');
             return 0;
         }
-        $data = array();
         $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $user, PDO::PARAM_STR);
         $prep->execute();
-        $this->sql->checkError(__LINE__, __FILE__);
-        $fetch = $prep->fetch();
-        if($fetch['points'] == "")
+		$this->sql->checkError(__LINE__, __FILE__);
+        $user_imports = $prep->fetchAll();
+		$uicount = count($user_imports);
+
+		$KML_data="";
+        if($uicount < 1)
         {
             throw new ErrorException("User selected is empty, try again.");
-        }
-        $points = explode("-", $fetch['points']);
-        foreach($points as $point)
-        {
-            list($id, $new_old) = explode(":", $point);
-
-            $ap_hash = $this->GetAPhash($id);
-            $data[$ap_hash]['gdata'] = $this->ExportSingleAP((int)$id, $new_old);
-        }
-        $data1 = $this->subval_sort($data, 'ssid', 0);
-        $this->createKML->LoadData($data1);
-        $KML_data = $this->createKML->PlotAllAPs(1, 1, $this->named);
-        $KML_data = $this->createKML->createFolder($user, $KML_data, 0);
-        $user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+        }else
+		{
+			foreach($user_imports as $import)
+			{
+				$points = explode("-", $import['points']);
+				foreach($points as $point)
+				{
+					list($id, $new_old) = explode(":", $point);
+					$ret = $this->ExportSingleAP((int)$id, $new_old);
+					if(is_array($ret))
+					{
+						$this->createKML->ClearData();
+						$this->createKML->LoadData($ret);
+						$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+					}
+				}
+			}
+		}
+		$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
         $export_file = $this->kml_out.$user_fn.".kml";
-        $this->createKML->createKML($export_file, "$user AP's", $KML_data);
-
+        $KML_data = $this->createKML->createFolder($user, $KML_data, 0);
+        $this->createKML->createKML($export_file, "$user AP's", $KML_data, 1);
+		$KML_data="";
         $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$user_fn.'.kml">'.$user_fn.'.kml</a>');
         return $results;
     }

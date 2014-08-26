@@ -192,7 +192,7 @@ class createKML
             throw new ErrorException("WithSignal value for createKML::PlotAllAPs is not an integer or of the value 0, 1, 2, or 3.");
         }
         $data = "";
-        $r = 0;
+        #$r = 0;
         foreach($this->data->apdata as $key=>$ap)
         {
             switch($WithSignal)
@@ -210,7 +210,7 @@ class createKML
                     $data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
                     break;
             }
-            $r = dbcore::RotateSpinner($r);
+            #$r = dbcore::RotateSpinner($r);
         }
         return $data;
     }
