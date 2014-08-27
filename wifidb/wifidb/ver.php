@@ -31,19 +31,43 @@ $dbcore->smarty->smarty->display('header.tpl');
 		<p align="center"><font size="7"><b>WiFiDB Version History</b></font></p>
 		<table border="0" cellpadding="4" width="100%" border="2" id="details">
 			<tr class="dark">
-				<td>Project Name...</td><td><b>WiFiDB 0.30</b></td>
+				<td>Project Name...</td><td><b>WiFiDB 0.30v</b></td>
 			<tr class="light">
 				<td>Project State...</td><td><b>Alpha (planning and early dev)</b></td>
 			</tr>
 			<tr class="dark">
-				<td>Project Dev(s)...</td><td><b><a class="links" href="http://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=6">PFerland</a></b></td>
+				<td>Project Dev(s)...</td><td><b><a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=6">PFerland</a>, <a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=43">ACalcutt</b></td>
 			</tr>
 			<tr class="light">
-				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="http://www.randomintervals.com/wifidb/">Download WiFiDB</a></b></td>
+				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="https://github.com/pferland/WiFiDB/tree/andrew-test">Download WiFiDB</a></b></td>
 			</tr>
 		</table>
 		</ br>
                 <h2>Change Log</h2>
+                <table class="light" width="100%" border="2" id="21b1">
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland, Andrew Calcutt</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30v Build 1</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 08-27-2014</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
+                            <ol>
+                                <li>Minor modifications of WifiDB Alpha 0.30 to get a working release for the Vistumbler WiFiDB. The point of this release was to get the basics working.</li>
+								<li>Fixes to imports</li>
+								<li>Fixes to KML exports</li>
+								<li>Fixes to GPS conversions</li>
+								<li>Fixes to user login (though this needs a lot of work)</li>
+								<li>Removed Mysicache from menu since it still needs a lot of work</li>
+                            </ol>
+						</td>
+                    </tr>
+				</table>
+				<br>
                 <table class="dark" width="100%" border="2" id="21b1">
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30 Build 1</td>
@@ -110,9 +134,10 @@ $dbcore->smarty->smarty->display('header.tpl');
                                 <li>Implemented PDO prepared statements in all interactions with the SQL Servers.</li>
                                 <li>Removed all HTML elements from the import/export functions.</li>
                             </ol>
-			</td>
-                    </tr>
-		</table>
+						</td>
+					</tr>
+				</table>
+				<br>
                 <table class="light" width="100%" border="2" id="20b1">
 			<tr><td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.20 Build 1</td></tr>
 			<tr><td style="border-style: solid; border-width: 1px" height="26">Date: 2010-July-31</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Hyannis</td></tr>
