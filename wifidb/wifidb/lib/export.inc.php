@@ -780,7 +780,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
             throw new ErrorException('$row value for export::UserList() is NaN');
             return 0;
         }
-        $data = array();
         $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $row, PDO::PARAM_INT);
@@ -792,20 +791,23 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
             throw new ErrorException("User Import selected is empty, try again.");
         }
         $points = explode("-", $fetch['points']);
-        foreach($points as $point)
-        {
-            list($id, $new_old) = explode(":", $point);
-
-            $ap_hash = $this->GetAPhash($id);
-            $data[$ap_hash]['gdata'] = $this->ExportSingleAP((int)$id, $new_old);
-        }
-        $data1 = $this->subval_sort($data, 'ssid', 0);
-        $this->createKML->LoadData($data1);
-        $KML_data = $this->createKML->PlotAllAPs(1, 1, $this->named);
+		$KML_data="";
+		foreach($points as $point)
+		{
+			list($id, $new_old) = explode(":", $point);
+			$ret = $this->ExportSingleAP((int)$id, $new_old);
+			if(is_array($ret))
+			{
+				$this->createKML->ClearData();
+				$this->createKML->LoadData($ret);
+				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+			}
+		}
         $KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
         $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
         $export_file = $this->kml_out.$title.".kml";
-        $this->createKML->createKML($export_file, "$title", $KML_data);
+        $this->createKML->createKML($export_file, "$title", $KML_data, 1);
+		$KML_data="";
 
         $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kml">'.$title.'.kml</a>');
         return $results;

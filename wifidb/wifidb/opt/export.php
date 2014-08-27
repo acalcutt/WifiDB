@@ -37,10 +37,9 @@ switch($func)
             break;
         #--------------------------
         case "exp_user_list":
-            $row = ($_REQUEST['row'] ? $_REQUEST['row']: 0);
-            var_dump($row);
+            $row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
             $result = $dbcore->export->UserList($row);
-            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->assign('results', $result);
             $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
