@@ -198,9 +198,11 @@ class frontend extends dbcore
         }
 
         $list = array();
-        $id_find = "%-{$id}:%";
-        $prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ?");
+		$id_find = "%-{$id}:%";
+		$id_find_firstitem = "{$id}:%";
+		$prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
         $prep2->bindParam(1, $id_find, PDO::PARAM_STR);
+		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
         $prep2->execute();
         if($this->sql->checkError() !== 0)
         {
