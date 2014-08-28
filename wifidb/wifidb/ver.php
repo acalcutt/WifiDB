@@ -39,7 +39,7 @@ $dbcore->smarty->smarty->display('header.tpl');
 				<td>Project Dev(s)...</td><td><b><a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=6">PFerland</a>, <a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=43">ACalcutt</b></td>
 			</tr>
 			<tr class="light">
-				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="https://github.com/pferland/WiFiDB/tree/andrew-test">Download WiFiDB</a></b></td>
+				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="https://github.com/pferland/WiFiDB/">Offical WiFiDB GitHub</a></b></td>
 			</tr>
 		</table>
 		</ br>
@@ -52,7 +52,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Date: 08-27-2014</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/andrew-test">WiFiDB GitHub : Branch 'andrew-test'</a></td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
@@ -76,7 +76,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Date: 05-21-2013</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/dev">WiFiDB GitHub : Branch 'dev'</a></td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
