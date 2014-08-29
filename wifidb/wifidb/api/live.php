@@ -55,15 +55,15 @@ $session_id   =   (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "" );
 if($session_id === "")
 {
     $dbcore->mesg['message'] = "Session ID is blank :/";
-}
+} 
+echo $session_id;
 if($ssid == "UNAMED" && $mac == "00:00:00:00:00:00" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "0.0"
    && $OTX == "0.0" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
+	echo "no data";
     $dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
     $dbcore->Output();
 }
-
-
 $data = array(
     #ap data
     'ssid'=>$ssid,
@@ -81,8 +81,8 @@ $data = array(
     'rssi'=>$rssi,
     
     #gps data
-    'lat'=>$dbcore->convert_dd_dm($lat),
-    'long'=>$dbcore->convert_dd_dm($long),
+    'lat'=>$lat,
+    'long'=>$long,
     'sats'=>$sats,
     'hdp'=>$hdp,
     'kmh'=>$kmh,
@@ -94,7 +94,8 @@ $data = array(
     'time'=>$time,
     
     #user data
-    'username'=>$dbcore->username,
+    #'username'=>$dbcore->username,
+	'username'=>'Unknown',
     'session_id'=>$session_id
 );
 $dbcore->InsertLiveAP($data);
