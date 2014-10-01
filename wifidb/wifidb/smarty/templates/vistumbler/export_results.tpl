@@ -24,10 +24,5 @@ if not, write to the
                                                     {$results.mesg}
                                                 </td>
                                             </tr>
-                                            <tr>
-                                                <td class="style4">
-                                                    Export File: <a href="{$results.link}" >{$results.name}</a>
-                                                </td>
-                                            </tr>
                                         </table>
 {include file="footer.tpl"}

@@ -275,8 +275,7 @@ class export extends dbcore
   `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
 FROM `wifi`.`wifi_signals`
   LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
-WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
-      AND `wifi_gps`.`lat` != '0.0000'";
+WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat` != '0.0000'";
         if(!empty($limit))
         {
             $sql3 .= " LIMIT $limit";
@@ -754,22 +753,47 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
 				foreach($points as $point)
 				{
 					list($id, $new_old) = explode(":", $point);
-					$ret = $this->ExportSingleAP((int)$id, $new_old);
-					if(is_array($ret))
+					$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+					$result = $this->sql->conn->query($sql);
+					while($array = $result->fetch(2))
 					{
-						$this->createKML->ClearData();
-						$this->createKML->LoadData($ret);
-						$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+						$ret = $this->ExportSingleAP((int)$array['id']);
+						if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+						{
+							$this->createKML->ClearData();
+							$this->createKML->LoadData($ret);
+							$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+						}
 					}
 				}
 			}
 		}
-		$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-        $export_file = $this->kml_out.$user_fn.".kml";
-        $KML_data = $this->createKML->createFolder($user, $KML_data, 0);
-        $this->createKML->createKML($export_file, "$user AP's", $KML_data, 1);
-		$KML_data="";
-        $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$user_fn.'.kml">'.$user_fn.'.kml</a>');
+		if($KML_data == "")
+		{
+			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+		}
+		else
+		{
+			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			$export_kml_file = $this->kml_out.$user_fn.".kml";
+			$KML_data = $this->createKML->createFolder($user, $KML_data, 0);
+			$this->createKML->createKML($export_kml_file, "$user AP's", $KML_data, 1);
+			$KML_data="";
+
+			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
+			if($ret_kmz_name == -1)
+			{
+				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+			}
+			elseif($ret_kmz_name == -2)
+			{
+				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+			}
+			else
+			{		
+				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$user_fn.'.kmz">'.$user_fn.'.kmz</a>');
+			}
+		}
         return $results;
     }
 
@@ -795,21 +819,46 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."'
 		foreach($points as $point)
 		{
 			list($id, $new_old) = explode(":", $point);
-			$ret = $this->ExportSingleAP((int)$id, $new_old);
-			if(is_array($ret))
+			$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+			$result = $this->sql->conn->query($sql);
+			while($array = $result->fetch(2))
 			{
-				$this->createKML->ClearData();
-				$this->createKML->LoadData($ret);
-				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+				$ret = $this->ExportSingleAP((int)$array['id']);
+				if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+				{
+					$this->createKML->ClearData();
+					$this->createKML->LoadData($ret);
+					$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+				}
 			}
 		}
-        $KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
-        $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-        $export_file = $this->kml_out.$title.".kml";
-        $this->createKML->createKML($export_file, "$title", $KML_data, 1);
-		$KML_data="";
+		
+		if($KML_data == "")
+		{
+			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+		}
+		else
+		{
+			$KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+			$export_kml_file = $this->kml_out.$title.".kml";
+			$this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
+			$KML_data="";
 
-        $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kml">'.$title.'.kml</a>');
-        return $results;
+			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
+			if($ret_kmz_name == -1)
+			{
+				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+			}
+			elseif($ret_kmz_name == -2)
+			{
+				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+			}
+			else
+			{		
+				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+			}
+		}
+		return $results;
     }
 }
