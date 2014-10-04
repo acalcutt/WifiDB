@@ -404,7 +404,7 @@ class security
 			{
 				$this->privs = $this->check_privs();
 				$this->LoginLabel = "Logout";
-				$this->LoginHtml = 'Welcome, <a class="links" href="'.$dbcore->HOSTURL.'cp/">'.$logon['username'].'</a>';
+				$this->LoginHtml = 'Welcome, <a class="links" href="'.$dbcore->PATH.'cp/">'.$logon['username'].'</a>';
 				$this->LoginUri = '?func=logout';
 				$this->login_val = $logon['username'];
 				$this->username = $logon['username'];

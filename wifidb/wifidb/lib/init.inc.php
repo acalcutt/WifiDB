@@ -179,6 +179,10 @@ try
                     __autoload('graphs');
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
+				
+                case "cp":
+                    $dbcore = new frontend($config);
+                break;
 
                 default:
                     $dbcore = new frontend($config);

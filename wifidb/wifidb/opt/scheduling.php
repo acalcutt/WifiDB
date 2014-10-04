@@ -124,16 +124,8 @@ switch($func)
                 $daily_label_size = $dbcore->format_size(@filesize($daily_label), 2);
             }else
             {
-				$daily_label_kml = $daemon_out.$file."/daily_db_label.kml";
-				if(file_exists($daily_label_kml))
-				{
-					$daily_label_url = $url_base.$file.'/daily_db_label.kml';
-					$daily_label_size = $dbcore->format_size(@filesize($daily_label_kml), 2);
-				}else
-				{
-					$daily_label_url = "#";
-					$daily_label_size = "0.00 kB";
-				}
+				$daily_label_url = "#";
+				$daily_label_size = "0.00 kB";
             }
             $daily = $daemon_out.$file."/daily_db.kmz";
             if(file_exists($daily))
@@ -142,16 +134,8 @@ switch($func)
                 $daily_size = $dbcore->format_size(@filesize($daily), 2);
             }else
             {
-				$daily_kml = $daemon_out.$file."/daily_db.kml";
-				if(file_exists($daily_kml))
-				{
-					$daily_url = $url_base.$file.'/daily_db.kml';
-					$daily_size = $dbcore->format_size(@filesize($daily_kml), 2);
-				}else
-				{
-					$daily_url = "#";
-					$daily_size = "0.00 kB";
-				}
+				$daily_url = "#";
+				$daily_size = "0.00 kB";
             }
             $full_label = $daemon_out.$file."/full_db_label.kmz";
             if(file_exists($full_label))
@@ -160,16 +144,8 @@ switch($func)
                 $full_label_size = $dbcore->format_size(@filesize($full_label), 2);
             }else
             {
-				$full_label_kml = $daemon_out.$file."/full_db_label.kml";
-				if(file_exists($full_label_kml))
-				{
-					$full_label_url = $url_base.$file.'/full_db_label.kml';
-					$full_label_size = $dbcore->format_size(@filesize($full_label_kml), 2);
-				}else
-				{
-					$full_label_url = "#";
-					$full_label_size = "0.00 kB";
-				}
+				$full_label_url = "#";
+				$full_label_size = "0.00 kB";
             }
             $full = $daemon_out.$file."/full_db.kmz";
             if(file_exists($full))
@@ -178,16 +154,8 @@ switch($func)
                 $full_size = $dbcore->format_size(@filesize($full), 2);
             }else
             {
-				$full_kml = $daemon_out.$file."/full_db.kml";
-				if(file_exists($full_kml))
-				{
-					$full_url = $url_base.$file.'/full_db.kml';
-					$full_size = $dbcore->format_size(@filesize($full_kml), 2);
-				}else
-				{
-					$full_url = "#";
-					$full_size = "0.00 kB";
-				}
+				$full_url = "#";
+				$full_size = "0.00 kB";
             }
             
             $kml_all[] = array(
