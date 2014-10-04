@@ -22,7 +22,7 @@ class security
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
-        $this->URL_PATH           = $dbcore->URL_PATH;
+        $this->HOSTURL           = $dbcore->HOSTURL;
         $this->root               = $dbcore->root;
         $ssl_flag                = parse_url($dbcore->URL_PATH, PHP_URL_SCHEME);
         if($ssl_flag == "https")
@@ -404,7 +404,7 @@ class security
 			{
 				$this->privs = $this->check_privs();
 				$this->LoginLabel = "Logout";
-				$this->LoginHtml = 'Welcome, <a class="links" href="'.$dbcore->PATH.'cp/">'.$logon['username'].'</a>';
+				$this->LoginHtml = 'Welcome, <a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
 				$this->LoginUri = '?func=logout';
 				$this->login_val = $logon['username'];
 				$this->username = $logon['username'];
