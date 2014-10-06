@@ -358,6 +358,7 @@ class security
     
     function LoginCheck($authoritah = 0)
     {
+		$encoded_url = urlencode($_SERVER['REQUEST_URI']);
         $time = time()-1;
         $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `utime` < ?";
         $prep = $this->sql->conn->prepare($sql);
@@ -375,7 +376,7 @@ class security
         {
             $this->LoginLabel = "";
 			$this->LoginHtml = "";
-			$this->LoginUri = '?return='.$_SERVER['PHP_SELF'];
+			$this->LoginUri = '?return='.$encoded_url;
             $this->login_val = "No Cookie";
             $this->login_check = 0;
             return -1;
@@ -386,7 +387,7 @@ class security
             # Username Fail.
             $this->LoginLabel = "";
 			$this->LoginHtml = "";
-			$this->LoginUri = '?return='.$_SERVER['PHP_SELF'];
+			$this->LoginUri = '?return='.$encoded_url;
             $this->login_val = "u_fail";
             $this->login_check = 0;
             return 0;
@@ -405,7 +406,7 @@ class security
 				$this->privs = $this->check_privs();
 				$this->LoginLabel = "Logout";
 				$this->LoginHtml = 'Welcome, <a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
-				$this->LoginUri = '?func=logout';
+				$this->LoginUri = '?func=logout&return='.$encoded_url;
 				$this->login_val = $logon['username'];
 				$this->username = $logon['username'];
 				$this->login_check = 1;
@@ -414,7 +415,7 @@ class security
 		}
         $this->LoginLabel = "";
 		$this->LoginHtml = "";
-		$this->LoginUri = '?return='.$_SERVER['PHP_SELF'];
+		$this->LoginUri = '?return='.$encoded_url;
         $this->login_val = "Bad Cookie Password";
         $this->login_check = 0;
         return -1;

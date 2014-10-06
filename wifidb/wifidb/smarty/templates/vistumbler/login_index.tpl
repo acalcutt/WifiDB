@@ -36,7 +36,7 @@ if not, write to the
                                                     <td><input type="password" name="time_pass"></td>
                                                 </tr>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><input type="hidden" name="return" value="{$wifidb_host_url}index.php"><input type="submit" value="Login"></p></td>
+                                                    <td colspan="2"><p align="center"><input type="hidden" name="return" value="{$logon_return_url}"><input type="submit" value="Login"></p></td>
                                                 </tr>
                                                 <tr>
                                                     <td colspan="2">
