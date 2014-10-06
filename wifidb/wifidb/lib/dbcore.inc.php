@@ -106,9 +106,9 @@ class dbcore
         }
 
         $this->ver_array                =   array(
-            "wifidb"                    =>  " *Alpha* 0.30 Build 1 *Pre-Release* ",
+            "wifidb"                    =>  " *Alpha* 0.30v Build 1 *Pre-Release* ",
             "codename"                  =>  "Peabody",
-            "Last_Core_Edit"            =>  "06-05-2013"
+            "Last_Core_Edit"            =>  "08-27-2014"
             );
         $this->ver_str                  = $this->ver_array['wifidb'];
         $this->This_is_me               = getmypid();

@@ -50,7 +50,7 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap.limit}&amp;from=0&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_all_signal&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KML</a></td>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap.limit}&amp;from=0&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_all_signal&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -65,7 +65,7 @@ if not, write to the
                                                         <tr>
                                                             <th class="style4" onclick="expandcontract('Row{$wifidb_ap_signal.id}','ClickIcon{$wifidb_ap_signal.id}')" id="ClickIcon{$wifidb_ap_signal.id}" style="cursor: pointer; cursor: hand;">+</th>
                                                             <th colspan="5" class="style4">Signal History ({$wifidb_ap_signal.desc})</th>
-                                                            <td class="style4"><b>Export:</b> <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_single_ap&amp;limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">KML</a> / <a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">Graph</a></td>
+                                                            <td class="style4"><b>Export:</b> <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_single_ap&amp;limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">KMZ</a> / <a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">Graph</a></td>
                                                         </tr>
                                                     </tbody>
                                                     <tbody id="Row{$wifidb_ap_signal.id}" style="display:none">
