@@ -25,7 +25,7 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "cp");
 
 include('../lib/init.inc.php');
-$dbcore->smarty->assign('wifidb_page_label', 'Live Page');
+$dbcore->smarty->assign('wifidb_page_label', 'User Control Panel');
 
 #$theme = $GLOBALS['theme'];
 $theme = "vistumbler";
@@ -55,104 +55,36 @@ foreach($user_logons as $logon)
 
 if($login_check)
 {
-	?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-	<html xmlns="http://www.w3.org/1999/xhtml">
-
-	<head>
-	<meta http-equiv="Content-Language" content="en-us" />
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-	<title>Untitled 2</title>
-	<style type="text/css">
-	.style1 {
-					text-align: center;
-					background-color: #5C768B;
-	}
-	.style2 {
-					background-color: #6F899F;
-	}
-	.style3 {
-					color: #DBE3F0;
-					font-weight: bold;
-	}
-	.style4 {
-					background-color: #DBE3F0;
-	}
-	</style>
-	</head>
-
-	<body style="background-color: #145285">
-
-	<table style="width: 80%" align="center" BORDER=0 CELLPADDING=0 CELLSPACING=0>
-					<tr>
-									<td class="style1"><strong>User Control Panel</strong></td>
-					</tr>
-					<tr>
-									<td class="style2">
-										<a href="../"><span class="style3">WifiDB Home</span></a> 
-										<span class="style3"> | </span>
-										<a href="?func=profile"><span class="style3">Profile</span></a> 
-										<span class="style3"> | </span>
-										<a href="?func=pref"><span class="style3">Email Preferences</span></a>
-									</td>
-					</tr>
-					<tr>
-									<td class="style4">
-									<div>
-	<?php
 	switch($func)
 	{
 		##-------------##
 		case '':
-			header('Location: https://live.wifidb.net/wifidb/cp/index.php?func=profile');
+			header('Location: /wifidb/cp/?func=profile');
 		break;
+		
 		case 'profile':
-			#pageheader("User Control Panel --> Profile");
-			
+
 			$sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
 			$result->execute();
 			$user = $result->fetch();
-				#user_panel_bar("prof", 0);
-				?><tr>
-						<td colspan="6" class="style4">
-						<form method="post" action="?func=update_user_profile">
-						<table  BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 100%">
-							<tr>
-								<th width="30%" class="style4">Email</th>
-								<td class="light"><input type="text" name="email" size="75%" value="<?php echo $user['email'];?>"> Hide? <input name="h_email" type="checkbox" <?php if($newArray['h_email']){echo 'checked';}?>></td>
-							</tr>
-							<tr>
-								<th width="30%" class="style4">Website</th>
-								<td class="light"><input type="text" name="website" size="75%" value="<?php echo $user['website'];?>"></td>
-							</tr>
-							<tr>
-								<th width="30%" class="style4">Vistumbler Version</th>
-								<td class="light"><input type="text" name="Vis_ver" size="75%" value="<?php echo $user['Vis_ver'];?>"></td>
-							</tr>
-							<tr class="style4">
-								<td colspan="2">
-									<p align="center">
-										<input type="hidden" name="username" value="<?php echo $user['username'];?>">
-										<input type="hidden" name="user_id" value="<?php echo $user['id'];?>">
-										<input type="submit" value="Update Me!">
-									</p>
-								</td>
-							</tr>
-						</table>
-						</form>
-						</td>
-					</tr>
-				</table>
-				<?php
-			#footer($_SERVER['SCRIPT_FILENAME']);
+
+			$cp_profile = array();
+			$cp_profile['email'] = $user['email'];
+			$cp_profile['website'] = $user['website'];
+			$cp_profile['Vis_ver'] = $user['Vis_ver'];
+			$cp_profile['username'] = $user['username'];
+			$cp_profile['id'] = $user['id'];
+			if($user['h_email']){$cp_profile['hide_email'] = 'checked';}else{$cp_profile['hide_email'] = 'unchecked';};
+			
+			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
+			$dbcore->smarty->display('user_cp_profile.tpl');
+
 		break;
+		
+		##-------------##
 		case "update_user_profile":
-			#pageheader("User Control Panel --> Profile");
-			#user_panel_bar("prof", 0);
-			?><tr>
-					<td colspan="6" class="dark" align='center'>
-			<?php
 			$username = addslashes(strtolower($_POST['username']));
 			$user_id = addslashes(strtolower($_POST['user_id']));
 				$email = htmlentities(addslashes($_POST['email']),ENT_QUOTES);
@@ -164,38 +96,59 @@ if($login_check)
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$array = $result->fetch();
+			$cp_profile = array();
 			if($array['id']+0 === $user_id+0)
 			{
 				$sql1 = "UPDATE `wifi`.`user_info` SET `email` = '$email', `h_email` = '$h_email', `website` = '$website', `Vis_ver` = '$Vis_ver' WHERE `id` = '$user_id' LIMIT 1";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				if($result->execute())
 				{
-					echo "Updated user ($user_id) Profile\r\n<br>";
+					$cp_profile['message'] = "<br>Updated $username's Profile<br><br>";
 				}else
 				{
-					echo "There was a serious error: ".$result->errorInfo()."<br>";
-					die(footer($_SERVER['SCRIPT_FILENAME']));
+					$cp_profile['message'] = "<br>There was a serious error: ".$result->errorInfo()."<br><br>";
 				}
-				redirect_page('?func=profile', 2000, 'Update User Successful!');
 			}else
 			{
-				Echo "User ID's did not match, there was an error, contact the support forums for more help";
+				$cp_profile['message'] = "<br>User ID's did not match, there was an error, contact the support forums for more help<br><br>";
 			}
-			?>
-					</td>
-				</tr>
-			</table>
-			<?php
-			#footer($_SERVER['SCRIPT_FILENAME']);
+			
+			$dbcore->redirect_page('/wifidb/cp/?func=profile', 2000);
+			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
+			$dbcore->smarty->display('user_cp_msg.tpl');
+		break;
+
+		##-------------##
+		case 'pref':
+			$sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
+			$result = $dbcore->sql->conn->prepare($sql0);
+			$result->execute();
+			$newArray = $result->fetch();				
+
+			$cp_profile = array();
+			if($newArray['mail_updates']){$cp_profile['mail_updates'] = 'checked';}else{$cp_profile['mail_updates'] = 'unchecked';};
+			if($newArray['announcements']){$cp_profile['announcements'] = 'checked';}else{$cp_profile['announcements'] = 'unchecked';};
+			if($newArray['announce_comment']){$cp_profile['announce_comment'] = 'checked';}else{$cp_profile['announce_comment'] = 'unchecked';};
+			if($newArray['pub_geocache']){$cp_profile['pub_geocache'] = 'checked';}else{$cp_profile['pub_geocache'] = 'unchecked';};
+			if($newArray['new_users']){$cp_profile['new_users'] = 'checked';}else{$cp_profile['new_users'] = 'unchecked';};
+			if($newArray['schedule']){$cp_profile['schedule'] = 'checked';}else{$cp_profile['schedule'] = 'unchecked';};
+			if($newArray['imports']){$cp_profile['imports'] = 'checked';}else{$cp_profile['imports'] = 'unchecked';};
+			if($newArray['kmz']){$cp_profile['kmz'] = 'checked';}else{$cp_profile['kmz'] = 'unchecked';};
+			if($newArray['geonamed']){$cp_profile['geonamed'] = 'checked';}else{$cp_profile['geonamed'] = 'unchecked';};
+			if($newArray['statistics']){$cp_profile['statistics'] = 'checked';}else{$cp_profile['statistics'] = 'unchecked';};
+			$cp_profile['username'] = $newArray['username'];
+			$cp_profile['id'] = $newArray['id'];
+			
+			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
+			$dbcore->smarty->display('user_cp_email_prefs.tpl');
+
 		break;
 
 		##-------------##
 		case 'update_user_pref':
-			#pageheader("User Control Panel --> Update Preferences");
-			#user_panel_bar("pref", 0);
 			$username = addslashes(strtolower($_POST['username']));
 			$user_id = addslashes(strtolower($_POST['user_id']));
-				$mail_updates = ((@$_POST['mail_updates']) == 'on' ? 1 : 0);
+			$mail_updates = ((@$_POST['mail_updates']) == 'on' ? 1 : 0);
 			$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
 			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
 			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
@@ -205,11 +158,11 @@ if($login_check)
 			$geonamed = ((@$_POST['geonamed']) == 'on' ? 1 : 0);
 			$pub_geocache = ((@$_POST['pub_geocache']) == 'on' ? 1 : 0);
 			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
-				$sql0 = "SELECT `id` FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
-			echo $sql0;
+			$sql0 = "SELECT `id` FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$array = $result->fetch();
+			$cp_profile = array();
 			if($array['id']+0 === $user_id+0)
 			{
 				$sql1 = "UPDATE `wifi`.`user_info` SET
@@ -224,114 +177,30 @@ if($login_check)
 															`geonamed` = '$geonamed',
 															`pub_geocache` = '$pub_geocache'
 															WHERE `id` = '$user_id'";
-				echo $sql1;
 				$result = $dbcore->sql->conn->prepare($sql1);
 				if($result->execute())
 				{
-					echo "Updated $username ($user_id) Preferences\r\n<br>";
+					$cp_profile['message'] = "<br>Updated $username's Preferences<br><br>";
 				}else
 				{
-					echo "There was a serious error: ".$result->errorInfo()."<br>";
-					die();
+					$cp_profile['message'] = "<br>There was a serious error: ".$result->errorInfo()."<br><br>";
 				}
-				redirect_page('?func=pref', 2000, 'Update User Preferences Successful!');
 			}else
 			{
-				Echo "User ID's did not match, there was an error, contact the <a href='http://forum.techidiots.net/forum/viewforum.php?f=47'>support forums</a> for more help.";
+				$cp_profile['message'] = "<br>User ID's did not match, there was an error, contact the <a href='http://forum.techidiots.net/forum/viewforum.php?f=47'>support forums</a> for more help.<br><br>";
 			}
-			#footer($_SERVER['SCRIPT_FILENAME']);
-		break;
-
-
-		##-------------##
-		case 'pref':
-			#pageheader("User Control Panel --> Preferences");
-			$sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
-			$result = $dbcore->sql->conn->prepare($sql0);
-			$result->execute();
-			$newArray = $result->fetch();				
-				#user_panel_bar("pref", 0);
-			?><tr>
-					<td colspan="6" class="style4">
-					<form method="post" action="?func=update_user_pref">
-					<table BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 100%">
-						<tr>
-							<th width="30%" class="style4">Email me about updates</th>
-							<td align="center" class="dark"><input name="mail_updates" type="checkbox" <?php if($newArray['mail_updates']){echo 'checked';}?>></td>
-						</tr>
-						<tr>
-							<td colspan='2'>
-								<table BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 100%">
-									<tr>
-										<th width="30%" class="style4">Announcements</th>
-										<td align="center" class="light"><input name="announcements" type="checkbox" <?php if($newArray['announcements']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">Announcement Comments</th>
-										<td align="center" class="dark"><input name="announce_comment" type="checkbox" <?php if($newArray['announce_comment']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">New Public Geocaches</th>
-										<td align="center" class="light"><input name="pub_geocache" type="checkbox" <?php if($newArray['pub_geocache']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">New Users</th>
-										<td align="center" class="dark"><input name="new_users" type="checkbox" <?php if($newArray['new_users']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">Scheduled Import</th>
-										<td align="center" class="light"><input name="schedule" type="checkbox" <?php if($newArray['schedule']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">Import Finished</th>
-										<td align="center" class="dark"><input name="imports" type="checkbox" <?php if($newArray['imports']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">New Full DB KML</th>
-										<td align="center" class="light"><input name="kmz" type="checkbox" <?php if($newArray['kmz']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">GeoNames Daemon</th>
-										<td align="center" class="dark"><input name="geonamed" type="checkbox" <?php if($newArray['geonamed']){echo 'checked';}?>></td></td>
-									</tr>
-									<tr>
-										<th width="30%" class="style4">Database Statistics Daemon</th>
-										<td align="center" class="light"><input name="statistics" type="checkbox" <?php if($newArray['statistics']){echo 'checked';}?>></td></td>
-									</tr>
-								</table>
-							</td>
-						</tr>
-						<tr>
-							<td colspan="2">
-								<p align="center">
-									<input type="hidden" name="username" value="<?php echo $newArray['username'];?>">
-									<input type="hidden" name="user_id" value="<?php echo $newArray['id'];?>">
-									<input type="submit" value="Update Me!">
-								</p>
-							</td>
-						</tr>
-					</table>
-					</form>
-					</td>
-				</tr>
-			</table>
-			<?php
-			#footer($_SERVER['SCRIPT_FILENAME']);
+			
+			$dbcore->redirect_page('/wifidb/cp/?func=pref', 2000);
+			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
+			$dbcore->smarty->display('user_cp_msg.tpl');
 		break;
 	}
-	?>					</div>			
-						</td>
-					</tr>
-	</table>
-
-	</body>
-
-	</html>
-	<?php
 }
 else
 {
-	#redirect_page('/'.$root.'/', 2000, 'Not Logged in!');
-	header('Location: https://live.wifidb.net/wifidb/login.php?return=/wifidb/cp/index.php'); 
+	$dbcore->redirect_page('/wifidb/login.php?return=%2Fwifidb%2Fcp', 2000);
+	$cp_profile['message'] = "<br>You must be logged in to go into the User Control Panel. Redirecting to login page.<br><br>";
+	$dbcore->smarty->assign('user_cp_profile', $cp_profile);
+	$dbcore->smarty->display('user_cp_msg.tpl');
 }
 ?>
