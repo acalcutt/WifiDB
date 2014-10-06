@@ -24,7 +24,6 @@ if not, write to the
                                     <a class="links" href="https://github.com/RIEI/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>,
                                     <a class="links" href="https://play.google.com/store/apps/details?id=ki.wardrive4&hl=en" target="_blank">Wardrive for Android 4+</a>, and <a class="links" href="https://play.google.com/store/apps/details?id=ki.wardrive&hl=en" target="_blank">Old Wardrive</a> are Supported.<br>
                                     Username is optional, but it helps keep track of who has imported what Access Points<br>
-                                    <center>
                                         <form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">
                                             <table border="1" cellpadding="2" cellspacing="0">
                                                 <tbody>
@@ -90,10 +89,4 @@ if not, write to the
                                             </tbody>
                                             </table>
                                         </form>
-                                    </center>
-                                </div>
-                            <br>
-                            </td>
-                            <td class="cell_side_right">&nbsp;</td>
-                        </tr>
 {include file="footer.tpl"}

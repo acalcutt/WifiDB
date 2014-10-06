@@ -79,7 +79,4 @@ if not, write to the
                                             </td>
                                         </tr>
                                     </table>
-                                </div>
-                                <br>
-                            </td>
 {include file="footer.tpl"}
