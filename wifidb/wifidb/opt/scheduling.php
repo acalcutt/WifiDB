@@ -91,8 +91,11 @@ switch($func)
             if($file === "daily_db.kmz"){continue;}
             if($file === "daily_db.kml"){continue;}
             if($file === "newestAP_label.kml"){continue;}
+			if($file === "newestAP_label.kmz"){continue;}
             if($file === "newestAP.kml"){continue;}
+			if($file === "newestAP.kmz"){continue;}
             if($file === "update.kml"){continue;}
+			if($file === "update.kmz"){continue;}
             if($file === "history.kml"){continue;}
             #var_dump(array(
             #    "file"     => $file,
@@ -176,14 +179,14 @@ switch($func)
             );
         }
 
-        if(file_exists($daemon_out."update.kml"))
+        if(file_exists($daemon_out."update.kmz"))
         {
 
-            $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'out/daemon/update.kml">Download!</a>';
+            $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'out/daemon/update.kmz">Download!</a>';
 
         }else
         {
-            $kml_head['update_kml'] = 'The Daemon Needs to be on and you need to import something with GPS for the first update.kml file to be created.';
+            $kml_head['update_kml'] = 'The Daemon Needs to be on and you need to import something with GPS for the first update.kmz file to be created.';
         }
 
         $newest = $daemon_out.'newestAP.kml';
