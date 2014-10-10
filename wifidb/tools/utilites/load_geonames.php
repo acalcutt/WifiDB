@@ -27,11 +27,7 @@ $file = $file_exp[1];
 $validate = array("admin1","admin2","geonames","countrynames");
 $load = str_replace("-", "", $argv[1]);
 
-
-$tsvFile = new SplFileObject($file);
-echo "Loaded File: {$file} \r\nInto script.\r\n";
-$tsvFile->setFlags(SplFileObject::READ_CSV);
-$tsvFile->setCsvControl("\t");
+$contents = file($file);
 $r = 0;
 $l = 0;
 $II = 1;
@@ -48,10 +44,11 @@ if(mysqli_connect_errno())
     die(mysqli_connect_errno());
 }
 echo "Connected, now lets LOAD ALL THE DATA!!!!\r\n";
-foreach ($tsvFile as $line => $row_raw)
+foreach ($contents as $line)
 {
     echo $line."\r\n";
-    $row = filter_var_array($row_raw, FILTER_SANITIZE_ENCODED);
+    $tab_array = explode("\t", $line);
+    $row = filter_var_array($tab_array, FILTER_SANITIZE_ENCODED);
     if(!@$row[1] || $line == 50)
     {
         continue;
