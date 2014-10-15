@@ -443,7 +443,7 @@ class frontend extends dbcore
             else
                 {$style="light";$flip=1;}
             
-            if($array['lat'] == "N 0.0000")
+            if($array['lat'] == "0.0000")
                 {$globe = "off";}
             else
                 {$globe = "on";}
@@ -908,7 +908,7 @@ class frontend extends dbcore
                 $result_1->execute();
                 $gps = $result_1->fetch(1);
                 
-                if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "N 0.0000" || $gps['lat'] == "N 0000.0000" || $gps['lat'] == "0.00")
+                if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "0.0000")
                 {
                     $zero = 1;
                     continue;
