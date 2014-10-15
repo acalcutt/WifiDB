@@ -617,7 +617,7 @@ class frontend extends dbcore
             $result->execute();
             $ap_array = $result->fetch(2);
             
-            if($ap_array['lat'] == "N 0.0000")
+            if($ap_array['lat'] == "0.0000")
             {
                 $globe = "off";
             }else
