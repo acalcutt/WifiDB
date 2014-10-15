@@ -1,16 +1,16 @@
 <?php
-$switches = array('extras'=>'','screen'=>"CLI");
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "daemon");
 
-if(!(require('config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-$dbcore->PATH = $daemon_config['wifidb_install'];
-if($dbcore->PATH == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require($dbcore->PATH)."/lib/init.inc.php";
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $dbcore->verbosed("
 WiFiDB 'Geoname Daemon'
 Version: 2.0.0
 - Daemon Start: 2010-06-23
-- Last Daemon File Edit: 2011-Dec-13
+- Last Daemon File Edit: 2014-10-15 -ACalcutt
 ( /tools/daemon/geonamed.php )
 - By: Phillip Ferland ( pferland@randomintervals.com )
 - http://www.randomintervals.com/wifidb/
@@ -38,10 +38,10 @@ if($thread_id != NULL)
         $from = $thread_calc;
         $inc = $thread_rows_each;
     }
-    $sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' ORDER BY `id` ASC LIMIT {$from}, {$inc}";
+    $sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC LIMIT {$from}, {$inc}";
 }else
 {
-    $sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' ORDER BY `id` ASC";
+    $sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
 }
 echo $sql."\r\n";
 $result = $dbcore->sql->conn->query($sql);
@@ -53,8 +53,8 @@ while($ap = $result->fetch(1))
 {
 #    var_dump($ap);
     $dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
-    $lat = round($dbcore->convert_dm_dd($ap['lat']), 1);
-    $long = round($dbcore->convert_dm_dd($ap['long']), 1);
+    $lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
+    $long = round($dbcore->convert->dm2dd($ap['long']), 1);
     #if($lat == "0")
     #{
     #    var_dump($ap);
