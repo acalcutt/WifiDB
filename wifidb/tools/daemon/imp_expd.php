@@ -435,7 +435,7 @@ while(1)
             Throw new ErrorException;
         }
 		
-        $dbcore->verbosed("Next check at ".$nextrun);
+        $dbcore->verbosed("Next check in T+ ".$dbcore->time_interval_to_check."s");
         $dbcore->sql = NULL;
         sleep($dbcore->time_interval_to_check);
     }else{
