@@ -127,6 +127,12 @@ $finished = 0;
 //Main loop
 while(1)
 {
+
+	##### make sure import/export files are in sync with remote nodes
+	//$dbcore->verbosed("Synchronizing files between nodes...", 1);
+	//$cmd = '/opt/unison/sync_wifidb_files > /opt/unison/log/sync_wifidb_files 2>&1';
+	//exec ($cmd);
+
     if(is_null($dbcore->sql))
     {
         $dbcore->sql = new SQL($config);
@@ -400,7 +406,18 @@ while(1)
         $dbcore->verbosed("Running Daily and a Full DB KML Export if one does not already exists.");
 
         $dbcore->export->GenerateDaemonKMLData();
+		
+		##### make sure import/export files are in sync with remote nodes
+		//$dbcore->verbosed("Synchronizing files between nodes...", 1);
+		//$cmd = '/opt/unison/sync_wifidb_files > /opt/unison/log/sync_wifidb_files 2>&1';
+		//exec ($cmd);
 
+    }else
+    {
+        $dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
+    }
+    if(@$arguments['d']){
+		##### Set next run time
         $nextrun = date("Y-m-d H:i:s", (time()+$dbcore->time_interval_to_check));
         $sqlup2 = "UPDATE `wifi`.`settings` SET `size` = ? WHERE `id` = '1'";
         $prep6 = $dbcore->sql->conn->prepare($sqlup2);
@@ -417,12 +434,8 @@ while(1)
             $dbcore->verbosed("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
             Throw new ErrorException;
         }
-    }else
-    {
-        $dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
-    }
-    if(@$arguments['d']){
-        $dbcore->verbosed("Next check in T+ ".$dbcore->time_interval_to_check."s");
+		
+        $dbcore->verbosed("Next check at ".$nextrun);
         $dbcore->sql = NULL;
         sleep($dbcore->time_interval_to_check);
     }else{
