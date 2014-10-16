@@ -43,10 +43,28 @@ switch($func)
             $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
+		case "exp_all_signal": 
+            $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
+			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+            $result = $dbcore->export->SingleApKML($id,$limit,$from);
+            $dbcore->smarty->assign('results', $result);
+            $dbcore->smarty->display('export_results.tpl');
+			break;
+        #--------------------------
+		case "exp_single_ap": 
+            $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
+			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+            $result = $dbcore->export->SingleApKML($id,$limit,$from);
+            $dbcore->smarty->assign('results', $result);
+            $dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
         default:
             $imports = array();
             $usernames = array();
-            $sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports`";
+            $sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports` ORDER BY `username`, `title`";
             $result = $dbcore->sql->conn->query($sql);
             while($user_array = $result->fetch(2))
             {
@@ -59,7 +77,7 @@ switch($func)
                              );
             }
             
-            $sql = "SELECT `username` FROM `wifi`.`user_imports`";
+            $sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username`";
             $result = $dbcore->sql->conn->query($sql);
             while($user_array = $result->fetch(2))
             {

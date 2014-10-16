@@ -255,7 +255,7 @@ class createKML
             $named = "";
         }
         $tmp = "
-        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">
+        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
             <styleUrl>".$sec_type_label."StyleDead</styleUrl>
             <description>
                 <![CDATA[

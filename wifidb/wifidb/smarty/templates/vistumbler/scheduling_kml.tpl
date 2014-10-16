@@ -26,17 +26,27 @@ if not, write to the
                                         <td class="style4">Daemon Generated KMZ<br><font size="2">All times are local system time.</font></td>
                                     </tr>
                                 </table>
+								<br/>
                                 <table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
-                                    <tr class="style4">
+                                    <tr>
+                                        <td class="style4">Combined KMZ Network Link</td>
+                                    </tr>
+                                    <tr class="light">
                                         <td class="daemon_kml" colspan="4">
                                             {$wifidb_kml_head.update_kml}
                                         </td>
                                     </tr>
+                                </table>
+								<br/>
+                                <table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
+                                    <tr>
+                                        <th colspan="4" class="style4">Latest KMZ Files</th>
+                                    </tr>
                                     <tr class="dark">
-                                        <th></th>
-                                        <th>Download link</th>
-                                        <th style="width: 43%">Date & Time</th>
-                                        <th style="width: 11%">Size</th>
+                                        <th class="style4"></th>
+                                        <th class="style4">Download link</th>
+                                        <th class="style4" style="width: 43%">Date & Time</th>
+                                        <th class="style4" style="width: 11%">Size</th>
                                     </tr>
                                     <tr class="light">
                                         <th rowspan="2">Newest AP</th>

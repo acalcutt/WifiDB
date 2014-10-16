@@ -97,6 +97,7 @@ switch($func)
             if($file === "update.kml"){continue;}
 			if($file === "update.kmz"){continue;}
             if($file === "history.kml"){continue;}
+			if($file === "history.kmz"){continue;}
             #var_dump(array(
             #    "file"     => $file,
             #    "file_url" => $url_base.$file.'/full_db.kmz',
@@ -189,12 +190,12 @@ switch($func)
             $kml_head['update_kml'] = 'The Daemon Needs to be on and you need to import something with GPS for the first update.kmz file to be created.';
         }
 
-        $newest = $daemon_out.'newestAP.kml';
+        $newest = $daemon_out.'newestAP.kmz';
         if(file_exists($newest))
         {
             $kml_head['newest_date'] = date ("Y-m-d H:i:s", filemtime($newest));
             $kml_head['newest_size'] = $dbcore->format_size(filesize($newest), 2);
-            $kml_head['newest_link'] = $dbcore->URL_PATH."out/daemon/newestAP.kml";
+            $kml_head['newest_link'] = $dbcore->URL_PATH."out/daemon/newestAP.kmz";
         }else
         {
             $kml_head['newest_date'] = "None generated yet";
@@ -202,12 +203,12 @@ switch($func)
             $kml_head['newest_link'] = "#";
         }
 
-        $newest_label = $daemon_out.'newestAP_label.kml';
+        $newest_label = $daemon_out.'newestAP_label.kmz';
         if(file_exists($newest_label))
         {
             $kml_head['newest_labeled_date'] = date ("Y-m-d H:i:s", filemtime($newest_label));
             $kml_head['newest_labeled_size'] = $dbcore->format_size(filesize($newest_label), 2);
-            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."out/daemon/newestAP_label.kml";
+            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."out/daemon/newestAP_label.kmz";
         }else
         {
             $kml_head['newest_labeled_date'] = "None generated yet";
