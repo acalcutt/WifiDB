@@ -638,6 +638,24 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
   KEY `id` (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=58646 ;
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `daemon_pid_stats`
+--
+
+CREATE TABLE IF NOT EXISTS `daemon_pid_stats` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidfile` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidtime` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidmem` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidcmd` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+
 --
 -- Constraints for dumped tables
 --
