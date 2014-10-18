@@ -98,7 +98,7 @@ if(!file_exists($dbcore->pid_file_loc))
 {
     mkdir($dbcore->pid_file_loc);
 }
-$dbcore->pid_file = $dbcore->pid_file_loc.'wdb_imp_exp.pid';
+$dbcore->pid_file = $dbcore->pid_file_loc.'imp_expd.pid';
 
 if(!file_exists($dbcore->pid_file_loc))
 {
