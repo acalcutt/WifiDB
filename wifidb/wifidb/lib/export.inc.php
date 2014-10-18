@@ -717,14 +717,14 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
     public function GenerateUpdateKML()
     {
         
-        $full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
-        $full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1);
+        $full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
+        $full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
 		
         $daily_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
-        $daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1);
+        $daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
 		
-        $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 1, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 0, 0, "onInterval", 60);
-        $new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1);
+        $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
+        $new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1, 1);
 
         #$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
         #$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);

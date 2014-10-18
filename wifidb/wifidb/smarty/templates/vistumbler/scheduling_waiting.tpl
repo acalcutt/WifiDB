@@ -25,8 +25,8 @@ if not, write to the
                     </tr>
                     <tr>
                         <td class="style3">Next Import scheduled on:</td>
-                        <td class="light">{$wifidb_next_run.utc}</td>
-                        <td class="light">{$wifidb_next_run.local}</td>
+                        <td class="light">{$wifidb_next_run.utc} (UTC)</td>
+                        <td class="light">{$wifidb_next_run.local} (UTC{$wifidb_next_run.timezonediff})</td>
                     </tr>
                     <tr>
                         <td  class="style3" colspan="1">Select Refresh Rate:</td>
@@ -39,24 +39,48 @@ if not, write to the
                             </form>
                         </td>
                     </tr>
+                    <tr>
+                        <td  class="style3" colspan="1">Set Local Time Zone:</td>
+                        <td class="light" colspan="2">
+                            <form action="scheduling.php?func=timezone" method="post" enctype="multipart/form-data">
+                                <SELECT NAME="timezone">  
+                                    {$wifidb_timezone_options}
+                                </SELECT>
+								<input type="checkbox" name="dst" value="1" {$wifidb_dst_options}>DST
+								<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
+                            </form>
+                        </td>
+                    </tr>
                 </table>
                 <br />
                 <table border="1" width="90%">
                     <tr class="style4">
-                        <th colspan="4">WiFiDB {$wifidb_daemon.OS} Daemon Status:</th>
+                        <th colspan="7">WiFiDB {$wifidb_daemon.OS} Daemon Status:</th>
                     </tr>
                     <tr class="style4">
+						<th>NODE</th>
+						<th>PID FILE</th>
                         <th>PID</th>
                         <th>TIME</th>
-                        <th>Memory</th>
+                        <th>MEM</th>
                         <th>CMD</th>
+						<th>UPDATED</th>
                     </tr>
+					{foreach item=wifidb_daemon from=$wifidb_daemons}
                     <tr align="center" bgcolor="{$wifidb_daemon.color}">
+						<td>{$wifidb_daemon.nodename}</td>
+						<td>{$wifidb_daemon.pidfile}</td>
                         <td>{$wifidb_daemon.pid}</td>
-                        <td>{$wifidb_daemon.time}</td>
-                        <td>{$wifidb_daemon.mem}</td>
-                        <td>{$wifidb_daemon.cmd}</td>
+                        <td>{$wifidb_daemon.pidtime}</td>
+                        <td>{$wifidb_daemon.pidmem}</td>
+                        <td>{$wifidb_daemon.pidcmd}</td>
+						<td>{$wifidb_daemon.date} (UTC)</td>
                     </tr>
+					{foreachelse}
+                    <tr align="center" bgcolor="red">
+						<th colspan="7">Sorry there are no daemon PIDs...</th>
+                    </tr> 
+                    {/foreach}
                 </table>
                 <br />
                 <table border="1" width="90%">

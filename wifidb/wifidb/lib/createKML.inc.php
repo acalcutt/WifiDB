@@ -147,7 +147,7 @@ class createKML
     }
 
 
-    public function createFolder($name = "", $data = "", $open = 0)
+    public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
     {
         if($data === NULL)
         {
@@ -161,8 +161,20 @@ class createKML
         {
             $name = "Unknown";
         }
+        if($radiofolder)
+        {
+            $radiofolder = "
+            <Style>
+				<ListStyle>
+					<listItemType>radioFolder</listItemType>            
+				</ListStyle>          
+            </Style>";
+        }else
+		{
+			$radiofolder = "";
+		}
         $tmp = "
-        <Folder>
+        <Folder>$radiofolder
             <name>$name</name>
             <open>$open</open>
             $data

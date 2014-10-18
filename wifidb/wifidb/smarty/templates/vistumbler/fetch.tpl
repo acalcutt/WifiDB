@@ -135,7 +135,7 @@ if not, write to the
                                             </td>
                                             <td>
                                                 <a class="links" 
-                                                   href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.title_id}">
+                                                   href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">
                                                     {$wifidb_assoc.title}
                                                 </a>
                                             </td>

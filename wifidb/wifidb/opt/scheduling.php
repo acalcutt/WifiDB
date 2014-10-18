@@ -24,23 +24,27 @@ include('../lib/init.inc.php');
 
 $func = strtolower(filter_input(INPUT_GET, 'func', FILTER_SANITIZE_ENCODED));
 
-if($func === "refresh")
-{
-    $POST_san = filter_input(INPUT_POST, 'refresh', FILTER_SANITIZE_ENCODED);
-
-    if( (!isset($POST_san['refresh'])) or $POST_san['refresh']=='' ) { $POST_san['refresh'] = "wifidb"; }
-    $refresh_post = strip_tags(addslashes($POST_san['refresh']));
-    setcookie( 'wifidb_refresh' , $refresh_post , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
-    #echo $refresh_post."<BR>";
-    header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
-}
-
 $TZone= (@$_COOKIE['wifidb_client_timezone'] ? @$_COOKIE['wifidb_client_timezone'] : $dbcore->default_timezone);
 $dst = (@$_COOKIE['wifidb_client_dst']!='' ? @$_COOKIE['wifidb_client_dst'] : $dbcore->default_dst);
 $refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $dbcore->default_refresh);
 #echo $func;
 switch($func)
 {
+	case 'refresh':
+		$POST_refresh = filter_input(INPUT_POST, 'refresh', FILTER_SANITIZE_ENCODED);
+		if( (!isset($POST_refresh)) or $POST_refresh=='' ) { $POST_refresh = $refresh; }
+		setcookie( 'wifidb_refresh' , $POST_refresh , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+		header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
+	break;
+	case 'timezone':
+		$POST_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_ENCODED);
+		$POST_dst = filter_input(INPUT_POST, 'dst', FILTER_SANITIZE_ENCODED);
+		if( (!isset($POST_timezone)) or $POST_timezone=='' ) { $POST_timezone = $TZone; }
+		if( (!isset($POST_dst)) or $POST_dst=='' ) { $POST_dst = 0; }
+		setcookie( 'wifidb_client_timezone' , $POST_timezone , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+		setcookie( 'wifidb_client_dst' , $POST_dst , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+		header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
+	break;
     case 'done':
         $sql = "SELECT * FROM `wifi`.`files` ORDER BY `id` DESC";
         #echo $sql;
@@ -280,16 +284,40 @@ switch($func)
         $result = $dbcore->sql->conn->query($sql);
         $file_array = $result->fetch(2);
 
-        if($dst == 1){$dst = 0;}
+		$timezonediff = $TZone+$dst;
+        #if($dst == 1){$dst = 0;}
 #	echo "Before: ".$file_array['size']."<BR>";
         $str_time = strtotime($file_array['size']);
 #	echo "Convert: ".$str_time."<BR>";
-        $alter_by = ((($TZone+$dst)*60)*60);
+        $alter_by = (($timezonediff*60)*60);
 #	echo "CALC: ".$alter_by."<BR>";
         $altered = $str_time+$alter_by;
 #	echo "ADD: ".$altered."<BR>";
         $next_run = date("Y-m-d H:i:s", $altered);
 ####### echo $next_run.'  [ '.getTZ('-5').' ]';
+
+		$offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+		foreach($offsets as $key=>$value) 
+		{ 
+            if($TZone == $value)
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }			
+
+			$timezone_opt .= '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
+			';
+		}
+		
+		if($dst == 1)
+		{
+			$dst_opt = "checked";
+		}else
+		{
+			$dst_opt = "";
+		}
 
         $refresh_opt = "";
         $val = 15;
@@ -305,7 +333,7 @@ switch($func)
             }
             if($val > 60)
             {
-                $time_inc_name = "Minuets";
+                $time_inc_name = "Minutes";
                 $d=60;
             }
             else
@@ -313,7 +341,8 @@ switch($func)
                 $time_inc_name = "Seconds";
                 $d=1;
             }
-            $refresh_opt .= '<OPTION '.$select.' VALUE="'.$val.'"> '.($val/$d).' '.$time_inc_name."\r\n";
+            $refresh_opt .= '<OPTION '.$select.' VALUE="'.$val.'"> '.($val/$d).' '.$time_inc_name.'</option>
+			';
             $val = $val*2;
         }
         $sched_row = array();
@@ -362,10 +391,49 @@ switch($func)
             $sched_row[$n]['last_cell'] = $ssid.$tot;
             $n++;
         }
+		
+        $pid_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`daemon_pid_stats` ORDER BY `nodename` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+		
+			$lastupdatetime = strtotime($newArray['date']);
+			$curtime = time();
+			
+			if($newArray['pid'] == 0)
+			{
+				$color = 'red';
+			}else
+			{
+				if(($curtime-$lastupdatetime) < 60) {
+					$color = 'lime';
+				}else
+				{
+					$color = 'yellow';
+				}
+			}
+ 
+            $pid_row[$n]['color'] = $color;
+            $pid_row[$n]['nodename'] = $newArray['nodename'];
+            $pid_row[$n]['pidfile'] = $newArray['pidfile'];
+            $pid_row[$n]['pid'] = $newArray['pid'];
+            $pid_row[$n]['pidtime'] = $newArray['pidtime'];
+            $pid_row[$n]['pidmem'] = $newArray['pidmem'];
+            $pid_row[$n]['pidcmd'] = $newArray['pidcmd'];
+            $pid_row[$n]['date'] = $newArray['date'];
+			
+			$n++;
+		}
+		
+		
         $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
-        $dbcore->smarty->assign('wifidb_next_run', array('utc'=>$file_array['size'],'local'=>$next_run));
+        $dbcore->smarty->assign('wifidb_next_run', array('utc'=>$file_array['size'],'local'=>$next_run,'timezone'=>$TZone,'timezonedst'=>$dst,'timezonediff'=>$timezonediff));
         $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
-        $dbcore->smarty->assign('wifidb_daemon', $dbcore->getdaemonstats('wdb_imp_exp.pid'));
+		$dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
+		$dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
+        $dbcore->smarty->assign('wifidb_daemons', $pid_row);
         $dbcore->smarty->assign('wifidb_done_all', $sched_row);
         $dbcore->smarty->display('scheduling_waiting.tpl');
     break;
