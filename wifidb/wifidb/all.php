@@ -38,13 +38,14 @@ $dbcore->smarty->assign('inc', $inputs['to']);
 $dbcore->smarty->assign('ord', $inputs['ord']);
 $dbcore->smarty->assign('sort', $inputs['sort']);
 
-$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'wifi0'";
-$number_aps = $dbcore->sql->conn->query($sql);
-$num_ap_array = $number_aps->fetch(2);
-$total_rows = $num_ap_array['size'];
+$sql = "SELECT COUNT(*) FROM `wifi`.`wifi_pointers`";
+$sqlprep = $dbcore->sql->conn->prepare($sql);       
+$sqlprep->execute();
+$total_rows = $sqlprep->fetchColumn();
 
 $sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 $pre_page_list = $dbcore->sql->conn->query($sql);
+
 
 $row_color = 0;
 $n=0;
