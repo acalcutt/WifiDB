@@ -690,7 +690,7 @@ class convert extends dbcore
             #echo "--------------------------\r\n";
             #var_dump($ap);
             list($authen, $encry, $sectype, $nt) = $this->findCapabilities($ap["capabilities"]);
-            list($chan, $radio) = $this->findFreq($ap['Frequerncy']);
+            list($chan, $radio) = $this->findFreq($ap['Frequency']);
             $apdata[$ap['_id']] = array(
                 'ssid'=>$ap['ssid'],
                 'mac'=>$ap['bssid'],
@@ -767,11 +767,11 @@ class convert extends dbcore
         {
         #Add N/S to latitude
         $lat = $gps['lat'];
-        $sign = ($lat == "-") ? "S " : "N ";
+        $sign = ($lat[0] == "-") ? "S " : "N ";
         $lat = $sign.str_replace("-", "", $lat);
         #Add E/W to longitude
         $long = $gps['long'];
-        $sign = ($long == "-") ? "W " : "E ";
+        $sign = ($long[0] == "-") ? "W " : "E ";
         $long = $sign.str_replace("-", "", $long);        
         #Write VS1 GPS line
         $gpsd .= $n."|".$lat."|".$long."|".$gps["sats"]."|".$gps["hdp"]."|".$gps["alt"]."|".$gps["geo"]."|".$gps["kmh"]."|".$gps["mph"]."|".$gps["track"]."|".$gps["date"]."|".$gps["time"]."\r\n";
