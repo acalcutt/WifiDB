@@ -127,12 +127,6 @@ $finished = 0;
 //Main loop
 while(1)
 {
-
-	##### make sure import/export files are in sync with remote nodes
-	//$dbcore->verbosed("Synchronizing files between nodes...", 1);
-	//$cmd = '/opt/unison/sync_wifidb_files > /opt/unison/log/sync_wifidb_files 2>&1';
-	//exec ($cmd);
-
     if(is_null($dbcore->sql))
     {
         $dbcore->sql = new SQL($config);
@@ -153,6 +147,12 @@ while(1)
 
     if($result->rowCount() > 0)//Check to see if I can successfully look at the file_tmp folder
     {
+        ##### make sure import/export files are in sync with remote nodes
+        //$dbcore->verbosed("Synchronizing files between nodes...", 1);
+        //$cmd = '/opt/unison/sync_wifidb_files > /opt/unison/log/sync_wifidb_files 2>&1';
+        //exec ($cmd);
+        #####
+        
         $files_aa = $result->fetchAll(2);
         foreach($files_aa as $files_a)
         {
@@ -165,18 +165,22 @@ while(1)
 
             $source = $dbcore->PATH.'import/up/'.$files_a['file'];
             
-			echo $files_a['file']."\r\n";
+            echo $files_a['file']."\r\n";
             $file_src = explode(".",$files_a['file']);
             $file_type = strtolower($file_src[1]);
             $file_name = $files_a['file'];
-			$file_hash = $files_a['hash'];
+            $file_hash = $files_a['hash'];
+            $file_size = (filesize($source)/1024);
+            $file_date = $files_a['date'];
             #Lets check and see if it is has a valid VS1 file header.
             if(in_array($file_type, $dbcore->convert_extentions))
             {
                 $dbcore->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
                 $update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '0', `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
                 $prep = $dbcore->sql->conn->prepare($update_tmp);
-                $prep->execute(array($files_a['file'], $remove_file));
+                $prep->bindParam(1, $file_type, PDO::PARAM_STR);
+                $prep->bindParam(2, $remove_file, PDO::PARAM_INT);
+                $prep->execute();
                 $err = $dbcore->sql->conn->errorCode();
                 if($err[0] != "00000")
                 {
@@ -192,36 +196,35 @@ while(1)
 
                 $parts = pathinfo($ret_file_name);
                 $dest_name = $parts['basename'];
-                $hash1 = hash_file('md5', $ret_file_name);
-                $size1 = $dbcore->format_size($ret_file_name);
+                $file_hash1 = hash_file('md5', $ret_file_name);
+                $file_size1 = (filesize($ret_file_name)/1024);
 
                 $update = "UPDATE `wifi`.`files_tmp` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
-                $data = array(
-                    $dest_name,
-                    $hash1,
-                    $size1,
-                    $remove_file
-                );
                 $prep = $dbcore->sql->conn->prepare($update);
-                $prep->execute($data);
+                $prep->bindParam(1, $dest_name, PDO::PARAM_STR);
+                $prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
+                $prep->bindParam(3, $file_size1, PDO::PARAM_STR);
+                $prep->bindParam(4, $remove_file, PDO::PARAM_INT);
+                $prep->execute();
                 $err = $dbcore->sql->conn->errorCode();
                 if($err[0] == "00000")
                 {
                     $dbcore->verbosed("Conversion completed.", 1);
                     $dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $dbcore->This_is_me);
+                    $source = $ret_file_name;
+                    $file_name = $dest_name;
+                    $file_hash = $file_hash1;
+                    $file_size = $file_size1;
                 }else
                 {
                     $dbcore->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
                     $dbcore->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
                     throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1));
                 }
-                $file_name = $dest_name;
-                $source = $ret_file_name;
             }
 
             $return  = file($source);
             $count = count($return);
-            $hash = $file_hash;
             if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a valid file in the field
             {
                 $dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
@@ -239,9 +242,9 @@ while(1)
                 }
 
                 //check to see if this file has already been imported into the DB
-                $sql_check = "SELECT `hash` FROM `wifi`.`files` WHERE `hash` LIKE ? LIMIT 1";
+                $sql_check = "SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1";
                 $prep = $dbcore->sql->conn->prepare($sql_check);
-                $prep->bindParam(1, $hash, PDO::PARAM_STR);
+                $prep->bindParam(1, $file_hash, PDO::PARAM_STR);
                 $prep->execute();
                 if($dbcore->sql->checkError())
                 {
@@ -253,7 +256,7 @@ while(1)
 
                 $fileqq = $prep->fetch(2);
                 
-                if($hash != @$fileqq['hash'])
+                if($file_hash != @$fileqq['hash'])
                 {
                     if(count(explode(";", $files_a['notes'])) === 1)
                     {
@@ -269,7 +272,7 @@ while(1)
 
                     $sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
                     $prep_ext = $dbcore->sql->conn->prepare($sql_select_tmp_file_ext);
-                    $prep_ext->bindParam(1, $hash, PDO::PARAM_STR);
+                    $prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
                     $prep_ext->execute();
                     if($dbcore->sql->checkError())
                     {
@@ -286,16 +289,14 @@ while(1)
                             "Warning", $dbcore->This_is_me);
                         $dbcore->verbosed("Skipping Import of :".$file_name, -1);
                         //remove files_tmp row and user_imports row
-                        $dbcore->cleanBadImport($hash);
+                        $dbcore->cleanBadImport($file_hash);
                         continue;
                     }
                     $dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
-                    $import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $hash);
+                    $import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash);
                     
                     $totalaps = $tmp['aps'];
                     $totalgps = $tmp['gps'];
-                    $size = (filesize($source)/1024);
-                    $date = $files_a['date'];
 
                     $user_ids = implode(":", $import_ids);
                     
@@ -305,17 +306,18 @@ while(1)
                     
                     $prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
                     $prep1->bindParam(1, $file_name, PDO::PARAM_STR);
-                    $prep1->bindParam(2, $date, PDO::PARAM_STR);
-                    $prep1->bindParam(3, $size, PDO::PARAM_STR);
+                    $prep1->bindParam(2, $file_date, PDO::PARAM_STR);
+                    $prep1->bindParam(3, $file_size, PDO::PARAM_STR);
                     $prep1->bindParam(4, $totalaps, PDO::PARAM_STR);
                     $prep1->bindParam(5, $totalgps, PDO::PARAM_STR);
-                    $prep1->bindParam(6, $hash, PDO::PARAM_STR);
+                    $prep1->bindParam(6, $file_hash, PDO::PARAM_STR);
                     $prep1->bindParam(7, $user, PDO::PARAM_STR);
                     $prep1->bindParam(8, $notes, PDO::PARAM_STR);
                     $prep1->bindParam(9, $title, PDO::PARAM_STR);
                     $prep1->bindParam(10, $user_ids, PDO::PARAM_STR);
-                    $prep1->bindParam(11, $prev_ext['converted'], PDO::PARAM_STR);
+                    $prep1->bindParam(11, $prev_ext['converted'], PDO::PARAM_INT);
                     $prep1->bindParam(12, $prev_ext['prev_ext'], PDO::PARAM_STR);
+
                     $prep1->execute();
                     if($dbcore->sql->checkError())
                     {
@@ -348,7 +350,7 @@ while(1)
                             Throw new ErrorException("Failed to update user import row. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1));
                         }else
                         {
-                            $dbcore->verbosed("Updated User Import row. ($id : $hash)", 2);
+                            $dbcore->verbosed("Updated User Import row. ($id : $file_hash)", 2);
                         }
                     }
 
@@ -378,7 +380,7 @@ while(1)
                         "Warning", $dbcore->This_is_me);
                     $dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
                     unlink($source);
-                    $dbcore->cleanBadImport($hash);
+                    $dbcore->cleanBadImport($file_hash);
                 }
             }else
             {
@@ -387,7 +389,7 @@ while(1)
                     "Warning", $dbcore->This_is_me);
                 $dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
                 unlink($source);
-                $dbcore->cleanBadImport($hash);
+                $dbcore->cleanBadImport($file_hash);
             }
 
             $result = $dbcore->sql->conn->query($daemon_sql);
@@ -406,18 +408,18 @@ while(1)
         $dbcore->verbosed("Running Daily and a Full DB KML Export if one does not already exists.");
 
         $dbcore->export->GenerateDaemonKMLData();
-		
-		##### make sure import/export files are in sync with remote nodes
-		//$dbcore->verbosed("Synchronizing files between nodes...", 1);
-		//$cmd = '/opt/unison/sync_wifidb_files > /opt/unison/log/sync_wifidb_files 2>&1';
-		//exec ($cmd);
-
+        
+        ##### make sure import/export files are in sync with remote nodes
+        //$dbcore->verbosed("Synchronizing files between nodes...", 1);
+        //$cmd = '/opt/unison/sync_wifidb_files > /opt/unison/log/sync_wifidb_files 2>&1';
+        //exec ($cmd);
+        #####
     }else
     {
         $dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
     }
     if(@$arguments['d']){
-		##### Set next run time
+        ##### Set next run time
         $nextrun = date("Y-m-d H:i:s", (time()+$dbcore->time_interval_to_check));
         $sqlup2 = "UPDATE `wifi`.`settings` SET `size` = ? WHERE `id` = '1'";
         $prep6 = $dbcore->sql->conn->prepare($sqlup2);
@@ -434,7 +436,7 @@ while(1)
             $dbcore->verbosed("ERROR!! COULD NOT Update settings table with next run time: ".$nextrun);
             Throw new ErrorException;
         }
-		
+        
         $dbcore->verbosed("Next check in T+ ".$dbcore->time_interval_to_check."s");
         $dbcore->sql = NULL;
         sleep($dbcore->time_interval_to_check);

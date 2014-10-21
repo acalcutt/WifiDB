@@ -58,8 +58,8 @@ class convert extends dbcore
                 }
                 if ($line[7]===$this->languages->current_language[1]['SearchWords']['Open'] && $line[8]===$this->languages->current_language[1]['SearchWords']['None']){$sectype="1";}
                 if ($line[7]===$this->languages->current_language[1]['SearchWords']['Open'] && $line[8]===$this->languages->current_language[1]['SearchWords']['WEP']){$sectype="2";}
-                if ($line[8] !== $this->languages->current_language[1]['SearchWords']['None'] || $line[8] !== $this->languages->current_language[1]['SearchWords']['WEP']){$sectype="3";}
-
+                if ($line[8] !== $this->languages->current_language[1]['SearchWords']['None'] && $line[8] !== $this->languages->current_language[1]['SearchWords']['WEP']){$sectype="3";}
+				
                 $ap_hash = md5(
                     $line[0].
                     $line[1].
@@ -84,7 +84,7 @@ class convert extends dbcore
                 );
                 if(is_array(@$apdata[$ap_hash]))
                 {
-                    $apdata[$ap_hash]['sig'][$n] = array($n,$line[3],$line[5]);
+                    $apdata[$ap_hash]['sig'][$n] = $n.",".$line[3].",".$line[5];
                 }
                 else
                 {
@@ -102,9 +102,9 @@ class convert extends dbcore
                         "btx"=>$line[11],
                         "otx"=>$line[12],
                         "nt"=>$line[13],
-                        "label"=>$line[14],
-                        "sig"=>array($n => array($n,$line[3],$line[5]))
+                        "label"=>$line[14]
                     );
+					$apdata[$ap_hash]['sig'][$n] = $n.",".$line[3].",".$line[5];
                 }
                 $n++;
             }
