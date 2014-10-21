@@ -102,64 +102,70 @@ $finished = 0;
 //Main loop
 while(1)
 {
-	$dbcore->verbosed("Start Gather of WiFiDB GeoNames");
+    $dbcore->verbosed("Start Gather of WiFiDB GeoNames");
+    
+    if(is_null($dbcore->sql))
+    {
+        $dbcore->sql = new SQL($config);
+    }
 
-	$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
-	echo $sql."\r\n";
-	$result = $dbcore->sql->conn->query($sql);
-	$dbcore->verbosed("Gathered Wtable data");
-	echo "Rows that need updating: ".$result->rowCount()."\r\n";
-	sleep(4);
-	while($ap = $result->fetch(1))
-	{
-		$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
-		$lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
-		$long = round($dbcore->convert->dm2dd($ap['long']), 1);
-		$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
-		$sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code` FROM `wifi`.`geonames` WHERE `latitude` LIKE '$lat%' AND `longitude` LIKE '$long%' LIMIT 1";
-		$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
-		$geo_res = $dbcore->sql->conn->query($sql);
-		$geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
-		if(!$geo_array['geonameid'])
-		{continue;}
-		
-		$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
-		$admin1_array = array('id'=>'');
-		$admin2_array = array('id'=>'');
-		if($geo_array['admin1 code'])
-		{
-			$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
-			$admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
-			
-			$sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
-			$admin1_res = $dbcore->sql->conn->query($sql);
-			$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
-		}
-		if(is_numeric($geo_array['admin2 code']))
-		{
-			$dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
-			$admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
-			$sql = "SELECT `id` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
-			$admin2_res = $dbcore->sql->conn->query($sql);
-			$admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
-		}
+    $sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
+    echo $sql."\r\n";
+    $result = $dbcore->sql->conn->query($sql);
+    $dbcore->verbosed("Gathered Wtable data");
+    echo "Rows that need updating: ".$result->rowCount()."\r\n";
+    sleep(4);
+    while($ap = $result->fetch(1))
+    {
+        $dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
+        $lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
+        $long = round($dbcore->convert->dm2dd($ap['long']), 1);
+        $dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
+        $sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code` FROM `wifi`.`geonames` WHERE `latitude` LIKE '$lat%' AND `longitude` LIKE '$long%' LIMIT 1";
+        $dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
+        $geo_res = $dbcore->sql->conn->query($sql);
+        $geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
+        if(!$geo_array['geonameid'])
+        {continue;}
+        
+        $dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
+        $admin1_array = array('id'=>'');
+        $admin2_array = array('id'=>'');
+        if($geo_array['admin1 code'])
+        {
+            $dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
+            $admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
+            
+            $sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
+            $admin1_res = $dbcore->sql->conn->query($sql);
+            $admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
+        }
+        if(is_numeric($geo_array['admin2 code']))
+        {
+            $dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
+            $admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
+            $sql = "SELECT `id` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
+            $admin2_res = $dbcore->sql->conn->query($sql);
+            $admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
+        }
 
-		$sql = "UPDATE `wifi`.`wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
-		if($dbcore->sql->conn->query($sql))
-		{
-			$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
-		}else
-		{
-			$dbcore->verbosed("Failed to update AP's Geolocation [{$ap['id']}] ({$ap['ap_hash']})", -1);
-			var_dump($dbcore->sql->conn->errorInfo());
-		}
-	}
+        $sql = "UPDATE `wifi`.`wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
+        if($dbcore->sql->conn->query($sql))
+        {
+            $dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
+        }else
+        {
+            $dbcore->verbosed("Failed to update AP's Geolocation [{$ap['id']}] ({$ap['ap_hash']})", -1);
+            var_dump($dbcore->sql->conn->errorInfo());
+        }
+    }
 
     if(@$arguments['d']){
-		##### Set next run time
-		$wait_interval=86400;
-		$nextrun = date("Y-m-d H:i:s", (time()+$wait_interval));
+        ##### Set next run time
+        $wait_interval=86400;
+        $nextrun = date("Y-m-d H:i:s", (time()+$wait_interval));
         $dbcore->verbosed("Next check in T+ ".$wait_interval."s at ".$nextrun);
+        $dbcore->sql = NULL;
         sleep($wait_interval);
     }else{
         break;
