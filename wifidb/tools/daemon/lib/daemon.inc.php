@@ -28,7 +28,7 @@ class daemon extends wdbcli
         $this->default_user         = $daemon_config['default_user'];
         $this->default_title        = $daemon_config['default_title'];
         $this->default_notes        = $daemon_config['default_notes'];
-        $this->convert_extentions   = array('csv','db3','vsz');
+        $this->convert_extentions   = array('csv','db','db3','vsz');
         $this->ver_array['Daemon']  = array(
                                     "last_edit"             =>  "2013-May-27",
                                     "CheckDaemonKill"       =>  "1.0",#
