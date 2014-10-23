@@ -27,7 +27,6 @@ $file = $file_exp[1];
 $validate = array("admin1","admin2","geonames","countrynames");
 $load = str_replace("-", "", $argv[1]);
 
-$contents = file($file);
 $r = 0;
 $l = 0;
 $II = 1;
@@ -43,66 +42,74 @@ if(mysqli_connect_errno())
 {
     die(mysqli_connect_errno());
 }
-echo "Connected, now lets LOAD ALL THE DATA!!!!\r\n";
-foreach ($contents as $line)
-{
-    echo $line."\r\n";
-    $tab_array = explode("\t", $line);
-    $row = filter_var_array($tab_array, FILTER_SANITIZE_ENCODED);
-    if(!@$row[1] || $line == 50)
-    {
-        continue;
-    }
-#Insert Row into Geonames table.
-    switch($load)
-    {
-        case "admin1":
-            $sql = "INSERT INTO `wifi`.`geonames_admin1` (`id`, `admin1`, `name`, `asciiname`, `geonameid`)
-                VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}')";
-            break;
-        case "geoname":
-            $sql = "INSERT INTO `wifi`.`geonames` (`id`, `geonameid`, `name`, `asciiname`, `alternatenames`, `latitude`, `longitude`,
-    `feature class`, `feature code`, `country code`, `cc2`, `admin1 code`, `admin2 code`, `admin3 code`, `admin4 code`,
-    `population`, `elevation`, `gtopo30`, `timezone`, `mod_date`)
-    VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
-            break;
-        case "admin2":
-            $sql = "INSERT INTO `wifi`.`geonames_admin2` (`id`, `admin2`, `name`, `asciiname`, `geonameid`)
-                VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}')";
-            break;
-        case "countrynames":
-            $sql = "INSERT INTO `wifi`.`geonames_country_names` (`id`, `ISO`, `ISO3`, `ISO-Numeric`, `fips`, `Country`, `Capital`, `Area`, `Population`, `Continent`, `tld`, `CurrencyCode`, `CurrencyName`, `Phone`, `Postal Code Format`, `Postal Code Regex`, `Languages`, `geonamesid`, `neighbors`, `EquivalentFipsCode`)
-                VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
-            break;
-    }
-    echo $sql."\r\n";
-    #var_dump($row);
-    #echo count($row)."\r\n";
-    #die();
+echo "Connected, now lets read the file!!!!\r\n";
 
-    if(!mysqli_query($conn, $sql))
-    {
-        echo mysqli_error($conn)."\r\n";
-        die();
-        #mysqli_close($conn);
-        echo ".";
+$handle = @fopen($file, "r");
+if ($handle) {
+    while (($line = fgets($handle, 4096)) !== false) {
+	
+		echo $line."\r\n";
+		$tab_array = explode("\t", $line);
+		$row = filter_var_array($tab_array, FILTER_SANITIZE_ENCODED);
+		if(!@$row[1] || $line == 50)
+		{
+			continue;
+		}
+		#Insert Row into Geonames table.
+		switch($load)
+		{
+			case "admin1":
+				$sql = "INSERT INTO `wifi`.`geonames_admin1` (`id`, `admin1`, `name`, `asciiname`, `geonameid`)
+					VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}')";
+				break;
+			case "geoname":
+				$sql = "INSERT INTO `wifi`.`geonames` (`id`, `geonameid`, `name`, `asciiname`, `alternatenames`, `latitude`, `longitude`,
+		`feature class`, `feature code`, `country code`, `cc2`, `admin1 code`, `admin2 code`, `admin3 code`, `admin4 code`,
+		`population`, `elevation`, `gtopo30`, `timezone`, `mod_date`)
+		VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
+				break;
+			case "admin2":
+				$sql = "INSERT INTO `wifi`.`geonames_admin2` (`id`, `admin2`, `name`, `asciiname`, `geonameid`)
+					VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}')";
+				break;
+			case "countrynames":
+				$sql = "INSERT INTO `wifi`.`geonames_country_names` (`id`, `ISO`, `ISO3`, `ISO-Numeric`, `fips`, `Country`, `Capital`, `Area`, `Population`, `Continent`, `tld`, `CurrencyCode`, `CurrencyName`, `Phone`, `Postal Code Format`, `Postal Code Regex`, `Languages`, `geonamesid`, `neighbors`, `EquivalentFipsCode`)
+					VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
+				break;
+		}
+		echo $sql."\r\n";
+		#var_dump($row);
+		#echo count($row)."\r\n";
+		#die();
+
+		if(!mysqli_query($conn, $sql))
+		{
+			echo mysqli_error($conn)."\r\n";
+			die();
+			#mysqli_close($conn);
+			echo ".";
+		}
+		else
+		{
+			echo "$II Inserted!\r\n";
+		}
+		$sql = "";
+		$l = 0;
+		$II++;
+		if($r===0){echo "|\r";}
+		if($r===10){echo "/\r";}
+		if($r===20){echo "-\r";}
+		if($r===30){echo "\\\r";}
+		if($r===40){echo "|\r";}
+		if($r===50){echo "/\r";}
+		if($r===60){echo "-\r";}
+		if($r===70){echo "\\\r";$r=0;}
+		$r++;
+	}
+	if (!feof($handle)) {
+        echo "Error: unexpected fgets() fail\n";
     }
-    else
-    {
-        echo "$II Inserted!\r\n";
-    }
-    $sql = "";
-    $l = 0;
-    $II++;
-    if($r===0){echo "|\r";}
-    if($r===10){echo "/\r";}
-    if($r===20){echo "-\r";}
-    if($r===30){echo "\\\r";}
-    if($r===40){echo "|\r";}
-    if($r===50){echo "/\r";}
-    if($r===60){echo "-\r";}
-    if($r===70){echo "\\\r";$r=0;}
-    $r++;
+    fclose($handle);
 }
 mysqli_close($conn);
 
