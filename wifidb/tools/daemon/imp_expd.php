@@ -317,6 +317,18 @@ while(1)
                     $prep1->bindParam(10, $user_ids, PDO::PARAM_STR);
                     $prep1->bindParam(11, $prev_ext['converted'], PDO::PARAM_INT);
                     $prep1->bindParam(12, $prev_ext['prev_ext'], PDO::PARAM_STR);
+                    echo "file_name:".$file_name."\r\n";
+                    echo "date:".$file_date."\r\n";
+                    echo "size:".$file_size."\r\n";
+                    echo "totalaps:".$totalaps."\r\n";
+                    echo "totalgps:".$totalgps."\r\n";
+                    echo "hash:".$file_hash."\r\n";
+                    echo "user:".$user."\r\n";
+                    echo "notes:".$notes."\r\n";
+                    echo "title:".$title."\r\n";
+                    echo "user_ids:".$user_ids."\r\n";
+                    echo "prev_ext['converted']:".$prev_ext['converted']."\r\n";
+                    echo "prev_ext['prev_ext']:".$prev_ext['prev_ext']."\r\n";
 
                     $prep1->execute();
                     if($dbcore->sql->checkError())
@@ -341,6 +353,16 @@ while(1)
                         $prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
                         $prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
                         $prep3->bindParam(8, $id, PDO::PARAM_INT);
+                        
+                        echo "tmp['imported']:".$tmp['imported']."\r\n";
+                        echo "tmp['date']:".$tmp['date']."\r\n";
+                        echo "tmp['aps']:".$tmp['aps']."\r\n";
+                        echo "tmp['gps']:".$tmp['gps']."\r\n";
+                        echo "file_row:".$file_row."\r\n";
+                        echo "prev_ext['converted']:".$prev_ext['converted']."\r\n";
+                        echo "prev_ext['prev_ext']:".$prev_ext['prev_ext']."\r\n";
+                        echo "id:".$id."\r\n";
+                        
                         $prep3->execute();
                         if($dbcore->sql->checkError())
                         {
