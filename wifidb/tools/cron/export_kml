@@ -1,0 +1,10 @@
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
+
+cd ${0%/*}
+if ps -ef | grep -v grep | grep exportd.php ; then
+        exit 0
+else
+        php ../daemon/exportd.php -v >> ../log/exportd.log &
+        exit 0
+fi
