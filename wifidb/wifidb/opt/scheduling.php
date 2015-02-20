@@ -399,7 +399,7 @@ switch($func)
             }
             else
             {
-                if($min_diff <= $interval and $min_diff >= 0)
+                if(($min_diff <= $interval and $min_diff >= 0) or status=="Running")
                 {
                     $color = 'lime';
                 }
