@@ -283,19 +283,6 @@ switch($func)
         $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
         $result = $dbcore->sql->conn->query($sql);
         $file_array = $result->fetch(2);
-
-        $timezonediff = $TZone+$dst;
-        #if($dst == 1){$dst = 0;}
-#    echo "Before: ".$file_array['size']."<BR>";
-        $str_time = strtotime($file_array['size']);
-#    echo "Convert: ".$str_time."<BR>";
-        $alter_by = (($timezonediff*60)*60);
-#    echo "CALC: ".$alter_by."<BR>";
-        $altered = $str_time+$alter_by;
-#    echo "ADD: ".$altered."<BR>";
-        $next_run = date("Y-m-d H:i:s", $altered);
-####### echo $next_run.'  [ '.getTZ('-5').' ]';
-
         $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
         foreach($offsets as $key=>$value) 
         { 
@@ -477,7 +464,6 @@ switch($func)
         }
         
         $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
-        $dbcore->smarty->assign('wifidb_next_run', array('utc'=>$file_array['size'],'local'=>$next_run,'timezone'=>$TZone,'timezonedst'=>$dst,'timezonediff'=>$timezonediff));
         $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
         $dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
         $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
