@@ -392,6 +392,55 @@ switch($func)
             $n++;
         }
 		
+		$schedule_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`schedule` ORDER BY `nodename` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+		
+			$nextrun_utc = strtotime($newArray['nextrun']);
+			$curtime = time();
+			$min_diff = ($nextrun_utc - $curtime) / 60;
+			$interval = (int)$newArray['interval'];
+			$status = $newArray['status'];
+			$enabled = $newArray['enabled'];
+			
+			if($enabled==0 or $status=="Error")
+			{
+				$color = 'red';
+			}
+			else
+			{
+				if($min_diff <= $interval and $min_diff >= 0)
+				{
+					$color = 'lime';
+				}
+				else
+				{
+					$color = 'yellow';
+				}
+			}
+		
+		#convert to local time
+		$timezonediff = $TZone+$dst;
+        $alter_by = (($timezonediff*60)*60);
+        $altered = $nextrun_utc+$alter_by;
+        $nextrun_local = date("Y-m-d H:i:s", $altered);
+ 
+			$schedule_row[$n]['color'] = $color;
+            $schedule_row[$n]['id'] = $newArray['id'];
+            $schedule_row[$n]['nodename'] = $newArray['nodename'];
+            $schedule_row[$n]['daemon'] = $newArray['daemon'];
+            $schedule_row[$n]['enabled'] = $newArray['enabled'];
+            $schedule_row[$n]['interval'] = $newArray['interval'];
+            $schedule_row[$n]['status'] = $newArray['status'];
+            $schedule_row[$n]['nextrun_utc'] = $newArray['nextrun'];
+			$schedule_row[$n]['nextrun_local'] = $nextrun_local;
+			
+			$n++;
+		}
+		
         $pid_row = array();
         $n=0;
         $sql = "SELECT * FROM `wifi`.`daemon_pid_stats` ORDER BY `nodename` ASC";
@@ -427,13 +476,13 @@ switch($func)
 			$n++;
 		}
 		
-		
         $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
         $dbcore->smarty->assign('wifidb_next_run', array('utc'=>$file_array['size'],'local'=>$next_run,'timezone'=>$TZone,'timezonedst'=>$dst,'timezonediff'=>$timezonediff));
         $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
 		$dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
 		$dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
-        $dbcore->smarty->assign('wifidb_daemons', $pid_row);
+		$dbcore->smarty->assign('wifidb_schedules', $schedule_row);
+		$dbcore->smarty->assign('wifidb_daemons', $pid_row);
         $dbcore->smarty->assign('wifidb_done_all', $sched_row);
         $dbcore->smarty->display('scheduling_waiting.tpl');
     break;
