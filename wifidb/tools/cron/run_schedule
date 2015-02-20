@@ -1,0 +1,13 @@
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
+cd ${0%/*}
+
+timestamp=$(date +%s)
+echo "Starting Scheduler... ${timestamp}"
+php ../daemon/scheduled.php -v >> ../log/scheduler/schedule_${timestamp}.log &
+
+echo "Cleaning up old logs..."
+find ../log/scheduler/ -mtime +7 -type f -delete
+
+echo "Done. Exiting."
+exit 0

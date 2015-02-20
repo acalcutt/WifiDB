@@ -117,7 +117,8 @@ $status_waiting = "Waiting";
 $status_error = "Error";
 $dbcore->verbosed("Running jobs for $nodename");
 
-$daemon_path = "";
+$daemon_path = "/opt/wifidb-0-30/tools/daemon/";
+$php_path = "/usr/bin/php";
 
 $daemon = array( );
 $daemon["Import"] = "importd.php";
@@ -126,7 +127,7 @@ $daemon["Geoname"] = "geonamed.php";
 
 foreach ($daemon as $daemon_name => $daemon_file) 
 {
-	$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= now() And `enabled` = 1";
+	$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= now() And `enabled` = 1 LIMIT 1";
 	$prep = $dbcore->sql->conn->prepare($sql);
 	$prep->bindParam(1, $nodename, PDO::PARAM_STR);
 	$prep->bindParam(2, $daemon_name, PDO::PARAM_STR);
@@ -137,7 +138,8 @@ foreach ($daemon as $daemon_name => $daemon_file)
     {
 		#Job Settings
 		$job_id = $job['id'];
-		$job_cmd = "php ".$daemon_path.$daemon_file;
+		$job_cmd = $php_path." ".$daemon_path.$daemon_file;
+		$dbcore->verbosed($job_cmd);
 		$job_interval = $job['interval'];
 		if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
 		
@@ -149,8 +151,8 @@ foreach ($daemon as $daemon_name => $daemon_file)
 		$prep2->execute();
 		
 		#Execute Job Command
-		exec($job_cmd, $output, $return );
-		if($return = 0){$ret_status = $status_waiting;}else{$ret_status = $status_error;}
+		passthru($job_cmd, $return);
+		if(!$return){$ret_status = $status_waiting;}else{$ret_status = $status_error;}
 		
 		#Set Next run time and status
 		$nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
