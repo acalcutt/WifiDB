@@ -37,20 +37,21 @@ if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
 $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
 //End write of PID
 
-$nodename = $daemon_config['wifidb_nodename'];
+$node_name = $daemon_config['wifidb_nodename'];
+$pid_path = $dbcore->pid_file_loc;
 
-$dbcore->verbosed("Start Monitoring of WiFiDB Daemons for $nodename");
+$dbcore->verbosed("Start Monitoring of WiFiDB Daemons for $node_name");
 
 while(1)
 {
-	$daemon_pids = array( );
-	$daemon_pids["Import Export"] = "imp_expd.pid";
-	$daemon_pids["Geoname"] = "geonamed.pid";
-
-	foreach ($daemon_pids as $daemon_name => $pidfile) 
-	{
-		$dbcore->verbosed("Checking status of $daemon_name daemon", 1);
-		$timestamp = date('Y-m-d G:i:s');
+	$timestamp = date('Y-m-d G:i:s');
+	
+	foreach (glob($pid_path."*.pid") as $file) {
+		$pidfile = basename($file);
+		if($pidfile == "monitord.pid"){continue;}
+		
+		$dbcore->verbosed("Checking status of $pidfile daemon", 1);
+		
 		$stats_imp_exp = $dbcore->getdaemonstats($pidfile);
 		
 		$pid = $stats_imp_exp["pid"];
@@ -58,26 +59,29 @@ while(1)
 		$mem = $stats_imp_exp["mem"];
 		$cmd = $stats_imp_exp["cmd"];
 		
-		#echo "node:".$nodename."\r\n";
+		#echo "node:".$node_name."\r\n";
 		#echo "pidefile:".$pidfile."\r\n";
 		#echo "pid:".$pid."\r\n";
 		#echo "time:".$time."\r\n";
 		#echo "mem:".$mem."\r\n";
 		#echo "cmd:".$cmd."\r\n";
 		
-		$daemon_sql = "SELECT * FROM `wifi`.`daemon_pid_stats` where `nodename` = '$nodename' AND `pidfile` = '$pidfile'";
+		$daemon_sql = "SELECT * FROM `wifi`.`daemon_pid_stats` where `nodename` = '$node_name' AND `pidfile` = '$pidfile'";
 		$result = $dbcore->sql->conn->query($daemon_sql);
 		if($result->rowCount() > 0)
 		{
-			$sql = "UPDATE `wifi`.`daemon_pid_stats` SET `pid` = '$pid', `pidtime` = '$time', `pidmem` = '$mem', `pidcmd` = '$cmd' , `date` = '$timestamp' where `nodename` = '$nodename' AND `pidfile` = '$pidfile'";
+			$sql = "UPDATE `wifi`.`daemon_pid_stats` SET `pid` = '$pid', `pidtime` = '$time', `pidmem` = '$mem', `pidcmd` = '$cmd' , `date` = '$timestamp' where `nodename` = '$node_name' AND `pidfile` = '$pidfile'";
 			$result_update = $dbcore->sql->conn->query($sql);
 		}else
 		{
-			$sql = "INSERT INTO `wifi`.`daemon_pid_stats` (nodename, pidfile, pid, pidtime, pidmem, pidcmd, date) VALUES ('$nodename', '$pidfile', '$pid', '$time', '$mem', '$cmd', '$timestamp')";
+			$sql = "INSERT INTO `wifi`.`daemon_pid_stats` (nodename, pidfile, pid, pidtime, pidmem, pidcmd, date) VALUES ('$node_name', '$pidfile', '$pid', '$time', '$mem', '$cmd', '$timestamp')";
 			$result_update = $dbcore->sql->conn->query($sql);
 		}
 	}
 	
-	sleep(30);
+	$sql = "DELETE FROM `wifi`.`daemon_pid_stats` where `date` <> '$timestamp' AND `nodename` = '$node_name'";
+	$result_delete = $dbcore->sql->conn->query($sql);
+	
+	sleep(10);
 }
 
