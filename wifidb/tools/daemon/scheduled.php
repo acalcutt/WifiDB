@@ -133,6 +133,7 @@ foreach ($daemon as $daemon_name => $daemon_file)
 	$prep->bindParam(2, $daemon_name, PDO::PARAM_STR);
 	$prep->bindParam(3, $status_running, PDO::PARAM_STR);
 	$prep->execute();
+	printf("Error: %s.\n", $prep->error);
 	$job_fetch = $prep->fetchAll(2);
 	foreach($job_fetch as $job)
     {
@@ -144,11 +145,13 @@ foreach ($daemon as $daemon_name => $daemon_file)
 		if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
 		
 		#Set job to Running
-		$sql = "UPDATE `wifi`.`schedule` SET `status` = ? WHERE `id` = ?";
+		$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
+		$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
 		$prep2 = $dbcore->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $status_running, PDO::PARAM_STR);
 		$prep2->bindParam(2, $job_id, PDO::PARAM_INT);
 		$prep2->execute();
+		printf("Error: %s.\n", $prep2->error);
 		
 		#Execute Job Command
 		passthru($job_cmd, $return);
@@ -158,12 +161,15 @@ foreach ($daemon as $daemon_name => $daemon_file)
 		$nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
 		$dbcore->verbosed("Setting ".$daemon_name." to ".$ret_status." and next run to ".$nextrun, 1);
 
-		$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
+		$sql = "UPDATE `wifi`.`schedule` SET `nextrun`=?, `status`=? WHERE `id`=?";
 		$prep3 = $dbcore->sql->conn->prepare($sql);
 		$prep3->bindParam(1, $nextrun, PDO::PARAM_STR);
 		$prep3->bindParam(2, $ret_status, PDO::PARAM_STR);
 		$prep3->bindParam(3, $job_id, PDO::PARAM_INT);
 		$prep3->execute();
+		printf("Error: %s.\n", $prep3->error);
+		
+		$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
 
 	}
 }
