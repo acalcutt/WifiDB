@@ -58,6 +58,17 @@ while ( $array = $pre_page_list->fetch(2) )
     $wifidb_aps_all[$n]['class'] = $color;
 
     $wifidb_aps_all[$n]['id'] = $array['id'];
+	
+	$wifidb_aps_all[$n]['fa'] = $array['FA'];
+	$wifidb_aps_all[$n]['la'] = $array['LA'];
+	
+    if($array['lat'] == "0.0000")
+	{
+		$wifidb_aps_all[$n]['globe'] = "off";
+	}else
+	{
+		$wifidb_aps_all[$n]['globe'] = "on";
+	}
     
     $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
 
@@ -75,25 +86,7 @@ while ( $array = $pre_page_list->fetch(2) )
     $wifidb_aps_all[$n]['auth'] = ($array['auth'] == '' ? 'Unknown :(' : $array['auth']);
     $wifidb_aps_all[$n]['encry'] = ($array['encry'] == '' ? 'Unknown :(' : $array['encry']);
 
-    switch(strtolower($array['radio']))
-    {
-        case "a":
-            $radios="802.11a";
-            break;
-        case "b":
-            $radios="802.11b";
-            break;
-        case "g":
-            $radios="802.11g";
-            break;
-        case "n":
-            $radios="802.11n";
-            break;
-        default:
-            $radios="Unknown Radio";
-            break;
-    }
-    $wifidb_aps_all[$n]['radio'] = $radios;
+    $wifidb_aps_all[$n]['radio'] = $array['radio'];
     $n++;
 }
 
