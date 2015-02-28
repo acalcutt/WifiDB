@@ -16,16 +16,17 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit  = "2015-02-10";
+$lastedit  = "2015-02-28";
+$daemon_name = "Import";
+$daemon_version = "1.0";
+$node_name = $daemon_config['wifidb_nodename'];
 
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-    echo "Usage: importd.php [args...]
+    echo "Usage: exportd.php [args...]
   -v               Run Verbosely (SHOW EVERYTHING!)
-  -c               Location of the config file you want to load. *
-  -L               Log Daemon output to a file. *
   -i               Version Info.
   -h               Show this screen.
   -l               Show License Information.
@@ -39,7 +40,7 @@ if(@$arguments['i'])
 {
     $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-Import Daemon 1.0, {$lastedit}, GPLv2");
+{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals");
     exit();
 }
 
@@ -47,26 +48,16 @@ if(@$arguments['l'])
 {
     $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-Import Daemon 1.0, {$lastedit}, GPLv2
+{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2
+Copyright (C) 2015 Andrew Calcutt,
+This script is based on imp_expd.php by Phil Ferland. It is made to do just exports and be run as a cron job.
 
-This program is free software; you can redistribute it and/or modify it under the terms
-of the GNU General Public License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-ou should have received a copy of the GNU General Public License along with this program;
-if not, write to the
-
-   Free Software Foundation, Inc.,
-   59 Temple Place, Suite 330,
-   Boston, MA 02111-1307 USA
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 ");
     exit();
 }
-
 
 if(@$arguments['v'])
 {
@@ -100,7 +91,7 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
- - Import Daemon 1.0, {$lastedit}, GPLv2
+ - {$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
  Log Level is: ".$dbcore->log_level);
@@ -110,10 +101,6 @@ if($dbcore->checkDaemonKill())
 	$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
 	exit($dbcore->exit_msg);
 }
-
-$daemon_name = "Import";
-$node_name = $daemon_config['wifidb_nodename'];
-$daemon_path = $daemon_config['daemon_path'];
 
 $dbcore->verbosed("Running $daemon_name jobs for $node_name");
 
@@ -174,9 +161,9 @@ else
 			else
 			{
 				##### make sure import/export files are in sync with remote nodes
-				//$dbcore->verbosed("Synchronizing files between nodes...", 1);
-				//$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
-				//exec ($cmd);
+				$dbcore->verbosed("Synchronizing files between nodes...", 1);
+				$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
+				exec ($cmd);
 				#####
 				
 				$files_aa = $result->fetchAll(2);
