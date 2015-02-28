@@ -25,7 +25,7 @@ $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-    echo "Usage: exportd.php [args...]
+    echo "Usage: importd.php [args...]
   -v               Run Verbosely (SHOW EVERYTHING!)
   -i               Version Info.
   -h               Show this screen.
