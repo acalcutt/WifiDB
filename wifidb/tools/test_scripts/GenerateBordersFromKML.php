@@ -24,30 +24,45 @@ echo "
 ";
 $dbcore->verbose = 1;
 
-$filename = "../kml/Countries.kml";
+$filename = "../kml/Countries_full.kml";
 $xml = simplexml_load_file($filename);
 #var_dump($xml);
 $AlphabetSoup = $xml->Folder->children();
 foreach ($AlphabetSoup as $letter)
 {
+    echo "Letter Folder: ".$letter->name."\n";
     foreach($letter->children() as $country)
     {
         if(@$country->name)
         {
-            echo $country->name."\n";
+            echo "\t".$country->name."\n";
         }
         if(@$country->Polygon)
         {
-            echo "Polygon!\n";
-            echo $country->Polygon->outerBoundaryIs->LinearRing->coordinates."\n";
+            echo "\t\tPolygon!\n";
+            $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
+            $name = $country->name;
+            $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
+            $dbcore->sql->conn->query($sql);
+            if($dbcore->sql->conn->errorCode() != "00000")
+            {
+                var_dump($dbcore->sql->conn->errorInfo());
+            }
         }
         if(@$country->MultiGeometry)
         {
-            echo "MultiGeometry!\n";
-            #var_dump($country->MultiGeometry);
-            foreach($country->MultiGeometry->children() as $polygon)
+            echo "\t\tMultiGeometry!\n";
+            foreach($country->MultiGeometry->children() as $key=>$polygon)
             {
-                echo $polygon->outerBoundaryIs->LinearRing->coordinates."\n";
+                echo "\t\t\t".$key."\n";
+                $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
+                $name = $country->name;
+                $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
+                $dbcore->sql->conn->query($sql);
+                if($dbcore->sql->conn->errorCode() != "00000")
+                {
+                    var_dump($dbcore->sql->conn->errorInfo());
+                }
             }
         }
     }
