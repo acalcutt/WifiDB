@@ -16,82 +16,63 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit  = "2015-02-28";
+$lastedit  = "2015-03-02";
 
-$results = $dbcore->sql->conn->query("SELECT `id`, `name`, `polygon` FROM wifi.boundaries");
+$results = $dbcore->sql->conn->query(" SELECT * FROM wifi.boundaries");
+$dbcore->sql->checkError();
 $Items = $results->fetchAll(2);
 
+$placemarks = array();
 $regions = array();
+$i = 0;
 
 foreach ($Items as $bounds)
 {
     echo $bounds['name']."\n";
-
-    $points = explode(" ", $bounds['polygon']);
-    $North = NULL;
-    $South = NULL;
-    $East = NULL;
-    $West = NULL;
-    $regions[$bounds['id']] = array( 'name' => $bounds['name'], 'polygon' => $bounds['polygon']);
-
-    foreach($points as $point)
-    {
-        $elements = explode(",", $point);
-        #var_dump($elements);
-        if($elements[1] == '')
-        {
-            continue;
-        }
-        if($North == NULL)
-        {
-            $North = $elements[1];
-        }
-        if($South == NULL)
-        {
-        #    var_dump($elements);
-            $South = $elements[1];
-        }
-
-        if($East == NULL)
-        {
-            $East = $elements[0];
-        }
-        if($West == NULL)
-        {
-        #    var_dump($elements);
-            $West = $elements[0];
-        }
-        #var_dump((float)$HighLat,
-        #    (float)$LowLat,
-        #    (float)$HighLong,
-        #    (float)$LowLat);
-        #######
-        #######
-        #echo "Highlat: $HighLat < $elements[1]\n";
-        if((float)$North < (float)$elements[1])
-        {
-            $North = $elements[1];
-        }
-        #echo "LowLat: $LowLat > $elements[1]\n";
-        if((float)$South > (float)$elements[1])
-        {
-            $South = $elements[1];
-        }
-
-        #echo "HighLong: $HighLong < $elements[0]\n";
-        if((float)$East < (float)$elements[0])
-        {
-            $East = $elements[0];
-        }
-        #echo "LowLong: $LowLong > $elements[0]\n";
-        if((float)$West > (float)$elements[0])
-        {
-            $West = $elements[0];
-        }
-    }
-
-#    var_dump(array( $North, $South, $East, $West));
-
-    $regions[$bounds['id']['RegionBox']] = array( $North, $South, $East, $West );
+    list($North, $South, $East, $West) = explode(",", $bounds['box']);
+	$placemarks[] = '        <Placemark>
+            <name>'.$bounds['name'].'</name>
+            <styleUrl>#default</styleUrl>
+            <Polygon>
+                <outerBoundaryIs>
+                    <LinearRing>
+                        <coordinates>'.$bounds['polygon'].'</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+            <Region>
+            <LatLonAltBox>
+                <north>'.trim($North).'</north>
+                <south>'.trim($South).'</south>
+                <east>'.trim($East).'</east>
+                <west>'.trim($West).'</west>
+                <minAltitude>0</minAltitude>
+                <maxAltitude>'.$bounds['distance'].'</maxAltitude>
+            </LatLonAltBox>
+            <Lod>
+                <minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
+                <maxLodPixels>-1</maxLodPixels>
+                <minFadeExtent>0</minFadeExtent>
+                <maxFadeExtent>0</maxFadeExtent>
+            </Lod>
+            </Region>
+        </Placemark>';
+    #if($i == 5){break;}else{$i++;}
+    echo "\n";
 }
 
+####Compile data
+$data = '<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
+<Document>
+    <Style id="default">
+		<PolyStyle>
+			<fill>0</fill>
+		</PolyStyle>
+	</Style>
+    <Folder>
+'.implode("\n", $placemarks).'
+    </Folder>
+</Document>
+</kml>';
+file_put_contents("test.kml", $data);

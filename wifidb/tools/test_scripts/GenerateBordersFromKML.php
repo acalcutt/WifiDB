@@ -28,49 +28,200 @@ $files = array("../kml/US_States.kml", "../kml/Countries.kml");
 foreach ($files as $filename)
 {
     $xml = simplexml_load_file($filename);
-    #var_dump($xml);
-    $AlphabetSoup = $xml->Folder->children();
-    foreach ($AlphabetSoup as $letter)
+    if($filename == "../kml/US_States.kml")
     {
-        if($letter->name == "Labels")
-        {continue;}
-        echo "Letter Folder: ".$letter->name."\n";
-        foreach($letter->children() as $country)
+        $StateSoup = $xml->Document->children();
+        foreach($StateSoup as $state)
         {
-            if(@$country->name)
+            if($state->name != "")
             {
-                echo "   ".$country->name."\n";
+                echo "\t".$state->name."\n";
+            }else
+            {
+                continue;
             }
-            if(@$country->Polygon)
+            if($state->Polygon)
             {
-                echo "\tPolygon!\n";
-                $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
-                $name = $country->name;
-                $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$country->name', '$country->Polygon->outerBoundaryIs->LinearRing->coordinates')";
-                #$dbcore->sql->conn->query($sql);
-                if($dbcore->sql->conn->errorCode() != "00000")
-                {
-                    var_dump($dbcore->sql->conn->errorInfo());
-                }
+                echo "\t   Polygon!\n";
+                list($North, $South, $East, $West) = FindBox($state->Polygon->outerBoundaryIs->LinearRing->coordinates);
+
+                list($distance_calc, $minLodPix) = distance($North, $East, $South, $West, "K"); # North, East, South, West
+
+                InsertPolygon($dbcore, $state->name, $state->Polygon, "$North, $South, $East, $West", $distance_calc, $minLodPix);
             }
-            if(@$country->MultiGeometry)
+            if($state->MultiGeometry)
             {
-                echo "\tMultiGeometry!\n\t";
+                echo "\t   MultiGeometry!\n\t     ";
                 $i = 1;
-                foreach($country->MultiGeometry->children() as $key=>$polygon)
+                foreach($state->MultiGeometry->children() as $key=>$polygon)
                 {
                     echo $i." ";
                     $i++;
-                    $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$country->name', '$country->outerBoundaryIs->LinearRing->coordinates')";
-                    #$dbcore->sql->conn->query($sql);
-                    if($dbcore->sql->conn->errorCode() != "00000")
-                    {
-                        var_dump($dbcore->sql->conn->errorInfo());
-                    }
+                    list($North, $South, $East, $West) = FindBox($polygon->outerBoundaryIs->LinearRing->coordinates);
 
+                    list($distance_calc, $minLodPix) = distance($North, $East, $South, $West, "K"); # North, East, South, West
+
+                    InsertPolygon($dbcore, $state->name, $polygon, "$North, $South, $East, $West", $distance_calc, $minLodPix);
                 }
                 echo "\n";
             }
         }
+    }else
+    {
+        $AlphabetSoup = $xml->Folder->children();
+        foreach ($AlphabetSoup as $letter)
+        {
+            if($letter->name == "Labels")
+            {continue;}
+            echo "Letter Folder: ".$letter->name."\n";
+            foreach($letter->children() as $country)
+            {
+                if(@$country->name)
+                {
+                    echo "   ".$country->name."\n";
+                }
+                if(@$country->Polygon)
+                {
+                    echo "\tPolygon!\n";
+                    list($North, $South, $East, $West) = FindBox($country->Polygon->outerBoundaryIs->LinearRing->coordinates);
+
+                    list($distance_calc, $minLodPix) = distance($North, $East, $South, $West, "K"); # North, East, South, West
+
+                    InsertPolygon($dbcore, $country->name, $country->Polygon, "$North, $South, $East, $West", $distance_calc, $minLodPix);
+                }
+                if(@$country->MultiGeometry)
+                {
+                    echo "\tMultiGeometry!\n\t";
+                    $i = 1;
+                    foreach($country->MultiGeometry->children() as $key=>$polygon)
+                    {
+                        echo $i." ";
+                        $i++;
+                        list($North, $South, $East, $West) = FindBox($polygon->outerBoundaryIs->LinearRing->coordinates);
+
+                        list($distance_calc, $minLodPix) = distance($North, $East, $South, $West, "K"); # North, East, South, West
+
+                        InsertPolygon($dbcore, $country->name, $polygon, "$North, $South, $East, $West", $distance_calc, $minLodPix);
+                    }
+                    echo "\n";
+                }
+            }
+        }
     }
+
+
+}
+
+/**
+ * @param $core
+ * @param $name
+ * @param $polygon
+ * @param $box
+ * @param $distance
+ * @param $minLodPix
+ */
+function InsertPolygon($core, $name, $polygon, $box, $distance, $minLodPix)
+{
+    $coordinates = $polygon->outerBoundaryIs->LinearRing->coordinates;
+    $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`, `box`, `distance`, `minLodPix`) VALUES ('', '$name', '$coordinates', '$box', '$distance', '$minLodPix')";
+    $core->sql->conn->query($sql);
+    if($core->sql->conn->errorCode() != "00000")
+    {
+        var_dump($core->sql->conn->errorInfo());
+    }
+}
+
+
+
+function FindBox($polygon)
+{
+    $North = NULL;
+    $South = NULL;
+    $East = NULL;
+    $West = NULL;
+    $points = explode(" ", $polygon);
+    foreach($points as $point)
+    {
+        $elements = explode(",", trim($point));
+
+        if(@$elements[0] == '' || @$elements[1] == '')
+        {
+            continue;
+        }
+        if($North == NULL)
+        {
+            $North = $elements[1];
+        }
+        if($South == NULL)
+        {
+            $South = $elements[1];
+        }
+
+        if($East == NULL)
+        {
+            $East = $elements[0];
+        }
+        if($West == NULL)
+        {
+            $West = $elements[0];
+        }
+
+        if((float)$North < (float)$elements[1])
+        {
+            $North = $elements[1];
+        }
+        if((float)$South > (float)$elements[1])
+        {
+            $South = $elements[1];
+        }
+        if((float)$East < (float)$elements[0])
+        {
+            $East = $elements[0];
+        }
+        if((float)$West > (float)$elements[0])
+        {
+            $West = $elements[0];
+        }
+    }
+    #var_dump(array( $North, $South, $East, $West));
+    return array( $North, $South, $East, $West);
+}
+
+function distance($lat1, $lon1, $lat2, $lon2, $unit)
+{
+    $theta = $lon1 - $lon2;
+    $dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+    $dist = acos($dist);
+    $dist = rad2deg($dist);
+    $miles = $dist * 60 * 1.1515;
+    $unit = strtoupper($unit);
+    if ($unit == "K") {
+        $ret = ($miles * 1.609344);
+    }
+    elseif ($unit == "N")
+    {
+        $ret = ($miles * 0.8684);
+    }
+    else
+    {
+        $ret = $miles;
+    }
+    if($ret < 100)
+    {
+        $distance_calc = 3000;
+        $minLodPix = 512;
+    }
+
+    if($ret > 100 && $ret < 400)
+    {
+        $distance_calc = 3000;
+        $minLodPix = 768;
+    }
+
+    if($ret > 400)
+    {
+        $distance_calc = 6000;
+        $minLodPix = 256;
+    }
+    return array($distance_calc, $minLodPix);
 }
