@@ -619,8 +619,7 @@ CREATE TABLE IF NOT EXISTS `wifi_pointers` (
   KEY `username` (`username`),
   KEY `ap_hash` (`ap_hash`),
   KEY `alt` (`alt`),
-  KEY `manuf` (`manuf`),
-  KEY `signals` (`signals`(255)),
+  KEY `manuf` (`manuf`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------

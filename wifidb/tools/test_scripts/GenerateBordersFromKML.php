@@ -10,13 +10,13 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 define("SWITCH_SCREEN", "cli");
-define("SWITCH_EXTRAS", "import");
+define("SWITCH_EXTRAS", "cli");
 
 if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit  = "2015-02-28";
+$lastedit  = "2015-03-02";
 echo "
 ##########################################################
 ##       Start Gathering of Boarder data from KML       ##
@@ -24,7 +24,7 @@ echo "
 ";
 $dbcore->verbose = 1;
 
-$files = array("../kml/US_States.kml", "../kml/Countries_full.kml");
+$files = array("../kml/US_States.kml", "../kml/Countries.kml");
 foreach ($files as $filename)
 {
     $xml = simplexml_load_file($filename);
@@ -32,20 +32,22 @@ foreach ($files as $filename)
     $AlphabetSoup = $xml->Folder->children();
     foreach ($AlphabetSoup as $letter)
     {
+        if($letter->name == "Labels")
+        {continue;}
         echo "Letter Folder: ".$letter->name."\n";
         foreach($letter->children() as $country)
         {
             if(@$country->name)
             {
-                echo "\t".$country->name."\n";
+                echo "   ".$country->name."\n";
             }
             if(@$country->Polygon)
             {
-                echo "\t\tPolygon!\n";
+                echo "\tPolygon!\n";
                 $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
                 $name = $country->name;
-                $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
-                $dbcore->sql->conn->query($sql);
+                $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$country->name', '$country->Polygon->outerBoundaryIs->LinearRing->coordinates')";
+                #$dbcore->sql->conn->query($sql);
                 if($dbcore->sql->conn->errorCode() != "00000")
                 {
                     var_dump($dbcore->sql->conn->errorInfo());
@@ -53,19 +55,21 @@ foreach ($files as $filename)
             }
             if(@$country->MultiGeometry)
             {
-                echo "\t\tMultiGeometry!\n";
+                echo "\tMultiGeometry!\n\t";
+                $i = 1;
                 foreach($country->MultiGeometry->children() as $key=>$polygon)
                 {
-                    echo "\t\t\t".$key."\n";
-                    $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
-                    $name = $country->name;
-                    $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
-                    $dbcore->sql->conn->query($sql);
+                    echo $i." ";
+                    $i++;
+                    $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$country->name', '$country->outerBoundaryIs->LinearRing->coordinates')";
+                    #$dbcore->sql->conn->query($sql);
                     if($dbcore->sql->conn->errorCode() != "00000")
                     {
                         var_dump($dbcore->sql->conn->errorInfo());
                     }
+
                 }
+                echo "\n";
             }
         }
     }
