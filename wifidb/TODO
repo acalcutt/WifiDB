@@ -23,4 +23,7 @@ Add exports to users page under the stats for user table and above the last impo
 
 Add sorting on All Users page for Username, ID, Number of Imports, Number of AP's.
 
+Graphing page, the Graph type drop down does not stay on the line type if you generate that, it defaults to the bar graph, 
+	same with the colors, they default back to red and black once generated.
+
 I still have a lot of work to do...
