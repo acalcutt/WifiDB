@@ -127,10 +127,11 @@ try
                 ####
                 case "export":
                     $dbcore = new export($config, $daemon_config);
+                    $dbcore->convert = new convert($config);
                 break;
                 ####
                 case "import":
-                    $dbcore = new import($config, $daemon_config, new stdClass() );
+                    $dbcore = new import($config, $daemon_config, new stdClass(), new convert($config) );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);

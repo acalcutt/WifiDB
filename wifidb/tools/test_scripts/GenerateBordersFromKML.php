@@ -24,37 +24,24 @@ echo "
 ";
 $dbcore->verbose = 1;
 
-$filename = "../kml/Countries_full.kml";
-$xml = simplexml_load_file($filename);
-#var_dump($xml);
-$AlphabetSoup = $xml->Folder->children();
-foreach ($AlphabetSoup as $letter)
+$files = array("../kml/US_States.kml", "../kml/Countries_full.kml");
+foreach ($files as $filename)
 {
-    echo "Letter Folder: ".$letter->name."\n";
-    foreach($letter->children() as $country)
+    $xml = simplexml_load_file($filename);
+    #var_dump($xml);
+    $AlphabetSoup = $xml->Folder->children();
+    foreach ($AlphabetSoup as $letter)
     {
-        if(@$country->name)
+        echo "Letter Folder: ".$letter->name."\n";
+        foreach($letter->children() as $country)
         {
-            echo "\t".$country->name."\n";
-        }
-        if(@$country->Polygon)
-        {
-            echo "\t\tPolygon!\n";
-            $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
-            $name = $country->name;
-            $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
-            $dbcore->sql->conn->query($sql);
-            if($dbcore->sql->conn->errorCode() != "00000")
+            if(@$country->name)
             {
-                var_dump($dbcore->sql->conn->errorInfo());
+                echo "\t".$country->name."\n";
             }
-        }
-        if(@$country->MultiGeometry)
-        {
-            echo "\t\tMultiGeometry!\n";
-            foreach($country->MultiGeometry->children() as $key=>$polygon)
+            if(@$country->Polygon)
             {
-                echo "\t\t\t".$key."\n";
+                echo "\t\tPolygon!\n";
                 $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
                 $name = $country->name;
                 $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
@@ -62,6 +49,22 @@ foreach ($AlphabetSoup as $letter)
                 if($dbcore->sql->conn->errorCode() != "00000")
                 {
                     var_dump($dbcore->sql->conn->errorInfo());
+                }
+            }
+            if(@$country->MultiGeometry)
+            {
+                echo "\t\tMultiGeometry!\n";
+                foreach($country->MultiGeometry->children() as $key=>$polygon)
+                {
+                    echo "\t\t\t".$key."\n";
+                    $coordinates = $country->Polygon->outerBoundaryIs->LinearRing->coordinates;
+                    $name = $country->name;
+                    $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`) VALUES ('', '$name', '$coordinates')";
+                    $dbcore->sql->conn->query($sql);
+                    if($dbcore->sql->conn->errorCode() != "00000")
+                    {
+                        var_dump($dbcore->sql->conn->errorInfo());
+                    }
                 }
             }
         }
