@@ -20,6 +20,7 @@ class createKML
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
         $this->SigMapTimeBeforeMarkedDead = $tilldead;
+
         $this->openstyle = '
         <Style id="openStyleDead">
             <IconStyle>
@@ -144,6 +145,22 @@ class createKML
         $this->users = "WiFiDB";
         $this->data = new stdClass();
         $this->data->apdata = array();
+    }
+
+    public function createRegionView($north, $south, $east, $west, $minAlt, $maxAlt, $minLod, $maxLod, $minFade, $maxFade)
+    {
+
+    }
+
+
+    public function createPolygon($geopoints = array())
+    {
+
+    }
+
+    public function createMultiGeometry($polygon_objects = array())
+    {
+
     }
 
 
