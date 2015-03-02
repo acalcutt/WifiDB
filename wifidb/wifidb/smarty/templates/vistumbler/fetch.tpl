@@ -19,21 +19,21 @@ if not, write to the
 -->
 {include file="header.tpl"}
                                 <script language="JavaScript">
-				// Row Hide function.
-				// by tcadieux
-				function expandcontract(tbodyid,ClickIcon)
-				{
-					if (document.getElementById(ClickIcon).innerHTML == "+")
-					{
-						document.getElementById(tbodyid).style.display = "";
-						document.getElementById(ClickIcon).innerHTML = "-";
-					}else{
-						document.getElementById(tbodyid).style.display = "none";
-						document.getElementById(ClickIcon).innerHTML = "+";
-					}
-				}
-				</script>
-                                <h1>{$wifidb_ap.ssid}<img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_ap_globe}.png"></h1>
+                // Row Hide function.
+                // by tcadieux
+                function expandcontract(tbodyid,ClickIcon)
+                {
+                    if (document.getElementById(ClickIcon).innerHTML == "+")
+                    {
+                        document.getElementById(tbodyid).style.display = "";
+                        document.getElementById(ClickIcon).innerHTML = "-";
+                    }else{
+                        document.getElementById(tbodyid).style.display = "none";
+                        document.getElementById(ClickIcon).innerHTML = "+";
+                    }
+                }
+                </script>
+                                <h1>{$wifidb_ap.ssid}{$wifidb_ap_globe_html}</h1>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
                                     <tbody>
