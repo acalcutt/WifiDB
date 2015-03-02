@@ -142,14 +142,6 @@ else
 			$result = $dbcore->sql->conn->query($daemon_sql);
 			if($dbcore->sql->checkError())
 			{
-				$dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-				$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1),
-					"Error", $dbcore->This_is_me);
-				Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
-			}
-			
-			if($dbcore->sql->checkError())
-			{
 				$dbcore->verbosed("There was an error getting a list of import files");
 				break;
 			}
@@ -161,9 +153,9 @@ else
 			else
 			{
 				##### make sure import/export files are in sync with remote nodes
-				$dbcore->verbosed("Synchronizing files between nodes...", 1);
-				$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
-				exec ($cmd);
+				//$dbcore->verbosed("Synchronizing files between nodes...", 1);
+				//$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
+				//exec ($cmd);
 				#####
 				
 				$files_aa = $result->fetchAll(2);
