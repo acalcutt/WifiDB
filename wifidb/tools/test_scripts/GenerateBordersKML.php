@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 /*
-GenerateBoardersFromKML.php, WiFiDB Import Daemon
+GenerateBoardersKML.php, WiFiDB Import Daemon
 Copyright (C) 2015 Phil Ferland.
 Used to generate the boarders data from a KML file.
 

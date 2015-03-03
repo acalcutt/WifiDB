@@ -7,3 +7,4 @@ define("SWITCH_EXTRAS", "export");
 require( '../config.inc.php' );
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 var_dump($dbcore->GenerateDaemonKMLData());
+
