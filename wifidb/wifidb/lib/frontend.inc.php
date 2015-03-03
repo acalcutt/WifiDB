@@ -837,13 +837,33 @@ class frontend extends dbcore
                 $row_color = 1;
                 $results_all[$i]['class'] = "dark";
             }
+			if($newArray['lat'] == "0.0000")
+			{
+				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+			}else
+			{
+				$results_all[$i]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+			}
+			if($newArray['ssid'] == '')
+			{
+				$results_all[$i]['ssid'] = '[Blank SSID]';
+			}
+			elseif(!ctype_print($newArray['ssid']))
+			{
+				$results_all[$i]['ssid'] = '['.$newArray['ssid'].']';
+			}
+			else
+			{
+				$results_all[$i]['ssid'] = $newArray['ssid'];
+			}
             $results_all[$i]['id'] = $newArray['id'];
-            $results_all[$i]['ssid'] = $newArray['ssid'];
             $results_all[$i]['mac'] = $newArray['mac'];
             $results_all[$i]['chan'] = $newArray['chan'];
             $results_all[$i]['auth'] = $newArray['auth'];
             $results_all[$i]['encry'] = $newArray['encry'];
             $results_all[$i]['radio']=$newArray['radio'];
+			$results_all[$i]['FA']=$newArray['FA'];
+			$results_all[$i]['LA']=$newArray['LA'];
             $results_all[$i]['ap_hash']=$newArray['ap_hash'];
             $i++;
         }

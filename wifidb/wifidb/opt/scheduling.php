@@ -388,7 +388,7 @@ switch($func)
         
             $nextrun_utc = strtotime($newArray['nextrun']);
             $curtime = time();
-            $min_diff = ($nextrun_utc - $curtime) / 60;
+            $min_diff = round(($nextrun_utc - $curtime) / 60);
             $interval = (int)$newArray['interval'];
             $status = $newArray['status'];
             $enabled = $newArray['enabled'];
@@ -399,7 +399,7 @@ switch($func)
             }
             else
             {
-                if(($min_diff <= $interval and $min_diff >= 0) or status=="Running")
+                if(($min_diff <= $interval and $min_diff >= 0) or $status=="Running")
                 {
                     $color = 'lime';
                 }

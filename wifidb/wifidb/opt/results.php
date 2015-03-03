@@ -19,7 +19,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "");
+define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
@@ -98,7 +98,9 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     }
     if($func == "export")
     {
-        $dbcore->exp_search($results_all);
+        $results = $dbcore->export->exp_search($results_all);
+        $dbcore->smarty->assign('results', $results);
+        $dbcore->smarty->display('export_results.tpl');
     }else
     {
         $dbcore->smarty->assign('wifidb_page_label', 'Search Results Page');
