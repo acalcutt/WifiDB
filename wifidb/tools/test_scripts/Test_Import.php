@@ -1,8 +1,8 @@
 #!/usr/bin/php
 <?php
 /*
-import_test.php, WiFiDB Import Daemon
-Copyright (C) 2015 Andrew Calcutt, based on import_test.php by Phil Ferland.
+Test_Import.php, WiFiDB Import Daemon
+Copyright (C) 2015 Andrew Calcutt, based on Test_Import.php by Phil Ferland.
 This script is made to do imports and be run as a cron job.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
