@@ -25,7 +25,7 @@ if not, write to the
         <tr>
             <td align="center" colspan="9">
                 <a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?{$save_url}">Save for later</a><br>
-                <a class="links" href="{$wifidb_host_url}opt/results.php?func=export{$export_url}">Export to KMZ</a>
+                <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_search{$export_url}">Export to KMZ</a>
             </td>
         </tr>
         <tr class="style4">
