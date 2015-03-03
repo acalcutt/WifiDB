@@ -579,10 +579,10 @@ class api extends dbcore
                 }
 
                 $gpsarray = $result->fetch(2);
-                if($gpsarray['long'] == "E 0.0000" || $gpsarray['long'] == "E 0000.0000" || $gpsarray['long'] == ""){continue;}
+                if($gpsarray['long'] == "0.0000" || $gpsarray['long'] == ""){continue;}
                 break;
             }
-            if($gpsarray['sats'] >= $pre_sat)
+            if($gpsarray['sats'] > $pre_sat)
             {
                 $use = array(
                     'lat'	=> $gpsarray['lat'],
@@ -591,8 +591,8 @@ class api extends dbcore
                     'time'	=> $gpsarray['time'],
                     'sats'	=> $gpsarray['sats']
                     );
+				$pre_sat	=   $gpsarray['sats']+0;
             }
-            $pre_sat	=   $gpsarray['sats']+0;
         }
         $this->mesg = $use;
         return $use;
