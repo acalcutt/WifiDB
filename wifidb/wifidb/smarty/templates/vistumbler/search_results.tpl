@@ -77,7 +77,9 @@ if not, write to the
 			<td>{$result.LA}</td>
         </tr>
         {foreachelse}
-        <tr><td><h2>{$mesg}</h2></td></tr>
+        <tr align="center">
+			<td border="1" colspan="9">{$mesg}</td>
+		</tr>
         {/foreach}
     </tbody>
 </table>

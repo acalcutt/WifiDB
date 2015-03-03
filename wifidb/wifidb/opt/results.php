@@ -93,8 +93,7 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
     if($total_rows === 0)
     {
-        $dbcore->smarty->assign('mesg', 'There where no results, please try again');
-        $dbcore->smarty->display('search_results.tpl');
+        $dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');
     }
 	$dbcore->smarty->assign('wifidb_page_label', 'Search Results Page');
 	$dbcore->smarty->assign('total_rows', $total_rows);
