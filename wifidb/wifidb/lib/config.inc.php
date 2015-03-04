@@ -21,34 +21,34 @@ if not, write to the
 
 $config = array
 (    
-    'lastedit'              =>   '2013-06-22',
+    'lastedit'              =>   '2015-03-03',
 
     #----------General Settings------------#
     'wifidb_tools'          =>   '/opt/wifidb/tools/',
-    'wifidb_install'        =>   '/var/www/wifidb/',
+    'wifidb_install'        =>   '/var/www/htdocs/wifidb/',
     'smarty_path'           =>   '/usr/share/php/smarty/libs/',
     'timezn'                =>   'UTC',
     'root'                  =>   'wifidb',
-    'hosturl'               =>   'https://dev01.wifidb.net/',
+    'hosturl'               =>   'http://wifidb.foo.lan',
     'dim'                   =>   DIRECTORY_SEPARATOR,
     'timetilldead'          =>   2,
-    'admin_email'           =>   'wifidb@vistumbler.net',
+    'admin_email'           =>   'wifidb@someemail.net',
     'config_fails'          =>   3,
-    'wifidb_from'           =>   'wifidb@vistumbler.net',
-    'wifidb_from_pass'      =>   'wePHespuKavey96RepHuxebr',
-    'wifidb_smtp'           =>   'smtp.gmail.com',
+    'wifidb_from'           =>   'wifidb@someemail.com',
+    'wifidb_from_pass'      =>   'supersecretpw',
+    'wifidb_smtp'           =>   'smtp.someemail.com',
     'email_validation'      =>   1,
     'wifidb_email_updates'  =>   0,
     'GeoNamesLoopGiveUp'    =>   5000,
     'reserved_users'        =>   'WiFiDB::wifidb:Recovery:root:system',
-    'dBmMaxSignal'          =>   '-30',
-    'dBmDissociationSignal' =>   '-85',
-    'verbose'               =>   1,
+    'dBmMaxSignal'			=>   '-30',
+    'dBmDissociationSignal'	=>   '-85',
+	'verbose'      			=>   1,
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
     'log_level'             =>   0,
-    'log_interval'          =>   0,
+    'log_interval'          =>   1,
     'apache_user'           =>   'www-data',
     'apache_group'          =>   'www-data',
     'pid_file_loc'          =>   '/var/run/wifidb/',
@@ -92,8 +92,8 @@ $config = array
 
     #---------------- SQL Info ----------------#
     'srvc'                  =>   'mysql',
-    'host'                  =>   '192.168.1.100',
-    'db_user'               =>   'root',
+    'host'                  =>   'localhost',
+    'db_user'               =>   'wdbuser',
     'db_pwd'                =>   'supersecretpw',
     'collate'               =>   'utf8_bin',
     'engine'                =>   'innodb',
