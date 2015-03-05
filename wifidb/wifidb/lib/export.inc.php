@@ -477,8 +477,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             }
             #####################################
             $KML_string = $this->createKML->PlotAPpoint($hash, 1);
-			if($ExportKML)
-			{
             $full_kml_file = $this->daemon_out."newestAP_label.kml";
             if($this->createKML->createKML($full_kml_file, "Newest AP Labeled", $KML_string, 1))
             {
@@ -504,7 +502,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             }else
             {
                 Throw new ErrorException('Could not write Newest AP Labeled.');
-            }
             }
         }
     }
