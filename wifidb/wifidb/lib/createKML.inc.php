@@ -519,6 +519,19 @@ class createKML
             throw new ErrorException("All AP data string is empty in export::createFinalKML");
         }
 
+        $KML_DATA = $this->createKMLstructure($title, $alldata);
+        if(file_put_contents($filename, $KML_DATA))
+        {
+            return 1;
+        }else
+        {
+            return 0;
+        }
+
+    }
+	
+    public function createKMLstructure($title, $alldata)
+    {
         $KML_DATA =
 '<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -529,16 +542,8 @@ class createKML
     </Document>
 </kml>';
 
-        if(file_put_contents($filename, $KML_DATA))
-        {
-            return 1;
-        }else
-        {
-            return 0;
-        }
-
+        Return $KML_DATA;
     }
-
 
     /*
      * Create a compressed file from a filename and the destination extention

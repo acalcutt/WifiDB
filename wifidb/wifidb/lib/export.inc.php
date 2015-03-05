@@ -409,9 +409,29 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         return 1;
     }
 
-    /*
-     * Export to Vistumbler VS1 File
-     */
+    public function ExportCurrentAPkmlApi($labelap=0)
+    {
+        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+        $result = $this->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
+        $hash = $ap_array['ap_hash'];
+
+        $data = $this->ExportSingleAP((int)$ap_array['id']);
+        $count = count($data[$hash]['gdata']);
+		$this->createKML->LoadData($data);
+		if($labelap)
+		{
+			$KML_string = $this->createKML->PlotAPpoint($hash, 1);
+			$KML_string = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_string);
+		}
+		else
+		{
+			$KML_string = $this->createKML->PlotAPpoint($hash, 0);
+			$KML_string = $this->createKML->createKMLstructure("Newest AP", $KML_string);
+		}
+		Return $KML_string;
+	}
+	
     public function ExportCurrentAPkml()
     {
         $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` ORDER BY `id` DESC LIMIT 1";
@@ -457,6 +477,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             }
             #####################################
             $KML_string = $this->createKML->PlotAPpoint($hash, 1);
+			if($ExportKML)
+			{
             $full_kml_file = $this->daemon_out."newestAP_label.kml";
             if($this->createKML->createKML($full_kml_file, "Newest AP Labeled", $KML_string, 1))
             {
@@ -478,11 +500,12 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     $this->verbosed("Newest AP Labeled KMZ created at ".$ret_kmz_name);
                     chmod($ret_kmz_name, 0664);
                 }
+				$this->verbosed('File has been written and is ready.', 1);
             }else
             {
                 Throw new ErrorException('Could not write Newest AP Labeled.');
             }
-            $this->verbosed('File has been written and is ready.', 1);
+            }
         }
     }
 
@@ -724,7 +747,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         $daily_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
         $daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
         
-        $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
+        $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
         $new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1, 1);
 
         #$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
