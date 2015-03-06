@@ -7,7 +7,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "export");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
@@ -17,7 +17,15 @@ $download = $_REQUEST['download'];
 
 $results = $dbcore->export->ExportCurrentAPkmlApi($labeled);
 
-if($download){header('Content-Disposition: attachment; filename="'.$download.'"');}
+if($download)
+{
+	header('Content-Type: application/octet-stream');
+	header('Content-Disposition: attachment; filename="'.$download.'"');
+}
+else
+{
+	header("Content-type: text/xml");
+}
 echo $results;
 
 ?>

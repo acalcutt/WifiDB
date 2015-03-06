@@ -164,6 +164,7 @@ try
             {
                 case "api":
                     $dbcore = new api($config);
+                    $dbcore->export = new export($config, $dbcore->convert);
                 break;
 
                 case "export":
@@ -179,7 +180,7 @@ try
                     __autoload('graphs');
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
-				
+                
                 case "cp":
                     $dbcore = new frontend($config);
                 break;
