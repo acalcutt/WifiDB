@@ -112,6 +112,7 @@ function __autoload($class)
         return 1;
     }else
     {
+
         throw new errorexception("Could not load class `{$class}`");
     }
 }
@@ -169,6 +170,9 @@ try
                 break;
 
                 case "export":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
                     $dbcore = new frontend($config);
                     $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
