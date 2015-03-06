@@ -53,6 +53,7 @@ switch($func)
         case "useraplist":
             $dbcore->UserAPList($row);
             $dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->users_import_aps);
+			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
             $dbcore->smarty->display('user_import_aps.tpl');
             break;
         #-------------

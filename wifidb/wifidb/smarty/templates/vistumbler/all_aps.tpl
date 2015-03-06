@@ -20,6 +20,10 @@ if not, write to the
 {include file="header.tpl"}
                                     <table border="1" width="100%" cellspacing="0">
                                         <tr class="style4">
+											<td>
+                                                GPS<a href="?sort=lat&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
+                                                <a href="?sort=lat&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+                                            </td>
                                             <td>
                                                 SSID<a href="?sort=SSID&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
                                                 <a href="?sort=SSID&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
@@ -43,9 +47,20 @@ if not, write to the
                                                 Encryption<a href="?sort=encry&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
                                                 <a href="?sort=encry&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
                                             </td>
+                                            <td>
+                                                First Active<a href="?sort=FA&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
+                                                <a href="?sort=FA&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+                                            </td>
+                                            <td>
+                                                Last Active<a href="?sort=LA&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
+                                                <a href="?sort=LA&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+                                            </td>
                                         </tr>
                                         {foreach name=outer item=wifidb_ap from=$wifidb_aps_all}
                                         <tr class="{$wifidb_ap.class}">
+											<td align="center">
+												<img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_ap.globe}.png">
+											</td>
                                             <td align="center">
                                                 <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_ap.id}">{$wifidb_ap.ssid}</a>
                                             </td>
@@ -64,22 +79,25 @@ if not, write to the
                                             <td align="center">
                                                 {$wifidb_ap.encry}
                                             </td>
+                                            <td align="center">
+                                                {$wifidb_ap.fa}
+                                            </td>
+                                            <td align="center">
+                                                {$wifidb_ap.la}
+                                            </td>
                                         </tr>
                                         {foreachelse}
                                         <tr>
-                                            <td align="center" colspan="6">
+                                            <td align="center" colspan="9">
                                                 <b>There are no Access Points imported as of yet, go grab some with Vistumbler and import them.<br />
                                                 Come on... you know you want too.</b>
                                             </td>
                                         </tr>
                                         {/foreach}
                                         <tr class="sub_head">
-                                            <td colspan="6" align="center">
+                                            <td colspan="9" align="center">
                                              {$pages_together}
                                             </td>
                                         </tr>
                                     </table>
-                                </div>
-                                <br>
-                            </td>
 {include file="footer.tpl"}

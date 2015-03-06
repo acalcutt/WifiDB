@@ -19,10 +19,10 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 // Show all error's with strict santex
-//***DEV USE ONLY***
-ini_set('display_errors', 1);//***DEV USE ONLY***
-error_reporting(E_ALL && E_STRICT && E_WARNING && E_NOTICE);//***DEV USE ONLY***
-ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
+//***DEV USE ONLY*** TODO: remove dev stuff
+#ini_set('display_errors', 1);//***DEV USE ONLY***
+#error_reporting(E_ALL);//***DEV USE ONLY***
+#ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
 //***DEV USE ONLY***
 
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
@@ -64,7 +64,7 @@ if($fetch['size'] != '0.30 b1')
     {
         throw new ErrorException('The database is still in an old format, you will need to do an upgrade first.<br>
                 If this database is older than Version 0.20 I would do a Full Fresh Install, After making a backup of all your data.
-                Please go '.$config['hosturl'].$config['root'].'/install/ to do that.');
+                Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
     }
 }
 unset($fetch);
@@ -120,20 +120,22 @@ try
 {
     switch(strtolower(SWITCH_SCREEN))
     {
+
         case "cli":
             switch(strtolower(SWITCH_EXTRAS))
             {
                 ####
                 case "export":
                     $dbcore = new export($config, $daemon_config);
+                    $dbcore->convert = new convert($config);
                 break;
                 ####
                 case "import":
-                    $dbcore = new import($config, $daemon_config, new stdClass() );
+                    $dbcore = new import($config, $daemon_config, new stdClass(), new convert($config) );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
-                    $dbcore->convert = new convert($config, $daemon_config, $dbcore);
+                    $dbcore->convert = new convert($config);
                     $dbcore->export = new export($config, $daemon_config);
                     $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
                 break;
@@ -168,7 +170,7 @@ try
                 case "export":
                     $dbcore = new frontend($config);
                     __autoload('convert');
-                    $dbcore->convert = new convert($config, $daemon_config, $dbcore);
+                    $dbcore->convert = new convert($config);
                     __autoload('export');
                     $dbcore->export = new export($config, $dbcore->convert);
                 break;
@@ -177,6 +179,10 @@ try
                     $dbcore = new frontend($config);
                     __autoload('graphs');
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
+                break;
+				
+                case "cp":
+                    $dbcore = new frontend($config);
                 break;
 
                 default:
@@ -214,7 +220,7 @@ function exception_handler($err)
             break;
 
         case "cli":
-            var_dump($trace);
+            var_dump($err);
             break;
 
         default:
@@ -223,7 +229,16 @@ function exception_handler($err)
     }
 }
 
-
+function CLIErrorHandlingFunction($message, $type=E_USER_NOTICE) {
+    $backtrace = debug_backtrace();
+    foreach($backtrace as $entry) {
+        if ($entry['function'] == __FUNCTION__) {
+            trigger_error($entry['file'] . '#' . $entry['line'] . ' ' . $message, $type);
+            return true;
+        }
+    }
+    return false;
+}
 function create_base_cookies($URL_PATH)
 {
     $ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);

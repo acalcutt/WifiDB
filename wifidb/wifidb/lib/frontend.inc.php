@@ -54,13 +54,15 @@ class frontend extends dbcore
             $this->smarty->assign('wifidb_meta_header', $this->meta->header);
             $this->smarty->assign('wifidb_theme', $this->theme);
             $this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
-            $this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
             
             $this->smarty->assign('critical_error_message', '');
             
             $this->smarty->assign("redirect_func", "");
             $this->smarty->assign("redirect_html", "");
             $this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
+            $this->smarty->assign('wifidb_login_html', $this->sec->LoginHtml);
+            $this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
+            #$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
             $this->htmlheader();
             $this->htmlfooter();
             $this->users_import_aps = array();
@@ -196,9 +198,11 @@ class frontend extends dbcore
         }
 
         $list = array();
-        $id_find = "%-{$id}:%";
-        $prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE `points` LIKE ?");
+		$id_find = "%-{$id}:%";
+		$id_find_firstitem = "{$id}:%";
+		$prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
         $prep2->bindParam(1, $id_find, PDO::PARAM_STR);
+		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
         $prep2->execute();
         if($this->sql->checkError() !== 0)
         {
@@ -439,7 +443,7 @@ class frontend extends dbcore
             else
                 {$style="light";$flip=1;}
             
-            if($array['lat'] == "N 0.0000")
+            if($array['lat'] == "0.0000")
                 {$globe = "off";}
             else
                 {$globe = "on";}
@@ -613,7 +617,7 @@ class frontend extends dbcore
             $result->execute();
             $ap_array = $result->fetch(2);
             
-            if($ap_array['lat'] == "N 0.0000")
+            if($ap_array['lat'] == "0.0000")
             {
                 $globe = "off";
             }else
@@ -904,7 +908,7 @@ class frontend extends dbcore
                 $result_1->execute();
                 $gps = $result_1->fetch(1);
                 
-                if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "N 0.0000" || $gps['lat'] == "N 0000.0000" || $gps['lat'] == "0.00")
+                if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "0.0000")
                 {
                     $zero = 1;
                     continue;

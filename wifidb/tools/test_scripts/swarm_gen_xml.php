@@ -1,4 +1,7 @@
 <?php
+define("SWITCH_SCREEN", "cli");
+define("SWITCH_EXTRAS", "export");
+
 $details = 0;
 error_reporting(E_ALL|E_STRICT);
 date_default_timezone_set('EST');
@@ -8,8 +11,11 @@ $header = '<?xml version="1.0"?>
 ';
 $footer = "</file_events>";
 $events = "";
-$conn = new mysqli("172.16.1.18", "root", "saNsui20si", "wifi");
-$result = $conn->query("SELECT `points`,`title`,`username`,`date`,`aps` FROM `wifi`.`users_imports` order by `id` DESC");
+
+require('../config.inc.php');
+require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
+
+$result = $dbcore->sql->conn->query("SELECT `points`,`title`,`username`,`date`,`aps` FROM `wifi`.`users_imports` order by `id` DESC");
 #$array = $result->fetch_row();
 #var_dump($array);
 #die();

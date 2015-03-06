@@ -13,13 +13,14 @@ Rewrite code to OO ( @= Not implemented yet, * = needs work still, ** = basicall
 	mail()**
 	xml()**
 
-Use Smartty for the webpage templates. **
 Re-design some of the pages [ap fetch, list all users, index, scheduling] *
 Live Access Points wifidb_lived.php [management daemon] @
-Rewrite SQL methods with PDO **
 
 Maybe rewrite PostgreSQL (maybe Oracle and MSSQL if I have the will power) @
 Maybe implement memcached @
 
+Add exports to users page under the stats for user table and above the last import details for VS1, KML, KMZ, and CSV
+
+Add sorting on All Users page for Username, ID, Number of Imports, Number of AP's.
 
 I still have a lot of work to do...

@@ -61,28 +61,20 @@ $sql = "SELECT * FROM `wifi`.`user_imports` order by id desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $newest_array = $result->fetch(2);
 
-$sql = "SELECT `id`,`ap_hash`,`ssid` FROM `wifi`.`wifi_pointers` order by `id` desc limit 1";
+$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi`.`wifi_pointers` order by `id` desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
 $lastap_id = $lastap_array['id'];
 $lastap_ssid = $lastap_array['ssid'];
 $ap_hash = $lastap_array['ap_hash'];
-$sql_gps = "select `lat` from `wifi`.`wifi_pointers` WHERE `lat` != 'N 0000.0000' AND `lat` != '' AND `lat` != 'N 0.0000' AND `ap_hash` = '$ap_hash'";
-#echo $sql_gps;
 
-$result = $dbcore->sql->conn->query($sql_gps);
-$lastgps = $result->fetch(2);
-
-$lat_check = explode(" ", $lastgps['lat']);
-$lat_c = @$lat_check[1]+0;
-if($lat_c != "0")
+if($lastap_array['lat'] == "0.0000")
 {
-    $gps_yes = 1;
-}
-else
+	$gps_yes = 0;
+}else
 {
-    $gps_yes = 0;
+	$gps_yes = 1;
 }
 
 if ($usercount == NULL)

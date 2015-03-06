@@ -22,7 +22,7 @@ class security
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
-        $this->URL_PATH           = $dbcore->URL_PATH;
+        $this->HOSTURL           = $dbcore->HOSTURL;
         $this->root               = $dbcore->root;
         $ssl_flag                = parse_url($dbcore->URL_PATH, PHP_URL_SCHEME);
         if($ssl_flag == "https")
@@ -358,6 +358,9 @@ class security
     
     function LoginCheck($authoritah = 0)
     {
+		$return_url = $_SERVER['REQUEST_URI'];
+		if($_SERVER['PHP_SELF'] == '/'.$this->root.'/login.php'){$return_url = '/'.$this->root.'/';};#Set return url to main page if this is the login page.
+		
         $time = time()-1;
         $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `utime` < ?";
         $prep = $this->sql->conn->prepare($sql);
@@ -374,6 +377,8 @@ class security
         if(!@isset($_COOKIE[$cookie_name]))
         {
             $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.urlencode($return_url);
             $this->login_val = "No Cookie";
             $this->login_check = 0;
             return -1;
@@ -383,32 +388,39 @@ class security
         {
             # Username Fail.
             $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.urlencode($return_url);
             $this->login_val = "u_fail";
             $this->login_check = 0;
             return 0;
         }
-        $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? LIMIT 1";
+        $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1, $username, PDO::PARAM_STR);
         $result->execute();
-        $newArray = $result->fetch(2);
-        $db_pass = $newArray['hash'];
-        #var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
-        if(crypt($cookie_pass, $db_pass) == $db_pass)
-        {
-            $this->privs = $this->check_privs();
-            $this->LoginLabel = $newArray['username'];
-            $this->login_val = $newArray['username'];
-            $this->username = $newArray['username'];
-            $this->login_check = 1;
-            return 1;
-        }else
-        {
-            $this->LoginLabel = "";
-            $this->login_val = "Bad Cookie Password";
-            $this->login_check = 0;
-            return -1;
-        }
+		$user_logons = $result->fetchAll();
+		foreach($user_logons as $logon)
+		{
+			$db_pass = $logon['hash'];
+			#var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
+			if(crypt($cookie_pass, $db_pass) == $db_pass)
+			{
+				$this->privs = $this->check_privs();
+				$this->LoginLabel = "Logout";
+				$this->LoginHtml = 'Welcome, <a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
+				$this->LoginUri = '?func=logout&return='.urlencode($return_url);
+				$this->login_val = $logon['username'];
+				$this->username = $logon['username'];
+				$this->login_check = 1;
+				return 1;
+			}
+		}
+        $this->LoginLabel = "";
+		$this->LoginHtml = "";
+		$this->LoginUri = '?return='.urlencode($return_url);
+        $this->login_val = "Bad Cookie Password";
+        $this->login_check = 0;
+        return -1;
     }
     
     function UnlockUser($id)

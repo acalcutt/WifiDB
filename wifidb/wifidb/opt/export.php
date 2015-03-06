@@ -30,47 +30,41 @@ switch($func)
 {
         #--------------------------
         case "exp_user_all_kml":
-            $row = 0;
-            $dbcore->export->exp_kml($export="exp_user_all_kml", $user,$row);
-            break;
-        #--------------------------
-        case "exp_all_db_kml":
-            $user ='';
-            $row = 0;
-            $dbcore->export->exp_kml($export="exp_all_db_kml",$user,$row);
+            $user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+            $results = $dbcore->export->UserAll($user);
+            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
         case "exp_user_list":
-            $row = ($_REQUEST['row'] ? $_REQUEST['row']: 0);
-            var_dump($row);
+            $row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
             $result = $dbcore->export->UserList($row);
-            $dbcore->smarty->assign('results', $results);
+            $dbcore->smarty->assign('results', $result);
             $dbcore->smarty->display('export_results.tpl');
             break;
         #--------------------------
-        case "exp_all_signal":
-            $id = ($_REQUEST['id'] ? $_REQUEST['id'] : 0);
-            $from = ($_REQUEST['from'] ? $_REQUEST['from'] : 0);
-            $limit = ($_REQUEST['limit'] ? $_REQUEST['limit'] : 0);
-            $results = $dbcore->export->ExportSingleAP($id, $from, $limit);
-            $dbcore->smarty->assign('results', $results);
+		case "exp_all_signal": 
+            $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
+			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+            $result = $dbcore->export->SingleApKML($id,$limit,$from);
+            $dbcore->smarty->assign('results', $result);
             $dbcore->smarty->display('export_results.tpl');
-            break;
+			break;
         #--------------------------
-        case "exp_single_ap":
-            $id = ($_REQUEST['id'] ? $_REQUEST['id'] : 0);
-            $from = ($_REQUEST['from'] ? $_REQUEST['from'] : 0);
-            $limit = ($_REQUEST['limit'] ? $_REQUEST['limit'] : 0);
-            $results = $dbcore->export->ExportSingleAP($id, $from, $limit);
-            $dbcore->smarty->assign('results', $results);
+		case "exp_single_ap": 
+            $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
+			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+            $result = $dbcore->export->SingleApKML($id,$limit,$from);
+            $dbcore->smarty->assign('results', $result);
             $dbcore->smarty->display('export_results.tpl');
-
-            break;
-        #--------------------------
+			break;
+		#--------------------------
         default:
             $imports = array();
             $usernames = array();
-            $sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports`";
+            $sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports` ORDER BY `username`, `title`";
             $result = $dbcore->sql->conn->query($sql);
             while($user_array = $result->fetch(2))
             {
@@ -83,7 +77,7 @@ switch($func)
                              );
             }
             
-            $sql = "SELECT `username` FROM `wifi`.`user_imports`";
+            $sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username`";
             $result = $dbcore->sql->conn->query($sql);
             while($user_array = $result->fetch(2))
             {

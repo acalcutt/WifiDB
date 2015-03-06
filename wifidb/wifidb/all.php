@@ -38,13 +38,14 @@ $dbcore->smarty->assign('inc', $inputs['to']);
 $dbcore->smarty->assign('ord', $inputs['ord']);
 $dbcore->smarty->assign('sort', $inputs['sort']);
 
-$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'wifi0'";
-$number_aps = $dbcore->sql->conn->query($sql);
-$num_ap_array = $number_aps->fetch(2);
-$total_rows = $num_ap_array['size'];
+$sql = "SELECT COUNT(*) FROM `wifi`.`wifi_pointers`";
+$sqlprep = $dbcore->sql->conn->prepare($sql);       
+$sqlprep->execute();
+$total_rows = $sqlprep->fetchColumn();
 
 $sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 $pre_page_list = $dbcore->sql->conn->query($sql);
+
 
 $row_color = 0;
 $n=0;
@@ -57,6 +58,17 @@ while ( $array = $pre_page_list->fetch(2) )
     $wifidb_aps_all[$n]['class'] = $color;
 
     $wifidb_aps_all[$n]['id'] = $array['id'];
+	
+	$wifidb_aps_all[$n]['fa'] = $array['FA'];
+	$wifidb_aps_all[$n]['la'] = $array['LA'];
+	
+    if($array['lat'] == "0.0000")
+	{
+		$wifidb_aps_all[$n]['globe'] = "off";
+	}else
+	{
+		$wifidb_aps_all[$n]['globe'] = "on";
+	}
     
     $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
 
@@ -74,25 +86,7 @@ while ( $array = $pre_page_list->fetch(2) )
     $wifidb_aps_all[$n]['auth'] = ($array['auth'] == '' ? 'Unknown :(' : $array['auth']);
     $wifidb_aps_all[$n]['encry'] = ($array['encry'] == '' ? 'Unknown :(' : $array['encry']);
 
-    switch(strtolower($array['radio']))
-    {
-        case "a":
-            $radios="802.11a";
-            break;
-        case "b":
-            $radios="802.11b";
-            break;
-        case "g":
-            $radios="802.11g";
-            break;
-        case "n":
-            $radios="802.11n";
-            break;
-        default:
-            $radios="Unknown Radio";
-            break;
-    }
-    $wifidb_aps_all[$n]['radio'] = $radios;
+    $wifidb_aps_all[$n]['radio'] = $array['radio'];
     $n++;
 }
 

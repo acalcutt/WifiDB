@@ -1,17 +1,12 @@
 <?php
-$ver = "1.3.0";
-$LastEdit = "2013-July-4";
+$ver = "1.2.2";
+ini_set("memory_limit","3072M"); //lots of GPS cords need lots of memory
+$script_start = "2013-Jan-24";
+$last_edit = "2013-July-22";
 $author = "pferland";
 $stime = time();
-
-echo "-----------------------------------------------------------------------
-| Starting creation of Vistumbler compatible Wireless Router Manuf List.
-| By: $author
-| Last Edit: $LastEdit
-| http:\\\\www.wifidb.net
-| Version: $ver
-";
-
+echo "-----------------------------------------------------------------------\n";
+echo "| Starting creation of Vistumbler compatible Wireless Router Manuf List.\n| By: $author\n| http:\\\\www.wifidb.netn| Version: $ver\n";
 $debug = 0;
 $cwd = getcwd();
 
@@ -24,17 +19,17 @@ echo "Downloading and Opening the Source File from: \n----->".$source."\n|\n|";
 $return = file($source);
 
 $total_lines = count($return);
-
-echo $total_lines."\r\n";
-echo "Source File opened; starting conversion.\n|\n|";
-
+echo "Source File opened and Destination file placed, starting convertion.\n|\n|";
 foreach($return as $key=>$ret)
 {
     #if($key == 40){die();}
-    if($ret == "" || $ret == "  \r\n"){continue;}
+    if($ret == "" || $ret == "  \r\n")
+    {continue;}
+
+    #var_dump($ret);
 
     preg_match("/([A-F0-9].+)     (\(base 16\))\t\t([a-zA-Z].+)/", $ret, $matches);
-	
+
     if(@$matches[2] != "(base 16)")
     {
         if($debug === 1)
@@ -43,6 +38,9 @@ foreach($return as $key=>$ret)
         }
         continue;
     }
+
+    #var_dump($matches);
+
     if($matches[3] == "PRIVATE"){echo "Non Needed Manuf found...\n| ";continue;}
 
     $manuf_list[] = array(
@@ -66,6 +64,9 @@ foreach($manuf_list as $manuf)
     #WiFiDB PHP Array
     $php_data .= '"'.$manuf['mac'].'"=>"'.addslashes($manuf['manuf']).'",'."\r\n";
     if($debug === 1){	echo $write."\n| ";}
+
+    $current++;
+
     #Vistumbler INI
     if($debug == 1){echo $write."\r\n";}
     $ini_data .= $manuf['mac']."=".$manuf['manuf']."\r\n";
@@ -86,14 +87,3 @@ $lines_p_min = $total_lines/$diff_time;
     ."Total Lines:......".$total_lines."\n"
     ."Lines per min:....".$lines_p_min."\n"
 	."----------------\nDone";
-	
-	
-function file_put_contents($filename, $data, $file_append = false) {
-  $fp = fopen($filename, (!$file_append ? 'w+' : 'a+'));
-	if(!$fp) {
-	  trigger_error('file_put_contents cannot write in file.', E_USER_ERROR);
-	  return;
-	}
-  fputs($fp, $data);
-  fclose($fp);
-}

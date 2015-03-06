@@ -28,11 +28,11 @@ class import extends wdbcli
         $this->export = $export_obj;
         $this->convert = $convert_obj;
         $this->log_level    = $config['log_level'];
-        $this->log_interval = 1;
+        $this->log_interval = $config['log_interval'];
         $this->verbose      = $config['verbose'];
-        $this->dBmMaxSignal = -30;
-        $this->dBmDissociationSignal = -85;
-
+        $this->dBmMaxSignal      = $config['dBmMaxSignal'];
+        $this->dBmDissociationSignal      = $config['dBmDissociationSignal'];
+        $this->rssi_signals_flag = 0;
     }
 
 
@@ -126,9 +126,10 @@ class import extends wdbcli
                     if($gps_line[0] == 0){$increment_ids = 1;}
                     if($increment_ids){$gps_line[0]++;}
                     $gdata[$gps_line[0]] = array(
+                                'import_id' => 0,
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $this->convert->dd2dm($gps_line[1]),
-                                'long'	=>  $this->convert->dd2dm($gps_line[2]),
+                                'lat'	=>  $this->convert->all2dm($gps_line[1]),
+                                'long'	=>  $this->convert->all2dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'   =>  '0',
                                 'alt'   =>  '0',
@@ -147,9 +148,10 @@ class import extends wdbcli
                     if($gps_line[0] == 0){$increment_ids = 1;}
                     if($increment_ids){$gps_line[0]++;}
                     $gdata[$gps_line[0]] = array(
+                                'import_id' => 0,
                                 'id'    =>  (int) $gps_line[0],
-                                'lat'	=>  $this->convert->dd2dm($gps_line[1]),
-                                'long'	=>  $this->convert->dd2dm($gps_line[2]),
+                                'lat'	=>  $this->convert->all2dm($gps_line[1]),
+                                'long'	=>  $this->convert->all2dm($gps_line[2]),
                                 'sats'	=>  (int) $gps_line[3],
                                 'hdp'	=>  (float) $gps_line[4],
                                 'alt'	=>  (float) $gps_line[5],
@@ -162,7 +164,7 @@ class import extends wdbcli
                             );
                     break;
                 case 13:
-                    #This is to generate a sanitized and ordered array for each AP from the old VS1 format.
+                    #This is to generate a sanitized and sane array for each AP from the old VS1 format.
                     $ap_line = $file_line_exp;
                     if(!$this->validateMacAddress($ap_line[1]))
                     {
@@ -173,6 +175,7 @@ class import extends wdbcli
                     $highestSignal = $this->FindHighestSig($ap_line[12]);
                     $highestRSSI = $this->convert->Sig2dBm($highestSignal);
                     $apdata[] = array(
+                                'ap_hash'   => "",
                                 'ssid'      =>  $ap_line[0],
                                 'mac'       =>  $ap_line[1],
                                 'auth'      =>  $ap_line[3],
@@ -192,7 +195,7 @@ class import extends wdbcli
                     $this->rssi_signals_flag = 0;
                     break;
                 case 15:
-                    #This is to generate a sanitized and ordered array for each AP from the new VS1 format.
+                    #This is to generate a sanitized and sane array for each AP from the new VS1 format.
                     $ap_line = $file_line_exp;
                     if(!$this->validateMacAddress($ap_line[1]))
                     {
@@ -200,6 +203,7 @@ class import extends wdbcli
                         break;
                     }
                     $apdata[] = array(
+                                'ap_hash'   => "",
                                 'ssid'      =>  $ap_line[0],
                                 'mac'       =>  $ap_line[1],
                                 'manuf'     =>  $ap_line[2],
@@ -281,11 +285,12 @@ class import extends wdbcli
         
         foreach($vs1data['apdata'] as $key=>$aps)
         {
-            $calc = $key-$ap_count;
-            $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ? WHERE `id` = ?";
+            $calc = ($key+1)." / ".$ap_count;
+            $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $calc, PDO::PARAM_STR);
-            $prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
+            $prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
+            $prep->bindParam(3, $file_tmp_id, PDO::PARAM_INT);
             $prep->execute();
             if($this->sql->checkError() !== 0)
             {
@@ -320,12 +325,8 @@ class import extends wdbcli
             $res = $this->sql->conn->prepare($sql);
             $res->bindParam(1, $ap_hash, PDO::PARAM_STR);
             $res->execute();
-            if($this->sql->checkError() !== 0)
-            {
-                $this->verbosed("Failed to select previous signals list, last active time and id from the pointers table".var_export($this->sql->conn->errorInfo(),1), -1);
-                $this->logd("Failed to select previous signals list, last active time and id from the pointers table.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                throw new ErrorException("Failed to select previous signals list, last active time and id from the pointers table.\r\n".var_export($this->sql->conn->errorInfo(),1));
-            }
+            $this->sql->checkError();
+
             $fetch = $res->fetch(2);
             if($fetch['id'])
             {
@@ -357,10 +358,12 @@ class import extends wdbcli
             $FA = 0;
 
             $this->verbosed("Starting Import of Wifi Signal... ", 1);
-            $sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO `wifi`.`wifi_signals`
+            (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`)
+            VALUES (NULL, ?, ?, ?, ?, ?)";
             $preps = $this->sql->conn->prepare($sql);
 
-            foreach($ap_sig_exp as $key=>$sig_gps_id)
+            foreach($ap_sig_exp as $sig_gps_id)
             {
                 $sig_gps_exp = explode(",", $sig_gps_id);
                 
@@ -368,7 +371,7 @@ class import extends wdbcli
                 $signal = $sig_gps_exp[1];
                 if(!@$sig_gps_exp[2])
                 {
-                    $rssi   =  $this->convert->Sig2dBm($sig_gps_exp[1]);
+                    $rssi = $this->convert->Sig2dBm($sig_gps_exp[1]);
                 }else
                 {
                     $rssi = $sig_gps_exp[2];

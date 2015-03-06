@@ -1,6 +1,6 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
+searchxml.php, holds the database interactive functions.
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -11,7 +11,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
-ou should have received a copy of the GNU General Public License along with this program;
+You should have received a copy of the GNU General Public License along with this program;
 if not, write to the
 
    Free Software Foundation, Inc.,
@@ -39,32 +39,31 @@ if($encry != ""){$sql_a[] = "`encry` like '$encry%'";}
 if($radio != ""){$sql_a[] = "`radio` like '$radio%'";}
 if($chan != ""){$sql_a[] = "`chan` like '%$chan%'";}
 
+$waps = array();
 $sql_imp = implode(" AND ", $sql_a);
-$sql = "SELECT * FROM `{$dbcore->sql->db}`.`{$dbcore->sql->pointers_table}` WHERE ".$sql_imp." ORDER by `ssid` ASC LIMIT 0,15";
+$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE ".$sql_imp." ORDER by `ssid` ASC LIMIT 0,15";
 $result = $dbcore->sql->conn->query($sql);
 while($obj = $result->fetch(2))
 {
-    $ret[] = $obj;
+    $waps[] = $obj;
 }
-$waps = $ret;
 
 // prepare xml data
 if(sizeof($waps) != 0)
 {
     header('Content-type: text/xml');
-    echo "<waps>";
+    echo "<waps>\r\n";
     foreach($waps as $result) {
         #  var_dump($result);
-        echo "\t<ap>";
-        echo "\t\t<id>" . $result['id'] . "</id>";
-        echo "\t\t<ssid>" . $result['ssid'] . "</ssid>";
-        echo "\t\t<mac>" . $result['mac'] . "</mac>";
-        echo "\t\t<auth>" . $result['auth'] . "</auth>";
-        echo "\t\t<encry>" . $result['encry'] . "</encry>";
-        echo "\t\t<radio>" . $result['radio'] . "</radio>";
-        echo "\t\t<chan>" . $result['chan'] . "</chan>";
-        echo "\t</ap>";
+        echo "\t<ap>\r\n";
+        echo "\t\t<id>" . $result['id'] . "</id>\r\n";
+        echo "\t\t<ssid>" . $result['ssid'] . "</ssid>\r\n";
+        echo "\t\t<mac>" . $result['mac'] . "</mac>\r\n";
+        echo "\t\t<auth>" . $result['auth'] . "</auth>\r\n";
+        echo "\t\t<encry>" . $result['encry'] . "</encry>\r\n";
+        echo "\t\t<radio>" . $result['radio'] . "</radio>\r\n";
+        echo "\t\t<chan>" . $result['chan'] . "</chan>\r\n";
+        echo "\t</ap>\r\n";
     }
-    echo "</waps>";
+    echo "</waps>\r\n";
 }
-?>

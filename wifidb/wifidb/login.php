@@ -112,6 +112,7 @@ switch($func)
         {
             $message = "Could not log you out.. :-(";
         }
+		$dbcore->redirect_page($return, 2000);
         $dbcore->smarty->assign('message', $message);
         $dbcore->smarty->display('login_result.tpl');
     break;
@@ -129,12 +130,12 @@ switch($func)
         $email      = $_REQUEST['time_email'];
         if(!$dbcore->checkEmail($email))
         {
-            $dbcore->smarty->assign('wifidb_create_message', 'Email is not valid.');
+            $dbcore->smarty->assign('message', 'Email is not valid.');
             $dbcore->smarty->display('create_user.tpl');
         }
         if($password !== $password2)
         {
-            $dbcore->smarty->assign('wifidb_create_message', 'Passwords did not match.');
+            $dbcore->smarty->assign('message', 'Passwords did not match.');
             $dbcore->smarty->display('create_user.tpl');
         }else
         {
@@ -165,7 +166,7 @@ switch($func)
 
                 case 0:
                     #Failed to create a user for some reason, tell them why.
-                    $dbcore->smarty->assign('wifidb_create_message', $message);
+                    $dbcore->smarty->assign('message', $message);
                     $dbcore->smarty->display('create_user.tpl');
                 break;
                 default:
@@ -381,6 +382,7 @@ Your account: $username_db
     break;
 
     default :
+		$dbcore->smarty->assign("logon_return_url", $return);
         $dbcore->smarty->display("login_index.tpl");
     break;
 }

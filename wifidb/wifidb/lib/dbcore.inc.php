@@ -58,10 +58,15 @@ class dbcore
         $this->URL_PATH                 = $this->HOSTURL.$this->root.'/';
         $this->PATH                     = $config['wifidb_install'];
         $this->gpx_out                  = $this->PATH.$config['gpx_out'];
+        $this->gpx_htmlpath             = $this->URL_PATH.$config['gpx_out'];
         $this->daemon_out               = $this->PATH.$config['daemon_out'];
+        $this->daemon_htmlpath          = $this->URL_PATH.$config['daemon_out'];
         $this->vs1_out                  = $this->PATH.$config['vs1_out'];
+        $this->vs1_htmlpath             = $this->URL_PATH.$config['vs1_out'];
         $this->kml_out                  = $this->PATH.$config['kml_out'];
+        $this->kml_htmlpath             = $this->URL_PATH.$config['kml_out'];
         $this->csv_out                  = $this->PATH.$config['csv_out'];
+        $this->csv_htmlpath             = $this->URL_PATH.$config['csv_out'];
         
         $this->theme                    = (@$_REQUEST['wifidb_theme']!='' ? @$_REQUEST['wifidb_theme'] : $config['default_theme']);
         $this->PATH_THEMES              = $this->PATH.'themes/'.$this->theme;
@@ -80,7 +85,7 @@ class dbcore
         $this->email_validation         = 1;
         $this->WDBadmin                 = $config['admin_email'];
         $this->smtp                     = $config['wifidb_smtp'];
-        if($config['colors_setting'] == 0 or PHP_OS != "Linux")
+        if(empty($config['colors_setting']) or PHP_OS != "Linux")
         {
             $this->colors = array(
                 "LIGHTGRAY"	=> "",
@@ -101,15 +106,18 @@ class dbcore
         }
 
         $this->ver_array                =   array(
-            "wifidb"                    =>  " *Alpha* 0.30 Build 1 *Pre-Release* ",
+            "wifidb"                    =>  " *Alpha* 0.30v Build 1 *Pre-Release* ",
             "codename"                  =>  "Peabody",
-            "Last_Core_Edit"            =>  "06-05-2013"
+            "Last_Core_Edit"            =>  "08-27-2014"
             );
         $this->ver_str                  = $this->ver_array['wifidb'];
         $this->This_is_me               = getmypid();
         $this->sec                      = new security($this, $config);
         $this->lang                     = new languages($config['wifidb_install']);
         $this->xml                      = new xml();
+        $this->languages = $this->lang;
+        $this->dBmMaxSignal = $config['dBmMaxSignal'];
+        $this->dBmDissociationSignal = $config['dBmDissociationSignal'];
     }
 
     ##############################
@@ -117,44 +125,27 @@ class dbcore
      * @param string $email
      * @return int
      */
-    private function checkEmail($email = "")
+    function checkEmail($email = "")
     {
-        if($email == ""){return 0;}
-        // First, we check that there's one @ symbol, and that the lengths are right
-        if (!ereg("^[^@]{1,64}@[^@]{1,255}$", $email))
+        if(!filter_var($email, FILTER_VALIDATE_EMAIL))
         {
-            // Email invalid because wrong number of characters in one section, or wrong number of @ symbols.
             return 0;
         }
-        // Split it into sections to make life easier
-        $email_array = explode("@", $email);
-        $local_array = explode(".", $email_array[0]);
-        for ($i = 0; $i < sizeof($local_array); $i++)
+        else
         {
-            if (!ereg("^(([A-Za-z0-9!#$%&'*+/=?^_`{|}~-][A-Za-z0-9!#$%&'*+/=?^_`{|}~\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$", $local_array[$i]))
-            {
-                return 0;
-            }
+            return 1;
         }
-        if (!ereg("^\[?[0-9\.]+\]?$", $email_array[1]))
-        {
-            // Check if domain is IP. If not, it should be valid domain name
-            $domain_array = explode(".", $email_array[1]);
-            if (sizeof($domain_array) < 2)
-            {
-                return 0; // Not enough parts to domain
-            }
-            for ($i = 0; $i < sizeof($domain_array); $i++)
-            {
-                if (!ereg("^(([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])|([A-Za-z0-9]+))$", $domain_array[$i]))
-                {
-                    return 0;
-                }
-            }
-        }
-        return 1;
     }
-    
+
+    function GetAPhash($id)
+    {
+        $sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+        $result = $this->sql->conn->query($sql);
+        $ret = $result->fetch(2);
+        $hash = $ret['ap_hash'];
+        return $hash;
+    }
+
     ###################################
     /**
      * @param string $value
@@ -178,7 +169,7 @@ class dbcore
         if ($type=='string')
         {
             echo '('.strlen($value).')';
-            $value= $this->dump($value,-1);
+            $value = dbcore::dump($value,-1);
         }
         elseif ($type=='boolean') $value= ($value?'true':'false');
         elseif ($type=='object')
@@ -197,8 +188,8 @@ class dbcore
             echo '('.count($value).')';
             foreach($value as $key=>$val)
             {
-                echo "\n".str_repeat("\t",$level+1).$this->dump($key,-1).' => ';
-                $this->dump($val,$level+1);
+                echo "\n".str_repeat("\t",$level+1).dbcore::dump($key,-1).' => ';
+                dbcore::dump($val,$level+1);
             }
             $value= '';
         }
@@ -215,7 +206,7 @@ class dbcore
     {
         if($daemon_pid == NULL ) # Test to see if a PID file was passed, if not fail.
         {
-            $ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
+            $ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
             return $ret;
         }
         $WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
@@ -240,23 +231,26 @@ class dbcore
                     preg_match_all("/(\d+)(\:)(\d+)/", $start, $mat); # get the uptime of the daemon.
                     $time = $mat[0][0];
 
-                    $patterns[1] = '/  /';
-                    $patterns[2] = '/ /';
-                    $ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
-                    $ps_Sta_exp = explode("|", $ps_stats);
+                    //$patterns[1] = '/  /';
+                    //$patterns[2] = '/ /';
+                    //$ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
+                    //$ps_Sta_exp = explode("|", $ps_stats);
 
-                    $returns = array(  # lets now throw all this
-                        $mem,$CMD,$time,$ps_Sta_exp # into one array
-                    );
-                    return $returns; # and return it
+                    //$returns = array(  # lets now throw all this
+                    //    $mem,$CMD,$time,$ps_Sta_exp # into one array
+                    //);
+					//var_dump($returns);
+					
+					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
+                    return $ret; # and return it
                 }else
                 {
-                    $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
+                    $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
                     return $ret; # There was no data in the PS return.
                 }
             }else
             {
-                $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
+                $ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
                 return $ret; # PID File could not be found.
             }
         }elseif( $os[0] == 'W')
@@ -272,12 +266,12 @@ class dbcore
                     return $ps_stats;
                 }else
                 {
-                    $ret = array('Windows'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'no data returned from tasklist','color'=>'red','errc'=>-3);
+                    $ret = array('Windows'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'no data returned from tasklist','color'=>'red','errc'=>-3);
                     return $ret; #no data returned from tasklist
                 }
             }else
             {
-                $ret = array('OS'=>'Windows','pid'=>'0','time'=>'0:00','mem'=>'0 bytes','cmd'=>'PID File did not exsist','color'=>'red','errc'=>-2);
+                $ret = array('OS'=>'Windows','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File did not exsist','color'=>'red','errc'=>-2);
                 return $ret; #PID File did not exsist
             }
         }else
@@ -310,7 +304,7 @@ class dbcore
      * @param int $round
      * @return string
      */
-    public function format_size($size, $round = 2)
+    public static function format_size($size, $round = 2)
     {
         //Size must be bytes!
         $sizes = array('B', 'kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB');
@@ -330,7 +324,7 @@ class dbcore
      * @param $uid
      * @param $gid
      */
-    public function recurse_chown_chgrp($mypath, $uid, $gid)
+    public static function recurse_chown_chgrp($mypath, $uid, $gid)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)
@@ -341,7 +335,7 @@ class dbcore
                 //print $typepath. " : " . filetype ($typepath). "<BR>" ;
                 if (filetype ($typepath) == 'dir')
                 {
-                    $this->recurse_chown_chgrp ($typepath, $uid, $gid);
+                    dbcore::recurse_chown_chgrp ($typepath, $uid, $gid);
                 }
                 chown($typepath, $uid);
                 chgrp($typepath, $gid);
@@ -356,7 +350,7 @@ class dbcore
      * @param $mypath
      * @param $mod
      */
-    public function recurse_chmod($mypath, $mod)
+    public static function recurse_chmod($mypath, $mod)
     {
         $d = opendir ($mypath) ;
         while(($file = readdir($d)) !== false)
@@ -367,7 +361,7 @@ class dbcore
                 //print $typepath. " : " . filetype ($typepath). "<BR>" ;
                 if (filetype ($typepath) == 'dir')
                 {
-                    $this->recurse_chmod($typepath, $mod);
+                    dbcore::recurse_chmod($typepath, $mod);
                 }
                 chmod($typepath, $mod);
             }
@@ -496,7 +490,7 @@ class dbcore
      * @param string $text
      * @return mixed
      */
-    public function GPSFilter($text="") // Used for GPS
+    public static function GPSFilter($text="") // Used for GPS
     {
         $pattern = '/"((.)*?)"/i';
         $strip = array(
@@ -515,7 +509,7 @@ class dbcore
     }
 
 
-    function normalize_ssid($string)
+    public static function normalize_ssid($string)
     {
         $string = htmlentities($string, ENT_QUOTES, 'UTF-8');
         $string = preg_replace('~&([a-z]{1,2})(acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml);~i', '$1', $string);
@@ -556,7 +550,7 @@ class dbcore
      * @param $long2
      * @return array
      */
-    public function CalcDistance($lat1, $long1, $lat2, $long2)
+    public static function CalcDistance($lat1, $long1, $lat2, $long2, $return_type = "m")
     {
             $pi80 = M_PI / 180;
             $lat1 *= $pi80;
@@ -570,7 +564,14 @@ class dbcore
             $a = sin($dlat / 2) * sin($dlat / 2) + cos($lat1) * cos($lat2) * sin($dlong / 2) * sin($dlong / 2);
             $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
             $km = $r * $c;
-            return array(($km * 0.621371192), $km);
+            if($return_type === "m")
+            {
+                return array((($km * 0.621371192)*5280), $km*1000);#feet, meters
+            }elseif($return_type === "km")
+            {
+                return array(($km * 0.621371192), $km);#Miles, KM
+            }
+
     }
 
     /**
@@ -579,7 +580,7 @@ class dbcore
      * @param int $asc
      * @return array
      */
-    public function subval_sort($a,$subkey, $asc = 0)
+    public static function subval_sort($a,$subkey, $asc = 0)
     {
         foreach($a as $k=>$v)
         {
@@ -603,7 +604,8 @@ class dbcore
     }
 
 
-    public function RotateSpinner($r = 0)
+
+    public static function RotateSpinner($r = 0)
     {
         if($r===0){echo "|\r";}
         if($r===10){echo "/\r";}
@@ -621,7 +623,7 @@ class dbcore
      * @param string $file
      * @return int|string
      */
-    public function TarFile($file = "")
+    public static function TarFile($file = "")
     {
         if($file == "")
         {

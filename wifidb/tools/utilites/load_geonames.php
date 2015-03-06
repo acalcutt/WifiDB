@@ -18,7 +18,7 @@ if(@!$argv[1])
     exit("Need to used one of these switches (and only one, and it hast to be the first one):\r\n
         --admin1
         --admin2
-        --geonames
+        --geoname
         --countrynames\r\n");
 }
 
@@ -27,34 +27,28 @@ $file = $file_exp[1];
 $validate = array("admin1","admin2","geonames","countrynames");
 $load = str_replace("-", "", $argv[1]);
 
-
-$tsvFile = new SplFileObject($file);
-echo "Loaded File: {$file} \r\nInto script.\r\n";
-$tsvFile->setFlags(SplFileObject::READ_CSV);
-$tsvFile->setCsvControl("\t");
+$contents = file($file);
 $r = 0;
 $l = 0;
 $II = 1;
 $sql = "";
 echo "Loading WiFiDB config files.\r\n";
-if(!(require('daemon/config.inc.php'))){exit("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-$daemon_config['wifidb_install'];
-if($daemon_config['wifidb_install'] == ""){exit("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-if(!(require($daemon_config['wifidb_install'].'/lib/config.inc.php')))
-{
-    exit("Could not load the Database config file, so we cannot connect to the SQL server :/\r\n");
-}
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
 echo "Config files loaded. Going to try and connect to the SQL Server...\r\n";
-$conn = mysqli_connect($config['host'], $config['db_usr'], $config['db_pwd'], $config['db']);
+$conn = mysqli_connect($config['host'], $config['db_user'], $config['db_pwd'], "wifi");
 if(mysqli_connect_errno())
 {
     die(mysqli_connect_errno());
 }
 echo "Connected, now lets LOAD ALL THE DATA!!!!\r\n";
-foreach ($tsvFile as $line => $row_raw)
+foreach ($contents as $line)
 {
     echo $line."\r\n";
-    $row = filter_var_array($row_raw, FILTER_SANITIZE_ENCODED);
+    $tab_array = explode("\t", $line);
+    $row = filter_var_array($tab_array, FILTER_SANITIZE_STRING);
     if(!@$row[1] || $line == 50)
     {
         continue;

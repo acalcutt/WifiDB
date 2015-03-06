@@ -20,12 +20,13 @@ if not, write to the
 */
 class export extends dbcore
 {
-    public function __construct($config)
-    {
-        parent::__construct($config);
-        $this->convert = new convert($this);
-        $this->createKML = new createKML($this->URL_PATH, $this->convert, $config['timetilldead']);
+    public function __construct($config, $daemon_config) {
+        parent::__construct($config, $daemon_config);
 
+        $this->convert = new convert($config);
+        $this->createKML = new createKML($this, $config['timetilldead']);
+        $this->daemon_folder_stats = array();
+        $this->named = 0;
         $this->month_names  = array(
             1=>'January',
             2=>'February',
@@ -41,13 +42,12 @@ class export extends dbcore
             12=>'December',
         );
         $this->ver_array['export'] = array(
-            "last_edit"             =>  "12-05-2013",
-            "ExportAll"             =>  "2.0",
-            "ExportAllDaily"        =>  "1.0",
+            "last_edit"             =>  "2015-03-02",
+            "ExportAllkml"          =>  "2.1",
+            "ExportDailykml"        =>  "1.1",
             "ExportSingleAP"        =>  "1.0",
-            "CreateKMZ"             =>  "1.0",
             "ExportCurrentAPkml"    =>  "1.0",
-            "GenerateDaemonKMLData" =>  "1.0",
+            "GenerateDaemonKMLData" =>  "1.1",
             "GenerateDaemonKMLLinks"=>  "1.0",
             "HistoryKMLLink"        =>  "1.0",
             "FulldbKMLLink"         =>  "1.0",
@@ -55,32 +55,50 @@ class export extends dbcore
             "GenerateUpdateKML"     =>  "1.0",
             "ExportAllVS1"          =>  "2.0",
             "ExportAllGPX"          =>  "2.0",
-            );
+        );
+    }
+
+
+    public function CreateBoundariesKML()
+    {
+        $boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
+        $this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
+
+        $results = $this->sql->conn->query("SELECT * FROM `wifi`.`boundaries`");
+        $fetched = $results->fetchAll(2);
+        $KML_data = "";
+        foreach($fetched as $boundary)
+        {
+            $KML_data .= $this->createKML->PlotBoundary($boundary);
+        }
+
+        $KMLFolderdata = $this->createKML->createFolder("World Boundaries", $KML_data, 0);
+        $this->createKML->createKML($boundaries_kml_file, "World Boundaries", $KMLFolderdata);
+        chmod($boundaries_kml_file, 0664);
+        return $boundaries_kml_file;
     }
 
 
     /*
      * Export to Google KML File
      */
-    public function ExportAll()
+    public function ExportAllkml($date = NULL)
     {
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `lat` != 'N 00' ORDER by `id` ASC";
+        if($date === NULL)
+        {
+            $date = date($this->date_format);
+        }
+        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER by `id` ASC";
         $result = $this->sql->conn->query($sql);
 
-        if($this->sql->checkError())
+        if($this->sql->checkError(__LINE__, __FILE__))
         {
             $this->verbosed("There was an error running the SQL");
             throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
         }
         $NN = $result->rowCount();
         $this->verbosed("APs with GPS: ".$NN);
-        $Odata = "";
-        $Wdata = "";
-        $Sdata = "";
-        $open_count = 0;
-        $wep_count = 0;
-        $sec_count = 0;
-        
+
         if($this->named)
         {
             $this->verbosed("Starting Export of Labeled Full KML.");
@@ -90,7 +108,7 @@ class export extends dbcore
             $this->verbosed("Starting Export of Non-Labeled Full KML.");
             $labeled = "";
         }
-        $daily_folder = $this->PATH.'out/daemon/'.date($this->date_format);
+        $daily_folder = $this->PATH.'out/daemon/'.$date;
         if(!@file_exists($daily_folder))
         {
             $this->verbosed("Need to make a daily export folder...", 1);
@@ -100,213 +118,83 @@ class export extends dbcore
             }
         }else
         {
-            if(file_exists($daily_folder."/full_db".$labeled.".kml") && file_exists($daily_folder."/full_db".$labeled.".kmz")){$this->verbosed("Full DB Export for (".date($this->date_format).") already exists."); return -1;}
+            if(file_exists($daily_folder."/full_db".$labeled.".kml") && file_exists($daily_folder."/full_db".$labeled.".kmz")){$this->verbosed("Full DB Export for (".$date.") already exists."); return -1;}
         }
         $this->verbosed("Compiling Data for Export.");
+        $KML_data="";
         while($array = $result->fetch(2))
         {
-            $ssid = preg_replace('/[\x00-\x1F\x7F]/', '', $array['ssid']);
-            
-            $lat = $this->convert->dm2dd($array['lat']);
-            $long = $this->convert->dm2dd($array['long']);
-            
-            $ssid_name = str_replace("", "", htmlentities($ssid, ENT_QUOTES));
-            if($this->named)
+            $ret = $this->ExportSingleAP((int)$array['id']);
+            if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
-                $place_label = "<name>".$ssid_name."</name>";
-            }else
-            {
-                $place_label = "";
+                $this->createKML->ClearData();
+                $this->createKML->LoadData($ret);
+                $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
             }
-            switch($array['sectype'])
-            {
-                case 1:
-                    $Odata .= "<Placemark id=\"".$array['mac']."\">
-    ".$place_label."
-    <description>
-        <![CDATA[<b>SSID: </b>".$ssid."<br />
-            <b>Mac Address: </b>".$array['mac']."<br />
-            <b>Network Type: </b>".$array['NT']."<br />
-            <b>Radio Type: </b>".$array['radio']."<br />
-            <b>Channel: </b>".$array['chan']."<br />
-            <b>Authentication: </b>".$array['auth']."<br />
-            <b>Encryption: </b>".$array['encry']."<br />
-            <b>Basic Transfer Rates: </b>".$array['BTx']."<br />
-            <b>Other Transfer Rates: </b>".$array['OTx']."<br />
-            <b>First Active: </b>".$array['FA']."<br />
-            <b>Last Updated: </b>".$array['LA']."<br />
-            <b>Latitude: </b>".$lat."<br />
-            <b>Longitude: </b>".$long."<br />
-            <b>Manufacturer: </b>".$array['manuf']."<br />
-            <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$array['id']."\">WiFiDB Link</a>
-        ]]>
-    </description>
-    <styleUrl>openStyleDead</styleUrl>
-    <Point id=\"".$array['mac']."_GPS\">
-        <coordinates>".$long.",".$lat.",".$array['alt']."</coordinates>
-    </Point>
-</Placemark>\r\n";
-                    $open_count++;
-                    break;
-                case 2:
-                    $Wdata .= "<Placemark id=\"".$array['mac']."\">
-    ".$place_label."
-    <description>
-        <![CDATA[<b>SSID: </b>".$ssid."<br />
-            <b>Mac Address: </b>".$array['mac']."<br />
-            <b>Network Type: </b>".$array['NT']."<br />
-            <b>Radio Type: </b>".$array['radio']."<br />
-            <b>Channel: </b>".$array['chan']."<br />
-            <b>Authentication: </b>".$array['auth']."<br />
-            <b>Encryption: </b>".$array['encry']."<br />
-            <b>Basic Transfer Rates: </b>".$array['BTx']."<br />
-            <b>Other Transfer Rates: </b>".$array['OTx']."<br />
-            <b>First Active: </b>".$array['FA']."<br />
-            <b>Last Updated: </b>".$array['LA']."<br />
-            <b>Latitude: </b>".$lat."<br />
-            <b>Longitude: </b>".$long."<br />
-            <b>Manufacturer: </b>".$array['manuf']."<br />
-            <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$array['id']."\">WiFiDB Link</a>
-        ]]>
-    </description>
-    <styleUrl>wepStyleDead</styleUrl>
-    <Point id=\"".$array['mac']."_GPS\">
-        <coordinates>".$long.",".$lat.",".$array['alt']."</coordinates>
-    </Point>
-</Placemark>\r\n";
-                    $wep_count++;
-                    break;
-                case 3:
-                    $Sdata .= "<Placemark id=\"".$array['mac']."\">
-    ".$place_label."
-    <description>
-        <![CDATA[<b>SSID: </b>".$ssid."<br />
-            <b>Mac Address: </b>".$array['mac']."<br />
-            <b>Network Type: </b>".$array['NT']."<br />
-            <b>Radio Type: </b>".$array['radio']."<br />
-            <b>Channel: </b>".$array['chan']."<br />
-            <b>Authentication: </b>".$array['auth']."<br />
-            <b>Encryption: </b>".$array['encry']."<br />
-            <b>Basic Transfer Rates: </b>".$array['BTx']."<br />
-            <b>Other Transfer Rates: </b>".$array['OTx']."<br />
-            <b>First Active: </b>".$array['FA']."<br />
-            <b>Last Updated: </b>".$array['LA']."<br />
-            <b>Latitude: </b>".$lat."<br />
-            <b>Longitude: </b>".$long."<br />
-            <b>Manufacturer: </b>".$array['manuf']."<br />
-            <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$array['id']."\">WiFiDB Link</a>
-        ]]>
-    </description>
-    <styleUrl>secureStyleDead</styleUrl>
-    <Point id=\"".$array['mac']."_GPS\">
-        <coordinates>".$long.",".$lat.",".$array['alt']."</coordinates>
-    </Point>
-</Placemark>\r\n";
-                    $sec_count++;
-                    break;
-            }
+
         }
-        
         $full_kml_file = $daily_folder."/full_db".$labeled.".kml";
         $this->verbosed("Writing the Full KML File. ($NN APs) : ".$full_kml_file);
-        file_put_contents($full_kml_file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<kml xmlns=\"$this->KML_SOURCE_URL\">
-<!--exp_all_db_kml-->
-    <Document>
-        <name>WiFiDB Full DB Export (".date($this->date_format).")</name>
-        <Style id=\"openStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->open_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"wepStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->WEP_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"secureStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->WPA_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"Location\">
-            <LineStyle>
-                <color>7f0000ff</color>
-                <width>4</width>
-            </LineStyle>
-        </Style>
-        <Folder>
-            <name>Access Points</name>
-            <description>APs: ".$NN."</description>
-            <Folder>
-                <name>WiFiDB Access Points</name>
-                    <Folder>
-                        <name>Open Access Points</name>
-                        <description>APs: ".$open_count."</description>
-                            ".$Odata."
-                    </Folder>
-                    <Folder>
-                        <name>WEP Access Points</name>
-                        <description>APs: ".$wep_count."</description>
-                            ".$Wdata."
-                    </Folder>
-                    <Folder>
-                        <name>Secure Access Points</name>
-                        <description>APs: ".$sec_count."</description>
-                            ".$Sdata."
-                    </Folder>
-            </Folder>
-        </Folder>
-     </Document>
-</kml>");
-        
-        @link($daily_folder.'/full_db'.$labeled.'.kml', $this->PATH.'out/daemon/full_db'.$labeled.'.kml');
+        $KML_data = $this->createKML->createFolder("Full Database Export", $KML_data, 0);
+        ###
+        $this->createKML->createKML($full_kml_file, "WiFiDB Full Database Export", $KML_data, 1);
+        chmod($full_kml_file, 0664);
+        ###
+        $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kml';
+        $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
+        unlink($link);
+        symlink($full_kml_file, $link);
+        chmod($link, 0664);
+        #####################
         $this->verbosed("Starting to compress the KML to a KMZ.");
-        if($this->CreateKMZ($daily_folder.'/full_db'.$labeled.'.kml'))
-        {
-            $this->verbosed("Failed to Zip up the KML to a KMZ file :/");
-        }
-        @link($daily_folder.'/full_db'.$labeled.'.kmz', $this->PATH.'out/daemon/full_db'.$labeled.'.kmz');
 
-        chmod($daily_folder.'/full_db'.$labeled.'.kml', 0664);
-        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kml', 0664);
-        chmod($this->PATH.'out/daemon/full_db'.$labeled.'.kmz', 0664);
-        chmod($daily_folder.'/full_db'.$labeled.'.kmz', 0664);
+        $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+        if($ret_kmz_name == -1)
+        {
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+        }
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+            ###
+            $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kmz';
+            $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
+            #unlink($link);
+            symlink($ret_kmz_name, $link);
+            chmod($link, 0664);
+        }
 
         return $daily_folder;
     }
-    
+
     /*
      * Export All Daily Aps to KML
      */
-    public function ExportAllDaily()
+    public function ExportDailykml($date = NULL)
     {
-        $date = date($this->date_format);
+        if($date === NULL)
+        {
+            $date = date($this->date_format);
+        }
         $date_search = $date."%";
-        $select_daily = "SELECT `id` , `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `date` LIKE ?";
-        $prep = $this->sql->conn->prepare($select_daily);
-        $prep->bindParam(1, $date_search, PDO::PARAM_STR);
-        $prep->execute();
+        $select_daily = "SELECT `id` , `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search'";
+        $result = $this->sql->conn->query($select_daily);
 
-        if($this->sql->checkError())
+        if($this->sql->checkError(__LINE__, __FILE__))
         {
             $this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
             Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
         }
-        if($prep->rowCount() < 1)
+        if($result->rowCount() < 1)
         {
             return -1;
         }
-        
+
         if($this->named)
         {
             $this->verbosed("Start of Exporting Labeled Daily KML.");
@@ -316,228 +204,72 @@ class export extends dbcore
             $this->verbosed("Start of Exporting Non-Labeled Daily KML.");
             $labeled = "";
         }
-        $fetch_imports = $prep->fetchAll();
 
-        $NN = 0;
-        $imports = array();
-
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `id` = ?";
-        $result = $this->sql->conn->prepare($sql);
-        foreach($fetch_imports as $import)
-        {
-            $open_count = 0;
-            $wep_count = 0;
-            $sec_count = 0;
-            $Odata = "";
-            $Wdata = "";
-            $Sdata = "";
-
-            $stage_pts = explode("-", $import['points']);
-            foreach($stage_pts as $point)
-            {
-                $data = explode(":", $point);
-                $result->bindParam(1, $data[1], PDO::PARAM_INT);
-                $result->execute();
-
-                if($this->sql->checkError())
-                {
-                    $this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-                    Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-                }
-                $array = $result->fetch();
-                $NN++;
-                $ssid = preg_replace('/[\x00-\x1F\x7F]/', '', $array['ssid']);
-
-                $lat = $this->convert->dm2dd($array['lat']);
-
-                $long = $this->convert->dm2dd($array['long']);
-
-                $ssid_name = str_replace("", "", htmlentities($ssid, ENT_QUOTES));
-                if($this->named)
-                {
-                    $place_label = "<name>".$ssid_name."</name>";
-                }  else {
-                    $place_label = "";
-                }
-                switch($array['sectype'])
-                {
-                    case 1:
-                        $Odata .= "<Placemark id=\"".$array['mac']."\">
-        ".$place_label."
-        <description>
-            <![CDATA[<b>SSID: </b>".$ssid."<br />
-                <b>Mac Address: </b>".$array['mac']."<br />
-                <b>Network Type: </b>".$array['NT']."<br />
-                <b>Radio Type: </b>".$array['radio']."<br />
-                <b>Channel: </b>".$array['chan']."<br />
-                <b>Authentication: </b>".$array['auth']."<br />
-                <b>Encryption: </b>".$array['encry']."<br />
-                <b>Basic Transfer Rates: </b>".$array['BTx']."<br />
-                <b>Other Transfer Rates: </b>".$array['OTx']."<br />
-                <b>First Active: </b>".$array['FA']."<br />
-                <b>Last Updated: </b>".$array['LA']."<br />
-                <b>Latitude: </b>".$lat."<br />
-                <b>Longitude: </b>".$long."<br />
-                <b>Manufacturer: </b>".$array['manuf']."<br />
-                <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$array['id']."\">WiFiDB Link</a>
-            ]]>
-        </description>
-        <styleUrl>openStyleDead</styleUrl>
-        <Point id=\"".$array['mac']."_GPS\">
-            <coordinates>".$long.",".$lat.",".$array['alt']."</coordinates>
-        </Point>
-    </Placemark>\r\n";
-                        $open_count++;
-                        break;
-                    case 2:
-                        $Wdata .= "<Placemark id=\"".$array['mac']."\">
-        ".$place_label."
-        <description>
-            <![CDATA[<b>SSID: </b>".$ssid."<br />
-                <b>Mac Address: </b>".$array['mac']."<br />
-                <b>Network Type: </b>".$array['NT']."<br />
-                <b>Radio Type: </b>".$array['radio']."<br />
-                <b>Channel: </b>".$array['chan']."<br />
-                <b>Authentication: </b>".$array['auth']."<br />
-                <b>Encryption: </b>".$array['encry']."<br />
-                <b>Basic Transfer Rates: </b>".$array['BTx']."<br />
-                <b>Other Transfer Rates: </b>".$array['OTx']."<br />
-                <b>First Active: </b>".$array['FA']."<br />
-                <b>Last Updated: </b>".$array['LA']."<br />
-                <b>Latitude: </b>".$lat."<br />
-                <b>Longitude: </b>".$long."<br />
-                <b>Manufacturer: </b>".$array['manuf']."<br />
-                <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$array['id']."\">WiFiDB Link</a>
-            ]]>
-        </description>
-        <styleUrl>wepStyleDead</styleUrl>
-        <Point id=\"".$array['mac']."_GPS\">
-            <coordinates>".$long.",".$lat.",".$array['alt']."</coordinates>
-        </Point>
-    </Placemark>\r\n";
-                        $wep_count++;
-                        break;
-                    case 3:
-                        $Sdata .= "<Placemark id=\"".$array['mac']."\">
-        ".$place_label."
-        <description>
-            <![CDATA[<b>SSID: </b>".$ssid."<br />
-                <b>Mac Address: </b>".$array['mac']."<br />
-                <b>Network Type: </b>".$array['NT']."<br />
-                <b>Radio Type: </b>".$array['radio']."<br />
-                <b>Channel: </b>".$array['chan']."<br />
-                <b>Authentication: </b>".$array['auth']."<br />
-                <b>Encryption: </b>".$array['encry']."<br />
-                <b>Basic Transfer Rates: </b>".$array['BTx']."<br />
-                <b>Other Transfer Rates: </b>".$array['OTx']."<br />
-                <b>First Active: </b>".$array['FA']."<br />
-                <b>Last Updated: </b>".$array['LA']."<br />
-                <b>Latitude: </b>".$lat."<br />
-                <b>Longitude: </b>".$long."<br />
-                <b>Manufacturer: </b>".$array['manuf']."<br />
-                <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$array['id']."\">WiFiDB Link</a>
-            ]]>
-        </description>
-        <styleUrl>secureStyleDead</styleUrl>
-        <Point id=\"".$array['mac']."_GPS\">
-            <coordinates>".$long.",".$lat.",".$array['alt']."</coordinates>
-        </Point>
-    </Placemark>\r\n";
-                        $sec_count++;
-                        break;
-                }
-            }
-
-            $imports[] = "<Folder>
-                <name>".$import['username']." - ".$import['title']."</name>
-                    <Folder>
-                        <name>Open Access Points</name>
-                        <description>APs: ".$open_count."</description>
-                            ".$Odata."
-                    </Folder>
-                    <Folder>
-                        <name>WEP Access Points</name>
-                        <description>APs: ".$wep_count."</description>
-                            ".$Wdata."
-                    </Folder>
-                    <Folder>
-                        <name>Secure Access Points</name>
-                        <description>APs: ".$sec_count."</description>
-                            ".$Sdata."
-                    </Folder>
-            </Folder>";
-
-        }
-
-        $all_imports = implode("\r\n\t\t\t", $imports);
-        $daily_folder = $this->PATH.'out/daemon/'.date($this->date_format);
+        $daily_folder = $this->daemon_out.$date;
         if(!@file_exists($daily_folder))
         {
             $this->verbosed("Need to make a daily export folder...", 1);
-            if(!@mkdir($daily_folder))
+            if(!mkdir($daily_folder))
             {
                 $this->verbosed("Error making new daily export folder...", -1);
                 Throw new ErrorException("Error Making new Daily Export Folder. - ".$php_errormsg." - ".$daily_folder);
             }
         }
 
-
+        $fetch_imports = $result->fetchAll();
+        $KML_data="";
+        foreach($fetch_imports as $import)
+        {
+            $Import_KML_Data = "";
+            $stage_pts = explode("-", $import['points']);
+            foreach($stage_pts as $point)
+            {
+                $exp = explode(":", $point);
+                $hash = $this->GetAPhash($exp[0]);
+                $id = $exp[0]+0;
+                $ret = $this->ExportSingleAP($id);
+                if(is_array($ret) && count($ret[$hash]['gdata']) > 0)
+                {
+                    $this->createKML->ClearData();
+                    $this->createKML->LoadData($ret);
+                    $Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+                }
+            }
+            if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
+        }
+        if($KML_data == ""){$KML_data .= $this->createKML->createFolder("No Daily Exports with GPS", $KML_data, 0);}
         $full_kml_file = $daily_folder."/daily_db".$labeled.".kml";
         $this->verbosed("Writing the Daily KML File: ".$full_kml_file);
-        file_put_contents($full_kml_file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<kml xmlns=\"$this->KML_SOURCE_URL\">
-    <Document>
-        <name>Daily DB ($date)</name>
-        <Style id=\"openStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->open_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"wepStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->WEP_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"secureStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->WPA_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"Location\">
-            <LineStyle>
-                <color>7f0000ff</color>
-                <width>4</width>
-            </LineStyle>
-        </Style>
-        <Folder>
-            <name>WiFiDB Daily Imports</name>
-            <description>APs: ".$NN."</description>
-            $all_imports
-        </Folder>
-     </Document>
-</kml>");
-        
-        @link($daily_folder.'/daily_db'.$labeled.'.kml', $this->PATH.'out/daemon/daily_db'.$labeled.'.kml');
+        $this->createKML->createKML($full_kml_file, "WiFiDB Daily Export ($date)", $KML_data);
+        ##
+        $link = $this->daemon_out.'daily_db'.$labeled.'.kml';
+        $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
+        unlink($link);
+        symlink($full_kml_file, $link);
+        chmod($link, 0664);
+        #####################
         $this->verbosed("Starting to compress the KML to a KMZ.");
-        if($this->CreateKMZ($daily_folder.'/daily_db'.$labeled.'.kml'))
+
+        $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+        if($ret_kmz_name == -1)
         {
-            $this->verbosed("Failed to compress the Daily KMZ file :(", -1);
-            Throw New ErrorException("Failed to compress the Daily KMZ file :(");
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
         }
-        @link($daily_folder.'/daily_db'.$labeled.'.kmz', $this->PATH.'out/daemon/daily_db'.$labeled.'.kmz');
-
-
-        chmod($daily_folder.'/daily_db'.$labeled.'.kml', 0750);
-        chmod($this->PATH.'out/daemon/daily_db'.$labeled.'.kml', 0750);
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+            ##
+            $link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
+            $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
+            unlink($link);
+            symlink($ret_kmz_name, $link);
+            chmod($link, 0664);
+        }
 
         return $daily_folder;
     }
@@ -545,183 +277,51 @@ class export extends dbcore
     /*
      * Export All Daily Aps to KML
      */
-    public function ExportSingleAP( $id = 0, $from = 0, $limit = 0)
+    public function ExportSingleAP( $id = 0, $new_old = 0, $limit = NULL, $from = NULL)
     {
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
-        $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam(1, $id, PDO::PARAM_INT);
-        $prep->execute();
-        if($this->sql->checkError() !== 0)
+        if($id === 0 || !is_int($id))
         {
-            throw new ErrorException("Could not select ID from pointers Table.");
+            throw new ErrorException("AP ID is empty or not an Integer, supply one.");
+            return 0;
         }
-        $fetch = $prep->fetch(2);
-        switch($fetch['sectype'])
+        $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+
+        $prep2 = $this->sql->conn->query($sql2);
+        $this->sql->checkError(__LINE__, __FILE__);
+        $ap_fetch = $prep2->fetch(2);
+        $sql3 = "SELECT
+  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
+  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
+  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
+FROM `wifi`.`wifi_signals`
+  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat` != '0.0000'";
+        if(!empty($limit))
         {
-            case "1":
-                $type = "openStyleDead";
-            break;
-
-            case "2":
-                $type = "wepStyleDead";
-            break;
-
-            case "3":
-                $type = "secureStyleDead";
-            break;
-        }
-
-        $sql = "SELECT * FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? LIMIT $from, $limit";
-        $prep2 = $this->sql->conn->prepare($sql);
-        $prep2->bindParam(1, $fetch['ap_hash'], PDO::PARAM_STR);
-        $prep2->execute();
-        if($this->sql->checkError() !== 0)
-        {
-            throw new ErrorException("Could not select from Signals Table.");
-        }
-        $signals = $prep2->fetchAll(2);
-
-        $SignalData = "";
-        $sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
-        $prep3 = $this->sql->conn->prepare($sql);
-        foreach($signals as $signal)
-        {
-
-            $prep3->bindParam(1, $signal['gps_id'], PDO::PARAM_INT);
-            $prep3->execute();
-            if($this->sql->checkError() !== 0)
+            $sql3 .= " LIMIT $limit";
+            if(!empty($from))
             {
-                throw new ErrorException("Could not select from GPS Table.");
+                $sql3 .= ", $from";
             }
-            $gps = $prep3->fetch(2);
-            $SignalData .= "
-                    <Placemark id=\"".$signal['id']."\">
-                        ".$signal['id']."
-                        <description>
-                            <![CDATA[
-                                <b>Signal Percent: </b>".$signal['signal']."<br />
-                                <b>RSSI Signal: </b>".$signal['rssi']."<br />
-                                <b>Date: </b>".$gps['date']."<br />
-                                <b>Time: </b>".$gps['time']."<br />
-                            ]]>
-                        </description>
-                        <styleUrl>$type</styleUrl>
-                        <Point id=\"".$fetch['mac']."_GPS\">
-                            <coordinates>".$this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']).",".$gps['alt']."</coordinates>
-                        </Point>
-                    </Placemark>
-";
-            $alt = $gps['alt'];
         }
-        $file = $fetch['ap_hash']."_".str_pad(rand(0, 999999), 6, "0").".kml";
-        $kml_file = $this->PATH."out/kml/single/".$file;
-        file_put_contents($kml_file, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<kml xmlns=\"$this->KML_SOURCE_URL\">
-<!--export single ap kml-->
-    <Document>
-        <name>".htmlentities($fetch['ssid'], ENT_QUOTES)." (".date($this->date_format).")</name>
-        <Style id=\"openStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->open_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"wepStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->WEP_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"secureStyleDead\">
-            <IconStyle>
-                <scale>0.5</scale>
-                <Icon>
-                    <href>".$this->WPA_loc."</href>
-                </Icon>
-            </IconStyle>
-        </Style>
-        <Style id=\"Location\">
-            <LineStyle>
-                <color>7f0000ff</color>
-                <width>4</width>
-            </LineStyle>
-        </Style>
-        <Folder>
-            <name>Access Point Center</name>
-            <description>Best Signal For All AP History</description>
-            <Placemark id=\"".$fetch['mac']."\">
-                ".htmlentities($fetch['ssid'], ENT_QUOTES)."
-                <description>
-                    <![CDATA[<b>SSID: </b>".htmlentities($fetch['ssid'], ENT_QUOTES)."<br />
-                        <b>Mac Address: </b>".$fetch['mac']."<br />
-                        <b>Network Type: </b>".$fetch['NT']."<br />
-                        <b>Radio Type: </b>".$fetch['radio']."<br />
-                        <b>Channel: </b>".$fetch['chan']."<br />
-                        <b>Authentication: </b>".$fetch['auth']."<br />
-                        <b>Encryption: </b>".$fetch['encry']."<br />
-                        <b>Basic Transfer Rates: </b>".$fetch['BTx']."<br />
-                        <b>Other Transfer Rates: </b>".$fetch['OTx']."<br />
-                        <b>First Active: </b>".$fetch['FA']."<br />
-                        <b>Last Updated: </b>".$fetch['LA']."<br />
-                        <b>Latitude: </b>".$fetch['lat']."<br />
-                        <b>Longitude: </b>".$fetch['long']."<br />
-                        <b>Manufacturer: </b>".$fetch['manuf']."<br />
-                        <a href=\"".$this->URL_PATH."opt/fetch.php?id=".$fetch['id']."\">WiFiDB Link</a>
-                    ]]>
-                </description>
-                <styleUrl>$type</styleUrl>
-                <Point id=\"".$fetch['mac']."_GPS\">
-                    <coordinates>".$this->convert->dm2dd($fetch['long']).",".$this->convert->dm2dd($fetch['lat']).",".$alt."</coordinates>
-                </Point>
-            </Placemark>
-            <Folder>
-                <name>Signal Points</name>
-                <description>Selected Export History for AP's signal points</description>
-                ".$SignalData."
-            </Folder>
-        </Folder>
-     </Document>
-</kml>");
+        #echo $sql3;
+        $data[$ap_fetch['ap_hash']] = $ap_fetch;
+        $data[$ap_fetch['ap_hash']]['new_old'] = $new_old;
+        $prep3 = $this->sql->conn->query($sql3);
+        $this->sql->checkError();
+        $sig_gps_data = $prep3->fetchAll(2);
+        $data[$ap_fetch['ap_hash']]['gdata'] = $sig_gps_data;
 
-        $ret = array(
-            'mesg' => "Export for AP: ".$fetch['ssid']." was Successful.",
-            'link' => $this->URL_PATH."out/kml/single/".$file,
-            'name' => $file
-        );
-        return $ret;
+        return $data;
     }
 
-    /*
-     * Create a compressed file from a filename and the destination extention
-     */
-    public function CreateKMZ($file = "")
-    {
-        if($file === ""){return 1;}
-        $file_exp = explode(".", $file);
-        $file_create = $file_exp[0].'.kmz';
-        
-        $zip = new ZipArchive;
-        $zip->open($file_create, ZipArchive::CREATE);
-        #var_dump($zip->getStatusString());
-        
-        $zip->addFile($file, 'doc.kml');
-        #var_dump($zip->getStatusString());
-        
-        $zip->close();
-        return 0;
-    }
-    
     /*
      * Export to Garmin GPX File
      */
     public function ExportGPXAll()
     {
         $this->verbosed("Starting GPX Export of WiFiDB.");
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != 'N 0.0000' AND `lat` != 'N 0000.0000' AND `lat` != 'N 0.0000000' AND `lat` != 'N 00' ORDER by `id` ASC";
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER by `id` ASC";
         $prep = $this->sql->conn->execute($sql);
         $aparray_all = $prep->fetchAll(2);
         $this->verbosed("Pointers Table Queried.");
@@ -732,7 +332,7 @@ class export extends dbcore
             $this->verbosed("Error Fetching data from Pointers Table :(", -1);
             return -1;
         }
-        
+
         foreach($aparray_all as $aparray)
         {
             $file_data  = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>
@@ -742,7 +342,7 @@ class export extends dbcore
     xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
     xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1\">";
             // write file header buffer var
-            
+
             $type = $aparray['sectype'];
             switch($type)
             {
@@ -766,15 +366,15 @@ class export extends dbcore
             $long = $this->convert->dm2dd($aparray['long']);
 
             $file_data .= "<wpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
-                                            ."<ele>".$alt."</ele>\r\n"
-                                            ."<time>".$date."T".$time."Z</time>\r\n"
-                                            ."<name>".$aparray['ssid']."</name>\r\n"
-                                            ."<cmt>".$aparray['mac']."</cmt>\r\n"
-                                            ."<desc>".$aparray['label']."</desc>\r\n"
-                                            ."<sym>".$color."</sym>\r\n<extensions>\r\n"
-                                            ."<gpxx:WaypointExtension xmlns:gpxx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensions/v3/GpxExtensionsv3.xsd\">\r\n"
-                                            ."<gpxx:DisplayMode>SymbolAndName</gpxx:DisplayMode>\r\n<gpxx:Categories>\r\n"
-                                            ."<gpxx:Category>Category ".$type."</gpxx:Category>\r\n</gpxx:Categories>\r\n</gpxx:WaypointExtension>\r\n</extensions>\r\n</wpt>\r\n\r\n";
+                ."<ele>".$alt."</ele>\r\n"
+                ."<time>".$date."T".$time."Z</time>\r\n"
+                ."<name>".$aparray['ssid']."</name>\r\n"
+                ."<cmt>".$aparray['mac']."</cmt>\r\n"
+                ."<desc>".$aparray['label']."</desc>\r\n"
+                ."<sym>".$color."</sym>\r\n<extensions>\r\n"
+                ."<gpxx:WaypointExtension xmlns:gpxx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensions/v3/GpxExtensionsv3.xsd\">\r\n"
+                ."<gpxx:DisplayMode>SymbolAndName</gpxx:DisplayMode>\r\n<gpxx:Categories>\r\n"
+                ."<gpxx:Category>Category ".$type."</gpxx:Category>\r\n</gpxx:Categories>\r\n</gpxx:WaypointExtension>\r\n</extensions>\r\n</wpt>\r\n\r\n";
             if($aparray['rssi'])
             {
                 $signals = explode("\\", $aparray['signals']);
@@ -782,33 +382,33 @@ class export extends dbcore
             {
                 $signals = explode("-",$aparray['sig']);
             }
-            
+
             $file_data .= "<trk>\r\n<name>GPS Track</name>\r\n<trkseg>\r\n";
             foreach($signals as $signal)
             {
                 $sig_exp    = explode(",",$signal);
                 $gpsid      = $sig_exp[0];
-                
+
                 $sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ? LIMIT 1";
                 $prepgps = $this->sql->conn->prepare($sql);
                 $prepgps->bindParam(1, $gpsid, PDO::PARAM_INT);
                 $prepgps->execute();
                 $gps = $prepgps->fetch(2);
-                
+
                 $alt = $gps['alt'] * 3.28;
 
                 $lat =& $this->convert->dm2dd($gps['lat']);
 
                 $long =& $this->convert->dm2dd($gps['long']);
                 $file_data .= "<trkpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
-                                        ."<ele>".$alt."</ele>\r\n"
-                                        ."<time>".$date."T".$time."Z</time>\r\n"
-                                        ."</trkpt>\r\n";
+                    ."<ele>".$alt."</ele>\r\n"
+                    ."<time>".$date."T".$time."Z</time>\r\n"
+                    ."</trkpt>\r\n";
             }
             $this->verbosed('Plotted AP: '.$aparray['ssid']);
         }
-        
-        
+
+
         $file_data .= "</trkseg>\r\n</trk></gpx>";
         $file_ext = "wifidb_".date($this->datetime_format).".gpx";
         $filename = ($this->gpx_out.$file_ext);
@@ -831,139 +431,77 @@ class export extends dbcore
     /*
      * Export to Vistumbler VS1 File
      */
-    public function ExportCurrentAPkml($verbose = 0)
+    public function ExportCurrentAPkml()
     {
-        $KML_SOURCE_URL = "http://www.opengis.net/kml/2.2";
-        $KML_folder = $this->PATH."/out/daemon/";
-        $filename = $KML_folder."newestAP.kml";
-        $filename_label = $KML_folder."newestAP_label.kml";
-
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY `id` DESC LIMIT 1";
+        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` ORDER BY `id` DESC LIMIT 1";
         $result = $this->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
-        $this->verbosed('Start export of Newest AP: '.$ap_array["ssid"]>"\n".$filename."\n".$filename_label, $verbose, "CLI");
-        
-        $man    = $ap_array['manuf'];
-        $id     = $ap_array['id'];
+        $hash = $ap_array['ap_hash'];
 
-        $ssid_name = str_replace("", "", htmlentities($ap_array['ssid'], ENT_QUOTES));
-
-        $mac	= $ap_array['mac'];
-        $radio	= $ap_array['radio'];
-        switch($ap_array['sectype'])
+        $this->verbosed('Start export of Newest AP: '.$ap_array["ssid"], 1);
+        $data = $this->ExportSingleAP((int)$ap_array['id']);
+        $count = count($data[$hash]['gdata']);
+        if($count < 1)
         {
-            case 1:
-                $type = "#openStyleDead";
-                $auth = "Open";
-                $encry = "None";
-                break;
-            case 2:
-                $type = "#wepStyleDead";
-                $auth = "Open";
-                $encry = "WEP";
-                break;
-            case 3:
-                $type = "#secureStyleDead";
-                $auth = "WPA-Personal";
-                $encry = "TKIP-PSK";
-                break;
-        }
-        switch($ap_array['radio'])
-        {
-            case "a":
-                $radio="802.11a";
-                break;
-            case "b":
-                $radio="802.11b";
-                break;
-            case "g":
-                $radio="802.11g";
-                break;
-            case "n":
-                $radio="802.11n";
-                break;
-            default:
-                $radio="Unknown Radio";
-                break;
-        }
-        $otx = $ap_array["OTx"];
-        $btx = $ap_array["BTx"];
-        $nt = $ap_array['NT'];
-
-        $lat_exp = explode(".", $ap_array['lat']);
-
-        $test = $lat_exp[1];
-
-        if($test == "0000")
-        {$zero = 1;}
-        else
-        {
-            if(strlen($test) > 4)
-            {
-                $lat = $ap_array['lat'];
-                $long = $ap_array['long'];
-            }else
-            {
-                $lat = $this->convert->dm2dd($ap_array['lat']);
-                $long = $this->convert->dm2dd($ap_array['long']);
-            }
-            $fa = $ap_array["FA"];
-            $la = $ap_array["LA"];
-            $alt = $ap_array['alt'];
-            $zero = 0;
-        }
-        if($zero == 1)
-        {
-            $this->verbosed('Didnt Find any, not writing AP to file.', $verbose, "CLI");
+            $this->verbosed('Did not Find any, not writing AP to file.', -1);
         }else
         {
-            $this->verbosed('Found some, writing KML File.', $verbose, "CLI");
-            $Odata = "<Placemark id=\"".$mac."\">\r\n	<description><![CDATA[<b>SSID: </b>".$ssid_name."<br /><b>Mac Address: </b>".$mac."<br /><b>Network Type: </b>".$nt."<br /><b>Radio Type: </b>".$radio."<br /><b>Channel: </b>".$ap_array['chan']."<br /><b>Authentication: </b>".$auth."<br /><b>Encryption: </b>".$encry."<br /><b>Basic Transfer Rates: </b>".$btx."<br /><b>Other Transfer Rates: </b>".$otx."<br /><b>First Active: </b>".$fa."<br /><b>Last Updated: </b>".$la."<br /><b>Latitude: </b>".$lat."<br /><b>Longitude: </b>".$long."<br /><b>Manufacturer: </b>".$man."<br /><a href=\"".$this->URL_PATH."/opt/fetch.php?id=".$id."\">WiFiDB Link</a>]]></description>\r\n	<styleUrl>".$type."</styleUrl>\r\n<Point id=\"".$mac."_GPS\">\r\n<coordinates>".$long.",".$lat.",".$alt."</coordinates>\r\n</Point>\r\n</Placemark>\r\n";
-            
-            $Ddata  =  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<kml xmlns=\"$KML_SOURCE_URL\"><!--exp_all_db_kml-->\r\n<Document>\r\n<name>RanInt WifiDB KML Newset AP</name>\r\n";
-            $Ddata .= "<Style id=\"openStyleDead\">\r\n<IconStyle>\r\n<scale>0.5</scale>\r\n<Icon>\r\n<href>".$this->open_loc."</href>\r\n</Icon>\r\n</IconStyle>\r\n	</Style>\r\n";
-            $Ddata .= "<Style id=\"wepStyleDead\">\r\n<IconStyle>\r\n<scale>0.5</scale>\r\n<Icon>\r\n<href>".$this->WEP_loc."</href>\r\n</Icon>\r\n</IconStyle>\r\n</Style>\r\n";
-            $Ddata .= "<Style id=\"secureStyleDead\">\r\n<IconStyle>\r\n<scale>0.5</scale>\r\n<Icon>\r\n<href>".$this->WPA_loc."</href>\r\n</Icon>\r\n</IconStyle>\r\n</Style>\r\n";
-            $Ddata .= '<Style id="Location"><LineStyle><color>7f0000ff</color><width>4</width></LineStyle></Style>';
-            $Ddata .= "\r\n".$Odata."\r\n";
-            $Ddata = $Ddata."</Document>\r\n</kml>";
-
-
-            $filewrite  =   fopen($filename, "w");
-            if($filewrite)
+            $this->verbosed('Found some, writing KML File.', 2);
+            $this->createKML->LoadData($data);
+            $KML_string = $this->createKML->PlotAPpoint($hash, 0);
+            $full_kml_file = $this->daemon_out."newestAP.kml";
+            if($this->createKML->createKML($full_kml_file, "Newest AP", $KML_string, 1))
             {
-                $fileappend =   fopen($filename, "a");
-                fwrite($fileappend, $Ddata);
-                fclose($fileappend);
+                $this->verbosed('Newest AP KML File written.', 2);
+                chmod($full_kml_file, 0664);
+                $this->verbosed("Starting to compress the KML to a KMZ.");
+
+                $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+                if($ret_kmz_name == -1)
+                {
+                    $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+                }
+                elseif($ret_kmz_name == -2)
+                {
+                    $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+                }
+                else
+                {
+                    $this->verbosed("Newest AP KMZ created at ".$ret_kmz_name);
+                    chmod($ret_kmz_name, 0664);
+                }
             }else
             {
-                $this->verbosed('Could not write Placer file ('.$filename.'), check permissions.', $verbose, "CLI");
+                Throw new ErrorException('Could not write NewestAP.');
             }
             #####################################
-            $Odata = "<Placemark id=\"".$mac."_Label\">\r\n	<name>".$ssid_name."</name>\r\n	<description><![CDATA[<b>SSID: </b>".$ssid_name."<br /><b>Mac Address: </b>".$mac."<br /><b>Network Type: </b>".$nt."<br /><b>Radio Type: </b>".$radio."<br /><b>Channel: </b>".$ap_array['chan']."<br /><b>Authentication: </b>".$auth."<br /><b>Encryption: </b>".$encry."<br /><b>Basic Transfer Rates: </b>".$btx."<br /><b>Other Transfer Rates: </b>".$otx."<br /><b>First Active: </b>".$fa."<br /><b>Last Updated: </b>".$la."<br /><b>Latitude: </b>".$lat."<br /><b>Longitude: </b>".$long."<br /><b>Manufacturer: </b>".$man."<br /><a href=\"".$this->URL_PATH."/opt/fetch.php?id=".$id."\">WiFiDB Link</a>]]></description>\r\n	<styleUrl>".$type."</styleUrl>\r\n<Point id=\"".$mac."_GPS\">\r\n<coordinates>".$long.",".$lat.",".$alt."</coordinates>\r\n</Point>\r\n</Placemark>\r\n";
-
-            $Ddata  =  "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n<kml xmlns=\"$KML_SOURCE_URL\"><!--exp_all_db_kml-->\r\n<Document>\r\n<name>RanInt WifiDB KML Newset AP</name>\r\n";
-            $Ddata .= "<Style id=\"openStyleDead\">\r\n<IconStyle>\r\n<scale>0.5</scale>\r\n<Icon>\r\n<href>".$this->open_loc."</href>\r\n</Icon>\r\n</IconStyle>\r\n	</Style>\r\n";
-            $Ddata .= "<Style id=\"wepStyleDead\">\r\n<IconStyle>\r\n<scale>0.5</scale>\r\n<Icon>\r\n<href>".$this->WEP_loc."</href>\r\n</Icon>\r\n</IconStyle>\r\n</Style>\r\n";
-            $Ddata .= "<Style id=\"secureStyleDead\">\r\n<IconStyle>\r\n<scale>0.5</scale>\r\n<Icon>\r\n<href>".$this->WPA_loc."</href>\r\n</Icon>\r\n</IconStyle>\r\n</Style>\r\n";
-            $Ddata .= '<Style id="Location"><LineStyle><color>7f0000ff</color><width>4</width></LineStyle></Style>';
-            $Ddata .= "\r\n".$Odata."\r\n";
-            $Ddata = $Ddata."</Document>\r\n</kml>";
-
-            $filewrite_l = fopen($filename_label, "w");
-            if($filewrite_l)
+            $KML_string = $this->createKML->PlotAPpoint($hash, 1);
+            $full_kml_file = $this->daemon_out."newestAP_label.kml";
+            if($this->createKML->createKML($full_kml_file, "Newest AP Labeled", $KML_string, 1))
             {
-                $fileappend_label = fopen($filename_label, "a");
-                fwrite($fileappend_label, $Ddata);
-                fclose($fileappend_label);
+                $this->verbosed('Newest AP Labeled KML File written.', 2);
+                chmod($full_kml_file, 0664);
+                $this->verbosed("Starting to compress the KML to a KMZ.");
+
+                $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+                if($ret_kmz_name == -1)
+                {
+                    $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+                }
+                elseif($ret_kmz_name == -2)
+                {
+                    $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+                }
+                else
+                {
+                    $this->verbosed("Newest AP Labeled KMZ created at ".$ret_kmz_name);
+                    chmod($ret_kmz_name, 0664);
+                }
             }else
             {
-                $this->verbosed('Could not write Placer file ('.$filename_label.'), check permissions.', $verbose, "CLI");
+                Throw new ErrorException('Could not write Newest AP Labeled.');
             }
-            $this->recurse_chown_chgrp($KML_folder, $this->apache_user, $this->apache_group);
-            $this->recurse_chmod($KML_folder, 0750);
-
-            $this->verbosed('File has been written and is ready.', $verbose, "CLI");
+            $this->verbosed('File has been written and is ready.', 1);
         }
     }
 
@@ -972,16 +510,17 @@ class export extends dbcore
      */
     public function GenerateDaemonKMLData()
     {
+        $date = date($this->date_format);
         $this->named = 0;
-        $this->ExportAll();
+        $this->ExportAllkml($date);
         $this->named = 1;
-        $this->ExportAll();
-        
+        $this->ExportAllkml($date);
+
         $this->named = 0;
-        $this->ExportAllDaily();
+        $this->ExportDailykml($date);
         $this->named = 1;
-        $this->ExportAllDaily();
-        
+        $this->ExportDailykml($date);
+
         if($this->HistoryKMLLink() === -1)
         {
             $this->verbosed("Failed to Create Daemon History KML Links", -1);
@@ -989,7 +528,7 @@ class export extends dbcore
         {
             $this->verbosed("Created Daemon History KML Links");
         }
-        
+
         if($this->GenerateUpdateKML() === -1)
         {
             $this->verbosed("Failed to Create Update.kml File", -1);
@@ -999,13 +538,12 @@ class export extends dbcore
         }
         return 1;
     }
-    
+
     /*
      * Create the Archival KML links
      */
     public function HistoryKMLLink()
     {
-        $this->daemon_folder_stats = array();
         $this->daemon_folder_stats['history'] = array();
         $daemon_export = $this->PATH."out/daemon/";
         $dir = opendir($daemon_export);
@@ -1020,7 +558,7 @@ class export extends dbcore
         }
         sort($files);
         closedir($dir);
-        
+
         foreach($files as $entry)
         {
             $matches = array();
@@ -1034,16 +572,16 @@ class export extends dbcore
                 $month_label = $this->month_names[$month];
                 $this->daemon_folder_stats['history'][$year][$month_label][$day] = $entry;
             }
-            
+
         }
         $generated = array();
         foreach($this->daemon_folder_stats['history'] as $key=>$year)
         {
-            $output = $daemon_export.'history/'.$key.'.kml';
+            $output = $daemon_export.'history/'.$key.'.kmz';
             $current_year = date("Y")+0;
             if(file_exists($output) && $key != $current_year)
             {
-                $generated[] = $key.'.kml';
+                $generated[] = $key.'.kmz';
                 continue;
             }
             $kml_data = '<?xml version="1.0" encoding="UTF-8"?>
@@ -1074,36 +612,7 @@ class export extends dbcore
                     {
                         $daily_db_kmz_nl = '';
                     }
-                    if(file_exists($daemon_export.$day.'/daily_db.kml'))
-                    {
-                        $daily_db_kml_nl = '
-                        <NetworkLink>
-                                <name>Daily KML</name>
-                                <visibility>0</visibility>
-                                <Link>
-                                        <href>'.$this->URL_PATH.'out/daemon/'.$day.'/daily_db.kml</href>
-                                </Link>
-                        </NetworkLink>';
-                    }else
-                    {
-                        $daily_db_kml_nl = '';
-                    }
-                    
-                    if(file_exists($daemon_export.$day.'/daily_db_label.kml'))
-                    {
-                        $daily_db_kml_label_nl = '
-                        <NetworkLink>
-                                <name>Daily Labeled KML</name>
-                                <visibility>0</visibility>
-                                <Link>
-                                        <href>'.$this->URL_PATH.'out/daemon/'.$day.'/daily_db_label.kml</href>
-                                </Link>
-                        </NetworkLink>';
-                    }else
-                    {
-                        $daily_db_kml_label_nl = '';
-                    }
-                    
+
                     if(file_exists($daemon_export.$day.'/daily_db_label.kmz'))
                     {
                         $daily_db_kmz_label_nl = '
@@ -1118,22 +627,7 @@ class export extends dbcore
                     {
                         $daily_db_kmz_label_nl = '';
                     }
-                    
-                    if(file_exists($daemon_export.$day.'/full_db.kml'))
-                    {
-                        $full_db_kml_nl = '
-                        <NetworkLink>
-                                <name>Full DB KML</name>
-                                <visibility>0</visibility>
-                                <Link>
-                                        <href>'.$this->URL_PATH.'out/daemon/'.$day.'/full_db.kml</href>
-                                </Link>
-                        </NetworkLink>';
-                    }else
-                    {
-                        $full_db_kml_nl = '';
-                    }
-                    
+
                     if(file_exists($daemon_export.$day.'/full_db.kmz'))
                     {
                         $full_db_kmz_nl = '
@@ -1147,21 +641,6 @@ class export extends dbcore
                     }else
                     {
                         $full_db_kmz_nl = '';
-                    }
-                    
-                    if(file_exists($daemon_export.$day.'/full_db_label.kml'))
-                    {
-                        $full_db_label_kml_nl = '
-                        <NetworkLink>
-                                <name>Full DB Labeled KML</name>
-                                <visibility>0</visibility>
-                                <Link>
-                                        <href>'.$this->URL_PATH.'out/daemon/'.$day.'/full_db_label.kml</href>
-                                </Link>
-                        </NetworkLink>';
-                    }else
-                    {
-                        $full_db_label_kml_nl = '';
                     }
 
                     if(file_exists($daemon_export.$day.'/full_db_label.kmz'))
@@ -1178,29 +657,41 @@ class export extends dbcore
                     {
                         $full_db_label_kmz_nl = '';
                     }
-                    
-                    
+
+
                     $kml_data .= '
                 <Folder>
                         <name>'.$key2.'</name>
-                        <open>0</open>'.$daily_db_kml_nl.
-                            $daily_db_kmz_nl.
-                            $daily_db_kml_label_nl.
-                            $daily_db_kmz_label_nl.
-                            $full_db_kml_nl.
-                            $full_db_kmz_nl.
-                            $full_db_label_kml_nl.
-                            $full_db_label_kmz_nl.'
+                        <open>0</open>'.$daily_db_kmz_nl.
+                        $daily_db_kmz_label_nl.
+                        $full_db_kmz_nl.
+                        $full_db_label_kmz_nl.'
                 </Folder>';
                 }
                 $kml_data .= '</Folder>';
             }
             $kml_data .= '</Folder></kml>';
-            
+
             file_put_contents($output, $kml_data);
-            $generated[] = $key.'.kml';
+
+            $ret_kmz_name = $this->createKML->CreateKMZ($output);
+            if($ret_kmz_name == -1)
+            {
+                $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+            }
+            elseif($ret_kmz_name == -2)
+            {
+                $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+            }
+            else
+            {
+                $this->verbosed("KMZ created at ".$ret_kmz_name);
+                chmod($ret_kmz_name, 0664);
+            }
+
+            $generated[] = $key.'.kmz';
         }
-        
+
         $kml_data = '<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
 <Folder>
@@ -1223,634 +714,301 @@ class export extends dbcore
 </kml>';
         $output = $daemon_export.'history.kml';
         file_put_contents($output, $kml_data);
+
+        $ret_kmz_name = $this->createKML->CreateKMZ($output);
+        if($ret_kmz_name == -1)
+        {
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+        }
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+        }
     }
-    
+
     /*
      * Generate the updated KML Link
      */
     public function GenerateUpdateKML()
     {
-        $kml_data = '<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
-<Folder>
-    <name>WiFiDB Network Link</name>
-    <open>1</open>
-    <Folder>
-        <name>Newest Data</name>
-        <visibility>0</visibility>
-                <Folder>
-                        <name>Newest AP</name>
-                        <open>1</open>
-                        <NetworkLink>
-                                <name>Newest AP (No Label)</name>
-                                <visibility>0</visibility>
-                                <flyToView>1</flyToView>
-                                <Link>
-                                        <href>'.$this->URL_PATH.'out/daemon/newestAP.kml</href>
-                                        <refreshMode>onInterval</refreshMode>
-                                        <refreshInterval>2</refreshInterval>
-                                </Link>
-                        </NetworkLink>
-                        <NetworkLink>
-                                <name>Newest AP (Labeled)</name>
-                                <flyToView>1</flyToView>
-                                <Link>
-                                        <href>'.$this->URL_PATH.'out/daemon/newestAP_label.kml</href>
-                                        <refreshMode>onInterval</refreshMode>
-                                        <refreshInterval>2</refreshInterval>
-                                </Link>
-                        </NetworkLink>
-                </Folder>
-        <NetworkLink>
-            <name>Full DataBase</name>
-            <visibility>0</visibility>
-            <Link>
-                <href>'.$this->URL_PATH.'out/daemon/full_db.kml</href>
-                <refreshMode>onInterval</refreshMode>
-                <refreshInterval>86404</refreshInterval>
-            </Link>
-        </NetworkLink>
-        <NetworkLink>
-            <name>Daily DataBase</name>
-            <visibility>0</visibility>
-            <Link>
-                <href>'.$this->URL_PATH.'out/daemon/daily_db.kml</href>
-                <refreshMode>onInterval</refreshMode>
-                <refreshInterval>3604</refreshInterval>
-            </Link>
-                </NetworkLink>
-        </Folder>
-        <NetworkLink>
-                <name>Archived History</name>
-                <visibility>0</visibility>
-                <Link>
-                        <href>'.$this->URL_PATH.'out/daemon/history.kml</href>
-                        <refreshMode>onInterval</refreshMode>
-                        <refreshInterval>86400</refreshInterval>
-                </Link>
-        </NetworkLink>
-</Folder>
-</kml>
-';
-        if(file_put_contents($this->PATH."out/daemon/update.kml", $kml_data))
+
+        $full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
+        $full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
+
+        $daily_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
+        $daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
+
+        $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
+        $new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1, 1);
+
+        $regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml',"Regions to save precious CPU cycles.", 0, 1, "once", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
+        $regions_folder = $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
+
+        #$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
+        #$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
+
+        $kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
+
+        $full_kml_file = $this->daemon_out.'update.kml';
+        $this->createKML->createKML($full_kml_file, "WiFiDB Auto KMZ Generation", $kml_data);
+        chmod($full_kml_file, 0664);
+        #####################
+        $this->verbosed("Starting to compress the KML to a KMZ.");
+
+        $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+        if($ret_kmz_name == -1)
         {
-            return 1;
-        }else
-        {
-            return 0;
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
         }
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+        }
+
+        return $ret_kmz_name;
     }
 
-    /*
-     * Export to Vistumbler VS1 File
-     *
-     * TODO: NEEDS TO BE RE-WRITTEN
-     */
-    public function exp_vs1($export = "", $user = "", $row = 0, $screen = "HTML")
+    public function UserAll($user)
     {
-        $vs1_out   = $this->PATH."/out/VS1/";
-        $gps_array = array();
-        switch ($export)
+        if(!is_string($user))
         {
-                case "exp_user_all":
-                        if($screen == "HTML"){echo '<table><tr class="style4"><th style="border-style: solid; border-width: 1px">Start Export Of $user</th></tr>';}
-                        $sql_		= "SELECT * FROM `wifi`.`$users_t` WHERE `username` = '$user' ORDER by `id` ASC";
-                        $result_2	= mysql_query($sql_, $conn) or die(mysql_error($conn));
-                        echo "Rows: ".mysql_num_rows($result_2)."\r\n";
-                        $username = $list_array['username'];
-                        $nn =-1;
-                        $n =1;	# GPS Array KEY -has to start at 1 vistumbler will error out if the first GPS point has a key of 0
-                        while($list_array = mysql_fetch_array($result_2))
-                        {
-                                if($list_array["points"] == ''){continue;}
-                                $points = explode("-", $list_array['points']);
-                                $title = $list_array['title'];
-                        #	echo "Starting AP Export.\r\n";
-                                foreach($points as $point)
-                                {
-                        #		echo $point."\r\n";
-                                        $nn++;
-                                        $point_exp = explode(",", $point);
-                                        $pnt = explode(":", $point_exp[1]);
-                                        $rows = $pnt[1];
-                                        $APID = $pnt[0];
-                                        $sql_1	= "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$APID' LIMIT 1";
-                                        $result_1	= mysql_query($sql_1, $conn) or die(mysql_error($conn));
-                                        $ap_array = mysql_fetch_array($result_1);
-                                        #var_dump($ap_array);
-                                        $manuf = $this->findManuf($ap_array['mac']);
-                                        switch($ap_array['sectype'])
-                                                {
-                                                        case 1:
-                                                                $type = "#openStyleDead";
-                                                                $auth = "Open";
-                                                                $encry = "None";
-                                                                break;
-                                                        case 2:
-                                                                $type = "#wepStyleDead";
-                                                                $auth = "Open";
-                                                                $encry = "WEP";
-                                                                break;
-                                                        case 3:
-                                                                $type = "#secureStyleDead";
-                                                                $auth = "WPA-Personal";
-                                                                $encry = "TKIP-PSK";
-                                                                break;
-                                                }
-                                        switch($ap_array['radio'])
-                                                {
-                                                        case "a":
-                                                                $radio="802.11a";
-                                                                break;
-                                                        case "b":
-                                                                $radio="802.11b";
-                                                                break;
-                                                        case "g":
-                                                                $radio="802.11g";
-                                                                break;
-                                                        case "n":
-                                                                $radio="802.11n";
-                                                                break;
-                                                        default:
-                                                                $radio="Unknown Radio";
-                                                                break;
-                                                }
-                        #		echo $ap_array['id']." -- ".$ap_array['ssid']."\r\n";
-                                        $ssid_edit = html_entity_decode($ap_array['ssid']);
-                                        list($ssid_t, $ssid_f, $ssid)  = make_ssid($ssid_edit);
-                                #	$ssid_t = $ssid_array[0];
-                                #	$ssid_f = $ssid_array[1];
-                                #	$ssid = $ssid_array[2];
-                                        $table	=	$ssid_t.'-'.$ap_array['mac'].'-'.$ap_array['sectype'].'-'.$ap_array['radio'].'-'.$ap_array['chan'];
-                                        $sql1 = "SELECT * FROM `wifi_st`.`$table` WHERE `id` = '$rows'";
-                                        $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-                                        $newArray = mysql_fetch_array($result1);
-#					echo $nn."<BR>";
-                                        $otx	= $newArray["otx"];
-                                        $btx	= $newArray["btx"];
-                                        $nt		= $newArray['nt'];
-                                        $label	= $newArray['label'];
-                                        $signal	= $newArray['sig'];
-                                        $aps[$nn]	= array(
-                                                                                'id'		=>	$ap_array['id'],
-                                                                                'ssid'		=>	$ssid_t,
-                                                                                'mac'		=>	$ap_array['mac'],
-                                                                                'sectype'	=>	$ap_array['sectype'],
-                                                                                'r'			=>	$radio,
-                                                                                'radio'		=>	$ap_array['radio'],
-                                                                                'chan'		=>	$ap_array['chan'],
-                                                                                'man'		=>	$manuf,
-                                                                                'type'		=>	$type,
-                                                                                'auth'		=>	$auth,
-                                                                                'encry'		=>	$encry,
-                                                                                'label'		=>	$label,
-                                                                                'nt'		=>	$nt,
-                                                                                'btx'		=>	$btx,
-                                                                                'otx'		=>	$otx,
-                                                                                'sig'		=>	$signal
-                                                                                );
-
-                                        $sig		=	$aps[$nn]['sig'];
-                                        $signals	=	explode("-", $sig);
-        #				echo $sig."<BR>";
-                                        $table_gps		=	$aps[$nn]['ssid'].'-'.$aps[$nn]['mac'].'-'.$aps[$nn]['sectype'].'-'.$aps[$nn]['radio'].'-'.$aps[$nn]['chan'].$gps_ext;
-                        #		echo $table_gps."\r\n";
-                                        foreach($signals as $key=>$val)
-                                        {
-                                                $sig_exp = explode(",", $val);
-                                                $gps_id	= $sig_exp[0];
-
-                                                $sql1 = "SELECT * FROM `wifi_st`.`$table_gps` WHERE `id` = '$gps_id'";
-                                                $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-                                                $gps_table = mysql_fetch_array($result1);
-                                                $gps_array[$n]	=	array(
-                                                                                                "lat" => $gps_table['lat'],
-                                                                                                "long" => $gps_table['long'],
-                                                                                                "sats" => $gps_table['sats'],
-                                                                                                "hdp" => $gps_table['hdp'],
-                                                                                                "alt" => $gps_table['alt'],
-                                                                                                "geo" => $gps_table['geo'],
-                                                                                                "kmh" => $gps_table['kmh'],
-                                                                                                "mph" => $gps_table['mph'],
-                                                                                                "track" => $gps_table['track'],
-                                                                                                "date" => $gps_table['date'],
-                                                                                                "time" => $gps_table['time']
-                                                                                                );
-                                                $n++;
-                                                $signals[] = $n.",".$sig_exp[1];
-                                        }
-                                        echo $nn."-".$n."==";
-                                        $sig_new = implode("-", $signals);
-                                        $aps[$nn]['sig'] = $sig_new;
-                                        unset($signals);
-                                }
-                        }
-                break;
-
-                case "exp_user_list":
-                        $sql_		= "SELECT * FROM `wifi`.`$users_t` WHERE `id` = '$row' LIMIT 1";
-                        $result_1	= mysql_query($sql_, $conn) or die(mysql_error($conn));
-                        $list_array = mysql_fetch_array($result_1);
-                        if($list_array["points"] == ''){$return = array(0=>0, 1=>"Empty return"); return $return;}
-                        $points = explode("-", $list_array['points']);
-                        $title = $list_array['title'];
-                        $username = $list_array['username'];
-                        if($screen == "HTML"){echo '<table><tr class="style4"><th style="border-style: solid; border-width: 1px">Start Export Of $title by $username</th></tr>';}
-                #	echo "Starting AP Export.\r\n";
-                        $nn=-1;
-                        foreach($points as $point)
-                        {
-                #		echo $point."\r\n";
-                                $nn++;
-                #		echo $nn."\r\n";
-                                $point_exp = explode(",", $point);
-                                $pnt = explode(":", $point_exp[1]);
-                                $rows = $pnt[1];
-                                $APID = $pnt[0];
-                                $sql_1	= "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$APID' LIMIT 1";
-                                $result_1	= mysql_query($sql_1, $conn) or die(mysql_error($conn));
-                                $ap_array = mysql_fetch_array($result_1);
-                                #var_dump($ap_array);
-                                $manuf = $this->findManuf($ap_array['mac']);
-                                switch($ap_array['sectype'])
-                                        {
-                                                case 1:
-                                                        $type = "#openStyleDead";
-                                                        $auth = "Open";
-                                                        $encry = "None";
-                                                        break;
-                                                case 2:
-                                                        $type = "#wepStyleDead";
-                                                        $auth = "Open";
-                                                        $encry = "WEP";
-                                                        break;
-                                                case 3:
-                                                        $type = "#secureStyleDead";
-                                                        $auth = "WPA-Personal";
-                                                        $encry = "TKIP-PSK";
-                                                        break;
-                                        }
-                                switch($ap_array['radio'])
-                                        {
-                                                case "a":
-                                                        $radio="802.11a";
-                                                        break;
-                                                case "b":
-                                                        $radio="802.11b";
-                                                        break;
-                                                case "g":
-                                                        $radio="802.11g";
-                                                        break;
-                                                case "n":
-                                                        $radio="802.11n";
-                                                        break;
-                                                default:
-                                                        $radio="Unknown Radio";
-                                                        break;
-                                        }
-                #		echo $ap_array['id']." -- ".$ap_array['ssid']."\r\n";
-                                $ssid_edit = html_entity_decode($ap_array['ssid']);
-                                list($ssid_t, $ssid_f, $ssid)  = make_ssid($ssid_edit);
-                        #	$ssid_t = $ssid_array[0];
-                        #	$ssid_f = $ssid_array[1];
-                        #	$ssid = $ssid_array[2];
-                                $table	=	$ssid_t.'-'.$ap_array['mac'].'-'.$ap_array['sectype'].'-'.$ap_array['radio'].'-'.$ap_array['chan'];
-                                $sql1 = "SELECT * FROM `wifi_st`.`$table` WHERE `id` = '$rows'";
-                                $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-                                $newArray = mysql_fetch_array($result1);
-#					echo $nn."<BR>";
-                                $otx	= $newArray["otx"];
-                                $btx	= $newArray["btx"];
-                                $nt		= $newArray['nt'];
-                                $label	= $newArray['label'];
-                                $signal	= $newArray['sig'];
-                                $aps[$nn]	= array(
-                                                                        'id'		=>	$ap_array['id'],
-                                                                        'ssid'		=>	$ssid_t,
-                                                                        'mac'		=>	$ap_array['mac'],
-                                                                        'sectype'	=>	$ap_array['sectype'],
-                                                                        'r'			=>	$radio,
-                                                                        'radio'		=>	$ap_array['radio'],
-                                                                        'chan'		=>	$ap_array['chan'],
-                                                                        'man'		=>	$manuf,
-                                                                        'type'		=>	$type,
-                                                                        'auth'		=>	$auth,
-                                                                        'encry'		=>	$encry,
-                                                                        'label'		=>	$label,
-                                                                        'nt'		=>	$nt,
-                                                                        'btx'		=>	$btx,
-                                                                        'otx'		=>	$otx,
-                                                                        'sig'		=>	$signal
-                                                                        );
-
-                                $n			=	1;	# GPS Array KEY -has to start at 1 vistumbler will error out if the first GPS point has a key of 0
-                                $sig		=	$aps[$nn]['sig'];
-                                $signals	=	explode("-", $sig);
-#				echo $sig."<BR>";
-                                $table_gps		=	$aps[$nn]['ssid'].'-'.$aps[$nn]['mac'].'-'.$aps[$nn]['sectype'].'-'.$aps[$nn]['radio'].'-'.$aps[$nn]['chan'].$gps_ext;
-                #		echo $table_gps."\r\n";
-                                foreach($signals as $key=>$val)
-                                {
-                                        $sig_exp = explode(",", $val);
-                                        $gps_id	= $sig_exp[0];
-
-                                        $sql1 = "SELECT * FROM `wifi_st`.`$table_gps` WHERE `id` = '$gps_id'";
-                                        $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-                                        $gps_table = mysql_fetch_array($result1);
-                                        $gps_array[$n]	=	array(
-                                                                                        "lat" => $gps_table['lat'],
-                                                                                        "long" => $gps_table['long'],
-                                                                                        "sats" => $gps_table['sats'],
-                                                                                        "hdp" => $gps_table['hdp'],
-                                                                                        "alt" => $gps_table['alt'],
-                                                                                        "geo" => $gps_table['geo'],
-                                                                                        "kmh" => $gps_table['kmh'],
-                                                                                        "mph" => $gps_table['mph'],
-                                                                                        "track" => $gps_table['track'],
-                                                                                        "date" => $gps_table['date'],
-                                                                                        "time" => $gps_table['time']
-                                                                                        );
-                                        $n++;
-                                        $signals[] = $n.",".$sig_exp[1];
-                                }
-                                $sig_new = implode("-", $signals);
-                                $aps[$nn]['sig'] = $sig_new;
-                                echo $nn."-".$n."==";
-                                unset($signals);
-                        }
-                break;
-
-                case "exp_all_db_vs1":
-                        $n	=	1;
-                        $nn	=	1; # AP Array key
-                        if($screen == "HTML"){echo '<table><tr class="style4"><th style="border-style: solid; border-width: 1px">Start of WiFi DB export to VS1</th></tr>';}
-                        $sql_		= "SELECT * FROM `wifi`.`wifi_pointers`";
-                        $result_	= mysql_query($sql_, $conn) or die(mysql_error($conn));
-                        while($ap_array = mysql_fetch_array($result_))
-                        {
-                                $manuf = $this->findManuf($ap_array['mac']);
-                                switch($ap_array['sectype'])
-                                        {
-                                                case 1:
-                                                        $type = "#openStyleDead";
-                                                        $auth = "Open";
-                                                        $encry = "None";
-                                                        break;
-                                                case 2:
-                                                        $type = "#wepStyleDead";
-                                                        $auth = "Open";
-                                                        $encry = "WEP";
-                                                        break;
-                                                case 3:
-                                                        $type = "#secureStyleDead";
-                                                        $auth = "WPA-Personal";
-                                                        $encry = "TKIP-PSK";
-                                                        break;
-                                        }
-                                switch($ap_array['radio'])
-                                        {
-                                                case "a":
-                                                        $radio="802.11a";
-                                                        break;
-                                                case "b":
-                                                        $radio="802.11b";
-                                                        break;
-                                                case "g":
-                                                        $radio="802.11g";
-                                                        break;
-                                                case "n":
-                                                        $radio="802.11n";
-                                                        break;
-                                                default:
-                                                        $radio="Unknown Radio";
-                                                        break;
-                                        }
-                                $ssid_edit = html_entity_decode($ap_array['ssid']);
-                                list($ssid_t, $ssid_f, $ssid)  = make_ssid($ssid_edit);
-                                $table	=	$ssid_t.'-'.$ap_array['mac'].'-'.$ap_array['sectype'].'-'.$ap_array['radio'].'-'.$ap_array['chan'];
-                                $sql	=	"SELECT * FROM `wifi_st`.`$table`";
-                                $result	=	mysql_query($sql, $conn) or die(mysql_error($conn));
-                                $rows	=	mysql_num_rows($result);
-
-                                $sql1 = "SELECT * FROM `wifi_st`.`$table` WHERE `id` = '$rows'";
-                                $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-                                $newArray = mysql_fetch_array($result1);
-#					echo $nn."<BR>";
-                                $otx	= $newArray["otx"];
-                                $btx	= $newArray["btx"];
-                                $nt		= $newArray['nt'];
-                                $label	= $newArray['label'];
-                                $signal	= $newArray['sig'];
-                                $aps[$nn]	= array(
-                                                                        'id'		=>	$ap_array['id'],
-                                                                        'ssid'		=>	$ap_array['ssid'],
-                                                                        'mac'		=>	$ap_array['mac'],
-                                                                        'sectype'	=>	$ap_array['sectype'],
-                                                                        'r'			=>	$ap_array['radio'],
-                                                                        'radio'		=>	$radio,
-                                                                        'chan'		=>	$ap_array['chan'],
-                                                                        'man'		=>	$manuf,
-                                                                        'type'		=>	$type,
-                                                                        'auth'		=>	$auth,
-                                                                        'encry'		=>	$encry,
-                                                                        'label'		=>	$label,
-                                                                        'nt'		=>	$nt,
-                                                                        'btx'		=>	$btx,
-                                                                        'otx'		=>	$otx,
-                                                                        'sig'		=>	$signal
-                                                                        );
-                                $sig		=	$ap['sig'];
-                                $signals	=	explode("-", $sig);
-#				echo $sig."<BR>";
-                                $table_gps		=	$table.$gps_ext;
-                                echo $table_gps."\r\n";
-                                foreach($signals as $sign)
-                                {
-                                        $sig_exp = explode(",", $sign);
-                                        $gps_id	= $sig_exp[0];
-
-                                        $sql1 = "SELECT * FROM `wifi_st`.`$table_gps` WHERE `id` = '$gps_id'";
-                                        $result1 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-                                        $gps_table = mysql_fetch_array($result1);
-                                        $gps_array[$n]	=	array(
-                                                                                        "lat" => $gps_table['lat'],
-                                                                                        "long" => $gps_table['long'],
-                                                                                        "sats" => $gps_table['sats'],
-                                                                                        "hdp" => $gps_table['hdp'],
-                                                                                        "alt" => $gps_table['alt'],
-                                                                                        "geo" => $gps_table['geo'],
-                                                                                        "kmh" => $gps_table['kmh'],
-                                                                                        "mph" => $gps_table['mph'],
-                                                                                        "track" => $gps_table['track'],
-                                                                                        "date" => $gps_table['date'],
-                                                                                        "time" => $gps_table['time']
-                                                                                        );
-                                        $n++;
-                                        $signals[] = $n.",".$sig_exp[1];
-                                }
-                                $sig_new = implode("-", $signals);
-                                $aps[$nn]['sig'] = $sig_new;
-
-                                echo $nn."-".$n."==";
-                                unset($signals);
-                                $nn++;
-                        }
-                break;
-        }
-        if(count($aps) > 1 && count($gps_array) > 1)
-        {
-                $date		=	date('Y-m-d_H-i-s');
-
-                if(@$row != 0)
-                {
-                        $file_ext	=	$date."_".$title.".vs1";
-                }elseif(@$user != "")
-                {
-                        $file_ext	=	$date."_".$user.".vs1";
-                }else
-                {
-                        $file_ext	=	$date."_FULL_DB.vs1";
-                }
-                $filename	=	$vs1_out.$file_ext;
-                #echo $filename."\r\n";
-                // define initial write and appends
-                fopen($filename, "w");
-                $fileappend	=	fopen($filename, "a");
-
-                $h1 = "#  Vistumbler VS1 - Detailed Export Version 3.0
-# Created By: RanInt WiFiDB ".$ver['wifidb']."
-# -------------------------------------------------
-# GpsID|Latitude|Longitude|NumOfSatalites|HorizontalDilutionOfPrecision|Altitude(m)|HeightOfGeoidAboveWGS84Ellipsoid(m)|Speed(km/h)|Speed(MPH)|TrackAngle(Deg)|Date(UTC y-m-d)|Time(UTC h:m:s.ms)
-# -------------------------------------------------
-";
-                fwrite($fileappend, $h1);
-
-                foreach( $gps_array as $key=>$gps )
-                {
-                        $lat	=	$gps['lat'];
-                        $long	=	$gps['long'];
-                        $sats	=	$gps['sats'];
-
-                        $hdp	= $gps['hdp'];
-                        if($hdp == ''){$hdp = 0;}
-
-                        $alt	= $gps['alt'];
-                        if($alt == ''){$alt = 0;}
-
-                        $geo	= $gps['geo'];
-                        if($geo == ''){$geo = "-0";}
-
-                        $kmh	= $gps['kmh'];
-                        if($kmh == ''){$kmh = 0;}
-
-                        $mph	= $gps['mph'];
-                        if($mph == ''){$mph = 0;}
-
-                        $track	= $gps['track'];
-                        if($track == ''){$track = 0;}
-
-                        $date	=	$gps['date'];
-                        $time	=	$gps['time'];
-                        $gpsd = $key."|".$lat."|".$long."|".$sats."|".$hdp."|".$alt."|".$geo."|".$kmh."|".$mph."|".$track."|".$date."|".$time."\r\n";
-                        fwrite($fileappend, $gpsd);
-                }
-                $ap_head = "# ---------------------------------------------------------------------------------------------------------------------------------------------------------
-# SSID|BSSID|MANUFACTURER|Authetication|Encryption|Security Type|Radio Type|Channel|Basic Transfer Rates|Other Transfer Rates|Network Type|Label|GpsID,SIGNAL
-# ---------------------------------------------------------------------------------------------------------------------------------------------------------
-";
-                fwrite($fileappend, $ap_head);
-                foreach($aps as $ap)
-                {
-                        $apd = $ap['ssid']."|".$ap['mac']."|".$ap['man']."|".$ap['auth']."|".$ap['encry']."|".$ap['sectype']."|".$ap['radio']."|".$ap['chan']."|".$ap['btx']."|".$ap['otx']."|".$ap['nt']."|".$ap['label']."|".$ap['sig']."\r\n";
-                        fwrite($fileappend, $apd);
-                }
-                fclose($fileappend);
-                $end    =   date("H:i:s");
-                $GPSS   =   count($gps_array);
-                $APSS   =   count($aps);
-                $return = array(0=>1, 1=>$file_ext);
-                if($screen == "HTML")
-                {
-                        echo '<tr><td style="border-style: solid; border-width: 1px">Wrote # GPS Points: '.$GPSS.'</td></tr>';
-                        echo '<tr><td style="border-style: solid; border-width: 1px">Wrote # Access Points: '.$APSS.'</td></tr>';
-                        echo '<tr><td style="border-style: solid; border-width: 1px">Your Vistumbler VS1 file is ready,<BR>you can download it from <a class="links" href="'.$filename.'">Here</a></td><td></td></tr></table>';
-                }
-        }else
-        {
-                $return = array(0=>0, 1=>"Empty arrays. :/");
-                if($screen == "HTML")
-                {
-                        echo '<tr><td style="border-style: solid; border-width: 1px">Failed to export.</td><td></td></tr></table>';
-                }
-        }
-        return $return;
-    }
-
-
-
-
-
-
-
-    public function UserList($row = 0, $trail_type = 3)
-    {
-        if($row === 0)
-        {
-            throw new ErrorException("Row value for export::UserList() is empty.");
+            throw new ErrorException('$user value for export::UserAll() is not a string');
             return 0;
         }
-        $r = 0;
-        $data = array();
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $user, PDO::PARAM_STR);
+        $prep->execute();
+        $this->sql->checkError(__LINE__, __FILE__);
+        $user_imports = $prep->fetchAll();
+        $uicount = count($user_imports);
+
+        $KML_data="";
+        if($uicount < 1)
+        {
+            throw new ErrorException("User selected is empty, try again.");
+        }else
+        {
+            foreach($user_imports as $import)
+            {
+                $points = explode("-", $import['points']);
+                foreach($points as $point)
+                {
+                    list($id, $new_old) = explode(":", $point);
+                    $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+                    $result = $this->sql->conn->query($sql);
+                    while($array = $result->fetch(2))
+                    {
+                        $ret = $this->ExportSingleAP((int)$array['id']);
+                        if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+                        {
+                            $this->createKML->ClearData();
+                            $this->createKML->LoadData($ret);
+                            $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+                        }
+                    }
+                }
+            }
+        }
+        if($KML_data == "")
+        {
+            $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+        }
+        else
+        {
+            $user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+            $export_kml_file = $this->kml_out.$user_fn.".kml";
+            $KML_data = $this->createKML->createFolder($user, $KML_data, 0);
+            $this->createKML->createKML($export_kml_file, "$user AP's", $KML_data, 1);
+            $KML_data="";
+
+            $ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
+            if($ret_kmz_name == -1)
+            {
+                $results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+            }
+            elseif($ret_kmz_name == -2)
+            {
+                $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+            }
+            else
+            {
+                $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$user_fn.'.kmz">'.$user_fn.'.kmz</a>');
+            }
+        }
+        return $results;
+    }
+
+    public function SingleApKML($id, $limit = NULL, $from = NULL)
+    {
+        if(!is_int($id))
+        {
+            throw new ErrorException('$id value for export::SingleApKML() is NaN');
+            return 0;
+        }
+
+        $KML_data = "";
+        $export_id="";
+        $export_ssid="";
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+        $result = $this->sql->conn->query($sql);
+        while($array = $result->fetch(2))
+        {
+            $export_id = (int)$array['id'];
+            $export_ssid = $array['ssid'];
+            $ret = $this->ExportSingleAP($id, 0, $limit, $from);
+            if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+            {
+                $this->createKML->ClearData();
+                $this->createKML->LoadData($ret);
+                $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+            }
+        }
+
+        if($KML_data == "")
+        {
+            $results = array("mesg" => 'This AP has no gps. No KMZ file has been exported');
+        }
+        else
+        {
+            $KML_data = $this->createKML->createFolder($export_id." - ".$export_ssid, $KML_data, 0);
+            $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $export_id."-".$export_ssid);
+            $export_kml_file = $this->kml_out.$title.".kml";
+            $this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
+            $KML_data="";
+
+            $ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
+            if($ret_kmz_name == -1)
+            {
+                $results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+            }
+            elseif($ret_kmz_name == -2)
+            {
+                $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+            }
+            else
+            {
+                $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+            }
+        }
+        return $results;
+
+    }
+
+    public function UserList($row)
+    {
+        if(!is_int($row))
+        {
+            throw new ErrorException('$row value for export::UserList() is NaN');
+            return 0;
+        }
         $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $row, PDO::PARAM_INT);
         $prep->execute();
+        $this->sql->checkError(__LINE__, __FILE__);
         $fetch = $prep->fetch();
-
+        if($fetch['points'] == "")
+        {
+            throw new ErrorException("User Import selected is empty, try again.");
+        }
         $points = explode("-", $fetch['points']);
-        #$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
-        #$prep2 = $this->sql->conn->prepare($sql2);
-
-        #$sql3 = "SELECT `wifi_signals`.*, `wifi_gps`.*
-        #        FROM `wifi`.`wifi_signals`
-        #        LEFT JOIN `wifi`.`wifi_gps`
-        #        ON `wifi_gps`.`ap_hash` = `wifi_signals`.`ap_hash`
-        #        WHERE `wifi_signals`.`id` = ? AND `wifi_gps`.`lat` != '0000.0000'";
-        #$prep3 = $this->sql->conn->prepare($sql3);
-echo "Gathering List...\r\n";
+        $KML_data="";
         foreach($points as $point)
         {
             list($id, $new_old) = explode(":", $point);
-            $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = $id";
-
-            $sql3 = "SELECT `wifi_signals`.*, `wifi_gps`.*
-                FROM `wifi`.`wifi_signals`
-                LEFT JOIN `wifi`.`wifi_gps`
-                ON `wifi_gps`.`ap_hash` = `wifi_signals`.`ap_hash`
-                WHERE `wifi_signals`.`id` = $id AND `wifi_gps`.`lat` != '0000.0000'";
-            #$prep2->bindParam(1, $id, PDO::PARAM_INT);
-            #$prep2->execute();
-            $prep2 = $this->sql->conn->query($sql2);
-            $this->sql->checkError();
-            $ap_fetch = $prep2->fetch(2);
-
-            $data[$ap_fetch['ap_hash']] = $ap_fetch;
-            $data[$ap_fetch['ap_hash']]['new_old'] = $new_old;
-            $prep3 = $this->sql->conn->query($sql3);
-            #$prep3->bindParam(1, $ap_fetch['ap_hash']);
-            #$prep3->execute();
-            $sig_gps_data = $prep3->fetchAll(2);
-            $data[$ap_fetch['ap_hash']]['gdata'] = $sig_gps_data;
-            $r = dbcore::RotateSpinner($r);
+            $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+            $result = $this->sql->conn->query($sql);
+            while($array = $result->fetch(2))
+            {
+                $ret = $this->ExportSingleAP((int)$array['id']);
+                if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+                {
+                    $this->createKML->ClearData();
+                    $this->createKML->LoadData($ret);
+                    $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+                }
+            }
         }
-echo "Data gathered, Generating the KML File...\r\n";
-echo "Plotting the AP's\r\n";
-        $this->createKML->LoadData($data);
-        $date = date("Y-m-d_H-i-s");
 
-        $folder_data = $this->createKML->createFolder($this->createKML->PlotAllAPs($trail_type), $fetch['title']);
-        $kml_data = $this->createKML->createFolder($folder_data, "WiFiDB Export on ".$date);
-        $this->createKML->createKML("UserImport_".$date."_".rand(000000,999999), $kml_data);
-        return $data;
+        if($KML_data == "")
+        {
+            $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+        }
+        else
+        {
+            $KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
+            $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+            $export_kml_file = $this->kml_out.$title.".kml";
+            $this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
+            $KML_data="";
+
+            $ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
+            if($ret_kmz_name == -1)
+            {
+                $results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+            }
+            elseif($ret_kmz_name == -2)
+            {
+                $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+            }
+            else
+            {
+                $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+            }
+        }
+        return $results;
+    }
+
+    public function exp_search($ResultList)
+    {
+        $KML_data = "";
+        foreach($ResultList as $ResultAP) {
+            $ret = $this->ExportSingleAP((int)$ResultAP['id']);
+            if(is_array($ret) && count($ret[$ResultAP['ap_hash']]['gdata']) > 0)
+            {
+                $this->createKML->ClearData();
+                $this->createKML->LoadData($ret);
+                $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+            }
+        }
+
+        if($KML_data == "")
+        {
+            $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+        }
+        else
+        {
+            $KML_data = $this->createKML->createFolder("Search Export", $KML_data, 0);
+            $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), "Search_Export");
+            $export_kml_file = $this->kml_out.$title.".kml";
+            $this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
+            $KML_data="";
+
+            $ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
+            if($ret_kmz_name == -1)
+            {
+                $results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+            }
+            elseif($ret_kmz_name == -2)
+            {
+                $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+            }
+            else
+            {
+                $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+            }
+        }
+        return $results;
     }
 }

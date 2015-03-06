@@ -1,5 +1,5 @@
 <?php
-error_reporting(E_ALL | E_STRICT); # supposed this could get removed, but its nice to see all the errors that might happen during a backup
+error_reporting(E_ALL|E_STRICT);
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
 require('../daemon/config.inc.php');

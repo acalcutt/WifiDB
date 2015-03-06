@@ -280,7 +280,6 @@ class api extends dbcore
                 WHERE `ap_hash` = ?
                 AND `session_id` = ?
                 AND `username` = ? LIMIT 1";
-
         $result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $ap_hash, PDO::PARAM_STR);
         $result->bindParam(2, $data['session_id'], PDO::PARAM_STR);
@@ -465,7 +464,6 @@ class api extends dbcore
             $prep->execute();
 
             $gps_id = $this->sql->conn->lastInsertId();
-            var_dump($gps_id);
 
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")
@@ -480,10 +478,11 @@ class api extends dbcore
             $sql_sig = "INSERT INTO `wifi`.`live_signals`
                         (`id`, `signal`, `rssi`, `gps_id`, `ap_hash`, `time_stamp`)
                         VALUES ('', ?, ?, ?, ?, ?)";
+			$time_stamp = strtotime($data['date']." ".$data['time']);
             $prep_sig = $this->sql->conn->prepare($sql_sig);
             $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
             $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
-            $prep_sig->bindParam(3, $data['gps_id'], PDO::PARAM_INT);
+            $prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
             $prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
             $prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
             $prep_sig->execute();
@@ -501,11 +500,13 @@ class api extends dbcore
             $date_time = strtotime($data['date']." ".$data['time']);
             $sql = "INSERT INTO  `wifi`.`live_aps` ( `id`, `ssid`, `mac`,  `chan`, `radio`, `auth`, `encry`, `sectype`,
                 `BTx`, `OTx`, `NT`, `label`, `sig`, `username`, `FA`, `LA`, `lat`, `long`, `session_id`, `ap_hash`)
-                                            VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? ) ";
+                                            VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
+			$chan = (int)$data['chan'];
+			var_dump($chan, $data['username']);
             $prep = $this->sql->conn->prepare($sql);
-            $prep->bindParam(1, $data['ssid'], PDO::PARAM_STR);
+			$prep->bindParam(1, $data['ssid'], PDO::PARAM_STR);
             $prep->bindParam(2, $data['mac'], PDO::PARAM_STR);
-            $prep->bindParam(3, $data['chan'], PDO::PARAM_STR);
+            $prep->bindParam(3, $chan, PDO::PARAM_INT);
             $prep->bindParam(4, $data['radio'], PDO::PARAM_STR);
             $prep->bindParam(5, $data['auth'], PDO::PARAM_STR);
             $prep->bindParam(6, $data['encry'], PDO::PARAM_STR);

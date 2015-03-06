@@ -25,7 +25,7 @@ if not, write to the
                 <table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
                     <tbody>
                         <tr>
-                            <td class="style4">Daemon Generated KML<br>
+                            <td class="style4">Daemon Generated KMZ<br>
                                 <font size="2">All times are local system time.</font>
                             </td>
                         </tr>
