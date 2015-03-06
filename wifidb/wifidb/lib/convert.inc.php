@@ -684,13 +684,13 @@ class convert extends dbcore
 
         $APQuery = $dbh->query("SELECT * FROM `wifi`");
         $all_aps = $APQuery->fetchAll(2);
-
+        $n=0;
         foreach($all_aps as $ap)
         {
             #echo "--------------------------\r\n";
             #var_dump($ap);
             list($authen, $encry, $sectype, $nt) = $this->findCapabilities($ap["capabilities"]);
-            list($chan, $radio) = $this->findFreq($ap['Frequency']);
+            list($chan, $radio) = $this->findFreq($ap['frequency']);
             $apdata[$ap['_id']] = array(
                 'ssid'=>$ap['ssid'],
                 'mac'=>$ap['bssid'],
@@ -713,22 +713,25 @@ class convert extends dbcore
             #echo $sql1."\r\n";
             $gps_query = $dbh->query($sql1);
             $gps_fetch = $gps_query->fetchAll(2);
-            $n=0;
             foreach($gps_fetch as $point)
             {
+                var_dump($point['lat']);
+                var_dump($this->all2dm(number_format($point['lat'], 7)));
+                var_dump($point['lon']);
+                var_dump($this->all2dm(number_format($point['lon'], 7)));
                 $n++;
-                $apdata[$ap['_id']]['sig'][] = $point['_id'].",".$this->dBm2Sig($point['level']).",".$point['level'];
-                $gdata[$point['_id']] = array(
-                    "id"=>$n,
+                $apdata[$ap['_id']]['sig'][] = $n.",".$this->dBm2Sig($point['level']).",".$point['level'];
+                $gdata[$n] = array(
+                    'id'=>$n,
                     'lat' => $this->all2dm(number_format($point['lat'], 7)),
                     'long'=> $this->all2dm(number_format($point['lon'], 7)),
                     'sats'=> 0,
-                    "hdp"=> '0.0',
+                    'hdp'=> '0.0',
                     'alt' => $point['alt'],
-                    "geo"=> '-0.0',
-                    "kmh"=> '0.0',
-                    "mph"=> '0.0',
-                    "track"=> '0.0',
+                    'geo'=> '-0.0',
+                    'kmh'=> '0.0',
+                    'mph'=> '0.0',
+                    'track'=> '0.0',
                     'date'=> date($this->date_format, substr($point['timestamp'], 0, -3)),
                     'time'=> date($this->time_format, substr($point['timestamp'], 0, -3)),
                 );
@@ -763,19 +766,19 @@ class convert extends dbcore
 ";
         $gpsd = $h1;
         $n=1;
-        foreach( $data[1] as $gps )
+        foreach( $data[1] as $key=>$gps )
         {
-        #Add N/S to latitude
-        $lat = $gps['lat'];
-        $sign = ($lat[0] == "-") ? "S " : "N ";
-        $lat = $sign.str_replace("-", "", $lat);
-        #Add E/W to longitude
-        $long = $gps['long'];
-        $sign = ($long[0] == "-") ? "W " : "E ";
-        $long = $sign.str_replace("-", "", $long);        
-        #Write VS1 GPS line
-        $gpsd .= $n."|".$lat."|".$long."|".$gps["sats"]."|".$gps["hdp"]."|".$gps["alt"]."|".$gps["geo"]."|".$gps["kmh"]."|".$gps["mph"]."|".$gps["track"]."|".$gps["date"]."|".$gps["time"]."\r\n";
-        $n++;
+            #Add N/S to latitude
+            $lat = $gps['lat'];
+            $sign = ($lat[0] == "-") ? "S " : "N ";
+            $lat = $sign.str_replace("-", "", $lat);
+            #Add E/W to longitude
+            $long = $gps['long'];
+            $sign = ($long[0] == "-") ? "W " : "E ";
+            $long = $sign.str_replace("-", "", $long);
+            #Write VS1 GPS line
+            $gpsd .= $key."|".$lat."|".$long."|".$gps["sats"]."|".$gps["hdp"]."|".$gps["alt"]."|".$gps["geo"]."|".$gps["kmh"]."|".$gps["mph"]."|".$gps["track"]."|".$gps["date"]."|".$gps["time"]."\r\n";
+            $n++;
         }
         $ap_head = "#------------------------------------------------------------------------------------------------------------------------------------------------------------------- #
 # SSID|BSSID|MANUFACTURER|Authentication|Encryption|Security Type|Radio Type|Channel|Basic Transfer Rates|Other Transfer Rates|Network Type|High Signal|High RSSI|Label|GID,SIGNAL,RSSI
@@ -785,7 +788,7 @@ class convert extends dbcore
         foreach($data[0] as $ap)
         {
             #Write VS1 AP line
-            $apd .= $ap["ssid"]."|".$ap["mac"]."|".$ap["man"]."|".$ap["auth"]."|".$ap["encry"]."|".$ap["sectype"]."|".$ap["radio"]."|".$ap["chan"]."|".$ap["btx"]."|".$ap["otx"]."|".$ap['highsig']."|".$ap['highRSSI']."|".$ap["nt"]."|".$ap["label"]."|".implode(",", $ap["sig"])."\r\n";
+            $apd .= $ap["ssid"]."|".$ap["mac"]."|".$ap["man"]."|".$ap["auth"]."|".$ap["encry"]."|".$ap["sectype"]."|".$ap["radio"]."|".$ap["chan"]."|".$ap["btx"]."|".$ap["otx"]."|".$ap['highsig']."|".$ap['highRSSI']."|".$ap["nt"]."|".$ap["label"]."|".implode("\\", $ap["sig"])."\r\n";
         }
         file_put_contents($fullfile, $apd);
         return $fullfile;
