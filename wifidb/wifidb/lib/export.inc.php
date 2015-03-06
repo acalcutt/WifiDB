@@ -20,11 +20,11 @@ if not, write to the
 */
 class export extends dbcore
 {
-    public function __construct($config, $daemon_config) {
+    public function __construct($config, $daemon_config, $createKMLObj, $convertObj) {
         parent::__construct($config, $daemon_config);
 
-        $this->convert = new convert($config);
-        $this->createKML = new createKML($this, $config['timetilldead']);
+        $this->convert = $convertObj;
+        $this->createKML = $createKMLObj;
         $this->daemon_folder_stats = array();
         $this->named = 0;
         $this->month_names  = array(

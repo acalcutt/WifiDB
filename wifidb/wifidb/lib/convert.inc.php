@@ -714,10 +714,6 @@ class convert extends dbcore
             $gps_fetch = $gps_query->fetchAll(2);
             foreach($gps_fetch as $point)
             {
-                var_dump($point['lat']);
-                var_dump($this->all2dm(number_format($point['lat'], 7)));
-                var_dump($point['lon']);
-                var_dump($this->all2dm(number_format($point['lon'], 7)));
                 $n++;
                 $apdata[$ap['_id']]['sig'][] = $n.",".$this->dBm2Sig($point['level']).",".$point['level'];
                 $gdata[$n] = array(

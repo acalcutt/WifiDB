@@ -120,14 +120,15 @@ try
 {
     switch(strtolower(SWITCH_SCREEN))
     {
-
         case "cli":
             switch(strtolower(SWITCH_EXTRAS))
             {
                 ####
                 case "export":
-                    $dbcore = new export($config, $daemon_config);
+                    $dbcore = new wdbcli($config, $daemon_config);
+                    $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
+                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
                 break;
                 ####
                 case "import":
@@ -136,7 +137,7 @@ try
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config);
+                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
                     $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
                 break;
                 ####
@@ -170,10 +171,9 @@ try
 
                 case "export":
                     $dbcore = new frontend($config);
-                    __autoload('convert');
+                    $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
-                    __autoload('export');
-                    $dbcore->export = new export($config, $dbcore->convert);
+                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "graph":
