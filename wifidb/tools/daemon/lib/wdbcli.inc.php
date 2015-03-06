@@ -32,6 +32,6 @@ class wdbcli extends dbcore
                             );
         }
     }
-
-
 }
+
+?>
