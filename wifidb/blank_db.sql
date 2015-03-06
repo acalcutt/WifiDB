@@ -1,14 +1,5 @@
--- phpMyAdmin SQL Dump
--- version 4.1.12
--- http://www.phpmyadmin.net
---
--- Host: localhost
--- Generation Time: Mar 28, 2014 at 04:32 AM
--- Server version: 10.0.9-MariaDB-1~wheezy-log
--- PHP Version: 5.4.4-14+deb7u8
-
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET time_zone = "+00:00";
+SET time_zone = "-05:00";
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -37,7 +28,23 @@ CREATE TABLE IF NOT EXISTS `annunc` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `title` (`title`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=2 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `boundaries`
+--
+
+CREATE TABLE IF NOT EXISTS `boundaries` (
+  `id` int(255) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `polygon` text COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `id` (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
+
 
 -- --------------------------------------------------------
 
@@ -86,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `DB_stats` (
   `geos` blob NOT NULL,
   UNIQUE KEY `timestamp` (`timestamp`),
   KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -111,7 +118,7 @@ CREATE TABLE IF NOT EXISTS `files` (
   PRIMARY KEY (`user_row`),
   UNIQUE KEY `file` (`file`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=4 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -136,7 +143,7 @@ CREATE TABLE IF NOT EXISTS `files_tmp` (
   `row` int(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `file` (`file`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -182,7 +189,7 @@ CREATE TABLE IF NOT EXISTS `geonames` (
   KEY `population` (`population`),
   KEY `elevation` (`elevation`),
   KEY `timezone` (`timezone`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=9807271 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0;
 
 -- --------------------------------------------------------
 
@@ -198,7 +205,7 @@ CREATE TABLE IF NOT EXISTS `geonames_admin1` (
   `geonameid` int(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `admin1` (`admin1`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=3866 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -214,7 +221,7 @@ CREATE TABLE IF NOT EXISTS `geonames_admin2` (
   `geonameid` int(255) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `admin2` (`admin2`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=27652 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -245,7 +252,7 @@ CREATE TABLE IF NOT EXISTS `geonames_country_names` (
   `EquivalentFipsCode` varchar(255) COLLATE utf8_bin NOT NULL,
   KEY `id` (`id`),
   KEY `geonamesid` (`geonamesid`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=253 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -276,7 +283,7 @@ CREATE TABLE IF NOT EXISTS `live_aps` (
   `long` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'E 0.0000',
   PRIMARY KEY (`ap_hash`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=14 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -300,7 +307,7 @@ CREATE TABLE IF NOT EXISTS `live_gps` (
   `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=32410 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -318,7 +325,7 @@ CREATE TABLE IF NOT EXISTS `live_signals` (
   KEY `id` (`id`),
   KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`time_stamp`),
   KEY `FK_ap_hash_gps` (`gps_id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=237 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -333,7 +340,7 @@ CREATE TABLE IF NOT EXISTS `live_titles` (
   `notes` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -348,7 +355,7 @@ CREATE TABLE IF NOT EXISTS `log` (
   `timestamp` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `prefix` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=9 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -362,7 +369,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `size` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   UNIQUE KEY `table` (`table`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=5 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
 -- Dumping data for table `settings`
@@ -398,7 +405,7 @@ CREATE TABLE IF NOT EXISTS `share_waypoints` (
   `pvt_id` int(255) NOT NULL,
   `shared_by` varchar(255) CHARACTER SET utf8 NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -421,7 +428,7 @@ CREATE TABLE IF NOT EXISTS `user_imports` (
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
   KEY `id` (`id`),
   KEY `id_2` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=6 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -463,7 +470,7 @@ CREATE TABLE IF NOT EXISTS `user_info` (
   UNIQUE KEY `uid` (`uid`),
   UNIQUE KEY `email` (`email`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=5 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -477,7 +484,7 @@ CREATE TABLE IF NOT EXISTS `user_login_hashes` (
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `utime` int(64) NOT NULL,
   KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -490,7 +497,7 @@ CREATE TABLE IF NOT EXISTS `user_stats` (
   `newest` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `largest` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   UNIQUE KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -505,7 +512,7 @@ CREATE TABLE IF NOT EXISTS `user_validate` (
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY `username` (`username`),
   KEY `id` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -533,7 +540,7 @@ CREATE TABLE IF NOT EXISTS `user_waypoints` (
   `u_date` datetime NOT NULL,
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `gcid` (`gcid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -559,7 +566,7 @@ CREATE TABLE IF NOT EXISTS `wifi_gps` (
   KEY `GPS_INDEX` (`lat`,`sats`,`alt`,`date`,`time`),
   KEY `ap_hash` (`ap_hash`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=28212 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -612,10 +619,8 @@ CREATE TABLE IF NOT EXISTS `wifi_pointers` (
   KEY `username` (`username`),
   KEY `ap_hash` (`ap_hash`),
   KEY `alt` (`alt`),
-  KEY `manuf` (`manuf`),
-  KEY `signals` (`signals`(255)),
-  KEY `ap_hash_2` (`ap_hash`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=5681 ;
+  KEY `manuf` (`manuf`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -634,9 +639,8 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
   PRIMARY KEY (`id`),
   KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`username`,`time_stamp`),
   KEY `FK_GPS` (`gps_id`),
-  KEY `ap_hash_2` (`ap_hash`),
   KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=58646 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
@@ -654,7 +658,7 @@ CREATE TABLE IF NOT EXISTS `daemon_pid_stats` (
   `pidcmd` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=1 ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
 -- Constraints for dumped tables
@@ -692,7 +696,7 @@ CREATE TABLE IF NOT EXISTS `schedule` (
   `status` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=7 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
 -- Dumping data for table `schedule`

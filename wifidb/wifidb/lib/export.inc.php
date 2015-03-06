@@ -1,5 +1,4 @@
 <?php
-require_once("createKML.inc.php");
 /*
 Export.inc.php, holds the WiFiDB exporting functions.
 Copyright (C) 2012 Phil Ferland
@@ -43,7 +42,7 @@ class export extends dbcore
             12=>'December',
         );
         $this->ver_array['export'] = array(
-            "last_edit"             =>  "22-Apr-2014",
+            "last_edit"             =>  "2015-03-06",
             "ExportAllkml"          =>  "2.1",
             "ExportDailykml"        =>  "1.1",
             "ExportSingleAP"        =>  "1.0",
@@ -56,7 +55,27 @@ class export extends dbcore
             "GenerateUpdateKML"     =>  "1.0",
             "ExportAllVS1"          =>  "2.0",
             "ExportAllGPX"          =>  "2.0",
-            );
+        );
+    }
+
+
+    public function CreateBoundariesKML()
+    {
+        $boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
+        $this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
+
+        $results = $this->sql->conn->query("SELECT * FROM `wifi`.`boundaries`");
+        $fetched = $results->fetchAll(2);
+        $KML_data = "";
+        foreach($fetched as $boundary)
+        {
+            $KML_data .= $this->createKML->PlotBoundary($boundary);
+        }
+
+        $KMLFolderdata = $this->createKML->createFolder("World Boundaries", $KML_data, 0);
+        $this->createKML->createKML($boundaries_kml_file, "World Boundaries", $KMLFolderdata);
+        chmod($boundaries_kml_file, 0664);
+        return $boundaries_kml_file;
     }
 
 
@@ -79,7 +98,7 @@ class export extends dbcore
         }
         $NN = $result->rowCount();
         $this->verbosed("APs with GPS: ".$NN);
-        
+
         if($this->named)
         {
             $this->verbosed("Starting Export of Labeled Full KML.");
@@ -112,7 +131,7 @@ class export extends dbcore
                 $this->createKML->LoadData($ret);
                 $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
             }
-            
+
         }
         $full_kml_file = $daily_folder."/full_db".$labeled.".kml";
         $this->verbosed("Writing the Full KML File. ($NN APs) : ".$full_kml_file);
@@ -145,14 +164,14 @@ class export extends dbcore
             ###
             $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kmz';
             $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-            unlink($link);
+            #unlink($link);
             symlink($ret_kmz_name, $link);
             chmod($link, 0664);
         }
-        
+
         return $daily_folder;
     }
-    
+
     /*
      * Export All Daily Aps to KML
      */
@@ -175,7 +194,7 @@ class export extends dbcore
         {
             return -1;
         }
-        
+
         if($this->named)
         {
             $this->verbosed("Start of Exporting Labeled Daily KML.");
@@ -185,7 +204,7 @@ class export extends dbcore
             $this->verbosed("Start of Exporting Non-Labeled Daily KML.");
             $labeled = "";
         }
-        
+
         $daily_folder = $this->daemon_out.$date;
         if(!@file_exists($daily_folder))
         {
@@ -227,7 +246,7 @@ class export extends dbcore
         $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
         unlink($link); 
         symlink($full_kml_file, $link);
-        chmod($link, 0664);        
+        chmod($link, 0664);
         #####################
         $this->verbosed("Starting to compress the KML to a KMZ.");
 
@@ -250,7 +269,7 @@ class export extends dbcore
             unlink($link);
             symlink($ret_kmz_name, $link);
             chmod($link, 0664);
-        }        
+        }
 
         return $daily_folder;
     }
@@ -313,7 +332,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             $this->verbosed("Error Fetching data from Pointers Table :(", -1);
             return -1;
         }
-        
+
         foreach($aparray_all as $aparray)
         {
             $file_data  = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\" ?>
@@ -323,7 +342,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
     xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
     xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1\">";
             // write file header buffer var
-            
+
             $type = $aparray['sectype'];
             switch($type)
             {
@@ -347,15 +366,15 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             $long = $this->convert->dm2dd($aparray['long']);
 
             $file_data .= "<wpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
-                                            ."<ele>".$alt."</ele>\r\n"
-                                            ."<time>".$date."T".$time."Z</time>\r\n"
-                                            ."<name>".$aparray['ssid']."</name>\r\n"
-                                            ."<cmt>".$aparray['mac']."</cmt>\r\n"
-                                            ."<desc>".$aparray['label']."</desc>\r\n"
-                                            ."<sym>".$color."</sym>\r\n<extensions>\r\n"
-                                            ."<gpxx:WaypointExtension xmlns:gpxx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensions/v3/GpxExtensionsv3.xsd\">\r\n"
-                                            ."<gpxx:DisplayMode>SymbolAndName</gpxx:DisplayMode>\r\n<gpxx:Categories>\r\n"
-                                            ."<gpxx:Category>Category ".$type."</gpxx:Category>\r\n</gpxx:Categories>\r\n</gpxx:WaypointExtension>\r\n</extensions>\r\n</wpt>\r\n\r\n";
+                ."<ele>".$alt."</ele>\r\n"
+                ."<time>".$date."T".$time."Z</time>\r\n"
+                ."<name>".$aparray['ssid']."</name>\r\n"
+                ."<cmt>".$aparray['mac']."</cmt>\r\n"
+                ."<desc>".$aparray['label']."</desc>\r\n"
+                ."<sym>".$color."</sym>\r\n<extensions>\r\n"
+                ."<gpxx:WaypointExtension xmlns:gpxx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensions/v3/GpxExtensionsv3.xsd\">\r\n"
+                ."<gpxx:DisplayMode>SymbolAndName</gpxx:DisplayMode>\r\n<gpxx:Categories>\r\n"
+                ."<gpxx:Category>Category ".$type."</gpxx:Category>\r\n</gpxx:Categories>\r\n</gpxx:WaypointExtension>\r\n</extensions>\r\n</wpt>\r\n\r\n";
             if($aparray['rssi'])
             {
                 $signals = explode("\\", $aparray['signals']);
@@ -363,33 +382,33 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             {
                 $signals = explode("-",$aparray['sig']);
             }
-            
+
             $file_data .= "<trk>\r\n<name>GPS Track</name>\r\n<trkseg>\r\n";
             foreach($signals as $signal)
             {
                 $sig_exp    = explode(",",$signal);
                 $gpsid      = $sig_exp[0];
-                
+
                 $sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ? LIMIT 1";
                 $prepgps = $this->sql->conn->prepare($sql);
                 $prepgps->bindParam(1, $gpsid, PDO::PARAM_INT);
                 $prepgps->execute();
                 $gps = $prepgps->fetch(2);
-                
+
                 $alt = $gps['alt'] * 3.28;
 
                 $lat =& $this->convert->dm2dd($gps['lat']);
 
                 $long =& $this->convert->dm2dd($gps['long']);
                 $file_data .= "<trkpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
-                                        ."<ele>".$alt."</ele>\r\n"
-                                        ."<time>".$date."T".$time."Z</time>\r\n"
-                                        ."</trkpt>\r\n";
+                    ."<ele>".$alt."</ele>\r\n"
+                    ."<time>".$date."T".$time."Z</time>\r\n"
+                    ."</trkpt>\r\n";
             }
             $this->verbosed('Plotted AP: '.$aparray['ssid']);
         }
-        
-        
+
+
         $file_data .= "</trkseg>\r\n</trk></gpx>";
         $file_ext = "wifidb_".date($this->datetime_format).".gpx";
         $filename = ($this->gpx_out.$file_ext);
@@ -418,20 +437,20 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
         $data = $this->ExportSingleAP((int)$ap_array['id']);
         $count = count($data[$hash]['gdata']);
-		$this->createKML->LoadData($data);
-		if($labelap)
-		{
-			$KML_string = $this->createKML->PlotAPpoint($hash, 1);
-			$KML_string = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_string);
-		}
-		else
-		{
-			$KML_string = $this->createKML->PlotAPpoint($hash, 0);
-			$KML_string = $this->createKML->createKMLstructure("Newest AP", $KML_string);
-		}
-		Return $KML_string;
-	}
-	
+        $this->createKML->LoadData($data);
+        if($labelap)
+        {
+            $KML_string = $this->createKML->PlotAPpoint($hash, 1);
+            $KML_string = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_string);
+        }
+        else
+        {
+            $KML_string = $this->createKML->PlotAPpoint($hash, 0);
+            $KML_string = $this->createKML->createKMLstructure("Newest AP", $KML_string);
+        }
+        Return $KML_string;
+    }
+    
     public function ExportCurrentAPkml()
     {
         $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` ORDER BY `id` DESC LIMIT 1";
@@ -470,8 +489,9 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 {
                     $this->verbosed("Newest AP KMZ created at ".$ret_kmz_name);
                     chmod($ret_kmz_name, 0664);
-                }    
-            }else
+                }
+            }
+            else
             {
                 Throw new ErrorException('Could not write NewestAP.');
             }
@@ -498,8 +518,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     $this->verbosed("Newest AP Labeled KMZ created at ".$ret_kmz_name);
                     chmod($ret_kmz_name, 0664);
                 }
-				$this->verbosed('File has been written and is ready.', 1);
-            }else
+            }
+            else
             {
                 Throw new ErrorException('Could not write Newest AP Labeled.');
             }
@@ -516,12 +536,12 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         $this->ExportAllkml($date);
         $this->named = 1;
         $this->ExportAllkml($date);
-        
+
         $this->named = 0;
         $this->ExportDailykml($date);
         $this->named = 1;
         $this->ExportDailykml($date);
-        
+
         if($this->HistoryKMLLink() === -1)
         {
             $this->verbosed("Failed to Create Daemon History KML Links", -1);
@@ -529,7 +549,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         {
             $this->verbosed("Created Daemon History KML Links");
         }
-        
+
         if($this->GenerateUpdateKML() === -1)
         {
             $this->verbosed("Failed to Create Update.kml File", -1);
@@ -539,7 +559,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         }
         return 1;
     }
-    
+
     /*
      * Create the Archival KML links
      */
@@ -559,7 +579,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         }
         sort($files);
         closedir($dir);
-        
+
         foreach($files as $entry)
         {
             $matches = array();
@@ -573,7 +593,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 $month_label = $this->month_names[$month];
                 $this->daemon_folder_stats['history'][$year][$month_label][$day] = $entry;
             }
-            
+
         }
         $generated = array();
         foreach($this->daemon_folder_stats['history'] as $key=>$year)
@@ -613,7 +633,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     {
                         $daily_db_kmz_nl = '';
                     }
-                    
+
                     if(file_exists($daemon_export.$day.'/daily_db_label.kmz'))
                     {
                         $daily_db_kmz_label_nl = '
@@ -628,7 +648,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     {
                         $daily_db_kmz_label_nl = '';
                     }
-                    
+
                     if(file_exists($daemon_export.$day.'/full_db.kmz'))
                     {
                         $full_db_kmz_nl = '
@@ -658,23 +678,23 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     {
                         $full_db_label_kmz_nl = '';
                     }
-                    
-                    
+
+
                     $kml_data .= '
                 <Folder>
                         <name>'.$key2.'</name>
                         <open>0</open>'.$daily_db_kmz_nl.
-                            $daily_db_kmz_label_nl.
-                            $full_db_kmz_nl.
-                            $full_db_label_kmz_nl.'
+                        $daily_db_kmz_label_nl.
+                        $full_db_kmz_nl.
+                        $full_db_label_kmz_nl.'
                 </Folder>';
                 }
                 $kml_data .= '</Folder>';
             }
             $kml_data .= '</Folder></kml>';
-            
+
             file_put_contents($output, $kml_data);
-            
+
             $ret_kmz_name = $this->createKML->CreateKMZ($output);
             if($ret_kmz_name == -1)
             {
@@ -688,11 +708,10 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             {
                 $this->verbosed("KMZ created at ".$ret_kmz_name);
                 chmod($ret_kmz_name, 0664);
-            }        
-
+            }
             $generated[] = $key.'.kmz';
         }
-        
+
         $kml_data = '<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2" xmlns:kml="http://www.opengis.net/kml/2.2" xmlns:atom="http://www.w3.org/2005/Atom">
 <Folder>
@@ -715,7 +734,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 </kml>';
         $output = $daemon_export.'history.kml';
         file_put_contents($output, $kml_data);
-        
+
         $ret_kmz_name = $this->createKML->CreateKMZ($output);
         if($ret_kmz_name == -1)
         {
@@ -729,28 +748,31 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         {
             $this->verbosed("KMZ created at ".$ret_kmz_name);
             chmod($ret_kmz_name, 0664);
-        }        
+        }
     }
-    
+
     /*
      * Generate the updated KML Link
      */
     public function GenerateUpdateKML()
     {
-        
+
         $full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
         $full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
-        
+
         $daily_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
         $daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
         
         $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
         $new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1, 1);
 
+        $regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml',"Regions to save precious CPU cycles.", 0, 1, "once", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
+        $regions_folder = $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
+
         #$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
         #$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
 
-        $kml_data = $full_folder.$daily_folder.$new_AP_folder;#.$archive_folder;
+        $kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
 
         $full_kml_file = $this->daemon_out.'update.kml';
         $this->createKML->createKML($full_kml_file, "WiFiDB Auto KMZ Generation", $kml_data);
@@ -772,7 +794,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             $this->verbosed("KMZ created at ".$ret_kmz_name);
             chmod($ret_kmz_name, 0664);
         }              
-
         return $ret_kmz_name;
     }
 
@@ -872,7 +893,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
             }
         }
-        
+
         if($KML_data == "")
         {
             $results = array("mesg" => 'This AP has no gps. No KMZ file has been exported');
@@ -895,14 +916,13 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
             }
             else
-            {        
+            {
                 $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
             }
         }
         return $results;
-    
     }
-    
+
     public function UserList($row)
     {
         if(!is_int($row))
@@ -938,7 +958,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 }
             }
         }
-        
+
         if($KML_data == "")
         {
             $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
@@ -961,7 +981,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
             }
             else
-            {        
+            {
                 $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
             }
         }
@@ -978,9 +998,9 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 $this->createKML->ClearData();
                 $this->createKML->LoadData($ret);
                 $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
-            }        
+            }
         }
-        
+
         if($KML_data == "")
         {
             $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
@@ -1003,7 +1023,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 $results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
             }
             else
-            {        
+            {
                 $results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
             }
         }

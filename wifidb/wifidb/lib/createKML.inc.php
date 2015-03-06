@@ -20,6 +20,14 @@ class createKML
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
         $this->SigMapTimeBeforeMarkedDead = $tilldead;
+
+        $this->PolyStyle = '
+        <Style id="default">
+            <PolyStyle>
+                <fill>0</fill>
+            </PolyStyle>
+        </Style>
+';
         $this->openstyle = '
         <Style id="openStyleDead">
             <IconStyle>
@@ -139,15 +147,15 @@ class createKML
             <opacity>75</opacity>
         </PolyStyle>
     </Style>';
-        $this->style_data = $this->openstyle.$this->wepstyle.$this->securestyle.$this->tracklinestyle.$this->SignalLevelStyle;
+        $this->style_data = $this->PolyStyle.$this->openstyle.$this->wepstyle.$this->securestyle.$this->tracklinestyle.$this->SignalLevelStyle;
         $this->title = "Untitled";
         $this->users = "WiFiDB";
         $this->data = new stdClass();
         $this->data->apdata = array();
+        $this->data->placemarks = array();
     }
 
-
-    public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
+    public function createFolder($name = "", $data = "", $open = 0)
     {
         if($data === NULL)
         {
@@ -161,20 +169,8 @@ class createKML
         {
             $name = "Unknown";
         }
-        if($radiofolder)
-        {
-            $radiofolder = "
-            <Style>
-				<ListStyle>
-					<listItemType>radioFolder</listItemType>            
-				</ListStyle>          
-            </Style>";
-        }else
-		{
-			$radiofolder = "";
-		}
         $tmp = "
-        <Folder>$radiofolder
+        <Folder>
             <name>$name</name>
             <open>$open</open>
             $data
@@ -204,7 +200,7 @@ class createKML
             throw new ErrorException("WithSignal value for createKML::PlotAllAPs is not an integer or of the value 0, 1, 2, or 3.");
         }
         $data = "";
-        #$r = 0;
+        $r = 0;
         foreach($this->data->apdata as $key=>$ap)
         {
             switch($WithSignal)
@@ -222,7 +218,7 @@ class createKML
                     $data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
                     break;
             }
-            #$r = dbcore::RotateSpinner($r);
+            $r = dbcore::RotateSpinner($r);
         }
         return $data;
     }
@@ -267,7 +263,7 @@ class createKML
             $named = "";
         }
         $tmp = "
-        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
+        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">
             <styleUrl>".$sec_type_label."StyleDead</styleUrl>
             <description>
                 <![CDATA[
@@ -469,6 +465,39 @@ class createKML
         return $ret;
     }
 
+    public function PlotBoundary($bounds = array())
+    {
+        list($North, $South, $East, $West) = explode(",", $bounds['box']);
+        $placemark = '        <Placemark>
+            <name>'.$bounds['name'].'</name>
+            <styleUrl>#default</styleUrl>
+            <Polygon>
+                <outerBoundaryIs>
+                    <LinearRing>
+                        <coordinates>'.$bounds['polygon'].'</coordinates>
+                    </LinearRing>
+                </outerBoundaryIs>
+            </Polygon>
+            <Region>
+            <LatLonAltBox>
+                <north>'.trim($North).'</north>
+                <south>'.trim($South).'</south>
+                <east>'.trim($East).'</east>
+                <west>'.trim($West).'</west>
+                <minAltitude>0</minAltitude>
+                <maxAltitude>'.$bounds['distance'].'</maxAltitude>
+            </LatLonAltBox>
+            <Lod>
+                <minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
+                <maxLodPixels>-1</maxLodPixels>
+                <minFadeExtent>0</minFadeExtent>
+                <maxFadeExtent>0</maxFadeExtent>
+            </Lod>
+            </Region>
+        </Placemark>';
+        return $placemark;
+    }
+
 
     /**
      * @param string $url
@@ -479,7 +508,7 @@ class createKML
      * @param int $refreshInterval
      * @return string
      */
-    public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2)
+    public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "once", $refreshInterval = 2)
     {
         $tmp = '
         <NetworkLink>
