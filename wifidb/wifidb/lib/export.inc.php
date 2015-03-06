@@ -58,7 +58,6 @@ class export extends dbcore
         );
     }
 
-
     public function CreateBoundariesKML()
     {
         $boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
@@ -77,7 +76,6 @@ class export extends dbcore
         chmod($boundaries_kml_file, 0664);
         return $boundaries_kml_file;
     }
-
 
     /*
      * Export to Google KML File
@@ -131,7 +129,6 @@ class export extends dbcore
                 $this->createKML->LoadData($ret);
                 $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
             }
-
         }
         $full_kml_file = $daily_folder."/full_db".$labeled.".kml";
         $this->verbosed("Writing the Full KML File. ($NN APs) : ".$full_kml_file);
@@ -142,7 +139,7 @@ class export extends dbcore
         ###
         $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kml';
         $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
-        unlink($link);
+        //unlink($link);
         symlink($full_kml_file, $link);
         chmod($link, 0664);
         #####################
@@ -164,11 +161,10 @@ class export extends dbcore
             ###
             $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kmz';
             $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-            #unlink($link);
+            //unlink($link);
             symlink($ret_kmz_name, $link);
             chmod($link, 0664);
         }
-
         return $daily_folder;
     }
 
@@ -244,7 +240,7 @@ class export extends dbcore
         ##
         $link = $this->daemon_out.'daily_db'.$labeled.'.kml';
         $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
-        unlink($link); 
+        //unlink($link); 
         symlink($full_kml_file, $link);
         chmod($link, 0664);
         #####################
@@ -266,7 +262,7 @@ class export extends dbcore
             ##
             $link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
             $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-            unlink($link);
+            //unlink($link);
             symlink($ret_kmz_name, $link);
             chmod($link, 0664);
         }
@@ -408,7 +404,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             $this->verbosed('Plotted AP: '.$aparray['ssid']);
         }
 
-
         $file_data .= "</trkseg>\r\n</trk></gpx>";
         $file_ext = "wifidb_".date($this->datetime_format).".gpx";
         $filename = ($this->gpx_out.$file_ext);
@@ -450,7 +445,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         }
         Return $KML_string;
     }
-    
+ 
     public function ExportCurrentAPkml()
     {
         $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` ORDER BY `id` DESC LIMIT 1";
@@ -679,7 +674,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                         $full_db_label_kmz_nl = '';
                     }
 
-
                     $kml_data .= '
                 <Folder>
                         <name>'.$key2.'</name>
@@ -756,23 +750,23 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
      */
     public function GenerateUpdateKML()
     {
-
         $full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
         $full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
 
         $daily_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
         $daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
-        
+
         $new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
         $new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1, 1);
 
-        $regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml',"Regions to save precious CPU cycles.", 0, 1, "once", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
-        $regions_folder = $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
+        //$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml',"Regions to save precious CPU cycles.", 0, 1, "once", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP.kmz',"Newest AP (No Label)", 0, 0, "onInterval", 60).$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/newestAP_label.kmz'...(line truncated)...
+        //$regions_folder = $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
 
-        #$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
-        #$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
+        //$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
+        //$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
 
-        $kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
+        //$kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
+        $kml_data = $full_folder.$daily_folder.$new_AP_folder;#.$archive_folder;
 
         $full_kml_file = $this->daemon_out.'update.kml';
         $this->createKML->createKML($full_kml_file, "WiFiDB Auto KMZ Generation", $kml_data);
@@ -921,6 +915,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
             }
         }
         return $results;
+    
     }
 
     public function UserList($row)
