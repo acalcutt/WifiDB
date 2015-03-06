@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 /*
-Test_ConverToVS1.php, WiFiDB Import Daemon
+Test_ConvertToVS1.php, WiFiDB Import Daemon
 Copyright (C) 2015 Phil Ferland.
 This script is made to test the convert other files (csv, wardrive 3 [db3] and wardrive 4 [db], and VSZ) to VS1.
 
@@ -14,9 +14,37 @@ define("SWITCH_EXTRAS", "import");
 
 require('../config.inc.php');
 require( $daemon_config['wifidb_install']."lib/init.inc.php" );
-
+$dbcore->verbosed("Starting Conversion test script.....");
+$dbcore->verbosed("SQLite Version: ".SQLite3::version()['versionString']);
 $dbcore->verbosed("Testing Wardrive 4 SQLite file.");
-$ret = $dbcore->convert->main("/var/www/wifidb/import/up/wifi.db", 0);
+
+$source = "/var/www/wifidb/import/up/wifi.db";
+$dbh = new PDO("sqlite:$source");
+$dbh->setAttribute(PDO::ATTR_ERRMODE,
+    PDO::ERRMODE_EXCEPTION );
+
+
+/*
+$tablesquery = $dbh->query("SELECT * FROM wifi;");
+while ($table = $tablesquery->fetch(SQLITE3_ASSOC)) {
+    var_dump($table['ssid']);
+    $tablesquery1 = $dbh->query("SELECT * FROM wifispot WHERE `fk_wifi` = '".$table['_id']."';");
+    while ($table1 = $tablesquery1->fetch(SQLITE3_ASSOC)) {
+        var_dump($table1);
+    }
+
+}
+
+
+
+$tablesquery = $dbh->query("SELECT * FROM sqlite_master WHERE type='table';");
+while ($table = $tablesquery->fetch(SQLITE3_ASSOC)) {
+    echo $table['name']."\n";
+}
+die();
+*/
+
+$ret = $dbcore->convert->main($source, 0);
 var_dump($ret);
 if($ret === -1)
 {
@@ -24,7 +52,6 @@ if($ret === -1)
 }
 dump_info($ret);
 die();
-
 
 $dbcore->verbosed("Testing Wardrive 3 SQLite file.");
 $ret = $dbcore->convert->main("/var/www/wifidb/import/up/wardrive.db3", 0);
