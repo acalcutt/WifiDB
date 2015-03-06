@@ -7,4 +7,4 @@ define("SWITCH_EXTRAS", "export");
 require( '../config.inc.php' );
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 
-var_dump($dbcore->ExportSingleAP(1));
+var_dump($dbcore->export->ExportSingleAP(1));

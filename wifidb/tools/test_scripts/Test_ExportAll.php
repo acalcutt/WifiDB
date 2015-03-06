@@ -12,6 +12,6 @@ $dbcore->verbosed("Testing KML Update KML file.");
 
 echo "Start\r\n";
 $dbcore->named = 0;
-var_dump($dbcore->ExportAllkml());
+var_dump($dbcore->export->ExportAllkml());
 
 echo "End\r\n";
