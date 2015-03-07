@@ -194,6 +194,8 @@ switch($func)
             $kml_head['update_kml'] = 'The Daemon Needs to be on and you need to import something with GPS for the first update.kmz file to be created.';
         }
 
+        if($files[0]){$kmldate=$files[0];}else{$kmldate=date ("Y-m-d");}
+
         $sql = "SELECT `LA` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
@@ -214,12 +216,12 @@ switch($func)
         else
         {
             $newest = $daemon_out.'newestAP.kml';
-            $kml_head['newest_date'] = "None generated yet.";
+            $kml_head['newest_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['newest_link'] = "#";
             $kml_head['newest_size'] = "0.00 kB";
             
             $newest_label = $daemon_out.'newestAP_label.kml';
-            $kml_head['newest_labeled_date'] = "None generated yet.";
+            $kml_head['newest_labeled_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['newest_labeled_link'] = "#";
             $kml_head['newest_labeled_size'] = "0.00 kB";
         }
@@ -234,7 +236,7 @@ switch($func)
             $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/full_db.kmz';
         }else
         {
-            $kml_head['full_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['full_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['full_size'] = "0.00 kB";
             $kml_head['full_link'] = "#";
         }
@@ -247,7 +249,7 @@ switch($func)
             $kml_head['full_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/full_db_label.kmz';
         }else
         {
-            $kml_head['full_labeled_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['full_labeled_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['full_labeled_size'] = "0.00 kB";
             $kml_head['full_labeled_link'] = "#";
         }
@@ -260,7 +262,7 @@ switch($func)
             $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/daily_db_label.kmz';
         }else
         {
-            $kml_head['daily_labeled_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['daily_labeled_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['daily_labeled_size'] = "0.00 kB";
             $kml_head['daily_labeled_link'] = "#";
         }
@@ -273,7 +275,7 @@ switch($func)
             $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/daily_db.kmz';
         }else
         {
-            $kml_head['daily_date'] = "None generated for ".$files[0]." yet.";
+            $kml_head['daily_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['daily_size'] = "0.00 kB";
             $kml_head['daily_link'] = "#";
         }
