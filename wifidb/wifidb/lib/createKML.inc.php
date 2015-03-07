@@ -159,19 +159,19 @@ class createKML
     {
         if($data === NULL)
         {
-            throw new ErrorException("Name value for createKML::addFolder is empty.");
+            throw new ErrorException("data value for createKML::addFolder is empty.");
         }
         if(!is_int($open))
         {
             throw new ErrorException("Open value for createKML::addFolder is not an integer.");
         }
-        if($name === "")
+        if($name != "")
         {
-            $name = "Unknown";
+            $name = "<name>$name</name>";
         }
         $tmp = "
         <Folder>
-            <name>$name</name>
+            $name
             <open>$open</open>
             $data
         </Folder>";

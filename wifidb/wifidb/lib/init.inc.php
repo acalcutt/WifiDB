@@ -176,7 +176,7 @@ try
                     $dbcore = new frontend($config);
                     $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "graph":
