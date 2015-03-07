@@ -8,4 +8,4 @@ require( '../config.inc.php' );
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 
 $dbcore->named = 0;
-var_dump($dbcore->ExportDailykml("2013-07-18"));
+var_dump($dbcore->export->ExportDailykml("2013-07-18"));
