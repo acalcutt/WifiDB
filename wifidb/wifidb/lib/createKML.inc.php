@@ -10,10 +10,10 @@
 class createKML
 {
 
-    public function __construct($core, $tilldead = 2)
+    public function __construct($core, $tilldead = 2, $convertObj)
     {
         $this->URL_BASE     =   $core->URL_PATH;
-        $this->convert      =   $core->convert;
+        $this->convert      =   $convertObj;
         $this->kml_out      =   $core->kml_out;
         $this->daemon_out   =   $core->daemon_out;
         $this->open_path    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
