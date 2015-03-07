@@ -170,7 +170,7 @@ try
                     $dbcore = new api($config);
                     $dbcore->convert = new convert($config);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->convert, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "export":
@@ -180,7 +180,7 @@ try
                     $dbcore = new frontend($config);
                     $dbcore->convert = new convert($config);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "graph":
