@@ -112,6 +112,7 @@ function __autoload($class)
         return 1;
     }else
     {
+
         throw new errorexception("Could not load class `{$class}`");
     }
 }
@@ -169,6 +170,9 @@ try
                 break;
 
                 case "export":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
                     $dbcore = new frontend($config);
                     $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
@@ -177,7 +181,6 @@ try
 
                 case "graph":
                     $dbcore = new frontend($config);
-                    __autoload('graphs');
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
 				
@@ -193,10 +196,10 @@ try
             break;
         ################
         Default:
-            die("Unknown Switch Set.");
+            die("Unknown Switch Set. gurgle...cough...dead...");
             break;
     }
-    #done setting up WiFiDB, weather it be the daemon or the web interface, or just plain failing.
+    #done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
 }
 catch (Exception $e) {
     throw new ErrorException($e);
