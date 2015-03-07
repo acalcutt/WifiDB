@@ -1,21 +1,32 @@
 <?php
-/**
- * Created by JetBrains PhpStorm.
- * User: sysferland
- * Date: 6/2/13
- * Time: 6:35 PM
- * To change this template use File | Settings | File Templates.
- */
+/*
+createKML.inc.php, class to create KML/KMZ files
+Copyright (C) 2015 Phil Ferland
 
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
 class createKML
 {
 
-    public function __construct($core, $tilldead = 2, $convertObj)
+    public function __construct($URL_PATH, $kml_out, $daemon_out, $tilldead = 2, $convertObj)
     {
-        $this->URL_BASE     =   $core->URL_PATH;
+        $this->URL_BASE     =   $URL_PATH;
         $this->convert      =   $convertObj;
-        $this->kml_out      =   $core->kml_out;
-        $this->daemon_out   =   $core->daemon_out;
+        $this->kml_out      =   $kml_out;
+        $this->daemon_out   =   $daemon_out;
         $this->open_path    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
@@ -595,20 +606,20 @@ class createKML
         $parts = pathinfo($file);
         $parts_base = $parts['dirname'];
         $parts_name = $parts['filename'];
-        $file_create = $parts_base."/".$parts_name.".kmz";
+        $file_create = $parts_base."/".$parts_name.".zip";
 
         #Create KMZ zip file
-        $zip = new ZipArchive;
+        $zip = new ZipArchive();
         $zip->open($file_create, ZipArchive::CREATE);
+        #var_dump("FileCreate: ".$file_create);
         #var_dump($zip->getStatusString());
-
         $zip->addFile($file, 'doc.kml');
         #var_dump($zip->getStatusString());
-
         $zip->close();
-
-        if (file_exists($file_create)) {
-            return $file_create;
+        $new_filename = $parts_base."/".$parts_name.".kmz";
+        rename($file_create, $new_filename);
+        if (file_exists($new_filename)) {
+            return $new_filename;
         } else {
             return -2;
         }

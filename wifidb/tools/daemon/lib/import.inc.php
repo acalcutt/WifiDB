@@ -21,11 +21,9 @@ if not, write to the
 
 class import extends wdbcli
 {
-    function __construct($config, $daemon_config, $export_obj = NULL, $convert_obj = NULL)
+    function __construct($config, $daemon_config, $convert_obj = NULL)
     {
         parent::__construct($config, $daemon_config);
-
-        $this->export = $export_obj;
         $this->convert = $convert_obj;
         $this->log_level    = $config['log_level'];
         $this->log_interval = $config['log_interval'];

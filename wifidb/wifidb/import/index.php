@@ -144,7 +144,9 @@ switch($func)
                     {
                         chmod($uploadfile, 0600);
                         $hash = hash_file('md5', $uploadfile);
-                        $size = $dbcore->format_size(filesize($uploadfile));
+                        $filesize = filesize($uploadfile);
+                        var_dump($filesize);
+                        $size = $dbcore->format_size($filesize);
                         $mesg .= "<h1>Title: ".$title."</h1>";
                         $mesg .= "<h1>Imported By: ".$user."<BR></h1>";
                         if($otherusers)
@@ -157,7 +159,7 @@ switch($func)
                         $date = date("y-m-d H:i:s");
                         $sql = "INSERT INTO `wifi`.`files_tmp`
                                         ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-                                VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
+                                 VALUES ( '',     ?,      ?,      ?,      ?,        ?,      ?,      ?)";
                         $result = $dbcore->sql->conn->prepare( $sql );
                         $all_users = $user."|".$otherusers;
                         $result->bindValue(1, $filename, PDO::PARAM_STR);
@@ -210,4 +212,3 @@ switch($func)
 }
 $dbcore->smarty->assign('mesg', $mesg);
 $dbcore->smarty->display('import_index.tpl');
-?>
