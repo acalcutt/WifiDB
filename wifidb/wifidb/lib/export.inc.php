@@ -428,20 +428,20 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
         $result = $this->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
-		if($ap_array['ap_hash'])
+        if($ap_array['ap_hash'])
         {
-			$hash = $ap_array['ap_hash'];
-			$id = (int)$ap_array['id'];
-			$data = $this->ExportSingleAP($id);
-			$this->createKML->LoadData($data);
-			if($labelap){$KML_string = $this->createKML->PlotAPpoint($hash, 1);}else{$KML_string = $this->createKML->PlotAPpoint($hash, 0);}
-		}
-		else
-		{
-			$KML_string = $this->createKML->createFolder("No Access Points Found", "", 0, 0);
-		}
-		if($labelap){$KML_string = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_string);}else{$KML_string = $this->createKML->createKMLstructure("Newest AP", $KML_string);}
-		Return $KML_string;
+            $hash = $ap_array['ap_hash'];
+            $id = (int)$ap_array['id'];
+            $data = $this->ExportSingleAP($id);
+            $this->createKML->LoadData($data);
+            if($labelap){$KML_string = $this->createKML->PlotAPpoint($hash, 1);}else{$KML_string = $this->createKML->PlotAPpoint($hash, 0);}
+        }
+        else
+        {
+            $KML_string = $this->createKML->createFolder("No Access Points Found", "", 0, 0);
+        }
+        if($labelap){$KML_string = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_string);}else{$KML_string = $this->createKML->createKMLstructure("Newest AP", $KML_string);}
+        Return $KML_string;
     }
  
     public function ExportCurrentAPkml()
