@@ -194,32 +194,21 @@ switch($func)
             $kml_head['update_kml'] = 'The Daemon Needs to be on and you need to import something with GPS for the first update.kmz file to be created.';
         }
 
-        $newest = $daemon_out.'newestAP.kmz';
-        if(file_exists($newest))
-        {
-            $kml_head['newest_date'] = date ("Y-m-d H:i:s", filemtime($newest));
-            $kml_head['newest_size'] = $dbcore->format_size(filesize($newest), 2);
-            $kml_head['newest_link'] = $dbcore->URL_PATH."out/daemon/newestAP.kmz";
-        }else
-        {
-            $kml_head['newest_date'] = "None generated yet";
-            $kml_head['newest_size'] = "0.00 kB";
-            $kml_head['newest_link'] = "#";
-        }
-
-        $newest_label = $daemon_out.'newestAP_label.kmz';
-        if(file_exists($newest_label))
-        {
-            $kml_head['newest_labeled_date'] = date ("Y-m-d H:i:s", filemtime($newest_label));
-            $kml_head['newest_labeled_size'] = $dbcore->format_size(filesize($newest_label), 2);
-            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."out/daemon/newestAP_label.kmz";
-        }else
-        {
-            $kml_head['newest_labeled_date'] = "None generated yet";
-            $kml_head['newest_labeled_size'] = "0.00 kB";
-            $kml_head['newest_labeled_link'] = "#";
-        }
-
+		$sql = "SELECT `LA` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+        $result = $dbcore->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
+        $lastapdate = substr($ap_array['LA'], 0, strpos($ap_array['LA'], "."));
+		
+        $newest = $daemon_out.'newestAP.kml';
+        $kml_head['newest_date'] = $lastapdate;
+        $kml_head['newest_link'] = $dbcore->URL_PATH."api/latest.php?labeled=0&download=newestAP.kml";
+		$kml_head['newest_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
+		
+        $newest_label = $daemon_out.'newestAP_label.kml';
+        $kml_head['newest_labeled_date'] = $lastapdate;
+        $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/latest.php?labeled=1&download=newestAP_label.kml";
+        $kml_head['newest_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
+		
         $date = date("Y-m-d");
         $full = $daemon_out.$files[0].'/full_db.kmz';
         if(file_exists($full))
@@ -388,7 +377,7 @@ switch($func)
         
             $nextrun_utc = strtotime($newArray['nextrun']);
             $curtime = time();
-            $min_diff = ($nextrun_utc - $curtime) / 60;
+            $min_diff = round(($nextrun_utc - $curtime) / 60);
             $interval = (int)$newArray['interval'];
             $status = $newArray['status'];
             $enabled = $newArray['enabled'];
@@ -399,7 +388,7 @@ switch($func)
             }
             else
             {
-                if(($min_diff <= $interval and $min_diff >= 0) or status=="Running")
+                if(($min_diff <= $interval and $min_diff >= 0) or $status=="Running")
                 {
                     $color = 'lime';
                 }

@@ -93,30 +93,23 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
     if($total_rows === 0)
     {
-        $dbcore->smarty->assign('mesg', 'There where no results, please try again');
-        $dbcore->smarty->display('search_results.tpl');
+        $dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');
     }
-    if($func == "export")
-    {
-        $dbcore->exp_search($results_all);
-    }else
-    {
-        $dbcore->smarty->assign('wifidb_page_label', 'Search Results Page');
-        $dbcore->smarty->assign('total_rows', $total_rows);
-        $dbcore->smarty->assign('to', $to);
-        $dbcore->smarty->assign('from', $from);
-        $dbcore->smarty->assign('ssid_search', $ssid);
-        $dbcore->smarty->assign('mac_search', $mac);
-        $dbcore->smarty->assign('radio_search', $radio);
-        $dbcore->smarty->assign('chan_search', $chan);
-        $dbcore->smarty->assign('auth_search', $auth);
-        $dbcore->smarty->assign('encry_search', $encry);
-        $dbcore->smarty->assign('save_url', $save_url);
-        $dbcore->smarty->assign('export_url', $export_url);
-        $dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", $ssid, $mac, $chan, $radio, $auth, $encry);
-        $dbcore->smarty->assign('page_list', $dbcore->pages_together);
-        $dbcore->smarty->assign('results_all', $results_all);
-        $dbcore->smarty->display('search_results.tpl');
-    }
+	$dbcore->smarty->assign('wifidb_page_label', 'Search Results Page');
+	$dbcore->smarty->assign('total_rows', $total_rows);
+	$dbcore->smarty->assign('to', $to);
+	$dbcore->smarty->assign('from', $from);
+	$dbcore->smarty->assign('ssid_search', $ssid);
+	$dbcore->smarty->assign('mac_search', $mac);
+	$dbcore->smarty->assign('radio_search', $radio);
+	$dbcore->smarty->assign('chan_search', $chan);
+	$dbcore->smarty->assign('auth_search', $auth);
+	$dbcore->smarty->assign('encry_search', $encry);
+	$dbcore->smarty->assign('save_url', $save_url);
+	$dbcore->smarty->assign('export_url', $export_url);
+	$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", $ssid, $mac, $chan, $radio, $auth, $encry);
+	$dbcore->smarty->assign('page_list', $dbcore->pages_together);
+	$dbcore->smarty->assign('results_all', $results_all);
+	$dbcore->smarty->display('search_results.tpl');
 }
 ?>

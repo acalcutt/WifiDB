@@ -58,20 +58,32 @@ while ( $array = $pre_page_list->fetch(2) )
     $wifidb_aps_all[$n]['class'] = $color;
 
     $wifidb_aps_all[$n]['id'] = $array['id'];
-	
-	$wifidb_aps_all[$n]['fa'] = $array['FA'];
-	$wifidb_aps_all[$n]['la'] = $array['LA'];
-	
-    if($array['lat'] == "0.0000")
-	{
-		$wifidb_aps_all[$n]['globe'] = "off";
-	}else
-	{
-		$wifidb_aps_all[$n]['globe'] = "on";
-	}
     
-    $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
-
+    $wifidb_aps_all[$n]['fa'] = $array['FA'];
+    $wifidb_aps_all[$n]['la'] = $array['LA'];
+    
+    if($array['lat'] == "0.0000")
+    {
+        $wifidb_aps_all[$n]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
+    }else
+    {
+        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."opt/export.php?func=exp_all_signal&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+    }
+    
+   // $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
+    if($array['ssid'] == '')
+    {
+        $wifidb_aps_all[$n]['ssid'] = '[Blank SSID]';
+    }
+    elseif(!ctype_print($array['ssid']))
+    {
+        $wifidb_aps_all[$n]['ssid'] = '['.$array['ssid'].']';
+    }
+    else
+    {
+        $wifidb_aps_all[$n]['ssid'] = $array['ssid'];
+    }
+    
     if(@$array['mac'][2] != ":")
     {
         $mac_exp = str_split($array['mac'], 2);

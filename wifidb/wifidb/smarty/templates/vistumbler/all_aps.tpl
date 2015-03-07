@@ -20,9 +20,8 @@ if not, write to the
 {include file="header.tpl"}
                                     <table border="1" width="100%" cellspacing="0">
                                         <tr class="style4">
-											<td>
-                                                GPS<a href="?sort=lat&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-                                                <a href="?sort=lat&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+                                            <td>
+                                                GPS
                                             </td>
                                             <td>
                                                 SSID<a href="?sort=SSID&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
@@ -58,11 +57,11 @@ if not, write to the
                                         </tr>
                                         {foreach name=outer item=wifidb_ap from=$wifidb_aps_all}
                                         <tr class="{$wifidb_ap.class}">
-											<td align="center">
-												<img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_ap.globe}.png">
-											</td>
                                             <td align="center">
-                                                <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_ap.id}">{$wifidb_ap.ssid}</a>
+                                                {$wifidb_ap.globe_html}
+                                            </td>
+                                            <td align="center">
+                                                <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_ap.id}" title="View AP Details">{$wifidb_ap.ssid}</a>
                                             </td>
                                             <td align="center">
                                                 {$wifidb_ap.mac}

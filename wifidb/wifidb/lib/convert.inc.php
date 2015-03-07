@@ -1,8 +1,7 @@
 <?php
 /**
- * Created by Phillip Ferland
- * Date: 5/27/13
- * Time: 7:06 PM
+ * Created by Phillip Ferland, Edited by Andrew Calcutt
+ * Date: 2015-03-06
  *
  */
 

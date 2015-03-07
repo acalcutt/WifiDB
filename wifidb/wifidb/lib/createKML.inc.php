@@ -10,24 +10,22 @@
 class createKML
 {
 
-    public function __construct($core, $tilldead = 2)
+    public function __construct($core, $tilldead = 2, $convertObj)
     {
         $this->URL_BASE     =   $core->URL_PATH;
-        $this->convert      =   $core->convert;
+        $this->convert      =   $convertObj;
         $this->kml_out      =   $core->kml_out;
         $this->daemon_out   =   $core->daemon_out;
         $this->open_path    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
         $this->SigMapTimeBeforeMarkedDead = $tilldead;
-
         $this->PolyStyle = '
         <Style id="default">
             <PolyStyle>
                 <fill>0</fill>
             </PolyStyle>
-        </Style>
-';
+        </Style>';
         $this->openstyle = '
         <Style id="openStyleDead">
             <IconStyle>
@@ -155,7 +153,8 @@ class createKML
         $this->data->placemarks = array();
     }
 
-    public function createFolder($name = "", $data = "", $open = 0)
+
+    public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
     {
         if($data === NULL)
         {
@@ -169,8 +168,20 @@ class createKML
         {
             $name = "<name>$name</name>";
         }
+        if($radiofolder)
+        {
+            $radiofolder = "<Style>
+                <ListStyle>
+                    <listItemType>radioFolder</listItemType>            
+                </ListStyle>          
+            </Style>";
+        }else
+        {
+            $radiofolder = "";
+        }
         $tmp = "
         <Folder>
+            $radiofolder
             $name
             <open>$open</open>
             $data
@@ -200,7 +211,7 @@ class createKML
             throw new ErrorException("WithSignal value for createKML::PlotAllAPs is not an integer or of the value 0, 1, 2, or 3.");
         }
         $data = "";
-        $r = 0;
+        #$r = 0;
         foreach($this->data->apdata as $key=>$ap)
         {
             switch($WithSignal)
@@ -218,7 +229,7 @@ class createKML
                     $data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
                     break;
             }
-            $r = dbcore::RotateSpinner($r);
+            #$r = dbcore::RotateSpinner($r);
         }
         return $data;
     }
@@ -263,7 +274,7 @@ class createKML
             $named = "";
         }
         $tmp = "
-        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">
+        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
             <styleUrl>".$sec_type_label."StyleDead</styleUrl>
             <description>
                 <![CDATA[
@@ -464,7 +475,7 @@ class createKML
         $ret = $tmp;
         return $ret;
     }
-
+    
     public function PlotBoundary($bounds = array())
     {
         list($North, $South, $East, $West) = explode(",", $bounds['box']);
@@ -498,7 +509,6 @@ class createKML
         return $placemark;
     }
 
-
     /**
      * @param string $url
      * @param string $title
@@ -508,7 +518,7 @@ class createKML
      * @param int $refreshInterval
      * @return string
      */
-    public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "once", $refreshInterval = 2)
+    public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2)
     {
         $tmp = '
         <NetworkLink>
@@ -548,6 +558,19 @@ class createKML
             throw new ErrorException("All AP data string is empty in export::createFinalKML");
         }
 
+        $KML_DATA = $this->createKMLstructure($title, $alldata);
+        if(file_put_contents($filename, $KML_DATA))
+        {
+            return 1;
+        }else
+        {
+            return 0;
+        }
+
+    }
+    
+    public function createKMLstructure($title, $alldata)
+    {
         $KML_DATA =
 '<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2">
@@ -558,16 +581,8 @@ class createKML
     </Document>
 </kml>';
 
-        if(file_put_contents($filename, $KML_DATA))
-        {
-            return 1;
-        }else
-        {
-            return 0;
-        }
-
+        Return $KML_DATA;
     }
-
 
     /*
      * Create a compressed file from a filename and the destination extention

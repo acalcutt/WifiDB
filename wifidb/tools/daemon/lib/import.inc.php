@@ -227,12 +227,10 @@ class import extends wdbcli
                 default:
                     echo "--------------------------------\r\n";
                     $this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1), "Error");
-                    $this->verbosed($file_line_exp_count."\r\nummm.... thats not supposed to happen... :/\r\n", -1);
-                    throw new ErrorException("Error parsing File.\r\n".var_export($file_line_alt, 1));
-                    #$this->mail->mail_admins();
+                    $this->verbosed($file_line_exp_count."\r\nummm.... wrong number of columns... I'm going to ignore this line:/\r\n", -1);
                     break;
             }
-            $r = $this->RotateSpinner($r);
+            //$r = $this->RotateSpinner($r);
         }
         if(count($apdata) === 0)
         {
@@ -277,7 +275,7 @@ class import extends wdbcli
                 throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
             }
             $vs1data['gpsdata'][$key]['import_id'] = $this->sql->conn->lastInsertId();
-            $r = $this->RotateSpinner($r);
+            //$r = $this->RotateSpinner($r);
         }
         
         $this->verbosed("Importing AP Data [$ap_count]:", 2);
@@ -420,7 +418,7 @@ class import extends wdbcli
                 }
                 $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
                 
-                $r = $this->RotateSpinner($r);
+                //$r = $this->RotateSpinner($r);
             }
             
             if(count($compile_sig) < 1 )
@@ -477,6 +475,35 @@ class import extends wdbcli
                         throw new ErrorException("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     }
                 }
+				
+				// Update Highest GPS position
+				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi`.`wifi_signals` INNER JOIN `wifi`.`wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as int) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`sats` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`time` DESC LIMIT 1";
+				$resgps = $this->sql->conn->prepare($sql);
+				$resgps->bindParam(1, $ap_hash, PDO::PARAM_STR);
+				$resgps->execute();
+				$this->sql->checkError();
+
+				$fetchgps = $resgps->fetch(2);
+				if($fetchgps['lat'])
+				{
+					$high_lat = $fetchgps['lat'];
+					$high_long = $fetchgps['long'];
+					
+                    $sql = "UPDATE `wifi`.`wifi_pointers` SET `lat` = ?, `long` = ? WHERE `ap_hash` = ?";
+                    $prep = $this->sql->conn->prepare($sql);
+                    $prep->bindParam(1, $high_lat, PDO::PARAM_STR);
+                    $prep->bindParam(2, $high_long, PDO::PARAM_STR);
+                    $prep->bindParam(3, $ap_hash, PDO::PARAM_STR);
+                    $prep->execute();
+                    if($this->sql->checkError() !== 0)
+                    {
+                        $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+                        $this->logd("Error Updating High GPS Position.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                        throw new ErrorException("Error Updating High GPS Position.\r\n".var_export($this->sql->conn->errorInfo(),1));
+                    }
+
+				}
+
                 $this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
                 #$this->logd("Updated AP Pointer. {".$prev_id."}");
                 $imported_aps[] = $prev_id.":1";
@@ -485,8 +512,8 @@ class import extends wdbcli
 ######################################################################################################
                 if(!$gps_center)
                 {
-                    $vs1data['gpsdata'][$gps_center]['lat'] = "N 0000.0000";
-                    $vs1data['gpsdata'][$gps_center]['long'] = "E 0000.0000";
+                    $vs1data['gpsdata'][$gps_center]['lat'] = "0.0000";
+                    $vs1data['gpsdata'][$gps_center]['long'] = "0.0000";
                     $vs1data['gpsdata'][$gps_center]['alt'] = "0";
                     $this->verbosed("bad center : $source\r\n");
                 }
@@ -535,7 +562,6 @@ class import extends wdbcli
                     #$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
                 }
             }
-            $this->export->exportCurrentAPkml();
             $this->verbosed("------------------------\r\n", 1);# Done with this AP.
         }
         #Finish off Import and give credit to the user.

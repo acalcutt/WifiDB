@@ -67,7 +67,6 @@ if not, write to the
                         <tbody>
                             <tr>
                                 <td align="center" id="auto-row" colspan="2">
-                                    <h4>First 15 results will show here.</h4>
                                     <table class="popupBox" style="display:none"></table>
                                 </td>
                             </tr>

@@ -2,23 +2,26 @@
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
 
-include('daemon/config.inc.php');
-$dbconfig = $GLOBALS['wifidb_install'].$dim.'lib'.$dim.'config.inc.php';
-echo $dbconfig."\n";
-include($dbconfig);
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
 $filewrite = fopen("filenames.txt", 'w');
-$fileappend = fopen("filenames.txt", 'a');
-fwrite($fileappend, "# FILE HASH | FILENAME | USERNAME | TITLE | DATE | NOTES\r\n");
-$sql1 = "select * from `$db`.`files` ORDER BY `id` ASC";
-$result1 = mysql_query($sql1, $conn);
-if($result1)
+$sql = "select * from `wifi`.`files` ORDER BY `id` ASC";
+$result = $dbcore->sql->conn->query($sql);
+$dbcore->verbosed("Gathered file data");
+$write = "# FILE HASH | FILENAME | USERNAME | TITLE | DATE | NOTES\r\n";
+while($array = $result->fetch(1))
 {
-	while($array = mysql_fetch_array($result1))
+	if ($array['hash'] != "")
 	{
-		$write = $array['hash']."|".$array['file']."|".$array['user']."|".$array['title']."|".$array['date']."|".$array['notes']."\r\n";
-		echo $array['id']." -=> ".$write;
-		fwrite($fileappend, $write);
+		if (trim($array['title']) == ""){$array['title'] = "Untitled";}
+		$write .= trim($array['hash']."|".$array['file']."|".str_replace("|", "", $array['user'])."|".$array['title']."|".$array['date']."|".$array['notes'])."\r\n";
+		echo $array['id']."|".$array['hash']."|".$array['file']."|".$array['user']."|".$array['title']."|".$array['date']."|".$array['notes']."\r\n";
+		
 	}
 }
-fclose($fileappend);
+
+fwrite($filewrite, $write);
+fclose($filewrite);
 ?>

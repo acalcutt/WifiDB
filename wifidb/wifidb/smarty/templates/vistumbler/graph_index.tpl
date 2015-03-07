@@ -42,7 +42,7 @@ if not, write to the
                         <input name="name" type="hidden" value="{$AP_data.name}">
                         Choose Graph Type:
                         <select name="line" style="height: 22px; width: 139px">
-                            <option value="">Bar (Vertical)</option>
+                            <option value="bar">Bar (Vertical)</option>
                             <option value="line">Line (Horizontal)</option>
                         </select>
                     </td>

@@ -4,7 +4,7 @@
 # in the files_tmp table when you do a rebuild.
 global $debug, $screen_output;
 $screen_output = "CLI";
-require 'daemon/config.inc.php';
+require '../config.inc.php';
 require $GLOBALS['wifidb_install']."/lib/database.inc.php";
 require $GLOBALS['wifidb_install']."/lib/config.inc.php";
 

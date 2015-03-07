@@ -66,15 +66,27 @@ $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
 $lastap_id = $lastap_array['id'];
-$lastap_ssid = $lastap_array['ssid'];
+if($lastap_array['ssid'] == '')
+{
+    $lastap_ssid = '[Blank SSID]';
+}
+elseif(!ctype_print($lastap_array['ssid']))
+{
+    $lastap_ssid = '['.$lastap_array['ssid'].']';
+}
+else
+{
+    $lastap_ssid = $lastap_array['ssid'];
+}
+
 $ap_hash = $lastap_array['ap_hash'];
 
 if($lastap_array['lat'] == "0.0000")
 {
-	$gps_yes = 0;
+    $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
 }else
 {
-	$gps_yes = 1;
+    $globe_html = "<a href=\"".$dbcore->URL_PATH."opt/export.php?func=exp_all_signal&id=".$lastap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
 }
 
 if ($usercount == NULL)
@@ -96,7 +108,6 @@ if ($usercount == NULL)
     if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
     $lastid = $lastuser['id'];
 }
-if($gps_yes) { $gps = "on"; }else{ $gps = "off"; }
 
 $dbcore->smarty->assign('wifidb_page_label', 'Index Page');
 $dbcore->smarty->assign('total_aps', $rows['count(`id`)']);
@@ -105,9 +116,7 @@ $dbcore->smarty->assign('wep_aps', $wep['count(`id`)']);
 $dbcore->smarty->assign('sec_aps', $sec['count(`id`)']);
 $dbcore->smarty->assign('total_users', $usercount);
 $dbcore->smarty->assign('new_ap_id', $lastap_id);
-
-$dbcore->smarty->assign('globe_status', $gps);
-
+$dbcore->smarty->assign('globe_html', $globe_html);
 $dbcore->smarty->assign('new_import_user', $lastusername);
 $dbcore->smarty->assign('new_ap_ssid', $lastap_ssid);
 $dbcore->smarty->assign('new_import_date', $lastdate);

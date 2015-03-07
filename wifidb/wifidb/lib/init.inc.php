@@ -21,7 +21,7 @@ if not, write to the
 // Show all error's with strict santex
 //***DEV USE ONLY*** TODO: remove dev stuff
 #ini_set('display_errors', 1);//***DEV USE ONLY***
-#error_reporting(E_ALL);//***DEV USE ONLY***
+error_reporting(E_ALL);//***DEV USE ONLY***
 #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
 //***DEV USE ONLY***
 
@@ -167,6 +167,9 @@ try
             {
                 case "api":
                     $dbcore = new api($config);
+                    $dbcore->convert = new convert($config);
+                    $dbcore->createKML = new createKML($dbcore, $config, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->convert, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "export":
@@ -174,16 +177,16 @@ try
                     __autoload("convert");
                     __autoload("export");
                     $dbcore = new frontend($config);
-                    $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore, $config, $dbcore->convert);
+                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "graph":
                     $dbcore = new frontend($config);
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
-				
+                
                 case "cp":
                     $dbcore = new frontend($config);
                 break;

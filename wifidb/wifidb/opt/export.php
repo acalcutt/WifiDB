@@ -69,6 +69,71 @@ switch($func)
             $dbcore->smarty->display('export_results.tpl');
 			break;
 		#--------------------------
+		case "exp_search": 
+			$ord    =   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc    =	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+			
+			if(@$_REQUEST['ssid'])
+			{
+				$ssid   =   $_REQUEST['ssid'];
+			}else
+			{
+				$ssid   =   "";
+			}
+			
+			if(@$_REQUEST['mac'])
+			{
+				$mac    =   $_REQUEST['mac'];
+			}else
+			{
+				$mac    =   "";
+			}
+			
+			if(@$_REQUEST['radio'])
+			{
+				$radio  =   $_REQUEST['radio'];
+			}else
+			{
+				$radio  =   "";
+			}
+			
+			if(@$_REQUEST['chan'])
+			{
+				$chan   =   $_REQUEST['chan'];
+			}else
+			{
+				$chan   =   "";
+			}
+			
+			if(@$_REQUEST['auth'])
+			{
+				$auth   =   $_REQUEST['auth'];
+			}else
+			{
+				$auth   =   "";
+			}
+			
+			if(@$_REQUEST['encry'])
+			{
+				$encry  =   $_REQUEST['encry'];
+			}else
+			{
+				$encry  =   "";
+			}
+			if ($from == ""){$from = 0;}
+			if ($inc == ""){$inc = 100;}
+			if ($ord == ""){$ord = "ASC";}
+			if ($sort == ""){$sort = "ssid";}
+			
+			list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
+			$results = $dbcore->export->exp_search($results_all);
+			$dbcore->smarty->assign('results', $results);
+			$dbcore->smarty->display('export_results.tpl');
+			
+			break;
+		#--------------------------
         default:
             define("SWITCH_EXTRAS", "");
             include('../lib/init.inc.php');

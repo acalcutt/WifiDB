@@ -64,8 +64,8 @@ if not, write to the
                                         <tr class="{$wifidb_users_aps.class}">
                                             <td align="center">{$wifidb_users_aps.id}</td>
                                             <td align="center">{$wifidb_users_aps.un}</td>
-                                            <td align="center"><img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_users_aps.globe}.png"></td>
-                                            <td align="center"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid}</a></td>
+                                            <td align="center">{$wifidb_users_aps.globe_html}</td>
+                                            <td align="center"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid}</a></td>
                                             <td>{$wifidb_users_aps.mac}</td>
                                             <td align="center">{$wifidb_users_aps.auth}</td>
                                             <td align="center">{$wifidb_users_aps.encry}</td>
