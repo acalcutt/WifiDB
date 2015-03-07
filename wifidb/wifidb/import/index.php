@@ -60,8 +60,7 @@ $dbcore->smarty->assign('import_username_field', $import_username_field);
 switch($func)
 {
     case 'import': //Import file that has been uploaded
-        #var_dump($_REQUEST);
-        #die();
+        #var_dump($_REQUEST,$_FILES);
         if($_FILES['file']['tmp_name'] === "")
         {
             $mesg .= "Failure... File not supplied. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
@@ -95,7 +94,7 @@ switch($func)
             $filename       =   $rand.'_'.$prefilename;
             $uploadfolder   =   getcwd().'/up/';
             $uploadfile     =   $uploadfolder.$filename;
-            
+
             switch(strtolower($ext))
             {
                 case "vs1":
@@ -152,7 +151,6 @@ switch($func)
                         {
                             $mesg .= "<h3>With help from: ".$otherusers."<BR></h3>";
                         }
-                        
                         //lets try a scheduled import table that has a cron job
                         //that runs and imports all of them at once into the DB
                         //in order that they where uploaded
@@ -170,7 +168,7 @@ switch($func)
                         $result->bindValue(6, $size, PDO::PARAM_STR);
                         $result->bindValue(7, $hash, PDO::PARAM_STR);
                         $result->execute();
-                        if($dbcore->sql->checkError() === 0)
+                        if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
                         {
                             $mesg .= "<h2>File has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
                             $message = "File has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
@@ -181,6 +179,9 @@ switch($func)
                             #{
                                 #echo "Failed to Mail";
                             #}
+                        }elseif($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() == 0)
+                        {
+                            $mesg .= "<h2>File has already been inserted</h2>";
                         }else
                         {
                             $mesg .= "<h2>There was an error inserting file for scheduled import.</h2>".var_export($dbcore->sql->conn->errorInfo());
@@ -192,6 +193,8 @@ switch($func)
 
                 default:
                     $mesg .= "Failure.... File is not supported. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
+                    $message = "Unsupported file type was attempted to be uploaded... $upfilename\r\n\r\n";
+                    #$dbcore->mail_admins($message, $subject, $type);
                 break;
             }
         }
