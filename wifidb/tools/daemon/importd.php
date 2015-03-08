@@ -303,7 +303,7 @@ else
 
 							$totalaps = $tmp['aps'];
 							$totalgps = $tmp['gps'];
-
+                            $user_ids = implode(":", $import_ids);
 							$sql_insert_file = "INSERT INTO `wifi`.`files`
 							   (`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`)
 						VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
