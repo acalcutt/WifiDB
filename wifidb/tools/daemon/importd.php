@@ -2,8 +2,8 @@
 <?php
 /*
 importd.php, WiFiDB Import Daemon
-Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland. 
-This script is made to do imports and be run as a cron job. 
+Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
+This script is made to do imports and be run as a cron job.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -30,7 +30,7 @@ if(@$arguments['h'])
   -i			   Version Info.
   -h			   Show this screen.
   -l			   Show License Information.
-  
+
 * = Not working yet.
 ";
 	exit();
@@ -303,8 +303,6 @@ else
 
 							$totalaps = $tmp['aps'];
 							$totalgps = $tmp['gps'];
-
-							$user_ids = implode(":", $import_ids);
 
 							$sql_insert_file = "INSERT INTO `wifi`.`files`
 							   (`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`)
