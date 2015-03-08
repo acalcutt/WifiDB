@@ -122,10 +122,11 @@ class frontend extends dbcore
 
         if($newArray['lat'] == "0.0000")
         {
-            $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+            $globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
         }else
         {
-            $globe_html = "<a href=\"".$dbcore->URL_PATH."../opt/export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+            $globe_html = "<a href=\"".$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\">
+            <img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
         }
 
         $sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
@@ -479,23 +480,26 @@ class frontend extends dbcore
     {
         if($username == ""){return 0;}
         $total_aps = array();
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+        #Get Last Active AP
+        $sql = "SELECT id, aps, gps, title, data FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $username, PDO::PARAM_STR);
         $prep1->execute();
         $user_last = $prep1->fetch(2);
-        
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+
+        #Get First Active AP
+        $sql = "SELECT id, username, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
         $prep2 = $this->sql->conn->prepare($sql);
         $prep2->bindParam(1, $username, PDO::PARAM_STR);
         $prep2->execute();
         $user_first = $prep2->fetch(2);
-        
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC";
+
+        #Get All Imports for User
+        $sql = "SELECT points FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
         $prep3 = $this->sql->conn->prepare($sql);
         $prep3->bindParam(1, $username, PDO::PARAM_STR);
         $prep3->execute();
-        
+        #Count APs in all Imports
         while($imports = $prep3->fetch(2))
         {
             if($imports['points'] == ""){continue;}
@@ -510,7 +514,7 @@ class frontend extends dbcore
                 }
             }
             $pts_count = count($points);
-            $total_aps[] = $pts_count;
+            $total_aps[] = (int)$pts_count;
         }
         $total = 0;
         if(count(@$total_aps))

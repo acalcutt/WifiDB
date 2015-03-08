@@ -486,7 +486,32 @@ class createKML
         $ret = $tmp;
         return $ret;
     }
-    
+
+    public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
+    {
+        if($idName != "")
+        {
+            $idLabel = 'id="'.$idName.'"';
+        }
+        $data = '                <Region '.$idLabel.'>
+                <LatLonAltBox>
+                    <north>'.$this->convert->dm2dd($box[0]).'</north>
+                    <south>'.$this->convert->dm2dd($box[1]).'</south>
+                    <east>'.$this->convert->dm2dd($box[2]).'</east>
+                    <west>'.$this->convert->dm2dd($box[3]).'</west>
+                    <minAltitude>0</minAltitude>
+                    <maxAltitude>'.$distance.'</maxAltitude>
+                </LatLonAltBox>
+                <Lod>
+                    <minLodPixels>'.$minLodPix.'</minLodPixels>
+                    <maxLodPixels>-1</maxLodPixels>
+                    <minFadeExtent>0</minFadeExtent>
+                    <maxFadeExtent>0</maxFadeExtent>
+                </Lod>
+            </Region>';
+        return $data;
+    }
+
     public function PlotBoundary($bounds = array())
     {
         list($North, $South, $East, $West) = explode(",", $bounds['box']);
@@ -501,20 +526,20 @@ class createKML
                 </outerBoundaryIs>
             </Polygon>
             <Region>
-            <LatLonAltBox>
-                <north>'.trim($North).'</north>
-                <south>'.trim($South).'</south>
-                <east>'.trim($East).'</east>
-                <west>'.trim($West).'</west>
-                <minAltitude>0</minAltitude>
-                <maxAltitude>'.$bounds['distance'].'</maxAltitude>
-            </LatLonAltBox>
-            <Lod>
-                <minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
-                <maxLodPixels>-1</maxLodPixels>
-                <minFadeExtent>0</minFadeExtent>
-                <maxFadeExtent>0</maxFadeExtent>
-            </Lod>
+                <LatLonAltBox>
+                    <north>'.$this->convert->all2dm($this->convert->dm2dd($North)).'</north>
+                    <south>'.$this->convert->all2dm($this->convert->dm2dd($South)).'</south>
+                    <east>'.$this->convert->all2dm($this->convert->dm2dd($East)).'</east>
+                    <west>'.$this->convert->all2dm($this->convert->dm2dd($West)).'</west>
+                    <minAltitude>0</minAltitude>
+                    <maxAltitude>'.$bounds['distance'].'</maxAltitude>
+                </LatLonAltBox>
+                <Lod>
+                    <minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
+                    <maxLodPixels>-1</maxLodPixels>
+                    <minFadeExtent>0</minFadeExtent>
+                    <maxFadeExtent>0</maxFadeExtent>
+                </Lod>
             </Region>
         </Placemark>';
         return $placemark;
@@ -624,5 +649,7 @@ class createKML
             return -2;
         }
     }
+
+
 
 }

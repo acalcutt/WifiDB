@@ -29,9 +29,9 @@ class api extends dbcore
         $this->Author       = "Phil Ferland";
         $this->contact      = "pferland@randomintervals.com";
         $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");
-        $this->username     = (@$_REQUEST['username']  ? $_REQUEST['username'] : $this->username );
-        $this->apikey       = (@$_REQUEST['apikey']    ? $_REQUEST['apikey'] : "");
-        $this->session_id   = (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "");
+        $this->username     = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
+        $this->apikey       = (@$_REQUEST['apikey']    ? @$_REQUEST['apikey'] : "");
+        $this->session_id   = (@$_REQUEST['SessionID'] ? @$_REQUEST['SessionID'] : "");
         $this->output       = (@$_REQUEST['output']    ? strtolower($_REQUEST['output']) : "json");
         $this->message      = "";
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];

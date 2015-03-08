@@ -19,11 +19,13 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-class import extends wdbcli
+class import extends dbcore
 {
-    function __construct($config, $daemon_config, $convert_obj = NULL)
+    function __construct($config, $convert_obj = NULL)
     {
-        parent::__construct($config, $daemon_config);
+        if($convert_obj === NULL)
+        {die("Convert Object is null...");}
+        parent::__construct($config);
         $this->convert = $convert_obj;
         $this->log_level    = $config['log_level'];
         $this->log_interval = $config['log_interval'];
