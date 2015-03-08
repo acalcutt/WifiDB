@@ -183,8 +183,8 @@ class createKML
         {
             $radiofolder = "<Style>
                 <ListStyle>
-                    <listItemType>radioFolder</listItemType>            
-                </ListStyle>          
+                    <listItemType>radioFolder</listItemType>
+                </ListStyle>
             </Style>";
         }else
         {
@@ -489,6 +489,7 @@ class createKML
 
     public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
     {
+        #var_dump($box, $this->convert->dm2dd($box[0]));
         if($idName != "")
         {
             $idLabel = 'id="'.$idName.'"';
@@ -509,6 +510,7 @@ class createKML
                     <maxFadeExtent>0</maxFadeExtent>
                 </Lod>
             </Region>';
+        #var_dump($data);
         return $data;
     }
 
@@ -604,7 +606,7 @@ class createKML
         }
 
     }
-    
+
     public function createKMLstructure($title, $alldata)
     {
         $KML_DATA =

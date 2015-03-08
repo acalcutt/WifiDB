@@ -87,7 +87,7 @@ class import extends dbcore
         $File_return     = explode("\r\n", utf8_decode(file_get_contents($source)));
         # get the MD5 hash for the file data.
         $hash = hash_file('md5', $source);
-        
+
         # Now lets loop through the file and see what we have.
         $this->verbosed("Compiling data from file to array:", 3);
         $sql = "SELECT `id` FROM `wifi`.`files_tmp` WHERE `hash`= ? LIMIT 1";
@@ -106,7 +106,7 @@ class import extends dbcore
         foreach($File_return as $key => $file_line)
         {
             $encoding = mb_detect_encoding($file_line);
-            $file_line_alt = iconv($encoding, 'UTF-8//TRANSLIT', $file_line);
+            $file_line_alt = @iconv($encoding, 'UTF-8//TRANSLIT', $file_line);
             if($key == 0)
             {
                 $file_line_alt = str_replace("?","",$file_line_alt);
@@ -114,7 +114,7 @@ class import extends dbcore
             $first_char = trim(substr($file_line_alt,0,1));
             if($first_char == "#"){continue;}
             if($file_line_alt == ""){continue;}
-            
+
             $file_line_exp = explode("|",$file_line_alt);
             $file_line_exp_count = count($file_line_exp);
             switch($file_line_exp_count)
@@ -223,7 +223,7 @@ class import extends dbcore
                             );
                     $this->rssi_signals_flag = 1;
                     break;
-                
+
                 default:
                     echo "--------------------------------\r\n";
                     $this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1), "Error");
@@ -248,7 +248,7 @@ class import extends dbcore
         $vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);
         $ap_count = count($vs1data['apdata']);
         $gps_count = count($vs1data['gpsdata']);
-        
+
         $this->verbosed("Importing GPS data [$gps_count]", 2);
         foreach($vs1data['gpsdata'] as $key=>$gps)
         {
@@ -277,10 +277,10 @@ class import extends dbcore
             $vs1data['gpsdata'][$key]['import_id'] = $this->sql->conn->lastInsertId();
             //$r = $this->RotateSpinner($r);
         }
-        
+
         $this->verbosed("Importing AP Data [$ap_count]:", 2);
         $imported_aps = array();
-        
+
         foreach($vs1data['apdata'] as $key=>$aps)
         {
             $calc = ($key+1)." / ".$ap_count;
@@ -348,7 +348,7 @@ class import extends dbcore
             {
                $ap_sig_exp = explode("-", $aps['signals']);
             }
-                
+
             $compile_sig = array();
             $sig_high = 0;
             $rssi_high = 0;
@@ -364,7 +364,7 @@ class import extends dbcore
             foreach($ap_sig_exp as $sig_gps_id)
             {
                 $sig_gps_exp = explode(",", $sig_gps_id);
-                
+
                 $gps_id = $sig_gps_exp[0];
                 $signal = $sig_gps_exp[1];
                 if(!@$sig_gps_exp[2])
@@ -375,7 +375,7 @@ class import extends dbcore
                     $rssi = $sig_gps_exp[2];
                 }
                 if(!@$vs1data['gpsdata'][$gps_id]){continue;}
-                
+
                 if($signal >= $sig_high)
                 {
                     $sig_high = $signal;
@@ -417,10 +417,10 @@ class import extends dbcore
                     throw new ErrorException("Error Updating GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
                 }
                 $compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
-                
+
                 //$r = $this->RotateSpinner($r);
             }
-            
+
             if(count($compile_sig) < 1 )
             {
                 $this->verbosed("This AP has No vaild GPS in the file, this means a corrupted file. APs with corrupted data will not have signal data until there is valid GPS data.", -1);
@@ -437,7 +437,7 @@ class import extends dbcore
                 {
                     $new_signals = $sig_imp;
                 }
-                
+
                 $LA_time = $vs1data['gpsdata'][$LA]['date'].' '.$vs1data['gpsdata'][$LA]['time'];
                 $FA_time = $vs1data['gpsdata'][$FA]['date'].' '.$vs1data['gpsdata'][$FA]['time'];
             }
@@ -446,7 +446,7 @@ class import extends dbcore
             {
                 $LA_time_sec = strtotime($FA_time);
                 $prev_LA_time_sec = strtotime($prev_LA_time);
-                
+
                 if($LA_time_sec <= $prev_LA_time_sec)
                 {
                     $sql = "UPDATE `wifi`.`wifi_pointers` SET `signals` = ? WHERE `ap_hash` = ?";
@@ -475,7 +475,7 @@ class import extends dbcore
                         throw new ErrorException("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     }
                 }
-				
+
 				// Update Highest GPS position
 				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi`.`wifi_signals` INNER JOIN `wifi`.`wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as int) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`sats` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`time` DESC LIMIT 1";
 				$resgps = $this->sql->conn->prepare($sql);
@@ -488,7 +488,7 @@ class import extends dbcore
 				{
 					$high_lat = $fetchgps['lat'];
 					$high_long = $fetchgps['long'];
-					
+
                     $sql = "UPDATE `wifi`.`wifi_pointers` SET `lat` = ?, `long` = ? WHERE `ap_hash` = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $high_lat, PDO::PARAM_STR);
@@ -518,13 +518,19 @@ class import extends dbcore
                     $this->verbosed("bad center : $source\r\n");
                 }
 ######################################################################################################
-
+                if(explode("|", $user)[1] == "")
+                {
+                    $user = str_replace("|", "", $user);
+                }else
+                {
+                    $user = explode("|", $user)[0];
+                }
                 $sql = "INSERT INTO `wifi`.`wifi_pointers`
             ( `id`, `ssid`, `mac`,`chan`,`sectype`,`radio`,`auth`,`encry`,
             `manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
             `username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`)
             VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
-                
+
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $aps['ssid'], PDO::PARAM_STR);
                 $prep->bindParam(2, $aps['mac'], PDO::PARAM_STR);
@@ -565,7 +571,7 @@ class import extends dbcore
             $this->verbosed("------------------------\r\n", 1);# Done with this AP.
         }
         #Finish off Import and give credit to the user.
-        
+
         $imported = implode("-", $imported_aps);
         $date = date("Y-m-d H:i:s");
 
