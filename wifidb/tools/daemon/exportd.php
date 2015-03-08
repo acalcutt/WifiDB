@@ -105,12 +105,14 @@ if($dbcore->checkDaemonKill())
 
 $dbcore->verbosed("Running $daemon_name jobs for $node_name");
 
-#Checking for Import Jobs
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= now() And `enabled` = 1 LIMIT 1";
+#Checking for Export Jobs
+$currentrun = date("Y-m-d G:i:s");
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $daemon_config['status_running'], PDO::PARAM_STR);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 
 if($prepgj->rowCount() == 0)
@@ -124,7 +126,6 @@ else
     #Job Settings
     $job_id = $job['id'];
     $job_interval = $job['interval'];
-    //if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
 
     #Set Job to Running
     $dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
