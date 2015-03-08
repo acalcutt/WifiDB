@@ -70,6 +70,7 @@ switch($func)
                                     'hash'=>$newArray['hash']
                                 );
         }
+        $dbcore->smarty->assign('wifidb_page_label', "Files Imported Page");
         $dbcore->smarty->assign("wifidb_done_all_array", $files_all);
         $dbcore->smarty->display('scheduling_done.tpl');
     break;
@@ -86,6 +87,9 @@ switch($func)
             if($file === "."){continue;}
             if($file === ".."){continue;}
             if($file === "history"){continue;}
+            if($file === "history.kml"){continue;}
+            if($file === "history.kmz"){continue;}
+            if($file === "boundaries.kml"){continue;}
             if($file === "full_db.kml"){continue;}
             if($file === "full_db.kmz"){continue;}
             if($file === "full_db_label.kml"){continue;}
@@ -100,8 +104,6 @@ switch($func)
             if($file === "newestAP.kmz"){continue;}
             if($file === "update.kml"){continue;}
             if($file === "update.kmz"){continue;}
-            if($file === "history.kml"){continue;}
-            if($file === "history.kmz"){continue;}
             #var_dump(array(
             #    "file"     => $file,
             #    "file_url" => $url_base.$file.'/full_db.kmz',
@@ -267,6 +269,7 @@ switch($func)
             $kml_head['daily_size'] = "0.00 kB";
             $kml_head['daily_link'] = "#";
         }
+        $dbcore->smarty->assign('wifidb_page_label', "Daemon KML Exports");
         $dbcore->smarty->assign('wifidb_kml_head', $kml_head);
         $dbcore->smarty->assign('wifidb_kml_all_array', $kml_all);
         $dbcore->smarty->display('scheduling_kml.tpl');
@@ -467,4 +470,3 @@ switch($func)
         $dbcore->smarty->display('scheduling_waiting.tpl');
     break;
 }
-?>

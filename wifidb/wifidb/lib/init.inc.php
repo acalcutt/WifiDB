@@ -133,14 +133,16 @@ try
                 break;
                 ####
                 case "import":
-                    $dbcore = new import($config, $daemon_config, new convert($config) );
+                    $dbcore = new daemon($config, $daemon_config);
+                    $dbcore->convert = new convert($config);
+                    $dbcore->import = new import($config, $dbcore->convert );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
-                    $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
+                    $dbcore->import = new import($config, $dbcore->convert );
                 break;
                 ####
                 case "cli":

@@ -11,9 +11,9 @@ define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
-$labeled = $_REQUEST['labeled'];
+$labeled = @$_REQUEST['labeled'];
 if($labeled == 1){$labeled = 1;}else{$labeled = 0;}
-$download = $_REQUEST['download'];
+$download = @$_REQUEST['download'];
 
 $results = $dbcore->export->ExportCurrentAPkmlApi($labeled);
 
