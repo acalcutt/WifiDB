@@ -199,9 +199,10 @@ switch($func)
         $sql = "SELECT `LA` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
+
         if($ap_array['LA'])
         {
-            $lastapdate = substr($ap_array['LA'], 0, strpos($ap_array['LA'], "."));
+            if(strpos($ap_array['LA'], ".")){$lastapdate = substr($ap_array['LA'], 0, strpos($ap_array['LA'], "."));}else{$lastapdate = $ap_array['LA'];}
             
             $newest = $daemon_out.'newestAP.kml';
             $kml_head['newest_date'] = $lastapdate;
@@ -300,7 +301,7 @@ switch($func)
                 $select = "";
             }            
 
-            $timezone_opt .= '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
+            $timezone_opt = '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
             ';
         }
         

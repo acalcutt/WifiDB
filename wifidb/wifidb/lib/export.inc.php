@@ -41,7 +41,7 @@ class export extends dbcore
             11=>'November',
             12=>'December',
         );
-        $this->ver_array['export'] = array(
+        $this->ver_array['export']  =   array(
             "last_edit"             =>  "2015-03-06",
             "ExportAllkml"          =>  "2.1",
             "ExportDailykml"        =>  "1.1",
@@ -240,7 +240,7 @@ class export extends dbcore
         ##
         $link = $this->daemon_out.'daily_db'.$labeled.'.kml';
         $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
-        //unlink($link); 
+        unlink($link);
         symlink($full_kml_file, $link);
         chmod($link, 0664);
         #####################
@@ -262,7 +262,7 @@ class export extends dbcore
             ##
             $link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
             $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-            //unlink($link);
+            unlink($link);
             symlink($ret_kmz_name, $link);
             chmod($link, 0664);
         }
@@ -456,10 +456,10 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         $count = count($data[$hash]['gdata']);
         if($count < 1)
         {
-            $this->verbosed('Did not Find any, not writing AP to file.', -1);
+            $this->verbosed('Did not Find any GPS, not writing AP to file.', -1);
         }else
         {
-            $this->verbosed('Found some, writing KML File.', 2);
+            $this->verbosed('Found some GPS, writing KML File.', 2);
             $this->createKML->LoadData($data);
             $KML_string = $this->createKML->PlotAPpoint($hash, 0);
             $full_kml_file = $this->daemon_out."newestAP.kml";

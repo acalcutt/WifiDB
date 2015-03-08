@@ -16,6 +16,9 @@ $daemon_config = array(
     'console_trim_log'      =>	1,
     'pid_file_loc'          =>	'/var/run/',
     'daemon_log_folder'     =>	'/opt/wifidb/tools/log/',
+    'wifidb_nodename'       =>  '1',
+    'status_running'        =>  'Running',
+    'status_waiting'        =>  'Waiting',
 
     //IF you are running windows you need to define the install path to the PHP binary, this is so the daemon can restart itself every once and a while.
     'php_install'	=>	'C:\\program files\\php5\\',

@@ -12,7 +12,5 @@ class wdbcli extends dbcore
         parent::__construct($config);
     }
     
-    
-}
 
-?>
+}

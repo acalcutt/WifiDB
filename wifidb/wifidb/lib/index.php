@@ -1,6 +1,6 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
+index.inc.php, a blank file so directories cannot be browsed... usesless really
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms

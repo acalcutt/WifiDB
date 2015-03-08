@@ -11,7 +11,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
-ou should have received a copy of the GNU General Public License along with this program;
+You should have received a copy of the GNU General Public License along with this program;
 if not, write to the
 
    Free Software Foundation, Inc.,
@@ -126,19 +126,20 @@ try
             {
                 ####
                 case "export":
-                    $dbcore = new wdbcli($config, $daemon_config);
-                    $dbcore->createKML = new createKML($dbcore, $config);
+                    $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
                 ####
                 case "import":
-                    $dbcore = new import($config, $daemon_config, new stdClass(), new convert($config) );
+                    $dbcore = new import($config, $daemon_config, new convert($config) );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                     $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
                 break;
                 ####
@@ -168,8 +169,8 @@ try
                 case "api":
                     $dbcore = new api($config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->createKML = new createKML($dbcore, $config, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->convert, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "export":
@@ -178,8 +179,8 @@ try
                     __autoload("export");
                     $dbcore = new frontend($config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->createKML = new createKML($dbcore, $config, $dbcore->convert);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "graph":

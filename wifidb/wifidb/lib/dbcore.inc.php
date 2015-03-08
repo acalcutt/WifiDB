@@ -1,6 +1,6 @@
 <?php
 /*
-DBcore.inc.php, holds the WiFiDB Core functions.
+dbcore.inc.php, holds the WiFiDB Core functions.
 Copyright (C) 2012 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
