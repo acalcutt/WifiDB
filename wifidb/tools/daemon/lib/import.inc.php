@@ -252,6 +252,20 @@ class import extends dbcore
         $this->verbosed("Importing GPS data [$gps_count]", 2);
         foreach($vs1data['gpsdata'] as $key=>$gps)
         {
+			$calc = "GPS: ".($key+1)." / ".$gps_count;
+            $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+            $prep = $this->sql->conn->prepare($sql);
+            $prep->bindParam(1, $calc, PDO::PARAM_STR);
+            $prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
+            $prep->bindParam(3, $file_tmp_id, PDO::PARAM_INT);
+            $prep->execute();
+            if($this->sql->checkError() !== 0)
+            {
+                $this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
+                $this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+                throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
+            }
+			
             $sql = "INSERT INTO `wifi`.`wifi_gps` ( `id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`)
                     VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
             $prep = $this->sql->conn->prepare($sql);
@@ -283,7 +297,7 @@ class import extends dbcore
 
         foreach($vs1data['apdata'] as $key=>$aps)
         {
-            $calc = ($key+1)." / ".$ap_count;
+            $calc = "AP: ".($key+1)." / ".$ap_count;
             $sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $calc, PDO::PARAM_STR);
@@ -298,19 +312,16 @@ class import extends dbcore
             }
 
             $ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
-            $ssid_len = strlen($aps['ssid']);
-            if($ssid_len < 7)
-            {
-                $pad = 20;
-            }else
-            {
-                $pad = $ssid_len;
-            }
+			
+            if(strlen($aps['ssid']) < 7){$pad_ssid = 20;}else{$pad_ssid = strlen($aps['ssid']);}
+			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
+			if(strlen($aps['radio']) < 7){$pad_radio = 20;}else{$pad_radio = strlen($aps['radio']);}
+			if(strlen($aps['encry']) < 7){$pad_encr = 20;}else{$pad_encr = strlen($aps['encry']);}
             $key_c = $key+1;
-            $ssid = str_pad($aps['ssid'], $pad);
-            $chan = str_pad($aps['chan'], $pad);
-            $radio = str_pad($aps['radio'], $pad);
-            $encry = str_pad($aps['encry'], $pad);
+            $ssid = str_pad($aps['ssid'], $pad_ssid);
+            $chan = str_pad($aps['chan'], $pad_chan);
+            $radio = str_pad($aps['radio'], $pad_radio);
+            $encry = str_pad($aps['encry'], $pad_encr);
             $this->verbosed("------------------------
             File AP/Total: {$key_c}/{$ap_count}
             SSID:  {$ssid} | MAC: {$aps['mac']}
@@ -331,13 +342,13 @@ class import extends dbcore
                 $prev_signals = $fetch['signals'];
                 $prev_LA_time = $fetch['LA'];
                 $prev_id      = $fetch['id'];
-                $no_pointer   = 1;
+                $no_pointer   = 0;
             }else
             {
                 $prev_signals = "";
                 $prev_LA_time = 0;
                 $prev_id      = 0;
-                $no_pointer   = 0;
+                $no_pointer   = 1;
             }
 
             if($this->rssi_signals_flag)
@@ -356,10 +367,6 @@ class import extends dbcore
             $FA = 0;
 
             $this->verbosed("Starting Import of Wifi Signal... ", 1);
-            $sql = "INSERT INTO `wifi`.`wifi_signals`
-            (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`)
-            VALUES (NULL, ?, ?, ?, ?, ?)";
-            $preps = $this->sql->conn->prepare($sql);
 
             foreach($ap_sig_exp as $sig_gps_id)
             {
@@ -376,21 +383,10 @@ class import extends dbcore
                 }
                 if(!@$vs1data['gpsdata'][$gps_id]){continue;}
 
-                if($signal >= $sig_high)
-                {
-                    $sig_high = $signal;
-                    $gps_center = $gps_id;
-                }
-                else
-                {
-                    $sig_high = $signal;
-                    $gps_center = $gps_id;
-                }
-
-                if($FA === 0){$FA = $gps_id;}
-                $LA = $gps_id;
                 $time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
-
+				
+				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
+				$preps = $this->sql->conn->prepare($sql);
                 $preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
                 $preps->bindParam(2, $signal, PDO::PARAM_INT);
                 $preps->bindParam(3, $rssi, PDO::PARAM_INT);
@@ -425,10 +421,45 @@ class import extends dbcore
             {
                 $this->verbosed("This AP has No vaild GPS in the file, this means a corrupted file. APs with corrupted data will not have signal data until there is valid GPS data.", -1);
                 #$this->logd("This AP has No vaild GPS in the file, this means a corrupted file. APs with corrupted data will not have signal data until there is valid GPS data.");
-                $FA_time = date("Y-m-d H:i:s");
-                $LA_time = date("Y-m-d H:i:s");
             }else
             {
+				#Find New First Seen Timestamp
+				$FA_SQL = "SELECT `time_stamp` FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY `time_stamp` ASC LIMIT 1";
+				$faprep = $this->sql->conn->prepare($FA_SQL);
+				$faprep->bindParam(1, $ap_hash, PDO::PARAM_STR);
+				$faprep->execute();
+				$fetchfaprep = $faprep->fetch(2);
+				$FA_time = date("Y-m-d H:i:s", $fetchfaprep['time_stamp']);
+				
+				#Find New Last Seen Timestamp
+				$LA_SQL = "SELECT `time_stamp` FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY `time_stamp` DESC LIMIT 1";
+				$laprep = $this->sql->conn->prepare($LA_SQL);
+				$laprep->bindParam(1, $ap_hash, PDO::PARAM_STR);
+				$laprep->execute();
+				$fetchlaprep = $laprep->fetch(2);
+				$LA_time = date("Y-m-d H:i:s", $fetchlaprep['time_stamp']);
+				
+				#Find Highest GPS Position
+				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi`.`wifi_signals` INNER JOIN `wifi`.`wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as int) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`sats` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`time` DESC LIMIT 1";
+				$resgps = $this->sql->conn->prepare($sql);
+				$resgps->bindParam(1, $ap_hash, PDO::PARAM_STR);
+				$resgps->execute();
+				$this->sql->checkError();
+				$fetchgps = $resgps->fetch(2);
+				if($fetchgps['lat'])
+				{
+					$high_lat = $fetchgps['lat'];
+					$high_long = $fetchgps['long'];
+					$high_sats = $fetchgps['sats'];
+				}
+                else
+				{
+					$high_lat = "0.0000";
+					$high_long = "0.0000";
+					$high_sats = "0";
+				}
+				
+				#Create Signal History
                 $sig_imp = implode("-", $compile_sig);
                 if($prev_signals != "")
                 {
@@ -438,21 +469,18 @@ class import extends dbcore
                     $new_signals = $sig_imp;
                 }
 
-                $LA_time = $vs1data['gpsdata'][$LA]['date'].' '.$vs1data['gpsdata'][$LA]['time'];
-                $FA_time = $vs1data['gpsdata'][$FA]['date'].' '.$vs1data['gpsdata'][$FA]['time'];
-            }
-
-            if($no_pointer)
-            {
-                $LA_time_sec = strtotime($FA_time);
-                $prev_LA_time_sec = strtotime($prev_LA_time);
-
-                if($LA_time_sec <= $prev_LA_time_sec)
-                {
-                    $sql = "UPDATE `wifi`.`wifi_pointers` SET `signals` = ? WHERE `ap_hash` = ?";
+				#Update or Insert AP
+				if(!$no_pointer)#Update AP
+				{
+                    $sql = "UPDATE `wifi`.`wifi_pointers` SET `signals` = ? , `FA` = ? , `LA` = ? , `lat` = ? , `long` = ?, `sats` = ? WHERE `ap_hash` = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $new_signals, PDO::PARAM_STR);
-                    $prep->bindParam(2, $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(2, $FA_time, PDO::PARAM_STR);
+					$prep->bindParam(3, $LA_time, PDO::PARAM_STR);
+					$prep->bindParam(4, $high_lat, PDO::PARAM_STR);
+					$prep->bindParam(5, $high_long, PDO::PARAM_STR);
+					$prep->bindParam(6, $high_sats, PDO::PARAM_STR);
+                    $prep->bindParam(7, $ap_hash, PDO::PARAM_STR);
                     $prep->execute();
                     if($this->sql->checkError() !== 0)
                     {
@@ -460,113 +488,54 @@ class import extends dbcore
                         $this->logd("Error Updating AP Pointer Signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
                         throw new ErrorException("Error Updating AP Pointer Signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
                     }
-                }else
-                {
-                    $sql = "UPDATE `wifi`.`wifi_pointers` SET `LA` = ?, `signals` = ? WHERE `ap_hash` = ?";
-                    $prep = $this->sql->conn->prepare($sql);
-                    $prep->bindParam(1, $LA_time, PDO::PARAM_STR);
-                    $prep->bindParam(2, $new_signals, PDO::PARAM_STR);
-                    $prep->bindParam(3, $ap_hash, PDO::PARAM_STR);
-                    $prep->execute();
-                    if($this->sql->checkError() !== 0)
-                    {
-                        $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-                        $this->logd("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                        throw new ErrorException("Error Updating AP Pointer Signal and Last Active time.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                    }
-                }
-
-				// Update Highest GPS position
-				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi`.`wifi_signals` INNER JOIN `wifi`.`wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as int) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`sats` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`time` DESC LIMIT 1";
-				$resgps = $this->sql->conn->prepare($sql);
-				$resgps->bindParam(1, $ap_hash, PDO::PARAM_STR);
-				$resgps->execute();
-				$this->sql->checkError();
-
-				$fetchgps = $resgps->fetch(2);
-				if($fetchgps['lat'])
-				{
-					$high_lat = $fetchgps['lat'];
-					$high_long = $fetchgps['long'];
-
-                    $sql = "UPDATE `wifi`.`wifi_pointers` SET `lat` = ?, `long` = ? WHERE `ap_hash` = ?";
-                    $prep = $this->sql->conn->prepare($sql);
-                    $prep->bindParam(1, $high_lat, PDO::PARAM_STR);
-                    $prep->bindParam(2, $high_long, PDO::PARAM_STR);
-                    $prep->bindParam(3, $ap_hash, PDO::PARAM_STR);
-                    $prep->execute();
-                    if($this->sql->checkError() !== 0)
-                    {
-                        $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-                        $this->logd("Error Updating High GPS Position.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                        throw new ErrorException("Error Updating High GPS Position.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                    }
-
+					$this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
+					$imported_aps[] = $prev_id.":1";
 				}
-
-                $this->verbosed("Updated AP Pointer {".$prev_id."}.", 2);
-                #$this->logd("Updated AP Pointer. {".$prev_id."}");
-                $imported_aps[] = $prev_id.":1";
-            }else
-            {
-######################################################################################################
-                if(!$gps_center)
-                {
-                    $vs1data['gpsdata'][$gps_center]['lat'] = "0.0000";
-                    $vs1data['gpsdata'][$gps_center]['long'] = "0.0000";
-                    $vs1data['gpsdata'][$gps_center]['alt'] = "0";
-                    $this->verbosed("bad center : $source\r\n");
-                }
-######################################################################################################
-                if(explode("|", $user)[1] == "")
-                {
-                    $user = str_replace("|", "", $user);
-                }else
-                {
-                    $user = explode("|", $user)[0];
-                }
-                $sql = "INSERT INTO `wifi`.`wifi_pointers`
-            ( `id`, `ssid`, `mac`,`chan`,`sectype`,`radio`,`auth`,`encry`,
-            `manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
-            `username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`)
-            VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
-
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $aps['ssid'], PDO::PARAM_STR);
-                $prep->bindParam(2, $aps['mac'], PDO::PARAM_STR);
-                $prep->bindParam(3, $aps['chan'], PDO::PARAM_INT);
-                $prep->bindParam(4, $aps['sectype'], PDO::PARAM_INT);
-                $prep->bindParam(5, $aps['radio'], PDO::PARAM_STR);
-                $prep->bindParam(6, $aps['auth'], PDO::PARAM_STR);
-                $prep->bindParam(7, $aps['encry'], PDO::PARAM_STR);
-                $prep->bindParam(8, $aps['manuf'], PDO::PARAM_STR);
-                $prep->bindParam(9, $vs1data['gpsdata'][$gps_center]['lat'], PDO::PARAM_STR);
-                $prep->bindParam(10, $vs1data['gpsdata'][$gps_center]['long'], PDO::PARAM_STR);
-                $prep->bindParam(11, $vs1data['gpsdata'][$gps_center]['alt'], PDO::PARAM_INT);
-                $prep->bindParam(12, $aps['btx'], PDO::PARAM_STR);
-                $prep->bindParam(13, $aps['otx'], PDO::PARAM_STR);
-                $prep->bindParam(14, $aps['nt'], PDO::PARAM_STR);
-                $prep->bindParam(15, $aps['label'], PDO::PARAM_STR);
-                $prep->bindParam(16, $LA_time, PDO::PARAM_STR);
-                $prep->bindParam(17, $FA_time, PDO::PARAM_STR);
-                $prep->bindParam(18, $user, PDO::PARAM_STR);
-                $prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
-                $prep->bindParam(20, $new_signals, PDO::PARAM_STR);
-                $prep->bindParam(21, $rssi_high, PDO::PARAM_INT);
-                $prep->bindParam(22, $sig_high, PDO::PARAM_INT);
-                $prep->execute();
-                if($this->sql->checkError())
-                {
-                    $this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-                    $this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
-                    throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
-                }
-                else
-                {
-                    $imported_aps[] = $this->sql->conn->lastInsertId().":0";
-                    $this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
-                    #$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
-                }
+				else#Insert AP
+				{
+					$sql = "INSERT INTO `wifi`.`wifi_pointers`
+						( `id`, `ssid`, `mac`,`chan`,`sectype`,`radio`,`auth`,`encry`,
+						`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
+						`username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`)
+						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
+					
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(1, $aps['ssid'], PDO::PARAM_STR);
+					$prep->bindParam(2, $aps['mac'], PDO::PARAM_STR);
+					$prep->bindParam(3, $aps['chan'], PDO::PARAM_INT);
+					$prep->bindParam(4, $aps['sectype'], PDO::PARAM_INT);
+					$prep->bindParam(5, $aps['radio'], PDO::PARAM_STR);
+					$prep->bindParam(6, $aps['auth'], PDO::PARAM_STR);
+					$prep->bindParam(7, $aps['encry'], PDO::PARAM_STR);
+					$prep->bindParam(8, $aps['manuf'], PDO::PARAM_STR);
+					$prep->bindParam(9, $high_lat, PDO::PARAM_STR);
+					$prep->bindParam(10, $high_long, PDO::PARAM_STR);
+					$prep->bindParam(11, $high_sats, PDO::PARAM_INT);
+					$prep->bindParam(12, $aps['btx'], PDO::PARAM_STR);
+					$prep->bindParam(13, $aps['otx'], PDO::PARAM_STR);
+					$prep->bindParam(14, $aps['nt'], PDO::PARAM_STR);
+					$prep->bindParam(15, $aps['label'], PDO::PARAM_STR);
+					$prep->bindParam(16, $LA_time, PDO::PARAM_STR);
+					$prep->bindParam(17, $FA_time, PDO::PARAM_STR);
+					$prep->bindParam(18, $user, PDO::PARAM_STR);
+					$prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(20, $new_signals, PDO::PARAM_STR);
+					$prep->bindParam(21, $rssi_high, PDO::PARAM_INT);
+					$prep->bindParam(22, $sig_high, PDO::PARAM_INT);
+					$prep->execute();
+					if($this->sql->checkError())
+					{
+						$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+						$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
+						throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					}
+					else
+					{
+						$imported_aps[] = $this->sql->conn->lastInsertId().":0";
+						$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
+						#$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
+					}
+				}
             }
             $this->verbosed("------------------------\r\n", 1);# Done with this AP.
         }
