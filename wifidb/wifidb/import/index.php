@@ -60,7 +60,6 @@ $dbcore->smarty->assign('import_username_field', $import_username_field);
 switch($func)
 {
     case 'import': //Import file that has been uploaded
-        #var_dump($_REQUEST,$_FILES);
         if($_FILES['file']['tmp_name'] === "")
         {
             $mesg .= "Failure... File not supplied. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
@@ -145,7 +144,7 @@ switch($func)
                         chmod($uploadfile, 0600);
                         $hash = hash_file('md5', $uploadfile);
                         $filesize = filesize($uploadfile);
-                        var_dump($filesize);
+
                         $size = $dbcore->format_size($filesize);
                         $mesg .= "<h1>Title: ".$title."</h1>";
                         $mesg .= "<h1>Imported By: ".$user."<BR></h1>";

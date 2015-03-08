@@ -95,9 +95,9 @@ class daemon extends wdbcli
                 Throw new ErrorException;
             }
             $n++;
-            $rows[$n] = $this->sql->conn->lastInsertId();
-            $this->logd("User ($muser) import row: ".$rows[$n]);
-            $this->verbosed("User ($muser) import row: ".$rows[$n]);
+            $rows[$n] = array($muser, $this->sql->conn->lastInsertId());
+            $this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
+            $this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
         }
         return $rows;
     }
