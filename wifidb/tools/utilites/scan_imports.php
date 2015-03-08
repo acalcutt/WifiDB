@@ -1,14 +1,28 @@
+#!/usr/bin/php
 <?php
-error_reporting(E_ALL|E_STRICT);
-global $screen_output, $dim, $COLORS, $daemon_ver;
-$screen_output = "CLI";
-$starts = microtime(1);
-function clearscreen($out=TRUE){$clearscreen=chr(27)."[H".chr(27)."[2J";if($out){print$clearscreen;}else{return$clearscreen;}}
+/*
+GenerateBoardersFromKML.php, WiFiDB Import Daemon
+Copyright (C) 2015 Phil Ferland.
+Used to generate the boarders data from a KML file.
 
-if(!(@require_once 'daemon/config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($GLOBALS['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require_once $GLOBALS['wifidb_install']."/lib/database.inc.php";
-require_once $GLOBALS['wifidb_install']."/lib/config.inc.php";
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
+define("SWITCH_SCREEN", "cli");
+define("SWITCH_EXTRAS", "cli");
+
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
+$lastedit  = "2015-03-02";
+echo "
+##########################################################
+##       Start Gathering of Boarder data from KML       ##
+##########################################################
+";
+$dbcore->verbose = 1;
 
 $dir = $GLOBALS['wifidb_install']."/import/up/";
 if ($dh = opendir($dir))
@@ -23,11 +37,11 @@ if ($dh = opendir($dir))
             continue;
         }
         $file_cont = file($dir.$file);
-        
+
         #echo $file_cont[1]."\r\n";
 
         $exp_line = explode(":", $file_cont[1]);
-        
+
         if(!@$exp_line[1])
         {
             echo $file."\r\n";

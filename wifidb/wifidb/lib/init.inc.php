@@ -11,7 +11,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 See the GNU General Public License for more details.
 
-ou should have received a copy of the GNU General Public License along with this program;
+You should have received a copy of the GNU General Public License along with this program;
 if not, write to the
 
    Free Software Foundation, Inc.,
@@ -21,7 +21,7 @@ if not, write to the
 // Show all error's with strict santex
 //***DEV USE ONLY*** TODO: remove dev stuff
 #ini_set('display_errors', 1);//***DEV USE ONLY***
-#error_reporting(E_ALL);//***DEV USE ONLY***
+error_reporting(E_ALL);//***DEV USE ONLY***
 #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
 //***DEV USE ONLY***
 
@@ -126,20 +126,23 @@ try
             {
                 ####
                 case "export":
-                    $dbcore = new wdbcli($config, $daemon_config);
-                    $dbcore->createKML = new createKML($dbcore, $config);
+                    $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
                 ####
                 case "import":
-                    $dbcore = new import($config, $daemon_config, new stdClass(), new convert($config) );
+                    $dbcore = new daemon($config, $daemon_config);
+                    $dbcore->convert = new convert($config);
+                    $dbcore->import = new import($config, $dbcore->convert );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
-                    $dbcore->import = new import($config, $daemon_config, $dbcore->export, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->import = new import($config, $dbcore->convert );
                 break;
                 ####
                 case "cli":
@@ -167,6 +170,9 @@ try
             {
                 case "api":
                     $dbcore = new api($config);
+                    $dbcore->convert = new convert($config);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "export":
@@ -174,16 +180,16 @@ try
                     __autoload("convert");
                     __autoload("export");
                     $dbcore = new frontend($config);
-                    $dbcore->createKML = new createKML($dbcore, $config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $daemon_config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                 break;
 
                 case "graph":
                     $dbcore = new frontend($config);
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
-				
+                
                 case "cp":
                     $dbcore = new frontend($config);
                 break;

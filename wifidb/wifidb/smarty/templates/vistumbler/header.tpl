@@ -46,7 +46,7 @@
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}">Main Page</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}all.php?sort=SSID&ord=DESC&from=0&to=100">View All APs</a></strong></div>
+                                    <a href="{$wifidb_host_url}all.php?sort=SSID&ord=ASC&from=0&to=500">View All APs</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}import/">Import</a></strong></div>
                                 <div class="inside_text_bold"><strong>
@@ -54,32 +54,25 @@
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Already Imported</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Daemon Generated kml</a></strong></div>
+                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Daemon Generated KMZ</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/export.php?func=index">Export</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/search.php">Search</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>
+                                <!--<div class="inside_text_bold"><strong>
+                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>-->
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/userstats.php?func=allusers">View All Users</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a class="links" href="http://forum.techidiots.net/forum/viewforum.php?f=47">Help / Support</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}ver.php">WiFiDB Version</a></strong></div>
+								<!--
                                 {if $login_val eq "1"}
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}login.php?func=logout">Log Out</a></strong></div>
+                                    <a href="{$wifidb_host_url}login.php?func=logout&return=%2Fwifidb%2F">Log Out</a></strong></div>
                                 {/if}
-                                <br>
-                                <div class="inside_dark_header">[Mysticache]</div>
-                                <div class="inside_text_bold"><a class="links" href="{$wifidb_host_url}caches.php">View shared Caches</a></div>
-                                <!--   User Mysicache Link   -->
-                                {if $wifidb_mysticache_link eq 1}
-                                <div class="inside_text_bold">
-                                    <a class="links" href="{$wifidb_host_url}cp/?func=boeyes&boeye_func=list_all&sort=id&ord=ASC&from=0&to=100">List All My Caches</a>
-                                </div>
-                                {/if}
+								-->
                                     
                                 <!--=========================-->
                             </td>

@@ -1,33 +1,42 @@
 <?php
-/**
- * Created by JetBrains PhpStorm.
- * User: sysferland
- * Date: 6/2/13
- * Time: 6:35 PM
- * To change this template use File | Settings | File Templates.
- */
+/*
+createKML.inc.php, class to create KML/KMZ files
+Copyright (C) 2015 Phil Ferland
 
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
 class createKML
 {
 
-    public function __construct($core, $tilldead = 2)
+    public function __construct($URL_PATH, $kml_out, $daemon_out, $tilldead = 2, $convertObj)
     {
-        $this->URL_BASE     =   $core->URL_PATH;
-        $this->convert      =   $core->convert;
-        $this->kml_out      =   $core->kml_out;
-        $this->daemon_out   =   $core->daemon_out;
+        $this->URL_BASE     =   $URL_PATH;
+        $this->convert      =   $convertObj;
+        $this->kml_out      =   $kml_out;
+        $this->daemon_out   =   $daemon_out;
         $this->open_path    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
         $this->SigMapTimeBeforeMarkedDead = $tilldead;
-
         $this->PolyStyle = '
         <Style id="default">
             <PolyStyle>
                 <fill>0</fill>
             </PolyStyle>
-        </Style>
-';
+        </Style>';
         $this->openstyle = '
         <Style id="openStyleDead">
             <IconStyle>
@@ -155,23 +164,36 @@ class createKML
         $this->data->placemarks = array();
     }
 
-    public function createFolder($name = "", $data = "", $open = 0)
+
+    public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
     {
         if($data === NULL)
         {
-            throw new ErrorException("Name value for createKML::addFolder is empty.");
+            throw new ErrorException("data value for createKML::addFolder is empty.");
         }
         if(!is_int($open))
         {
             throw new ErrorException("Open value for createKML::addFolder is not an integer.");
         }
-        if($name === "")
+        if($name != "")
         {
-            $name = "Unknown";
+            $name = "<name>$name</name>";
+        }
+        if($radiofolder)
+        {
+            $radiofolder = "<Style>
+                <ListStyle>
+                    <listItemType>radioFolder</listItemType>
+                </ListStyle>
+            </Style>";
+        }else
+        {
+            $radiofolder = "";
         }
         $tmp = "
         <Folder>
-            <name>$name</name>
+            $radiofolder
+            $name
             <open>$open</open>
             $data
         </Folder>";
@@ -200,7 +222,7 @@ class createKML
             throw new ErrorException("WithSignal value for createKML::PlotAllAPs is not an integer or of the value 0, 1, 2, or 3.");
         }
         $data = "";
-        $r = 0;
+        #$r = 0;
         foreach($this->data->apdata as $key=>$ap)
         {
             switch($WithSignal)
@@ -218,7 +240,7 @@ class createKML
                     $data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
                     break;
             }
-            $r = dbcore::RotateSpinner($r);
+            #$r = dbcore::RotateSpinner($r);
         }
         return $data;
     }
@@ -263,7 +285,7 @@ class createKML
             $named = "";
         }
         $tmp = "
-        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">
+        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
             <styleUrl>".$sec_type_label."StyleDead</styleUrl>
             <description>
                 <![CDATA[
@@ -465,6 +487,33 @@ class createKML
         return $ret;
     }
 
+    public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
+    {
+        #var_dump($box, $this->convert->dm2dd($box[0]));
+        if($idName != "")
+        {
+            $idLabel = 'id="'.$idName.'"';
+        }
+        $data = '                <Region '.$idLabel.'>
+                <LatLonAltBox>
+                    <north>'.$this->convert->dm2dd($box[0]).'</north>
+                    <south>'.$this->convert->dm2dd($box[1]).'</south>
+                    <east>'.$this->convert->dm2dd($box[2]).'</east>
+                    <west>'.$this->convert->dm2dd($box[3]).'</west>
+                    <minAltitude>0</minAltitude>
+                    <maxAltitude>'.$distance.'</maxAltitude>
+                </LatLonAltBox>
+                <Lod>
+                    <minLodPixels>'.$minLodPix.'</minLodPixels>
+                    <maxLodPixels>-1</maxLodPixels>
+                    <minFadeExtent>0</minFadeExtent>
+                    <maxFadeExtent>0</maxFadeExtent>
+                </Lod>
+            </Region>';
+        #var_dump($data);
+        return $data;
+    }
+
     public function PlotBoundary($bounds = array())
     {
         list($North, $South, $East, $West) = explode(",", $bounds['box']);
@@ -479,25 +528,24 @@ class createKML
                 </outerBoundaryIs>
             </Polygon>
             <Region>
-            <LatLonAltBox>
-                <north>'.trim($North).'</north>
-                <south>'.trim($South).'</south>
-                <east>'.trim($East).'</east>
-                <west>'.trim($West).'</west>
-                <minAltitude>0</minAltitude>
-                <maxAltitude>'.$bounds['distance'].'</maxAltitude>
-            </LatLonAltBox>
-            <Lod>
-                <minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
-                <maxLodPixels>-1</maxLodPixels>
-                <minFadeExtent>0</minFadeExtent>
-                <maxFadeExtent>0</maxFadeExtent>
-            </Lod>
+                <LatLonAltBox>
+                    <north>'.$this->convert->all2dm($this->convert->dm2dd($North)).'</north>
+                    <south>'.$this->convert->all2dm($this->convert->dm2dd($South)).'</south>
+                    <east>'.$this->convert->all2dm($this->convert->dm2dd($East)).'</east>
+                    <west>'.$this->convert->all2dm($this->convert->dm2dd($West)).'</west>
+                    <minAltitude>0</minAltitude>
+                    <maxAltitude>'.$bounds['distance'].'</maxAltitude>
+                </LatLonAltBox>
+                <Lod>
+                    <minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
+                    <maxLodPixels>-1</maxLodPixels>
+                    <minFadeExtent>0</minFadeExtent>
+                    <maxFadeExtent>0</maxFadeExtent>
+                </Lod>
             </Region>
         </Placemark>';
         return $placemark;
     }
-
 
     /**
      * @param string $url
@@ -508,7 +556,7 @@ class createKML
      * @param int $refreshInterval
      * @return string
      */
-    public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "once", $refreshInterval = 2)
+    public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2)
     {
         $tmp = '
         <NetworkLink>
@@ -548,16 +596,7 @@ class createKML
             throw new ErrorException("All AP data string is empty in export::createFinalKML");
         }
 
-        $KML_DATA =
-'<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-    <Document>
-        <name>'.$title.'</name>
-        '.$this->style_data.'
-        '.$alldata.'
-    </Document>
-</kml>';
-
+        $KML_DATA = $this->createKMLstructure($title, $alldata);
         if(file_put_contents($filename, $KML_DATA))
         {
             return 1;
@@ -568,6 +607,20 @@ class createKML
 
     }
 
+    public function createKMLstructure($title, $alldata)
+    {
+        $KML_DATA =
+'<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+    <Document>
+        <name>'.$title.'</name>
+        '.$this->style_data.'
+        '.$alldata.'
+    </Document>
+</kml>';
+
+        Return $KML_DATA;
+    }
 
     /*
      * Create a compressed file from a filename and the destination extention
@@ -580,23 +633,25 @@ class createKML
         $parts = pathinfo($file);
         $parts_base = $parts['dirname'];
         $parts_name = $parts['filename'];
-        $file_create = $parts_base."/".$parts_name.".kmz";
+        $file_create = $parts_base."/".$parts_name.".zip";
 
         #Create KMZ zip file
-        $zip = new ZipArchive;
+        $zip = new ZipArchive();
         $zip->open($file_create, ZipArchive::CREATE);
+        #var_dump("FileCreate: ".$file_create);
         #var_dump($zip->getStatusString());
-
         $zip->addFile($file, 'doc.kml');
         #var_dump($zip->getStatusString());
-
         $zip->close();
-
-        if (file_exists($file_create)) {
-            return $file_create;
+        $new_filename = $parts_base."/".$parts_name.".kmz";
+        rename($file_create, $new_filename);
+        if (file_exists($new_filename)) {
+            return $new_filename;
         } else {
             return -2;
         }
     }
+
+
 
 }

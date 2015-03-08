@@ -1,6 +1,6 @@
 <?php
 /*
-DBcore.inc.php, holds the WiFiDB Core functions.
+dbcore.inc.php, holds the WiFiDB Core functions.
 Copyright (C) 2012 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -88,20 +88,20 @@ class dbcore
         if(empty($config['colors_setting']) or PHP_OS != "Linux")
         {
             $this->colors = array(
-                "LIGHTGRAY"	=> "",
-                "BLUE"		=> "",
-                "GREEN"		=> "",
-                "RED"		=> "",
-                "YELLOW"	=> ""
+                "LIGHTGRAY"    => "",
+                "BLUE"        => "",
+                "GREEN"        => "",
+                "RED"        => "",
+                "YELLOW"    => ""
             );
         }else
         {
             $this->colors = array(
-                "LIGHTGRAY"	=> "\033[0;37m",
-                "BLUE"		=> "\033[0;34m",
-                "GREEN"		=> "\033[0;32m",
-                "RED"		=> "\033[0;31m",
-                "YELLOW"	=> "\033[1;33m"
+                "LIGHTGRAY"    => "\033[0;37m",
+                "BLUE"        => "\033[0;34m",
+                "GREEN"        => "\033[0;32m",
+                "RED"        => "\033[0;31m",
+                "YELLOW"    => "\033[1;33m"
             );
         }
 
@@ -217,7 +217,7 @@ class dbcore
             if(file_exists($WFDBD_PID)) #Check and see if the PID File exists
             {
                 $pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
-        #	echo $pid_open[0]."<br>";
+        #    echo $pid_open[0]."<br>";
                 exec('ps vp '.$pid_open[0] , $output, $sta); #execute PS for the PID given.
                 if(isset($output[1])) #if there was data returned from PS lets parse it.
                 {
@@ -239,9 +239,9 @@ class dbcore
                     //$returns = array(  # lets now throw all this
                     //    $mem,$CMD,$time,$ps_Sta_exp # into one array
                     //);
-					//var_dump($returns);
-					
-					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
+                    //var_dump($returns);
+                    
+                    $ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
                     return $ret; # and return it
                 }else
                 {

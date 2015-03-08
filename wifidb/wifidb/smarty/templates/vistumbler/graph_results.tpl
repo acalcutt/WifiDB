@@ -42,8 +42,8 @@ if not, write to the
                 <input name="name" type="hidden" value="{$AP_data.name}">
                 Choose Graph Type:
                 <select name="line" style="height: 22px; width: 139px">
-                    <option value="">Bar (Vertical)</option>
-                    <option value="line">Line (Horizontal)</option>
+                    <option{if $AP_data.line eq 'bar'} selected{/if} value="bar">Bar (Vertical)</option>
+                    <option{if $AP_data.line eq 'line'} selected{/if} value="line">Line (Horizontal)</option>
                 </select>
             </td>
         </tr>
@@ -51,49 +51,48 @@ if not, write to the
             <td class="style2">
                 Choose Text Color:
                 <select name="text" style="height: 22px; width: 147px">
-                    <option value="255:000:000">Red</option>
-                    <option value="000:255:000">Green</option>
-                    <option value="000:000:255">Blue</option>
-                    <option value="000:000:000">Black</option>
-                    <option value="255:255:000">Yellow</option>
-                    <option value="255:128:000">Orange</option>
-                    <option value="128:064:000">Brown</option>
-                    <option value="000:255:255">Sky Blue</option>
-                    <option value="064:000:128">Purple</option>
-                    <option value="128:128:128">Grey</option>
-                    <option value="226:012:243">Pink</option>
-                    <option value="rand">Random</option>
+                    <option{if $AP_data.tex eq '255:000:000'} selected{/if} value="255:000:000">Red</option>
+                    <option{if $AP_data.text eq '000:255:000'} selected{/if} value="000:255:000">Green</option>
+                    <option{if $AP_data.text eq '000:000:255'} selected{/if} value="000:000:255">Blue</option>
+                    <option{if $AP_data.text eq '000:000:000'} selected{/if} value="000:000:000">Black</option>
+                    <option{if $AP_data.text eq '255:255:000'} selected{/if} value="255:255:000">Yellow</option>
+                    <option{if $AP_data.text eq '255:128:000'} selected{/if} value="255:128:000">Orange</option>
+                    <option{if $AP_data.text eq '128:064:000'} selected{/if} value="128:064:000">Brown</option>
+                    <option{if $AP_data.text eq '000:255:255'} selected{/if} value="000:255:255">Sky Blue</option>
+                    <option{if $AP_data.text eq '064:000:128'} selected{/if} value="064:000:128">Purple</option>
+                    <option{if $AP_data.text eq '128:128:128'} selected{/if} value="128:128:128">Grey</option>
+                    <option{if $AP_data.text eq '226:012:243'} selected{/if} value="226:012:243">Pink</option>
+                    <option{if $AP_data.text eq 'rand'} selected{/if} value="rand">Random</option>
                 </select>
-
             </td>
         </tr>
         <tr>
             <td class="style2">
                 Choose Background Color:
                 <select name="bgc" style="height: 22px; width: 147px">
-                    <option value="000:000:000">Black</option>
-                    <option value="255:255:255">White</option>
+                    <option{if $AP_data.bgc eq '000:000:000'} selected{/if} value="000:000:000">Black</option>
+                    <option{if $AP_data.bgc eq '255:255:255'} selected{/if} value="255:255:255">White</option>
                 </select>
 
             </td>
         </tr>
         <tr>
             <td class="style2">
-                Choose Graph Color:<select name="linec" style="width: 153px">
-                    <option value="255:000:000">Red</option>
-                    <option value="000:255:000">Green</option>
-                    <option value="000:000:255">Blue</option>
-                    <option value="000:000:000">Black</option>
-                    <option value="255:255:000">Yellow</option>
-                    <option value="255:128:000">Orange</option>
-                    <option value="128:064:000">Brown</option>
-                    <option value="000:255:255">Sky Blue</option>
-                    <option value="064:000:128">Purple</option>
-                    <option value="128:128:128">Grey</option>
-                    <option value="226:012:243">Pink</option>
-                    <option value="rand">Random</option>
+                Choose Graph Color:
+                <select name="linec" style="width: 153px">
+                    <option{if $AP_data.linec eq '255:000:000'} selected{/if} value="255:000:000">Red</option>
+                    <option{if $AP_data.linec eq '000:255:000'} selected{/if} value="000:255:000">Green</option>
+                    <option{if $AP_data.linec eq '000:000:255'} selected{/if} value="000:000:255">Blue</option>
+                    <option{if $AP_data.linec eq '000:000:000'} selected{/if} value="000:000:000">Black</option>
+                    <option{if $AP_data.linec eq '255:255:000'} selected{/if} value="255:255:000">Yellow</option>
+                    <option{if $AP_data.linec eq '255:128:000'} selected{/if} value="255:128:000">Orange</option>
+                    <option{if $AP_data.linec eq '128:064:000'} selected{/if} value="128:064:000">Brown</option>
+                    <option{if $AP_data.linec eq '000:255:255'} selected{/if} value="000:255:255">Sky Blue</option>
+                    <option{if $AP_data.linec eq '064:000:128'} selected{/if} value="064:000:128">Purple</option>
+                    <option{if $AP_data.linec eq '28:128:128'} selected{/if} value="128:128:128">Grey</option>
+                    <option{if $AP_data.linec eq '226:012:243'} selected{/if} value="226:012:243">Pink</option>
+                    <option{if $AP_data.linec eq 'rand'} selected{/if} value="rand">Random</option>
                 </select>
-
             </td>
         </tr>
         <tr>
@@ -103,7 +102,9 @@ if not, write to the
         </tr>
     </table>
 </form>
+
 You can find your Wifi Graph here -> <a class="links" href="{$wifidb_host_url}{$graph_ret.1}">{$graph_ret.1}</a>
+<br />
 <img src="{$wifidb_host_url}{$graph_ret.1}"/>
 
 {include file="footer.tpl"}

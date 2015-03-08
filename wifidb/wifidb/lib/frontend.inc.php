@@ -1,7 +1,7 @@
 <?php
 /*
 Frontend.inc.php, Functions to generate the frontend data and some views..
-Copyright (C) 2011 Phil Ferland
+Copyright (C) 2011 Phil Ferland, 2015 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -88,12 +88,26 @@ class frontend extends dbcore
         $prep->bindParam(1, $id, PDO::PARAM_INT);
         $prep->execute();
         $newArray = $prep->fetch(2);
+        
+        if($newArray['ssid'] == '')
+        {
+            $new_ssid = '[Blank SSID]';
+        }
+        elseif(!ctype_print($newArray['ssid']))
+        {
+            $new_ssid = '['.$newArray['ssid'].']';
+        }
+        else
+        {
+            $new_ssid = $newArray['ssid'];
+        }
+        
         $ap_data = array(
             'id'=>$newArray['id'],
             'radio'=>$newArray['radio'],
             'manuf'=>$newArray['manuf'],
             'mac'=>$newArray['mac'],
-            'ssid'=>$newArray['ssid'],
+            'ssid'=>$new_ssid,
             'chan'=>$newArray['chan'],
             'encry'=>$newArray['encry'],
             'auth'=>$newArray['auth'],
@@ -106,27 +120,13 @@ class frontend extends dbcore
             'user'=>$newArray["username"]
         );
 
-        $sql = "SELECT `lat` FROM `wifi`.`wifi_gps`
-                WHERE `ap_hash` = ?
-                AND `lat` != '0.0000'
-                ORDER BY `date` DESC LIMIT 1";
-        $ap_hash = $newArray["ap_hash"];
-        $prep1 = $this->sql->conn->prepare($sql);
-        $prep1->bindParam(1, $ap_hash, PDO::PARAM_STR);
-        $prep1->execute();
-        if($this->sql->checkError() !== 0)
+        if($newArray['lat'] == "0.0000")
         {
-            throw new Exception("Error getting GPS for colored globe.");
-        }
-        $lastgps = $prep1->fetch(2);
-
-        if($lastgps !== FALSE)
-        {
-            $lat_c = $lastgps['lat']+0;
-            $gps_globe = ($lat_c == "0" ? "off" : "on");
+            $globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
         }else
         {
-            $gps_globe = "off";
+            $globe_html = "<a href=\"".$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\">
+            <img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
         }
 
         $sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
@@ -198,11 +198,11 @@ class frontend extends dbcore
         }
 
         $list = array();
-		$id_find = "%-{$id}:%";
-		$id_find_firstitem = "{$id}:%";
-		$prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
+        $id_find = "%-{$id}:%";
+        $id_find_firstitem = "{$id}:%";
+        $prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
         $prep2->bindParam(1, $id_find, PDO::PARAM_STR);
-		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
+        $prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
         $prep2->execute();
         if($this->sql->checkError() !== 0)
         {
@@ -231,7 +231,7 @@ class frontend extends dbcore
                         $newArray['ssid'],
                         $signal_runs,
                         $list,
-                        $gps_globe,
+                        $globe_html,
                         $ap_data
                     );
     }
@@ -480,23 +480,26 @@ class frontend extends dbcore
     {
         if($username == ""){return 0;}
         $total_aps = array();
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+        #Get Last Active AP
+        $sql = "SELECT id, aps, gps, title, data FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
         $prep1 = $this->sql->conn->prepare($sql);
         $prep1->bindParam(1, $username, PDO::PARAM_STR);
         $prep1->execute();
         $user_last = $prep1->fetch(2);
-        
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+
+        #Get First Active AP
+        $sql = "SELECT id, username, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
         $prep2 = $this->sql->conn->prepare($sql);
         $prep2->bindParam(1, $username, PDO::PARAM_STR);
         $prep2->execute();
         $user_first = $prep2->fetch(2);
-        
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC";
+
+        #Get All Imports for User
+        $sql = "SELECT points FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
         $prep3 = $this->sql->conn->prepare($sql);
         $prep3->bindParam(1, $username, PDO::PARAM_STR);
         $prep3->execute();
-        
+        #Count APs in all Imports
         while($imports = $prep3->fetch(2))
         {
             if($imports['points'] == ""){continue;}
@@ -511,7 +514,7 @@ class frontend extends dbcore
                 }
             }
             $pts_count = count($points);
-            $total_aps[] = $pts_count;
+            $total_aps[] = (int)$pts_count;
         }
         $total = 0;
         if(count(@$total_aps))
@@ -620,19 +623,32 @@ class frontend extends dbcore
             if($ap_array['lat'] == "0.0000")
             {
                 $globe = "off";
+                $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
             }else
             {
                 $globe = "on";
+                $globe_html = "<a href=\"".$dbcore->URL_PATH."../opt/export.php?func=exp_all_signal&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
             }
-            if($ap_array['ssid'] == "")
-                {$ssid = "Unnamed";}
+
+            if($ap_array['ssid'] == '')
+            {
+                $ssid = '[Blank SSID]';
+            }
+            elseif(!ctype_print($ap_array['ssid']))
+            {
+                $ssid = '['.$ap_array['ssid'].']';
+            }
             else
-                {$ssid = $ap_array['ssid'];}
+            {
+                $ssid = $ap_array['ssid'];
+            }
+
             $all_aps_array['allaps'][] = array(
                     'id' => $ap_array['id'],
                     'class' => $style,
                     'un' => $update_or_new,
                     'globe' => $globe,
+                    'globe_html' => $globe_html,
                     'ssid' => $ssid,
                     'mac' => $ap_array['mac'],
                     'chan' => $ap_array['chan'],
@@ -825,13 +841,33 @@ class frontend extends dbcore
                 $row_color = 1;
                 $results_all[$i]['class'] = "dark";
             }
+			if($newArray['lat'] == "0.0000")
+			{
+				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+			}else
+			{
+				$results_all[$i]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+			}
+			if($newArray['ssid'] == '')
+			{
+				$results_all[$i]['ssid'] = '[Blank SSID]';
+			}
+			elseif(!ctype_print($newArray['ssid']))
+			{
+				$results_all[$i]['ssid'] = '['.$newArray['ssid'].']';
+			}
+			else
+			{
+				$results_all[$i]['ssid'] = $newArray['ssid'];
+			}
             $results_all[$i]['id'] = $newArray['id'];
-            $results_all[$i]['ssid'] = $newArray['ssid'];
             $results_all[$i]['mac'] = $newArray['mac'];
             $results_all[$i]['chan'] = $newArray['chan'];
             $results_all[$i]['auth'] = $newArray['auth'];
             $results_all[$i]['encry'] = $newArray['encry'];
             $results_all[$i]['radio']=$newArray['radio'];
+			$results_all[$i]['FA']=$newArray['FA'];
+			$results_all[$i]['LA']=$newArray['LA'];
             $results_all[$i]['ap_hash']=$newArray['ap_hash'];
             $i++;
         }

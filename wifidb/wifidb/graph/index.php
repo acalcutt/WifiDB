@@ -37,7 +37,7 @@ if($dbcore->sql->checkError() !== 0)
 }
 $pointer = $result->fetch(2);
 
-$man = $dbcore->manufactures($pointer["mac"]);
+$man = $pointer["manuf"];
 $limit = (int) $_GET['limit']+0;
 $from = (int) $_GET['from']+0;
 

@@ -18,7 +18,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-		<meta http-equiv="refresh" content="15">
+        <meta http-equiv="refresh" content="15">
                 <table border="1" width="90%">
                     <tr class="style4">
                         <th colspan="2">Schedule Display Settings</th>
@@ -41,8 +41,8 @@ if not, write to the
                                 <SELECT NAME="timezone">  
                                     {$wifidb_timezone_options}
                                 </SELECT>
-								<input type="checkbox" name="dst" value="1" {$wifidb_dst_options}>DST
-								<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
+                                <input type="checkbox" name="dst" value="1" {$wifidb_dst_options}>DST
+                                <INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
                             </form>
                         </td>
                     </tr>
@@ -53,25 +53,27 @@ if not, write to the
                         <th colspan="7">Daemon Schedule</th>
                     </tr>
                     <tr class="style4">
-						<th>NODE</th>
-						<th>DAEMON</th>
+                        <th>NODE</th>
+                        <th>DAEMON</th>
                         <th>INTERVAL</th>
                         <th>STATUS</th>
                         <th>NEXT RUN(UTC)</th>
-						<th>NEXT RUN(Local)</th>
+                        <th>NEXT RUN(Local)</th>
                     </tr>
-					{foreach item=wifidb_schedule from=$wifidb_schedules}
+                    {foreach item=wifidb_schedule from=$wifidb_schedules}
                     <tr align="center" bgcolor="{$wifidb_schedule.color}">
-						<td>{$wifidb_schedule.nodename}</td>
-						<td>{$wifidb_schedule.daemon}</td>
+                        <td>{$wifidb_schedule.nodename}</td>
+                        <td>{$wifidb_schedule.daemon}</td>
                         <td>{$wifidb_schedule.interval} minutes</td>
                         <td>{$wifidb_schedule.status}</td>
                         <td>{$wifidb_schedule.nextrun_utc}</td>
-						<td>{$wifidb_schedule.nextrun_local}</td>
+                        <td>{$wifidb_schedule.nextrun_local}</td>
                     </tr>
-					{foreachelse}
-                    <tr align="center" bgcolor="red">
-						<th colspan="7">Sorry there is nothing scheduled...</th>
+                    {foreachelse}
+                    <tr align="center">
+                        <td border="1" colspan="7">
+                            Sorry there is nothing scheduled...
+                        </td>
                     </tr> 
                     {/foreach}
                 </table>
@@ -81,28 +83,30 @@ if not, write to the
                         <th colspan="7">Daemon Status</th>
                     </tr>
                     <tr class="style4">
-						<th>NODE</th>
-						<th>PID FILE</th>
+                        <th>NODE</th>
+                        <th>PID FILE</th>
                         <th>PID</th>
                         <th>TIME</th>
                         <th>MEM</th>
                         <th>CMD</th>
-						<th>UPDATED</th>
+                        <th>UPDATED</th>
                     </tr>
-					{foreach item=wifidb_daemon from=$wifidb_daemons}
+                    {foreach item=wifidb_daemon from=$wifidb_daemons}
                     <tr align="center" bgcolor="{$wifidb_daemon.color}">
-						<td>{$wifidb_daemon.nodename}</td>
-						<td>{$wifidb_daemon.pidfile}</td>
+                        <td>{$wifidb_daemon.nodename}</td>
+                        <td>{$wifidb_daemon.pidfile}</td>
                         <td>{$wifidb_daemon.pid}</td>
                         <td>{$wifidb_daemon.pidtime}</td>
                         <td>{$wifidb_daemon.pidmem}</td>
                         <td>{$wifidb_daemon.pidcmd}</td>
-						<td>{$wifidb_daemon.date} (UTC)</td>
+                        <td>{$wifidb_daemon.date} (UTC)</td>
                     </tr>
-					{foreachelse}
-                    <tr align="center" bgcolor="red">
-						<th colspan="7">Sorry there are no daemon PIDs...</th>
-                    </tr> 
+                    {foreachelse}
+                    <tr align="center">
+                        <td border="1" colspan="7">
+                            Sorry there are no daemon PIDs...
+                        </td>
+                    </tr>
                     {/foreach}
                 </table>
                 <br />

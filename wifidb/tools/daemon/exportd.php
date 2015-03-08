@@ -16,7 +16,10 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit  = "2015-02-10";
+$lastedit  = "2015-03-07";
+$daemon_name = "Export";
+$daemon_version = "1.0";
+$node_name = $daemon_config['wifidb_nodename'];
 
 $arguments = $dbcore->parseArgs($argv);
 
@@ -24,8 +27,6 @@ if(@$arguments['h'])
 {
     echo "Usage: exportd.php [args...]
   -v               Run Verbosely (SHOW EVERYTHING!)
-  -c               Location of the config file you want to load. *
-  -L               Log Daemon output to a file. *
   -i               Version Info.
   -h               Show this screen.
   -l               Show License Information.
@@ -39,7 +40,7 @@ if(@$arguments['i'])
 {
     $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-Export Daemon 1.0, {$lastedit}, GPLv2 Random Intervals");
+{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals");
     exit();
 }
 
@@ -47,7 +48,7 @@ if(@$arguments['l'])
 {
     $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-Export Daemon 1.0, {$lastedit}, GPLv2
+{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2
 Copyright (C) 2015 Andrew Calcutt,
 This script is based on imp_expd.php by Phil Ferland. It is made to do just exports and be run as a cron job.
 
@@ -57,7 +58,6 @@ You should have received a copy of the GNU General Public License along with thi
 ");
     exit();
 }
-
 
 if(@$arguments['v'])
 {
@@ -91,7 +91,7 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
- - Export Daemon 1.0, {$lastedit}, GPLv2 Random Intervals
+ - {$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
 
@@ -103,15 +103,10 @@ if($dbcore->checkDaemonKill())
 	exit($dbcore->exit_msg);
 }
 
-$daemon_name = "Export";
-$node_name = $daemon_config['wifidb_nodename'];
-$daemon_path = $daemon_config['daemon_path'];
-
-
 $dbcore->verbosed("Running $daemon_name jobs for $node_name");
 
 #Checking for Import Jobs
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= now() And `enabled` = 1 LIMIT 1";
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= now() And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $daemon_name, PDO::PARAM_STR);
@@ -125,98 +120,87 @@ if($prepgj->rowCount() == 0)
 else
 {
 	$dbcore->verbosed("Running...");
-	$job_fetch = $prepgj->fetchAll(2);
-	foreach($job_fetch as $job)
-	{
-		#Job Settings
-		$job_id = $job['id'];
-		$job_interval = $job['interval'];
-		if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
-		
-		#Set Job to Running
-		$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
-		$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
-		$prepsr = $dbcore->sql->conn->prepare($sql);
-		$prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
-		$prepsr->bindParam(2, $job_id, PDO::PARAM_INT);
-		$prepsr->execute();
+	$job = $prepgj->fetch(2);
+    #Job Settings
+    $job_id = $job['id'];
+    $job_interval = $job['interval'];
+    //if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
 
-		#Find How Many APs had GPS on the last run
-		$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'apswithgps'";
-		$result =  $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
-		$settingarray = $result->fetch(2);
-		$apswithgps_last = $settingarray['size'];
-		$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
+    #Set Job to Running
+    $dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
+    $sql = "UPDATE `wifi`.`schedule` SET `status` = ? WHERE `id` = ?";
+    $prepsr = $dbcore->sql->conn->prepare($sql);
+    $prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
+    $prepsr->bindParam(2, $job_id, PDO::PARAM_INT);
+    $prepsr->execute();
 
+    #Find How Many APs had GPS on the last run
+    $sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'apswithgps'";
+    $result =  $dbcore->sql->conn->query($sql);
+    if($dbcore->sql->checkError(__LINE__, __FILE__))
+    {
+        $dbcore->verbosed("There was an error running the SQL");
+        throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
+    }
+    $settingarray = $result->fetch(2);
+    $apswithgps_last = $settingarray['size'];
+    $dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
-		#Find How Many APs have GPS now
-		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000'";
-		$result = $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
-		$apswithgps_now = $result->rowCount();
-		$dbcore->verbosed("APs with GPS on Current Run: ".$apswithgps_now);
+    #Find How Many APs have GPS now
+    $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000'";
+    $result = $dbcore->sql->conn->query($sql);
+    if($dbcore->sql->checkError(__LINE__, __FILE__))
+    {
+        $dbcore->verbosed("There was an error running the SQL");
+        throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
+    }
+    $apswithgps_now = $result->rowCount();
+    $dbcore->verbosed("APs with GPS on Current Run: ".$apswithgps_now);
 
-		#If current gps count is higher than last gps count, run the kml export daemon
+    #If current gps count is higher than last gps count, run the kml export daemon
 
-		if ($apswithgps_last >= $apswithgps_now)  
-		{
-			$dbcore->verbosed("Number of APs with GPS has not changed. go import something and try again.");
-		}
-		else
-		{
-			$dbcore->verbosed("Looks like there are some new results...now this script has something to eat...");
-			
-			#Run Deamon Exports
-			$dbcore->verbosed("Running Daily and a Full DB KML Export if one does not already exists.");
+    if ($apswithgps_last >= $apswithgps_now)
+    {
+        $dbcore->verbosed("Number of APs with GPS has not changed. go import something and try again.");
+    }
+    else
+    {
+        $dbcore->verbosed("Looks like there are some new results...now this script has something to eat...");
 
-			$dbcore->export->GenerateDaemonKMLData();
-				
-			#Set current number of APs with GPS into the settings table
-			$sqlup2 = "UPDATE `wifi`.`settings` SET `size` = ? WHERE `table` = 'apswithgps'";
-			$prep6 = $dbcore->sql->conn->prepare($sqlup2);
-			$prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
-			$prep6->execute();
-			if(!$dbcore->sql->checkError())
-			{
-				$dbcore->verbosed("Updated settings table with next run time: ".$nextrun);
-			}
-				
-			##### make sure import/export files are in sync with remote nodes
-			//$dbcore->verbosed("Synchronizing files between nodes...", 1);
-			//$cmd = '/opt/unison/sync_wifidb_exports > /opt/unison/log/sync_wifidb_exports 2>&1';
-			//exec ($cmd);
-			#####
-		}
-		
-		#Set Next Run
-		$nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
-		$dbcore->verbosed("Setting Job Next Run to ".$nextrun, 1);
-		$sql = "UPDATE `wifi`.`schedule` SET `nextrun`=? WHERE `id`=?";
-		$prepnr = $dbcore->sql->conn->prepare($sql);
-		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
-		$prepnr->bindParam(2, $job_id, PDO::PARAM_INT);
-		$prepnr->execute();
-		
-		#Set Job to Waiting
-		$dbcore->verbosed("Setting Job to ".$daemon_config['status_waiting'], 1);
-		$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
-		$prepsw = $dbcore->sql->conn->prepare($sql);
-		$prepsw->bindParam(1, $daemon_config['status_waiting'], PDO::PARAM_STR);
-		$prepsw->bindParam(2, $job_id, PDO::PARAM_INT);
-		$prepsw->execute();
-		
-		#Finished Job
-		$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
-	}
+        #Run Deamon Exports
+        $dbcore->verbosed("Running Daily and a Full DB KML Export if one does not already exists.");
+
+        $dbcore->export->GenerateDaemonKMLData();
+
+        #Set current number of APs with GPS into the settings table
+        $sqlup2 = "UPDATE `wifi`.`settings` SET `size` = ? WHERE `table` = 'apswithgps'";
+        $prep6 = $dbcore->sql->conn->prepare($sqlup2);
+        $prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
+        $prep6->execute();
+        if(!$dbcore->sql->checkError())
+        {
+            $nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
+            $dbcore->verbosed("Updated settings table with next run time: ".$nextrun);
+        }
+
+        ##### make sure import/export files are in sync with remote nodes
+        $dbcore->verbosed("Synchronizing files between nodes...", 1);
+        $cmd = '/opt/unison/sync_wifidb_exports > /opt/unison/log/sync_wifidb_exports 2>&1';
+        #exec ($cmd);
+        #####
+    }
+
+    #Set Next Run Job to Waiting
+    $nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
+    $dbcore->verbosed("Setting Job Next Run to ".$nextrun, 1);
+    $sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
+    $prepnr = $dbcore->sql->conn->prepare($sql);
+    $prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
+    $prepnr->bindParam(2, $daemon_config['status_waiting'], PDO::PARAM_STR);
+    $prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
+    $prepnr->execute();
+
+    #Finished Job
+    $dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
 }
-
 unlink($dbcore->pid_file);

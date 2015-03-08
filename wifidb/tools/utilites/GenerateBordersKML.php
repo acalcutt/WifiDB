@@ -75,4 +75,4 @@ $data = '<?xml version="1.0" encoding="UTF-8"?>
     </Folder>
 </Document>
 </kml>';
-file_put_contents("test.kml", $data);
+file_put_contents($daemon_config['wifidb_install']."out/daemon/boundaries.kml", $data);

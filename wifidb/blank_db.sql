@@ -142,7 +142,7 @@ CREATE TABLE IF NOT EXISTS `files_tmp` (
   `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
   `row` int(255) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `file` (`file`)
+  UNIQUE KEY `hash` (`hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------

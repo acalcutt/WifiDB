@@ -43,31 +43,11 @@ $apdata = array(
     "label" => $_POST['label'],
     "sig" => $_POST['sig'],
     "name" => $_POST['name'],
+	"line" => $_POST['line'],
     "bgc" => $_POST['bgc'],
     "linec" => $_POST['linec'],
     "text" => $_POST['text']
 );
-
-$ssid = $_POST['ssid'];
-$mac = $_POST['mac'];
-$man = $_POST['man'];
-$auth = $_POST['auth'];
-$encry = $_POST['encry'];
-$radio = $_POST['radio'];
-$chan = $_POST['chan'];
-$lat = $_POST['lat'];
-$long = $_POST['long'];
-$btx = $_POST['btx'];
-$otx = $_POST['otx'];
-$fa = $_POST['fa'];
-$lu = $_POST['lu'];
-$nt = $_POST['nt'];
-$label = $_POST['label'];
-$sig = $_POST['sig'];
-$name = $_POST['name'];
-$bgc = $_POST['bgc'];
-$linec = $_POST['linec'];
-$text = $_POST['text'];
 
 if($_POST['line'] === 'line')
 {
