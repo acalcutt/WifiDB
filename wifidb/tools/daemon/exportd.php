@@ -124,7 +124,7 @@ else
     #Job Settings
     $job_id = $job['id'];
     $job_interval = $job['interval'];
-    if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
+    //if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
 
     #Set Job to Running
     $dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
