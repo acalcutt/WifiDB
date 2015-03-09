@@ -624,11 +624,11 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
     {
         $date = date($this->date_format);
         $this->named = 0;
-        $this->GatherAllExports();
-        #$this->ExportAllkml($date);
+        #$this->GatherAllExports();
+        $this->ExportAllkml($date);
         $this->named = 1;
-        $this->GatherAllExports();
-        #$this->ExportAllkml($date);
+        #$this->GatherAllExports();
+        $this->ExportAllkml($date);
 
         $this->named = 0;
         $this->ExportDailykml($date);
