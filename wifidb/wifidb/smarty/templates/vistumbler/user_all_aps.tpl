@@ -33,7 +33,7 @@ if not, write to the
                                         </tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Export This list To...</b></td>
-                                            <td><a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_user_all_kml&amp;user={$wifidb_all_user_aps.username}">KML</a></td>
+                                            <td><a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_user_all_kml&amp;user={$wifidb_all_user_aps.username}">KMZ</a></td>
                                         </tr>
                                     </tbody>
                                 </table>
