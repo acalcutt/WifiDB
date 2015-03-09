@@ -186,6 +186,7 @@ try
                 break;
 
                 case "graph":
+					__autoload("graphs");
                     $dbcore = new frontend($config);
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
