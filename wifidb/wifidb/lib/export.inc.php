@@ -865,8 +865,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         //$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
         //$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
 
-        $kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
-        //$kml_data = $full_folder.$daily_folder.$new_AP_folder;#.$archive_folder;
+        //$kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
+        $kml_data = $full_folder.$daily_folder.$new_AP_folder;#.$archive_folder;
 
         $full_kml_file = $this->daemon_out.'update.kml';
         $this->createKML->createKML($full_kml_file, "WiFiDB Auto KMZ Generation", $kml_data);
