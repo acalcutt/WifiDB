@@ -12,8 +12,8 @@ $otherusers = (empty($_REQUEST['otherusers'])) ? "" : $_REQUEST['otherusers'];
 if(!@$_FILES['file']['tmp_name']){$dbcore->Output("No upload file found :(");}
 
 $tmp  = $_FILES['file']['tmp_name'];
-$size = $dbcore->format_size($tmp);
-if($size == "0B"){$dbcore->Output("Size of file is only 0B, come one man....");}
+$size = $_FILES['file']['size'];
+if($size == "0"){$dbcore->Output("Size of file is only 0B, come one man....");}
 
 $hash           =   hash_file('md5', $tmp);
 $prefilename    =   str_replace(" ", "_", $_FILES['file']['name']);
