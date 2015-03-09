@@ -169,6 +169,99 @@ class export extends dbcore
         }
         return $daily_folder;
     }
+	
+    public function ExportDailykmlOldVersion($date = NULL)
+    {
+        if($date === NULL)
+        {
+            $date = date($this->date_format);
+        }
+        $date_search = $date."%";
+        $select_daily = "SELECT `id` , `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search'";
+        $result = $this->sql->conn->query($select_daily);
+        if($this->sql->checkError(__LINE__, __FILE__))
+        {
+            $this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
+            Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
+        }
+        if($result->rowCount() < 1)
+        {
+            return -1;
+        }
+        
+        if($this->named)
+        {
+            $this->verbosed("Start of Exporting Labeled Daily KML.");
+            $labeled = "_label";
+        }else
+        {
+            $this->verbosed("Start of Exporting Non-Labeled Daily KML.");
+            $labeled = "";
+        }
+        $fetch_imports = $result->fetchAll();
+        $data = array();
+        foreach($fetch_imports as $import)
+        {
+            $stage_pts = explode("-", $import['points']);
+            foreach($stage_pts as $point)
+            {
+                $exp = explode(":", $point);
+                $hash = $this->GetAPhash($exp[0]);
+                $id = $exp[0]+0;
+                $ret = $this->ExportSingleAP($id);
+                if(is_array($ret) && count($ret[$hash]['gdata']) > 0)
+                {
+                    $data = array_merge($data, $ret );
+                }
+            }
+            $this->createKML->ClearData();
+            $this->createKML->LoadData($data);
+            $KML_data = $this->createKML->PlotAllAPs(1, 1, $this->named);
+            $KML_data = $this->createKML->createFolder($import['username']." - ".$import['title'], $KML_data, 0);
+        }
+        $daily_folder = $this->daemon_out.$date;
+        if(!@file_exists($daily_folder))
+        {
+            $this->verbosed("Need to make a daily export folder...", 1);
+            if(!mkdir($daily_folder))
+            {
+                $this->verbosed("Error making new daily export folder...", -1);
+                Throw new ErrorException("Error Making new Daily Export Folder. - ".$php_errormsg." - ".$daily_folder);
+            }
+        }
+        $full_kml_file = $daily_folder."/daily_db".$labeled.".kml";
+        $this->verbosed("Writing the Daily KML File: ".$full_kml_file);
+        $this->createKML->createKML($full_kml_file, "WiFiDB Daily Export ($date)", $KML_data);
+        ##
+        $link = $this->daemon_out.'daily_db'.$labeled.'.kml';
+        $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
+        unlink($link);
+        symlink($full_kml_file, $link);
+        chmod($link, 0664);        
+        #####################
+        $this->verbosed("Starting to compress the KML to a KMZ.");
+        $ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
+        if($ret_kmz_name == -1)
+        {
+            $this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
+        }
+        elseif($ret_kmz_name == -2)
+        {
+            $this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+        }
+        else
+        {
+            $this->verbosed("KMZ created at ".$ret_kmz_name);
+            chmod($ret_kmz_name, 0664);
+            ##
+            $link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
+            $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
+            unlink($link);
+            symlink($ret_kmz_name, $link);
+            chmod($link, 0664);
+        }        
+        return $daily_folder;
+    }	
 
     /*
      * Export All Daily Aps to KML
@@ -631,9 +724,11 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         $this->ExportAllkml($date);
 
         $this->named = 0;
-        $this->ExportDailykml($date);
+        #$this->ExportDailykml($date);
+		$this->ExportDailykmlOldVersion($date);
         $this->named = 1;
-        $this->ExportDailykml($date);
+        #$this->ExportDailykml($date);
+		$this->ExportDailykmlOldVersion($date);
 
         if($this->HistoryKMLLink() === -1)
         {
