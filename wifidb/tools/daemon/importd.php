@@ -26,10 +26,10 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -v			   Run Verbosely (SHOW EVERYTHING!)
-  -i			   Version Info.
-  -h			   Show this screen.
-  -l			   Show License Information.
+  -v				Run Verbosely (SHOW EVERYTHING!)
+  -i				Version Info.
+  -h				Show this screen.
+  -l				Show License Information.
 
 * = Not working yet.
 ";
@@ -303,9 +303,9 @@ else
 
 							$totalaps = $tmp['aps'];
 							$totalgps = $tmp['gps'];
-                            $user_ids = implode(":", $import_ids);
+							$user_ids = implode(":", $import_ids);
 							$sql_insert_file = "INSERT INTO `wifi`.`files`
-							   (`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`)
+							(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`)
 						VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 							$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);

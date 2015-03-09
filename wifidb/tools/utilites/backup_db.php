@@ -30,4 +30,3 @@ if(copy($tmp_full, $full_export_file))
     $tarfile = $dbcore->TarFile($full_export_file);
     var_dump($tarfile);
 }
-?>
