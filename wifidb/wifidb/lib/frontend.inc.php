@@ -480,6 +480,22 @@ class frontend extends dbcore
 	{
 		if($username == ""){return 0;}
 		$total_aps = array();
+		
+		#Total APs
+		$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
+		$result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $username, PDO::PARAM_STR);
+		$result->execute();
+		$rows = $result->fetch(1);
+		$total = $rows[0];
+
+		#Get First Active AP
+		$sql = "SELECT id, username, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC LIMIT 1";
+		$prep2 = $this->sql->conn->prepare($sql);
+		$prep2->bindParam(1, $username, PDO::PARAM_STR);
+		$prep2->execute();
+		$user_first = $prep2->fetch(2);
+	
 		#Get Last Active AP
 		$sql = "SELECT id, aps, gps, title, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
@@ -487,74 +503,42 @@ class frontend extends dbcore
 		$prep1->execute();
 		$user_last = $prep1->fetch(2);
 
-		#Get First Active AP
-		$sql = "SELECT id, username, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
-		$prep2 = $this->sql->conn->prepare($sql);
-		$prep2->bindParam(1, $username, PDO::PARAM_STR);
-		$prep2->execute();
-		$user_first = $prep2->fetch(2);
-
 		#Get All Imports for User
-		$sql = "SELECT points FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
-		$prep3 = $this->sql->conn->prepare($sql);
-		$prep3->bindParam(1, $username, PDO::PARAM_STR);
-		$prep3->execute();
-		#Count APs in all Imports
-		while($imports = $prep3->fetch(2))
+		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		#echo $sql."\r\n";
+		$other_imports = $this->sql->conn->prepare($sql);
+		$other_imports->execute(array($username, $user_last['id']));
+		$other_rows = $other_imports->rowCount();
+		$other_imports_array = array();
+		if($other_rows > 0)
 		{
-			if($imports['points'] == ""){continue;}
-			$points = explode("-",$imports['points']);
-			foreach($points as $key=>$pt)
-			{
-				$pt_ex = explode(":", $pt);
-				if($pt_ex[1] == 1)
-				{
-					#var_dump($pt_ex);
-					unset($points[$key]);
-				}
-			}
-			$pts_count = count($points);
-			$total_aps[] = (int)$pts_count;
-		}
-		$total = 0;
-		if(count(@$total_aps))
-		{
-			foreach($total_aps as $totals)
-			{
-				$total += $totals;
-			}
-
-			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
-			#echo $sql."\r\n";
-			$other_imports = $this->sql->conn->prepare($sql);
-			$other_imports->execute(array($username, $user_first['id']));
-			$other_rows = $other_imports->rowCount();
-
 			#var_dump($other_rows);
-
-			$other_imports_array = array();
-			if($other_rows > 0)
+			$flip = 0;
+			while($imports = $other_imports->fetch(2))
 			{
-				#var_dump($other_rows);
-				$flip = 0;
-				while($imports = $other_imports->fetch(2))
+				#var_dump($imports);
+				if($imports['points'] == ""){continue;}
+				if($flip)
 				{
-					#var_dump($imports);
-					if($imports['points'] == ""){continue;}
-					if($flip){$style = "dark";$flip=0;}else{$style="light";$flip=1;}
-					$import_id = $imports['id'];
-					$import_title = $imports['title'];
-					$import_date = $imports['date'];
-					$import_ap = $imports['aps'];
-
-					$other_imports_array[] = array(
-													'class' => $style,
-													'id' => $import_id,
-													'title' => $import_title,
-													'aps' => $import_ap,
-													'date' => $import_date
-												   );
+					$style = "dark";
+					$flip=0;
+				}else
+				{
+					$style="light";
+					$flip=1;
 				}
+				$import_id = $imports['id'];
+				$import_title = $imports['title'];
+				$import_date = $imports['date'];
+				$import_ap = $imports['aps'];
+
+				$other_imports_array[] = array(
+												'class' => $style,
+												'id' => $import_id,
+												'title' => $import_title,
+												'aps' => $import_ap,
+												'date' => $import_date
+											   );
 			}
 		}
 		$this->user_all_imports_data = array();
