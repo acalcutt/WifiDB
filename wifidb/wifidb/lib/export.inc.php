@@ -141,7 +141,7 @@ class export extends dbcore
         ###
         $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kml';
         $this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
-        //unlink($link);
+        unlink($link);
         symlink($full_kml_file, $link);
         chmod($link, 0664);
         #####################
@@ -163,7 +163,7 @@ class export extends dbcore
             ###
             $link = $this->PATH.'out/daemon/full_db'.$labeled.'.kmz';
             $this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-            //unlink($link);
+            unlink($link);
             symlink($ret_kmz_name, $link);
             chmod($link, 0664);
         }
