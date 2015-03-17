@@ -207,11 +207,13 @@ class createKML
         }
         if($name != "")
         {
-            $name = "<name>$name</name>";
+            $name = "
+            <name>$name</name>";
         }
         if($radiofolder)
         {
-            $radiofolder = "<Style>
+            $radiofolder = "
+			<Style>
                 <ListStyle>
                     <listItemType>radioFolder</listItemType>
                 </ListStyle>
@@ -220,10 +222,7 @@ class createKML
         {
             $radiofolder = "";
         }
-        $tmp = "
-        <Folder>
-            $radiofolder
-            $name
+        $tmp = "<Folder>$radiofolder$name
             <open>$open</open>
             $data
         </Folder>";
@@ -279,6 +278,7 @@ class createKML
     {
         if($hash === "")
         {
+
             throw new ErrorException("AP Hash pointer for createKML::PlotAPpoint is empty.");
         }
         if($this->data->apdata[$hash] === NULL)
@@ -289,7 +289,6 @@ class createKML
         {
             throw new ErrorException("gdata element in the data object for createKML::PlotAPpoint is empty");
         }
-        $gps_center = (int) round((count($this->data->apdata[$hash]['gdata'])/2))-1;
 
         switch($this->data->apdata[$hash]['sectype'])
         {
@@ -308,8 +307,7 @@ class createKML
         }
         if($named)
         {
-            $named = "
-            <name>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."</name>";
+            $named = "            <name>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."</name>";
         }else
         {
             $named = "";
@@ -323,8 +321,7 @@ class createKML
             $icon_style = $sec_type_label."StyleDead";
         }
         
-        $tmp = "
-        <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
+        $tmp = "<Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
             <styleUrl>".$icon_style."</styleUrl>
             <description>
                 <![CDATA[
