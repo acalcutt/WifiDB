@@ -30,6 +30,9 @@ class createKML
         $this->open_path    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
         $this->wep_path     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
         $this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
+        $this->open_path_dead    =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open_dead.png";
+        $this->wep_path_dead     =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep_dead.png";
+        $this->secure_path_dead  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure_dead.png";
         $this->SigMapTimeBeforeMarkedDead = $tilldead;
         $this->PolyStyle = '
         <Style id="default">
@@ -38,7 +41,7 @@ class createKML
             </PolyStyle>
         </Style>';
         $this->openstyle = '
-        <Style id="openStyleDead">
+        <Style id="openStyle">
             <IconStyle>
                 <scale>0.5</scale>
                 <Icon>
@@ -47,7 +50,7 @@ class createKML
             </IconStyle>
         </Style>';
         $this->wepstyle = '
-        <Style id="wepStyleDead">
+        <Style id="wepStyle">
             <IconStyle>
                 <scale>0.5</scale>
                 <Icon>
@@ -56,11 +59,38 @@ class createKML
             </IconStyle>
         </Style>';
         $this->securestyle = '
-        <Style id="secureStyleDead">
+        <Style id="secureStyle">
             <IconStyle>
                 <scale>0.5</scale>
                 <Icon>
                     <href>'.$this->secure_path.'</href>
+                </Icon>
+            </IconStyle>
+        </Style>';
+        $this->openstyledead = '
+        <Style id="openStyleDead">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>'.$this->open_path_dead.'</href>
+                </Icon>
+            </IconStyle>
+        </Style>';
+        $this->wepstyledead = '
+        <Style id="wepStyleDead">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>'.$this->wep_path_dead.'</href>
+                </Icon>
+            </IconStyle>
+        </Style>';
+        $this->securestyledead = '
+        <Style id="secureStyleDead">
+            <IconStyle>
+                <scale>0.5</scale>
+                <Icon>
+                    <href>'.$this->secure_path_dead.'</href>
                 </Icon>
             </IconStyle>
         </Style>';
@@ -156,7 +186,7 @@ class createKML
             <opacity>75</opacity>
         </PolyStyle>
     </Style>';
-        $this->style_data = $this->PolyStyle.$this->openstyle.$this->wepstyle.$this->securestyle.$this->tracklinestyle.$this->SignalLevelStyle;
+        $this->style_data = $this->PolyStyle.$this->openstyle.$this->wepstyle.$this->securestyle.$this->openstyledead.$this->wepstyledead.$this->securestyledead.$this->tracklinestyle.$this->SignalLevelStyle;
         $this->title = "Untitled";
         $this->users = "WiFiDB";
         $this->data = new stdClass();
@@ -284,9 +314,18 @@ class createKML
         {
             $named = "";
         }
+        
+        if($this->data->apdata[$hash]['new_ap'])
+        {
+            $icon_style = $sec_type_label."Style";
+        }else
+        {
+            $icon_style = $sec_type_label."StyleDead";
+        }
+        
         $tmp = "
         <Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
-            <styleUrl>".$sec_type_label."StyleDead</styleUrl>
+            <styleUrl>".$icon_style."</styleUrl>
             <description>
                 <![CDATA[
                     <b>SSID: </b>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."<br />
@@ -307,7 +346,7 @@ class createKML
                 ]]>
             </description>
             <Point id=\"".$this->data->apdata[$hash]['mac']."_signal_gps\">
-                <coordinates>".$this->convert->dm2dd($this->data->apdata[$hash]['gdata'][$gps_center]['long']).",".$this->convert->dm2dd($this->data->apdata[$hash]['gdata'][$gps_center]['lat']).",".$this->data->apdata[$hash]['gdata'][$gps_center]['alt']."</coordinates>
+                <coordinates>".$this->convert->dm2dd($this->data->apdata[$hash]['long']).",".$this->convert->dm2dd($this->data->apdata[$hash]['lat']).",".$this->data->apdata[$hash]['alt']."</coordinates>
             </Point>
         </Placemark>";
         return $tmp;

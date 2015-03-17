@@ -86,7 +86,7 @@ class export extends dbcore
         {
             $date = date($this->date_format);
         }
-        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER by `id` ASC";
+        $sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
         $result = $this->sql->conn->query($sql);
 
         if($this->sql->checkError(__LINE__, __FILE__))
@@ -124,7 +124,7 @@ class export extends dbcore
 
         while($array = $result->fetch(2))
         {
-            $ret = $this->ExportSingleAP((int)$array['id']);
+            $ret = $this->ExportSingleAP((int)$array['id'], 0);
             if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
                 $this->createKML->ClearData();
@@ -215,16 +215,19 @@ class export extends dbcore
             $stage_pts = explode("-", $import['points']);
             foreach($stage_pts as $point)
             {
-                $exp = explode(":", $point);
-                $hash = $this->GetAPhash($exp[0]);
-                $id = $exp[0]+0;
-                $ret = $this->ExportSingleAP($id);
-                if(is_array($ret) && count($ret[$hash]['gdata']) > 0)
-                {
-                    $this->createKML->ClearData();
-                    $this->createKML->LoadData($ret);
-                    $Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
-                }
+				list($id, $new_old) = explode(":", $point);
+				$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+				$result = $this->sql->conn->query($sql);
+				while($array = $result->fetch(2))
+				{
+					$ret = $this->ExportSingleAP((int)$array['id'], 1);
+					if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+					{
+						$this->createKML->ClearData();
+						$this->createKML->LoadData($ret);
+						$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+					}
+				}
             }
             if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
         }
@@ -411,7 +414,7 @@ class export extends dbcore
     /*
      * Export All Daily Aps to KML
      */
-    public function ExportSingleAP( $id = 0, $new_old = 0, $limit = NULL, $from = NULL)
+    public function ExportSingleAP( $id = 0, $new_ap = 0, $limit = NULL, $from = NULL)
     {
         if($id === 0 || !is_int($id))
         {
@@ -440,7 +443,10 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         }
         #echo $sql3;
         $data[$ap_fetch['ap_hash']] = $ap_fetch;
-        $data[$ap_fetch['ap_hash']]['new_old'] = $new_old;
+        $data[$ap_fetch['ap_hash']]['new_ap'] = $new_ap;
+		$data[$ap_fetch['ap_hash']]['lat'] = $ap_fetch['lat'];
+		$data[$ap_fetch['ap_hash']]['long'] = $ap_fetch['long'];
+		$data[$ap_fetch['ap_hash']]['alt'] = $ap_fetch['alt'];
         $prep3 = $this->sql->conn->query($sql3);
         $this->sql->checkError();
         $sig_gps_data = $prep3->fetchAll(2);
@@ -460,7 +466,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
     public function ExportGPXAll()
     {
         $this->verbosed("Starting GPX Export of WiFiDB.");
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER by `id` ASC";
+        $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
         $prep = $this->sql->conn->execute($sql);
         $aparray_all = $prep->fetchAll(2);
         $this->verbosed("Pointers Table Queried.");
@@ -575,7 +581,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         {
             $hash = $ap_array['ap_hash'];
             $id = (int)$ap_array['id'];
-            $data = $this->ExportSingleAP($id);
+            $data = $this->ExportSingleAP($id, 1);
             $this->createKML->LoadData($data);
             if($labelap){$KML_string = $this->createKML->PlotAPpoint($hash, 1);}else{$KML_string = $this->createKML->PlotAPpoint($hash, 0);}
         }
@@ -595,7 +601,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         $hash = $ap_array['ap_hash'];
 
         $this->verbosed('Start export of Newest AP: '.$ap_array["ssid"], 1);
-        $data = $this->ExportSingleAP((int)$ap_array['id']);
+        $data = $this->ExportSingleAP((int)$ap_array['id'], 1);
         $count = count($data[$hash]['gdata']);
         if($count < 1)
         {
@@ -1015,11 +1021,11 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 foreach($points as $point)
                 {
                     list($id, $new_old) = explode(":", $point);
-                    $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+                    $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
                     $result = $this->sql->conn->query($sql);
                     while($array = $result->fetch(2))
                     {
-                        $ret = $this->ExportSingleAP((int)$array['id']);
+                        $ret = $this->ExportSingleAP((int)$array['id'], 1);
                         if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
                         {
                             $this->createKML->ClearData();
@@ -1076,7 +1082,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         {
             $export_id = (int)$array['id'];
             $export_ssid = $array['ssid'];
-            $ret = $this->ExportSingleAP($id, 0, $limit, $from);
+            $ret = $this->ExportSingleAP($id, 1, $limit, $from);
             if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
             {
                 $this->createKML->ClearData();
@@ -1137,11 +1143,11 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         foreach($points as $point)
         {
             list($id, $new_old) = explode(":", $point);
-            $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+            $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
             $result = $this->sql->conn->query($sql);
             while($array = $result->fetch(2))
             {
-                $ret = $this->ExportSingleAP((int)$array['id']);
+                $ret = $this->ExportSingleAP((int)$array['id'], 1);
                 if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
                 {
                     $this->createKML->ClearData();
@@ -1184,7 +1190,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
     {
         $KML_data = "";
         foreach($ResultList as $ResultAP) {
-            $ret = $this->ExportSingleAP((int)$ResultAP['id']);
+            $ret = $this->ExportSingleAP((int)$ResultAP['id'], 1);
             if(is_array($ret) && count($ret[$ResultAP['ap_hash']]['gdata']) > 0)
             {
                 $this->createKML->ClearData();
