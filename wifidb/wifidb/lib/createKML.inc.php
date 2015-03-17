@@ -336,8 +336,8 @@ class createKML
                     <b>Other Transfer Rates: </b>".$this->data->apdata[$hash]['OTx']."<br />
                     <b>First Active: </b>".$this->data->apdata[$hash]['FA']."<br />
                     <b>Last Updated: </b>".$this->data->apdata[$hash]['LA']."<br />
-                    <b>Latitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['gdata'][$gps_center]['lat'])."<br />
-                    <b>Longitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['gdata'][$gps_center]['long'])."<br />
+                    <b>Latitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['lat'])."<br />
+                    <b>Longitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['long'])."<br />
                     <b>Manufacturer: </b>".$this->data->apdata[$hash]['manuf']."<br />
                     <a href=\"".$this->URL_BASE."opt/fetch.php?id=".$this->data->apdata[$hash]['id']."\">WiFiDB Link</a>
                 ]]>
