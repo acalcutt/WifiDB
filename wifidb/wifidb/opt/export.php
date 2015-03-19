@@ -69,7 +69,10 @@ switch($func)
             $dbcore->smarty->display('export_results.tpl');
 			break;
 		#--------------------------
-		case "exp_search": 
+		case "exp_search":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+            $dbcore->smarty->assign('wifidb_page_label', 'Export Search Results');
 			$ord    =   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
@@ -122,8 +125,8 @@ switch($func)
 			{
 				$encry  =   "";
 			}
-			if ($from == ""){$from = 0;}
-			if ($inc == ""){$inc = 100;}
+			if ($from == ""){$from = NULL;}
+			if ($inc == ""){$inc = NULL;}
 			if ($ord == ""){$ord = "ASC";}
 			if ($sort == ""){$sort = "ssid";}
 			

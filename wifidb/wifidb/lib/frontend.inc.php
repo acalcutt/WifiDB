@@ -730,7 +730,7 @@ class frontend extends dbcore
 		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
 	}
 
-	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc)
+	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from = NULL, $inc = NULL)
 	{
 		$sql1 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
 			`ssid` LIKE ? AND
@@ -738,7 +738,8 @@ class frontend extends dbcore
 			`radio` LIKE ? AND
 			`chan` LIKE ? AND
 			`auth` LIKE ? AND
-			`encry` LIKE ? ORDER BY `".$sort."` ".$ord." LIMIT ".$from.", ".$inc;
+			`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
 		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
@@ -779,7 +780,7 @@ class frontend extends dbcore
 		if($auth!='')
 		{
 			$save_url   .= '&auth='.$auth;
-			$export_url .= 'auth='.$auth.'&';
+			$export_url .= '&auth='.$auth;
 		}
 
 		if($encry!='')
