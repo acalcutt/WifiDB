@@ -24,59 +24,59 @@ $func=$_GET['func'];
 
 switch($func)
 {
-        #--------------------------
-        case "exp_user_all_kml":
-            define("SWITCH_EXTRAS", "export");
-            include('../lib/init.inc.php');
-            $dbcore->smarty->assign('wifidb_page_label', 'Export All User APs');
-            $user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-            $results = $dbcore->export->UserAll($user);
-            $dbcore->smarty->assign('results', $results);
-            $dbcore->smarty->display('export_results.tpl');
-            break;
-        #--------------------------
-        case "exp_user_list":
-            define("SWITCH_EXTRAS", "export");
-            include('../lib/init.inc.php');
-            $dbcore->smarty->assign('wifidb_page_label', 'Export User List');
-            $row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
-            $result = $dbcore->export->UserList($row);
-            $dbcore->smarty->assign('results', $result);
-            $dbcore->smarty->display('export_results.tpl');
-            break;
-        #--------------------------
-		case "exp_all_signal":
-            define("SWITCH_EXTRAS", "export");
-            include('../lib/init.inc.php');
-            $dbcore->smarty->assign('wifidb_page_label', 'Export All Signals for AP');
-            $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
-			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
-            $result = $dbcore->export->SingleApKML($id,$limit,$from);
-            $dbcore->smarty->assign('results', $result);
-            $dbcore->smarty->display('export_results.tpl');
+		#--------------------------
+		case "exp_user_all_kml":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export All User APs');
+			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+			$results = $dbcore->export->UserAll($user);
+			$dbcore->smarty->assign('results', $results);
+			$dbcore->smarty->display('export_results.tpl');
 			break;
-        #--------------------------
-		case "exp_single_ap":
-            define("SWITCH_EXTRAS", "export");
-            include('../lib/init.inc.php');
-            $dbcore->smarty->assign('wifidb_page_label', 'Export Single AP');
-            $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		#--------------------------
+		case "exp_user_list":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export User List');
+			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
+			$result = $dbcore->export->UserList($row);
+			$dbcore->smarty->assign('results', $result);
+			$dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
+		case "exp_all_signal":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export All Signals for AP');
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
 			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
-            $result = $dbcore->export->SingleApKML($id,$limit,$from);
-            $dbcore->smarty->assign('results', $result);
-            $dbcore->smarty->display('export_results.tpl');
+			$result = $dbcore->export->SingleApKML($id,$limit,$from);
+			$dbcore->smarty->assign('results', $result);
+			$dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
+		case "exp_single_ap":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export Single AP');
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
+			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+			$result = $dbcore->export->SingleApKML($id,$limit,$from);
+			$dbcore->smarty->assign('results', $result);
+			$dbcore->smarty->display('export_results.tpl');
 			break;
 		#--------------------------
 		case "exp_search":
 			define("SWITCH_EXTRAS", "export");
 			include('../lib/init.inc.php');
-            $dbcore->smarty->assign('wifidb_page_label', 'Export Search Results');
-			$ord    =   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$dbcore->smarty->assign('wifidb_page_label', 'Export Search Results');
+			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc    =	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
 			
 			if(@$_REQUEST['ssid'])
 			{
@@ -88,10 +88,10 @@ switch($func)
 			
 			if(@$_REQUEST['mac'])
 			{
-				$mac    =   $_REQUEST['mac'];
+				$mac	=   $_REQUEST['mac'];
 			}else
 			{
-				$mac    =   "";
+				$mac	=   "";
 			}
 			
 			if(@$_REQUEST['radio'])
@@ -137,36 +137,36 @@ switch($func)
 			
 			break;
 		#--------------------------
-        default:
-            define("SWITCH_EXTRAS", "");
-            include('../lib/init.inc.php');
-            $dbcore->smarty->assign('wifidb_page_label', 'Export Page');
+		default:
+			define("SWITCH_EXTRAS", "");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export Page');
 
-            $imports = array();
-            $usernames = array();
-            $sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports` ORDER BY `username`, `title`";
-            $result = $dbcore->sql->conn->query($sql);
-            while($user_array = $result->fetch(2))
-            {
-                $imports[] = array(
-                                "id"=>$user_array["id"],
-                                "username"=>$user_array["username"],
-                                "title"=>$user_array["title"],
-                                "aps"=>$user_array["aps"],
-                                "date"=>$user_array["date"]
-                             );
-            }
-            
-            $sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username`";
-            $result = $dbcore->sql->conn->query($sql);
-            while($user_array = $result->fetch(2))
-            {
-                $usernames[] = $user_array["username"];
-            }
-            $usernames = array_unique($usernames);
+			$imports = array();
+			$usernames = array();
+			$sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports` ORDER BY `username`, `title`";
+			$result = $dbcore->sql->conn->query($sql);
+			while($user_array = $result->fetch(2))
+			{
+				$imports[] = array(
+								"id"=>$user_array["id"],
+								"username"=>$user_array["username"],
+								"title"=>$user_array["title"],
+								"aps"=>$user_array["aps"],
+								"date"=>$user_array["date"]
+							 );
+			}
 
-            $dbcore->smarty->assign('wifidb_export_imports_all', $imports);
-            $dbcore->smarty->assign('wifidb_export_users_all', $usernames);
-            $dbcore->smarty->display('export_index.tpl');
-        break;
+			$sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username`";
+			$result = $dbcore->sql->conn->query($sql);
+			while($user_array = $result->fetch(2))
+			{
+				$usernames[] = $user_array["username"];
+			}
+			$usernames = array_unique($usernames);
+
+			$dbcore->smarty->assign('wifidb_export_imports_all', $imports);
+			$dbcore->smarty->assign('wifidb_export_users_all', $usernames);
+			$dbcore->smarty->display('export_index.tpl');
+		break;
 }
