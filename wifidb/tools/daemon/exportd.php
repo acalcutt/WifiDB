@@ -123,6 +123,7 @@ else
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
+
 	#Job Settings
 	$job_id = $job['id'];
 	$job_interval = $job['interval'];
@@ -184,10 +185,10 @@ else
 			$dbcore->verbosed("Updated settings table with next run time: ".$nextrun);
 		}
 
-		##### make sure import/export files are in sync with remote nodes
+		##### make sure export files are in sync with remote nodes
 		$dbcore->verbosed("Synchronizing files between nodes...", 1);
 		$cmd = '/opt/unison/sync_wifidb_exports > /opt/unison/log/sync_wifidb_exports 2>&1';
-		#exec ($cmd);
+		//exec ($cmd);
 		#####
 	}
 
