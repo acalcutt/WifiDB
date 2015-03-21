@@ -32,6 +32,7 @@ class SQL
         }else
         {
             throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1)."\r\nLine: $line\r\nFile: $file");
+            return 1;
         }
     }
 }

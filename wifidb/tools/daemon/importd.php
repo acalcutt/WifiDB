@@ -301,8 +301,8 @@ if($prepgj->rowCount() == 0)
 						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 						$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
 						$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-						$prep1->bindParam(4, $totalaps, PDO::PARAM_STR);
-						$prep1->bindParam(5, $totalgps, PDO::PARAM_STR);
+						$prep1->bindParam(4, $tmp['aps'], PDO::PARAM_STR);
+						$prep1->bindParam(5, $tmp['gps'], PDO::PARAM_STR);
 						$prep1->bindParam(6, $file_hash, PDO::PARAM_STR);
 						$prep1->bindParam(7, $user, PDO::PARAM_STR);
 						$prep1->bindParam(8, $notes, PDO::PARAM_STR);
@@ -330,10 +330,10 @@ if($prepgj->rowCount() == 0)
 								"Error", $dbcore->This_is_me);
 							$dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
 							Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
+						}else{
+							$file_row = $dbcore->sql->conn->lastInsertID();
+							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
 						}
-						$file_row = $dbcore->sql->conn->lastInsertID();
-						$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
-
 
 						$tmp = $dbcore->import->import_vs1( $source, $user);
 						if($tmp == -1)

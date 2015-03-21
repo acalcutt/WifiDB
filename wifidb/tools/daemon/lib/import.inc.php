@@ -120,7 +120,7 @@ class import extends dbcore
 			switch($file_line_exp_count)
 			{
 				case 6:
-				echo "---------------------6 columns!----------------";
+					#echo "---------------------6 columns!----------------";
 					#This is from an older version of the VS1 GPS data, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
 					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
@@ -143,7 +143,7 @@ class import extends dbcore
 					);
 					break;
 				case 12:
-				echo "---------------------12 columns!----------------";
+					#echo "---------------------12 columns!----------------";
 					#This is the current version of the VS1 export, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
 					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
@@ -166,7 +166,7 @@ class import extends dbcore
 							);
 					break;
 				case 13:
-					echo "---------------------13 columns!----------------";
+					#echo "---------------------13 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the old VS1 format.
 					$ap_line = $file_line_exp;
 					if(!$this->validateMacAddress($ap_line[1]))
@@ -198,7 +198,7 @@ class import extends dbcore
 					$this->rssi_signals_flag = 0;
 					break;
 				case 15:
-					echo "---------------------15 columns!----------------";
+					#echo "---------------------15 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the new VS1 format.
 					$ap_line = $file_line_exp;
 					if(!$this->validateMacAddress($ap_line[1]))
