@@ -49,14 +49,13 @@ class daemon extends wdbcli
 	 */
 	public function CheckDaemonKill()
 	{
-		$D_SQL = "SELECT `daemon_state` FROM `wifi`.`settings` WHERE `node` = ?";
+		$D_SQL = "SELECT `daemon_state` FROM `wifi`.`settings` WHERE `node_name` = ? LIMIT 1";
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
 		$Dresult->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
-		$daemon_state = $Dresult->fetch(2);
-
-		if(!$daemon_state['daemon_state'])
+		$daemon_state = $Dresult->fetch();
+		if($daemon_state['daemon_state'] == 0)
 		{
 			$this->exit_msg = "Daemon was told to kill itself";
 			return 1;
@@ -156,24 +155,24 @@ class daemon extends wdbcli
 		$size1 = $this->format_size(filesize($source));
 		if(@is_array($file_names[$hash]))
 		{
-			$user = $file_names[$hash]['user'];
-			$title = $file_names[$hash]['title'];
-			$notes = $file_names[$hash]['notes'];
-			$date = $file_names[$hash]['date'];
-			$hash_ = $file_names[$hash]['hash'];
+			$user	=	$file_names[$hash]['user'];
+			$title	=	$file_names[$hash]['title'];
+			$notes	=	$file_names[$hash]['notes'];
+			$date	=	$file_names[$hash]['date'];
+			$hash_	=	$file_names[$hash]['hash'];
 		}else
 		{
-			$user = $this->default_user;
-			$title = $this->default_title;
-			$notes = $this->default_notes;
-			$date = date("y-m-d H:i:s");
-			$hash_ = $hash;
+			$user	=	$this->default_user;
+			$title	=	$this->default_title;
+			$notes	=	$this->default_notes;
+			$date	=	date("y-m-d H:i:s");
+			$hash_	=	$hash;
 
 		}
 		$this->logd("=== Start Daemon Prep of ".$file." ===");
 
 		$sql = "INSERT INTO `wifi`.`files_tmp` ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-																VALUES ( '', '$file', '$date', '$user', '$notes', '$title', '$size1', '$hash')";
+																VALUES ( '', '$file', '$date', '$user', '$notes', '$title', '$size1', '$hash_')";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $file, PDO::PARAM_STR);
 		$prep->bindParam(2, $date, PDO::PARAM_STR);

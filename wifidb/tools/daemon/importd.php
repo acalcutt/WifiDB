@@ -273,6 +273,20 @@ if($prepgj->rowCount() == 0)
 							$user = $file_to_Import['user'];
 							$dbcore->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
 						}
+						$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
+						$prep_ext = $dbcore->sql->conn->prepare($sql_select_tmp_file_ext);
+						$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
+						$prep_ext->execute();
+						if($dbcore->sql->checkError())
+						{
+							$dbcore->logd("Failed to select previous convert extension. :(",
+								"Error", $dbcore->This_is_me);
+							$dbcore->verbosed("Failed to select previous convert extension. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+							Throw new ErrorException("Failed to select previous convert extension. :(");
+						}
+						$prev_ext = $prep_ext->fetch(2);
+
+
 						$notes = $file_to_Import['notes'];
 						$title = $file_to_Import['title'];
 

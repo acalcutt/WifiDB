@@ -52,4 +52,3 @@ $daemon_config = array(
     //so only turn on if you really know what you are doing
     'debug' => 0
 );
-?>
