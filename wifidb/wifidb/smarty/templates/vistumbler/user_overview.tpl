@@ -71,7 +71,7 @@ if not, write to the
                                                     <th>Date</th>
                                                 </tr>
                                                 {foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
-                                                <tr class="light">
+                                                <tr class="{$wifidb_user_prev.class}">
                                                     <td>{$wifidb_user_prev.id}</td>
                                                     <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.username}">{$wifidb_user_prev.title}</a></td>
                                                     <td>{$wifidb_user_prev.aps}</td>

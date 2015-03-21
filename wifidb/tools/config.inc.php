@@ -39,7 +39,7 @@ $daemon_config = array(
     //if you ware running windows, this is disabled for you, so even if you turn it on, its not going to work :-p
     'colors_setting'	=>	1,
 
-    
+
 
     //Default colors for the CLI
     //Allowed colors:

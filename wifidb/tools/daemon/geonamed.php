@@ -16,7 +16,7 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit  = "2015-02-28";
+$lastedit  = "2015-03-19";
 $daemon_name = "Geoname";
 $daemon_version = "4.0";
 $node_name = $daemon_config['wifidb_nodename'];
@@ -105,12 +105,14 @@ if($dbcore->checkDaemonKill())
 
 $dbcore->verbosed("Running $daemon_name jobs for $node_name");
 
-#Checking for Import Jobs
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= now() And `enabled` = 1 LIMIT 1";
+#Checking for Geoname Jobs
+$currentrun = date("Y-m-d G:i:s");
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $daemon_config['status_running'], PDO::PARAM_STR);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 
 if($prepgj->rowCount() == 0)
@@ -120,93 +122,83 @@ if($prepgj->rowCount() == 0)
 else
 {
 	$dbcore->verbosed("Running...");
-	$job_fetch = $prepgj->fetchAll(2);
-	foreach($job_fetch as $job)
-	{
-		#Job Settings
-		$job_id = $job['id'];
-		$job_interval = $job['interval'];
-		if($job_interval < '5'){$job_interval = '5';} //its really pointless to check more then 5 min at a time
-		
-		#Set Job to Running
-		$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
-		$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
-		$prepsr = $dbcore->sql->conn->prepare($sql);
-		$prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
-		$prepsr->bindParam(2, $job_id, PDO::PARAM_INT);
-		$prepsr->execute();
-		
-		#Start gathering Geonames
-		$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
-		echo $sql."\r\n";
-		$result = $dbcore->sql->conn->query($sql);
-		$dbcore->verbosed("Gathered Wtable data");
-		echo "Rows that need updating: ".$result->rowCount()."\r\n";
-		sleep(4);
-		while($ap = $result->fetch(1))
-		{
-			$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
-			$lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
-			$long = round($dbcore->convert->dm2dd($ap['long']), 1);
-			$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
-			$sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code` FROM `wifi`.`geonames` WHERE `latitude` LIKE '$lat%' AND `longitude` LIKE '$long%' LIMIT 1";
-			$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
-			$geo_res = $dbcore->sql->conn->query($sql);
-			$geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
-			if(!$geo_array['geonameid'])
-			{continue;}
-			
-			$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
-			$admin1_array = array('id'=>'');
-			$admin2_array = array('id'=>'');
-			if($geo_array['admin1 code'])
-			{
-				$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
-				$admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
-				
-				$sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
-				$admin1_res = $dbcore->sql->conn->query($sql);
-				$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
-			}
-			if(is_numeric($geo_array['admin2 code']))
-			{
-				$dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
-				$admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
-				$sql = "SELECT `id` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
-				$admin2_res = $dbcore->sql->conn->query($sql);
-				$admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
-			}
+	$job = $prepgj->fetch(2);
 
-			$sql = "UPDATE `wifi`.`wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
-			if($dbcore->sql->conn->query($sql))
-			{
-				$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
-			}else
-			{
-				$dbcore->verbosed("Failed to update AP's Geolocation [{$ap['id']}] ({$ap['ap_hash']})", -1);
-				var_dump($dbcore->sql->conn->errorInfo());
-			}
+	#Job Settings
+	$job_id = $job['id'];
+	$job_interval = $job['interval'];
+	
+	#Set Job to Running
+	$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
+	$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
+	$prepsr = $dbcore->sql->conn->prepare($sql);
+	$prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
+	$prepsr->bindParam(2, $job_id, PDO::PARAM_INT);
+	$prepsr->execute();
+	
+	#Start gathering Geonames
+	$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
+	echo $sql."\r\n";
+	$result = $dbcore->sql->conn->query($sql);
+	$dbcore->verbosed("Gathered Wtable data");
+	echo "Rows that need updating: ".$result->rowCount()."\r\n";
+	sleep(4);
+	while($ap = $result->fetch(1))
+	{
+		$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
+		$lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
+		$long = round($dbcore->convert->dm2dd($ap['long']), 1);
+		$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
+		$sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code` FROM `wifi`.`geonames` WHERE `latitude` LIKE '$lat%' AND `longitude` LIKE '$long%' LIMIT 1";
+		$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
+		$geo_res = $dbcore->sql->conn->query($sql);
+		$geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
+		if(!$geo_array['geonameid'])
+		{continue;}
+		
+		$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
+		$admin1_array = array('id'=>'');
+		$admin2_array = array('id'=>'');
+		if($geo_array['admin1 code'])
+		{
+			$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
+			$admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
+			
+			$sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
+			$admin1_res = $dbcore->sql->conn->query($sql);
+			$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
 		}
-		
-		#Set Next Run
-		$nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
-		$dbcore->verbosed("Setting Job Next Run to ".$nextrun, 1);
-		$sql = "UPDATE `wifi`.`schedule` SET `nextrun`=? WHERE `id`=?";
-		$prepnr = $dbcore->sql->conn->prepare($sql);
-		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
-		$prepnr->bindParam(2, $job_id, PDO::PARAM_INT);
-		$prepnr->execute();
-		
-		#Set Job to Waiting
-		$dbcore->verbosed("Setting Job to ".$daemon_config['status_waiting'], 1);
-		$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
-		$prepsw = $dbcore->sql->conn->prepare($sql);
-		$prepsw->bindParam(1, $daemon_config['status_waiting'], PDO::PARAM_STR);
-		$prepsw->bindParam(2, $job_id, PDO::PARAM_INT);
-		$prepsw->execute();
-		
-		#Finished Job
-		$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
+		if(is_numeric($geo_array['admin2 code']))
+		{
+			$dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
+			$admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
+			$sql = "SELECT `id` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
+			$admin2_res = $dbcore->sql->conn->query($sql);
+			$admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
+		}
+
+		$sql = "UPDATE `wifi`.`wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
+		if($dbcore->sql->conn->query($sql))
+		{
+			$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
+		}else
+		{
+			$dbcore->verbosed("Failed to update AP's Geolocation [{$ap['id']}] ({$ap['ap_hash']})", -1);
+			var_dump($dbcore->sql->conn->errorInfo());
+		}
 	}
+	
+	#Set Next Run Job to Waiting
+	$nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
+	$dbcore->verbosed("Setting Job Next Run to ".$nextrun, 1);
+	$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
+	$prepnr = $dbcore->sql->conn->prepare($sql);
+	$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
+	$prepnr->bindParam(2, $daemon_config['status_waiting'], PDO::PARAM_STR);
+	$prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
+	$prepnr->execute();
+	
+	#Finished Job
+	$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
 }
 unlink($dbcore->pid_file);

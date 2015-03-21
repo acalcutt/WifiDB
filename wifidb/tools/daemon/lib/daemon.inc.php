@@ -24,18 +24,23 @@ class daemon extends wdbcli
 	public function __construct($config, $daemon_config)
 	{
 		parent::__construct($config, $daemon_config);
-		$this->time_interval_to_check = $daemon_config['time_interval_to_check'];
-		$this->default_user		 = $daemon_config['default_user'];
-		$this->default_title		= $daemon_config['default_title'];
-		$this->default_notes		= $daemon_config['default_notes'];
+		$this->time_interval_to_check 	=	$daemon_config['time_interval_to_check'];
+		$this->default_user		 		=	$daemon_config['default_user'];
+		$this->default_title			=	$daemon_config['default_title'];
+		$this->default_notes			=	$daemon_config['default_notes'];
+		$this->StatusWaiting			=	$daemon_config['status_waiting'];
+		$this->StatusRunning			=	$daemon_config['status_running'];
+		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
+		$this->job_interval				=	10;
+
 		$this->convert_extentions   = array('csv','db','db3','vsz');
 		$this->ver_array['Daemon']  = array(
-									"last_edit"			 =>  "2013-May-27",
-									"CheckDaemonKill"	   =>  "1.0",#
-									"cleanBadImport"		=>  "1.0",
-									"GenerateUserImport"	=>  "1.0",
-									"insert_file"		   =>  "1.0",
-									"parseArgs"			 =>  "1.0"
+									"last_edit"				=>	"2015-Mar-21",
+									"CheckDaemonKill"		=>	"1.0",#
+									"cleanBadImport"		=>	"1.0",
+									"GenerateUserImport"	=>	"1.0",
+									"insert_file"			=>	"1.0",
+									"parseArgs"				=>	"1.0"
 									);
 	}
 ####################
@@ -44,11 +49,14 @@ class daemon extends wdbcli
 	 */
 	public function CheckDaemonKill()
 	{
-		$D_SQL = "SELECT * FROM `wifi`.`settings` WHERE `table` = 'daemon_state'";
-		$Dresult = $this->sql->conn->query($D_SQL);
-		$daemon_state = $Dresult->fetchall();
+		$D_SQL = "SELECT `daemon_state` FROM `wifi`.`settings` WHERE `node` = ?";
+		$Dresult = $this->sql->conn->prepare($D_SQL);
+		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
+		$Dresult->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		$daemon_state = $Dresult->fetch(2);
 
-		if($daemon_state[0]['size']=="0")
+		if(!$daemon_state['daemon_state'])
 		{
 			$this->exit_msg = "Daemon was told to kill itself";
 			return 1;
@@ -189,6 +197,20 @@ class daemon extends wdbcli
 			$this->logd("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo(),1));
 			throw new ErrorException;
 		}
+	}
+
+
+	public function SetNextJob()
+	{
+		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"));
+		$this->verbosed("Setting Job Next Run to ".$nextrun, 1);
+		$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
+		$prepnr = $this->sql->conn->prepare($sql);
+		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
+		$prepnr->bindParam(2, $this->StatusWaiting, PDO::PARAM_STR);
+		$prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
+		$prepnr->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
 	}
 #END DAEMON CLASS
 }

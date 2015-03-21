@@ -50,13 +50,13 @@ $options = array(
 
 $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
 
-$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'version'";
+$sql = "SELECT `version` FROM `wifi`.`settings` LIMIT 1";
 $res = $conn->query($sql);
 $fetch = $res->fetch(2);
 
 unset($res);
 unset($conn);
-if($fetch['size'] != '0.30 b1')
+if($fetch['version'] != '0.30 b1 Alpha')
 {
     $cwd = getcwd().'/';
     $gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
@@ -186,10 +186,11 @@ try
                 break;
 
                 case "graph":
+					__autoload("graphs");
                     $dbcore = new frontend($config);
                     $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
                 break;
-                
+
                 case "cp":
                     $dbcore = new frontend($config);
                 break;
@@ -276,7 +277,7 @@ function create_base_cookies($URL_PATH)
     {
         $ultimate_path = $URL_PATH;
     }
-    
+
     ?>
 <script type="text/javascript">
     function checkTimeZone()

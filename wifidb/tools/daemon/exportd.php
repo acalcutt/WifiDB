@@ -123,6 +123,7 @@ else
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
+
 	#Job Settings
 	$job_id = $job['id'];
 	$job_interval = $job['interval'];
@@ -136,7 +137,7 @@ else
 	$prepsr->execute();
 
 	#Find How Many APs had GPS on the last run
-	$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'apswithgps'";
+	$sql = "SELECT `apswithgps` FROM `wifi`.`settings` LIMIT 1";
 	$result =  $dbcore->sql->conn->query($sql);
 	if($dbcore->sql->checkError(__LINE__, __FILE__))
 	{
@@ -144,7 +145,7 @@ else
 		throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
 	}
 	$settingarray = $result->fetch(2);
-	$apswithgps_last = $settingarray['size'];
+	$apswithgps_last = $settingarray['apswithgps'];
 	$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 	#Find How Many APs have GPS now
@@ -174,7 +175,7 @@ else
 		$dbcore->export->GenerateDaemonKMLData();
 
 		#Set current number of APs with GPS into the settings table
-		$sqlup2 = "UPDATE `wifi`.`settings` SET `size` = ? WHERE `table` = 'apswithgps'";
+		$sqlup2 = "UPDATE `wifi`.`settings` SET `apswithgps` = ? WHERE `id` = 1";
 		$prep6 = $dbcore->sql->conn->prepare($sqlup2);
 		$prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
 		$prep6->execute();
@@ -184,10 +185,10 @@ else
 			$dbcore->verbosed("Updated settings table with next run time: ".$nextrun);
 		}
 
-		##### make sure import/export files are in sync with remote nodes
+		##### make sure export files are in sync with remote nodes
 		$dbcore->verbosed("Synchronizing files between nodes...", 1);
 		$cmd = '/opt/unison/sync_wifidb_exports > /opt/unison/log/sync_wifidb_exports 2>&1';
-		#exec ($cmd);
+		//exec ($cmd);
 		#####
 	}
 

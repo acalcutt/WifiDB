@@ -26,7 +26,7 @@ class dbcore
     {
         if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
         $this->sql                      = new SQL($config);
-        
+
         $this->mesg                     = "";
         $this->switches                 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
         $this->reserved_users           = $config['reserved_users'];
@@ -38,7 +38,7 @@ class dbcore
         $this->rebuild                  = $config['rebuild'];
         $this->log_level                = $config['log_level'];
         $this->log_interval             = $config['log_interval'];
-        
+
         $this->default_refresh          = $config['default_refresh'];
         $this->default_timezone         = $config['default_timezone'];
         $this->default_dst              = $config['default_dst'];
@@ -46,12 +46,12 @@ class dbcore
         $this->time_format              = "H:i:s";
         $this->datetime_format          = $this->date_format." ".$this->time_format;
         $this->timeout                  = $config['timeout'];
-        
+
         $this->TOOLS_PATH               = $config['wifidb_tools'];
         $this->pid_file_loc             = $config['pid_file_loc'];
         $this->apache_user              = $config['apache_user'];
         $this->apache_group             = $config['apache_group'];
-        
+
         $this->dim                      = DIRECTORY_SEPARATOR;
         $this->HOSTURL                  = $config['hosturl'];
         $this->root                     = $config['root'];
@@ -67,20 +67,20 @@ class dbcore
         $this->kml_htmlpath             = $this->URL_PATH.$config['kml_out'];
         $this->csv_out                  = $this->PATH.$config['csv_out'];
         $this->csv_htmlpath             = $this->URL_PATH.$config['csv_out'];
-        
+
         $this->theme                    = (@$_REQUEST['wifidb_theme']!='' ? @$_REQUEST['wifidb_theme'] : $config['default_theme']);
         $this->PATH_THEMES              = $this->PATH.'themes/'.$this->theme;
-        
+
         $this->open_loc                 = $config['open_loc'];
         $this->WEP_loc                  = $config['WEP_loc'];
         $this->WPA_loc                  = $config['WPA_loc'];
         $this->KML_SOURCE_URL           = $config['KML_SOURCE_URL'];
-        
+
         $this->smarty_path              = $config['smarty_path'];
         include_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
         $this->manuf_array             = @$GLOBALS['manufactures'];
         unset($GLOBALS['manufactures']);
-        
+
         $this->wifidb_email_updates     = 0;
         $this->email_validation         = 1;
         $this->WDBadmin                 = $config['admin_email'];
@@ -196,7 +196,7 @@ class dbcore
         echo " <b>$value</b>";
         if ($level==0) echo '</pre>';
     }
-    
+
     # Gets the status of the Import/Export Daemon, windows/linux
     /**
      * @param null $daemon_pid
@@ -240,7 +240,7 @@ class dbcore
                     //    $mem,$CMD,$time,$ps_Sta_exp # into one array
                     //);
                     //var_dump($returns);
-                    
+
                     $ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
                     return $ret; # and return it
                 }else
@@ -295,9 +295,9 @@ class dbcore
         {
             return $ranks[$rank];
         }
-        
+
     }
-    
+
     # Formats a bit size to Bytes/kB/MB/GB/TB/PB/EB/ZB/YB
     /**
      * @param $size
@@ -423,7 +423,7 @@ class dbcore
                 $this->verbosed("Logd was told to write a blank string.\r\n Message has NOT been logged and this will NOT be allowed!", -1);
                 return 0;
             }
-            
+
             $date = date("y-m-d");
             $utime = explode(".", microtime(1));
             $time = date("H:i:s.").$utime[1];
@@ -586,7 +586,7 @@ class dbcore
         {
             $b[$k] = strtolower($v[$subkey]);
         }
-        
+
         if($asc)
         {
             asort($b , 6); //SORT_NATURAL (6)
@@ -594,7 +594,7 @@ class dbcore
         {
             arsort($b , 6); //SORT_NATURAL (6)
         }
-        
+
         foreach($b as $key=>$val)
         {
             $c[] = $a[$key];
@@ -637,7 +637,7 @@ class dbcore
         var_dump($tared);
         return $tared_file;
     }
-    
+
 ####################
     /*
        verbosed (writes a message to the screen)
