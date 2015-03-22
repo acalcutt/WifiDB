@@ -14,6 +14,7 @@ $daemon_config = array(
     'wifidb_install'        =>	'/var/www/wifidb/',
     'console_line_limit'    =>	3000,
     'console_trim_log'      =>	1,
+    'DeleteDeadPids'		=>	1,
     'pid_file_loc'          =>	'/var/run/',
     'daemon_log_folder'     =>	'/opt/wifidb/tools/log/',
     'wifidb_nodename'       =>  '1',

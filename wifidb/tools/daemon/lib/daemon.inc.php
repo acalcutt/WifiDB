@@ -32,7 +32,7 @@ class daemon extends wdbcli
 		$this->StatusRunning			=	$daemon_config['status_running'];
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
 		$this->job_interval				=	10;
-
+		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
 		$this->ver_array['Daemon']  = array(
 									"last_edit"				=>	"2015-Mar-21",

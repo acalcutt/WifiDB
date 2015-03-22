@@ -364,22 +364,19 @@ CREATE TABLE IF NOT EXISTS `log` (
 --
 
 CREATE TABLE IF NOT EXISTS `settings` (
-  `id` int(255) NOT NULL AUTO_INCREMENT,
-  `table` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
-  `size` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  UNIQUE KEY `table` (`table`),
-  KEY `id` (`id`)
+  `id` int(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `daemon_state` int(2) NOT NULL,
+  `version` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `apswithgps` INT(255) NOT NULL,
+  `node_name` VARCHAR(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY `id` (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
 -- Dumping data for table `settings`
 --
 
-INSERT INTO `settings` (`id`, `table`, `size`) VALUES
-(3, 'daemon_state', '1'),
-(1, 'nextruntime', '2013-08-14 00:10:14'),
-(4, 'version', '0.30 b1'),
-(2, 'wifi0', '0');
+INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES ('1', 1, '0.30 b1 Alpha', 0, '1');
 
 -- --------------------------------------------------------
 
