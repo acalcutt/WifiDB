@@ -14,6 +14,7 @@ $daemon_config = array(
     'wifidb_install'        =>	'/var/www/wifidb/',
     'console_line_limit'    =>	3000,
     'console_trim_log'      =>	1,
+    'DeleteDeadPids'		=>	1,
     'pid_file_loc'          =>	'/var/run/',
     'daemon_log_folder'     =>	'/opt/wifidb/tools/log/',
     'wifidb_nodename'       =>  '1',
@@ -39,7 +40,7 @@ $daemon_config = array(
     //if you ware running windows, this is disabled for you, so even if you turn it on, its not going to work :-p
     'colors_setting'	=>	1,
 
-    
+
 
     //Default colors for the CLI
     //Allowed colors:
@@ -52,4 +53,3 @@ $daemon_config = array(
     //so only turn on if you really know what you are doing
     'debug' => 0
 );
-?>

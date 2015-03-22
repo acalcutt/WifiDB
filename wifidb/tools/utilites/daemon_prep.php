@@ -44,6 +44,8 @@ if(!is_null(@$filenames[0]))
 {
     $file_names = array();
 }
+var_dump(count($file_names));
+#die();
 // Go through the VS1 folder and grab all the VS1 and tmp files
 // I included tmp because if you dont tell PHP to rename a file on upload to a website, it will give it a random name with a .tmp extension
 echo "Going through the import/up folder for the source files...\r\n";
@@ -53,16 +55,17 @@ $ii = 0;
 while (!(($file = readdir($dh)) == false))
 {
     $ii++;
+    if($file == '.'){continue;}
+	if($file == '..'){continue;}
+
     if ((is_file("$vs1dir/$file")))
     {
-        if($file == '.'){continue;}
-        if($file == '..'){continue;}
         $file_e = explode('.',$file);
         $file_max = count($file_e);
         $fileext = strtolower($file_e[$file_max-1]);
-        if ($fileext=='vs1' or $fileext=="tmp" or $fileext=="db3")
+        if ($fileext=='vs1' or $fileext=="db3" or $fileext=="csv" or $fileext=="db")
         {
-            if($dbcore->insert_file($file,@$file_names))
+            if($dbcore->insert_file($file, @$file_names))
             {
                 $file_a[] = $file; //if Filename is valid, throw it into an array for later use
             }else
@@ -82,6 +85,9 @@ while (!(($file = readdir($dh)) == false))
     }
     $i++;
 }
+
+var_dump(count($file_a));
+
 $TOTAL_END = date("Y-m-d H:i:s");
 $dbcore->verbosed("TOTAL Running time::\n\nStart: ".$TOTAL_START."\nStop : ".$TOTAL_END."\n");
 closedir($dh);

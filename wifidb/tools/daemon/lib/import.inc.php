@@ -120,6 +120,7 @@ class import extends dbcore
 			switch($file_line_exp_count)
 			{
 				case 6:
+					#echo "---------------------6 columns!----------------";
 					#This is from an older version of the VS1 GPS data, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
 					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
@@ -142,6 +143,7 @@ class import extends dbcore
 					);
 					break;
 				case 12:
+					#echo "---------------------12 columns!----------------";
 					#This is the current version of the VS1 export, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
 					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
@@ -164,6 +166,7 @@ class import extends dbcore
 							);
 					break;
 				case 13:
+					#echo "---------------------13 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the old VS1 format.
 					$ap_line = $file_line_exp;
 					if(!$this->validateMacAddress($ap_line[1]))
@@ -195,6 +198,7 @@ class import extends dbcore
 					$this->rssi_signals_flag = 0;
 					break;
 				case 15:
+					#echo "---------------------15 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the new VS1 format.
 					$ap_line = $file_line_exp;
 					if(!$this->validateMacAddress($ap_line[1]))
@@ -253,11 +257,10 @@ class import extends dbcore
 		foreach($vs1data['gpsdata'] as $key=>$gps)
 		{
 			$calc = "GPS: ".($key+1)." / ".$gps_count;
-			$sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = 'Importing GPS Data' WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
-			$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
-			$prep->bindParam(3, $file_tmp_id, PDO::PARAM_INT);
+			$prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
 			$prep->execute();
 			if($this->sql->checkError() !== 0)
 			{
@@ -340,13 +343,11 @@ class import extends dbcore
 			if($fetch['id'])
 			{
 				$prev_signals = $fetch['signals'];
-				$prev_LA_time = $fetch['LA'];
 				$prev_id	  = $fetch['id'];
 				$no_pointer   = 0;
 			}else
 			{
 				$prev_signals = "";
-				$prev_LA_time = 0;
 				$prev_id	  = 0;
 				$no_pointer   = 1;
 			}
@@ -363,14 +364,13 @@ class import extends dbcore
 			$compile_sig = array();
 			$sig_high = 0;
 			$rssi_high = 0;
-			$gps_center = 0;
-			$FA = 0;
-
 			$this->verbosed("Starting Import of Wifi Signal... ", 1);
 
 			foreach($ap_sig_exp as $sig_gps_id)
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
+
+				if(empty($sig_gps_exp[0])){$this->verbosed("Bad Signal Data."); continue;}
 
 				$gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
@@ -381,6 +381,7 @@ class import extends dbcore
 				{
 					$rssi = $sig_gps_exp[2];
 				}
+
 				if(!@$vs1data['gpsdata'][$gps_id]){continue;}
 
 				$time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
@@ -416,6 +417,7 @@ class import extends dbcore
 
 				//$r = $this->RotateSpinner($r);
 			}
+			var_dump(count($compile_sig));
 
 			if(count($compile_sig) < 1 )
 			{
@@ -444,8 +446,10 @@ class import extends dbcore
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$resgps->execute();
-				$this->sql->checkError();
+				$this->sql->checkError(__LINE__, __FILE__);
 				$fetchgps = $resgps->fetch(2);
+				var_dump($fetchgps);
+
 				if($fetchgps['lat'])
 				{
 					$high_lat = $fetchgps['lat'];
@@ -498,7 +502,7 @@ class import extends dbcore
 						`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
 						`username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`)
 						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
-					if(explode("|", $user)[1] == "")
+					if(@explode("|", $user)[1] == "")
 					{
 						$user = str_replace("|", "", $user);
 					}else
