@@ -38,34 +38,42 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 //End write of PID
 
 $node_name = $daemon_config['wifidb_nodename'];
-$pid_path = $dbcore->pid_file_loc;
 
 $dbcore->verbosed("Start Monitoring of WiFiDB Daemons for $node_name");
 
 while(1)
 {
 	$timestamp = date('Y-m-d G:i:s');
-	
-	foreach (glob($pid_path."*.pid") as $file) {
+
+	foreach (glob($dbcore->pid_file_loc."*.pid") as $file) {
 		$pidfile = basename($file);
 		if($pidfile == "monitord.pid"){continue;}
-		
+
 		$dbcore->verbosed("Checking status of $pidfile daemon", 1);
-		
+
 		$stats_imp_exp = $dbcore->getdaemonstats($pidfile);
-		
+
 		$pid = $stats_imp_exp["pid"];
 		$time = $stats_imp_exp["time"];
 		$mem = $stats_imp_exp["mem"];
 		$cmd = $stats_imp_exp["cmd"];
-		
+		if($mem == "0%" && $dbcore->DeleteDeadPids)
+		{
+			$pid_contents = (int)trim(file_get_contents($dbcore->pid_file_loc.$pidfile));
+			echo "Pid is dead.\n";
+			unlink($dbcore->pid_file_loc.$pidfile);
+			$sql = "DELETE FROM `wifi`.`daemon_pid_stats` where pid LIKE '$pid_contents'";
+			$result_delete = $dbcore->sql->conn->query($sql);
+			$dbcore->sql->checkError(__LINE__, __FILE__);
+			continue;
+		}
 		#echo "node:".$node_name."\r\n";
 		#echo "pidefile:".$pidfile."\r\n";
 		#echo "pid:".$pid."\r\n";
 		#echo "time:".$time."\r\n";
 		#echo "mem:".$mem."\r\n";
 		#echo "cmd:".$cmd."\r\n";
-		
+
 		$daemon_sql = "SELECT * FROM `wifi`.`daemon_pid_stats` where `nodename` = '$node_name' AND `pidfile` = '$pidfile'";
 		$result = $dbcore->sql->conn->query($daemon_sql);
 		if($result->rowCount() > 0)
@@ -78,10 +86,10 @@ while(1)
 			$result_update = $dbcore->sql->conn->query($sql);
 		}
 	}
-	
+
 	$sql = "DELETE FROM `wifi`.`daemon_pid_stats` where `date` <> '$timestamp' AND `nodename` = '$node_name'";
 	$result_delete = $dbcore->sql->conn->query($sql);
-	
+
 	sleep(10);
 }
 

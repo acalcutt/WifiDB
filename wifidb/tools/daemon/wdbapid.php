@@ -31,7 +31,7 @@ socket_listen($sock);
 
 // Loop continuously
 while (true) {
-    // Setup clients listen socket for reading
+	// Setup clients listen socket for reading
 #	echo ".";
 	$read[0] = $sock;
 	for ($i = 0; $i < $max_clients; $i++)
@@ -90,7 +90,7 @@ while (true) {
 					$messg = "OK|Logged IP...";
 					socket_write($client[$i]['sock'], $messg, strlen($messg));
 				break;
-				
+
 				case "LOCATE":
 					$locate = locate($n[1]);
 					switch($locate[0])
@@ -112,7 +112,7 @@ while (true) {
 						break;
 					}
 				break;
-				
+
 				case "LOGIN":
 					$client[$i]['wdb_user'] = $input[1];
 					echo "User attemting login from (".$client[$i]['ip_addr']."): ".$client[$i]['wdb_user']."\r\n";
@@ -144,14 +144,14 @@ while (true) {
 						unset($client[$i]);
 						break;
 					}
-					
+
 					$id = $array['id'];
 					$db_pass = $array['password'];
 					$fails = $array['login_fails'];
 					$username_db = $array['username'];
-					
+
 				#	$pass_seed = md5($input[1].$server_settings['seed']);
-					
+
 					if($db_pass === $input[1])
 					{
 						$sql = "SELECT `last_active` FROM `".$server_settings['db']."`.`".$server_settings['login_t']."` WHERE `id` = '$id' LIMIT 1";
@@ -240,20 +240,20 @@ function locate($list = "")
 		}
 		$ssidss = smart_quotes($array['ssid']);
 		$ssidsss = str_split($ssidss,25); //split SSID in two at is 25th char.
-		$ssid_S = $ssidsss[0]; //Use the 25 char long word for the APs table name, this is due to a limitation in MySQL table name lengths, 
+		$ssid_S = $ssidsss[0]; //Use the 25 char long word for the APs table name, this is due to a limitation in MySQL table name lengths,
 							  //the rest of the info will suffice for unique table names
-		
+
 		$table = $ssid_S.$sep.$array['mac'].$sep.$array['sectype'].$sep.$array['radio'].$sep.$array['chan'];
 		$table_gps = $ssid_S.$sep.$array['mac'].$sep.$array['sectype'].$sep.$array['radio'].$sep.$array['chan'].$gps_ext;
-		
+
 		$pre_sat	= '';
 		$pre_lat	= '';
 		$pre_long	= '';
 		$pre_date	= '';
-		
+
 		$result_rows = mysql_query("select * from `$db_st`.`$table_gps`",$conn);
 		$total_rows = mysql_num_rows($result_rows);
-		
+
 		if($total_rows < 2)
 		{
 			$sql1 ="select * from `$db_st`.`$table_gps`";
@@ -268,15 +268,15 @@ function locate($list = "")
 		while($array1 = mysql_fetch_array($result1))
 		{
 			if($array1['sats'] == 0 or $array1['sats'] <= $pre_sats){continue;}
-			
+
 			$lat_exp = explode(" ",$array1['lat']);
 			$lat = $lat_exp[1];
 			if($lat == "0.0000"){continue;}
-			
+
 			$long_exp = explode(" ",$array1['long']);
 			$long = $long_exp[1];
 			if($long == "0.0000"){continue;}
-			
+
 			if($array1['sats'] >= $pre_sat)
 			{
 				$use[$N] = array(
@@ -301,7 +301,7 @@ function locate($list = "")
 	@array_multisort($sig_sort, $sig_id);
 	$count_sig = count($sig_sort);
 	$array_id = $count_sig-1;
-	
+
 	if($array_id != -1)
 	{
 		$return = array(0=>1, 1=> $use[$array_id]['lat'].",".$use[$array_id]['long'].",".$use[$array_id]['sats'].",".$use[$array_id]['date'].",".$use[$array_id]['time']);
@@ -315,8 +315,8 @@ function locate($list = "")
 
 ###################################
 function getIPs($withV6 = true) {
-    preg_match_all('/inet'.($withV6 ? '6?' : '').' addr: ?([^ ]+)/', `ifconfig`, $ips);
-    return $ips[1];
+	preg_match_all('/inet'.($withV6 ? '6?' : '').' addr: ?([^ ]+)/', `ifconfig`, $ips);
+	return $ips[1];
 }
 
-?> 
+?>

@@ -22,19 +22,17 @@ class SQL
         $this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
         $this->conn->query("SET NAMES 'utf8'");
     }
-    
+
     function checkError($line=0, $file="")
     {
         $err = $this->conn->errorCode();
-        #var_dump($err);
         if($err === "00000")
         {
             return 0;
         }else
         {
-            @dbcore::verbosed("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1));
-            @dbcore::logd("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1));
             throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1)."\r\nLine: $line\r\nFile: $file");
+            return 1;
         }
     }
 }
