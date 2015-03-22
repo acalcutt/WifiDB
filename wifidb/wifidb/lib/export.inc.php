@@ -320,36 +320,42 @@ class export extends dbcore
 
 		$fetch_imports = $result->fetchAll();
 
+		#$KML_data = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
+		#$KML_data = $this->createKML->createFolder("Regions to save precious CPU cycles.", $regions_link, 0, 0);
 		$exports = array();
 		foreach($fetch_imports as $import)
 		{
 			$this->verbosed("----------------------------");
 			$KML_data = '';
-			$r = 0;
+			$ii = 0;
 			$box = array();
 			$Import_KML_Data = "";
 			$stage_pts = explode("-", $import['points']);
 			foreach($stage_pts as $point)
 			{
-				#$r = $this->RotateSpinner($r);
-				list($id, $new_old) = explode(":", $point);
-				$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-				$result = $this->sql->conn->query($sql);
-				while($array = $result->fetch(2))
+				$exp = explode(":", $point);
+				$hash = $this->GetAPhash($exp[0]);
+				$id = $exp[0]+0;
+				$ret = $this->ExportSingleAP($id);
+				if($ret == -1)
 				{
-					$ret = $this->ExportSingleAP((int)$id, 1);
-					$box[] = $this->FindBox($ret[$array['ap_hash']]['gdata']);
-					if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
-					{
-						$this->createKML->ClearData();
-						$this->createKML->LoadData($ret);
-						$Import_KML_Data .= $this->createKML->PlotAPpoint($array['ap_hash'], $this->named);
-					}
+					continue;
+				}
+				$ii++;
+				#var_dump($ret[$hash]['gdata']);
+				$box[] = $this->FindBox($ret[$hash]['gdata']);
+				#var_dump($box);
+				#die();
+				if(is_array($ret) && count($ret[$hash]['gdata']) > 0)
+				{
+					$this->createKML->ClearData();
+					$this->createKML->LoadData($ret);
+					$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
 				}
 			}
-			if($Import_KML_Data === "")
+			if($ii == 0)
 			{
-				$this->verbosed("No GPS File");
+				echo "No GPS File\n";
 				continue;
 			}
 			#var_dump($box);
@@ -360,6 +366,7 @@ class export extends dbcore
 			#var_dump($distance_calc, $minLodPix, $distance);
 
 			$KML_data .= $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, $import['id']) . $Import_KML_Data;
+			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
 
 			$kml_filename = $daily_folder."/".$import['hash'].$labeled.".kml";
 			$this->verbosed("Writing KML File for ".$import['title']." : ".$kml_filename);
@@ -443,8 +450,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$data[$ap_fetch['ap_hash']]['lat'] = $ap_fetch['lat'];
 		$data[$ap_fetch['ap_hash']]['long'] = $ap_fetch['long'];
 		$data[$ap_fetch['ap_hash']]['alt'] = $ap_fetch['alt'];
-		$data[$ap_fetch['ap_hash']]['alt'] = $ap_fetch['alt'];
-
 		$prep3 = $this->sql->conn->query($sql3);
 		$this->sql->checkError();
 		$sig_gps_data = $prep3->fetchAll(2);
