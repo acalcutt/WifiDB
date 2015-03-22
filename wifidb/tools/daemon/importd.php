@@ -295,21 +295,19 @@ if($prepgj->rowCount() == 0)
 						$user_ids = implode(":", $import_ids);
 						$sql_insert_file = "INSERT INTO `wifi`.`files`
 						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`)
-					VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
 
 						$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
 						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 						$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
 						$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-						$prep1->bindParam(4, $tmp['aps'], PDO::PARAM_STR);
-						$prep1->bindParam(5, $tmp['gps'], PDO::PARAM_STR);
-						$prep1->bindParam(6, $file_hash, PDO::PARAM_STR);
-						$prep1->bindParam(7, $user, PDO::PARAM_STR);
-						$prep1->bindParam(8, $notes, PDO::PARAM_STR);
-						$prep1->bindParam(9, $title, PDO::PARAM_STR);
-						$prep1->bindParam(10, $user_ids, PDO::PARAM_STR);
-						$prep1->bindParam(11, $prev_ext['converted'], PDO::PARAM_INT);
-						$prep1->bindParam(12, $prev_ext['prev_ext'], PDO::PARAM_STR);
+						$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
+						$prep1->bindParam(5, $user, PDO::PARAM_STR);
+						$prep1->bindParam(6, $notes, PDO::PARAM_STR);
+						$prep1->bindParam(7, $title, PDO::PARAM_STR);
+						$prep1->bindParam(8, $user_ids, PDO::PARAM_STR);
+						$prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
+						$prep1->bindParam(10, $prev_ext['prev_ext'], PDO::PARAM_STR);
 						/*echo "file_name:".$file_name."\r\n";
 						echo "date:".$file_date."\r\n";
 						echo "size:".$file_size."\r\n";
