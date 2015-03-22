@@ -327,36 +327,27 @@ class export extends dbcore
 		{
 			$this->verbosed("----------------------------");
 			$KML_data = '';
-			$ii = 0;
+			$r = 0;
 			$box = array();
 			$Import_KML_Data = "";
 			$stage_pts = explode("-", $import['points']);
 			foreach($stage_pts as $point)
 			{
-				$exp = explode(":", $point);
-				$hash = $this->GetAPhash($exp[0]);
-				$id = $exp[0]+0;
-				$ret = $this->ExportSingleAP($id);
-				if($ret == -1)
+				#$r = $this->RotateSpinner($r);
+				list($id, $new_old) = explode(":", $point);
+				$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+				$result = $this->sql->conn->query($sql);
+				while($array = $result->fetch(2))
 				{
-					continue;
+					$ret = $this->ExportSingleAP((int)$id, 1);
+					$box[] = $this->FindBox($ret[$array['ap_hash']]['gdata']);
+					if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+					{
+						$this->createKML->ClearData();
+						$this->createKML->LoadData($ret);
+						$Import_KML_Data .= $this->createKML->PlotAPpoint($array['ap_hash'], $this->named);
+					}
 				}
-				$ii++;
-				#var_dump($ret[$hash]['gdata']);
-				$box[] = $this->FindBox($ret[$hash]['gdata']);
-				#var_dump($box);
-				#die();
-				if(is_array($ret) && count($ret[$hash]['gdata']) > 0)
-				{
-					$this->createKML->ClearData();
-					$this->createKML->LoadData($ret);
-					$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
-				}
-			}
-			if($ii == 0)
-			{
-				echo "No GPS File\n";
-				continue;
 			}
 			#var_dump($box);
 			#die();
@@ -366,7 +357,12 @@ class export extends dbcore
 			#var_dump($distance_calc, $minLodPix, $distance);
 
 			$KML_data .= $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, $import['id']) . $Import_KML_Data;
-			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
+			if($Import_KML_Data != ""){
+				$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);
+			}
+			else{
+				return 0;
+			}
 
 			$kml_filename = $daily_folder."/".$import['hash'].$labeled.".kml";
 			$this->verbosed("Writing KML File for ".$import['title']." : ".$kml_filename);
