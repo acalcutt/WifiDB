@@ -246,7 +246,7 @@ class api extends dbcore
 
                 $result->bindValue(1, $filename, PDO::PARAM_STR);
                 $result->bindValue(2, $date, PDO::PARAM_STR);
-                $result->bindValue(3, $user.";".$otherusers, PDO::PARAM_STR);
+                $result->bindValue(3, $user."|".$otherusers, PDO::PARAM_STR);
                 $result->bindValue(4, $notes, PDO::PARAM_STR);
                 $result->bindValue(5, $title, PDO::PARAM_STR);
                 $result->bindValue(6, $size, PDO::PARAM_STR);
