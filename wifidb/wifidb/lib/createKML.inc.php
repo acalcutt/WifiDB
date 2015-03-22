@@ -687,7 +687,4 @@ class createKML
 			return -2;
 		}
 	}
-
-
-
 }
