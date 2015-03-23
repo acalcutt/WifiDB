@@ -368,8 +368,7 @@ CREATE TABLE IF NOT EXISTS `settings` (
   `daemon_state` int(2) NOT NULL,
   `version` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `apswithgps` INT(255) NOT NULL,
-  `node_name` VARCHAR(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY `id` (`id`)
+  `node_name` VARCHAR(255) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
