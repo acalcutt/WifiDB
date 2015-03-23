@@ -21,7 +21,7 @@ if not, write to the
 // Show all error's with strict santex
 //***DEV USE ONLY*** TODO: remove dev stuff
 #ini_set('display_errors', 1);//***DEV USE ONLY***
-error_reporting(E_ALL);//***DEV USE ONLY***
+error_reporting(E_ALL && E_STRICT);//***DEV USE ONLY***
 #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
 //***DEV USE ONLY***
 

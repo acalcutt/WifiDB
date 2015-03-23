@@ -34,6 +34,8 @@ class daemon extends wdbcli
 		$this->job_interval				=	10;
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
+
+		$this->daemon_version			=	"3.0";
 		$this->ver_array['Daemon']  = array(
 									"last_edit"				=>	"2015-Mar-21",
 									"CheckDaemonKill"		=>	"1.0",#
@@ -112,20 +114,6 @@ class daemon extends wdbcli
 
 	function cleanBadImport($hash = "")
 	{
-		$sql1 = "DELETE FROM `wifi`.`files_tmp` WHERE `hash` = ?";
-		$prep = $this->sql->conn->prepare($sql1);
-		$prep->bindParam(1, $hash, PDO::PARAM_STR);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			$this->logd("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Failed to remove bad file from the tmp table.");
-		}else
-		{
-			$this->verbosed("Cleaned file from the Temp table.");
-		}
-
 		$sql1 = "DELETE FROM `wifi`.`user_imports` WHERE `hash` = ?";
 		$prep = $this->sql->conn->prepare($sql1);
 		$prep->bindParam(1, $hash, PDO::PARAM_STR);
@@ -139,6 +127,36 @@ class daemon extends wdbcli
 		{
 			$this->verbosed("Cleaned file from the User Import table.");
 		}
+
+		$sql1 = "DELETE FROM `wifi`.`files` WHERE `hash` = ?";
+		$prep = $this->sql->conn->prepare($sql1);
+		$prep->bindParam(1, $hash, PDO::PARAM_STR);
+		$prep->execute();
+		if($this->sql->checkError())
+		{
+			$this->verbosed("Failed to remove bad file from the Files table.".var_export($this->sql->conn->errorInfo(),1), -1);
+			$this->logd("Failed to remove bad file from the Files table.".var_export($this->sql->conn->errorInfo(),1));
+			throw new ErrorException("Failed to remove bad file from the Files table.");
+		}else
+		{
+			$this->verbosed("Cleaned file from the Files table.");
+		}
+
+		$sql1 = "DELETE FROM `wifi`.`files_tmp` WHERE `hash` = ?";
+		$prep = $this->sql->conn->prepare($sql1);
+		$prep->bindParam(1, $hash, PDO::PARAM_STR);
+		$prep->execute();
+		if($this->sql->checkError())
+		{
+			$this->verbosed("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1), -1);
+			$this->logd("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1));
+			throw new ErrorException("Failed to remove bad file from the tmp table.");
+		}else
+		{
+			$this->verbosed("Cleaned file from the Temp Files table.");
+		}
+
+
 	}
 
 	/**
@@ -199,9 +217,10 @@ class daemon extends wdbcli
 	}
 
 
-	public function SetNextJob()
+	public function SetNextJob($job_id)
 	{
-		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"));
+		var_dump($this->job_interval);
+		$nextrun = date("Y-m-d G:i:s", time() + strtotime("+".$this->job_interval." minutes"));
 		$this->verbosed("Setting Job Next Run to ".$nextrun, 1);
 		$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
 		$prepnr = $this->sql->conn->prepare($sql);
