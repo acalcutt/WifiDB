@@ -18,7 +18,6 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit  = "2015-03-21";
 $daemon_name = "Import";
-$daemon_version = "1.0";
 
 $arguments = $dbcore->parseArgs($argv);
 
@@ -47,9 +46,10 @@ if(@$arguments['l'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2
-Copyright (C) 2015 Andrew Calcutt,
-This script is based on imp_expd.php by Phil Ferland. It is made to do just exports and be run as a cron job.
+{$daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
+Copyright (C) 2015 Andrew Calcutt, Phil Ferland
+This script is based on imp_expd.php by Phil Ferland. It is made to do just imports and be run as a cron job.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -90,7 +90,8 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
- - {$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2
+ - {$daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
  Log Level is: ".$dbcore->log_level);
@@ -104,39 +105,48 @@ if($dbcore->checkDaemonKill())
 $dbcore->verbosed("Running $daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
-$currentrun = date("Y-m-d G:i:s");
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= NOW() And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $daemon_config['status_running'], PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 
 if($prepgj->rowCount() == 0)
-#{
-#	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
-#}
+{
+	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
+}
 #else
+if(1)
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
-
 	#Job Settings
-	$job_id = $job['id'];
 	$dbcore->job_interval = $job['interval'];
+	$job_id = $job['id'];
 
 	#Set Job to Running
+	$nextrun = date("Y-m-d G:i:s", time() + strtotime("+".$dbcore->job_interval." minutes"))."";
 	$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
-	$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
+
+	$sql = "UPDATE `wifi`.`schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
 	$prepsr = $dbcore->sql->conn->prepare($sql);
 	$prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
-	$prepsr->bindParam(2, $job_id, PDO::PARAM_INT);
+	$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
+	$prepsr->bindParam(3, $job_id, PDO::PARAM_INT);
+
 	$prepsr->execute();
 
 	#Check if there are any imports
 	While(1)
 	{
+		if($dbcore->checkDaemonKill())# Safely kill script if Daemon kill flag has been set
+		{
+			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
+			$dbcore->SetNextJob($job_id);
+			exit($dbcore->exit_msg);
+		}
+
 		$daemon_sql = "SELECT * FROM `wifi`.`files_tmp` where `importing` = '0' ORDER BY `date` ASC LIMIT 1";
 		$result = $dbcore->sql->conn->query($daemon_sql);
 		if($dbcore->sql->checkError(__LINE__, __FILE__))
@@ -158,12 +168,7 @@ if($prepgj->rowCount() == 0)
 			#####
 
 			$file_to_Import = $result->fetch(2);
-			if($dbcore->checkDaemonKill())# Safely kill script if Daemon kill flag has been set
-			{
-				$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
-				$dbcore->SetNextJob();
-				exit($dbcore->exit_msg);
-			}elseif(!@$file_to_Import['id'])
+			if(!@$file_to_Import['id'])
 			{
 				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
 			}else
@@ -197,7 +202,8 @@ if($prepgj->rowCount() == 0)
 					$ret_file_name = $dbcore->convert->main($source);
 					if($ret_file_name === -1)
 					{
-						Throw new ErrorException("Error Converting File. $source");
+						$dbcore->verbosed("Error Converting File. $source, Skipping to next file.");
+						continue;
 					}
 
 					$parts = pathinfo($ret_file_name);
@@ -229,8 +235,8 @@ if($prepgj->rowCount() == 0)
 					}
 				}
 
-				$return  = file($source);
-				$count = count($return);
+				$return	=	file($source);
+				$count	=	count($return);
 				if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
 				{
 					$dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
@@ -346,8 +352,8 @@ if($prepgj->rowCount() == 0)
 							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
 							$update_files_table_sql = "UPDATE `wifi`.`files` SET `aps` = ?, `gps` = ? WHERE `id` = ?";
 							$prep_update_files_table = $dbcore->sql->conn->prepare($update_files_table_sql);
-							$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_INT);
-							$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_INT);
+							$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
+							$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
 							$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
 							$prep_update_files_table->execute();
 							$dbcore->sql->checkError(__LINE__, __FILE__);
@@ -386,6 +392,7 @@ if($prepgj->rowCount() == 0)
 							$prep->execute();
 							if($dbcore->sql->checkError(__LINE__, __FILE__))
 							{
+								//**TODO
 								#mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
 								$dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1),
 									"Error", $dbcore->This_is_me);
@@ -432,12 +439,16 @@ if($prepgj->rowCount() == 0)
 			}
 
 		}
+
+	#Finished Job
+	$dbcore->verbosed("Finished - Id:".$job_id, 1);
 	}
 
 	#Set Next Run Job to Waiting
-	$dbcore->SetNextJob();
+	$dbcore->SetNextJob($job_id);
+	$dbcore->verbosed("Finished - Job: ".$daemon_name , 1);
 
-	#Finished Job
-	$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
+
+
 }
 unlink($dbcore->pid_file);

@@ -63,7 +63,7 @@ while (!(($file = readdir($dh)) == false))
         $file_e = explode('.',$file);
         $file_max = count($file_e);
         $fileext = strtolower($file_e[$file_max-1]);
-        if ($fileext=='vs1' or $fileext=="db3" or $fileext=="csv" or $fileext=="db")
+        if ($fileext=='vs1' or $fileext=="db3" or $fileext=="csv" or $fileext=="db" or $fileext=="vsz")
         {
             if($dbcore->insert_file($file, @$file_names))
             {

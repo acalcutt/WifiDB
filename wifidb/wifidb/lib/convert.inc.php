@@ -61,7 +61,7 @@ class convert extends dbcore
 			$n = 1;
 			while(($line = fgetcsv($handle, 1000, ",")) !== FALSE)
 			{
-				if($line[1] == "BSSID" && $line[2] == "MANUFACTURER" && $line[3] == "SIGNAL" && $line[4] == "High Signal"){continue;}
+				if($line[1] == "BSSID" && $line[2] == "MANUFACTURER" && $line[3] == "SIGNAL" && $line[4] == "High Signal"){continue;} #tis the header, skip it..
 				$line_count = count($line);
 				if($line_count < 26){echo "CSV file with less than 26 fields\r\n";break;}
 				if(!@$this->languages->code)
@@ -104,8 +104,8 @@ class convert extends dbcore
 						"ssid"=>$line[0],
 						"mac"=>$line[1],
 						"man"=>$line[2],
-						"HighSig"=>$line[4],
-						"HighRSSI"=>$line[6],
+						"highsig"=>$line[4],
+						"highRSSI"=>$line[6],
 						"auth"=>$line[7],
 						"encry"=>$line[8],
 						"sectype"=>$sectype,
@@ -512,6 +512,10 @@ class convert extends dbcore
 				$this->logd("Unsupported File Type of : $extension", $this->This_is_me);
 				break;
 		}
+		if($data === -1)
+		{
+			return -1;
+		}
 		if(!is_string($data))
 		{
 			$filename = $this->WriteVS1File($source, $data);
@@ -592,13 +596,14 @@ class convert extends dbcore
 					"date"=>$date,
 					"time"=>$time
 				);
-
 				$apdata[$N]=array(
 					"ssid"=>$wifi[0],
 					"mac"=>$wifi[1],
 					"man"=>$wifi[2],
 					"auth"=>$wifi[4],
 					"encry"=>$wifi[5],
+					"highsig"=>$wifi[3],
+					"highRSSI"=>$this->Sig2dBm($wifi[3]),
 					"sectype"=>$sectype,
 					"radio"=>$wifi[6],
 					"chan"=>$wifi[7],
@@ -668,8 +673,8 @@ class convert extends dbcore
 				"chan"=>$chan,
 				"btx"=>"0",
 				"otx"=>"0",
-				'highsig'=>$this->dBm2Sig($row['level']),
-				'highRSSI'=>$row['level'],
+				'highsig'=> $this->dBm2Sig($row['level']),
+				'highRSSI'=> $row['level'],
 				"nt"=>$nt,
 				"label"=>"Unknown",
 				"sig"=>array($n,$this->dBm2Sig($row['level']),$row['level'])
@@ -695,6 +700,10 @@ class convert extends dbcore
 			PDO::ERRMODE_EXCEPTION);
 
 		$APQuery = $dbh->query("SELECT * FROM `wifi`");
+		if($dbh->errorCode() != "00000")
+		{
+			return -1;
+		}
 		$all_aps = $APQuery->fetchAll(2);
 		$n=0;
 		foreach($all_aps as $ap)
@@ -760,10 +769,11 @@ class convert extends dbcore
 		if($data[1] == NULL){return 0;}
 		if($source == ""){return 0;}
 		$dir = $this->PATH.'import/up/convert/';
-		echo "Write VS1".$dir."\r\n";
+
 		$file_parts = pathinfo($source);
 		$filename = rand(000000,999999).'_'.$file_parts['filename'].'.vs1';
 		$fullfile = $dir.$filename;
+		echo "Write VS1: ".$fullfile."\r\n";
 
 		# Dump GPS data to VS1 File
 		$h1 = "# Vistumbler VS1 - Detailed Export Version 4.0

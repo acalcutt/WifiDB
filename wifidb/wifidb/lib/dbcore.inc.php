@@ -519,6 +519,15 @@ class dbcore
         return trim($string, ' -');
     }
 
+	public function FindHighSig($sig)
+	{
+		foreach($sig as $point)
+		{
+			var_dump($point);
+		}
+		die();
+	}
+
     /**
      * @param string $mac
      * @return string

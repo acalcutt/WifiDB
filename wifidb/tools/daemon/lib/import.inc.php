@@ -381,7 +381,14 @@ class import extends dbcore
 				{
 					$rssi = $sig_gps_exp[2];
 				}
-
+				if($rssi > $rssi_high)
+				{
+					$rssi_high = $rssi;
+				}
+				if($signal > $sig_high)
+				{
+					$sig_high = $signal;
+				}
 				if(!@$vs1data['gpsdata'][$gps_id]){continue;}
 
 				$time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
@@ -415,9 +422,9 @@ class import extends dbcore
 				}
 				$compile_sig[] = $vs1data['gpsdata'][$gps_id]['import_id'].",".$this->sql->conn->lastInsertId();
 
-				//$r = $this->RotateSpinner($r);
+				#$r = $this->RotateSpinner($r);
 			}
-			var_dump(count($compile_sig));
+			#var_dump(count($compile_sig));
 
 			if(count($compile_sig) < 1 )
 			{
@@ -448,7 +455,7 @@ class import extends dbcore
 				$resgps->execute();
 				$this->sql->checkError(__LINE__, __FILE__);
 				$fetchgps = $resgps->fetch(2);
-				var_dump($fetchgps);
+				#var_dump($fetchgps);
 
 				if($fetchgps['lat'])
 				{
@@ -476,15 +483,14 @@ class import extends dbcore
 				#Update or Insert AP
 				if(!$no_pointer)#Update AP
 				{
-					$sql = "UPDATE `wifi`.`wifi_pointers` SET `signals` = ? , `FA` = ? , `LA` = ? , `lat` = ? , `long` = ?, `sats` = ? WHERE `ap_hash` = ?";
+					$sql = "UPDATE `wifi`.`wifi_pointers` SET `FA` = ? , `LA` = ? , `lat` = ? , `long` = ?, `sats` = ? WHERE `ap_hash` = ?";
 					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $new_signals, PDO::PARAM_STR);
-					$prep->bindParam(2, $FA_time, PDO::PARAM_STR);
-					$prep->bindParam(3, $LA_time, PDO::PARAM_STR);
-					$prep->bindParam(4, $high_lat, PDO::PARAM_STR);
-					$prep->bindParam(5, $high_long, PDO::PARAM_STR);
-					$prep->bindParam(6, $high_sats, PDO::PARAM_STR);
-					$prep->bindParam(7, $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(1, $FA_time, PDO::PARAM_STR);
+					$prep->bindParam(2, $LA_time, PDO::PARAM_STR);
+					$prep->bindParam(3, $high_lat, PDO::PARAM_STR);
+					$prep->bindParam(4, $high_long, PDO::PARAM_STR);
+					$prep->bindParam(5, $high_sats, PDO::PARAM_STR);
+					$prep->bindParam(6, $ap_hash, PDO::PARAM_STR);
 					$prep->execute();
 					if($this->sql->checkError() !== 0)
 					{
@@ -500,8 +506,8 @@ class import extends dbcore
 					$sql = "INSERT INTO `wifi`.`wifi_pointers`
 						( `id`, `ssid`, `mac`,`chan`,`sectype`,`radio`,`auth`,`encry`,
 						`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
-						`username`,`ap_hash`, `signals`, `rssi_high`, `signal_high`)
-						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
+						`username`,`ap_hash`, `rssi_high`, `signal_high`)
+						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
 					if(@explode("|", $user)[1] == "")
 					{
 						$user = str_replace("|", "", $user);
@@ -529,9 +535,8 @@ class import extends dbcore
 					$prep->bindParam(17, $FA_time, PDO::PARAM_STR);
 					$prep->bindParam(18, $user, PDO::PARAM_STR);
 					$prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
-					$prep->bindParam(20, $new_signals, PDO::PARAM_STR);
-					$prep->bindParam(21, $rssi_high, PDO::PARAM_INT);
-					$prep->bindParam(22, $sig_high, PDO::PARAM_INT);
+					$prep->bindParam(20, $rssi_high, PDO::PARAM_INT);
+					$prep->bindParam(21, $sig_high, PDO::PARAM_INT);
 					$prep->execute();
 					if($this->sql->checkError())
 					{
