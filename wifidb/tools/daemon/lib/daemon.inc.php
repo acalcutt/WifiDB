@@ -31,6 +31,7 @@ class daemon extends wdbcli
 		$this->StatusWaiting			=	$daemon_config['status_waiting'];
 		$this->StatusRunning			=	$daemon_config['status_running'];
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
+		$this->daemon_name				=	"";
 		$this->job_interval				=	10;
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
@@ -229,6 +230,20 @@ class daemon extends wdbcli
 		$prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
 		$prepnr->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
+	}
+
+	public function SetStartJob($job_id)
+	{
+		$nextrun = date("Y-m-d G:i:s", time() + strtotime("+".$this->job_interval." minutes"))."";
+		$this->verbosed("Starting - Job:".$this->daemon_name." Id:".$job_id, 1);
+
+		$sql = "UPDATE `wifi`.`schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
+		$prepsr = $this->sql->conn->prepare($sql);
+		$prepsr->bindParam(1, $this->StatusRunning, PDO::PARAM_STR);
+		$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
+		$prepsr->bindParam(3, $job_id, PDO::PARAM_INT);
+
+		$prepsr->execute();
 	}
 #END DAEMON CLASS
 }

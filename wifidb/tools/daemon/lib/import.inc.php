@@ -333,7 +333,7 @@ class import extends dbcore
 			ENCRY: {$encry}| APHASH:".$ap_hash, 1);
 			#$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
 
-			$sql = "SELECT `id`, `signals`, `LA` FROM `wifi`.`wifi_pointers` WHERE `ap_hash` = ? LIMIT 1";
+			$sql = "SELECT `id`, `LA` FROM `wifi`.`wifi_pointers` WHERE `ap_hash` = ? LIMIT 1";
 			$res = $this->sql->conn->prepare($sql);
 			$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
 			$res->execute();

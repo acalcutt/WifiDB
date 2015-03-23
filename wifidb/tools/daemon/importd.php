@@ -16,8 +16,8 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit  = "2015-03-21";
-$daemon_name = "Import";
+$lastedit			=	"2015-03-21";
+$dbcore->daemon_name	=	"Import";
 
 $arguments = $dbcore->parseArgs($argv);
 
@@ -38,7 +38,7 @@ if(@$arguments['i'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals");
+{$dbcore->daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals");
 	exit();
 }
 
@@ -46,7 +46,7 @@ if(@$arguments['l'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 Copyright (C) 2015 Andrew Calcutt, Phil Ferland
 This script is based on imp_expd.php by Phil Ferland. It is made to do just imports and be run as a cron job.
@@ -90,7 +90,7 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
- - {$daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+ - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
@@ -102,14 +102,16 @@ if($dbcore->checkDaemonKill())
 	exit($dbcore->exit_msg);
 }
 
-$dbcore->verbosed("Running $daemon_name jobs for $dbcore->node_name");
+$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= NOW() And `enabled` = 1 LIMIT 1";
+$currentrun = date("Y-m-d G:i:s");
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
-$prepgj->bindParam(2, $daemon_name, PDO::PARAM_STR);
-$prepgj->bindParam(3, $daemon_config['status_running'], PDO::PARAM_STR);
+$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
+$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 
 if($prepgj->rowCount() == 0)
@@ -126,16 +128,7 @@ if(1)
 	$job_id = $job['id'];
 
 	#Set Job to Running
-	$nextrun = date("Y-m-d G:i:s", time() + strtotime("+".$dbcore->job_interval." minutes"))."";
-	$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
-
-	$sql = "UPDATE `wifi`.`schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
-	$prepsr = $dbcore->sql->conn->prepare($sql);
-	$prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
-	$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
-	$prepsr->bindParam(3, $job_id, PDO::PARAM_INT);
-
-	$prepsr->execute();
+	$dbcore->SetStartJob($job_id);
 
 	#Check if there are any imports
 	While(1)
@@ -446,7 +439,7 @@ if(1)
 
 	#Set Next Run Job to Waiting
 	$dbcore->SetNextJob($job_id);
-	$dbcore->verbosed("Finished - Job: ".$daemon_name , 1);
+	$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
 
 
 
