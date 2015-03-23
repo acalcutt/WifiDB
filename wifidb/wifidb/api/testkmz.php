@@ -34,9 +34,13 @@ $zipName="test.zip";
 
 
 // Code to Zip a single file
-$createZipFile->addDirectory($outputDir);
+$dbcore->CreateZipFile->addDirectory($outputDir);
 $fileContents=file_get_contents($fileToZip);
-$createZipFile->addFile($fileContents, $outputDir.$fileToZip);
+$dbcore->CreateZipFile->addFile($fileContents, $outputDir.$fileToZip);
+
+$createZipFile->forceDownload($zipName);
+@unlink($zipName);
+
 
 /*
 
@@ -50,3 +54,5 @@ $out=fwrite($fd,$createZipFile->getZippedfile());
 fclose($fd);
 $createZipFile->forceDownload($zipName);
 @unlink($zipName);
+*/
+
