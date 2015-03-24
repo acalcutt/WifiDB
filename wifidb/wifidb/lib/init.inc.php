@@ -169,10 +169,17 @@ try
             switch(strtolower(SWITCH_EXTRAS))
             {
                 case "api":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("api");
+                    __autoload("Zip");
+					
                     $dbcore = new api($config);
                     $dbcore->convert = new convert($config);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+					$dbcore->Zip = new Zip;
                 break;
 
                 case "export":

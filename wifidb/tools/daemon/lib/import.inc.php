@@ -253,11 +253,10 @@ class import extends dbcore
 		foreach($vs1data['gpsdata'] as $key=>$gps)
 		{
 			$calc = "GPS: ".($key+1)." / ".$gps_count;
-			$sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = 'Importing GPS Data' WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
-			$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
-			$prep->bindParam(3, $file_tmp_id, PDO::PARAM_INT);
+			$prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
 			$prep->execute();
 			if($this->sql->checkError() !== 0)
 			{
