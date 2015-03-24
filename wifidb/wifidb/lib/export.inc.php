@@ -994,8 +994,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         }
         return $ret_kmz_name;
     }
-
-    public function UserAll($user)
+	
+    public function UserAllKml($user)
     {
         if(!is_string($user))
         {
@@ -1037,6 +1037,12 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                 }
             }
         }
+		return $KML_data;
+    }
+
+    public function UserAll($user)
+    {
+        $KML_data = $this->UserAllKml($user);
         if($KML_data == "")
         {
             $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
@@ -1122,24 +1128,9 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
     }
 
-    public function UserList($row)
+	public function UserListKml($points, $username, $title, $date)
     {
-        if(!is_int($row))
-        {
-            throw new ErrorException('$row value for export::UserList() is NaN');
-            return 0;
-        }
-        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
-        $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam(1, $row, PDO::PARAM_INT);
-        $prep->execute();
-        $this->sql->checkError(__LINE__, __FILE__);
-        $fetch = $prep->fetch();
-        if($fetch['points'] == "")
-        {
-            throw new ErrorException("User Import selected is empty, try again.");
-        }
-        $points = explode("-", $fetch['points']);
+        $points = explode("-", $points);
         $KML_data="";
         foreach($points as $point)
         {
@@ -1156,15 +1147,35 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
                 }
             }
+        }	
+		if($KML_data != "")
+		{
+			$KML_data = $this->createKML->createFolder($username." - ".$title." - ".$date, $KML_data, 0);
+		}
+		return $KML_data;
+    }	
+	
+    public function UserList($row)
+    {
+        if(!is_int($row))
+        {
+            throw new ErrorException('$row value for export::UserList() is NaN');
+            return 0;
         }
-
+        $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $row, PDO::PARAM_INT);
+        $prep->execute();
+        $this->sql->checkError(__LINE__, __FILE__);
+        $fetch = $prep->fetch();
+		
+        $KML_data = $this->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date']);
         if($KML_data == "")
         {
             $results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
         }
         else
         {
-            $KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
             $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
             $export_kml_file = $this->kml_out.$title.".kml";
             $this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
