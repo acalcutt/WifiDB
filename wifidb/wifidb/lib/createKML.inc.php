@@ -305,13 +305,26 @@ class createKML
 				$sec_type_label = "open";
 				break;
 		}
-		if($named)
-		{
-			$named = "			<name>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."</name>";
-		}else
-		{
-			$named = "";
-		}
+        if($named)
+        {
+			if($this->data->apdata[$hash]['ssid'] == '')
+			{
+				$ap_ssid = '&#91;Blank SSID&#93;';
+			}
+			elseif(!ctype_print($this->data->apdata[$hash]['ssid']))
+			{
+				$ap_ssid = '&#91;'.dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']).'&#93;';
+			}
+			else
+			{
+				$ap_ssid = dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']);
+			}		
+		
+            $named = "            <name>".$ap_ssid."</name>";
+        }else
+        {
+            $named = "";
+        }
 
 		if($this->data->apdata[$hash]['new_ap'])
 		{
