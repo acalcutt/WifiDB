@@ -208,12 +208,12 @@ switch($func)
 
             $newest = $daemon_out.'newestAP.kml';
             $kml_head['newest_date'] = $lastapdate;
-            $kml_head['newest_link'] = $dbcore->URL_PATH."api/latest.php?labeled=0&download=newestAP.kml";
+            $kml_head['newest_link'] = $dbcore->URL_PATH."api/latest.php?labeled=0&download=newestAP.kmz";
             $kml_head['newest_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
 
             $newest_label = $daemon_out.'newestAP_label.kml';
             $kml_head['newest_labeled_date'] = $lastapdate;
-            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/latest.php?labeled=1&download=newestAP_label.kml";
+            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/latest.php?labeled=1&download=newestAP_label.kmz";
             $kml_head['newest_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
         }
         else
