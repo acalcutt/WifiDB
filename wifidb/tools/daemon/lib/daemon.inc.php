@@ -179,6 +179,7 @@ class daemon extends wdbcli
 			$notes	=	$file_names[$hash]['notes'];
 			$date	=	$file_names[$hash]['date'];
 			$hash_	=	$file_names[$hash]['hash'];
+			echo "Is in filenames.txt\n";
 		}else
 		{
 			$user	=	$this->default_user;
@@ -186,7 +187,7 @@ class daemon extends wdbcli
 			$notes	=	$this->default_notes;
 			$date	=	date("y-m-d H:i:s");
 			$hash_	=	$hash;
-
+			echo "Recovery import, no previous data :(\n";
 		}
 		$this->logd("=== Start Daemon Prep of ".$file." ===");
 
@@ -220,8 +221,7 @@ class daemon extends wdbcli
 
 	public function SetNextJob($job_id)
 	{
-		var_dump($this->job_interval);
-		$nextrun = date("Y-m-d G:i:s", time() + strtotime("+".$this->job_interval." minutes"));
+		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"));
 		$this->verbosed("Setting Job Next Run to ".$nextrun, 1);
 		$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
 		$prepnr = $this->sql->conn->prepare($sql);
@@ -234,7 +234,7 @@ class daemon extends wdbcli
 
 	public function SetStartJob($job_id)
 	{
-		$nextrun = date("Y-m-d G:i:s", time() + strtotime("+".$this->job_interval." minutes"))."";
+		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"))."";
 		$this->verbosed("Starting - Job:".$this->daemon_name." Id:".$job_id, 1);
 
 		$sql = "UPDATE `wifi`.`schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
