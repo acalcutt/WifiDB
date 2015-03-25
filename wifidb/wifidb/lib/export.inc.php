@@ -380,7 +380,7 @@ class export extends dbcore
 		{
 			$KML_data .= $this->createKML->createNetworkLink($export[0], $export[1], 1, 0, "onInterval", 3600);
 		}
-		if($KML_data == ""){$KML_data .= $this->createKML->createFolder("Daily Exports with GPS", $KML_data, 1);}
+		if($KML_data == ""){$KML_data .= $this->createKML->createFolder("No Daily Exports with GPS", $KML_data, 0);}
 
 		$kml_filename = $daily_folder."/daily_db".$labeled.".kml";
 		$this->verbosed("Writing the Daily KML File: ".$kml_filename);
@@ -968,7 +968,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		//$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
 
 		//$kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
-		$kml_data = $full_folder.$daily_folder.$new_AP_folder;#.$archive_folder;
+		$kml_data = $new_AP_folder.$daily_folder.$full_folder;#.$archive_folder;
 
 		$full_kml_file = $this->daemon_out.'update.kml';
 		$this->createKML->createKML($full_kml_file, "WiFiDB Auto KMZ Generation", $kml_data);
@@ -992,8 +992,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 		return $ret_kmz_name;
 	}
-
-	public function UserAll($user)
+	
+	public function UserAllKml($user)
 	{
 		if(!is_string($user))
 		{
@@ -1035,6 +1035,12 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				}
 			}
 		}
+		return $KML_data;
+	}
+
+	public function UserAll($user)
+	{
+		$KML_data = $this->UserAllKml($user);
 		if($KML_data == "")
 		{
 			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
@@ -1045,6 +1051,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$export_kml_file = $this->kml_out.$user_fn.".kml";
 			$KML_data = $this->createKML->createFolder($user, $KML_data, 0);
 			$this->createKML->createKML($export_kml_file, "$user AP's", $KML_data, 1);
+			$KML_data="";
 
 			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
 			if($ret_kmz_name == -1)
@@ -1118,28 +1125,14 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
 	}
 
-	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
+	public function UserListKml($points, $username, $title, $date, $only_new=0)
 	{
-		if(!is_int($row))
-		{
-			throw new ErrorException('$row value for export::UserList() is NaN');
-			return 0;
-		}
-		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $row, PDO::PARAM_INT);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		$fetch = $prep->fetch();
-		if($fetch['points'] == "")
-		{
-			throw new ErrorException("User Import selected is empty, try again.");
-		}
-		$points = explode("-", $fetch['points']);
+		$points = explode("-", $points);
 		$KML_data="";
 		foreach($points as $point)
 		{
 			list($id, $new_old) = explode(":", $point);
+			if($only_new == 1 and $new_old == 1){continue;}
 			$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($array = $result->fetch(2))
@@ -1153,7 +1146,23 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				}
 			}
 		}
-
+		return $KML_data;
+	}	
+	
+	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
+		if(!is_int($row))
+		{
+			throw new ErrorException('$row value for export::UserList() is NaN');
+			return 0;
+		}
+		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $row, PDO::PARAM_INT);
+		$prep->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		$fetch = $prep->fetch();
+		
+		$KML_data = $this->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date']);
 		if($KML_data == "")
 		{
 			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
