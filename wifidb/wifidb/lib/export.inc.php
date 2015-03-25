@@ -1045,7 +1045,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$export_kml_file = $this->kml_out.$user_fn.".kml";
 			$KML_data = $this->createKML->createFolder($user, $KML_data, 0);
 			$this->createKML->createKML($export_kml_file, "$user AP's", $KML_data, 1);
-			$KML_data="";
 
 			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
 			if($ret_kmz_name == -1)
@@ -1100,7 +1099,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $export_id."-".$export_ssid);
 			$export_kml_file = $this->kml_out.$title.".kml";
 			$this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
-			$KML_data="";
 
 			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
 			if($ret_kmz_name == -1)
@@ -1120,7 +1118,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
 	}
 
-	public function UserList($row)
+	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
 	{
 		if(!is_int($row))
 		{
@@ -1164,22 +1162,43 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-			$export_kml_file = $this->kml_out.$title.".kml";
-			$this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
-			$KML_data="";
+
+			if($OutputPath)
+			{
+				if(!file_exists($this->region_out.$date.'/'))
+				{
+					mkdir($this->region_out.$date.'/');
+				}
+				$export_kml_file = $this->region_out.$date.'/'.$file_hash.".kml";
+			}else
+			{
+				$export_kml_file = $this->kml_out.$title.".kml";
+			}
+
+			$this->createKML->createKML($export_kml_file, $title, $KML_data, 1);
 
 			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
 			if($ret_kmz_name == -1)
 			{
-				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
+				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/', "code" => -1);
 			}
 			elseif($ret_kmz_name == -2)
 			{
-				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/', "code" => -2);
 			}
 			else
 			{
-				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+				if($OutputPath)
+				{
+					$results = $this->region_htmlpath.$file_hash.'.kmz';
+				}else
+				{
+					$results = array(
+								"mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'</a>',
+								"code" => 0
+								);
+				}
+				unlink($export_kml_file);
 			}
 		}
 		return $results;

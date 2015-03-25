@@ -140,7 +140,7 @@ if(1)
 			exit($dbcore->exit_msg);
 		}
 
-		$daemon_sql = "SELECT * FROM `wifi`.`files_tmp` where `importing` = '0' ORDER BY `date` ASC LIMIT 1";
+		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash` FROM `wifi`.`files_tmp` where `importing` = '0' ORDER BY `date` ASC LIMIT 1";
 		$result = $dbcore->sql->conn->query($daemon_sql);
 		if($dbcore->sql->checkError(__LINE__, __FILE__))
 		{
@@ -356,7 +356,7 @@ if(1)
 							foreach($import_ids as $id)
 							{
 								$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
-								$prep3->bindParam(2, $tmp['date'], PDO::PARAM_STR);
+								$prep3->bindParam(2, $file_date, PDO::PARAM_STR);
 								$prep3->bindParam(3, $tmp['aps'], PDO::PARAM_INT);
 								$prep3->bindParam(4, $tmp['gps'], PDO::PARAM_INT);
 								$prep3->bindParam(5, $file_row, PDO::PARAM_INT);

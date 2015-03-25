@@ -61,6 +61,8 @@ class dbcore
         $this->gpx_htmlpath             = $this->URL_PATH.$config['gpx_out'];
         $this->daemon_out               = $this->PATH.$config['daemon_out'];
         $this->daemon_htmlpath          = $this->URL_PATH.$config['daemon_out'];
+        $this->region_out               = $this->PATH.$config['region_out'];
+        $this->region_htmlpath			= $this->URL_PATH.$config['region_out'];
         $this->vs1_out                  = $this->PATH.$config['vs1_out'];
         $this->vs1_htmlpath             = $this->URL_PATH.$config['vs1_out'];
         $this->kml_out                  = $this->PATH.$config['kml_out'];
