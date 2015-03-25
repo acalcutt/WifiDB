@@ -27,6 +27,35 @@ $func=$_REQUEST['func'];
 
 switch($func)
 {
+		case "exp_all":
+			$sql = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->execute();
+			$fetch_user = $prep->fetchAll();
+			$results="";
+			foreach($fetch_user as $user)
+			{
+				$username = $user['username'];
+				$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `username` LIKE '$username' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' LIMIT 1";
+				$result = $dbcore->sql->conn->query($sql);
+				if($result->rowCount() > 0)
+				{
+					#valid results found, add network link for this user
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all_kml&#x26;user='.$username, $username, 1, 0, "onInterval", 3600);
+				}
+			}
+			
+			if($results == ""){$results .= $dbcore->createKML->createFolder("No Exports with GPS", $results, 0);}
+			
+			$results = $dbcore->createKML->createKMLstructure("All Exports", $results);		
+		
+			$dbcore->Zip->addFile($results, 'doc.kml');
+			$results = $dbcore->Zip->getZipData();
+			header('Content-Type: application/octet-stream');
+			header('Content-Disposition: attachment; filename="all_exports.kmz"');
+			echo $results;
+			break;
+
 		case "exp_user_all_kml":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			
@@ -60,7 +89,6 @@ switch($func)
 			
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			$title = $user."'s APs";
-			$results = $dbcore->createKML->createFolder($user, $results, 0);
 			$results = $dbcore->createKML->createKMLstructure("$user AP's", $results);		
 		
 			$dbcore->Zip->addFile($results, 'doc.kml');
