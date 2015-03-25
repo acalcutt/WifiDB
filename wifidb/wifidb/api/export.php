@@ -30,7 +30,7 @@ switch($func)
 		case "exp_user_all_kml":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			
-			$sql = "SELECT `id` FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
+			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -38,29 +38,37 @@ switch($func)
 			$results="";
 			foreach($fetch_imports as $import)
 			{
-				$expid = $import['id'];
-				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_list&#x26;row='.$expid, $user.'-'.$expid, 1, 0, "onInterval", 3600);
+			
+				#Check is list has access points with gps and non blank mac
+				$stage_pts = explode("-", $import['points']);
+				foreach($stage_pts as $point)
+				{
+					list($id, $new_old) = explode(":", $point);
+					if($new_old == 1){continue;}
+					$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$result = $dbcore->sql->conn->query($sql);
+					if($result->rowCount() > 0)
+					{
+						#valid results found, add network link and exit check
+						$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_list&#x26;row='.$import['id'], $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onInterval", 3600);
+						break;
+					}
+				}
 			}
 			
-			if($results == "")
-			{
-				echo 'This export has no APs with gps. No KMZ file has been exported';
-				break;
-			}
-			else
-			{
-				$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-				$title = $user."'s APs";
-				$results = $dbcore->createKML->createFolder($user, $results, 0);
-				$results = $dbcore->createKML->createKMLstructure("$user AP's", $results);		
+			if($results == ""){$results .= $dbcore->createKML->createFolder("No User Exports with GPS", $KML_data, 0);}
 			
-				$dbcore->Zip->addFile($results, 'doc.kml');
-				$results = $dbcore->Zip->getZipData();
-				header('Content-Type: application/octet-stream');
-				header('Content-Disposition: attachment; filename="'.$user_fn.'.kmz"');
-				echo $results;
-				break;
-			}
+			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			$title = $user."'s APs";
+			$results = $dbcore->createKML->createFolder($user, $results, 0);
+			$results = $dbcore->createKML->createKMLstructure("$user AP's", $results);		
+		
+			$dbcore->Zip->addFile($results, 'doc.kml');
+			$results = $dbcore->Zip->getZipData();
+			header('Content-Type: application/octet-stream');
+			header('Content-Disposition: attachment; filename="'.$user_fn.'.kmz"');
+			echo $results;
+			break;
 			
 		case "exp_user_list":
 			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
@@ -71,24 +79,17 @@ switch($func)
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$fetch = $prep->fetch();
 			
-			$results = $dbcore->export->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date']);
-			if($results == "")
-			{
-				echo 'This export has no APs with gps. No KMZ file has been exported';
-				break;
-			}
-			else
-			{
-				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-				$results = $dbcore->createKML->createKMLstructure($title, $results);		
+			$results = $dbcore->export->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date'], 1);
+			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $KML_data, 0);}
 			
-				$dbcore->Zip->addFile($results, 'doc.kml');
-				$results = $dbcore->Zip->getZipData();
-				header('Content-Type: application/octet-stream');
-				header('Content-Disposition: attachment; filename="'.$title.'.kmz"');
-				echo $results;
-				break;
-			}
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+			$results = $dbcore->createKML->createKMLstructure($title, $results);		
+			
+			$dbcore->Zip->addFile($results, 'doc.kml');
+			$results = $dbcore->Zip->getZipData();
+			header('Content-Type: application/octet-stream');
+			header('Content-Disposition: attachment; filename="'.$title.'.kmz"');
+			echo $results;
 			break;
 		default:
 				echo 'No function has been given...what am I supposed to do with this request?';

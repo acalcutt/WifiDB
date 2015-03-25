@@ -1128,13 +1128,14 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
     }
 
-	public function UserListKml($points, $username, $title, $date)
+	public function UserListKml($points, $username, $title, $date, $only_new=0)
     {
         $points = explode("-", $points);
         $KML_data="";
         foreach($points as $point)
         {
             list($id, $new_old) = explode(":", $point);
+			if($only_new == 1 and $new_old == 1){continue;}
             $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
             $result = $this->sql->conn->query($sql);
             while($array = $result->fetch(2))
@@ -1147,11 +1148,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
                     $KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
                 }
             }
-        }	
-		if($KML_data != "")
-		{
-			$KML_data = $this->createKML->createFolder($username." - ".$title." - ".$date, $KML_data, 0);
-		}
+        }
 		return $KML_data;
     }	
 	
@@ -1176,6 +1173,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
         }
         else
         {
+			$KML_data = $this->createKML->createFolder($username." - ".$title." - ".$date, $KML_data, 0);
             $title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
             $export_kml_file = $this->kml_out.$title.".kml";
             $this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
