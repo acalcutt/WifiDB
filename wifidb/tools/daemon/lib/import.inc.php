@@ -70,7 +70,7 @@ class import extends dbcore
 	 * @return array
 	 * @throws ErrorException
 	 */
-	public function import_vs1($source="" , $user="Unknown")
+	public function import_vs1($source="" , $user="Unknown", $file_id = 0)
 	{
 		$r = 0;
 		$increment_ids = 0;
@@ -393,13 +393,14 @@ class import extends dbcore
 
 				$time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
 
-				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`) VALUES (NULL, ?, ?, ?, ?, ?)";
+				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
 				$preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$preps->bindParam(2, $signal, PDO::PARAM_INT);
 				$preps->bindParam(3, $rssi, PDO::PARAM_INT);
 				$preps->bindParam(4, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_INT);
 				$preps->bindParam(5, $time_stamp, PDO::PARAM_INT);
+				$preps->bindParam(6, $file_id, PDO::PARAM_INT);
 				$preps->execute();
 				if($this->sql->checkError() !== 0)
 				{

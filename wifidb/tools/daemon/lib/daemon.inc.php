@@ -128,36 +128,6 @@ class daemon extends wdbcli
 		{
 			$this->verbosed("Cleaned file from the User Import table.");
 		}
-
-		$sql1 = "DELETE FROM `wifi`.`files` WHERE `hash` = ?";
-		$prep = $this->sql->conn->prepare($sql1);
-		$prep->bindParam(1, $hash, PDO::PARAM_STR);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Failed to remove bad file from the Files table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			$this->logd("Failed to remove bad file from the Files table.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Failed to remove bad file from the Files table.");
-		}else
-		{
-			$this->verbosed("Cleaned file from the Files table.");
-		}
-
-		$sql1 = "DELETE FROM `wifi`.`files_tmp` WHERE `hash` = ?";
-		$prep = $this->sql->conn->prepare($sql1);
-		$prep->bindParam(1, $hash, PDO::PARAM_STR);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			$this->logd("Failed to remove bad file from the tmp table.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Failed to remove bad file from the tmp table.");
-		}else
-		{
-			$this->verbosed("Cleaned file from the Temp Files table.");
-		}
-
-
 	}
 
 	/**

@@ -293,8 +293,8 @@ if(1)
 
 						$user_ids = implode(":", $import_ids);
 						$sql_insert_file = "INSERT INTO `wifi`.`files`
-						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`)
-						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`, `node_name`)
+						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 						$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
 						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
@@ -307,6 +307,7 @@ if(1)
 						$prep1->bindParam(8, $user_ids, PDO::PARAM_STR);
 						$prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
 						$prep1->bindParam(10, $prev_ext['prev_ext'], PDO::PARAM_STR);
+						$prep1->bindParam(11, $dbcore->node_name, PDO::PARAM_STR);
 						/*echo "file_name:".$file_name."\r\n";
 						echo "date:".$file_date."\r\n";
 						echo "size:".$file_size."\r\n";
@@ -332,22 +333,23 @@ if(1)
 							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
 						}
 
-						$tmp = $dbcore->import->import_vs1( $source, $user);
+						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
 						if($tmp == -1)
 						{
 							$dbcore->logd("Skipping Import of :".$file_name,
-								"Warning", $dbcore->This_is_me);
+								"Error", $dbcore->This_is_me);
 							$dbcore->verbosed("Skipping Import of :".$file_name, -1);
 							//remove files_tmp row and user_imports row
 							$dbcore->cleanBadImport($file_hash);
 						}else
 						{
 							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
-							$update_files_table_sql = "UPDATE `wifi`.`files` SET `aps` = ?, `gps` = ? WHERE `id` = ?";
+							$update_files_table_sql = "UPDATE `wifi`.`files` SET `aps` = ?, `gps` = ?, `completed` = 1 WHERE `id` = ?";
 							$prep_update_files_table = $dbcore->sql->conn->prepare($update_files_table_sql);
 							$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 							$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
 							$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
+
 							$prep_update_files_table->execute();
 							$dbcore->sql->checkError(__LINE__, __FILE__);
 
