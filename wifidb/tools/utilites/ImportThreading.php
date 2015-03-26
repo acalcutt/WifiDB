@@ -17,9 +17,7 @@ for ($i = 1; $i <= $NumberOfThreads; ++$i)
 
 	if (!$pid)
 	{
-		exec("php ../daemon/importd.php", $output, $ret_var);
-		$time = time();
-		file_put_contents("../log/import/$i_$time.log", $output );
+		exec("php ../daemon/importd.php");
 		exit($i);
 	}
 }
