@@ -3,6 +3,10 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
+if($dbcore->rebuild)
+{
+	$dbcore->Output("Imports are disabled because the database is being rebuilt. Please return to your seat until the aircraft has come to a complete stop.");
+}
 $title = (empty($_REQUEST['title'])) ? "Untitled" : $_REQUEST['title'];
 $notes = (empty($_REQUEST['notes'])) ? "No Notes" : $_REQUEST['notes'];
 
@@ -43,4 +47,3 @@ $details = array(
 
 $dbcore->ImportVS1($details);
 $dbcore->Output();
-?>
