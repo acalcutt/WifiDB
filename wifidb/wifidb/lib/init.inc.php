@@ -20,11 +20,10 @@ if not, write to the
 */
 // Show all error's with strict santex
 //***DEV USE ONLY*** TODO: remove dev stuff
-#ini_set('display_errors', 1);//***DEV USE ONLY***
-error_reporting(E_ALL && E_STRICT);//***DEV USE ONLY***
+ini_set('display_errors', 1);//***DEV USE ONLY***
 #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
+error_reporting(E_ALL || E_STRICT);//***DEV USE ONLY***
 //***DEV USE ONLY***
-
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 
 set_exception_handler('exception_handler');
@@ -173,14 +172,13 @@ try
                     __autoload("convert");
                     __autoload("export");
                     __autoload("api");
-                    __autoload("CreateZipFile");
+                    __autoload("Zip");
 
                     $dbcore = new api($config);
                     $dbcore->convert = new convert($config);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
-                    $dbcore->CreateZipFile = new CreateZipFile;
-
+                    $dbcore->Zip = new Zip;
                 break;
 
                 case "export":

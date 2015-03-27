@@ -122,11 +122,10 @@ class frontend extends dbcore
 
 		if($newArray['lat'] == "0.0000")
 		{
-			$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
+			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
 		}else
 		{
-			$globe_html = "<a href=\"".$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\">
-			<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+			$globe_html = '<a href="'.$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
 		}
 
 		$sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`

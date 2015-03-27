@@ -11,21 +11,24 @@ define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
-$labeled = @$_REQUEST['labeled'];
-if($labeled == 1){$labeled = 1;}else{$labeled = 0;}
-$download = @$_REQUEST['download'];
+if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}
+if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}
+$download = (empty($_REQUEST['download'])) ? 'latest.kmz' : $_REQUEST['download'];
 
 $results = $dbcore->export->ExportCurrentAPkmlApi($labeled);
 
-if($download)
-{
-	header('Content-Type: application/octet-stream');
-	header('Content-Disposition: attachment; filename="'.$download.'"');
-}
-else
+if($xml)
 {
 	header("Content-type: text/xml");
 }
+else
+{
+	header('Content-Type: application/octet-stream');
+	header('Content-Disposition: attachment; filename="'.$download.'"');
+	$dbcore->Zip->addFile($results, 'doc.kml');
+	$results = $dbcore->Zip->getZipData();
+}
+
 echo $results;
 
 ?>

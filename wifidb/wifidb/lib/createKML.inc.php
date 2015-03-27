@@ -43,7 +43,7 @@ class createKML
 		$this->openstyle = '
 		<Style id="openStyle">
 			<IconStyle>
-				<scale>0.5</scale>
+				<scale>0.4</scale>
 				<Icon>
 					<href>'.$this->open_path.'</href>
 				</Icon>
@@ -52,7 +52,7 @@ class createKML
 		$this->wepstyle = '
 		<Style id="wepStyle">
 			<IconStyle>
-				<scale>0.5</scale>
+				<scale>0.4</scale>
 				<Icon>
 					<href>'.$this->wep_path.'</href>
 				</Icon>
@@ -61,7 +61,7 @@ class createKML
 		$this->securestyle = '
 		<Style id="secureStyle">
 			<IconStyle>
-				<scale>0.5</scale>
+				<scale>0.4</scale>
 				<Icon>
 					<href>'.$this->secure_path.'</href>
 				</Icon>
@@ -70,7 +70,7 @@ class createKML
 		$this->openstyledead = '
 		<Style id="openStyleDead">
 			<IconStyle>
-				<scale>0.5</scale>
+				<scale>0.4</scale>
 				<Icon>
 					<href>'.$this->open_path_dead.'</href>
 				</Icon>
@@ -79,7 +79,7 @@ class createKML
 		$this->wepstyledead = '
 		<Style id="wepStyleDead">
 			<IconStyle>
-				<scale>0.5</scale>
+				<scale>0.4</scale>
 				<Icon>
 					<href>'.$this->wep_path_dead.'</href>
 				</Icon>
@@ -88,7 +88,7 @@ class createKML
 		$this->securestyledead = '
 		<Style id="secureStyleDead">
 			<IconStyle>
-				<scale>0.5</scale>
+				<scale>0.4</scale>
 				<Icon>
 					<href>'.$this->secure_path_dead.'</href>
 				</Icon>
@@ -305,13 +305,26 @@ class createKML
 				$sec_type_label = "open";
 				break;
 		}
-		if($named)
-		{
-			$named = "			<name>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."</name>";
-		}else
-		{
-			$named = "";
-		}
+        if($named)
+        {
+			if($this->data->apdata[$hash]['ssid'] == '')
+			{
+				$ap_ssid = '&#91;Blank SSID&#93;';
+			}
+			elseif(!ctype_print($this->data->apdata[$hash]['ssid']))
+			{
+				$ap_ssid = '&#91;'.dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']).'&#93;';
+			}
+			else
+			{
+				$ap_ssid = dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']);
+			}		
+		
+            $named = "            <name>".$ap_ssid."</name>";
+        }else
+        {
+            $named = "";
+        }
 
 		if($this->data->apdata[$hash]['new_ap'])
 		{
