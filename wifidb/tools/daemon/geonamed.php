@@ -18,22 +18,21 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit  = "2015-03-19";
 $dbcore->daemon_name	=	"Geoname";
-$daemon_version = "4.0";
-$node_name = $daemon_config['wifidb_nodename'];
 
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-    echo "Usage: geonamed.php [args...]
-  -v               Run Verbosely (SHOW EVERYTHING!)
-  -i               Version Info.
-  -h               Show this screen.
-  -l               Show License Information.
-  
+	echo "Usage: importd.php [args...]
+  -v				Run Verbosely (SHOW EVERYTHING!)
+  -i				Version Info.
+  -h				Show this screen.
+  -l				Show License Information.
+  -f				Force daemon to run without being scheduled.
+
 * = Not working yet.
 ";
-    exit();
+	exit();
 }
 
 if(@$arguments['i'])
@@ -58,6 +57,23 @@ You should have received a copy of the GNU General Public License along with thi
 ");
 	exit();
 }
+
+if(@$arguments['v'])
+{
+	$dbcore->verbose = 1;
+}else
+{
+	$dbcore->verbose = 0;
+}
+
+if(@$arguments['f'])
+{
+	$dbcore->ForceDaemonRun = 1;
+}else
+{
+	$dbcore->ForceDaemonRun = 0;
+}
+
 
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
@@ -107,21 +123,25 @@ $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
-
-if($prepgj->rowCount() == 0)
+var_dump($dbcore->ForceDaemonRun);
+if($prepgj->rowCount() == 0 && !$dbcore->ForceDaemonRun)
 {
-	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
+	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 }
 else
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
-	#Job Settings
-	$dbcore->job_interval = $job['interval'];
-	$job_id = $job['id'];
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Job Settings
+		$job = $prepgj->fetch(2);
+		$dbcore->job_interval = $job['interval'];
+		$job_id = $job['id'];
 
-	#Set Job to Running
-	$dbcore->SetStartJob($job_id);
+		#Set Job to Running
+		$dbcore->SetStartJob($job_id);
+	}
 
 	#Start gathering Geonames
 	$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
@@ -174,11 +194,14 @@ else
 			var_dump($dbcore->sql->conn->errorInfo());
 		}
 	}
-	#Finished Job
-	$dbcore->verbosed("Finished - Id:".$job_id, 1);
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Finished Job
+		$dbcore->verbosed("Finished - Id:".$job_id, 1);
 
-	#Set Next Run Job to Waiting
-	$dbcore->SetNextJob($job_id);
-	$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+		#Set Next Run Job to Waiting
+		$dbcore->SetNextJob($job_id);
+		$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+	}
 }
 unlink($dbcore->pid_file);

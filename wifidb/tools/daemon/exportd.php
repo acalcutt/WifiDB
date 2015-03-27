@@ -16,14 +16,6 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-if($dbcore->checkDaemonKill())# Safely kill script if Daemon kill flag has been set
-{
-	$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
-	$dbcore->SetNextJob($job_id);
-	exit($dbcore->exit_msg);
-}
-
-
 $lastedit  = "2015-03-07";
 $dbcore->daemon_name = "Export";
 
@@ -31,11 +23,12 @@ $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-	echo "Usage: exportd.php [args...]
-  -v			   Run Verbosely (SHOW EVERYTHING!)
-  -i			   Version Info.
-  -h			   Show this screen.
-  -l			   Show License Information.
+	echo "Usage: importd.php [args...]
+  -v				Run Verbosely (SHOW EVERYTHING!)
+  -i				Version Info.
+  -h				Show this screen.
+  -l				Show License Information.
+  -f				Force daemon to run without being scheduled.
 
 * = Not working yet.
 ";
@@ -71,6 +64,14 @@ if(@$arguments['v'])
 }else
 {
 	$dbcore->verbose = 0;
+}
+
+if(@$arguments['f'])
+{
+	$dbcore->ForceDaemonRun = 1;
+}else
+{
+	$dbcore->ForceDaemonRun = 0;
 }
 
 //Now we need to write the PID file so that the init.d file can control it.
@@ -121,22 +122,24 @@ $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
-
-if($prepgj->rowCount() == 0)
+var_dump($dbcore->ForceDaemonRun);
+if($prepgj->rowCount() == 0 && !$dbcore->ForceDaemonRun)
 {
-	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
+	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 }
 else
 {
 	$dbcore->verbosed("Running...");
-	$job = $prepgj->fetch(2);
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Job Settings
+		$job = $prepgj->fetch(2);
+		$dbcore->job_interval = $job['interval'];
+		$job_id = $job['id'];
 
-	#Job Settings
-	$job_id = $job['id'];
-	$job_interval = $job['interval'];
-
-	#Set Job to Running
-	$dbcore->SetStartJob($job_id);
+		#Set Job to Running
+		$dbcore->SetStartJob($job_id);
+	}
 
 	#Find How Many APs had GPS on the last run
 	$sql = "SELECT `apswithgps` FROM `wifi`.`settings` LIMIT 1";
@@ -191,11 +194,14 @@ else
 		//exec ($cmd);
 		#####
 	}
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Finished Job
+		$dbcore->verbosed("Finished - Id:".$job_id, 1);
 
-	#Set Next Run Job to Waiting
-	$dbcore->SetNextJob($job_id);
-
-	#Finished Job
-	$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
+		#Set Next Run Job to Waiting
+		$dbcore->SetNextJob($job_id);
+		$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+	}
 }
 unlink($dbcore->pid_file);

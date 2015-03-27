@@ -28,6 +28,7 @@ if(@$arguments['h'])
   -i				Version Info.
   -h				Show this screen.
   -l				Show License Information.
+  -f				Force daemon to run without being scheduled.
 
 * = Not working yet.
 ";
@@ -65,6 +66,14 @@ if(@$arguments['v'])
 	$dbcore->verbose = 0;
 }
 
+if(@$arguments['f'])
+{
+	$dbcore->ForceDaemonRun = 1;
+}else
+{
+	$dbcore->ForceDaemonRun = 0;
+}
+
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
 {
@@ -94,40 +103,37 @@ Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
  Log Level is: ".$dbcore->log_level);
-# Safely kill script if Daemon kill flag has been set
-if($dbcore->checkDaemonKill())
-{
-	$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
-	unlink($dbcore->pid_file);
-	exit($dbcore->exit_msg);
-}
 
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
 $currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
-
-if($prepgj->rowCount() == 0)
+$dbcore->sql->checkError(__LINE__, __FILE__);
+var_dump($dbcore->ForceDaemonRun);
+if($prepgj->rowCount() == 0 && !$dbcore->ForceDaemonRun)
 {
-	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
+	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 }
 else
 {
 	$dbcore->verbosed("Running...");
-	$job = $prepgj->fetch(2);
-	#Job Settings
-	$dbcore->job_interval = $job['interval'];
-	$job_id = $job['id'];
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Job Settings
+		$job = $prepgj->fetch(2);
+		$dbcore->job_interval = $job['interval'];
+		$job_id = $job['id'];
 
-	#Set Job to Running
-	$dbcore->SetStartJob($job_id);
+		#Set Job to Running
+		$dbcore->SetStartJob($job_id);
+	}
 
 	#Check if there are any imports
 	While(1)
@@ -135,7 +141,7 @@ else
 		if($dbcore->checkDaemonKill())# Safely kill script if Daemon kill flag has been set
 		{
 			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
-			$dbcore->SetNextJob($job_id);
+			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
 			unlink($dbcore->pid_file);
 			exit($dbcore->exit_msg);
 		}
@@ -285,55 +291,40 @@ else
 						}
 						$prev_ext = $prep_ext->fetch(2);
 
-
 						$notes = $file_to_Import['notes'];
 						$title = $file_to_Import['title'];
 
-						$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash);
 
-						$user_ids = implode(":", $import_ids);
-						$sql_insert_file = "INSERT INTO `wifi`.`files`
+                        $sql_insert_file = "INSERT INTO `wifi`.`files`
 						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`, `node_name`)
 						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        $prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
+                        $prep1->bindParam(1, $file_name, PDO::PARAM_STR);
+                        $prep1->bindParam(2, $file_date, PDO::PARAM_STR);
+                        $prep1->bindParam(3, $file_size, PDO::PARAM_STR);
+                        $prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
+                        $prep1->bindParam(5, $user, PDO::PARAM_STR);
+                        $prep1->bindParam(6, $notes, PDO::PARAM_STR);
+                        $prep1->bindParam(7, $title, PDO::PARAM_STR);
+                        $prep1->bindParam(8, $user_ids, PDO::PARAM_STR);
+                        $prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
+                        $prep1->bindParam(10, $prev_ext['prev_ext'], PDO::PARAM_STR);
+                        $prep1->bindParam(11, $dbcore->node_name, PDO::PARAM_STR);
+                        $prep1->execute();
+                        if($dbcore->sql->checkError(__LINE__, __FILE__))
+                        {
+                            $dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
+                                "Error", $dbcore->This_is_me);
+                            $dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+                            Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
+                        }else{
+                            $file_row = $dbcore->sql->conn->lastInsertID();
+                            $dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
+                        }
+                        $import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
+                        $user_ids = implode(":", $import_ids);
 
-						$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
-						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
-						$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
-						$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-						$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
-						$prep1->bindParam(5, $user, PDO::PARAM_STR);
-						$prep1->bindParam(6, $notes, PDO::PARAM_STR);
-						$prep1->bindParam(7, $title, PDO::PARAM_STR);
-						$prep1->bindParam(8, $user_ids, PDO::PARAM_STR);
-						$prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
-						$prep1->bindParam(10, $prev_ext['prev_ext'], PDO::PARAM_STR);
-						$prep1->bindParam(11, $dbcore->node_name, PDO::PARAM_STR);
-						/*echo "file_name:".$file_name."\r\n";
-						echo "date:".$file_date."\r\n";
-						echo "size:".$file_size."\r\n";
-						echo "totalaps:".$totalaps."\r\n";
-						echo "totalgps:".$totalgps."\r\n";
-						echo "hash:".$file_hash."\r\n";
-						echo "user:".$user."\r\n";
-						echo "notes:".$notes."\r\n";
-						echo "title:".$title."\r\n";
-						echo "user_ids:".$user_ids."\r\n";
-						echo "prev_ext['converted']:".$prev_ext['converted']."\r\n";
-						echo "prev_ext['prev_ext']:".$prev_ext['prev_ext']."\r\n";
-						*/
-						$prep1->execute();
-						if($dbcore->sql->checkError(__LINE__, __FILE__))
-						{
-							$dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
-								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-							Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
-						}else{
-							$file_row = $dbcore->sql->conn->lastInsertID();
-							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
-						}
-
-						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
+                        $tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
 						if($tmp == -1)
 						{
 							$dbcore->logd("Skipping Import of :".$file_name,
@@ -365,16 +356,6 @@ else
 								$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
 								$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
 								$prep3->bindParam(8, $id, PDO::PARAM_INT);
-								/*
-								echo "id:".$id."\r\n";
-								echo "tmp['imported']:".$tmp['imported']."\r\n";
-								echo "tmp['date']:".$tmp['date']."\r\n";
-								echo "tmp['aps']:".$tmp['aps']."\r\n";
-								echo "tmp['gps']:".$tmp['gps']."\r\n";
-								echo "file_row:".$file_row."\r\n";
-								echo "prev_ext['converted']:".$prev_ext['converted']."\r\n";
-								echo "prev_ext['prev_ext']:".$prev_ext['prev_ext']."\r\n";
-								*/
 								$prep3->execute();
 								$dbcore->sql->checkError(__LINE__, __FILE__);
 								$dbcore->verbosed("Updated User Import row. ($id : $file_hash)", 2);
@@ -435,11 +416,14 @@ else
 
 		}
 	}
-	#Finished Job
-	$dbcore->verbosed("Finished - Id:".$job_id, 1);
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Finished Job
+		$dbcore->verbosed("Finished - Id:".$job_id, 1);
 
-	#Set Next Run Job to Waiting
-	$dbcore->SetNextJob($job_id);
-	$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+		#Set Next Run Job to Waiting
+		$dbcore->SetNextJob($job_id);
+		$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+	}
 }
 unlink($dbcore->pid_file);
