@@ -10,7 +10,7 @@ SET time_zone = "-05:00";
 --
 -- Database: `wifi`
 --
-
+use `wifi`;
 -- --------------------------------------------------------
 
 --
@@ -103,19 +103,20 @@ CREATE TABLE IF NOT EXISTS `DB_stats` (
 
 CREATE TABLE IF NOT EXISTS `files` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `converted` tinyint(1) NOT NULL DEFAULT '0',
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `aps` int(11) NOT NULL,
-  `gps` int(11) NOT NULL,
-  `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `user_row` int(11) NOT NULL,
+  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
+  `node_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
   `user` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `notes` text COLLATE utf8_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`user_row`),
+  `converted` tinyint(1) NOT NULL DEFAULT 0,
+  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
+  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
+  `aps` int(11) NOT NULL,
+  `gps` int(11) NOT NULL,
+  `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `user_row` int(255) NOT NULL,
+  `completed` tinyint(1) NOT NULL DEFAULT 0,
   UNIQUE KEY `file` (`file`),
   KEY `id` (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
@@ -128,19 +129,19 @@ CREATE TABLE IF NOT EXISTS `files` (
 
 CREATE TABLE IF NOT EXISTS `files_tmp` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `converted` tinyint(1) NOT NULL DEFAULT '0',
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
+  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
   `user` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `notes` text COLLATE utf8_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `size` varchar(12) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `size` varchar(12) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
+  `date` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `importing` tinyint(1) NOT NULL,
   `ap` text COLLATE utf8_unicode_ci NOT NULL,
   `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
   `row` int(255) NOT NULL,
+  `converted` tinyint(1) NOT NULL DEFAULT '0',
+  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `hash` (`hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
@@ -629,6 +630,7 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
   `signal` int(11) NOT NULL,
   `rssi` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
   `gps_id` int(11) NOT NULL,
+  `file_id` int(255) NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT 'WiFiDB',
   `time_stamp` int(255) NOT NULL,
   PRIMARY KEY (`id`),
