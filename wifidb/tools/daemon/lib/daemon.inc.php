@@ -77,9 +77,14 @@ class daemon extends wdbcli
 	 * @return array
 	 * @throws ErrorException
 	 */
-	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "")
+	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
 	{
-		if($user === "")
+        if($file_row === 0)
+        {
+            throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
+        }
+
+        if($user === "")
 		{
 			throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
 		}
@@ -87,7 +92,7 @@ class daemon extends wdbcli
 		$rows = array();
 		$n = 0;
 		# Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
-		$sql = "INSERT INTO `wifi`.`user_imports` ( `id` , `username` , `notes` , `title`, `hash`) VALUES ( NULL, ?, ?, ?, ?)";
+		$sql = "INSERT INTO `wifi`.`user_imports` ( `id` , `username` , `notes` , `title`, `hash`, `file_id`) VALUES ( NULL, ?, ?, ?, ?, ?)";
 		$prep = $this->sql->conn->prepare($sql);
 		foreach($multi_user as $muser)
 		{
@@ -96,6 +101,7 @@ class daemon extends wdbcli
 			$prep->bindParam(2, $notes, PDO::PARAM_STR);
 			$prep->bindParam(3, $title, PDO::PARAM_STR);
 			$prep->bindParam(4, $hash, PDO::PARAM_STR);
+            $prep->bindParam(5, $file_row, PDO::PARAM_INT);
 			$prep->execute();
 
 			if($this->sql->checkError())

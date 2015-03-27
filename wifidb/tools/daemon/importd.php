@@ -106,7 +106,7 @@ $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
 $currentrun = date("Y-m-d G:i:s");
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
@@ -118,8 +118,7 @@ if($prepgj->rowCount() == 0)
 {
 	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
 }
-#else
-if(1)
+else
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
@@ -289,8 +288,6 @@ if(1)
 						$notes = $file_to_Import['notes'];
 						$title = $file_to_Import['title'];
 
-						$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash);
-
 						$user_ids = implode(":", $import_ids);
 						$sql_insert_file = "INSERT INTO `wifi`.`files`
 						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`, `node_name`)
@@ -332,6 +329,8 @@ if(1)
 							$file_row = $dbcore->sql->conn->lastInsertID();
 							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
 						}
+
+                        $import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
 						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
 						if($tmp == -1)

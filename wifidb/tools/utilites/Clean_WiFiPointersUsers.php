@@ -26,10 +26,22 @@ foreach($fetch as $row)
     echo $row['username']."\n";
     if(@explode("|", $row['username'])[1] == "")
     {
+        echo "One user found with a semicolon ( | )\n";
         $user = str_replace("|", "", $row['username']);
     }else
     {
-        $user = explode("|", $row['username'])[0];
+        echo "Found More than one user with a pipe ( | ) Setting first user as owner\n";
+        $user = explode( "|", $row['username'] )[0];
+    }
+
+    if(@explode( ";", $row['username'] )[1] == "")
+    {
+        echo "One user found with a semicolon ( ; )\n";
+        $user = str_replace(";", "", $row['username']);
+    }else
+    {
+        echo "Found More than one user with a semicolon ( ; ) Setting first user as owner\n";
+        $user = explode( ";", $row['username'] )[0];
     }
 
     $dbcore->sql->conn->query("UPDATE wifi.wifi_pointers SET `username` = '$user' WHERE `id` = '".$row['id']."'");

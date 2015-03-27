@@ -21,7 +21,7 @@ $exports = array();
 $dbcore->verbosed("Starting Pre-Populating of Daily Folders after a Recovery.");
 
 $dbcore->verbosed("Grabbing all the imports.");
-$UsersImportsResult = $dbcore->sql->conn->query("SELECT `id`, `title`, `username`, `points`, `date`, `hash` FROM `wifi`.`user_imports`");
+$UsersImportsResult = $dbcore->sql->conn->query("SELECT `id`, `title`, `username`, `points`, `date`, `hash`, `file_id` FROM `wifi`.`user_imports`");
 $dbcore->sql->checkError(__LINE__, __FILE__);
 
 $dbcore->verbosed("Go through all the imports and find the First Active for the first AP in each import.");
