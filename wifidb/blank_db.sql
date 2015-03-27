@@ -103,8 +103,8 @@ CREATE TABLE IF NOT EXISTS `DB_stats` (
 
 CREATE TABLE IF NOT EXISTS `files` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
-  `node_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `file` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `node_name` varchar(255) COLLATE utf8_unicode_ci,
   `user` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `notes` text COLLATE utf8_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -129,18 +129,18 @@ CREATE TABLE IF NOT EXISTS `files` (
 
 CREATE TABLE IF NOT EXISTS `files_tmp` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
+  `file` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `user` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `notes` text COLLATE utf8_unicode_ci NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `size` varchar(12) COLLATE utf8_unicode_ci DEFAULT NOT NULL,
+  `size` varchar(12) COLLATE utf8_unicode_ci NOT NULL,
   `date` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `importing` tinyint(1) NOT NULL,
   `ap` text COLLATE utf8_unicode_ci NOT NULL,
   `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
   `row` int(255) NOT NULL,
-  `converted` tinyint(1) NOT NULL DEFAULT '0',
+  `converted` tinyint(1) NOT NULL DEFAULT 0,
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `hash` (`hash`)
@@ -367,10 +367,9 @@ CREATE TABLE IF NOT EXISTS `log` (
 CREATE TABLE IF NOT EXISTS `settings` (
   `id` int(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `daemon_state` int(2) NOT NULL,
-  `version` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `apswithgps` INT(255) NOT NULL,
-  `node_name` VARCHAR(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY `id` (`id`)
+  `node_name` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
