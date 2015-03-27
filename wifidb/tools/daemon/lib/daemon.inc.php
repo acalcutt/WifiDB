@@ -32,7 +32,8 @@ class daemon extends wdbcli
 		$this->StatusRunning			=	$daemon_config['status_running'];
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
 		$this->daemon_name				=	"";
-		$this->job_interval				=	10;
+		$this->job_interval				=	0;
+        $this->ForceDaemonRun           =   0;
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
 
@@ -60,6 +61,7 @@ class daemon extends wdbcli
 		$daemon_state = $Dresult->fetch();
 		if($daemon_state['daemon_state'] == 0)
 		{
+			unlink($this->pid_file);
 			$this->exit_msg = "Daemon was told to kill itself";
 			return 1;
 		}else

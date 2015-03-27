@@ -17,7 +17,7 @@ for ($i = 1; $i <= $NumberOfThreads; ++$i)
 
 	if (!$pid)
 	{
-		exec("php ../daemon/importd.php");
+		exec("php ../daemon/importd.php -f");
 		exit($i);
 	}
 }
