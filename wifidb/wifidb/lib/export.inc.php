@@ -992,7 +992,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 		return $ret_kmz_name;
 	}
-	
+
 	public function UserAllKml($user)
 	{
 		if(!is_string($user))
@@ -1147,9 +1147,10 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			}
 		}
 		return $KML_data;
-	}	
-	
+	}
+
 	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
+	{
 		if(!is_int($row))
 		{
 			throw new ErrorException('$row value for export::UserList() is NaN');
@@ -1161,7 +1162,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$prep->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
-		
+
 		$KML_data = $this->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date']);
 		if($KML_data == "")
 		{
