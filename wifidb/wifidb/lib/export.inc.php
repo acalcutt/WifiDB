@@ -426,7 +426,7 @@ class export extends dbcore
 		$this->sql->checkError(__LINE__, __FILE__);
 		$ap_fetch = $prep2->fetch(2);
 		$sql3 = "SELECT
-  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
+  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.`time_stamp`,
   `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
   `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
 FROM `wifi`.`wifi_signals`

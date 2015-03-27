@@ -368,7 +368,7 @@ class import extends dbcore
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
 
-				if(empty($sig_gps_exp[0])){$this->verbosed("Bad Signal Data."); continue;}
+				if(empty($sig_gps_exp[1])){$this->verbosed("Bad Signal Data."); continue;}
 
 				$gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
@@ -387,17 +387,26 @@ class import extends dbcore
 				{
 					$sig_high = $signal;
 				}
-				if(!@$vs1data['gpsdata'][$gps_id]){continue;}
+				if(empty($vs1data['gpsdata'][$gps_id])){continue;}
 
-				$time_stamp = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
+				echo $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']."\n";
 
-				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
+				$date_exp = explode("-", $vs1data['gpsdata'][$gps_id]['date']);
+				if(strlen($date_exp[0]) === 2)
+				{
+					$vs1data['gpsdata'][$gps_id]['date'] = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
+				}
+
+				$datetime = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
+				var_dump($datetime);
+
+				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, time_stamp, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
 				$preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$preps->bindParam(2, $signal, PDO::PARAM_INT);
 				$preps->bindParam(3, $rssi, PDO::PARAM_INT);
 				$preps->bindParam(4, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_INT);
-				$preps->bindParam(5, $time_stamp, PDO::PARAM_INT);
+				$preps->bindParam(5, $datetime, PDO::PARAM_INT);
 				$preps->bindParam(6, $file_id, PDO::PARAM_INT);
 				$preps->execute();
 				if($this->sql->checkError() !== 0)
@@ -432,7 +441,7 @@ class import extends dbcore
 			}else
 			{
 				#Find New First Seen Timestamp
-				$FA_SQL = "SELECT `time_stamp` FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY `time_stamp` ASC LIMIT 1";
+				$FA_SQL = "SELECT time_stamp FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY time_stamp ASC LIMIT 1";
 				$faprep = $this->sql->conn->prepare($FA_SQL);
 				$faprep->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$faprep->execute();
@@ -440,7 +449,7 @@ class import extends dbcore
 				$FA_time = date("Y-m-d H:i:s", $fetchfaprep['time_stamp']);
 
 				#Find New Last Seen Timestamp
-				$LA_SQL = "SELECT `time_stamp` FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY `time_stamp` DESC LIMIT 1";
+				$LA_SQL = "SELECT time_stamp FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY time_stamp DESC LIMIT 1";
 				$laprep = $this->sql->conn->prepare($LA_SQL);
 				$laprep->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$laprep->execute();

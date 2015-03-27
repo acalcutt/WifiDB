@@ -632,7 +632,7 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
   `gps_id` int(11) NOT NULL,
   `file_id` int(255) NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT 'WiFiDB',
-  `time_stamp` int(255) NOT NULL,
+  `time_stamp` TIMESTAMP NOT NULL,
   PRIMARY KEY (`id`),
   KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`username`,`time_stamp`),
   KEY `FK_GPS` (`gps_id`),
