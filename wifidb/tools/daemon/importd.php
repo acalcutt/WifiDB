@@ -38,7 +38,7 @@ if(@$arguments['i'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$dbcore->daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals");
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals");
 	exit();
 }
 
@@ -46,10 +46,9 @@ if(@$arguments['l'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 Copyright (C) 2015 Andrew Calcutt, Phil Ferland
-This script is based on imp_expd.php by Phil Ferland. It is made to do just imports and be run as a cron job.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -99,13 +98,14 @@ PID: [ $dbcore->This_is_me ]
 if($dbcore->checkDaemonKill())
 {
 	$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
+	unlink($dbcore->pid_file);
 	exit($dbcore->exit_msg);
 }
 
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
-$currentrun = date("Y-m-d G:i:s");
+$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
 $sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
@@ -118,8 +118,7 @@ if($prepgj->rowCount() == 0)
 {
 	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
 }
-#else
-if(1)
+else
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
@@ -137,6 +136,7 @@ if(1)
 		{
 			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
 			$dbcore->SetNextJob($job_id);
+			unlink($dbcore->pid_file);
 			exit($dbcore->exit_msg);
 		}
 
@@ -434,16 +434,12 @@ if(1)
 			}
 
 		}
-
+	}
 	#Finished Job
 	$dbcore->verbosed("Finished - Id:".$job_id, 1);
-	}
 
 	#Set Next Run Job to Waiting
 	$dbcore->SetNextJob($job_id);
 	$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
-
-
-
 }
 unlink($dbcore->pid_file);

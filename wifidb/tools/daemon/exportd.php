@@ -54,9 +54,9 @@ if(@$arguments['l'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 Copyright (C) 2015 Andrew Calcutt, Phil Ferland
-This script is based on imp_expd.php by Phil Ferland. It is made to do just exports and be run as a cron job.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -97,15 +97,16 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
- - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
+ - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
-
  Log Level is: ".$dbcore->log_level);
- # Safely kill script if Daemon kill flag has been set
+# Safely kill script if Daemon kill flag has been set
 if($dbcore->checkDaemonKill())
 {
 	$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
+	unlink($dbcore->pid_file);
 	exit($dbcore->exit_msg);
 }
 
