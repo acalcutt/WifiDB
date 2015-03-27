@@ -342,12 +342,10 @@ class import extends dbcore
 			$fetch = $res->fetch(2);
 			if($fetch['id'])
 			{
-				$prev_signals = $fetch['signals'];
 				$prev_id	  = $fetch['id'];
 				$no_pointer   = 0;
 			}else
 			{
-				$prev_signals = "";
 				$prev_id	  = 0;
 				$no_pointer   = 1;
 			}
@@ -470,17 +468,6 @@ class import extends dbcore
 					$high_long = "0.0000";
 					$high_sats = "0";
 				}
-
-				#Create Signal History
-				$sig_imp = implode("-", $compile_sig);
-				if($prev_signals != "")
-				{
-					$new_signals = $prev_signals."-".$sig_imp;
-				}else
-				{
-					$new_signals = $sig_imp;
-				}
-
 				#Update or Insert AP
 				if(!$no_pointer)#Update AP
 				{
