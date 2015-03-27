@@ -33,7 +33,7 @@ class daemon extends wdbcli
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
 		$this->daemon_name				=	"";
 		$this->job_interval				=	0;
-        $this->ForceDaemonRun           =   0;
+		$this->ForceDaemonRun           =   0;
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
 
