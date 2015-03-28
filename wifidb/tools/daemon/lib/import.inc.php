@@ -71,7 +71,7 @@ class import extends dbcore
 	 * @return array
 	 * @throws ErrorException
 	 */
-	public function import_vs1($source="" , $user="Unknown", $file_id = 0)
+	public function import_vs1($source="" , $user="Unknown", $file_id)
 	{
 		$r = 0;
 		$increment_ids = 0;
@@ -409,7 +409,7 @@ class import extends dbcore
 				}
 
 				$datetime = date("Y-m-d H:i:s.u", strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']));
-				var_dump($datetime);
+				var_dump($datetime, $file_id);
 
 				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
@@ -420,6 +420,7 @@ class import extends dbcore
 				$preps->bindParam(5, $datetime, PDO::PARAM_INT);
 				$preps->bindParam(6, $file_id, PDO::PARAM_INT);
 				$preps->execute();
+
 				if($this->sql->checkError() !== 0)
 				{
 					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);

@@ -115,7 +115,6 @@ CREATE TABLE IF NOT EXISTS `files` (
   `aps` int(11) NOT NULL,
   `gps` int(11) NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `user_row` int(255) NOT NULL,
   `completed` tinyint(1) NOT NULL DEFAULT 0,
   UNIQUE KEY `file` (`file`),
   KEY `id` (`id`)
