@@ -400,7 +400,7 @@ else
 						//$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
 						//unlink($source);
 						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
-						$dbcore->cleanBadImport($import_ids, $file_row, $remove_file, 'Already Imported', $dbcore->thread_id);
+						$dbcore->cleanBadImport(0, 0, $remove_file, 'Already Imported', $dbcore->thread_id);
 					}
 				}else
 				{
@@ -412,7 +412,7 @@ else
 					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
 					//unlink($source);
 					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
-					$dbcore->cleanBadImport($import_ids, $file_row, $remove_file, 'Empty or not valid', $dbcore->thread_id);
+					$dbcore->cleanBadImport(0, 0, $remove_file, 'Empty or not valid', $dbcore->thread_id);
 				}
 			}
 		}

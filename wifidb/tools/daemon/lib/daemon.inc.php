@@ -176,23 +176,27 @@ class daemon extends wdbcli
 			{
 				$this->RemoveUserImport($import_id);
 			}
-		}else
+		}elseif($user_import_id === 0){}
+		else
 		{
 			$this->RemoveUserImport($user_import_id);
 		}
 
-		$sql = "DELETE FROM `wifi`.`files` WHERE `id` = ?";
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prep->execute();
-		if($this->sql->checkError())
+		if($file_id !== 0)
 		{
-			$this->verbosed("Failed to remove bad file from the files table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			$this->logd("Failed to remove bad file from the files table.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Failed to remove bad file from the files table.");
-		}else
-		{
-			$this->verbosed("Cleaned file from the files table.");
+			$sql = "DELETE FROM `wifi`.`files` WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError())
+			{
+				$this->verbosed("Failed to remove bad file from the files table.".var_export($this->sql->conn->errorInfo(),1), -1);
+				$this->logd("Failed to remove bad file from the files table.".var_export($this->sql->conn->errorInfo(),1));
+				throw new ErrorException("Failed to remove bad file from the files table.");
+			}else
+			{
+				$this->verbosed("Cleaned file from the files table.");
+			}
 		}
 
 		$sql = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
