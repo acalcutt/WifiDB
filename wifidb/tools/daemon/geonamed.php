@@ -17,55 +17,63 @@ if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon con
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit  = "2015-03-19";
-$daemon_name = "Geoname";
-$daemon_version = "4.0";
-$node_name = $daemon_config['wifidb_nodename'];
+$dbcore->daemon_name	=	"Geoname";
 
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-    echo "Usage: geonamed.php [args...]
-  -v               Run Verbosely (SHOW EVERYTHING!)
-  -i               Version Info.
-  -h               Show this screen.
-  -l               Show License Information.
-  
+	echo "Usage: importd.php [args...]
+  -v				Run Verbosely (SHOW EVERYTHING!)
+  -i				Version Info.
+  -h				Show this screen.
+  -l				Show License Information.
+  -f				Force daemon to run without being scheduled.
+
 * = Not working yet.
 ";
-    exit();
+	exit();
 }
 
 if(@$arguments['i'])
 {
-    $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals");
-    exit();
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals");
+	exit();
 }
 
 if(@$arguments['l'])
 {
-    $dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2
-Copyright (C) 2015 Andrew Calcutt,
-This script is based on imp_expd.php by Phil Ferland. It is made to do just exports and be run as a cron job.
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
+Copyright (C) 2015 Andrew Calcutt, Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 ");
-    exit();
+	exit();
 }
 
 if(@$arguments['v'])
 {
-    $dbcore->verbose = 1;
+	$dbcore->verbose = 1;
 }else
 {
-    $dbcore->verbose = 0;
+	$dbcore->verbose = 0;
 }
+
+if(@$arguments['f'])
+{
+	$dbcore->ForceDaemonRun = 1;
+}else
+{
+	$dbcore->ForceDaemonRun = 0;
+}
+
 
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
@@ -91,51 +99,50 @@ $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore
 $dbcore->verbosed("
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
- - {$daemon_name} Daemon {$daemon_version}, {$lastedit}, GPLv2 Random Intervals
+ - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
-
  Log Level is: ".$dbcore->log_level);
- # Safely kill script if Daemon kill flag has been set
+# Safely kill script if Daemon kill flag has been set
 if($dbcore->checkDaemonKill())
 {
 	$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
+	unlink($dbcore->pid_file);
 	exit($dbcore->exit_msg);
 }
 
-$dbcore->verbosed("Running $daemon_name jobs for $node_name");
+$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Geoname Jobs
-$currentrun = date("Y-m-d G:i:s");
+$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
 $sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` <> ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
-$prepgj->bindParam(1, $node_name, PDO::PARAM_STR);
-$prepgj->bindParam(2, $daemon_name, PDO::PARAM_STR);
-$prepgj->bindParam(3, $daemon_config['status_running'], PDO::PARAM_STR);
+$prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
+$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
+$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
-
-if($prepgj->rowCount() == 0)
+var_dump($dbcore->ForceDaemonRun);
+if($prepgj->rowCount() == 0 && !$dbcore->ForceDaemonRun)
 {
-	$dbcore->verbosed("There are no import jobs that need to be run... I'll go back to waiting...");
+	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 }
 else
 {
 	$dbcore->verbosed("Running...");
 	$job = $prepgj->fetch(2);
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Job Settings
+		$job = $prepgj->fetch(2);
+		$dbcore->job_interval = $job['interval'];
+		$job_id = $job['id'];
 
-	#Job Settings
-	$job_id = $job['id'];
-	$job_interval = $job['interval'];
-	
-	#Set Job to Running
-	$dbcore->verbosed("Starting - Job:".$daemon_name." Id:".$job_id, 1);
-	$sql = "UPDATE `wifi`.`schedule` SET `status`=? WHERE `id`=?";
-	$prepsr = $dbcore->sql->conn->prepare($sql);
-	$prepsr->bindParam(1, $daemon_config['status_running'], PDO::PARAM_STR);
-	$prepsr->bindParam(2, $job_id, PDO::PARAM_INT);
-	$prepsr->execute();
-	
+		#Set Job to Running
+		$dbcore->SetStartJob($job_id);
+	}
+
 	#Start gathering Geonames
 	$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
 	echo $sql."\r\n";
@@ -187,18 +194,14 @@ else
 			var_dump($dbcore->sql->conn->errorInfo());
 		}
 	}
-	
-	#Set Next Run Job to Waiting
-	$nextrun = date("Y-m-d G:i:s", strtotime("+".$job_interval." minutes"));
-	$dbcore->verbosed("Setting Job Next Run to ".$nextrun, 1);
-	$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
-	$prepnr = $dbcore->sql->conn->prepare($sql);
-	$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
-	$prepnr->bindParam(2, $daemon_config['status_waiting'], PDO::PARAM_STR);
-	$prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
-	$prepnr->execute();
-	
-	#Finished Job
-	$dbcore->verbosed("Finished - Job:".$daemon_name." Id:".$job_id, 1);
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Finished Job
+		$dbcore->verbosed("Finished - Id:".$job_id, 1);
+
+		#Set Next Run Job to Waiting
+		$dbcore->SetNextJob($job_id);
+		$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+	}
 }
 unlink($dbcore->pid_file);
