@@ -379,7 +379,7 @@ class import extends dbcore
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
 
-				if(empty($sig_gps_exp[1])){$this->verbosed("Bad Signal Data."); continue;}
+				if(is_int($sig_gps_exp[1])){$this->verbosed("Bad Signal Data."); continue;}
 
 				$gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
@@ -408,8 +408,8 @@ class import extends dbcore
 					$vs1data['gpsdata'][$gps_id]['date'] = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
 				}
 
-				$datetime = date("Y-m-d H:i:s.u", strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']));
-				var_dump($datetime, $file_id);
+				$datetime = $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time'];
+				#var_dump($datetime, $file_id);
 
 				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);

@@ -316,10 +316,10 @@ else
 							Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
 						}else{
 							$file_row = $dbcore->sql->conn->lastInsertID();
-							var_dump($file_row);
+							#var_dump($file_row);
 							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
 						}
-						die();
+						
 						$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
 						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
@@ -386,8 +386,9 @@ else
 					{
 						$dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
 							"Warning", $dbcore->This_is_me);
-						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
-						unlink($source);
+						//$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
+						//unlink($source);
+						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
 						$dbcore->cleanBadImport($file_hash);
 					}
 				}else
@@ -395,8 +396,9 @@ else
 					$finished = 0;
 					$dbcore->logd("File is empty or not valid. $source ($remove_file)",
 						"Warning", $dbcore->This_is_me);
-					$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
-					unlink($source);
+					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
+					//unlink($source);
+					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file)\n");
 					$dbcore->cleanBadImport($file_hash);
 				}
 			}
