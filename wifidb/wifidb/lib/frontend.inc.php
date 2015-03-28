@@ -606,11 +606,11 @@ class frontend extends dbcore
 			if($ap_array['lat'] == "0.0000")
 			{
 				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$dbcore->URL_PATH."../opt/export.php?func=exp_all_signal&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 
 			if($ap_array['ssid'] == '')

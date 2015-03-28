@@ -46,7 +46,7 @@ switch($func)
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
     case 'done':
-        $sql = "SELECT * FROM `wifi`.`files` ORDER BY `id` DESC";
+        $sql = "SELECT * FROM `wifi`.`files` WHERE `completed` = 1 ORDER BY `id` DESC";
         #echo $sql;
         $result = $dbcore->sql->conn->query($sql);
         $class_f = 0;
@@ -55,11 +55,20 @@ switch($func)
         {
             $users_array = explode("|", $newArray["user"]);
             $users_array = array_filter($users_array);
+
+			$sql = "SELECT `id`  FROM `wifi`.`user_imports` WHERE `file_id` = ? And `username` = ? LIMIT 1";
+			$prepgi = $dbcore->sql->conn->prepare($sql);
+			$prepgi->bindParam(1, $newArray['id'], PDO::PARAM_INT);
+			$prepgi->bindParam(2, $users_array[0], PDO::PARAM_STR);
+			$prepgi->execute();
+			$user_import = $prepgi->fetch(2);
+			$user_import_id = $user_import['id'];
+			
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
             $files_all[] = array(
                                     'class'=>$class,
                                     'id'=>$newArray['id'],
-                                    'user_row'=>$newArray["user_row"],
+                                    'user_row'=>$user_import_id,
                                     'file'=>html_entity_decode($newArray['file']),
                                     'date'=>$newArray['date'],
                                     'user'=>$users_array,
