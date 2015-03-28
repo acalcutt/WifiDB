@@ -175,7 +175,7 @@ else
 				$remove_file = $file_to_Import['id'];
 				$source = $dbcore->PATH.'import/up/'.$file_to_Import['file'];
 
-				echo $file_to_Import['file']."\r\n";
+				#echo $file_to_Import['file']."\r\n";
 				$file_src = explode(".",$file_to_Import['file']);
 				$file_type = strtolower($file_src[1]);
 				$file_name = $file_to_Import['file'];
@@ -233,7 +233,6 @@ else
 						throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1));
 					}
 				}
-
 				$return	=	file($source);
 				$count	=	count($return);
 				if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
@@ -290,10 +289,8 @@ else
 							Throw new ErrorException("Failed to select previous convert extension. :(");
 						}
 						$prev_ext = $prep_ext->fetch(2);
-
 						$notes = $file_to_Import['notes'];
 						$title = $file_to_Import['title'];
-
 
                         $sql_insert_file = "INSERT INTO `wifi`.`files`
 						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`, `node_name`)
@@ -400,20 +397,7 @@ else
 					unlink($source);
 					$dbcore->cleanBadImport($file_hash);
 				}
-
-				$result = $dbcore->sql->conn->query($daemon_sql);
-				if($dbcore->sql->checkError(__LINE__, __FILE__))
-				{
-					$dbcore->logd("Failed to update the File table query so that we know what files have already been imported.".var_export($dbcore->sql->conn->errorInfo(),1),
-						"Error", $dbcore->This_is_me);
-					$dbcore->verbosed("Failed to update the File table query so that we know what files have already been imported.", -1);
-					Throw new ErrorException("Failed to update the File table query so that we know what files have already been imported.".var_export($dbcore->sql->conn->errorInfo(),1));
-				}else
-				{
-					$dbcore->verbosed("Updated the File table query so that we know what files have already been imported.", 3);
-				}
 			}
-
 		}
 	}
 	if(!$dbcore->ForceDaemonRun)
