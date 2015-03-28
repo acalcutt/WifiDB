@@ -183,7 +183,7 @@ class daemon extends wdbcli
 
 		$sql = "DELETE FROM `wifi`.`files` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $file_id, PDO::PARAM_STR);
+		$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 		$prep->execute();
 		if($this->sql->checkError())
 		{
@@ -197,7 +197,7 @@ class daemon extends wdbcli
 
 		$sql = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $files_tmp_id, PDO::PARAM_STR);
+		$prep->bindParam(1, $files_tmp_id, PDO::PARAM_INT);
 		$prep->execute();
 		if($this->sql->checkError())
 		{
