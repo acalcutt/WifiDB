@@ -13,11 +13,13 @@ $NumberOfThreads = 20;
 
 for ($i = 1; $i <= $NumberOfThreads; ++$i)
 {
+	sleep(2);
 	$pid = pcntl_fork();
 
 	if (!$pid)
 	{
-		exec("php ../daemon/importd.php -f");
+		exec("php ../daemon/importd.php -f -t=$i", $output);
+		file_put_contents($dbcore->log_path."Import/".$pid."_".$i."_ConsoleOutput.log" , $output);
 		exit($i);
 	}
 }

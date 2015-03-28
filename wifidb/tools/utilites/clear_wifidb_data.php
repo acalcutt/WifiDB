@@ -17,6 +17,8 @@ if($rep == "y")
     echo "clearing files_tmp\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`files_tmp`");
     #var_dump($dbcore->sql->conn->errorInfo());
+    echo "clearing files_bad\r\n";
+    $dbcore->sql->conn->query("TRUNCATE `wifi`.`files_bad`");
     echo "clearing user_imports\r\n";
     $dbcore->sql->conn->query("TRUNCATE `wifi`.`user_imports`");
     #var_dump($dbcore->sql->conn->errorInfo());

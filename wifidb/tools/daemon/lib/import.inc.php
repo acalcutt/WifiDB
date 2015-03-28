@@ -73,29 +73,29 @@ class import extends dbcore
 	 */
 	public function import_vs1($source="" , $user="Unknown", $file_id)
 	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
 		$r = 0;
 		$increment_ids = 0;
 		$apdata = array();
 		$gdata = array();
 		# We need to check and see if the file location was passed, if not fail gracefully.
-		if ($source == NULL)
+		if($source == NULL)
 		{
 			$this->logd("The file that needs to be imported was not included in the import function.", "Error");
 			$this->verbosed("The file that needs to be imported was not included in the import function", -1);
 			throw new ErrorException;
 		}
 		# Open the file and dump its contents into an array. probably should re think this part...
-		if(!($file_contents = file_get_contents($source)))
+		$file_contents = @file_get_contents($source);
+		if($file_contents === "")
 		{
-			return -1;
+			return array(-1, "File was empty, or error opening file.");
 		}
 
 		$File_return	 = explode("\r\n", utf8_decode($file_contents));
-		if(empty($File_return[0]))
-		{
-			return -1;
-		}
-
 		# get the MD5 hash for the file data.
 		$hash = hash_file('md5', $source);
 
@@ -251,13 +251,13 @@ class import extends dbcore
 		{
 			$this->verbosed("File did not have an valid AP data, dropping file. $source from user: $user.", -1);
 			$this->logd("File did not have an valid AP data, dropping file. $source from user: $user.", "Warning");
-			return -1;
+			return array(-1, "File does not have any valid AP data.");
 		}
 		if(count($gdata) === 0)
 		{
 			$this->verbosed("File did not have an valid GPS data, dropping file. $source from user: $user.", -1);
 			$this->logd("File did not have an valid GPS data, dropping file. $source from user: $user.", "Warning");
-			return -1;
+			return array(-1, "File does not have any valid GPS data.");
 		}
 
 		$vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);
@@ -327,12 +327,15 @@ class import extends dbcore
 
 			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
 
+			if(strlen($aps['ssid']) < 7){$pad_ssid = 20;}else{$pad_ssid = strlen($aps['ssid']);}
+			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
+			if(strlen($aps['radio']) < 7){$pad_radio = 20;}else{$pad_radio = strlen($aps['radio']);}
+			if(strlen($aps['encry']) < 7){$pad_encr = 20;}else{$pad_encr = strlen($aps['encry']);}
 			$key_c = $key+1;
-			$pad_value = 25;
-			$ssid = str_pad($aps['ssid'], $pad_value);
-			$chan = str_pad($aps['chan'], $pad_value);
-			$radio = str_pad($aps['radio'], $pad_value + 1);
-			$encry = str_pad($aps['encry'], $pad_value + 1);
+			$ssid = str_pad($aps['ssid'], $pad_ssid);
+			$chan = str_pad($aps['chan'], $pad_chan);
+			$radio = str_pad($aps['radio'], $pad_radio);
+			$encry = str_pad($aps['encry'], $pad_encr);
 			$this->verbosed("------------------------
 			File AP/Total: {$key_c}/{$ap_count}
 			SSID:  {$ssid} | MAC: {$aps['mac']}
@@ -376,7 +379,7 @@ class import extends dbcore
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
 
-				if(empty($sig_gps_exp[1])){continue;}
+				if(empty($sig_gps_exp[1])){$this->verbosed("Bad Signal Data."); continue;}
 
 				$gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
@@ -406,7 +409,7 @@ class import extends dbcore
 				}
 
 				$datetime = $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time'];
-				#var_dump($datetime, $file_id);
+				var_dump($datetime, $file_id);
 
 				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
