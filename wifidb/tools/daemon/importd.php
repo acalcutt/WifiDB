@@ -292,36 +292,38 @@ else
 						$notes = $file_to_Import['notes'];
 						$title = $file_to_Import['title'];
 
-                        $sql_insert_file = "INSERT INTO `wifi`.`files`
-						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `user_row`, `converted`, `prev_ext`, `node_name`)
-						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?)";
-                        $prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
-                        $prep1->bindParam(1, $file_name, PDO::PARAM_STR);
-                        $prep1->bindParam(2, $file_date, PDO::PARAM_STR);
-                        $prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-                        $prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
-                        $prep1->bindParam(5, $user, PDO::PARAM_STR);
-                        $prep1->bindParam(6, $notes, PDO::PARAM_STR);
-                        $prep1->bindParam(7, $title, PDO::PARAM_STR);
-                        $prep1->bindParam(8, $user_ids, PDO::PARAM_STR);
-                        $prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
-                        $prep1->bindParam(10, $prev_ext['prev_ext'], PDO::PARAM_STR);
-                        $prep1->bindParam(11, $dbcore->node_name, PDO::PARAM_STR);
-                        $prep1->execute();
-                        if($dbcore->sql->checkError(__LINE__, __FILE__))
-                        {
-                            $dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
-                                "Error", $dbcore->This_is_me);
-                            $dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-                            Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
-                        }else{
-                            $file_row = $dbcore->sql->conn->lastInsertID();
-                            $dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
-                        }
-                        $import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
-                        $user_ids = implode(":", $import_ids);
+						$sql_insert_file = "INSERT INTO `wifi`.`files`
+						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
+						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+						$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
+						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
+						$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
+						$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
+						$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
+						$prep1->bindParam(5, $user, PDO::PARAM_STR);
+						$prep1->bindParam(6, $notes, PDO::PARAM_STR);
+						$prep1->bindParam(7, $title, PDO::PARAM_STR);
+						$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
+						$prep1->bindParam(9, $prev_ext['prev_ext'], PDO::PARAM_STR);
+						$prep1->bindParam(10, $dbcore->node_name, PDO::PARAM_STR);
+						$prep1->execute();
 
-                        $tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
+						if($dbcore->sql->checkError(__LINE__, __FILE__))
+						{
+							$dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
+								"Error", $dbcore->This_is_me);
+							$dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+							Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
+						}else{
+							$file_row = $dbcore->sql->conn->lastInsertID();
+							var_dump($file_row);
+							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
+						}
+						die();
+						$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
+
+						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
+
 						if($tmp == -1)
 						{
 							$dbcore->logd("Skipping Import of :".$file_name,
