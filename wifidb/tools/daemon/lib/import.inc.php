@@ -73,29 +73,29 @@ class import extends dbcore
 	 */
 	public function import_vs1($source="" , $user="Unknown", $file_id)
 	{
+		if(!file_exists($source))
+		{
+			return -2;
+		}
 		$r = 0;
 		$increment_ids = 0;
 		$apdata = array();
 		$gdata = array();
 		# We need to check and see if the file location was passed, if not fail gracefully.
-		if ($source == NULL)
+		if($source == NULL)
 		{
 			$this->logd("The file that needs to be imported was not included in the import function.", "Error");
 			$this->verbosed("The file that needs to be imported was not included in the import function", -1);
 			throw new ErrorException;
 		}
 		# Open the file and dump its contents into an array. probably should re think this part...
-		if(!($file_contents = file_get_contents($source)))
+		$file_contents = @file_get_contents($source);
+		if($file_contents === "")
 		{
 			return -1;
 		}
 
 		$File_return	 = explode("\r\n", utf8_decode($file_contents));
-		if(empty($File_return[0]))
-		{
-			return -1;
-		}
-
 		# get the MD5 hash for the file data.
 		$hash = hash_file('md5', $source);
 
@@ -408,7 +408,7 @@ class import extends dbcore
 					$vs1data['gpsdata'][$gps_id]['date'] = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
 				}
 
-				$datetime = date("Y-m-d H:i:s.u", strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']));
+				$datetime = $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time'];
 				var_dump($datetime, $file_id);
 
 				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";

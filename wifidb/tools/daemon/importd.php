@@ -230,161 +230,159 @@ else
 						throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1));
 					}
 				}
-				$return	=	file($source);
-				$count	=	count($return);
-				if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
+				if(file_exists($source))
 				{
-					$dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
-					$update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '1', `ap` = 'Preparing for Import' WHERE `id` = ?";
-					$prep4 = $dbcore->sql->conn->prepare($update_tmp);
-					$prep4->bindParam(1, $remove_file, PDO::PARAM_INT);
-					$prep4->execute();
-					if($dbcore->sql->checkError(__LINE__, __FILE__))
+					$return = file($source);
+					$count = count($return);
+					if (!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
 					{
-						$dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.",
-							-1);
-						$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1),
-							"Error", $dbcore->This_is_me);
-						Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
-					}
-
-					//check to see if this file has already been imported into the DB
-					$sql_check = "SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1";
-					$prep = $dbcore->sql->conn->prepare($sql_check);
-					$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
-					$prep->execute();
-					if($dbcore->sql->checkError(__LINE__, __FILE__))
-					{
-						$dbcore->logd("Failed to select file hash from files table. :(",
-							"Error", $dbcore->This_is_me);
-						$dbcore->verbosed("Failed to select file hash from files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-						Throw new ErrorException("Failed to select file hash from files table. :(");
-					}
-
-					$fileqq = $prep->fetch(2);
-
-					if($file_hash != @$fileqq['hash'])
-					{
-						if(count(explode(";", $file_to_Import['notes'])) === 1)
-						{
-							$user = str_replace(";", "", $file_to_Import['user']);
-							$dbcore->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
-						}else
-						{
-							$user = $file_to_Import['user'];
-							$dbcore->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
-						}
-						$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
-						$prep_ext = $dbcore->sql->conn->prepare($sql_select_tmp_file_ext);
-						$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
-						$prep_ext->execute();
-						if($dbcore->sql->checkError())
-						{
-							$dbcore->logd("Failed to select previous convert extension. :(",
+						$dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
+						$update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '1', `ap` = 'Preparing for Import' WHERE `id` = ?";
+						$prep4 = $dbcore->sql->conn->prepare($update_tmp);
+						$prep4->bindParam(1, $remove_file, PDO::PARAM_INT);
+						$prep4->execute();
+						if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+							$dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.",
+								-1);
+							$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems." . var_export($dbcore->sql->conn->errorInfo(), 1),
 								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Failed to select previous convert extension. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-							Throw new ErrorException("Failed to select previous convert extension. :(");
+							Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
 						}
-						$prev_ext = $prep_ext->fetch(2);
-						$notes = $file_to_Import['notes'];
-						$title = $file_to_Import['title'];
 
-						$sql_insert_file = "INSERT INTO `wifi`.`files`
-						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
-						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
-						$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
-						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
-						$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
-						$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-						$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
-						$prep1->bindParam(5, $user, PDO::PARAM_STR);
-						$prep1->bindParam(6, $notes, PDO::PARAM_STR);
-						$prep1->bindParam(7, $title, PDO::PARAM_STR);
-						$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
-						$prep1->bindParam(9, $prev_ext['prev_ext'], PDO::PARAM_STR);
-						$prep1->bindParam(10, $dbcore->node_name, PDO::PARAM_STR);
-						$prep1->execute();
-
-						if($dbcore->sql->checkError(__LINE__, __FILE__))
-						{
-							$dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
+						//check to see if this file has already been imported into the DB
+						$sql_check = "SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1";
+						$prep = $dbcore->sql->conn->prepare($sql_check);
+						$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
+						$prep->execute();
+						if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+							$dbcore->logd("Failed to select file hash from files table. :(",
 								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-							Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
-						}else{
-							$file_row = $dbcore->sql->conn->lastInsertID();
-							var_dump($file_row);
-							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
+							$dbcore->verbosed("Failed to select file hash from files table. :(\r\n" . var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+							Throw new ErrorException("Failed to select file hash from files table. :(");
 						}
-						die();
-						$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
-						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
+						$fileqq = $prep->fetch(2);
 
-						if($tmp == -1)
-						{
-							$dbcore->logd("Skipping Import of :".$file_name,
-								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Skipping Import of :".$file_name, -1);
-							//remove files_tmp row and user_imports row
-							$dbcore->cleanBadImport($file_hash);
-						}else
-						{
-							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
-							$update_files_table_sql = "UPDATE `wifi`.`files` SET `aps` = ?, `gps` = ?, `completed` = 1 WHERE `id` = ?";
-							$prep_update_files_table = $dbcore->sql->conn->prepare($update_files_table_sql);
-							$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
-							$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
-							$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
-
-							$prep_update_files_table->execute();
-							$dbcore->sql->checkError(__LINE__, __FILE__);
-
-							$sql = "UPDATE `wifi`.`user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ? WHERE `id` = ?";
-							$prep3 = $dbcore->sql->conn->prepare($sql);
-							foreach($import_ids as $id)
-							{
-								$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
-								$prep3->bindParam(2, $file_date, PDO::PARAM_STR);
-								$prep3->bindParam(3, $tmp['aps'], PDO::PARAM_INT);
-								$prep3->bindParam(4, $tmp['gps'], PDO::PARAM_INT);
-								$prep3->bindParam(5, $file_row, PDO::PARAM_INT);
-								$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
-								$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
-								$prep3->bindParam(8, $id, PDO::PARAM_INT);
-								$prep3->execute();
-								$dbcore->sql->checkError(__LINE__, __FILE__);
-								$dbcore->verbosed("Updated User Import row. ($id : $file_hash)", 2);
+						if ($file_hash != @$fileqq['hash']) {
+							if (count(explode(";", $file_to_Import['notes'])) === 1) {
+								$user = str_replace(";", "", $file_to_Import['user']);
+								$dbcore->verbosed("Start Import of : (" . $file_to_Import['id'] . ") " . $file_name, 1);
+							} else {
+								$user = $file_to_Import['user'];
+								$dbcore->verbosed("Start Import of : (" . $file_to_Import['id'] . ") " . $file_name, 1);
 							}
-
-							$del_file_tmp = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
-							#echo $del_file_tmp."\r\n";
-							$prep = $dbcore->sql->conn->prepare($del_file_tmp);
-							$prep->bindParam(1, $remove_file, PDO::PARAM_INT);
-							$prep->execute();
-							if($dbcore->sql->checkError(__LINE__, __FILE__))
-							{
-								//**TODO
-								#mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
-								$dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1),
+							$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
+							$prep_ext = $dbcore->sql->conn->prepare($sql_select_tmp_file_ext);
+							$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
+							$prep_ext->execute();
+							if ($dbcore->sql->checkError()) {
+								$dbcore->logd("Failed to select previous convert extension. :(",
 									"Error", $dbcore->This_is_me);
-								$dbcore->verbosed("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1), -1);
-								Throw new ErrorException("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
-							}else
-							{
-								//**TODO
-								#$message = "File has finished importing.\r\nUser: $user\r\nTitle: $title\r\nFile: $source ($remove_file)\r\nLink: ".$dbcore->PATH."/opt/userstats.php?func=useraplist&row=$newrow \r\n-WiFiDB Daemon.";
-								#mail_users($message, $subject, "import");
-								$dbcore->verbosed("Removed ".$remove_file." from the Temp files table.\n");
+								$dbcore->verbosed("Failed to select previous convert extension. :(\r\n" . var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+								Throw new ErrorException("Failed to select previous convert extension. :(");
 							}
-							$finished = 1;
+							$prev_ext = $prep_ext->fetch(2);
+							$notes = trim($file_to_Import['notes']);
+							$title = $file_to_Import['title'];
+
+							$sql_insert_file = "INSERT INTO `wifi`.`files`
+							(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
+							VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+							$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
+							$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
+							$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
+							$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
+							$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
+							$prep1->bindParam(5, $user, PDO::PARAM_STR);
+							$prep1->bindParam(6, $notes, PDO::PARAM_STR);
+							$prep1->bindParam(7, $title, PDO::PARAM_STR);
+							$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
+							$prep1->bindParam(9, $prev_ext['prev_ext'], PDO::PARAM_STR);
+							$prep1->bindParam(10, $dbcore->node_name, PDO::PARAM_STR);
+							$prep1->execute();
+
+							if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+								$dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
+									"Error", $dbcore->This_is_me);
+								$dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n" . var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+								Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
+							} else {
+								$file_row = $dbcore->sql->conn->lastInsertID();
+								var_dump($file_row);
+								$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
+							}
+							$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
+
+							$tmp = $dbcore->import->import_vs1($source, $user, $file_row);
+
+							if ($tmp === -1) {
+								$dbcore->logd("Skipping Import of :" . $file_name,
+									"Error", $dbcore->This_is_me);
+								$dbcore->verbosed("Skipping Import of :" . $file_name, -1);
+								//remove files_tmp row and user_imports row
+								$dbcore->cleanBadImport($file_hash);
+							} elseif($tmp === -2) {
+								throw new ErrorException("File was passed, but does not exist....");
+							}else {
+								$dbcore->verbosed("Finished Import of :" . $file_name . " | AP Count:" . $tmp['aps'] . " - GPS Count: " . $tmp['gps'], 3);
+								$update_files_table_sql = "UPDATE `wifi`.`files` SET `aps` = ?, `gps` = ?, `completed` = 1 WHERE `id` = ?";
+								$prep_update_files_table = $dbcore->sql->conn->prepare($update_files_table_sql);
+								$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
+								$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
+								$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
+
+								$prep_update_files_table->execute();
+								$dbcore->sql->checkError(__LINE__, __FILE__);
+
+								$sql = "UPDATE `wifi`.`user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ? WHERE `id` = ?";
+								$prep3 = $dbcore->sql->conn->prepare($sql);
+								foreach ($import_ids as $id) {
+									$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
+									$prep3->bindParam(2, $file_date, PDO::PARAM_STR);
+									$prep3->bindParam(3, $tmp['aps'], PDO::PARAM_INT);
+									$prep3->bindParam(4, $tmp['gps'], PDO::PARAM_INT);
+									$prep3->bindParam(5, $file_row, PDO::PARAM_INT);
+									$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
+									$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
+									$prep3->bindParam(8, $id, PDO::PARAM_INT);
+									$prep3->execute();
+									$dbcore->sql->checkError(__LINE__, __FILE__);
+									$dbcore->verbosed("Updated User Import row. ($id : $file_hash)", 2);
+								}
+
+								$del_file_tmp = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
+								#echo $del_file_tmp."\r\n";
+								$prep = $dbcore->sql->conn->prepare($del_file_tmp);
+								$prep->bindParam(1, $remove_file, PDO::PARAM_INT);
+								$prep->execute();
+								if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+									//**TODO
+									#mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
+									$dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t" . var_export($dbcore->sql->conn->errorInfo(), 1),
+										"Error", $dbcore->This_is_me);
+									$dbcore->verbosed("Error removing $source ($remove_file) from the Temp files table\n\t" . var_export($dbcore->sql->conn->errorInfo(), 1), -1);
+									Throw new ErrorException("Error removing $source ($remove_file) from the Temp files table\n\t" . var_export($dbcore->sql->conn->errorInfo(), 1));
+								} else {
+									//**TODO
+									#$message = "File has finished importing.\r\nUser: $user\r\nTitle: $title\r\nFile: $source ($remove_file)\r\nLink: ".$dbcore->PATH."/opt/userstats.php?func=useraplist&row=$newrow \r\n-WiFiDB Daemon.";
+									#mail_users($message, $subject, "import");
+									$dbcore->verbosed("Removed " . $remove_file . " from the Temp files table.\n");
+								}
+								$finished = 1;
+							}
+						} else {
+							$dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
+								"Warning", $dbcore->This_is_me);
+							$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
+							@unlink($source);
+							$dbcore->cleanBadImport($file_hash);
 						}
-					}else
-					{
-						$dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
+					} else {
+						$finished = 0;
+						$dbcore->logd("File is empty or not valid. $source ($remove_file)",
 							"Warning", $dbcore->This_is_me);
-						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
-						unlink($source);
+						$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
+						#@unlink($source);
 						$dbcore->cleanBadImport($file_hash);
 					}
 				}else
@@ -392,8 +390,8 @@ else
 					$finished = 0;
 					$dbcore->logd("File is empty or not valid. $source ($remove_file)",
 						"Warning", $dbcore->This_is_me);
-					$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
-					unlink($source);
+					$dbcore->verbosed("File is empty or does not exist, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
+					@unlink($source);
 					$dbcore->cleanBadImport($file_hash);
 				}
 			}
