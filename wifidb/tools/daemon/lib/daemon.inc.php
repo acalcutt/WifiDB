@@ -139,10 +139,10 @@ class daemon extends wdbcli
 	}
 	function cleanBadImport($user_import_id = 0, $file_id = 0, $file_tmp_id = 0, $error_msg = "")
 	{
-		$sql = "INSERT INTO `wifi`.`files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `wifi`.`files_tmp` WHERE `hash` = ?";
+		$sql = "INSERT INTO `wifi`.`files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `wifi`.`files_tmp` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
-		$prep->bindParam(2, $hash, PDO::PARAM_STR);
+		$prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
 		$prep->execute();
 		if($this->sql->checkError())
 		{
