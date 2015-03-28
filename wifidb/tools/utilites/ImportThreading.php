@@ -13,6 +13,7 @@ $NumberOfThreads = 20;
 
 for ($i = 1; $i <= $NumberOfThreads; ++$i)
 {
+	sleep(5);
 	$pid = pcntl_fork();
 
 	if (!$pid)

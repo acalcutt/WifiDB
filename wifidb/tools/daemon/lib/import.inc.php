@@ -75,7 +75,7 @@ class import extends dbcore
 	{
 		if(!file_exists($source))
 		{
-			return -2;
+			return array(-1, "File does not exist");
 		}
 		$r = 0;
 		$increment_ids = 0;
@@ -92,7 +92,7 @@ class import extends dbcore
 		$file_contents = @file_get_contents($source);
 		if($file_contents === "")
 		{
-			return -1;
+			return array(-1, "File was empty, or error opening file.");
 		}
 
 		$File_return	 = explode("\r\n", utf8_decode($file_contents));
@@ -251,13 +251,13 @@ class import extends dbcore
 		{
 			$this->verbosed("File did not have an valid AP data, dropping file. $source from user: $user.", -1);
 			$this->logd("File did not have an valid AP data, dropping file. $source from user: $user.", "Warning");
-			return -1;
+			return array(-1, "File does not have any valid AP data.");
 		}
 		if(count($gdata) === 0)
 		{
 			$this->verbosed("File did not have an valid GPS data, dropping file. $source from user: $user.", -1);
 			$this->logd("File did not have an valid GPS data, dropping file. $source from user: $user.", "Warning");
-			return -1;
+			return array(-1, "File does not have any valid GPS data.");
 		}
 
 		$vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);

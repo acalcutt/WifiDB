@@ -13,7 +13,7 @@ define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "import");
 
 if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit			=	"2015-03-21";
@@ -124,13 +124,14 @@ $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 $dbcore->sql->checkError(__LINE__, __FILE__);
-var_dump($dbcore->ForceDaemonRun);
-if($prepgj->rowCount() == 0 && !$dbcore->ForceDaemonRun)
+
+if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 }
 else
 {
+	trigger_error("Starting Impport on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
 	$dbcore->verbosed("Running...");
 	if(!$dbcore->ForceDaemonRun)
 	{
@@ -161,14 +162,13 @@ else
 			$dbcore->verbosed("There was an error getting a list of import files");
 			break;
 		}
-		elseif($result->rowCount() == 0)
+		elseif($result->rowCount() === 0)
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
 			break;
 		}
 		else
 		{
-			trigger_error("Starting Impport Process on Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
 			##### make sure import/export files are in sync with remote nodes
 			//$dbcore->verbosed("Synchronizing files between nodes...", 1);
 			//$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
@@ -227,7 +227,7 @@ else
 					$prep->bindParam(4, $remove_file, PDO::PARAM_INT);
 					$prep->execute();
 					$err = $dbcore->sql->conn->errorCode();
-					if($err[0] == "00000")
+					if($err[0] === "00000")
 					{
 						$dbcore->verbosed("Conversion completed.", 1);
 						$dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $dbcore->This_is_me);
@@ -275,7 +275,7 @@ else
 
 					$fileqq = $prep->fetch(2);
 
-					if($file_hash != @$fileqq['hash'])
+					if($file_hash !== @$fileqq['hash'])
 					{
 						if(count(explode(";", $file_to_Import['notes'])) === 1)
 						{
@@ -333,13 +333,14 @@ else
 
 						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
 
-						if($tmp == -1)
+						if(@$tmp[0] === -1)
 						{
-							$dbcore->logd("Skipping Import of :".$file_name,
+							trigger_error("Import Error! Reason: $tmp[1] |=| $source Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
+							$dbcore->logd("Skipping Import \nReason: $tmp[1]\n".$file_name,
 								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Skipping Import of :".$file_name, -1);
+							$dbcore->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
 							//remove files_tmp row and user_imports row
-							$dbcore->cleanBadImport($file_hash, 'Import Error', $dbcore->thread_id);
+							$dbcore->cleanBadImport($import_ids, $file_row, $remove_file, "Import Error! Reason: $tmp[1] |=| $source", $dbcore->thread_id);
 						}else
 						{
 							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
@@ -393,22 +394,25 @@ else
 						}
 					}else
 					{
+						trigger_error("File already imported. $source Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
 						$dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
 							"Warning", $dbcore->This_is_me);
 						//$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
 						//unlink($source);
 						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
-						$dbcore->cleanBadImport($file_hash, 'Already Imported', $dbcore->thread_id);
+						$dbcore->cleanBadImport($import_ids, $file_row, $remove_file, 'Already Imported', $dbcore->thread_id);
 					}
 				}else
 				{
 					$finished = 0;
+					trigger_error("File is Empty or bad $source Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
+
 					$dbcore->logd("File is empty or not valid. $source ($remove_file)",
 						"Warning", $dbcore->This_is_me);
 					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
 					//unlink($source);
 					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
-					$dbcore->cleanBadImport($file_hash, 'Empty or not valid', $dbcore->thread_id);
+					$dbcore->cleanBadImport($import_ids, $file_row, $remove_file, 'Empty or not valid', $dbcore->thread_id);
 				}
 			}
 		}
