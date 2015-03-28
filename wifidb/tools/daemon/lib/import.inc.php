@@ -67,6 +67,7 @@ class import extends dbcore
 	/**
 	 * @param string $source
 	 * @param string $user
+	 * @param integer $file_id
 	 * @return array
 	 * @throws ErrorException
 	 */
@@ -84,7 +85,17 @@ class import extends dbcore
 			throw new ErrorException;
 		}
 		# Open the file and dump its contents into an array. probably should re think this part...
-		$File_return	 = explode("\r\n", utf8_decode(file_get_contents($source)));
+		if(!($file_contents = file_get_contents($source)))
+		{
+			return -1;
+		}
+
+		$File_return	 = explode("\r\n", utf8_decode($file_contents));
+		if(empty($File_return[0]))
+		{
+			return -1;
+		}
+
 		# get the MD5 hash for the file data.
 		$hash = hash_file('md5', $source);
 
@@ -389,7 +400,7 @@ class import extends dbcore
 				}
 				if(empty($vs1data['gpsdata'][$gps_id])){continue;}
 
-				echo $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']."\n";
+				#echo $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']."\n";
 
 				$date_exp = explode("-", $vs1data['gpsdata'][$gps_id]['date']);
 				if(strlen($date_exp[0]) === 2)
@@ -397,10 +408,10 @@ class import extends dbcore
 					$vs1data['gpsdata'][$gps_id]['date'] = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
 				}
 
-				$datetime = strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']);
+				$datetime = date("Y-m-d H:i:s.u", strtotime($vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time']));
 				var_dump($datetime);
 
-				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, time_stamp, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
+				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
 				$preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$preps->bindParam(2, $signal, PDO::PARAM_INT);
@@ -446,7 +457,7 @@ class import extends dbcore
 				$faprep->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$faprep->execute();
 				$fetchfaprep = $faprep->fetch(2);
-				$FA_time = date("Y-m-d H:i:s", $fetchfaprep['time_stamp']);
+				$FA_time = $fetchfaprep['time_stamp'];
 
 				#Find New Last Seen Timestamp
 				$LA_SQL = "SELECT time_stamp FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? ORDER BY time_stamp DESC LIMIT 1";
@@ -454,7 +465,7 @@ class import extends dbcore
 				$laprep->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$laprep->execute();
 				$fetchlaprep = $laprep->fetch(2);
-				$LA_time = date("Y-m-d H:i:s", $fetchlaprep['time_stamp']);
+				$LA_time = $fetchlaprep['time_stamp'];
 
 				#Find Highest GPS Position
 				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi`.`wifi_signals` INNER JOIN `wifi`.`wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as SIGNED) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`sats` DESC LIMIT 1";
