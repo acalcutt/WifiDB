@@ -330,7 +330,7 @@ else
 								"Error", $dbcore->This_is_me);
 							$dbcore->verbosed("Skipping Import of :".$file_name, -1);
 							//remove files_tmp row and user_imports row
-							$dbcore->cleanBadImport($file_hash);
+							$dbcore->cleanBadImport($file_hash, 'Import Error');
 						}else
 						{
 							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
@@ -389,7 +389,7 @@ else
 						//$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
 						//unlink($source);
 						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
-						$dbcore->cleanBadImport($file_hash);
+						$dbcore->cleanBadImport($file_hash, 'Already Imported');
 					}
 				}else
 				{
@@ -398,8 +398,8 @@ else
 						"Warning", $dbcore->This_is_me);
 					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
 					//unlink($source);
-					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file)\n");
-					$dbcore->cleanBadImport($file_hash);
+					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
+					$dbcore->cleanBadImport($file_hash, 'Empty or not valid');
 				}
 			}
 		}

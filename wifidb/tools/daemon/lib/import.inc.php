@@ -327,15 +327,12 @@ class import extends dbcore
 
 			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
 
-			if(strlen($aps['ssid']) < 7){$pad_ssid = 20;}else{$pad_ssid = strlen($aps['ssid']);}
-			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
-			if(strlen($aps['radio']) < 7){$pad_radio = 20;}else{$pad_radio = strlen($aps['radio']);}
-			if(strlen($aps['encry']) < 7){$pad_encr = 20;}else{$pad_encr = strlen($aps['encry']);}
 			$key_c = $key+1;
-			$ssid = str_pad($aps['ssid'], $pad_ssid);
-			$chan = str_pad($aps['chan'], $pad_chan);
-			$radio = str_pad($aps['radio'], $pad_radio);
-			$encry = str_pad($aps['encry'], $pad_encr);
+			$pad_value = 25;
+			$ssid = str_pad($aps['ssid'], $pad_value);
+			$chan = str_pad($aps['chan'], $pad_value);
+			$radio = str_pad($aps['radio'], $pad_value + 1);
+			$encry = str_pad($aps['encry'], $pad_value + 1);
 			$this->verbosed("------------------------
 			File AP/Total: {$key_c}/{$ap_count}
 			SSID:  {$ssid} | MAC: {$aps['mac']}
@@ -379,7 +376,7 @@ class import extends dbcore
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
 
-				if(is_int($sig_gps_exp[1])){$this->verbosed("Bad Signal Data."); continue;}
+				if(empty($sig_gps_exp[1])){continue;}
 
 				$gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
