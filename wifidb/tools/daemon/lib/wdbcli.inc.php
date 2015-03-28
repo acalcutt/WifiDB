@@ -11,6 +11,7 @@ class wdbcli extends dbcore
     {
         parent::__construct($config);
         $this->pid_file =   "";
+        $this->log_path	= $daemon_config['daemon_log_folder'];
         $this->cli      =   1;
         if($daemon_config['colors_setting'] == 0 or PHP_OS == "WINNT")
         {

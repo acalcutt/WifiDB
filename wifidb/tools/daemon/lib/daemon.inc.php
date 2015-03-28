@@ -123,7 +123,6 @@ class daemon extends wdbcli
 
 	function cleanBadImport($hash = "", $error_msg = "")
 	{
-	
 		$sql = "INSERT INTO `wifi`.`files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `wifi`.`files_tmp` WHERE `hash` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
@@ -138,7 +137,24 @@ class daemon extends wdbcli
 		{
 			$this->verbosed("Added file to the Bad Import table.");
 		}
-		
+		$thread_row_id = $this->sql->conn->lastInsertId();
+		$sql = "UPDATE `wifi`.`files_bad` SET `thread_id` = ?, `node_name` = ? WHERE `id` = ?";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $this->thread_id, PDO::PARAM_INT);
+		$prep->bindParam(2, $this->node_name, PDO::PARAM_STR);
+		$prep->bindParam(3, $thread_row_id, PDO::PARAM_INT);
+		$prep->execute();
+
+		if($this->sql->checkError())
+		{
+			$this->verbosed("Failed to update bad file with the Thread ID.".var_export($this->sql->conn->errorInfo(),1), -1);
+			$this->logd("Failed to update bad file with the Thread ID.".var_export($this->sql->conn->errorInfo(),1));
+			throw new ErrorException("Failed to update bad file with the Thread ID.");
+		}else
+		{
+			$this->verbosed("Updated file Thread ID in the Bad Import table.");
+		}
+
 		$sql = "DELETE FROM `wifi`.`user_imports` WHERE `hash` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $hash, PDO::PARAM_STR);
@@ -152,7 +168,7 @@ class daemon extends wdbcli
 		{
 			$this->verbosed("Cleaned file from the User Import table.");
 		}
-		
+
 		$sql = "DELETE FROM `wifi`.`files` WHERE `hash` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $hash, PDO::PARAM_STR);
@@ -166,7 +182,7 @@ class daemon extends wdbcli
 		{
 			$this->verbosed("Cleaned file from the files table.");
 		}
-		
+
 		$sql = "DELETE FROM `wifi`.`files_tmp` WHERE `hash` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $hash, PDO::PARAM_STR);

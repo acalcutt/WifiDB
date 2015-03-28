@@ -17,7 +17,8 @@ for ($i = 1; $i <= $NumberOfThreads; ++$i)
 
 	if (!$pid)
 	{
-		exec("php ../daemon/importd.php -f");
+		exec("php ../daemon/importd.php -f -t=$i", $output);
+		file_put_contents($dbcore->log_path."Import/".$pid."_".$i."_ConsoleOutput.log" , $output);
 		exit($i);
 	}
 }

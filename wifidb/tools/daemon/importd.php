@@ -24,12 +24,12 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -v				Run Verbosely (SHOW EVERYTHING!)
-  -i				Version Info.
-  -h				Show this screen.
-  -l				Show License Information.
-  -f				Force daemon to run without being scheduled.
-
+  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
+  -i		(null)			Version Info.
+  -h		(null)			Show this screen.
+  -l		(null)			Show License Information.
+  -f		(null)			Force daemon to run without being scheduled.
+  -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bab files table.
 * = Not working yet.
 ";
 	exit();
@@ -74,12 +74,20 @@ if(@$arguments['f'])
 	$dbcore->ForceDaemonRun = 0;
 }
 
+if(@$arguments['t'])
+{
+	$dbcore->thread_id = (int)$arguments['t'];
+}else
+{
+	$dbcore->thread_id = 1;
+}
+
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
 {
 	mkdir($dbcore->pid_file_loc);
 }
-$dbcore->pid_file = $dbcore->pid_file_loc.'importd_'.time().'.pid';
+$dbcore->pid_file = $dbcore->pid_file_loc.'importd_'.$dbcore->This_is_me.'.pid';
 
 if(!file_exists($dbcore->pid_file_loc))
 {
@@ -160,6 +168,7 @@ else
 		}
 		else
 		{
+			trigger_error("Starting Impport Process on Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
 			##### make sure import/export files are in sync with remote nodes
 			//$dbcore->verbosed("Synchronizing files between nodes...", 1);
 			//$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
@@ -330,7 +339,7 @@ else
 								"Error", $dbcore->This_is_me);
 							$dbcore->verbosed("Skipping Import of :".$file_name, -1);
 							//remove files_tmp row and user_imports row
-							$dbcore->cleanBadImport($file_hash, 'Import Error');
+							$dbcore->cleanBadImport($file_hash, 'Import Error', $dbcore->thread_id);
 						}else
 						{
 							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
@@ -389,7 +398,7 @@ else
 						//$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
 						//unlink($source);
 						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
-						$dbcore->cleanBadImport($file_hash, 'Already Imported');
+						$dbcore->cleanBadImport($file_hash, 'Already Imported', $dbcore->thread_id);
 					}
 				}else
 				{
@@ -399,7 +408,7 @@ else
 					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
 					//unlink($source);
 					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
-					$dbcore->cleanBadImport($file_hash, 'Empty or not valid');
+					$dbcore->cleanBadImport($file_hash, 'Empty or not valid', $dbcore->thread_id);
 				}
 			}
 		}
