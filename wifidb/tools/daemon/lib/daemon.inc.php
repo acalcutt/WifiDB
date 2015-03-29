@@ -33,7 +33,7 @@ class daemon extends wdbcli
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
 		$this->daemon_name				=	"";
 		$this->job_interval				=	0;
-		$this->ForceDaemonRun           =   0;
+		$this->ForceDaemonRun			=   0;
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
 
@@ -81,12 +81,12 @@ class daemon extends wdbcli
 	 */
 	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
 	{
-        if($file_row === 0)
-        {
-            throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
-        }
+		if($file_row === 0)
+		{
+			throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
+		}
 
-        if($user === "")
+		if($user === "")
 		{
 			throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
 		}
@@ -103,7 +103,7 @@ class daemon extends wdbcli
 			$prep->bindParam(2, $notes, PDO::PARAM_STR);
 			$prep->bindParam(3, $title, PDO::PARAM_STR);
 			$prep->bindParam(4, $hash, PDO::PARAM_STR);
-            $prep->bindParam(5, $file_row, PDO::PARAM_INT);
+			$prep->bindParam(5, $file_row, PDO::PARAM_INT);
 			$prep->execute();
 
 			if($this->sql->checkError())
@@ -120,11 +120,11 @@ class daemon extends wdbcli
 		return $rows;
 	}
 
-	function  RemoveUserImport($import_ID)
+	function  RemoveUserImport($import_ID = 0)
 	{
 		$sql = "DELETE FROM `wifi`.`user_imports` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $import_id, PDO::PARAM_STR);
+		$prep->bindParam(1, $import_ID, PDO::PARAM_STR);
 		$prep->execute();
 		if($this->sql->checkError())
 		{
@@ -137,6 +137,7 @@ class daemon extends wdbcli
 		}
 		return 1;
 	}
+
 	function cleanBadImport($user_import_id = 0, $file_id = 0, $file_tmp_id = 0, $error_msg = "")
 	{
 		$sql = "INSERT INTO `wifi`.`files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `wifi`.`files_tmp` WHERE `id` = ?";

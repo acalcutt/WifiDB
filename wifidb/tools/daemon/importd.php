@@ -227,7 +227,7 @@ else
 					$prep->bindParam(4, $remove_file, PDO::PARAM_INT);
 					$prep->execute();
 					$err = $dbcore->sql->conn->errorCode();
-					if($err[0] === "00000")
+					if($err[0] == "00000")
 					{
 						$dbcore->verbosed("Conversion completed.", 1);
 						$dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $dbcore->This_is_me);
@@ -238,8 +238,8 @@ else
 					}else
 					{
 						$dbcore->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-						$dbcore->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
-						throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$file.var_export($daemon->sql->conn->errorInfo(),1));
+						$dbcore->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
+						throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($daemon->sql->conn->errorInfo(),1));
 					}
 				}
 				$return	=	file($source);
@@ -409,7 +409,7 @@ else
 
 					$dbcore->logd("File is empty or not valid. $source ($remove_file)",
 						"Warning", $dbcore->This_is_me);
-					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
+					//$dbcore->verbosed("File is empty. Skipping and deleting source file. $source ($remove_file)\n");
 					//unlink($source);
 					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
 					$dbcore->cleanBadImport(0, 0, $remove_file, 'Empty or not valid', $dbcore->thread_id);
