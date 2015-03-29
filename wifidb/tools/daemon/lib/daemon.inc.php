@@ -33,7 +33,7 @@ class daemon extends wdbcli
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
 		$this->daemon_name				=	"";
 		$this->job_interval				=	0;
-		$this->ForceDaemonRun           =   0;
+		$this->ForceDaemonRun			=   0;
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->convert_extentions   = array('csv','db','db3','vsz');
 
@@ -81,12 +81,12 @@ class daemon extends wdbcli
 	 */
 	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
 	{
-        if($file_row === 0)
-        {
-            throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
-        }
+		if($file_row === 0)
+		{
+			throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
+		}
 
-        if($user === "")
+		if($user === "")
 		{
 			throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
 		}
@@ -103,7 +103,7 @@ class daemon extends wdbcli
 			$prep->bindParam(2, $notes, PDO::PARAM_STR);
 			$prep->bindParam(3, $title, PDO::PARAM_STR);
 			$prep->bindParam(4, $hash, PDO::PARAM_STR);
-            $prep->bindParam(5, $file_row, PDO::PARAM_INT);
+			$prep->bindParam(5, $file_row, PDO::PARAM_INT);
 			$prep->execute();
 
 			if($this->sql->checkError())
