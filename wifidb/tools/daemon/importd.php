@@ -409,8 +409,8 @@ else
 
 					$dbcore->logd("File is empty or not valid. $source ($remove_file)",
 						"Warning", $dbcore->This_is_me);
-					//$dbcore->verbosed("File is empty, go and import something. Skipping and deleting source file. $source ($remove_file)\n");
-					//unlink($source);
+					//$dbcore->verbosed("File is empty. Skipping and deleting source file. $source ($remove_file)\n");
+					unlink($source);
 					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
 					$dbcore->cleanBadImport(0, 0, $remove_file, 'Empty or not valid', $dbcore->thread_id);
 				}

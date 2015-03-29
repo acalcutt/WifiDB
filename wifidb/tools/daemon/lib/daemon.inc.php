@@ -120,11 +120,11 @@ class daemon extends wdbcli
 		return $rows;
 	}
 
-	function  RemoveUserImport($import_ID)
+	function  RemoveUserImport($import_ID = 0)
 	{
 		$sql = "DELETE FROM `wifi`.`user_imports` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $import_id, PDO::PARAM_STR);
+		$prep->bindParam(1, $import_ID, PDO::PARAM_STR);
 		$prep->execute();
 		if($this->sql->checkError())
 		{
@@ -137,6 +137,7 @@ class daemon extends wdbcli
 		}
 		return 1;
 	}
+
 	function cleanBadImport($user_import_id = 0, $file_id = 0, $file_tmp_id = 0, $error_msg = "")
 	{
 		$sql = "INSERT INTO `wifi`.`files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `wifi`.`files_tmp` WHERE `id` = ?";
