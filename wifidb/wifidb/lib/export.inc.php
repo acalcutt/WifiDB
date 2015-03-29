@@ -1125,10 +1125,12 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
 	}
 
-	public function UserListKml($points, $username, $title, $date, $only_new=0)
+	public function UserListKml($points, $username, $title, $date, $only_new=0, $regions=0)
 	{
-		$points = explode("-", $points);
+		$box = array();
 		$KML_data="";
+		$Import_KML_Data="";
+		$points = explode("-", $points);
 		foreach($points as $point)
 		{
 			list($id, $new_old) = explode(":", $point);
@@ -1138,12 +1140,26 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			while($array = $result->fetch(2))
 			{
 				$ret = $this->ExportSingleAP((int)$array['id'], 1);
+				$box[] = $this->FindBox($ret[$array['ap_hash']]['gdata']);
 				if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
 				{
 					$this->createKML->ClearData();
 					$this->createKML->LoadData($ret);
-					$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+					$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
 				}
+			}
+		}
+		if($Import_KML_Data)
+		{
+			if($regions)
+			{
+				$final_box = $this->FindMostBox($box);
+				#list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+				$KML_data = $this->createKML->PlotRegionBox($final_box, 100000, 128, $title).$Import_KML_Data;
+			}
+			else
+			{
+				$KML_data = $Import_KML_Data;
 			}
 		}
 		return $KML_data;
