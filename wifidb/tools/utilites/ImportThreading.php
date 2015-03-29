@@ -24,6 +24,14 @@ You should have received a copy of the GNU General Public License along with thi
  */
 $NumberOfThreads = 20;
 
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
+
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
+$lastedit	=	"2015-03-28";
 
 for ($i = 1; $i <= $NumberOfThreads; ++$i)
 {
@@ -33,7 +41,7 @@ for ($i = 1; $i <= $NumberOfThreads; ++$i)
 	if (!$pid)
 	{
 		exec("php ../daemon/importd.php -f -t=$i", $output);
-		file_put_contents($dbcore->log_path."Import/".$pid."_".$i."_ConsoleOutput.log" , $output);
+		file_put_contents($dbcore->log_path."Import/".getmypid()."_".$i."_ConsoleOutput.log" , $output);
 		exit($i);
 	}
 }
