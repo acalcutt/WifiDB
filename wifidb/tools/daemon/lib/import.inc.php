@@ -188,6 +188,10 @@ class import extends dbcore
 
 					$highestSignal = $this->FindHighestSig($ap_line[12]);
 					$highestRSSI = $this->convert->Sig2dBm($highestSignal);
+					if($highestRSSI === 0)
+					{
+						trigger_error("Highest RSSI for $ap_line[0] : $highestRSSI", E_USER_NOTICE);
+					}
 					$apdata[] = array(
 								'ap_hash'   => "",
 								'ssid'	  =>  $ap_line[0],
@@ -372,7 +376,6 @@ class import extends dbcore
 
 			$compile_sig = array();
 			$sig_high = 0;
-			$rssi_high = 0;
 			$this->verbosed("Starting Import of Wifi Signal... ", 1);
 
 			foreach($ap_sig_exp as $sig_gps_id)
@@ -383,17 +386,7 @@ class import extends dbcore
 
 				$gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
-				if(!@$sig_gps_exp[2])
-				{
-					$rssi = $this->convert->Sig2dBm($sig_gps_exp[1]);
-				}else
-				{
-					$rssi = $sig_gps_exp[2];
-				}
-				if($rssi > $rssi_high)
-				{
-					$rssi_high = $rssi;
-				}
+
 				if($signal > $sig_high)
 				{
 					$sig_high = $signal;
@@ -409,7 +402,9 @@ class import extends dbcore
 				}
 
 				$datetime = $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time'];
-				var_dump($datetime, $file_id);
+				#var_dump($datetime, $file_id);
+
+				$rssi = $this->convert->Sig2dBm($signal);
 
 				$sql = "INSERT INTO `wifi`.`wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
@@ -492,14 +487,18 @@ class import extends dbcore
 				#Update or Insert AP
 				if(!$no_pointer)#Update AP
 				{
-					$sql = "UPDATE `wifi`.`wifi_pointers` SET `FA` = ? , `LA` = ? , `lat` = ? , `long` = ?, `sats` = ? WHERE `ap_hash` = ?";
+					$rssi = $this->convert->Sig2dBm($sig_high);
+
+					$sql = "UPDATE `wifi`.`wifi_pointers` SET `FA` = ? , `LA` = ? , `lat` = ? , `long` = ?, `alt` = ?, `rssi_high` = ?, `signal_high` = ? WHERE `ap_hash` = ?";
 					$prep = $this->sql->conn->prepare($sql);
 					$prep->bindParam(1, $FA_time, PDO::PARAM_STR);
 					$prep->bindParam(2, $LA_time, PDO::PARAM_STR);
 					$prep->bindParam(3, $high_lat, PDO::PARAM_STR);
 					$prep->bindParam(4, $high_long, PDO::PARAM_STR);
-					$prep->bindParam(5, $high_sats, PDO::PARAM_STR);
-					$prep->bindParam(6, $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(5, $high_alt, PDO::PARAM_INT);
+					$prep->bindParam(6, $rssi, PDO::PARAM_INT);
+					$prep->bindParam(7, $sig_high, PDO::PARAM_INT);
+					$prep->bindParam(8, $ap_hash, PDO::PARAM_STR);
 					$prep->execute();
 					if($this->sql->checkError() !== 0)
 					{
@@ -524,6 +523,8 @@ class import extends dbcore
 					{
 						$user = explode("|", $user)[0];
 					}
+					$rssi = $this->convert->Sig2dBm($sig_high);
+
 					$prep = $this->sql->conn->prepare($sql);
 					$prep->bindParam(1, $aps['ssid'], PDO::PARAM_STR);
 					$prep->bindParam(2, $aps['mac'], PDO::PARAM_STR);
@@ -544,7 +545,7 @@ class import extends dbcore
 					$prep->bindParam(17, $FA_time, PDO::PARAM_STR);
 					$prep->bindParam(18, $user, PDO::PARAM_STR);
 					$prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
-					$prep->bindParam(20, $rssi_high, PDO::PARAM_INT);
+					$prep->bindParam(20, $rssi, PDO::PARAM_INT);
 					$prep->bindParam(21, $sig_high, PDO::PARAM_INT);
 					$prep->execute();
 					if($this->sql->checkError())
