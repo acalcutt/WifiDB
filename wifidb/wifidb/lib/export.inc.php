@@ -420,7 +420,7 @@ class export extends dbcore
 			throw new ErrorException("AP ID is empty or not an Integer, supply one.");
 			return 0;
 		}
-		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+		$sql2 = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
 
 		$prep2 = $this->sql->conn->query($sql2);
 		$this->sql->checkError(__LINE__, __FILE__);

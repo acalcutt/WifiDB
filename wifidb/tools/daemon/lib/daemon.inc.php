@@ -171,16 +171,20 @@ class daemon extends wdbcli
 		{
 			$this->verbosed("Updated file Thread ID in the Bad Import table.");
 		}
-		if(is_array($user_import_id))
+
+		if($user_import_id !== 0)
 		{
-			foreach($user_import_id as $import_id)
+			if(is_array($user_import_id))
 			{
-				$this->RemoveUserImport($import_id);
+				foreach($user_import_id as $import_id)
+				{
+					$this->RemoveUserImport($import_id);
+				}
+			}elseif($user_import_id === 0){}
+			else
+			{
+				$this->RemoveUserImport($user_import_id);
 			}
-		}elseif($user_import_id === 0){}
-		else
-		{
-			$this->RemoveUserImport($user_import_id);
 		}
 
 		if($file_id !== 0)
@@ -202,7 +206,7 @@ class daemon extends wdbcli
 
 		$sql = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $files_tmp_id, PDO::PARAM_INT);
+		$prep->bindParam(1, $file_tmp_id, PDO::PARAM_INT);
 		$prep->execute();
 		if($this->sql->checkError())
 		{
