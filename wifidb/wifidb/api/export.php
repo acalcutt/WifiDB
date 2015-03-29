@@ -27,6 +27,16 @@ $func=$_REQUEST['func'];
 
 switch($func)
 {
+		case "exp_all_netlink":
+			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all', "All Exports Network Link", 1, 0, "onInterval", 86400);
+			$results = $dbcore->createKML->createKMLstructure("All Exports Network Link", $results);		
+			$dbcore->Zip->addFile($results, 'doc.kml');
+			$results = $dbcore->Zip->getZipData();
+			header('Content-Type: application/octet-stream');
+			header('Content-Disposition: attachment; filename="All_Exports_NetworkLink.kmz"');
+			echo $results;
+			break;
+			
 		case "exp_all":
 			$sql = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
 			$prep = $dbcore->sql->conn->prepare($sql);
@@ -41,7 +51,7 @@ switch($func)
 				if($result->rowCount() > 0)
 				{
 					#valid results found, add network link for this user
-					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all_kml&#x26;user='.$username, $username, 1, 0, "onInterval", 3600);
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all_kml&#x26;user='.$username, $username, 1, 0, "onInterval", 86400);
 				}
 			}
 			
@@ -52,13 +62,25 @@ switch($func)
 			$dbcore->Zip->addFile($results, 'doc.kml');
 			$results = $dbcore->Zip->getZipData();
 			header('Content-Type: application/octet-stream');
-			header('Content-Disposition: attachment; filename="all_exports.kmz"');
+			header('Content-Disposition: attachment; filename="All_Exports.kmz"');
+			echo $results;
+			break;
+
+		case "exp_user_netlink":
+			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all_kml&#x26;user='.$user, $user, 1, 0, "onInterval", 86400);
+			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			$title = $user."'s Network Link";
+			$results = $dbcore->createKML->createKMLstructure($title , $results);
+			$dbcore->Zip->addFile($results, 'doc.kml');
+			$results = $dbcore->Zip->getZipData();
+			header('Content-Type: application/octet-stream');
+			header('Content-Disposition: attachment; filename="'.$user_fn.'_NetworkLink.kmz"');
 			echo $results;
 			break;
 
 		case "exp_user_all_kml":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			
 			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
@@ -67,7 +89,6 @@ switch($func)
 			$results="";
 			foreach($fetch_imports as $import)
 			{
-			
 				#Check is list has access points with gps and non blank mac
 				$stage_pts = explode("-", $import['points']);
 				foreach($stage_pts as $point)
@@ -79,7 +100,7 @@ switch($func)
 					if($result->rowCount() > 0)
 					{
 						#valid results found, add network link and exit check
-						$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_list&#x26;row='.$import['id'], $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onInterval", 3600);
+						$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_list&#x26;row='.$import['id'], $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onInterval", 86400);
 						break;
 					}
 				}
@@ -111,6 +132,7 @@ switch($func)
 			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $KML_data, 0);}
 			
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+			$results = $dbcore->createKML->createFolder($title, $results, 0);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);		
 			
 			$dbcore->Zip->addFile($results, 'doc.kml');
@@ -120,7 +142,7 @@ switch($func)
 			echo $results;
 			break;
 		default:
-				echo 'No function has been given...what am I supposed to do with this request?';
+				echo 'No function or incorrect function has been given...what am I supposed to do with this request?';
 				break;
 		break;
 }
