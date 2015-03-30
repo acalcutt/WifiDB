@@ -1124,7 +1124,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
 	}
 
-	public function UserListKml($points, $username, $title, $date, $named=0, $only_new=0, $new_icon=0, $regions=0)
+	public function UserListKml($points, $username, $title, $date, $named=0, $only_new=0, $new_icons=0, $regions=0)
 	{
 		$box = array();
 		$KML_data="";
@@ -1138,7 +1138,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$result = $this->sql->conn->query($sql);
 			while($array = $result->fetch(2))
 			{
-				$ret = $this->ExportSingleAP((int)$array['id'], $new_icon);
+				$ret = $this->ExportSingleAP((int)$array['id'], $new_icons);
 				$box[] = $this->FindBox($ret[$array['ap_hash']]['gdata']);
 				if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
 				{
