@@ -284,7 +284,6 @@ class export extends dbcore
 		}
 		$date_search = $date."%";
 		$select_daily = "SELECT `id` , `points`, `username`, `title`, `date`, `hash` FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search'";
-		var_dump($select_daily);
 		$result = $this->sql->conn->query($select_daily);
 
 		if($this->sql->checkError(__LINE__, __FILE__))
@@ -571,7 +570,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		return 1;
 	}
 
-	public function ExportCurrentAPkmlApi($labelap=0)
+	public function ExportCurrentAPkmlApi($labelap=0, $new_icons=0)
 	{
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
 		$result = $this->sql->conn->query($sql);
@@ -580,7 +579,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$hash = $ap_array['ap_hash'];
 			$id = (int)$ap_array['id'];
-			$data = $this->ExportSingleAP($id, 1);
+			$data = $this->ExportSingleAP($id, $new_icons);
 			$this->createKML->LoadData($data);
 			if($labelap){$KML_string = $this->createKML->PlotAPpoint($hash, 1);}else{$KML_string = $this->createKML->PlotAPpoint($hash, 0);}
 		}
@@ -1125,7 +1124,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
 	}
 
-	public function UserListKml($points, $username, $title, $date, $only_new=0, $regions=0)
+	public function UserListKml($points, $username, $title, $date, $named=0, $only_new=0, $new_icon=0, $regions=0)
 	{
 		$box = array();
 		$KML_data="";
@@ -1139,13 +1138,13 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$result = $this->sql->conn->query($sql);
 			while($array = $result->fetch(2))
 			{
-				$ret = $this->ExportSingleAP((int)$array['id'], 1);
+				$ret = $this->ExportSingleAP((int)$array['id'], $new_icon);
 				$box[] = $this->FindBox($ret[$array['ap_hash']]['gdata']);
 				if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
 				{
 					$this->createKML->ClearData();
 					$this->createKML->LoadData($ret);
-					$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+					$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $named);
 				}
 			}
 		}
@@ -1154,8 +1153,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			if($regions)
 			{
 				$final_box = $this->FindMostBox($box);
-				#list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-				$KML_data = $this->createKML->PlotRegionBox($final_box, 100000, 128, $title).$Import_KML_Data;
+				list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+				$KML_data = $this->createKML->PlotRegionBox($final_box, $distance, $minLodPix, $title).$Import_KML_Data;
 			}
 			else
 			{

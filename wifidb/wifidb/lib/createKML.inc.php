@@ -40,6 +40,17 @@ class createKML
 				<fill>0</fill>
 			</PolyStyle>
 		</Style>';
+		$this->folderstyle = '
+		<Style id="check">
+			<ListStyle>
+				<listItemType>check</listItemType>
+			</ListStyle>
+		</Style>
+		<Style id="radio">
+			<ListStyle>
+				<listItemType>radioFolder</listItemType>
+			</ListStyle>
+		</Style>';
 		$this->openstyle = '
 		<Style id="openStyle">
 			<IconStyle>
@@ -186,7 +197,7 @@ class createKML
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>';
-		$this->style_data = $this->PolyStyle.$this->openstyle.$this->wepstyle.$this->securestyle.$this->openstyledead.$this->wepstyledead.$this->securestyledead.$this->tracklinestyle.$this->SignalLevelStyle;
+		$this->style_data = $this->PolyStyle.$this->folderstyle.$this->openstyle.$this->wepstyle.$this->securestyle.$this->openstyledead.$this->wepstyledead.$this->securestyledead.$this->tracklinestyle.$this->SignalLevelStyle;
 		$this->title = "Untitled";
 		$this->users = "WiFiDB";
 		$this->data = new stdClass();
@@ -210,17 +221,14 @@ class createKML
 			$name = "
 			<name>$name</name>";
 		}
-		if($radiofolder)
+		if($radiofolder == 1)
 		{
 			$radiofolder = "
-			<Style>
-				<ListStyle>
-					<listItemType>radioFolder</listItemType>
-				</ListStyle>
-			</Style>";
+			<styleUrl>#radio</styleUrl>";
 		}else
 		{
-			$radiofolder = "";
+		   $radiofolder = "
+			<styleUrl>#check</styleUrl>";
 		}
 		$tmp = "<Folder>$radiofolder$name
 			<open>$open</open>
@@ -305,8 +313,8 @@ class createKML
 				$sec_type_label = "open";
 				break;
 		}
-        if($named)
-        {
+		if($named)
+		{
 			if($this->data->apdata[$hash]['ssid'] == '')
 			{
 				$ap_ssid = '&#91;Blank SSID&#93;';
@@ -319,12 +327,11 @@ class createKML
 			{
 				$ap_ssid = dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']);
 			}		
-		
-            $named = "            <name>".$ap_ssid."</name>";
-        }else
-        {
-            $named = "";
-        }
+			$named = "			<name>".$ap_ssid."</name>";
+		}else
+		{
+			$named = "";
+		}
 
 		if($this->data->apdata[$hash]['new_ap'])
 		{
@@ -605,10 +612,20 @@ class createKML
 	 * @param int $refreshInterval
 	 * @return string
 	 */
-	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2)
+
+	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0)
 	{
+		if($radiofolder == 1)
+		{
+			$radiofolder = "
+			<styleUrl>#radio</styleUrl>";
+		}else
+		{
+		   $radiofolder = "
+			<styleUrl>#check</styleUrl>";
+		}
 		$tmp = '
-		<NetworkLink>
+		<NetworkLink>'.$radiofolder.'
 				<name>'.$title.'</name>
 				<visibility>'.$visibility.'</visibility>
 				<flyToView>'.$flytoview.'</flyToView>
