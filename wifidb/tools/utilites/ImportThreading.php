@@ -23,7 +23,6 @@ You should have received a copy of the GNU General Public License along with thi
  * The 20 Processes with the Console Output disabled it only used about .
  * Just a reminder Don't say I didn't warn you that this script will most likely bring your server to its knees and beg for mercy.
  */
-$NumberOfThreads = 20;
 
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
@@ -38,12 +37,12 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
-  -version	(null)			Version Info.
+  -f		(null)			Force daemon to run without being scheduled.
   -h		(null)			Show this screen.
   -l		(null)			Show License Information.
-  -f		(null)			Force daemon to run without being scheduled.
   -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bab files table.
+  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
+  -version	(null)			Version Info.
 * = Not working yet.
 ";
 	exit();
@@ -78,14 +77,6 @@ if(@$arguments['v'])
 }else
 {
 	$dbcore->verbose = 0;
-}
-
-if(@$arguments['i'])
-{
-	$dbcore->ImportID = (int)$arguments['i'];
-}else
-{
-	$dbcore->ImportID = 0;
 }
 
 if(@$arguments['f'])
@@ -162,16 +153,25 @@ else
 
 		#Set Job to Running
 		$dbcore->SetStartJob($job_id);
-	}
-	for ($i = 1; $i <= $NumberOfThreads; ++$i)
+	}else{
+        $dbcore->CheckDaemonKill();
+    }
+    $ii = 0;
+	for ($i = 1; $i <= $dbcore->NumberOfThreads; ++$i)
 	{
-		$dbcore->SpawnImportDaemon($i);
+        $ii++;
+		$dbcore->SpawnImportDaemon($ii);
 		sleep(2);
 	}
 	while (pcntl_waitpid(0, $status) != -1)
 	{
 		$status = pcntl_wexitstatus($status);
 		echo "Import Thread $status completed\n";
-		$dbcore->SpawnImportDaemon($status);
+        $ii++;
+        sleep(2);
+		if($dbcore->SpawnImportDaemon($ii) === -1)
+        {
+            continue;
+        }
 	}
 }

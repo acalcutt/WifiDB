@@ -31,6 +31,7 @@ class daemon extends wdbcli
 		$this->StatusWaiting			=	$daemon_config['status_waiting'];
 		$this->StatusRunning			=	$daemon_config['status_running'];
 		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
+        $this->NumberOfThreads          =   $daemon_config['NumberOfThreads'];
 		$this->daemon_name				=	"";
 		$this->job_interval				=	0;
 		$this->ForceDaemonRun			=   0;
@@ -71,98 +72,6 @@ class daemon extends wdbcli
 		}
 	}
 
-	/**
-	 * @param string $user
-	 * @param string $notes
-	 * @param string $title
-	 * @param string $hash
-	 * @return array
-	 * @throws ErrorException
-	 */
-	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
-	{
-		if($file_row === 0)
-		{
-			throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
-		}
-
-		if($user === "")
-		{
-			throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
-		}
-		$multi_user = explode("|", $user);
-		$rows = array();
-		$n = 0;
-		# Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
-		$sql = "INSERT INTO `wifi`.`user_imports` ( `id` , `username` , `notes` , `title`, `hash`, `file_id`) VALUES ( NULL, ?, ?, ?, ?, ?)";
-		$prep = $this->sql->conn->prepare($sql);
-		foreach($multi_user as $muser)
-		{
-			if ($muser === ""){continue;}
-			$prep->bindParam(1, $muser, PDO::PARAM_STR);
-			$prep->bindParam(2, $notes, PDO::PARAM_STR);
-			$prep->bindParam(3, $title, PDO::PARAM_STR);
-			$prep->bindParam(4, $hash, PDO::PARAM_STR);
-			$prep->bindParam(5, $file_row, PDO::PARAM_INT);
-			$prep->execute();
-
-			if($this->sql->checkError())
-			{
-				$this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
-				$this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
-				Throw new ErrorException;
-			}
-			$n++;
-			$rows[$n] = $this->sql->conn->lastInsertId();
-			$this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
-			$this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
-		}
-		return $rows;
-	}
-
-	function  RemoveUserImport($import_ID = 0)
-	{
-		$sql = "DELETE FROM `wifi`.`user_imports` WHERE `id` = ?";
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $import_ID, PDO::PARAM_STR);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			$this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Failed to remove bad file from the user import table.");
-		}else
-		{
-			$this->verbosed("Cleaned file from the User Import table.");
-		}
-		return 1;
-	}
-
-	function SpawnImportDaemon($ThreadID = 0)
-	{
-		# Copy data from the files_tmp table to the files_importing table.
-		$daemon_sql = "INSERT INTO wifi.files_importing (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `id`, `file`, `user`, `title`, `notes`, `size`, `date`, `hash` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
-		$this->sql->conn->execute($daemon_sql);
-		$LastInsert = $this->sql->conn->lastInsertId();
-
-		# Select the data that was just inserted.
-		$sql = "SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id` FROM wifi.files_importing WHERE `id` = $LastInsert";
-		$result = $this->sql->conn->query($sql);
-		$fetch = $result->fetch(2);
-
-		# Delete the files_tmp row.
-		$sql = "DELETE FROM wifi.files_tmp WHERE id = ?";
-		$deleteResult = $this->sql->conn->prepare($sql);
-		$deleteResult->bindParam(1, $fetch['tmp_id'], PDO::PARAM_INT);
-		$deleteResult->execute();
-
-		$pid = pcntl_fork();
-		if (!$pid)
-		{
-			exec("php ../daemon/importd.php -v -t=$ThreadID -i=$LastInsert" );
-			exit($ThreadID);
-		}
-	}
 
 	function cleanBadImport($user_import_id = 0, $file_id = 0, $file_tmp_id = 0, $file_importing_id = 0, $error_msg = "")
 	{
@@ -262,6 +171,55 @@ class daemon extends wdbcli
 		}
 	}
 
+    /**
+     * @param string $user
+     * @param string $notes
+     * @param string $title
+     * @param string $hash
+     * @return array
+     * @throws ErrorException
+     */
+    function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
+    {
+        if($file_row === 0)
+        {
+            throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
+        }
+
+        if($user === "")
+        {
+            throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
+        }
+        $multi_user = explode("|", $user);
+        $rows = array();
+        $n = 0;
+        # Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
+        $sql = "INSERT INTO `wifi`.`user_imports` ( `id` , `username` , `notes` , `title`, `hash`, `file_id`) VALUES ( NULL, ?, ?, ?, ?, ?)";
+        $prep = $this->sql->conn->prepare($sql);
+        foreach($multi_user as $muser)
+        {
+            if ($muser === ""){continue;}
+            $prep->bindParam(1, $muser, PDO::PARAM_STR);
+            $prep->bindParam(2, $notes, PDO::PARAM_STR);
+            $prep->bindParam(3, $title, PDO::PARAM_STR);
+            $prep->bindParam(4, $hash, PDO::PARAM_STR);
+            $prep->bindParam(5, $file_row, PDO::PARAM_INT);
+            $prep->execute();
+
+            if($this->sql->checkError())
+            {
+                $this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
+                $this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
+                Throw new ErrorException;
+            }
+            $n++;
+            $rows[$n] = $this->sql->conn->lastInsertId();
+            $this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
+            $this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
+        }
+        return $rows;
+    }
+
 	/**
 	 * @param $file
 	 * @param $file_names
@@ -320,7 +278,6 @@ class daemon extends wdbcli
 		}
 	}
 
-
 	public function SetNextJob($job_id)
 	{
 		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"));
@@ -347,5 +304,53 @@ class daemon extends wdbcli
 
 		$prepsr->execute();
 	}
+
+    public function SpawnImportDaemon($ThreadID = 0)
+    {
+        # Copy data from the files_tmp table to the files_importing table.
+        $daemon_sql = "INSERT INTO wifi.files_importing (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `id`, `file`, `user`, `title`, `notes`, `size`, `date`, `hash` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
+        $this->sql->conn->execute($daemon_sql);
+        $LastInsert = $this->sql->conn->lastInsertId();
+        if($LastInsert > 0)
+        {
+            # Select the data that was just inserted.
+            $sql = "SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id` FROM wifi.files_importing WHERE `id` = $LastInsert";
+            $result = $this->sql->conn->query($sql);
+            $fetch = $result->fetch(2);
+
+            # Delete the files_tmp row.
+            $sql = "DELETE FROM wifi.files_tmp WHERE id = ?";
+            $deleteResult = $this->sql->conn->prepare($sql);
+            $deleteResult->bindParam(1, $fetch['tmp_id'], PDO::PARAM_INT);
+            $deleteResult->execute();
+
+            $pid = pcntl_fork();
+            if (!$pid)
+            {
+                exec("php ../daemon/importd.php -v -t=$ThreadID -i=$LastInsert" , $out , $ret);
+                exit($ThreadID." ".$ret);
+            }
+        }
+        return -1;
+    }
+
+    public function  RemoveUserImport($import_ID = 0)
+    {
+        $sql = "DELETE FROM `wifi`.`user_imports` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $import_ID, PDO::PARAM_STR);
+        $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
+            $this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
+            throw new ErrorException("Failed to remove bad file from the user import table.");
+        }else
+        {
+            $this->verbosed("Cleaned file from the User Import table.");
+        }
+        return 1;
+    }
+
 #END DAEMON CLASS
 }
