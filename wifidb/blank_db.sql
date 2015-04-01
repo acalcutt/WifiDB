@@ -146,6 +146,30 @@ CREATE TABLE IF NOT EXISTS `files_bad` (
 
 -- --------------------------------------------------------
 
+-- --
+-- Table structure for table `files_importing`
+--
+
+CREATE TABLE IF NOT EXISTS `files_importing` (
+  `id` int(255) NOT NULL AUTO_INCREMENT,
+  `tmp_id` int(255) DEFAULT 0,
+  `file` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `user` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `notes` text COLLATE utf8_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `size` varchar(12) COLLATE utf8_unicode_ci NOT NULL,
+  `date` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `converted` tinyint(1) NOT NULL DEFAULT 0,
+  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,,
+  `importing` tinyint(1) NOT NULL,
+  `ap` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,
+  `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `hash` (`hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
+-- --------------------------------------------------------
+
 --
 -- Table structure for table `files_tmp`
 --
@@ -159,11 +183,6 @@ CREATE TABLE IF NOT EXISTS `files_tmp` (
   `size` varchar(12) COLLATE utf8_unicode_ci NOT NULL,
   `date` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `importing` tinyint(1) NOT NULL,
-  `bad_import` tinyint(1) NOT NULL,
-  `ap` text COLLATE utf8_unicode_ci NOT NULL,
-  `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
-  `row` int(255) NOT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),

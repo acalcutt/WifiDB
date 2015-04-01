@@ -52,6 +52,7 @@ echo "Going through the import/up folder for the source files...\r\n";
 $file_a = array();
 $dh = opendir($vs1dir) or die("couldn't open directory");
 $ii = 0;
+$bad_ext = 0;
 while (!(($file = readdir($dh)) == false))
 {
     $ii++;
@@ -65,15 +66,17 @@ while (!(($file = readdir($dh)) == false))
         $fileext = strtolower($file_e[$file_max-1]);
         if ($fileext=='vs1' or $fileext=="db3" or $fileext=="csv" or $fileext=="db" or $fileext=="vsz")
         {
-            if($dbcore->insert_file($file, @$file_names))
+        	$ret = $dbcore->insert_file($file, @$file_names);
+            if($ret)
             {
                 $file_a[] = $file; //if Filename is valid, throw it into an array for later use
             }else
             {
-                $dbcore->verbosed("No good... Blehk.\r\n");
+                #$dbcore->verbosed("No good... Blehk.\r\n");
             }
         }else
         {
+        	$bad_ext++;
             $dbcore->verbosed("EXT: ".$fileext."\r\n");
             $dbcore->verbosed("File not supported -->$file\r\n");
             $dbcore->logd("( ".$file." ) is not a supported file extention of ".$file_e[$file_max-1]."\r\n If the file is a txt file run it through the converter first.\r\n\r\n");
@@ -85,9 +88,9 @@ while (!(($file = readdir($dh)) == false))
     }
     $i++;
 }
+closedir($dh);
 
 var_dump(count($file_a));
-
+var_dump($bad_ext);
 $TOTAL_END = date("Y-m-d H:i:s");
 $dbcore->verbosed("TOTAL Running time::\n\nStart: ".$TOTAL_START."\nStop : ".$TOTAL_END."\n");
-closedir($dh);

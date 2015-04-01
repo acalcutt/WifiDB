@@ -68,10 +68,11 @@ class import extends dbcore
 	 * @param string $source
 	 * @param string $user
 	 * @param integer $file_id
+	 * @param integer $file_importing_id
 	 * @return array
 	 * @throws ErrorException
 	 */
-	public function import_vs1($source="" , $user="Unknown", $file_id)
+	public function import_vs1($source="" , $user="Unknown", $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -101,19 +102,6 @@ class import extends dbcore
 
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);
-		$sql = "SELECT `id` FROM `wifi`.`files_tmp` WHERE `hash`= ? LIMIT 1";
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $hash, PDO::PARAM_STR);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Failed to Select The current imports ID from the temp table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			$this->logd("Failed to Select The current imports ID from the temp table.".var_export($this->sql->conn->errorInfo(),1), "Error");
-			throw new ErrorException("Failed to Select The current imports ID from the temp table.".var_export($this->sql->conn->errorInfo(),1));
-		}
-
-		$file_tmp_array = $prep->fetch(2);
-		$file_tmp_id = $file_tmp_array['id'];
 		foreach($File_return as $key => $file_line)
 		{
 			$encoding = mb_detect_encoding($file_line);
@@ -154,7 +142,7 @@ class import extends dbcore
 					);
 					break;
 				case 12:
-					#echo "---------------------12 columns!----------------";
+					#trigger_error("12 columns!", E_USER_NOTICE);
 					#This is the current version of the VS1 export, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
 					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
@@ -182,16 +170,13 @@ class import extends dbcore
 					$ap_line = $file_line_exp;
 					if(!$this->validateMacAddress($ap_line[1]))
 					{
+						#trigger_error("Bad MACADDRESS...", E_USER_NOTICE);
 						$this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.", -1);
 						break;
 					}
 
 					$highestSignal = $this->FindHighestSig($ap_line[12]);
 					$highestRSSI = $this->convert->Sig2dBm($highestSignal);
-					if($highestRSSI === 0)
-					{
-						trigger_error("Highest RSSI for $ap_line[0] : $highestRSSI", E_USER_NOTICE);
-					}
 					$apdata[] = array(
 								'ap_hash'   => "",
 								'ssid'	  =>  $ap_line[0],
@@ -272,10 +257,10 @@ class import extends dbcore
 		foreach($vs1data['gpsdata'] as $key=>$gps)
 		{
 			$calc = "GPS: ".($key+1)." / ".$gps_count;
-			$sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = 'Importing GPS Data' WHERE `id` = ?";
+			$sql = "UPDATE `wifi`.`files_importing` SET `tot` = ?, `ap` = 'Importing GPS Data' WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
-			$prep->bindParam(2, $file_tmp_id, PDO::PARAM_INT);
+			$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
 			if($this->sql->checkError() !== 0)
 			{
@@ -316,11 +301,11 @@ class import extends dbcore
 		foreach($vs1data['apdata'] as $key=>$aps)
 		{
 			$calc = "AP: ".($key+1)." / ".$ap_count;
-			$sql = "UPDATE `wifi`.`files_tmp` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$sql = "UPDATE `wifi`.`files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
 			$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
-			$prep->bindParam(3, $file_tmp_id, PDO::PARAM_INT);
+			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
 			if($this->sql->checkError() !== 0)
 			{

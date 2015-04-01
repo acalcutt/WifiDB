@@ -138,7 +138,33 @@ class daemon extends wdbcli
 		return 1;
 	}
 
-	function cleanBadImport($user_import_id = 0, $file_id = 0, $file_tmp_id = 0, $error_msg = "")
+	function SpawnImportDaemon($ThreadID = 0)
+	{
+		# Copy data from the files_tmp table to the files_importing table.
+		$daemon_sql = "INSERT INTO wifi.files_importing (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `id`, `file`, `user`, `title`, `notes`, `size`, `date`, `hash` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
+		$this->sql->conn->execute($daemon_sql);
+		$LastInsert = $this->sql->conn->lastInsertId();
+
+		# Select the data that was just inserted.
+		$sql = "SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id` FROM wifi.files_importing WHERE `id` = $LastInsert";
+		$result = $this->sql->conn->query($sql);
+		$fetch = $result->fetch(2);
+
+		# Delete the files_tmp row.
+		$sql = "DELETE FROM wifi.files_tmp WHERE id = ?";
+		$deleteResult = $this->sql->conn->prepare($sql);
+		$deleteResult->bindParam(1, $fetch['tmp_id'], PDO::PARAM_INT);
+		$deleteResult->execute();
+
+		$pid = pcntl_fork();
+		if (!$pid)
+		{
+			exec("php ../daemon/importd.php -v -t=$ThreadID -i=$LastInsert" );
+			exit($ThreadID);
+		}
+	}
+
+	function cleanBadImport($user_import_id = 0, $file_id = 0, $file_tmp_id = 0, $file_importing_id = 0, $error_msg = "")
 	{
 		$sql = "INSERT INTO `wifi`.`files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `wifi`.`files_tmp` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
@@ -187,6 +213,23 @@ class daemon extends wdbcli
 			}
 		}
 
+		if($file_importing_id !== 0)
+		{
+			$sql = "DELETE FROM `wifi`.`files_importing` WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $file_importing_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError())
+			{
+				$this->verbosed("Failed to remove file from the files_importing table.".var_export($this->sql->conn->errorInfo(),1), -1);
+				$this->logd("Failed to remove bad file from the files_importing table.".var_export($this->sql->conn->errorInfo(),1));
+				throw new ErrorException("Failed to remove bad file from the files_importing table.");
+			}else
+			{
+				$this->verbosed("Cleaned file from the files_importing table.");
+			}
+		}
+
 		if($file_id !== 0)
 		{
 			$sql = "DELETE FROM `wifi`.`files` WHERE `id` = ?";
@@ -228,7 +271,7 @@ class daemon extends wdbcli
 	public function insert_file($file, $file_names)
 	{
 		$source = $this->PATH.'import/up/'.$file;
-		echo $source."\r\n";
+		#echo $source."\r\n";
 		$hash = hash_file('md5', $source);
 		$size1 = $this->format_size(filesize($source));
 		if(@is_array($file_names[$hash]))
@@ -238,7 +281,7 @@ class daemon extends wdbcli
 			$notes	=	$file_names[$hash]['notes'];
 			$date	=	$file_names[$hash]['date'];
 			$hash_	=	$file_names[$hash]['hash'];
-			echo "Is in filenames.txt\n";
+			#echo "Is in filenames.txt\n";
 		}else
 		{
 			$user	=	$this->default_user;
@@ -246,7 +289,8 @@ class daemon extends wdbcli
 			$notes	=	$this->default_notes;
 			$date	=	date("y-m-d H:i:s");
 			$hash_	=	$hash;
-			echo "Recovery import, no previous data :(\n";
+			#echo "Recovery import, no previous data :(\n";
+
 		}
 		$this->logd("=== Start Daemon Prep of ".$file." ===");
 
@@ -265,15 +309,14 @@ class daemon extends wdbcli
 		$err = $this->sql->conn->errorInfo();
 		if($err[0] == "00000")
 		{
-			$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
+			#$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
 			$this->logd("File Inserted into Files_tmp.".$sql);
 			return 1;
 		}else
 		{
-
-			$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			#$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
 			$this->logd("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException;
+			throw new ErrorException("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo()) );
 		}
 	}
 
