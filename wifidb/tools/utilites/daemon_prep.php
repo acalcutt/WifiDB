@@ -1,4 +1,14 @@
+#!/usr/bin/php
 <?php
+/*
+daemon_prep.php
+Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
+Used to prepare for a recovery import. Will take filenames.txt that is a | seperated file that was generated with filenames_create.php as a psudo-backup, as long as you have the import files still.
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 

@@ -33,6 +33,7 @@ class import extends dbcore
 		$this->dBmMaxSignal	  = $config['dBmMaxSignal'];
 		$this->dBmDissociationSignal	  = $config['dBmDissociationSignal'];
 		$this->rssi_signals_flag = 0;
+		$this->ImportID = 0;
 	}
 
 
@@ -97,8 +98,6 @@ class import extends dbcore
 		}
 
 		$File_return	 = explode("\r\n", utf8_decode($file_contents));
-		# get the MD5 hash for the file data.
-		$hash = hash_file('md5', $source);
 
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);

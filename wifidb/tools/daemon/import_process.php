@@ -1,48 +1,39 @@
 #!/usr/bin/php
 <?php
 /*
-ImportThreading.php, WiFiDB Import Daemon
-Copyright (C) 2015 by Phil Ferland.
-This script is made to do imports and be run as a cron job.
-It will run the number of import scripts as you set $NumberOfThreads to.
-I did not see an imporvement in import time after 20 threads.
-20 Threads imported 430,000 APs and their signal and GPS data in just over 1 hour and 45 minutes
-This was with 8 vCPU's and 16GB of RAM.
+import_process.php, WiFiDB Import Daemon
+Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
+This script is made to do imports and be run off of the importd.php daemon.
+It is not possible to run this script on its own, it needs to be controled and scheduled by the importd.php daemon.
+This is to prevent the import processes from colliding and thinking that an import is already in, when it is really not.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
-
-/*
- * DANGER, Will Robinson!!
- * DANGER, Will Robinson!!
- * DANGER, Will Robinson!!
- * This Process WILL use a shit load of RAM.
- * On my Dev server with 8 vCPU's and 16GB of RAM, 20 import processes after 340,000 APs was using 8GB of RAM with the Console Output enabled
- * The 20 Processes with the Console Output disabled it only used about .
- * Just a reminder Don't say I didn't warn you that this script will most likely bring your server to its knees and beg for mercy.
- */
-
 define("SWITCH_SCREEN", "CLI");
-define("SWITCH_EXTRAS", "cli");
+define("SWITCH_EXTRAS", "import");
 
 if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit	=	"2015-03-28";
+$lastedit			=	"2015-03-21";
+$dbcore->daemon_name	=	"Import";
+
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-	echo "Usage: importd.php [args...]
+	echo "Usage: import_process.php [args...]
   -f		(null)			Force daemon to run without being scheduled.
   -h		(null)			Show this screen.
+  -i        (integer)       The ID Number for the Import to be well... Imported...
   -l		(null)			Show License Information.
   -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bab files table.
   -v		(null)			Run Verbosely (SHOW EVERYTHING!)
   -version	(null)			Version Info.
+
 * = Not working yet.
 ";
 	exit();
@@ -79,6 +70,14 @@ if(@$arguments['v'])
 	$dbcore->verbose = 0;
 }
 
+if(@$arguments['i'])
+{
+	$dbcore->ImportID = (int)$arguments['i'];
+}else
+{
+	$dbcore->ImportID = 0;
+}
+
 if(@$arguments['f'])
 {
 	$dbcore->ForceDaemonRun = 1;
@@ -100,7 +99,7 @@ if(!file_exists($dbcore->pid_file_loc))
 {
 	mkdir($dbcore->pid_file_loc);
 }
-$dbcore->pid_file = $dbcore->pid_file_loc.'importd_'.$dbcore->This_is_me.'.pid';
+$dbcore->pid_file = $dbcore->pid_file_loc.'import_process_'.$dbcore->This_is_me.'.pid';
 
 if(!file_exists($dbcore->pid_file_loc))
 {
@@ -126,52 +125,7 @@ PID: [ $dbcore->This_is_me ]
  Log Level is: ".$dbcore->log_level);
 
 
-$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
-#Checking for Import Jobs
-$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
-$prepgj = $dbcore->sql->conn->prepare($sql);
-$prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
-$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
-$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
-$prepgj->execute();
-$dbcore->sql->checkError(__LINE__, __FILE__);
+trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
 
-
-if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
-{
-	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
-}
-else
-{
-	if (!$dbcore->ForceDaemonRun) {
-		#Job Settings
-		$job = $prepgj->fetch(2);
-		$dbcore->job_interval = $job['interval'];
-		$job_id = $job['id'];
-
-		#Set Job to Running
-		$dbcore->SetStartJob($job_id);
-	}else{
-        $dbcore->CheckDaemonKill();
-    }
-    $ii = 0;
-	for ($i = 1; $i <= $dbcore->NumberOfThreads; ++$i)
-	{
-        $ii++;
-		$dbcore->SpawnImportDaemon($ii);
-		sleep(2);
-	}
-	while (pcntl_waitpid(0, $status) != -1)
-	{
-		$status = pcntl_wexitstatus($status);
-		echo "Import Thread $status completed\n";
-        $ii++;
-        sleep(2);
-		if($dbcore->SpawnImportDaemon($ii) === -1)
-        {
-            continue;
-        }
-	}
-}
+unlink($dbcore->pid_file);
+exit($dbcore->thread_id);

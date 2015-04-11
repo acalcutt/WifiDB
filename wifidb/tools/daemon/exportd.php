@@ -23,9 +23,9 @@ $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-	echo "Usage: importd.php [args...]
+	echo "Usage: exportd.php [args...]
   -v				Run Verbosely (SHOW EVERYTHING!)
-  -i				Version Info.
+  -version			Version Info.
   -h				Show this screen.
   -l				Show License Information.
   -f				Force daemon to run without being scheduled.
@@ -35,7 +35,7 @@ if(@$arguments['h'])
 	exit();
 }
 
-if(@$arguments['i'])
+if(@$arguments['version'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."

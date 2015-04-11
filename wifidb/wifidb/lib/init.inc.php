@@ -25,8 +25,34 @@ ini_set('display_errors', 1);//***DEV USE ONLY***
 error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
 //***DEV USE ONLY***
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
+if(!function_exists('WiFiDBexception_handler')) {
+	function WiFiDBexception_handler($err)
+	{
+		$trace = array('Error' => strval($err->getCode()), 'Message' => str_replace("\n", "</br>\r\n", $err->getMessage()), 'Code' => strval($err->getCode()), 'File' => $err->getFile(), 'Line' => strval($err->getLine()));
+		switch (strtolower(SWITCH_SCREEN)) {
+			case "html":
+				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/");
+				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/smarty/");
+				$smarty = new Smarty();
+				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/wifidb/');
+				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/');
+				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/');
+				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/');
+				$smarty->smarty->assign('wifidb_error_mesg', $trace);
+				$smarty->display("error.tpl");
+				break;
 
-set_exception_handler('exception_handler');
+			case "cli":
+				var_dump($err);
+				break;
+
+			default:
+				echo "Unknown screen switch, here is a raw dump of the error...\r\n" . var_export($trace, 1);
+				break;
+		}
+	}
+}
+set_exception_handler('WiFiDBexception_handler');
 
 
 if(strtolower(SWITCH_SCREEN) == "cli")
@@ -87,34 +113,38 @@ if(strtolower(SWITCH_SCREEN) != "cli")
 /*
  * Class autoloader
  */
-function __autoload($class)
-{
-    if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
-    {
-        include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
-        return 1;
-    }elseif(file_exists($GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php'))
-    {
-        include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php';
-        return 1;
-    }elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
-    {
-        include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
-        return 1;
-    }elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
-    {
-        include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
-        return 1;
-    }elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
-    {
-        include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
-        return 1;
-    }else
-    {
+ if(!function_exists('__autoload'))
+ {
+	function __autoload($class)
+	{
+		if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
+		{
+			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
+			return 1;
+		}elseif(file_exists($GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php'))
+		{
+			include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php';
+			return 1;
+		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
+		{
+			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
+			return 1;
+		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
+		{
+			include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
+			return 1;
+		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
+		{
+			include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
+			return 1;
+		}else
+		{
 
-        throw new errorexception("Could not load class `{$class}`");
-    }
-}
+			throw new errorexception("Could not load class `{$class}`");
+		}
+	}
+
+ }
 
 try
 {
@@ -218,119 +248,101 @@ catch (Exception $e) {
     throw new ErrorException($e);
 }
 
-function exception_handler($err)
+
+if(!function_exists('CLIErrorHandlingFunction'))
 {
-    $trace = array( 'Error' =>strval($err->getCode()), 'Message'=>str_replace("\n", "</br>\r\n", $err->getMessage()),'Code'=>strval($err->getCode()), 'File'=>$err->getFile(), 'Line'=>strval($err->getLine()));
-    switch(strtolower(SWITCH_SCREEN))
-    {
-        case "html":
-            define('WWW_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/");
-            define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT']."/wifidb/smarty/");
-            $smarty = new Smarty();
-            $smarty->setTemplateDir( WWW_DIR.'smarty/templates/wifidb/' );
-            $smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
-            $smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
-            $smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
-            $smarty->smarty->assign('wifidb_error_mesg', $trace);
-            $smarty->display("error.tpl");
-            break;
-
-        case "cli":
-            var_dump($err);
-            break;
-
-        default:
-            echo "Unknown screen switch, here is a raw dump of the error...\r\n".var_export($trace, 1);
-            break;
-    }
+	function CLIErrorHandlingFunction($message, $type = E_USER_NOTICE)
+	{
+		$backtrace = debug_backtrace();
+		foreach ($backtrace as $entry) {
+			if ($entry['function'] == __FUNCTION__) {
+				trigger_error($entry['file'] . '#' . $entry['line'] . ' ' . $message, $type);
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
-function CLIErrorHandlingFunction($message, $type=E_USER_NOTICE) {
-    $backtrace = debug_backtrace();
-    foreach($backtrace as $entry) {
-        if ($entry['function'] == __FUNCTION__) {
-            trigger_error($entry['file'] . '#' . $entry['line'] . ' ' . $message, $type);
-            return true;
-        }
-    }
-    return false;
-}
-function create_base_cookies($URL_PATH)
+
+if(!function_exists('create_base_cookies'))
 {
-    $ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
-    if($ssl_flag == "https")
-    {
-        $ssl = ";secure";
-    }else
-    {
-        $ssl = "";
-    }
-    $domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
-    $folder = parse_url($URL_PATH, PHP_URL_PATH);
-    $c = strlen($folder);
-    if($folder[$c-1] == "/" && $c > 1)
-    {
-        $root = substr($folder, 0, -1);
-    }else
-    {
-        $root = $folder;
-    }
-    $PATH       = ";path=".$root;
-    if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
-    {
-        $ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
-    }else
-    {
-        $ultimate_path = $URL_PATH;
-    }
+	function create_base_cookies($URL_PATH)
+	{
+		$ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
+		if($ssl_flag == "https")
+		{
+			$ssl = ";secure";
+		}else
+		{
+			$ssl = "";
+		}
+		$domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
+		$folder = parse_url($URL_PATH, PHP_URL_PATH);
+		$c = strlen($folder);
+		if($folder[$c-1] == "/" && $c > 1)
+		{
+			$root = substr($folder, 0, -1);
+		}else
+		{
+			$root = $folder;
+		}
+		$PATH       = ";path=".$root;
+		if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
+		{
+			$ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
+		}else
+		{
+			$ultimate_path = $URL_PATH;
+		}
 
-    ?>
-<script type="text/javascript">
-    function checkTimeZone()
-    {
-        var expiredays = 86400;
-        var rightNow = new Date();
-        var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
-        var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
-        var temp = date1.toGMTString();
-        var date3 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
-        var temp = date2.toGMTString();
-        var date4 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
-        var hoursDiffStdTime = (date1 - date3) / (1000 * 60 * 60);
-        var hoursDiffDaylightTime = (date2 - date4) / (1000 * 60 * 60);
-        if (hoursDiffDaylightTime == hoursDiffStdTime)
-        {
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate()+expiredays);
-            document.cookie="wifidb_client_dst=" +escape("0")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		?>
+	<script type="text/javascript">
+		function checkTimeZone()
+		{
+			var expiredays = 86400;
+			var rightNow = new Date();
+			var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
+			var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
+			var temp = date1.toGMTString();
+			var date3 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
+			var temp = date2.toGMTString();
+			var date4 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
+			var hoursDiffStdTime = (date1 - date3) / (1000 * 60 * 60);
+			var hoursDiffDaylightTime = (date2 - date4) / (1000 * 60 * 60);
+			if (hoursDiffDaylightTime == hoursDiffStdTime)
+			{
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate()+expiredays);
+				document.cookie="wifidb_client_dst=" +escape("0")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate()+expiredays);
-            document.cookie="wifidb_client_check=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate()+expiredays);
+				document.cookie="wifidb_client_check=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate()+expiredays);
-            document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-        }
-        else
-        {
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate()+expiredays);
-            document.cookie="wifidb_client_dst" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate()+expiredays);
+				document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			}
+			else
+			{
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate()+expiredays);
+				document.cookie="wifidb_client_dst" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate()+expiredays);
-            document.cookie="wifidb_client_check" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate()+expiredays);
+				document.cookie="wifidb_client_check" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-            var exdate=new Date();
-            exdate.setDate(exdate.getDate()+expiredays);
-            document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-        }
-        location.href = '<?php echo $ssl_flag.'://'.$ultimate_path; ?>';
-    }
-    </script>
-    <body onload = "checkTimeZone();"> </body>
-    <?php
-    exit();
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate()+expiredays);
+				document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			}
+			location.href = '<?php echo $ssl_flag.'://'.$ultimate_path; ?>';
+		}
+		</script>
+		<body onload = "checkTimeZone();"> </body>
+		<?php
+		exit();
+	}
 }
-?>
