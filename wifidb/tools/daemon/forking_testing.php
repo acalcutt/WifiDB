@@ -16,16 +16,16 @@ $pool = new Pool(8);
 $pool->start();
 
 /* construct stage one */
-while (count($one) < 10) {
+while (count($one) < $dbcore->NumberOfThreads) {
     $staging = new StagingData();
     /* maintain reference counts by storing return value in normal array in local scope */
-    $one[] = $pool->submit(new StageOne($staging));
+    $one[] = $pool->submit(new StageOne($staging, $config, $daemon_config));
     /* maintain reference counts */
     $data[] = $staging;
 }
-$importnumber = 100;
+$NumberOfImports = $dbcore->GetWaitingImportRowCount();
 /* construct stage two */
-while($importnumber > 0)
+while(1)
 {
     /* find completed StageOne objects */
     foreach ($one as $id => $job) {
@@ -33,22 +33,26 @@ while($importnumber > 0)
         if ($job->done) {
             /* use each element of data to create new tasks for StageTwo */
             foreach ($job->data as $chunk) {
+
                 /* submit stage two */
                 $two[] = $pool->submit(new StageTwo($chunk));
             }
-
             /* no longer required */
             unset($one[$id]);
+
+			$NumberOfImports = $dbcore->GetWaitingImportRowCount();
+            if($NumberOfImports > 0)
+            {
+				$staging = new StagingData();
+				$one[] = $pool->submit(new StageOne($staging, $config, $daemon_config));
+				$data[] = $staging;
+				sleep(1);
+			}
         }
     }
-	$importnumber--;
-    /* in the real world, it is unecessary to keep polling the array */
-    /* you probably have some work you want to do ... do it :) */
-    #if (count($one)) {
-        /* everyone likes sleep ... */
-    #    usleep(1000000);
-    #}
-
+    echo "Done checking jobs for now... sleep for 5 seconds.\n";
+    sleep(5);
+	$NumberOfImports = $dbcore->GetWaitingImportRowCount();
 }
 
 /* all tasks stacked, the pool can be shutdown */

@@ -23,6 +23,9 @@ $daemon_config = array(
 	//Well... Im pretty sure this is self explanatory... 1 it will delete the dead pids in the [pid_file_loc]/wifidb/ path.
 	'DeleteDeadPids'		=>	1,
 
+	//Enable the Node Syncing commands to sync the filesystem data between the WiFiDB Nodes.
+	'NodeSyncing'		=> 0,
+
 	//Location of the wifidb folder for the pids of the daemons.
 	'pid_file_loc'		  =>	'/var/run/',
 
@@ -62,7 +65,7 @@ $daemon_config = array(
 	//if you want the CLI output to be color coded 1 => ON, 0 => OFF
 	//if you ware running windows, this is disabled for you, so even if you turn it on, its not going to work :-p
 	'colors_setting'	=>	1,
-    
+
 	//Default colors for the CLI
 	//Allowed colors:
 			//LIGHTGRAY, BLUE, GREEN, RED, YELLOW
