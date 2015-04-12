@@ -10,6 +10,7 @@ SET time_zone = "-05:00";
 --
 -- Database: `wifi`
 --
+create database wifi;
 use `wifi`;
 -- --------------------------------------------------------
 
@@ -161,7 +162,7 @@ CREATE TABLE IF NOT EXISTS `files_importing` (
   `date` timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,,
+  `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
   `importing` tinyint(1) NOT NULL,
   `ap` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,
   `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
