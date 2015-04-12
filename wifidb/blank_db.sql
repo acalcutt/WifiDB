@@ -407,6 +407,19 @@ CREATE TABLE IF NOT EXISTS `log` (
 -- Table structure for table `settings`
 --
 
+CREATE TABLE IF NOT EXISTS `manufactures`
+(
+  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  manuf VARCHAR(255) NOT NULL,
+  address VARCHAR(9) NOT NULL
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `settings`
+--
+
 CREATE TABLE IF NOT EXISTS `settings` (
   `id` int(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `daemon_state` int(2) NOT NULL,

@@ -25,4 +25,3 @@ while($array = $result->fetch())
     }
     #die();
 }
-?>
