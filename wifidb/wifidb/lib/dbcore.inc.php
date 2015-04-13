@@ -540,12 +540,18 @@ class dbcore
 		{
 			$mac = str_replace(":", "", $mac);
 		}
-		$man_mac = str_split($mac , 6);
-		#var_dump($man_mac[0]);
+
+		var_dump($mac);
 		#var_dump($this->manuf_array[$man_mac[0]]);
-		if($this->manuf_array[$man_mac[0]] !== NULL)
+		$result = $this->sql->conn->prepare("SELECT manuf FROM `wifi`.`manufactures` WHERE `mac` = ?");
+		$result->bindParam(1, $man, PDO::PARAM_STR);
+		$result->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		var_dump("----------", $result->fetch(2), "----------");
+		if($result->rowCount() > 0)
 		{
-			$manuf = $this->manuf_array[$man_mac[0]];
+			$fetch = $result->fetch(2);
+			$manuf = $fetch['manuf'];
 		}
 		else
 		{
