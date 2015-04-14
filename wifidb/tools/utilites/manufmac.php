@@ -26,7 +26,7 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 $ver = "2.0.0";
 ini_set("memory_limit","3072M");
 $script_start = "2009-Jan-24";
-$lastedit = "2015-04-12"; //Happy 4th of July!
+$lastedit = "2015-04-12";
 $author = "pferland"; //modified by acalcutt 2013-06-30 to support new oui.txt file
 
 $arguments = $dbcore->parseArgs($argv);
@@ -114,7 +114,6 @@ else
 {
     $source="oui.txt";
 }
-var_dump($source);
 $stime = time();
 $cwd = getcwd();
 echo "-----------------------------------------------------------------------\n";
@@ -128,16 +127,11 @@ $vs1fileappend = fopen($vs1file, "a");
 
 echo "Downloading and Opening the Source File from: \n----->".$source."\n|\n|";
 $return = file($source);
-
-#var_dump($return);
-#die();
-
 $total_lines = count($return);
 echo "Source File opened, starting to parse file.\n|";
 $r = 0;
 foreach($return as $ret)
 {
-#	var_dump($ret);
 	$test = substr($ret, 13, 5);
 	if ($test != "(hex)"){if($debug === 1){echo "Erroneous data found, dropping\n| This is normal...\n| ";} continue;}
 	$retexp = explode("(hex)",$ret);
@@ -186,7 +180,6 @@ foreach($manuf_list as $manuf)
     $r = $dbcore->RotateSpinner($r);
     if($wifidb_update)
     {
-    	#var_dump($manuf);
         $result->bindParam(1, $manuf['manuf'], PDO::PARAM_STR);
         $result->bindParam(2, $manuf['mac'], PDO::PARAM_STR);
         $result->execute();
