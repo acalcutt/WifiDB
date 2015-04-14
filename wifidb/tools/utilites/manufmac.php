@@ -99,7 +99,7 @@ else
 }
 
 # Neither flag was set, so lets do the vistumler ini only.
-if(!($vistumbler_ini AND $wifidb_update))
+if((!$vistumbler_ini AND !$wifidb_update))
 {
     $vistumbler_ini = 1;
     $wifidb_update = 0;
@@ -112,9 +112,9 @@ if(@$arguments['s'])
 }
 else
 {
-    $source="http://standards.ieee.org/develop/regauth/oui/oui.txt";
+    $source="oui.txt";
 }
-
+var_dump($source);
 $stime = time();
 $cwd = getcwd();
 echo "-----------------------------------------------------------------------\n";
@@ -129,15 +129,19 @@ $vs1fileappend = fopen($vs1file, "a");
 echo "Downloading and Opening the Source File from: \n----->".$source."\n|\n|";
 $return = file($source);
 
+#var_dump($return);
+#die();
+
 $total_lines = count($return);
 echo "Source File opened, starting to parse file.\n|";
 $r = 0;
 foreach($return as $ret)
 {
-	$test = substr($ret, 13,5);
+#	var_dump($ret);
+	$test = substr($ret, 13, 5);
 	if ($test != "(hex)"){if($debug === 1){echo "Erroneous data found, dropping\n| This is normal...\n| ";} continue;}
 	$retexp = explode("(hex)",$ret);
-	
+
 	$Man_mac = trim($retexp[0]);
 	$man_mac = explode("-",$Man_mac);
 	$Man_mac = implode("",$man_mac);
@@ -157,24 +161,36 @@ foreach($return as $ret)
     $r = $dbcore->RotateSpinner($r);
 }
 $total_manuf = count($manuf_list);
-if($total_manuf > 0)
+if(!($total_manuf > 0))
 {
     die("No Manufactures were found..\n");
 }
-echo "Manufactures and MAC Address' found...\n| \nWrite Manufactures File for both Vistumbler and WiFiDB:\n";
+echo "Manufactures and MAC Address' found...\n";
 
 fwrite($vs1fileappend, ";This file allows you to assign a manufacturer to a mac address(first 6 digits).\r\n[MANUFACURERS]\r\n");
 
 $current = 1;
-$result = $dbcore->sql->conn->prepare("INSERT INTO `wifi`.`manufactures` (`id`, `manuf`, `address`) VALUES (NULL, ?, ?)");
+$result = $dbcore->sql->conn->prepare("INSERT INTO `wifi`.`manufactures` (`id`, `manuf`, `mac`) VALUES (NULL, ?, ?)");
+if($wifidb_update)
+{
+	echo "Inserting into WifiDB Manufactures Table...\n";
+}
+
+if($vistumbler_ini)
+{
+	echo "Writing to manufactures.ini for Vistumbler.\n";
+}
+$r = 0;
 foreach($manuf_list as $manuf)
 {
     $r = $dbcore->RotateSpinner($r);
     if($wifidb_update)
     {
+    	#var_dump($manuf);
         $result->bindParam(1, $manuf['manuf'], PDO::PARAM_STR);
         $result->bindParam(2, $manuf['mac'], PDO::PARAM_STR);
         $result->execute();
+        $dbcore->sql->checkError(__LINE__, __FILE__);
     }
 
     if($vistumbler_ini)
@@ -185,12 +201,17 @@ foreach($manuf_list as $manuf)
         }else{
             $write = $manuf['mac']."=".$manuf['manuf'].",\r\n";
         }
-        $dbcore->sql->checkError(__LINE__, __FILE__);
+
         fwrite($vs1fileappend, $manuf['mac']."=".$manuf['manuf']."\r\n");
     }
 	if($debug == 1){echo $write."\n";}
+	$r = $dbcore->RotateSpinner($r);
     $current++;
 }
+
+$result = $dbcore->sql->conn->query("SELECT count(id) FROM `wifi`.`manufactures`");
+echo "Rows Inserted: ".$result->fetch(2)['count(id)']."\n";
+
 #------------------------------------------------------------------------------------------------------#
 
 $etime = time();
@@ -201,5 +222,5 @@ $lines_p_min = $total_lines/$diff_time;
 	."End Time:.........".$etime."\n"
 	."Total Run Time:...".$diff_time."\n----------------\n"
 	."Total Lines:......".$total_lines."\n"
-	."Lines per min:....".$lines_p_min."\n"	 
+	."Lines per min:....".$lines_p_min."\n"
 	."----------------\nDone";

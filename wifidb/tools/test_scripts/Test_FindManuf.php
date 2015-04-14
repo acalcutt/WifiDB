@@ -7,7 +7,7 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-for($i = 0; $i < 10 ;$i++)
+for($i = 0; $i < 20463 ;$i++)
 {
 	$GenMac = str_pad( dechex($i), 6, 0, STR_PAD_LEFT);
 	var_dump( $GenMac);

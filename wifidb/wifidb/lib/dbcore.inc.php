@@ -79,9 +79,6 @@ class dbcore
 		$this->KML_SOURCE_URL		   = $config['KML_SOURCE_URL'];
 
 		$this->smarty_path			  = $config['smarty_path'];
-		include_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
-		$this->manuf_array			 = @$GLOBALS['manufactures'];
-		unset($GLOBALS['manufactures']);
 
 		$this->wifidb_email_updates	 = 0;
 		$this->email_validation		 = 1;
@@ -541,13 +538,13 @@ class dbcore
 			$mac = str_replace(":", "", $mac);
 		}
 
-		var_dump($mac);
+		#var_dump("FindManuf Mac: ".$mac);
 		#var_dump($this->manuf_array[$man_mac[0]]);
 		$result = $this->sql->conn->prepare("SELECT manuf FROM `wifi`.`manufactures` WHERE `mac` = ?");
-		$result->bindParam(1, $man, PDO::PARAM_STR);
+		$result->bindParam(1, $mac, PDO::PARAM_STR);
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
-		var_dump("----------", $result->fetch(2), "----------");
+		#var_dump("----------", $result->fetch(2), "----------");
 		if($result->rowCount() > 0)
 		{
 			$fetch = $result->fetch(2);
