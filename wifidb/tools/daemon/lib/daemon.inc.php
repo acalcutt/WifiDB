@@ -150,10 +150,12 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		$daemon_sql = "INSERT INTO wifi.files_importing (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
-		$result = $this->dbcore->sql->conn->query($daemon_sql);
-		return $this->dbcore->sql->conn->lastInsertId;
-
+		$daemon_sql = "INSERT INTO `wifi`.`files_importing` (`id`, `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `id`, `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
+		$result = $this->sql->conn->prepare($daemon_sql);
+		$result->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		$LastInsert = $this->sql->conn->lastInsertID();
+		return $LastInsert;
 	}
 
     /**

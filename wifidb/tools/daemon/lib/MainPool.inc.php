@@ -1,8 +1,10 @@
 <?php
+require "lib/PooledWorker.inc.php";
+
 /**
 * Don't descend from pthreads, normal objects should be used for pools
 */
-class Pool {
+class MainPool extends Pool {
     protected $size;
     protected $workers;
 
@@ -13,6 +15,7 @@ class Pool {
     public function __construct($size) {
         $this->size = $size;
         $this->worker = 0;
+
     }
 
     /**
