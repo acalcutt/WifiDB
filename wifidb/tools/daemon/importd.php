@@ -36,7 +36,7 @@ if(@$arguments['h'])
 
 * = Not working yet.
 ";
-	return "help_menu";
+	exit(-1);
 }
 
 if(@$arguments['version'])
@@ -44,7 +44,7 @@ if(@$arguments['version'])
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
 {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals");
-	return "version";
+	exit(-2);
 }
 
 if(@$arguments['l'])
@@ -59,7 +59,7 @@ This program is free software; you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 ");
-	return "license";
+	exit(-3);
 }
 
 if(@$arguments['v'])
@@ -125,13 +125,13 @@ if(!file_exists($dbcore->pid_file_loc))
 	{
 		#throw new ErrorException("Could not make WiFiDB PID folder. ($dbcore->pid_file_loc)");
 		echo "Could not create PID Folder at path: $dbcore->pid_file_loc \n";
-		return "pid_folder_exception";
+		exit(-4);
 	}
 }
 if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
 {
 	echo "Could not write pid file ($dbcore->pid_file), that's not good... >:[\n";
-	return "pid_write_exception";
+	exit(-5);
 }
 
 $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
@@ -161,7 +161,7 @@ $dbcore->sql->checkError(__LINE__, __FILE__);
 if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
-	return "no_schedule_jobs";
+	exit(-6);
 }
 else
 {
@@ -187,30 +187,29 @@ else
 			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
 			unlink($dbcore->pid_file);
 			echo "Daemon was told to kill itself\n";
-			return "daemon_kill_flag";
+			exit(-7);
 		}
-
+		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
 		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
 		{
-			$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash` FROM `wifi`.`files_importing` WHERE `id` = ?";
+			$NextID = $dbcore->ImportID;
 
 		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
-			$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash` FROM `wifi`.`files_importing` ORDER BY `date` ASC LIMIT 1";
-
+			$NextID = $dbcore->GetNextImportID();
 		}
-		$NextID = $this->GetNextImportID();
+		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash` FROM `wifi`.`files_importing` WHERE `id` = ?";
 		$result = $dbcore->sql->conn->prepare($daemon_sql);
 		$result->bindParam(1, $NextID, PDO::PARAM_INT);
 		$result->execute();
 		if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
-			$dbcore->verbosed("There was an error getting a list of import files");
-			$dbcore->return_message = "TableReadError:files_tmp";
+			$dbcore->verbosed("There was an error getting an import file");
+			$dbcore->return_message = -8;
 			break;
 		}
-		if( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough )
+		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
-			$dbcore->return_message = "NoImportsWaiting";
+			$dbcore->return_message = -9;
 			break;
 		}
 		else
@@ -230,14 +229,14 @@ else
 				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
 				if( !$dbcore->daemonize )
 				{
-					$dbcore->return_message = "TableDataErrorIDWasBlank";
+					$dbcore->return_message = -10;
 					break;
 				}
 			}else
 			{
 				#$ImportProcessReturn = $dbcore->ImportProcess($ImportData);
 				$ImportProcessReturn = 1;
-				$dbcore->return_message = $file_to_Import['id'].":".rand(1,4000).":".rand(10,20000);
+				$dbcore->return_message = (int)$file_to_Import['id'];
 
 				switch($ImportProcessReturn)
 				{
@@ -247,8 +246,14 @@ else
 					#Error Converting file for daemon, continue run.
 					case 0:
 						continue;
+					case 1:
+						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
 				}
 			}
+		}
+		if($dbcore->ImportID !== 0)
+		{
+			break;
 		}
 		if($dbcore->daemonize)
 		{
@@ -267,4 +272,4 @@ else
 }
 unlink($dbcore->pid_file);
 
-return $dbcore->return_message;
+exit($dbcore->return_message);

@@ -346,3 +346,4 @@ if(!function_exists('create_base_cookies'))
 		exit();
 	}
 }
+
