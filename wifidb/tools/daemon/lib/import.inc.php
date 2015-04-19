@@ -21,15 +21,15 @@ if not, write to the
 
 class import extends dbcore
 {
-	function __construct($config, $convert_obj = NULL)
+	function __construct($config, $convert_obj = NULL, $verbose)
 	{
 		if($convert_obj === NULL)
 		{die("Convert Object is null...");}
 		parent::__construct($config);
+		$this->verbose = $verbose;
 		$this->convert = $convert_obj;
 		$this->log_level	= $config['log_level'];
 		$this->log_interval = $config['log_interval'];
-		$this->verbose	  = $config['verbose'];
 		$this->dBmMaxSignal	  = $config['dBmMaxSignal'];
 		$this->dBmDissociationSignal	  = $config['dBmDissociationSignal'];
 		$this->rssi_signals_flag = 0;
@@ -360,7 +360,7 @@ class import extends dbcore
 
 			$compile_sig = array();
 			$sig_high = 0;
-			$this->verbosed("Starting Import of Wifi Signal... ", 1);
+			$this->verbosed("Starting Import of Wifi Signal ( ".count($ap_sig_exp)." Signal Points )... ", 1);
 
 			foreach($ap_sig_exp as $sig_gps_id)
 			{

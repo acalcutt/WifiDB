@@ -150,10 +150,30 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		$daemon_sql = "INSERT INTO wifi.files_importing (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
-		$result = $this->dbcore->sql->conn->query($daemon_sql);
-		return $this->dbcore->sql->conn->lastInsertId;
+		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp  WRITE");
 
+		$daemon_sql = "INSERT INTO `wifi`.`files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
+		$result = $this->sql->conn->prepare($daemon_sql);
+		$result->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		$LastInsert = $this->sql->conn->lastInsertID();
+		var_dump($LastInsert);
+
+		$select = "SELECT tmp_id FROM wifi.files_importing WHERE id = ?";
+		$prep = $this->sql->conn->prepare($select);
+		$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
+		$prep->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+
+		$tmp_id = $prep->fetch(2)['tmp_id'];
+		$delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
+		$prep = $this->sql->conn->prepare($delete);
+		$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
+		$prep->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+
+		$this->sql->conn->query("UNLOCK TABLES");
+		return $LastInsert;
 	}
 
     /**
@@ -209,7 +229,8 @@ class daemon extends wdbcli
 
 	function ImportProcess($file_to_Import = array())
 	{
-		$remove_file = $file_to_Import['id'];
+		$importing_id = $file_to_Import['id'];
+
 		$source = $this->PATH.'import/up/'.$file_to_Import['file'];
 
 		#echo $file_to_Import['file']."\r\n";
@@ -223,10 +244,10 @@ class daemon extends wdbcli
 		if(in_array($file_type, $this->convert_extentions))
 		{
 			$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-			$update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '0', `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
+			$update_tmp = "UPDATE `wifi`.`files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($update_tmp);
 			$prep->bindParam(1, $file_type, PDO::PARAM_STR);
-			$prep->bindParam(2, $remove_file, PDO::PARAM_INT);
+			$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
 			$prep->execute();
 			$err = $this->sql->conn->errorCode();
 			if($err[0] != "00000")
@@ -255,12 +276,12 @@ class daemon extends wdbcli
 			$file_hash1 = hash_file('md5', $ret_file_name);
 			$file_size1 = (filesize($ret_file_name)/1024);
 
-			$update = "UPDATE `wifi`.`files_tmp` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+			$update = "UPDATE `wifi`.`files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($update);
 			$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
 			$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
 			$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-			$prep->bindParam(4, $remove_file, PDO::PARAM_INT);
+			$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
 			$prep->execute();
 			$err = $this->sql->conn->errorCode();
 			if($err[0] == "00000")
@@ -283,9 +304,9 @@ class daemon extends wdbcli
 		if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
 		{
 			$this->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
-			$update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '1', `ap` = 'Preparing for Import' WHERE `id` = ?";
+			$update_tmp = "UPDATE `wifi`.`files_importing` SET `ap` = 'Preparing for Import' WHERE `id` = ?";
 			$prep4 = $this->sql->conn->prepare($update_tmp);
-			$prep4->bindParam(1, $remove_file, PDO::PARAM_INT);
+			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
 			$prep4->execute();
 			if($this->sql->checkError(__LINE__, __FILE__))
 			{
@@ -362,12 +383,12 @@ class daemon extends wdbcli
 				}else{
 					$file_row = $this->sql->conn->lastInsertID();
 					#var_dump($file_row);
-					$this->verbosed("Added $source ($remove_file) to the Files table.\n");
+					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
 				}
 
 				$import_ids = $this->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
-				$tmp = $this->import->import_vs1( $source, $user, $file_row );
+				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $file_to_Import['tmp_id']);
 
 				if(@$tmp[0] === -1)
 				{
@@ -376,7 +397,7 @@ class daemon extends wdbcli
 						"Error", $this->This_is_me);
 					$this->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
-					$this->cleanBadImport($import_ids, $file_row, $remove_file, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
+					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
 				}else
 				{
 					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
@@ -409,44 +430,43 @@ class daemon extends wdbcli
 					$del_file_tmp = "DELETE FROM `wifi`.`files_importing` WHERE `id` = ?";
 					#echo $del_file_tmp."\r\n";
 					$prep = $this->sql->conn->prepare($del_file_tmp);
-					$prep->bindParam(1, $remove_file, PDO::PARAM_INT);
+					$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
 					$prep->execute();
 					if($this->sql->checkError(__LINE__, __FILE__))
 					{
 						//**TODO
-						#mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
-						$this->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),
+						#mail_users("Error removing file: $source ($importing_id)", "Error removing file: $source ($importing_id)", "import", 1);
+						$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),
 							"Error", $this->This_is_me);
-						$this->verbosed("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
-						Throw new ErrorException("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
+						$this->verbosed("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
+						Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
 					}else
 					{
 						//**TODO
-						#$message = "File has finished importing.\r\nUser: $user\r\nTitle: $title\r\nFile: $source ($remove_file)\r\nLink: ".$this->PATH."/opt/userstats.php?func=useraplist&row=$newrow \r\n-WiFiDB Daemon.";
+						#$message = "File has finished importing.\r\nUser: $user\r\nTitle: $title\r\nFile: $source ($importing_id)\r\nLink: ".$this->PATH."/opt/userstats.php?func=useraplist&row=$newrow \r\n-WiFiDB Daemon.";
 						#mail_users($message, $subject, "import");
-						$this->verbosed("Removed ".$remove_file." from the Temp files table.\n");
+						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
 					}
 					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];
 				}
 			}else
 			{
 				trigger_error("File already imported. $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
-				$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
+				$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($importing_id)",
 					"Warning", $this->This_is_me);
-				//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
+				//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($importing_id)");
 				//unlink($source);
-				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
-				$this->cleanBadImport(0, 0, $remove_file, 'Already Imported', $this->thread_id);
+				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($importing_id)");
+				$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);
 			}
 		}else
 		{
 			trigger_error("File is Empty or bad $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
-			$this->logd("File is empty or not valid. $source ($remove_file)",
+			$this->logd("File is empty or not valid. $source ($importing_id)",
 				"Warning", $this->This_is_me);
-			$this->verbosed("File is empty. Skipping and deleting from files_tmp. $source ($remove_file)\n");
+			$this->verbosed("File is empty. Skipping and deleting from files_importing. $source ($importing_id |-| $file_hash)\n");
 			//unlink($source);
-			$this->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
-			$this->cleanBadImport(0, 0, $remove_file, 'Empty or not valid', $this->thread_id);
+			$this->cleanBadImport(0, 0, $importing_id, 'Empty or not valid', $this->thread_id);
 		}
 		return 1;
 	}

@@ -26,7 +26,7 @@ class dbcore
 	{
 		if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
 		$this->sql					  = new SQL($config);
-
+		$this->verbose					= 0;
 		$this->mesg					 = "";
 		$this->switches				 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
 		$this->reserved_users		   = $config['reserved_users'];
@@ -670,33 +670,33 @@ class dbcore
 	 */
 	public function verbosed($message = "", $color = 1)
 	{
-		$datetime = date("Y-m-d H:i:s");
-		if($message != '')
+		if($this->verbose)
 		{
-			switch($color)
-			{
-				case -1: #Error
-					$message = $this->colors['RED']. $datetime .$this->colors['YELLOW']."   ->	".$this->colors['RED'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				case 1: #normal message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['LIGHTGRAY'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				case 2: #good / header message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['GREEN'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				case 3: #different good/header message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['BLUE'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				default: #normal message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['YELLOW'].$message.$this->colors['LIGHTGRAY'];
-					break;
+			$datetime = date("Y-m-d H:i:s");
+			if ($message != '') {
+				switch ($color) {
+					case -1: #Error
+						$message = $this->colors['RED'] . $datetime . $this->colors['YELLOW'] . "   ->	" . $this->colors['RED'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					case 1: #normal message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['LIGHTGRAY'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					case 2: #good / header message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['GREEN'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					case 3: #different good/header message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['BLUE'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					default: #normal message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['YELLOW'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+				}
+				echo $message . "\r\n";
+				return 1;
+			} else {
+				echo "WiFiDB Verbose was told to write a blank string :/\r\n";
+				return 0;
 			}
-			echo $message."\r\n";
-			return 1;
-		}else
-		{
-			echo "WiFiDB Verbose was told to write a blank string :/\r\n";
-			return 0;
 		}
 	}
 }

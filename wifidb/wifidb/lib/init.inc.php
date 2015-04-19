@@ -164,7 +164,7 @@ try
                 case "import":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->import = new import($config, $dbcore->convert );
+                    $dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
                 ####
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
@@ -346,3 +346,4 @@ if(!function_exists('create_base_cookies'))
 		exit();
 	}
 }
+

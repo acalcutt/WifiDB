@@ -16,6 +16,17 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
+$arguments = $dbcore->parseArgs($argv);
+
+if(@$arguments['v'])
+{
+	$dbcore->verbose = 1;
+}
+else
+{
+	$dbcore->verbose = 0;
+}
+
 $lastedit="2013.04.28";
 $start="2008.05.23";
 $ver="2.0";
