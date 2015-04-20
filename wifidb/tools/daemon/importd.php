@@ -27,7 +27,7 @@ if(@$arguments['h'])
   -f		(null)			Force daemon to run without being scheduled.
   -o		(null)			Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
   -d		(null)			Run the Import script as a Daemon. ( Will override the -i argument. )
-  -i        	(integer)       	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument.
+  -i        	(integer)       	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
   -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
   -v		(null)			Run Verbosely (SHOW EVERYTHING!)
   -l		(null)			Show License Information.
@@ -41,15 +41,15 @@ if(@$arguments['h'])
 
 if(@$arguments['version'])
 {
-	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+	echo "WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals");
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals\n";
 	exit(-2);
 }
 
 if(@$arguments['l'])
 {
-	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+	echo "WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
 {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
@@ -58,7 +58,7 @@ Copyright (C) 2015 Andrew Calcutt, Phil Ferland
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
-");
+";
 	exit(-3);
 }
 
@@ -70,7 +70,6 @@ else
 {
 	$dbcore->verbose = 0;
 }
-$dbcore->verbose = 0;
 
 if(@$arguments['i'])
 {
@@ -137,14 +136,14 @@ if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
 
 $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
 
-$dbcore->verbosed("
+echo "
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
  - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
- Log Level is: ".$dbcore->log_level);
+ Log Level is: ".$dbcore->log_level."\n";
 
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
@@ -167,7 +166,6 @@ if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 else
 {
 	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
-	$dbcore->verbosed("Running...");
 	if(!$dbcore->ForceDaemonRun)
 	{
 		#Job Settings

@@ -343,7 +343,7 @@ class daemon extends wdbcli
 					$user = $file_to_Import['user'];
 					$this->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
 				}
-				$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
+				$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_importing` WHERE `hash` = ?";
 				$prep_ext = $this->sql->conn->prepare($sql_select_tmp_file_ext);
 				$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
 				$prep_ext->execute();
@@ -357,7 +357,13 @@ class daemon extends wdbcli
 				$prev_ext = $prep_ext->fetch(2);
 				$notes = $file_to_Import['notes'];
 				$title = $file_to_Import['title'];
-
+                if( $prev_ext['prev_ext'] === NULL)
+                {
+                    $PrevExt = "";
+                }else
+                {
+                    $PrevExt =  $prev_ext['prev_ext'];
+                }
 				$sql_insert_file = "INSERT INTO `wifi`.`files`
 				(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
 				VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
@@ -370,7 +376,7 @@ class daemon extends wdbcli
 				$prep1->bindParam(6, $notes, PDO::PARAM_STR);
 				$prep1->bindParam(7, $title, PDO::PARAM_STR);
 				$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
-				$prep1->bindParam(9, $prev_ext['prev_ext'], PDO::PARAM_STR);
+				$prep1->bindParam(9, $PrevExt, PDO::PARAM_STR);
 				$prep1->bindParam(10, $this->node_name, PDO::PARAM_STR);
 				$prep1->execute();
 
@@ -382,10 +388,10 @@ class daemon extends wdbcli
 					Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
 				}else{
 					$file_row = $this->sql->conn->lastInsertID();
-					#var_dump($file_row);
+					var_dump($file_row);
 					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
 				}
-
+                die();
 				$import_ids = $this->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
 				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $file_to_Import['tmp_id']);

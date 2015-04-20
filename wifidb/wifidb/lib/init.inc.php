@@ -139,7 +139,6 @@ if(strtolower(SWITCH_SCREEN) != "cli")
 			return 1;
 		}else
 		{
-
 			throw new errorexception("Could not load class `{$class}`");
 		}
 	}
@@ -171,7 +170,7 @@ try
                     $dbcore->convert = new convert($config);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
-                    $dbcore->import = new import($config, $dbcore->convert );
+                    $dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
                 break;
                 ####
                 case "cli":
