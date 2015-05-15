@@ -1029,11 +1029,37 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		return $results;
 	}
 
-	public function SingleApKML($id, $limit = NULL, $from = NULL)
+	public function SingleAp($id, $limit = NULL, $from = NULL)
 	{
 		if(!is_int($id))
 		{
-			throw new ErrorException('$id value for export::SingleApKML() is NaN');
+			throw new ErrorException('$id value for export::SingleAp() is NaN');
+			return 0;
+		}
+
+		list($KML_data, $export_ssid) = $this->SingleApKml($id, $limit, $from);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
+		$KML_data = $this->createKML->createKMLstructure($title, $KML_data);
+		$kmz_filename = $this->kml_out.$title.".kmz";
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		if (file_exists($kmz_filename)) 
+		{
+			$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+		}
+		else
+		{
+			$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
+		}
+		return $results;
+	}
+
+	public function SingleApKml($id, $limit = NULL, $from = NULL, $named=0, $new_icons=0)
+	{
+		if(!is_int($id))
+		{
+			throw new ErrorException('$id value for export::SingleAp() is NaN');
 			return 0;
 		}
 
@@ -1046,41 +1072,18 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$export_id = (int)$array['id'];
 			$export_ssid = $array['ssid'];
-			$ret = $this->ExportSingleAP($id, 1, $limit, $from);
+			$ret = $this->ExportSingleAP($id, $new_icons, $limit, $from);
 			if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
 			{
 				$this->createKML->ClearData();
 				$this->createKML->LoadData($ret);
-				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $named);
 			}
 		}
-
-		if($KML_data == "")
-		{
-			$results = array("mesg" => 'This AP has no gps. No KMZ file has been exported');
-		}
-		else
-		{
-			$KML_data = $this->createKML->createFolder($export_id." - ".$export_ssid, $KML_data, 0);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $export_id."-".$export_ssid);
-			$kmz_filename = $this->kml_out.$title.".kmz";
-			#$this->verbosed("Writing KMZ for ".$title." : ".$kmz_filename);
-			$KML_data = $this->createKML->createKMLstructure($title, $KML_data);
-			$this->Zip->addFile($KML_data, 'doc.kml');
-			$this->Zip->setZipFile($kmz_filename);
-			$this->Zip->getZipFile();
-			
-			if (file_exists($kmz_filename)) 
-			{
-				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
-			}
-			else
-			{
-				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
-			}
-		}
-		return $results;
-
+		
+		if($KML_data == ""){$KML_data = $dbcore->createKML->createFolder("AP has no GPS", $KML_data, 0);}
+		
+		return array($KML_data, $export_ssid);
 	}
 
 	public function UserListKml($points, $username, $title, $date, $named=0, $only_new=0, $new_icons=0, $regions=0)

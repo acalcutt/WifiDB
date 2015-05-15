@@ -67,7 +67,7 @@ while ( $array = $pre_page_list->fetch(2) )
         $wifidb_aps_all[$n]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
     }else
     {
-        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."opt/export.php?func=exp_all_signal&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
     }
     
    // $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
