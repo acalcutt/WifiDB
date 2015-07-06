@@ -86,7 +86,7 @@ if($lastap_array['lat'] == "0.0000")
     $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
 }else
 {
-    $globe_html = "<a href=\"".$dbcore->URL_PATH."opt/export.php?func=exp_all_signal&id=".$lastap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+    $globe_html = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
 }
 
 if ($usercount == NULL)

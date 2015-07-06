@@ -125,7 +125,7 @@ class frontend extends dbcore
 			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
 		}else
 		{
-			$globe_html = '<a href="'.$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
+			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
 		}
 
 		$sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
@@ -441,11 +441,16 @@ class frontend extends dbcore
 				{$style = "dark";$flip=0;}
 			else
 				{$style="light";$flip=1;}
-
-			if($array['lat'] == "0.0000")
-				{$globe = "off";}
-			else
-				{$globe = "on";}
+				
+			if($ap_array['lat'] == "0.0000")
+			{
+				$globe = "off";
+				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+			}else
+			{
+				$globe = "on";
+				$globe_html = "<a href=\"".$dbcore->URL_PATH."../api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+			}
 
 			if($array['ssid'] == "")
 				{$ssid = "Unknown";}
@@ -456,6 +461,7 @@ class frontend extends dbcore
 						"id" => $array['id'],
 						"class" => $style,
 						"globe" => $globe,
+						"globe_html" => $globe_html,
 						"ssid" => $ssid,
 						"mac" => $array['mac'],
 						"radio" => $array['radio'],
@@ -610,7 +616,7 @@ class frontend extends dbcore
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."/opt/export.php?func=exp_all_signal&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$dbcore->URL_PATH."../api/export.php?func=exp_ap_netlink&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
 			}
 
 			if($ap_array['ssid'] == '')
@@ -830,7 +836,7 @@ class frontend extends dbcore
 				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
 			}else
 			{
-				$results_all[$i]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."export.php?func=exp_all_signal&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+				$results_all[$i]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."../api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
 			}
 			if($newArray['ssid'] == '')
 			{

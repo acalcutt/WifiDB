@@ -20,11 +20,12 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj){
+	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
 		parent::__construct($config);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;
+		$this->Zip = $ZipObj;
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
 		$this->month_names  = array(
@@ -132,41 +133,30 @@ class export extends dbcore
 				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
 			}
 		}
-		$full_kml_file = $daily_folder."/full_db".$labeled.".kml";
-		$this->verbosed("Writing the Full KML File. ($NN APs) : ".$full_kml_file);
+		$kmz_filename = $daily_folder."/full_db".$labeled.".kmz";
+		$this->verbosed("Writing the Full KMZ File. ($NN APs) : ".$kmz_filename);
 		$KML_data = $this->createKML->createFolder("Full Database Export", $KML_data, 0);
-		###
-		$this->createKML->createKML($full_kml_file, "WiFiDB Full Database Export", $KML_data, 1);
-		chmod($full_kml_file, 0664);
-		###
-		$link = $this->PATH.'out/daemon/full_db'.$labeled.'.kml';
-		$this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
-		unlink($link);
-		symlink($full_kml_file, $link);
-		chmod($link, 0664);
-		#####################
-		$this->verbosed("Starting to compress the KML to a KMZ.");
-
-		$ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
-		if($ret_kmz_name == -1)
+		$KML_data = $this->createKML->createKMLstructure("WiFiDB Full Database Export", $KML_data);
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		
+		if (file_exists($kmz_filename)) 
 		{
-			$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-		}
-		elseif($ret_kmz_name == -2)
-		{
-			$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+			$this->verbosed("KMZ created at ".$kmz_filename);
+			chmod($kmz_filename, 0664);
+			###
+			$link = $this->daemon_out.'full_db'.$labeled.'.kmz';
+			$this->verbosed('Creating symlink from "'.$kmz_filename.'" to "'.$link.'"');
+			unlink($link);
+			symlink($kmz_filename, $link);
+			chmod($link, 0664);
 		}
 		else
 		{
-			$this->verbosed("KMZ created at ".$ret_kmz_name);
-			chmod($ret_kmz_name, 0664);
-			###
-			$link = $this->PATH.'out/daemon/full_db'.$labeled.'.kmz';
-			$this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-			unlink($link);
-			symlink($ret_kmz_name, $link);
-			chmod($link, 0664);
-		}
+			$this->verbosed("Failed to Create KMZ file :/ ");
+		}		
+		
 		return $daily_folder;
 	}
 
@@ -232,38 +222,29 @@ class export extends dbcore
 			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
 		}
 		if($KML_data == ""){$KML_data .= $this->createKML->createFolder("No Daily Exports with GPS", $KML_data, 0);}
-		$full_kml_file = $daily_folder."/daily_db".$labeled.".kml";
-		$this->verbosed("Writing the Daily KML File: ".$full_kml_file);
-		$this->createKML->createKML($full_kml_file, "WiFiDB Daily Export ($date)", $KML_data);
-		##
-		$link = $this->daemon_out.'daily_db'.$labeled.'.kml';
-		$this->verbosed('Creating symlink from "'.$full_kml_file.'" to "'.$link.'"');
-		unlink($link);
-		symlink($full_kml_file, $link);
-		chmod($link, 0664);
-		#####################
-		$this->verbosed("Starting to compress the KML to a KMZ.");
-
-		$ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
-		if($ret_kmz_name == -1)
+		$kmz_filename = $daily_folder."/daily_db".$labeled.".kmz";
+		$this->verbosed("Writing the Daily KML File: ".$kmz_filename);
+		$KML_data = $this->createKML->createFolder("Daily Export", $KML_data, 0);
+		$KML_data = $this->createKML->createKMLstructure("WiFiDB Daily Export ($date)", $KML_data);
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		
+		if (file_exists($kmz_filename)) 
 		{
-			$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-		}
-		elseif($ret_kmz_name == -2)
-		{
-			$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+			$this->verbosed("KMZ created at ".$kmz_filename);
+			chmod($kmz_filename, 0664);
+			###
+			$link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
+			$this->verbosed('Creating symlink from "'.$kmz_filename.'" to "'.$link.'"');
+			unlink($link);
+			symlink($kmz_filename, $link);
+			chmod($link, 0664);
 		}
 		else
 		{
-			$this->verbosed("KMZ created at ".$ret_kmz_name);
-			chmod($ret_kmz_name, 0664);
-			##
-			$link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
-			$this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-			unlink($link);
-			symlink($ret_kmz_name, $link);
-			chmod($link, 0664);
-		}
+			$this->verbosed("Failed to Create KMZ file :/ ");
+		}				
 
 		return $daily_folder;
 	}
@@ -355,21 +336,14 @@ class export extends dbcore
 			list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
 			#var_dump($distance_calc, $minLodPix, $distance);
 
-			$KML_data .= $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, $import['id']) . $Import_KML_Data;
-			if($Import_KML_Data != ""){
-				$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);
-			}
-			else{
-				return 0;
-			}
-
-			$kml_filename = $daily_folder."/".$import['hash'].$labeled.".kml";
-			$this->verbosed("Writing KML File for ".$import['title']." : ".$kml_filename);
-			$this->createKML->createKML($kml_filename, $import['username']." - ".$import['title'], $KML_data);
-
-			$this->verbosed("Starting to compress the KML to a KMZ.");
-			$create_kml_results = $this->createKML->CreateKMZ($kml_filename);
-			#var_dump($create_kml_results);
+			$KML_data .= $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, $import['id']);
+			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
+			
+			$kmz_filename = $daily_folder."/".$import['hash'].$labeled.".kmz";
+			$this->verbosed("Writing KMZ for ".$import['title']." : ".$kmz_filename);
+			$this->Zip->addFile($KML_data, 'doc.kml');
+			$this->Zip->setZipFile($kmz_filename);
+			$this->Zip->getZipFile();
 
 			$exports[] = array($this->daemon_htmlpath.$date."/".$import['hash'].$labeled.".kmz", $import['username']." - ".$import['title']);
 			##
@@ -379,33 +353,31 @@ class export extends dbcore
 		{
 			$KML_data .= $this->createKML->createNetworkLink($export[0], $export[1], 1, 0, "onInterval", 3600);
 		}
-		if($KML_data == ""){$KML_data .= $this->createKML->createFolder("No Daily Exports with GPS", $KML_data, 0);}
-
-		$kml_filename = $daily_folder."/daily_db".$labeled.".kml";
-		$this->verbosed("Writing the Daily KML File: ".$kml_filename);
-		$this->createKML->createKML($kml_filename, "WiFiDB Daily Export ($date)", $KML_data);
-
-		$this->verbosed("Starting to compress the KML to a KMZ.");
-		$ret_kmz_name = $this->createKML->CreateKMZ($kml_filename);
-		if($ret_kmz_name == -1)
+		
+		$kmz_filename = $daily_folder."/daily_db".$labeled.".kmz";
+		$this->verbosed("Writing the Daily KML File: ".$kmz_filename);
+		$KML_data = $this->createKML->createFolder("Daily Export", $KML_data, 0);
+		$KML_data = $this->createKML->createKMLstructure("WiFiDB Daily Export ($date)", $KML_data);
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		
+		if (file_exists($kmz_filename)) 
 		{
-			$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-		}
-		elseif($ret_kmz_name == -2)
-		{
-			$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+			$this->verbosed("KMZ created at ".$kmz_filename);
+			chmod($kmz_filename, 0664);
+			###
+			$link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
+			$this->verbosed('Creating symlink from "'.$kmz_filename.'" to "'.$link.'"');
+			unlink($link);
+			symlink($kmz_filename, $link);
+			chmod($link, 0664);
 		}
 		else
 		{
-			$this->verbosed("KMZ created at ".$ret_kmz_name);
-			chmod($ret_kmz_name, 0664);
-			##
-			$link = $this->daemon_out.'daily_db'.$labeled.'.kmz';
-			$this->verbosed('Creating symlink from "'.$ret_kmz_name.'" to "'.$link.'"');
-			unlink($link);
-			symlink($ret_kmz_name, $link);
-			chmod($link, 0664);
+			$this->verbosed("Failed to Create KMZ file :/ ");
 		}
+
 		return $daily_folder;
 	}
 
@@ -608,60 +580,47 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$this->verbosed('Found some GPS, writing KML File.', 2);
 			$this->createKML->LoadData($data);
-			$KML_string = $this->createKML->PlotAPpoint($hash, 0);
-			$full_kml_file = $this->daemon_out."newestAP.kml";
-			if($this->createKML->createKML($full_kml_file, "Newest AP", $KML_string, 1))
+			
+			#Export Newest AP KMZ
+			$KML_data = $this->createKML->PlotAPpoint($hash, 0);
+			
+			$kmz_filename = $this->daemon_out."newestAP.kmz";
+			$this->verbosed("Writing the Newest AP File: ".$kmz_filename);
+			$KML_data = $this->createKML->createKMLstructure("Newest AP", $KML_data);
+			$this->Zip->addFile($KML_data, 'doc.kml');
+			$this->Zip->setZipFile($kmz_filename);
+			$this->Zip->getZipFile();
+			
+			if (file_exists($kmz_filename)) 
 			{
-				$this->verbosed('Newest AP KML File written.', 2);
-				chmod($full_kml_file, 0664);
-				$this->verbosed("Starting to compress the KML to a KMZ.");
-
-				$ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
-				if($ret_kmz_name == -1)
-				{
-					$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-				}
-				elseif($ret_kmz_name == -2)
-				{
-					$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
-				}
-				else
-				{
-					$this->verbosed("Newest AP KMZ created at ".$ret_kmz_name);
-					chmod($ret_kmz_name, 0664);
-				}
+				$this->verbosed("Newest AP KMZ created at ".$kmz_filename);
+				chmod($kmz_filename, 0664);
 			}
 			else
 			{
-				Throw new ErrorException('Could not write NewestAP.');
+				$this->verbosed("Failed to Create Newest KMZ file :/ ");
+				#Throw new ErrorException('Could not write Newest AP KMZ.');
 			}
-			#####################################
-			$KML_string = $this->createKML->PlotAPpoint($hash, 1);
-			$full_kml_file = $this->daemon_out."newestAP_label.kml";
-			if($this->createKML->createKML($full_kml_file, "Newest AP Labeled", $KML_string, 1))
-			{
-				$this->verbosed('Newest AP Labeled KML File written.', 2);
-				chmod($full_kml_file, 0664);
-				$this->verbosed("Starting to compress the KML to a KMZ.");
 
-				$ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
-				if($ret_kmz_name == -1)
-				{
-					$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-				}
-				elseif($ret_kmz_name == -2)
-				{
-					$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
-				}
-				else
-				{
-					$this->verbosed("Newest AP Labeled KMZ created at ".$ret_kmz_name);
-					chmod($ret_kmz_name, 0664);
-				}
+			#Export Newest AP KMZ w/Label
+			$KML_data = $this->createKML->PlotAPpoint($hash, 1);
+			
+			$kmz_filename = $this->daemon_out."newestAP_label.kmz";
+			$this->verbosed("Writing the Newest AP Labeled File: ".$kmz_filename);
+			$KML_data = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_data);
+			$this->Zip->addFile($KML_data, 'doc.kml');
+			$this->Zip->setZipFile($kmz_filename);
+			$this->Zip->getZipFile();
+			
+			if (file_exists($kmz_filename)) 
+			{
+				$this->verbosed("Newest AP Labeled KMZ created at ".$kmz_filename);
+				chmod($kmz_filename, 0664);
 			}
 			else
 			{
-				Throw new ErrorException('Could not write Newest AP Labeled.');
+				$this->verbosed("Failed to Create Newest Labeled KMZ file :/ ");
+				#Throw new ErrorException('Could not write Newest AP Labeled KMZ.');
 			}
 		}
 	}
@@ -885,23 +844,21 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				$kml_data .= '</Folder>';
 			}
 			$kml_data .= '</Folder></kml>';
-
-			file_put_contents($output, $kml_data);
-
-			$ret_kmz_name = $this->createKML->CreateKMZ($output);
-			if($ret_kmz_name == -1)
+			
+			$this->Zip->addFile($kml_data, 'doc.kml');
+			$this->Zip->setZipFile($output);
+			$this->Zip->getZipFile();
+			
+			if (file_exists($output)) 
 			{
-				$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-			}
-			elseif($ret_kmz_name == -2)
-			{
-				$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+				$this->verbosed("KMZ created at ".$output);
+				chmod($output, 0664);
 			}
 			else
 			{
-				$this->verbosed("KMZ created at ".$ret_kmz_name);
-				chmod($ret_kmz_name, 0664);
-			}
+				$this->verbosed("Failed to Create KMZ file :/ ");
+			}		
+
 			$generated[] = $key.'.kmz';
 		}
 
@@ -926,22 +883,20 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 </Folder>
 </kml>';
 		$output = $daemon_export.'history.kml';
-		file_put_contents($output, $kml_data);
-
-		$ret_kmz_name = $this->createKML->CreateKMZ($output);
-		if($ret_kmz_name == -1)
+		
+		$this->Zip->addFile($kml_data, 'doc.kml');
+		$this->Zip->setZipFile($output);
+		$this->Zip->getZipFile();
+		
+		if (file_exists($output)) 
 		{
-			$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-		}
-		elseif($ret_kmz_name == -2)
-		{
-			$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+			$this->verbosed("KMZ created at ".$output);
+			chmod($output, 0664);
 		}
 		else
 		{
-			$this->verbosed("KMZ created at ".$ret_kmz_name);
-			chmod($ret_kmz_name, 0664);
-		}
+			$this->verbosed("Failed to Create KMZ file :/ ");
+		}		
 	}
 
 	/*
@@ -949,7 +904,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 	 */
 	public function GenerateUpdateKML()
 	{
-		$full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 3600).
+		$full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 0, 0, "onInterval", 3600).
 			$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
 		$full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
 
@@ -966,30 +921,27 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		//$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
 		//$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
 
-		//$kml_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
-		$kml_data = $new_AP_folder.$daily_folder.$full_folder;#.$archive_folder;
-
-		$full_kml_file = $this->daemon_out.'update.kml';
-		$this->createKML->createKML($full_kml_file, "WiFiDB Auto KMZ Generation", $kml_data);
-		chmod($full_kml_file, 0664);
-		#####################
-		$this->verbosed("Starting to compress the KML to a KMZ.");
-
-		$ret_kmz_name = $this->createKML->CreateKMZ($full_kml_file);
-		if($ret_kmz_name == -1)
+		//$KML_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
+		$KML_data = $new_AP_folder.$daily_folder.$full_folder;#.$archive_folder;
+		$KML_data = $this->createKML->createKMLstructure("Combined KMZ Network Link", $KML_data);
+		
+		$kmz_filename = $this->daemon_out.'update.kmz';
+		$this->verbosed("Writing KMZ : ".$kmz_filename);
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		
+		if (file_exists($kmz_filename)) 
 		{
-			$this->verbosed("You did not give a kml file... what am I supposed to do with that? :/ ");
-		}
-		elseif($ret_kmz_name == -2)
-		{
-			$this->verbosed("Failed to Zip up the KML to a KMZ file :/ ");
+			$this->verbosed("KMZ created at ".$kmz_filename);
+			chmod($kmz_filename, 0664);
 		}
 		else
 		{
-			$this->verbosed("KMZ created at ".$ret_kmz_name);
-			chmod($ret_kmz_name, 0664);
+			$this->verbosed("Failed create KMZ file :/ ");
 		}
-		return $ret_kmz_name;
+		
+		return $kmz_filename;
 	}
 
 	public function UserAllKml($user)
@@ -1047,33 +999,56 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		else
 		{
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-			$export_kml_file = $this->kml_out.$user_fn.".kml";
-			$KML_data = $this->createKML->createFolder($user, $KML_data, 0);
-			$this->createKML->createKML($export_kml_file, "$user AP's", $KML_data, 1);
-			$KML_data="";
-
-			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
-			if($ret_kmz_name == -1)
+			$kmz_filename = $this->kml_out.$user_fn.".kmz";
+			#$this->verbosed("Writing KMZ for ".$user_fn." : ".$kmz_filename);
+			$KML_data = $this->createKML->createKMLstructure($user_fn, $KML_data);
+			$this->Zip->addFile($KML_data, 'doc.kml');
+			$this->Zip->setZipFile($kmz_filename);
+			$this->Zip->getZipFile();
+			
+			if (file_exists($kmz_filename)) 
 			{
-				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
-			}
-			elseif($ret_kmz_name == -2)
-			{
-				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$user_fn.'.kmz">'.$user_fn.'.kmz</a>');
 			}
 			else
 			{
-				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$user_fn.'.kmz">'.$user_fn.'.kmz</a>');
+				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
 			}
 		}
 		return $results;
 	}
 
-	public function SingleApKML($id, $limit = NULL, $from = NULL)
+	public function SingleAp($id, $limit = NULL, $from = NULL)
 	{
 		if(!is_int($id))
 		{
-			throw new ErrorException('$id value for export::SingleApKML() is NaN');
+			throw new ErrorException('$id value for export::SingleAp() is NaN');
+			return 0;
+		}
+
+		list($KML_data, $export_ssid) = $this->SingleApKml($id, $limit, $from);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
+		$KML_data = $this->createKML->createKMLstructure($title, $KML_data);
+		$kmz_filename = $this->kml_out.$title.".kmz";
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		if (file_exists($kmz_filename)) 
+		{
+			$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+		}
+		else
+		{
+			$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
+		}
+		return $results;
+	}
+
+	public function SingleApKml($id, $limit = NULL, $from = NULL, $named=0, $new_icons=0)
+	{
+		if(!is_int($id))
+		{
+			throw new ErrorException('$id value for export::SingleAp() is NaN');
 			return 0;
 		}
 
@@ -1086,42 +1061,18 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$export_id = (int)$array['id'];
 			$export_ssid = $array['ssid'];
-			$ret = $this->ExportSingleAP($id, 1, $limit, $from);
+			$ret = $this->ExportSingleAP($id, $new_icons, $limit, $from);
 			if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
 			{
 				$this->createKML->ClearData();
 				$this->createKML->LoadData($ret);
-				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
+				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $named);
 			}
 		}
 
-		if($KML_data == "")
-		{
-			$results = array("mesg" => 'This AP has no gps. No KMZ file has been exported');
-		}
-		else
-		{
-			$KML_data = $this->createKML->createFolder($export_id." - ".$export_ssid, $KML_data, 0);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $export_id."-".$export_ssid);
-			$export_kml_file = $this->kml_out.$title.".kml";
-			$this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
-
-			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
-			if($ret_kmz_name == -1)
-			{
-				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
-			}
-			elseif($ret_kmz_name == -2)
-			{
-				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
-			}
-			else
-			{
-				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
-			}
-		}
-		return $results;
-
+		if($KML_data == ""){$KML_data = $dbcore->createKML->createFolder("AP has no GPS", $KML_data, 0);}
+		
+		return array($KML_data, $export_ssid);
 	}
 
 	public function UserListKml($points, $username, $title, $date, $named=0, $only_new=0, $new_icons=0, $regions=0)
@@ -1153,8 +1104,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			if($regions)
 			{
 				$final_box = $this->FindMostBox($box);
-				list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-				$KML_data = $this->createKML->PlotRegionBox($final_box, $distance, $minLodPix, $title).$Import_KML_Data;
+				#list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+				$KML_data = $this->createKML->PlotRegionBox($final_box, 100, 0, $title).$Import_KML_Data;
 			}
 			else
 			{
@@ -1188,43 +1139,21 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 
-			if($OutputPath)
+			$kmz_filename = $this->kml_out.$title.".kmz";
+			#$this->verbosed("Writing KMZ for ".$title." : ".$kmz_filename);
+			$KML_data = $this->createKML->createKMLstructure($title, $KML_data);
+			$this->Zip->addFile($KML_data, 'doc.kml');
+			$this->Zip->setZipFile($kmz_filename);
+			$this->Zip->getZipFile();
+			
+			if (file_exists($kmz_filename)) 
 			{
-				if(!file_exists($this->region_out.$date.'/'))
-				{
-					mkdir($this->region_out.$date.'/');
-				}
-				$export_kml_file = $this->region_out.$date.'/'.$file_hash.".kml";
-			}else
-			{
-				$export_kml_file = $this->kml_out.$title.".kml";
-			}
-
-			$this->createKML->createKML($export_kml_file, $title, $KML_data, 1);
-
-			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
-			if($ret_kmz_name == -1)
-			{
-				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/', "code" => -1);
-			}
-			elseif($ret_kmz_name == -2)
-			{
-				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/', "code" => -2);
+				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
 			}
 			else
 			{
-				if($OutputPath)
-				{
-					$results = $this->region_htmlpath.$file_hash.'.kmz';
-				}else
-				{
-					$results = array(
-								"mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'</a>',
-								"code" => 0
-								);
-				}
-				unlink($export_kml_file);
-			}
+				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
+			}			
 		}
 		return $results;
 	}
@@ -1250,22 +1179,20 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$KML_data = $this->createKML->createFolder("Search Export", $KML_data, 0);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), "Search_Export");
-			$export_kml_file = $this->kml_out.$title.".kml";
-			$this->createKML->createKML($export_kml_file, "$title", $KML_data, 1);
-			$KML_data="";
-
-			$ret_kmz_name = $this->createKML->CreateKMZ($export_kml_file);
-			if($ret_kmz_name == -1)
+			$kmz_filename = $this->kml_out.$title.".kmz";
+			#$this->verbosed("Writing KMZ for ".$title." : ".$kmz_filename);
+			$KML_data = $this->createKML->createKMLstructure($title, $KML_data);
+			$this->Zip->addFile($KML_data, 'doc.kml');
+			$this->Zip->setZipFile($kmz_filename);
+			$this->Zip->getZipFile();
+			
+			if (file_exists($kmz_filename)) 
 			{
-				$results = array("mesg" => 'Error: No kml file... what am I supposed to do with that? :/');
-			}
-			elseif($ret_kmz_name == -2)
-			{
-				$results = array("mesg" => 'Error: Failed to Zip up the KML to a KMZ file :/');
+				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
 			}
 			else
 			{
-				$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
 			}
 		}
 		return $results;
@@ -1412,6 +1339,32 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			$minLodPix = 512;
 		}
 		return array($distance_calc, $minLodPix, $ret);
+	}
+	
+	function get_point($latitude, $longitude, $bearing, $distance, $unit = 'm')
+	{
+		//	Radius of earth.  3959 miles or 6371 kilometers.
+		//  Pass in coordinates in Decimal form.  Example: -41.5786214
+		if ($unit == 'm')
+		{
+			$radius = 3959;
+		}
+		elseif ($unit == 'km')
+		{
+			$radius = 6371;
+		}
+
+		//	New latitude in degrees.
+		$new_latitude = rad2deg(asin(sin(deg2rad($latitude)) * cos($distance / $radius) + cos(deg2rad($latitude)) * sin($distance / $radius) * cos(deg2rad($bearing))));
+				
+		//	New longitude in degrees.
+		$new_longitude = rad2deg(deg2rad($longitude) + atan2(sin(deg2rad($bearing)) * sin($distance / $radius) * cos(deg2rad($latitude)), cos($distance / $radius) - sin(deg2rad($latitude)) * sin(deg2rad($new_latitude))));
+
+		//  Assign new latitude and longitude to an array to be returned to the caller.
+		$coord['latitude'] = $new_latitude;
+		$coord['longitude'] = $new_longitude;
+
+		return $coord;
 	}
 
 }

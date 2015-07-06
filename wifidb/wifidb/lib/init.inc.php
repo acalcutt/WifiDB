@@ -127,8 +127,9 @@ try
                 case "export":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
+					$dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
                 break;
                 ####
                 case "import":
@@ -185,10 +186,12 @@ try
                     __autoload("createKML");
                     __autoload("convert");
                     __autoload("export");
+                    __autoload("Zip");
                     $dbcore = new frontend($config);
                     $dbcore->convert = new convert($config);
+					$dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
                 break;
 
                 case "graph":

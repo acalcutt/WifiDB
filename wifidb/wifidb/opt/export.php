@@ -52,7 +52,7 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
 			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
-			$result = $dbcore->export->SingleApKML($id,$limit,$from);
+			$result = $dbcore->export->SingleAp($id,$limit,$from);
 			$dbcore->smarty->assign('results', $result);
 			$dbcore->smarty->display('export_results.tpl');
 			break;
@@ -64,7 +64,7 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
 			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
-			$result = $dbcore->export->SingleApKML($id,$limit,$from);
+			$result = $dbcore->export->SingleAp($id,$limit,$from);
 			$dbcore->smarty->assign('results', $result);
 			$dbcore->smarty->display('export_results.tpl');
 			break;
