@@ -1,9 +1,9 @@
 #!/usr/bin/php
 <?php
 /*
-importd.php, WiFiDB Import Daemon
-Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
-This script is made to do imports and be run as a cron job.
+PrePopulateDailyFolders.php
+Copyright (C) 2015 Phil Ferland.
+After a recovery, and there is no history KML data, this will try to generate all the previous history.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.

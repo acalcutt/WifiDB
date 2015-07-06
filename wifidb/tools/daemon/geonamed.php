@@ -2,8 +2,8 @@
 <?php
 /*
 geonamed.php, WiFiDB Geoname Daemon
-Copyright (C) 2015 Andrew Calcutt, based on geonamed.php by Phil Ferland. 
-This script is made to update geoname information and be run as a cron job. 
+Copyright (C) 2015 Andrew Calcutt, based on geonamed.php by Phil Ferland.
+This script is made to update geoname information and be run as a cron job.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -23,9 +23,9 @@ $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
 {
-	echo "Usage: importd.php [args...]
+	echo "Usage: geonamesd.php [args...]
   -v				Run Verbosely (SHOW EVERYTHING!)
-  -i				Version Info.
+  -version			Version Info.
   -h				Show this screen.
   -l				Show License Information.
   -f				Force daemon to run without being scheduled.
@@ -35,7 +35,7 @@ if(@$arguments['h'])
 	exit();
 }
 
-if(@$arguments['i'])
+if(@$arguments['version'])
 {
 	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
@@ -162,7 +162,7 @@ else
 		$geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
 		if(!$geo_array['geonameid'])
 		{continue;}
-		
+
 		$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
 		$admin1_array = array('id'=>'');
 		$admin2_array = array('id'=>'');
@@ -170,7 +170,7 @@ else
 		{
 			$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
 			$admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
-			
+
 			$sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
 			$admin1_res = $dbcore->sql->conn->query($sql);
 			$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);

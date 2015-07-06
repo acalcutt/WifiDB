@@ -1,10 +1,31 @@
+#!/usr/bin/php
 <?php
+/*
+daemon_prep.php
+Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
+Used to prepare for a recovery import. Will take filenames.txt that is a | seperated file that was generated with filenames_create.php as a psudo-backup, as long as you have the import files still.
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
 if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
+$arguments = $dbcore->parseArgs($argv);
+
+if(@$arguments['v'])
+{
+	$dbcore->verbose = 1;
+}
+else
+{
+	$dbcore->verbose = 0;
+}
 
 $lastedit="2013.04.28";
 $start="2008.05.23";
@@ -52,6 +73,7 @@ echo "Going through the import/up folder for the source files...\r\n";
 $file_a = array();
 $dh = opendir($vs1dir) or die("couldn't open directory");
 $ii = 0;
+$bad_ext = 0;
 while (!(($file = readdir($dh)) == false))
 {
     $ii++;
@@ -65,15 +87,17 @@ while (!(($file = readdir($dh)) == false))
         $fileext = strtolower($file_e[$file_max-1]);
         if ($fileext=='vs1' or $fileext=="db3" or $fileext=="csv" or $fileext=="db" or $fileext=="vsz")
         {
-            if($dbcore->insert_file($file, @$file_names))
+        	$ret = $dbcore->insert_file($file, @$file_names);
+            if($ret)
             {
                 $file_a[] = $file; //if Filename is valid, throw it into an array for later use
             }else
             {
-                $dbcore->verbosed("No good... Blehk.\r\n");
+                #$dbcore->verbosed("No good... Blehk.\r\n");
             }
         }else
         {
+        	$bad_ext++;
             $dbcore->verbosed("EXT: ".$fileext."\r\n");
             $dbcore->verbosed("File not supported -->$file\r\n");
             $dbcore->logd("( ".$file." ) is not a supported file extention of ".$file_e[$file_max-1]."\r\n If the file is a txt file run it through the converter first.\r\n\r\n");
@@ -85,9 +109,9 @@ while (!(($file = readdir($dh)) == false))
     }
     $i++;
 }
+closedir($dh);
 
 var_dump(count($file_a));
-
+var_dump($bad_ext);
 $TOTAL_END = date("Y-m-d H:i:s");
 $dbcore->verbosed("TOTAL Running time::\n\nStart: ".$TOTAL_START."\nStop : ".$TOTAL_END."\n");
-closedir($dh);

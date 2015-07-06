@@ -34,7 +34,6 @@ class frontend extends dbcore
 		if(strtolower(SWITCH_EXTRAS) != "api")
 		{
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
-			require_once($config['wifidb_install'].'/lib/manufactures.inc.php');
 			$this->sec->LoginCheck();
 			$this->meta = new stdClass();
 			$this->meta->ads = $config['ads'];
@@ -485,7 +484,7 @@ class frontend extends dbcore
 	{
 		if($username == ""){return 0;}
 		$total_aps = array();
-		
+
 		#Total APs
 		$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
@@ -500,7 +499,7 @@ class frontend extends dbcore
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
 		$prep2->execute();
 		$user_first = $prep2->fetch(2);
-	
+
 		#Get Last Active AP
 		$sql = "SELECT id, aps, gps, title, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);

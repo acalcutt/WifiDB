@@ -26,7 +26,7 @@ class dbcore
 	{
 		if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
 		$this->sql					  = new SQL($config);
-
+		$this->verbose					= 0;
 		$this->mesg					 = "";
 		$this->switches				 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
 		$this->reserved_users		   = $config['reserved_users'];
@@ -79,9 +79,6 @@ class dbcore
 		$this->KML_SOURCE_URL		   = $config['KML_SOURCE_URL'];
 
 		$this->smarty_path			  = $config['smarty_path'];
-		include_once $config['wifidb_install'].'lib/manufactures.inc.php' ;
-		$this->manuf_array			 = @$GLOBALS['manufactures'];
-		unset($GLOBALS['manufactures']);
 
 		$this->wifidb_email_updates	 = 0;
 		$this->email_validation		 = 1;
@@ -540,12 +537,18 @@ class dbcore
 		{
 			$mac = str_replace(":", "", $mac);
 		}
-		$man_mac = str_split($mac , 6);
-		#var_dump($man_mac[0]);
+
+		#var_dump("FindManuf Mac: ".$mac);
 		#var_dump($this->manuf_array[$man_mac[0]]);
-		if($this->manuf_array[$man_mac[0]] !== NULL)
+		$result = $this->sql->conn->prepare("SELECT manuf FROM `wifi`.`manufactures` WHERE `mac` = ?");
+		$result->bindParam(1, $mac, PDO::PARAM_STR);
+		$result->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		#var_dump("----------", $result->fetch(2), "----------");
+		if($result->rowCount() > 0)
 		{
-			$manuf = $this->manuf_array[$man_mac[0]];
+			$fetch = $result->fetch(2);
+			$manuf = $fetch['manuf'];
 		}
 		else
 		{
@@ -667,33 +670,33 @@ class dbcore
 	 */
 	public function verbosed($message = "", $color = 1)
 	{
-		$datetime = date("Y-m-d H:i:s");
-		if($message != '')
+		if($this->verbose)
 		{
-			switch($color)
-			{
-				case -1: #Error
-					$message = $this->colors['RED']. $datetime .$this->colors['YELLOW']."   ->	".$this->colors['RED'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				case 1: #normal message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['LIGHTGRAY'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				case 2: #good / header message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['GREEN'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				case 3: #different good/header message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['BLUE'].$message.$this->colors['LIGHTGRAY'];
-					break;
-				default: #normal message
-					$message = $this->colors['YELLOW']. $datetime .$this->colors['LIGHTGRAY']."   ->	".$this->colors['YELLOW'].$message.$this->colors['LIGHTGRAY'];
-					break;
+			$datetime = date("Y-m-d H:i:s");
+			if ($message != '') {
+				switch ($color) {
+					case -1: #Error
+						$message = $this->colors['RED'] . $datetime . $this->colors['YELLOW'] . "   ->	" . $this->colors['RED'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					case 1: #normal message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['LIGHTGRAY'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					case 2: #good / header message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['GREEN'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					case 3: #different good/header message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['BLUE'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+					default: #normal message
+						$message = $this->colors['YELLOW'] . $datetime . $this->colors['LIGHTGRAY'] . "   ->	" . $this->colors['YELLOW'] . $message . $this->colors['LIGHTGRAY'];
+						break;
+				}
+				echo $message . "\r\n";
+				return 1;
+			} else {
+				echo "WiFiDB Verbose was told to write a blank string :/\r\n";
+				return 0;
 			}
-			echo $message."\r\n";
-			return 1;
-		}else
-		{
-			echo "WiFiDB Verbose was told to write a blank string :/\r\n";
-			return 0;
 		}
 	}
 }

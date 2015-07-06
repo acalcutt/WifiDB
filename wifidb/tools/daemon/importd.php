@@ -24,28 +24,32 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
-  -i		(null)			Version Info.
-  -h		(null)			Show this screen.
-  -l		(null)			Show License Information.
   -f		(null)			Force daemon to run without being scheduled.
-  -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bab files table.
+  -o		(null)			Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
+  -d		(null)			Run the Import script as a Daemon. ( Will override the -i argument. )
+  -i        	(integer)       	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
+  -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
+  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
+  -l		(null)			Show License Information.
+  -h		(null)			Show this screen.
+  --version	(null)			Version Info.
+
 * = Not working yet.
 ";
-	exit();
+	exit(-1);
 }
 
-if(@$arguments['i'])
+if(@$arguments['version'])
 {
-	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+	echo "WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
-{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals");
-	exit();
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals\n";
+	exit(-2);
 }
 
 if(@$arguments['l'])
 {
-	$dbcore->verbosed("WiFiDB".$dbcore->ver_array['wifidb']."
+	echo "WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
 {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
@@ -54,16 +58,26 @@ Copyright (C) 2015 Andrew Calcutt, Phil Ferland
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
-");
-	exit();
+";
+	exit(-3);
 }
 
 if(@$arguments['v'])
 {
 	$dbcore->verbose = 1;
-}else
+}
+else
 {
 	$dbcore->verbose = 0;
+}
+
+if(@$arguments['i'])
+{
+	$dbcore->ImportID = (int)$arguments['i'];
+}
+else
+{
+	$dbcore->ImportID = 0;
 }
 
 if(@$arguments['f'])
@@ -82,6 +96,22 @@ if(@$arguments['t'])
 	$dbcore->thread_id = 1;
 }
 
+if(@$arguments['d'])
+{
+	$dbcore->daemonize = 1;
+}else
+{
+	$dbcore->daemonize = 0;
+}
+
+if(@$arguments['o'])
+{
+	$dbcore->RunOnceThrough = 1;
+}else
+{
+	$dbcore->RunOnceThrough = 0;
+}
+
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
 {
@@ -93,24 +123,27 @@ if(!file_exists($dbcore->pid_file_loc))
 {
 	if(!mkdir($dbcore->pid_file_loc))
 	{
-		throw new ErrorException("Could not make WiFiDB PID folder. ($dbcore->pid_file_loc)");
+		#throw new ErrorException("Could not make WiFiDB PID folder. ($dbcore->pid_file_loc)");
+		echo "Could not create PID Folder at path: $dbcore->pid_file_loc \n";
+		exit(-4);
 	}
 }
 if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
 {
-	die("Could not write pid file ($dbcore->pid_file), that's not good... >:[");
+	echo "Could not write pid file ($dbcore->pid_file), that's not good... >:[\n";
+	exit(-5);
 }
 
 $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
 
-$dbcore->verbosed("
+echo "
 WiFiDB".$dbcore->ver_array['wifidb']."
 Codename: ".$dbcore->ver_array['codename']."
  - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
 PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
- Log Level is: ".$dbcore->log_level);
+ Log Level is: ".$dbcore->log_level."\n";
 
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
@@ -128,11 +161,11 @@ $dbcore->sql->checkError(__LINE__, __FILE__);
 if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
+	exit(-6);
 }
 else
 {
-	trigger_error("Starting Impport on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
-	$dbcore->verbosed("Running...");
+	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
 	if(!$dbcore->ForceDaemonRun)
 	{
 		#Job Settings
@@ -144,284 +177,99 @@ else
 		$dbcore->SetStartJob($job_id);
 	}
 
-	#Check if there are any imports
 	While(1)
 	{
-		if($dbcore->checkDaemonKill())# Safely kill script if Daemon kill flag has been set
+		# Safely kill script if Daemon kill flag has been set
+		if($dbcore->checkDaemonKill())
 		{
 			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
 			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
 			unlink($dbcore->pid_file);
-			exit($dbcore->exit_msg);
+			echo "Daemon was told to kill itself\n";
+			exit(-7);
 		}
-
-		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash` FROM `wifi`.`files_tmp` where `importing` = '0' ORDER BY `date` ASC LIMIT 1";
-		$result = $dbcore->sql->conn->query($daemon_sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
+		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
+		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
 		{
-			$dbcore->verbosed("There was an error getting a list of import files");
+			$NextID = $dbcore->ImportID;
+
+		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
+			$NextID = $dbcore->GetNextImportID();
+		}
+		var_dump($NextID);
+		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `wifi`.`files_importing` WHERE `id` = ?";
+		$result = $dbcore->sql->conn->prepare($daemon_sql);
+		$result->bindParam(1, $NextID, PDO::PARAM_INT);
+		$result->execute();
+		if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+			$dbcore->verbosed("There was an error getting an import file");
+			$dbcore->return_message = -8;
 			break;
 		}
-		elseif($result->rowCount() === 0)
+		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
+			$dbcore->return_message = -9;
 			break;
 		}
 		else
 		{
-			##### make sure import/export files are in sync with remote nodes
-			//$dbcore->verbosed("Synchronizing files between nodes...", 1);
-			//$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
-			//exec ($cmd);
-			#####
+			if($dbcore->NodeSyncing)
+			{
+				##### make sure import/export files are in sync with remote nodes
+				$dbcore->verbosed("Synchronizing files between nodes...", 1);
+				$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
+				exec($cmd);
+				#####
+			}
 
 			$file_to_Import = $result->fetch(2);
 			if(!@$file_to_Import['id'])
 			{
 				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
+				if( !$dbcore->daemonize )
+				{
+					$dbcore->return_message = -10;
+					break;
+				}
 			}else
 			{
-				$remove_file = $file_to_Import['id'];
-				$source = $dbcore->PATH.'import/up/'.$file_to_Import['file'];
+				$ImportProcessReturn = $dbcore->ImportProcess($file_to_Import);
+				#$ImportProcessReturn = 1;
+				$dbcore->return_message = (int)$file_to_Import['id'];
 
-				#echo $file_to_Import['file']."\r\n";
-				$file_src = explode(".",$file_to_Import['file']);
-				$file_type = strtolower($file_src[1]);
-				$file_name = $file_to_Import['file'];
-				$file_hash = $file_to_Import['hash'];
-				$file_size = (filesize($source)/1024);
-				$file_date = $file_to_Import['date'];
-				#Lets check and see if it is has a valid VS1 file header.
-				if(in_array($file_type, $dbcore->convert_extentions))
+				switch($ImportProcessReturn)
 				{
-					$dbcore->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-					$update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '0', `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
-					$prep = $dbcore->sql->conn->prepare($update_tmp);
-					$prep->bindParam(1, $file_type, PDO::PARAM_STR);
-					$prep->bindParam(2, $remove_file, PDO::PARAM_INT);
-					$prep->execute();
-					$err = $dbcore->sql->conn->errorCode();
-					if($err[0] != "00000")
-					{
-						$dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-						$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
-						throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($daemon->sql->conn->errorInfo(),1));
-					}
-					$ret_file_name = $dbcore->convert->main($source);
-					if($ret_file_name === -1)
-					{
-						$dbcore->verbosed("Error Converting File. $source, Skipping to next file.");
+					#Error converting file for single run through, break loop.
+					case -1:
+						break;
+					#Error Converting file for daemon, continue run.
+					case 0:
 						continue;
-					}
-
-					$parts = pathinfo($ret_file_name);
-					$dest_name = $parts['basename'];
-					$file_hash1 = hash_file('md5', $ret_file_name);
-					$file_size1 = (filesize($ret_file_name)/1024);
-
-					$update = "UPDATE `wifi`.`files_tmp` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
-					$prep = $dbcore->sql->conn->prepare($update);
-					$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
-					$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
-					$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-					$prep->bindParam(4, $remove_file, PDO::PARAM_INT);
-					$prep->execute();
-					$err = $dbcore->sql->conn->errorCode();
-					if($err[0] == "00000")
-					{
-						$dbcore->verbosed("Conversion completed.", 1);
-						$dbcore->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $dbcore->This_is_me);
-						$source = $ret_file_name;
-						$file_name = $dest_name;
-						$file_hash = $file_hash1;
-						$file_size = $file_size1;
-					}else
-					{
-						$dbcore->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-						$dbcore->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($daemon->sql->conn->errorInfo(),1), "Error", $daemon->This_is_me);
-						throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($daemon->sql->conn->errorInfo(),1));
-					}
-				}
-				$return	=	file($source);
-				$count	=	count($return);
-				if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
-				{
-					$dbcore->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
-					$update_tmp = "UPDATE `wifi`.`files_tmp` SET `importing` = '1', `ap` = 'Preparing for Import' WHERE `id` = ?";
-					$prep4 = $dbcore->sql->conn->prepare($update_tmp);
-					$prep4->bindParam(1, $remove_file, PDO::PARAM_INT);
-					$prep4->execute();
-					if($dbcore->sql->checkError(__LINE__, __FILE__))
-					{
-						$dbcore->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.",
-							-1);
-						$dbcore->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($dbcore->sql->conn->errorInfo(),1),
-							"Error", $dbcore->This_is_me);
-						Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
-					}
-
-					//check to see if this file has already been imported into the DB
-					$sql_check = "SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1";
-					$prep = $dbcore->sql->conn->prepare($sql_check);
-					$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
-					$prep->execute();
-					if($dbcore->sql->checkError(__LINE__, __FILE__))
-					{
-						$dbcore->logd("Failed to select file hash from files table. :(",
-							"Error", $dbcore->This_is_me);
-						$dbcore->verbosed("Failed to select file hash from files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-						Throw new ErrorException("Failed to select file hash from files table. :(");
-					}
-
-					$fileqq = $prep->fetch(2);
-
-					if($file_hash !== @$fileqq['hash'])
-					{
-						if(count(explode(";", $file_to_Import['notes'])) === 1)
-						{
-							$user = str_replace(";", "", $file_to_Import['user']);
-							$dbcore->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
-						}else
-						{
-							$user = $file_to_Import['user'];
-							$dbcore->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
-						}
-						$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `wifi`.`files_tmp` WHERE `hash` = ?";
-						$prep_ext = $dbcore->sql->conn->prepare($sql_select_tmp_file_ext);
-						$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
-						$prep_ext->execute();
-						if($dbcore->sql->checkError())
-						{
-							$dbcore->logd("Failed to select previous convert extension. :(",
-								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Failed to select previous convert extension. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-							Throw new ErrorException("Failed to select previous convert extension. :(");
-						}
-						$prev_ext = $prep_ext->fetch(2);
-						$notes = $file_to_Import['notes'];
-						$title = $file_to_Import['title'];
-
-						$sql_insert_file = "INSERT INTO `wifi`.`files`
-						(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
-						VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
-						$prep1 = $dbcore->sql->conn->prepare($sql_insert_file);
-						$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
-						$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
-						$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-						$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
-						$prep1->bindParam(5, $user, PDO::PARAM_STR);
-						$prep1->bindParam(6, $notes, PDO::PARAM_STR);
-						$prep1->bindParam(7, $title, PDO::PARAM_STR);
-						$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
-						$prep1->bindParam(9, $prev_ext['prev_ext'], PDO::PARAM_STR);
-						$prep1->bindParam(10, $dbcore->node_name, PDO::PARAM_STR);
-						$prep1->execute();
-
-						if($dbcore->sql->checkError(__LINE__, __FILE__))
-						{
-							$dbcore->logd("Failed to Insert the results of the new Import into the files table. :(",
-								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($dbcore->sql->conn->errorInfo(), 1), -1);
-							Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
-						}else{
-							$file_row = $dbcore->sql->conn->lastInsertID();
-							#var_dump($file_row);
-							$dbcore->verbosed("Added $source ($remove_file) to the Files table.\n");
-						}
-
-						$import_ids = $dbcore->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
-
-						$tmp = $dbcore->import->import_vs1( $source, $user, $file_row );
-
-						if(@$tmp[0] === -1)
-						{
-							trigger_error("Import Error! Reason: $tmp[1] |=| $source Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
-							$dbcore->logd("Skipping Import \nReason: $tmp[1]\n".$file_name,
-								"Error", $dbcore->This_is_me);
-							$dbcore->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
-							//remove files_tmp row and user_imports row
-							$dbcore->cleanBadImport($import_ids, $file_row, $remove_file, "Import Error! Reason: $tmp[1] |=| $source", $dbcore->thread_id);
-						}else
-						{
-							$dbcore->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
-							$update_files_table_sql = "UPDATE `wifi`.`files` SET `aps` = ?, `gps` = ?, `completed` = 1 WHERE `id` = ?";
-							$prep_update_files_table = $dbcore->sql->conn->prepare($update_files_table_sql);
-							$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
-							$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
-							$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
-
-							$prep_update_files_table->execute();
-							$dbcore->sql->checkError(__LINE__, __FILE__);
-
-							$sql = "UPDATE `wifi`.`user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ? WHERE `id` = ?";
-							$prep3 = $dbcore->sql->conn->prepare($sql);
-							foreach($import_ids as $id)
-							{
-								$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
-								$prep3->bindParam(2, $file_date, PDO::PARAM_STR);
-								$prep3->bindParam(3, $tmp['aps'], PDO::PARAM_INT);
-								$prep3->bindParam(4, $tmp['gps'], PDO::PARAM_INT);
-								$prep3->bindParam(5, $file_row, PDO::PARAM_INT);
-								$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
-								$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
-								$prep3->bindParam(8, $id, PDO::PARAM_INT);
-								$prep3->execute();
-								$dbcore->sql->checkError(__LINE__, __FILE__);
-								$dbcore->verbosed("Updated User Import row. ($id : $file_hash)", 2);
-							}
-
-							$del_file_tmp = "DELETE FROM `wifi`.`files_tmp` WHERE `id` = ?";
-							#echo $del_file_tmp."\r\n";
-							$prep = $dbcore->sql->conn->prepare($del_file_tmp);
-							$prep->bindParam(1, $remove_file, PDO::PARAM_INT);
-							$prep->execute();
-							if($dbcore->sql->checkError(__LINE__, __FILE__))
-							{
-								//**TODO
-								#mail_users("Error removing file: $source ($remove_file)", "Error removing file: $source ($remove_file)", "import", 1);
-								$dbcore->logd("Error removing $source ($remove_file) from the Temp files table\r\n\t".var_export($dbcore->sql->conn->errorInfo(),1),
-									"Error", $dbcore->This_is_me);
-								$dbcore->verbosed("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1), -1);
-								Throw new ErrorException("Error removing $source ($remove_file) from the Temp files table\n\t".var_export($dbcore->sql->conn->errorInfo(),1));
-							}else
-							{
-								//**TODO
-								#$message = "File has finished importing.\r\nUser: $user\r\nTitle: $title\r\nFile: $source ($remove_file)\r\nLink: ".$dbcore->PATH."/opt/userstats.php?func=useraplist&row=$newrow \r\n-WiFiDB Daemon.";
-								#mail_users($message, $subject, "import");
-								$dbcore->verbosed("Removed ".$remove_file." from the Temp files table.\n");
-							}
-						}
-					}else
-					{
-						trigger_error("File already imported. $source Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
-						$dbcore->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($remove_file)",
-							"Warning", $dbcore->This_is_me);
-						//$dbcore->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($remove_file)");
-						//unlink($source);
-						$dbcore->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($remove_file)");
-						$dbcore->cleanBadImport(0, 0, $remove_file, 'Already Imported', $dbcore->thread_id);
-					}
-				}else
-				{
-					trigger_error("File is Empty or bad $source Thread ID: ".$dbcore->thread_id, E_USER_NOTICE);
-					$dbcore->logd("File is empty or not valid. $source ($remove_file)",
-						"Warning", $dbcore->This_is_me);
-					$dbcore->verbosed("File is empty. Skipping and deleting from files_tmp. $source ($remove_file)\n");
-					//unlink($source);
-					$dbcore->verbosed("File is empty, go and import something. Skipping source file. $source ($remove_file-$file_hash)\n");
-					$dbcore->cleanBadImport(0, 0, $remove_file, 'Empty or not valid', $dbcore->thread_id);
+					case 1:
+						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
 				}
 			}
+		}
+		if($dbcore->ImportID !== 0)
+		{
+			break;
+		}
+		if($dbcore->daemonize)
+		{
+			$dbcore->verbosed("We have been told to become a daemon, will sleep for the defined time period of $dbcore->DaemonSleepTime seconds.", 1);
+			sleep($dbcore->DaemonSleepTime);
 		}
 	}
 	if(!$dbcore->ForceDaemonRun)
 	{
 		#Finished Job
 		$dbcore->verbosed("Finished - Id:".$job_id, 1);
-
 		#Set Next Run Job to Waiting
 		$dbcore->SetNextJob($job_id);
-		$dbcore->verbosed("Finished - Job: ".$dbcore->daemon_name , 1);
+		$dbcore->verbosed("Next Job Schedule Set for: ".$dbcore->daemon_name , 1);
 	}
 }
 unlink($dbcore->pid_file);
+
+exit($dbcore->return_message);
