@@ -57,20 +57,20 @@ set_exception_handler('WiFiDBexception_handler');
 
 if(strtolower(SWITCH_SCREEN) == "cli")
 {
-    if(!file_exists('../config.inc.php'))
-    {
-        $error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
-        throw new ErrorException($error_msg);
-    }
-    require '../config.inc.php';
-    require $daemon_config['wifidb_install'].'/lib/config.inc.php';
+	if(!file_exists('../config.inc.php'))
+	{
+		$error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
+		throw new ErrorException($error_msg);
+	}
+	require '../config.inc.php';
+	require $daemon_config['wifidb_install'].'/lib/config.inc.php';
 }else
 {
-    require 'config.inc.php';
+	require 'config.inc.php';
 }
 $dsn = $config['srvc'].':host='.$config['host'];
 $options = array(
-    PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
 );
 
 $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
@@ -83,14 +83,14 @@ unset($res);
 unset($conn);
 if($fetch['version'] != '0.30 b1 Alpha')
 {
-    $cwd = getcwd().'/';
-    $gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
-    if($cwd != $gen_cwd)
-    {
-        throw new ErrorException('The database is still in an old format, you will need to do an upgrade first.<br>
-                If this database is older than Version 0.20 I would do a Full Fresh Install, After making a backup of all your data.
-                Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
-    }
+	$cwd = getcwd().'/';
+	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
+	if($cwd != $gen_cwd)
+	{
+		throw new ErrorException('The database is still in an old format, you will need to do an upgrade first.<br>
+				If this database is older than Version 0.20 I would do a Full Fresh Install, After making a backup of all your data.
+				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
+	}
 }
 unset($fetch);
 unset($gen_cwd);
@@ -99,14 +99,14 @@ unset($sql);
 
 if(strtolower(SWITCH_SCREEN) != "cli")
 {
-    if(strtolower(SWITCH_EXTRAS) != "api")
-    {
-        if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
-        {
-            create_base_cookies($config['hosturl'].$config['root'].'/');
-            exit();
-        }
-    }
+	if(strtolower(SWITCH_EXTRAS) != "api")
+	{
+		if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
+		{
+			create_base_cookies($config['hosturl'].$config['root'].'/');
+			exit();
+		}
+	}
 }
 
 
@@ -147,109 +147,109 @@ if(strtolower(SWITCH_SCREEN) != "cli")
 
 try
 {
-    switch(strtolower(SWITCH_SCREEN))
-    {
-        case "cli":
-            switch(strtolower(SWITCH_EXTRAS))
-            {
-                ####
-                case "export":
-                    $dbcore = new daemon($config, $daemon_config);
-                    $dbcore->convert = new convert($config);
+	switch(strtolower(SWITCH_SCREEN))
+	{
+		case "cli":
+			switch(strtolower(SWITCH_EXTRAS))
+			{
+				####
+				case "export":
+					$dbcore = new daemon($config, $daemon_config);
+					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
-                break;
-                ####
-                case "import":
-                    $dbcore = new daemon($config, $daemon_config);
-                    $dbcore->convert = new convert($config);
-                    $dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
-                ####
-                case "daemon":
-                    $dbcore = new daemon($config, $daemon_config);
-                    $dbcore->convert = new convert($config);
-					$dbcore->Zip = new Zip;
-                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
-                    $dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
-                break;
-                ####
-                case "cli":
-                    $dbcore = new wdbcli($config, $daemon_config);
-                break;
-                ####
-                case "api":
-                    $dbcore = new api($config);
-                    break;
-                ####
-                case "frontend_prep":
-                    $dbcore = new frontend($config);
-                    break;
-                ####
-                default:
-                    die("bad cli extras switch.");
-                    break;
-            }
-            $dbcore->cli = 1;
-            break;
-
-        ################
-        case "html":
-            switch(strtolower(SWITCH_EXTRAS))
-            {
-                case "api":
-                    __autoload("createKML");
-                    __autoload("convert");
-                    __autoload("export");
-                    __autoload("api");
-                    __autoload("Zip");
-
-                    $dbcore = new api($config);
-                    $dbcore->convert = new convert($config);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
-                    $dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
-                break;
-
-                case "export":
-                    __autoload("createKML");
-                    __autoload("convert");
-                    __autoload("export");
-                    __autoload("Zip");
-                    $dbcore = new frontend($config);
-                    $dbcore->convert = new convert($config);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+				break;
+				####
+				case "import":
+					$dbcore = new daemon($config, $daemon_config);
+					$dbcore->convert = new convert($config);
+					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
+				####
+				case "daemon":
+					$dbcore = new daemon($config, $daemon_config);
+					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
-                break;
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
+				break;
+				####
+				case "cli":
+					$dbcore = new wdbcli($config, $daemon_config);
+				break;
+				####
+				case "api":
+					$dbcore = new api($config);
+					break;
+				####
+				case "frontend_prep":
+					$dbcore = new frontend($config);
+					break;
+				####
+				default:
+					die("bad cli extras switch.");
+					break;
+			}
+			$dbcore->cli = 1;
+			break;
 
-                case "graph":
+		################
+		case "html":
+			switch(strtolower(SWITCH_EXTRAS))
+			{
+				case "api":
+					__autoload("createKML");
+					__autoload("convert");
+					__autoload("export");
+					__autoload("api");
+					__autoload("Zip");
+
+					$dbcore = new api($config);
+					$dbcore->convert = new convert($config);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+					$dbcore->Zip = new Zip;
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+				break;
+
+				case "export":
+					__autoload("createKML");
+					__autoload("convert");
+					__autoload("export");
+					__autoload("Zip");
+					$dbcore = new frontend($config);
+					$dbcore->convert = new convert($config);
+					$dbcore->Zip = new Zip;
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+				break;
+
+				case "graph":
 					__autoload("graphs");
-                    $dbcore = new frontend($config);
-                    $dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
-                break;
+					$dbcore = new frontend($config);
+					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
+				break;
 
-                case "cp":
-                    $dbcore = new frontend($config);
-                break;
+				case "cp":
+					$dbcore = new frontend($config);
+				break;
 
-                default:
-                    $dbcore = new frontend($config);
-                break;
-            }
-            $dbcore->cli = 0;
-            break;
-        ################
-        Default:
-            die("Unknown Switch Set. gurgle...cough...dead...");
-            break;
-    }
-    #done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
+				default:
+					$dbcore = new frontend($config);
+				break;
+			}
+			$dbcore->cli = 0;
+			break;
+		################
+		Default:
+			die("Unknown Switch Set. gurgle...cough...dead...");
+			break;
+	}
+	#done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
 }
 catch (Exception $e) {
-    throw new ErrorException($e);
+	throw new ErrorException($e);
 }
 
 
@@ -291,7 +291,7 @@ if(!function_exists('create_base_cookies'))
 		{
 			$root = $folder;
 		}
-		$PATH       = ";path=".$root;
+		$PATH	   = ";path=".$root;
 		if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
 		{
 			$ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
@@ -350,4 +350,3 @@ if(!function_exists('create_base_cookies'))
 		exit();
 	}
 }
-
