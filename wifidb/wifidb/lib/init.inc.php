@@ -207,7 +207,6 @@ try
 
 					$dbcore = new api($config);
 					$dbcore->convert = new convert($config);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
@@ -268,85 +267,81 @@ if(!function_exists('CLIErrorHandlingFunction'))
 	}
 }
 
-
-if(!function_exists('create_base_cookies'))
+function create_base_cookies($URL_PATH)
 {
-	function create_base_cookies($URL_PATH)
+	$ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
+	if($ssl_flag == "https")
 	{
-		$ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
-		if($ssl_flag == "https")
-		{
-			$ssl = ";secure";
-		}else
-		{
-			$ssl = "";
-		}
-		$domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
-		$folder = parse_url($URL_PATH, PHP_URL_PATH);
-		$c = strlen($folder);
-		if($folder[$c-1] == "/" && $c > 1)
-		{
-			$root = substr($folder, 0, -1);
-		}else
-		{
-			$root = $folder;
-		}
-		$PATH	   = ";path=".$root;
-		if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
-		{
-			$ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
-		}else
-		{
-			$ultimate_path = $URL_PATH;
-		}
-
-		?>
-	<script type="text/javascript">
-		function checkTimeZone()
-		{
-			var expiredays = 86400;
-			var rightNow = new Date();
-			var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
-			var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
-			var temp = date1.toGMTString();
-			var date3 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
-			var temp = date2.toGMTString();
-			var date4 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
-			var hoursDiffStdTime = (date1 - date3) / (1000 * 60 * 60);
-			var hoursDiffDaylightTime = (date2 - date4) / (1000 * 60 * 60);
-			if (hoursDiffDaylightTime == hoursDiffStdTime)
-			{
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate()+expiredays);
-				document.cookie="wifidb_client_dst=" +escape("0")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate()+expiredays);
-				document.cookie="wifidb_client_check=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate()+expiredays);
-				document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-			}
-			else
-			{
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate()+expiredays);
-				document.cookie="wifidb_client_dst" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate()+expiredays);
-				document.cookie="wifidb_client_check" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-
-				var exdate=new Date();
-				exdate.setDate(exdate.getDate()+expiredays);
-				document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-			}
-			location.href = '<?php echo $ssl_flag.'://'.$ultimate_path; ?>';
-		}
-		</script>
-		<body onload = "checkTimeZone();"> </body>
-		<?php
-		exit();
+		$ssl = ";secure";
+	}else
+	{
+		$ssl = "";
 	}
+	$domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
+	$folder = parse_url($URL_PATH, PHP_URL_PATH);
+	$c = strlen($folder);
+	if($folder[$c-1] == "/" && $c > 1)
+	{
+		$root = substr($folder, 0, -1);
+	}else
+	{
+		$root = $folder;
+	}
+	$PATH	   = ";path=".$root;
+	if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
+	{
+		$ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
+	}else
+	{
+		$ultimate_path = $URL_PATH;
+	}
+
+	?>
+<script type="text/javascript">
+	function checkTimeZone()
+	{
+		var expiredays = 86400;
+		var rightNow = new Date();
+		var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
+		var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
+		var temp = date1.toGMTString();
+		var date3 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
+		var temp = date2.toGMTString();
+		var date4 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
+		var hoursDiffStdTime = (date1 - date3) / (1000 * 60 * 60);
+		var hoursDiffDaylightTime = (date2 - date4) / (1000 * 60 * 60);
+		if (hoursDiffDaylightTime == hoursDiffStdTime)
+		{
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate()+expiredays);
+			document.cookie="wifidb_client_dst=" +escape("0")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate()+expiredays);
+			document.cookie="wifidb_client_check=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate()+expiredays);
+			document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		}
+		else
+		{
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate()+expiredays);
+			document.cookie="wifidb_client_dst" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate()+expiredays);
+			document.cookie="wifidb_client_check" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+
+			var exdate=new Date();
+			exdate.setDate(exdate.getDate()+expiredays);
+			document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		}
+		location.href = '<?php echo $ssl_flag.'://'.$ultimate_path; ?>';
+	}
+	</script>
+	<body onload = "checkTimeZone();"> </body>
+	<?php
+	exit();
 }

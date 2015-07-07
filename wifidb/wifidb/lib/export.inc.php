@@ -391,7 +391,7 @@ class export extends dbcore
 			throw new ErrorException("AP ID is empty or not an Integer, supply one.");
 			return 0;
 		}
-		$sql2 = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
 
 		$prep2 = $this->sql->conn->query($sql2);
 		$this->sql->checkError(__LINE__, __FILE__);
@@ -551,7 +551,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$hash = $ap_array['ap_hash'];
 			$id = (int)$ap_array['id'];
-			$data = $this->ExportSingleAP($id, $new_icons);
+			$data = $this->ExportSingleAP($id, $new_icons); 	
 			$this->createKML->LoadData($data);
 			if($labelap){$KML_string = $this->createKML->PlotAPpoint($hash, 1);}else{$KML_string = $this->createKML->PlotAPpoint($hash, 0);}
 		}

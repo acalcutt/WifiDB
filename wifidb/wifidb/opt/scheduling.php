@@ -195,18 +195,9 @@ switch($func)
             );
         }
 
-        if(file_exists($daemon_out."update.kmz"))
-        {
-
-            $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'out/daemon/update.kmz">Download!</a>';
-
-        }else
-        {
-            $kml_head['update_kml'] = 'The Daemon Needs to be on and you need to import something with GPS for the first update.kmz file to be created.';
-        }
-
-        if($files[0]){$kmldate=$files[0];}else{$kmldate=date ("Y-m-d");}
-
+        $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">Download!</a>';
+        $kmldate=date ("Y-m-d");
+		#-----------
         $sql = "SELECT `LA` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
@@ -215,82 +206,83 @@ switch($func)
         {
             if(strpos($ap_array['LA'], ".")){$lastapdate = substr($ap_array['LA'], 0, strpos($ap_array['LA'], "."));}else{$lastapdate = $ap_array['LA'];}
 
-            $newest = $daemon_out.'newestAP.kml';
             $kml_head['newest_date'] = $lastapdate;
-            $kml_head['newest_link'] = $dbcore->URL_PATH."api/latest.php?labeled=0&download=newestAP.kmz";
+            $kml_head['newest_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=0";
             $kml_head['newest_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
 
-            $newest_label = $daemon_out.'newestAP_label.kml';
             $kml_head['newest_labeled_date'] = $lastapdate;
-            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/latest.php?labeled=1&download=newestAP_label.kmz";
+            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=1";
             $kml_head['newest_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
         }
         else
         {
-            $newest = $daemon_out.'newestAP.kml';
             $kml_head['newest_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['newest_link'] = "#";
             $kml_head['newest_size'] = "0.00 kB";
 
-            $newest_label = $daemon_out.'newestAP_label.kml';
             $kml_head['newest_labeled_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['newest_labeled_link'] = "#";
             $kml_head['newest_labeled_size'] = "0.00 kB";
         }
+		#-----------
+		$date_search = $kmldate."%";
+        $sql = "SELECT `id`, `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+        $result = $dbcore->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
 
-        $date = date("Y-m-d");
-        $full = $daemon_out.$files[0].'/full_db.kmz';
-        if(file_exists($full))
+        if($ap_array['id'])
         {
-            $kml_head['full_date'] = date ("Y-m-d H:i:s", filemtime($full));
-            $kml_head['full_size'] = $dbcore->format_size(filesize($full), 2);
+            if(strpos($ap_array['date'], ".")){$lastapdate = substr($ap_array['date'], 0, strpos($ap_array['date'], "."));}else{$lastapdate = $ap_array['date'];}
 
-            $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/full_db.kmz';
-        }else
-        {
-            $kml_head['full_date'] = "None generated for ".$kmldate." yet.";
-            $kml_head['full_size'] = "0.00 kB";
-            $kml_head['full_link'] = "#";
+            
+            $kml_head['daily_date'] = $lastapdate;
+            $kml_head['daily_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=0";
+            $kml_head['daily_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
+
+            $kml_head['daily_labeled_date'] = $lastapdate;
+            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=1";
+            $kml_head['daily_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
         }
-
-        $full_label = $daemon_out.$files[0].'/full_db_label.kmz';
-        if(file_exists($full_label))
-        {
-            $kml_head['full_labeled_date'] = date ("Y-m-d H:i:s", filemtime($full_label));
-            $kml_head['full_labeled_size'] = $dbcore->format_size(filesize($full_label), 2);
-            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/full_db_label.kmz';
-        }else
-        {
-            $kml_head['full_labeled_date'] = "None generated for ".$kmldate." yet.";
-            $kml_head['full_labeled_size'] = "0.00 kB";
-            $kml_head['full_labeled_link'] = "#";
-        }
-
-        $daily_label = $daemon_out.$files[0].'/daily_db_label.kmz';
-        if(file_exists($daily_label))
-        {
-            $kml_head['daily_labeled_date'] = date ("Y-m-d H:i:s", filemtime($daily_label));
-            $kml_head['daily_labeled_size'] = $dbcore->format_size(filesize($daily_label), 2);
-            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/daily_db_label.kmz';
-        }else
-        {
-            $kml_head['daily_labeled_date'] = "None generated for ".$kmldate." yet.";
-            $kml_head['daily_labeled_size'] = "0.00 kB";
-            $kml_head['daily_labeled_link'] = "#";
-        }
-
-        $daily = $daemon_out.$files[0].'/daily_db.kmz';
-        if(file_exists($daily))
-        {
-            $kml_head['daily_date'] = date ("Y-m-d H:i:s", filemtime($daily));
-            $kml_head['daily_size'] = $dbcore->format_size(filesize($daily), 2);
-            $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/".$files[0].'/daily_db.kmz';
-        }else
+        else
         {
             $kml_head['daily_date'] = "None generated for ".$kmldate." yet.";
-            $kml_head['daily_size'] = "0.00 kB";
             $kml_head['daily_link'] = "#";
+            $kml_head['daily_size'] = "0.00 kB";
+
+            $kml_head['daily_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['daily_labeled_link'] = "#";
+            $kml_head['daily_labeled_size'] = "0.00 kB";
         }
+		#-----------
+        $sql = "SELECT `id`, `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+        $result = $dbcore->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
+
+        if($ap_array['id'])
+        {
+            if(strpos($ap_array['date'], ".")){$lastapdate = substr($ap_array['date'], 0, strpos($ap_array['date'], "."));}else{$lastapdate = $ap_array['date'];}
+
+            
+            $kml_head['full_date'] = $lastapdate;
+            $kml_head['full_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=0";
+            $kml_head['full_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
+
+            $kml_head['full_labeled_date'] = $lastapdate;
+            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=1";
+            $kml_head['full_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
+        }
+        else
+        {
+            $kml_head['full_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['full_link'] = "#";
+            $kml_head['full_size'] = "0.00 kB";
+
+            $kml_head['full_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['full_labeled_link'] = "#";
+            $kml_head['full_labeled_size'] = "0.00 kB";
+        }
+		#-----------
+
         $dbcore->smarty->assign('wifidb_page_label', "Daemon KML Exports");
         $dbcore->smarty->assign('wifidb_kml_head', $kml_head);
         $dbcore->smarty->assign('wifidb_kml_all_array', $kml_all);
@@ -352,7 +344,7 @@ switch($func)
             ';
             $val = $val*2;
         }
-        $sched_row = array();
+        $importing_row = array();
         $n=0;
         $sql = "SELECT * FROM `wifi`.`files_importing` ORDER BY `date` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
@@ -365,21 +357,21 @@ switch($func)
             {
                 $color = 'yellow';
             }
-            $sched_row[$n]['color'] = $color;
-            $sched_row[$n]['id'] = $newArray['id'];
-            $sched_row[$n]['file'] = $newArray['file'];
-            $sched_row[$n]['title'] = $newArray['title'];
-            $sched_row[$n]['date'] = $newArray['date'];
-            $sched_row[$n]['size'] = $newArray['size'];
-            $sched_row[$n]['hash'] = $newArray['hash'];
-            $sched_row[$n]['user'] = $newArray['user'];
+            $importing_row[$n]['color'] = $color;
+            $importing_row[$n]['id'] = $newArray['id'];
+            $importing_row[$n]['file'] = $newArray['file'];
+            $importing_row[$n]['title'] = $newArray['title'];
+            $importing_row[$n]['date'] = $newArray['date'];
+            $importing_row[$n]['size'] = $newArray['size'];
+            $importing_row[$n]['hash'] = $newArray['hash'];
+            $importing_row[$n]['user'] = $newArray['user'];
 
             $tot = "";
             $ssid = "";
             switch($newArray['ap'])
             {
                 case "":
-                    $ssid = "<td colspan='2' align='center'>Not being imported</td>";
+                    $ssid = "<td colspan='2' align='center'>Processing...</td>";
                     break;
                 case "Preparing for Import":
                     $ssid = "<td colspan='2' align='center'>Preparing for Import...</td>";
@@ -395,7 +387,29 @@ switch($func)
                     if($newArray['tot'] == NULL){$tot = "";}else{$tot = '<td align="center">'.$newArray['tot'].'</td>';}
                     break;
             }
-            $sched_row[$n]['last_cell'] = $ssid.$tot;
+            $importing_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
+		
+        $waiting_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            $color = 'yellow';
+            $waiting_row[$n]['color'] = $color;
+            $waiting_row[$n]['id'] = $newArray['id'];
+            $waiting_row[$n]['file'] = $newArray['file'];
+            $waiting_row[$n]['title'] = $newArray['title'];
+            $waiting_row[$n]['date'] = $newArray['date'];
+            $waiting_row[$n]['size'] = $newArray['size'];
+            $waiting_row[$n]['hash'] = $newArray['hash'];
+            $waiting_row[$n]['user'] = $newArray['user'];
+
+            $tot = "";
+            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
+            $waiting_row[$n]['last_cell'] = $ssid.$tot;
             $n++;
         }
 
@@ -489,7 +503,8 @@ switch($func)
         $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
         $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
         $dbcore->smarty->assign('wifidb_daemons', $pid_row);
-        $dbcore->smarty->assign('wifidb_done_all', $sched_row);
+        $dbcore->smarty->assign('wifidb_importing', $importing_row);
+		$dbcore->smarty->assign('wifidb_waiting', $waiting_row);
         $dbcore->smarty->display('scheduling_waiting.tpl');
     break;
 }

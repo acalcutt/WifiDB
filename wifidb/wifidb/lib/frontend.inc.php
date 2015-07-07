@@ -441,14 +441,14 @@ class frontend extends dbcore
 			else
 				{$style="light";$flip=1;}
 				
-			if($ap_array['lat'] == "0.0000")
+			if($array['lat'] == "0.0000")
 			{
 				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$dbcore->URL_PATH."../api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 
 			if($array['ssid'] == "")
@@ -615,7 +615,7 @@ class frontend extends dbcore
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$dbcore->URL_PATH."../api/export.php?func=exp_ap_netlink&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 
 			if($ap_array['ssid'] == '')
@@ -832,10 +832,10 @@ class frontend extends dbcore
 			}
 			if($newArray['lat'] == "0.0000")
 			{
-				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_off.png\">";
+				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
 			}else
 			{
-				$results_all[$i]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."../api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."../img/globe_on.png\"></a>";
+				$results_all[$i]['globe_html'] = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 			if($newArray['ssid'] == '')
 			{

@@ -112,13 +112,13 @@ if not, write to the
                 <br />
                 <table border="1" width="90%">
                     <tr class="style4">
-                        <th border="1" colspan="7" align="center">Files waiting for import</th>
+                        <th border="1" colspan="7" align="center">Files being imported</th>
                     </tr>
                     <tr align="center">
                         <td border="1">
-                            {foreach item=wifidb_done from=$wifidb_done_all}
+                            {foreach item=wifidb_imp from=$wifidb_importing}
                             <br>
-                            <table style="background-color: {$wifidb_done.color}" border="1"  width="100%">
+                            <table style="background-color: {$wifidb_imp.color}" border="1"  width="100%">
                                 <tr class="style4">
                                     <th>ID</th>
                                     <th>Filename</th>
@@ -126,25 +126,68 @@ if not, write to the
                                     <th>Date</th>
                                     <th>size</th>
                                 </tr>
-                                <tr style="background-color: {$wifidb_done.color}">
-                                    <td align="center">{$wifidb_done.id}</td>
-                                    <td align="center">{$wifidb_done.file}</td>
-                                    <td align="center">{$wifidb_done.title}</td>
-                                    <td align="center">{$wifidb_done.date}</td>
-                                    <td align="center">{$wifidb_done.size}</td>
+                                <tr style="background-color: {$wifidb_imp.color}">
+                                    <td align="center">{$wifidb_imp.id}</td>
+                                    <td align="center">{$wifidb_imp.file}</td>
+                                    <td align="center">{$wifidb_imp.title}</td>
+                                    <td align="center">{$wifidb_imp.date}</td>
+                                    <td align="center">{$wifidb_imp.size}</td>
                                 </tr>
                                 <tr class="style4">
-                                    <th style="background-color: {$wifidb_done.color}"></th>
+                                    <th style="background-color: {$wifidb_imp.color}"></th>
                                     <th>Hash Sum</th>
                                     <th>User</th>
                                     <th>Current SSID</th>
-                                    <th>AP / Total AP's</th>
+                                    <th>Status</th>
                                 </tr>
-                                <tr style="background-color: {$wifidb_done.color}">
+                                <tr style="background-color: {$wifidb_imp.color}">
                                     <td></td>
-                                    <td align="center">{$wifidb_done.hash}</td>
-                                    <td align="center">{$wifidb_done.user}</td>
-                                    {$wifidb_done.last_cell}
+                                    <td align="center">{$wifidb_imp.hash}</td>
+                                    <td align="center">{$wifidb_imp.user}</td>
+                                    {$wifidb_imp.last_cell}
+                                </tr>
+                            </table>
+                            {foreachelse}
+                                Sorry there are no files importing...
+                            {/foreach}
+                        </td>
+                    </tr>
+                </table>
+				<br />
+                <table border="1" width="90%">
+                    <tr class="style4">
+                        <th border="1" colspan="7" align="center">Files waiting for import</th>
+                    </tr>
+                    <tr align="center">
+                        <td border="1">
+                            {foreach item=wifidb_wait from=$wifidb_waiting}
+                            <br>
+                            <table style="background-color: {$wifidb_wait.color}" border="1"  width="100%">
+                                <tr class="style4">
+                                    <th>ID</th>
+                                    <th>Filename</th>
+                                    <th>Title</th>
+                                    <th>Date</th>
+                                    <th>size</th>
+                                </tr>
+                                <tr style="background-color: {$wifidb_wait.color}">
+                                    <td align="center">{$wifidb_wait.id}</td>
+                                    <td align="center">{$wifidb_wait.file}</td>
+                                    <td align="center">{$wifidb_wait.title}</td>
+                                    <td align="center">{$wifidb_wait.date}</td>
+                                    <td align="center">{$wifidb_wait.size}</td>
+                                </tr>
+                                <tr class="style4">
+                                    <th style="background-color: {$wifidb_wait.color}"></th>
+                                    <th>Hash Sum</th>
+                                    <th>User</th>
+                                    <th colspan="2">Status</th>
+                                </tr>
+                                <tr style="background-color: {$wifidb_wait.color}">
+                                    <td></td>
+                                    <td align="center">{$wifidb_wait.hash}</td>
+                                    <td align="center">{$wifidb_wait.user}</td>
+                                    {$wifidb_wait.last_cell}
                                 </tr>
                             </table>
                             {foreachelse}

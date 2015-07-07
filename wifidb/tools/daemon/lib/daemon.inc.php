@@ -394,7 +394,7 @@ class daemon extends wdbcli
 
 				$import_ids = $this->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
-				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $file_to_Import['tmp_id']);
+				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $importing_id);
 
 				if(@$tmp[0] === -1)
 				{
