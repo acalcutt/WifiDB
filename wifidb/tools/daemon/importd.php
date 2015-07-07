@@ -206,6 +206,8 @@ else
 			$dbcore->return_message = -8;
 			break;
 		}
+		var_dump($result->rowCount());
+		var_dump($dbcore->RunOnceThrough);
 		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");

@@ -169,8 +169,9 @@ try
                 case "daemon":
                     $dbcore = new daemon($config, $daemon_config);
                     $dbcore->convert = new convert($config);
+					$dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
                     $dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
                 break;
                 ####
@@ -206,9 +207,10 @@ try
 
                     $dbcore = new api($config);
                     $dbcore->convert = new convert($config);
-                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert);
                     $dbcore->Zip = new Zip;
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
                 break;
 
                 case "export":

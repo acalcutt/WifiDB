@@ -152,7 +152,7 @@ class daemon extends wdbcli
 	{
 		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp  WRITE");
 
-		$daemon_sql = "INSERT INTO `wifi`.`files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `wifi`.`files_tmp` WHERE importing = 0 ORDER BY `id` ASC LIMIT 1;";
+		$daemon_sql = "INSERT INTO `wifi`.`files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `wifi`.`files_tmp` ORDER BY `date` ASC LIMIT 1;";
 		$result = $this->sql->conn->prepare($daemon_sql);
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
@@ -304,7 +304,7 @@ class daemon extends wdbcli
 		if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
 		{
 			$this->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
-			$update_tmp = "UPDATE `wifi`.`files_importing` SET `ap` = 'Preparing for Import' WHERE `id` = ?";
+			$update_tmp = "UPDATE `wifi`.`files_importing` SET `ap` = 'Preparing for Import', `importing` = '1' WHERE `id` = ?";
 			$prep4 = $this->sql->conn->prepare($update_tmp);
 			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
 			$prep4->execute();
@@ -391,7 +391,7 @@ class daemon extends wdbcli
 					var_dump($file_row);
 					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
 				}
-                die();
+
 				$import_ids = $this->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
 
 				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $file_to_Import['tmp_id']);

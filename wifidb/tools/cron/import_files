@@ -7,7 +7,7 @@ if ps -ef | grep -v grep | grep importd.php ; then
 else
 	echo Starting Import Daemon...
 		timestamp=$(date +%s)
-        php ../daemon/importd.php -v > ../log/import/importd_${timestamp}.log &
+        php ../daemon/importd.php -o -v > ../log/import/importd_${timestamp}.log &
 fi
 
 echo "Cleaning up old logs..."

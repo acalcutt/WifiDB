@@ -354,7 +354,7 @@ switch($func)
         }
         $sched_row = array();
         $n=0;
-        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` ASC";
+        $sql = "SELECT * FROM `wifi`.`files_importing` ORDER BY `date` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
