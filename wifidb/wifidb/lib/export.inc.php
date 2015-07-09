@@ -1070,7 +1070,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			}
 		}
 
-		if($KML_data == ""){$KML_data = $dbcore->createKML->createFolder("AP has no GPS", $KML_data, 0);}
+		if($KML_data == ""){$KML_data = $this->createKML->createFolder("AP has no GPS", $KML_data, 0);}
 		
 		return array($KML_data, $export_ssid);
 	}

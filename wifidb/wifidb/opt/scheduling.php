@@ -237,11 +237,11 @@ switch($func)
             
             $kml_head['daily_date'] = $lastapdate;
             $kml_head['daily_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=0";
-            $kml_head['daily_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
+            $kml_head['daily_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_link'])));
 
             $kml_head['daily_labeled_date'] = $lastapdate;
             $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=1";
-            $kml_head['daily_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
+            $kml_head['daily_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_labeled_link'])));
         }
         else
         {
@@ -265,11 +265,11 @@ switch($func)
             
             $kml_head['full_date'] = $lastapdate;
             $kml_head['full_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=0";
-            $kml_head['full_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
+            $kml_head['full_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['full_link'])));
 
             $kml_head['full_labeled_date'] = $lastapdate;
             $kml_head['full_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=1";
-            $kml_head['full_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
+            $kml_head['full_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['full_labeled_link'])));
         }
         else
         {

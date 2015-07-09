@@ -170,6 +170,7 @@ class frontend extends dbcore
 				$signal_runs[$date_range]['user'] = $field['username'];
 				$signal_runs[$date_range]['start_id'] = $field['id'];
 				$signal_runs[$date_range]['from'] = $from;
+				$signal_runs[$date_range]['limit'] = $from;
 			}else
 			{
 				if($signal_runs[$date_range]['user'] != $field['username'])
@@ -224,7 +225,7 @@ class frontend extends dbcore
 
 		}
 		$ap_data['from'] = $signals[0]['id'];
-		$ap_data['limit'] = $prep1->rowCount();
+		$ap_data['limit'] = $prep2->rowCount();
 		return array(
 						$newArray['ssid'],
 						$signal_runs,
