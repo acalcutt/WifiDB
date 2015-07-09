@@ -2,8 +2,7 @@
 <?php
 /*
 importd.php, WiFiDB Import Daemon
-Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
-This script is made to do imports and be run as a cron job.
+Copyright (C) 2015 Andrew Calcutt, Phil Ferland.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -16,7 +15,7 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit			=	"2015-03-21";
+$lastedit			=	"2015-06-08";
 $dbcore->daemon_name	=	"Import";
 
 $arguments = $dbcore->parseArgs($argv);

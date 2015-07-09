@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+@ini_set('display_errors', 0);
 /*
 Copyright (C) 2015 Andrew Calcutt
 
@@ -190,8 +192,8 @@ switch($func)
 			
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
-			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+			if(isset($_REQUEST['from'])){$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);}else{$from=NULL;}
+			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
 			
 			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $limit, $from, $labeled, $new_icons);
 			

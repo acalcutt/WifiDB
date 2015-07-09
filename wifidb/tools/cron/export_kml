@@ -7,7 +7,7 @@ if ps -ef | grep -v grep | grep exportd.php ; then
 else
 	echo Starting Export Daemon...
 		timestamp=$(date +%s)
-        php ../daemon/exportd.php -v > ../log/export/exportd_${timestamp}.log &
+        php ../daemon/exportd.php -o -v > ../log/export/exportd_${timestamp}.log &
 fi
 
 echo "Cleaning up old logs..."

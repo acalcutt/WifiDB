@@ -7,7 +7,7 @@ if ps -ef | grep -v grep | grep geonamed.php ; then
 else
 	echo Starting Geonames Daemon...
 		timestamp=$(date +%s)
-        php ../daemon/geonamed.php -v > ../log/geoname/geonamed_${timestamp}.log &
+        php ../daemon/geonamed.php -o -v > ../log/geoname/geonamed_${timestamp}.log &
 fi
 
 echo "Cleaning up old logs..."

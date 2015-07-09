@@ -24,7 +24,7 @@ define("SWITCH_EXTRAS", "");
 include('lib/init.inc.php');
 
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
-$return = $_REQUEST['return'];
+if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
 
 if($return == ''){$return = $dbcore->root;}
 switch($func)
@@ -119,6 +119,7 @@ switch($func)
 
     #---#
     case "create_user_form":
+		$dbcore->smarty->assign('message', "");
         $dbcore->smarty->display('create_user.tpl');
     break;
 
@@ -382,6 +383,7 @@ Your account: $username_db
     break;
 
     default :
+		$dbcore->smarty->assign('message', "");
 		$dbcore->smarty->assign("logon_return_url", $return);
         $dbcore->smarty->display("login_index.tpl");
     break;
