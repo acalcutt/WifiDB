@@ -176,6 +176,58 @@ class api extends dbcore
 		return $array;
 	}
 
+	public function CheckHash($hash)
+	{
+		if($hash == "")
+		{
+			$this->mesg[] = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
+			return -1;
+		}
+		else
+		{
+			$files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1");
+			$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
+			$imp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_importing` WHERE `hash` = ? LIMIT 1");
+			$imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
+			$tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_tmp` WHERE `hash` = ? LIMIT 1");
+			$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
+			$bad_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_bad` WHERE `hash` = ? LIMIT 1");
+			$bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
+
+			$files_prep->execute();
+			$imp_prep->execute();
+			$tmp_prep->execute();
+			$bad_prep->execute();
+			
+			$files_ret = $files_prep->fetch(2);
+			$imp_ret = $imp_prep->fetch(2);
+			$tmp_ret = $tmp_prep->fetch(2);
+			$bad_ret = $bad_prep->fetch(2);
+			
+			if($files_ret['hash'] != "")
+			{
+				$this->mesg[] = array("imported"=>"File Already Imported");
+			}
+			elseif($imp_ret['hash'] != "")
+			{
+				$this->mesg[] = array("importing"=>"File Being Imported");
+			}
+			elseif($tmp_ret['hash'] != "")
+			{
+				$this->mesg[] = array("waiting"=>"Waiting For Import");
+			}
+			elseif($bad_ret['hash'] != "")
+			{
+				$this->mesg[] = array("bad"=>"Bad File");
+			}
+			else
+			{
+				$this->mesg[] = array("unknown"=>"Hash not found in WifiDB");
+			}
+			return 1;
+		}
+	}
+	
 	public function ImportVS1($details = array())
 	{
 		$user		   = $details['user'];
