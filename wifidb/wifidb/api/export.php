@@ -114,15 +114,18 @@ switch($func)
 				$stage_pts = explode("-", $import['points']);
 				foreach($stage_pts as $point)
 				{
-					list($id, $new_old) = explode(":", $point);
-					if($new_old == 1){continue;}
-					$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-					$result = $dbcore->sql->conn->query($sql);
-					if($result->rowCount() > 0)
+					if($point)
 					{
-						#valid results found, add network link and exit check
-						$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onInterval", 86400);
-						break;
+						list($id, $new_old) = explode(":", $point);
+						if($new_old == 1){continue;}
+						$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+						$result = $dbcore->sql->conn->query($sql);
+						if($result->rowCount() > 0)
+						{
+							#valid results found, add network link and exit check
+							$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onInterval", 86400);
+							break;
+						}
 					}
 				}
 			}
@@ -151,15 +154,18 @@ switch($func)
 				$stage_pts = explode("-", $import['points']);
 				foreach($stage_pts as $point)
 				{
-					list($id, $new_old) = explode(":", $point);
-					if($new_old == 1){continue;}
-					$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-					$result = $dbcore->sql->conn->query($sql);
-					if($result->rowCount() > 0)
+					if($point)
 					{
-						#valid results found, add network link and exit check
-						$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onChange", 86400);
-						break;
+						list($id, $new_old) = explode(":", $point);
+						if($new_old == 1){continue;}
+						$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+						$result = $dbcore->sql->conn->query($sql);
+						if($result->rowCount() > 0)
+						{
+							#valid results found, add network link and exit check
+							$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onChange", 86400);
+							break;
+						}
 					}
 				}
 			}
