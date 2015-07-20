@@ -160,6 +160,7 @@ $dbcore->sql->checkError(__LINE__, __FILE__);
 if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
+	unlink($dbcore->pid_file);
 	exit(-6);
 }
 else
