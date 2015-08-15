@@ -52,7 +52,7 @@ if(!function_exists('WiFiDBexception_handler')) {
 		}
 	}
 }
-set_exception_handler('WiFiDBexception_handler');
+#set_exception_handler('WiFiDBexception_handler');
 
 
 if(strtolower(SWITCH_SCREEN) == "cli")
@@ -97,27 +97,23 @@ unset($gen_cwd);
 unset($cwd);
 unset($sql);
 
-if(strtolower(SWITCH_SCREEN) != "cli")
-{
-	if(strtolower(SWITCH_EXTRAS) != "api")
-	{
-		if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
-		{
-			create_base_cookies($config['hosturl'].$config['root'].'/');
-			exit();
-		}
-	}
+if(strtolower(SWITCH_SCREEN) === "html") {
+    if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
+        create_base_cookies($config['hosturl'] . $config['root'] . '/');
+        exit();
+    }
 }
 
 
 /*
  * Class autoloader
+ *
  */
- if(!function_exists('__autoload'))
- {
+if(!function_exists('__autoload'))
+{
 	function __autoload($class)
 	{
-		if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
+        if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
 		{
 			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
 			return 1;
@@ -134,16 +130,18 @@ if(strtolower(SWITCH_SCREEN) != "cli")
 			include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
 			return 1;
 		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
+        {
+            include_once $GLOBALS['config']['wifidb_install'] . 'smarty/sysplugins/' . strtolower($class) . '.php';
+            return 1;
+        }else
 		{
-			include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
-			return 1;
-		}else
-		{
-			throw new errorexception("Could not load class `{$class}`");
+            require_once $class . '.php';
+			#throw new errorexception("Could not load class `{$class}`");
 		}
 	}
 
- }
+}
+
 
 try
 {
@@ -198,20 +196,6 @@ try
 		case "html":
 			switch(strtolower(SWITCH_EXTRAS))
 			{
-				case "api":
-					__autoload("createKML");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("api");
-					__autoload("Zip");
-
-					$dbcore = new api($config);
-					$dbcore->convert = new convert($config);
-					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
-				break;
-
 				case "export":
 					__autoload("createKML");
 					__autoload("convert");
@@ -241,6 +225,68 @@ try
 			$dbcore->cli = 0;
 			break;
 		################
+
+        case "api":
+
+            switch(SWITCH_EXTRAS)
+            {
+                case "announce":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                case "export";
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("api");
+                    __autoload("Zip");
+                    $dbcore = new api($config);
+                    $dbcore->convert = new convert($config);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+                    break;
+                case "search":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                case "atomrss":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                case "latest":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("api");
+                    __autoload("Zip");
+                    $dbcore = new api($config);
+                    $dbcore->convert = new convert($config);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+                    break;
+                case "live":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                case "locate":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                case "geonames":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                case "import":
+                    __autoload("api");
+                    $dbcore = new api($config);
+                    break;
+                default:
+                    throw new ErrorException("SWITCH_EXTRAS does not have an additive. eg api:export");
+                    break;
+            }
+            break;
 		Default:
 			die("Unknown Switch Set. gurgle...cough...dead...");
 			break;

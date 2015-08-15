@@ -46,14 +46,24 @@ if not, write to the
     </tr>
     <tr class="dark">
             <td align="center" class="style2" style="width: 100px">{$total_users}</td>
-            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a></td>
+            <td align="center" class="style2">
+				{if $new_ap_id > 0 }
+					<a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a>
+				{else}
+					No APs yet...
+				{/if}
+			</td>
             <td align="center" class="style2">
                 <p align="center">
                 <table>
                     <tbody>
                         <tr>
                             <td align="right" width="100%">
-                                <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}" title="View AP Details">{$new_ap_ssid}</a>
+								{if $new_ap_id > 0 }
+                                	<a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}" title="View AP Details">{$new_ap_ssid}</a>
+								{else}
+								No APs yet...
+								{/if}
                             </td>
                             <td align="left">
                                 {$globe_html}
@@ -64,8 +74,13 @@ if not, write to the
                 </p>
             </td>
             <td align="center" class="style2">
-                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>
-                <br/>  [{$new_import_date}] </td>
+				{if $new_ap_id > 0 }
+				<a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>
+				<br/>  [{$new_import_date}]
+				{else}
+					No APs yet...
+				{/if}
+			</td>
     </tr>
     </tbody>
 </table>

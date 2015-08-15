@@ -59,6 +59,7 @@ class daemon extends wdbcli
 	 */
 	public function CheckDaemonKill()
 	{
+        var_dump($this->node_name);
 		$D_SQL = "SELECT `daemon_state` FROM `wifi`.`settings` WHERE `node_name` = ? LIMIT 1";
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
@@ -164,10 +165,10 @@ class daemon extends wdbcli
 		$prep->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 
-		$tmp_id = $prep->fetch(2)['tmp_id'];
+		$tmp_id = $prep->fetch(2);
 		$delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
 		$prep = $this->sql->conn->prepare($delete);
-		$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
+		$prep->bindParam(1, $tmp_id['tmp_id'], PDO::PARAM_INT);
 		$prep->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 

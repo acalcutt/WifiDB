@@ -51,7 +51,7 @@ if not, write to the
             <td class="style2">
                 Choose Text Color:
                 <select name="text" style="height: 22px; width: 147px">
-                    <option{if $AP_data.tex eq '255:000:000'} selected{/if} value="255:000:000">Red</option>
+                    <option{if $AP_data.text eq '255:000:000'} selected{/if} value="255:000:000">Red</option>
                     <option{if $AP_data.text eq '000:255:000'} selected{/if} value="000:255:000">Green</option>
                     <option{if $AP_data.text eq '000:000:255'} selected{/if} value="000:000:255">Blue</option>
                     <option{if $AP_data.text eq '000:000:000'} selected{/if} value="000:000:000">Black</option>

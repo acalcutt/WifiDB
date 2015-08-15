@@ -29,7 +29,7 @@ class api extends dbcore
 		$this->Author	   = "Phil Ferland";
 		$this->contact	  = "pferland@randomintervals.com";
 		$this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
-	$this->username	 = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
+		$this->username	 = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
 		$this->apikey	   = (@$_REQUEST['apikey']	? @$_REQUEST['apikey'] : "");
 		$this->session_id   = (@$_REQUEST['SessionID'] ? @$_REQUEST['SessionID'] : "");
 		$this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
@@ -162,18 +162,6 @@ class api extends dbcore
 					'feet'=>$dist[0]*5280
 				);
 		return 1;
-	}
-
-	public function GetAnnouncement()
-	{
-		$result = $this->sql->conn->query("SELECT `auth`,`title`,`body`,`date`,`comments` FROM `wifi`.`annunc` WHERE `set` = '1'");
-		$array = $result->fetch(2);
-		if($this->sql->checkError() || $array['body'] == "")
-		{
-			$this->Output(array("error"=>array("details"=>var_dump($this->sql->conn->errorInfo()))));
-			return 0;
-		}
-		return $array;
 	}
 
 	public function CheckHash($hash)
@@ -664,7 +652,7 @@ class api extends dbcore
 		}
 		if(empty($this->mesg)){return array("Empty Data Set.");}
 
-		switch(@$this->output)
+		switch(strtolower($this->output))
 		{
 			case "json":
 				echo json_encode($this->mesg);

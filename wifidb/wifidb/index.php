@@ -118,6 +118,7 @@ $dbcore->smarty->assign('total_users', $usercount);
 $dbcore->smarty->assign('new_ap_id', $lastap_id);
 $dbcore->smarty->assign('globe_html', $globe_html);
 $dbcore->smarty->assign('new_import_user', $lastusername);
+
 $dbcore->smarty->assign('new_ap_ssid', $lastap_ssid);
 $dbcore->smarty->assign('new_import_date', $lastdate);
 $dbcore->smarty->assign('new_import_title', $lasttitle);

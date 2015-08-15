@@ -18,8 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "api");
+define("SWITCH_SCREEN", "API");
+define("SWITCH_EXTRAS", "search");
 
 require '../lib/init.inc.php';
 

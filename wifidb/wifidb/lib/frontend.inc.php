@@ -235,17 +235,6 @@ class frontend extends dbcore
 					);
 	}
 
-	function GetAnnouncement()
-	{
-		$result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
-		$array = $result->fetch(2);
-		if($this->sql->checkError() || $array['body'] == "")
-		{
-			return 0;
-		}
-		return $array;
-	}
-
 
 	function htmlheader()
 	{
@@ -261,7 +250,7 @@ class frontend extends dbcore
 			$login_bar = "";
 		}
 		$this->smarty->assign("install_header", $this->check_install_folder());
-		$announc = $this->GetAnnouncement();
+		$announc = $this->GetLatestAnnouncement();
 
 		$this->smarty->assign("wifidb_announce_header", '<p class="annunc_text">'.$announc['body'].'</p>');
 		$this->smarty->assign("wifidb_mysticache_link", $wifidb_mysticache_link);
