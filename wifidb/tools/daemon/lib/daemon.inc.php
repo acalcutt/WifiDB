@@ -67,7 +67,6 @@ class daemon extends wdbcli
 		$daemon_state = $Dresult->fetch();
 		if($daemon_state['daemon_state'] == 0)
 		{
-			unlink($this->pid_file);
 			return 1;
 		}else
 		{
