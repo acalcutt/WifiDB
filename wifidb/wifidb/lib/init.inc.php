@@ -99,7 +99,7 @@ unset($sql);
 
 if(strtolower(SWITCH_SCREEN) === "html") {
     if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
-        create_base_cookies($config['hosturl'] . $config['root'] . '/');
+        create_base_cookies($config['hosturl'] . $config['root']);
         exit();
     }
 }
@@ -222,12 +222,15 @@ try
 					$dbcore = new frontend($config);
 				break;
 			}
-			$dbcore->cli = 0;
+            $dbcore->cli = 0;
+            if($dbcore->sec->privs > 1000)
+            {
+                $dbcore->smarty->assign('admin_login_link', ' <-> <a href="/wifidb/cp/admin/">Admin Control Panel</a>');
+            }
 			break;
 		################
 
         case "api":
-
             switch(SWITCH_EXTRAS)
             {
                 case "announce":

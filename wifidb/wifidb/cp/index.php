@@ -1,6 +1,6 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
+cp\index.php, Index page for the User Control Panel
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -19,8 +19,6 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "cp");
 

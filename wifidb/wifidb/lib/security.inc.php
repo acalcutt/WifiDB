@@ -64,30 +64,35 @@ class security
             }
         }
     }
-    
-    // Only moved, not updated, NEED TO UPDATE!!!!!!!!!
-    // UPDATE THIS YOU LAZY BASTARD.
+
     function check_privs($admin = 0)
     {
+        #var_dump(base64_decode($_COOKIE['WiFiDB_login_yes']));
         if($admin == 1)
         {
-            $cookie_seed = "@LOGGEDIN";
-            list($cookie_pass_seed, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_admin_login_yes']));
+            list($cookie_pass_seed, $username) = explode(':', base64_decode(@$_COOKIE['WiFiDB_admin_login_yes']));
         }else
         {
-            $cookie_seed = "@LOGGEDIN!";
-            list($cookie_pass_seed, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_login_yes']));
+            list($cookie_pass_seed, $username) = explode(':', base64_decode(@$_COOKIE['WiFiDB_login_yes']));
         }
+        #var_dump($username);
         $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1 , $username);
+        $result->execute();
         $newArray = $result->fetch(2);
-        $table_pass = crypt($newArray['password']);
-        
-        if($table_pass == $cookie_pass_seed)
+        #var_dump($newArray);
+        $sql1 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
+        $prep = $this->sql->conn->prepare($sql1);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->execute();
+        $this->sql->checkError();
+        $result = $prep->fetch(2);
+        #var_dump($result['hash']);
+        if($result['hash'] == $cookie_pass_seed)
         {
-            $this->privs = $newArray['users']+0;
-            #echo $privs;
+            $this->privs = (int)$newArray['permissions'];
+            #var_dump($this->privs);
             if($this->privs >= 1000)
                 {$this->priv_name = "Administrator";}
             elseif($this->privs >= 100)
@@ -101,6 +106,7 @@ class security
         {
             $this->check_error = "Wrong pass or no Cookie, go get one.";
         }
+        return 0;
     }
     
     function CheckReservedUser($username = '')
@@ -262,7 +268,7 @@ class security
                     else{$path  = '/';}
                 }
                 
-                if(!setcookie($cookie_name, base64_encode($gen.":".$username), $cookie_timeout, $path, $this->domain, $this->ssl))
+                if(!setcookie($cookie_name, base64_encode($pass_hash.":".$username), $cookie_timeout, $path, $this->domain, $this->ssl))
                 {
                     $this->login_val = "cookie_fail";
                     $this->login_check = 0;
@@ -395,27 +401,24 @@ class security
             $this->login_check = 0;
             return 0;
         }
-        $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
+        $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1, $username, PDO::PARAM_STR);
         $result->execute();
-		$user_logons = $result->fetchAll();
-		foreach($user_logons as $logon)
-		{
-			$db_pass = $logon['hash'];
-			#var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
-			if(crypt($cookie_pass, $db_pass) == $db_pass)
-			{
-				$this->privs = $this->check_privs();
-				$this->LoginLabel = "Logout";
-				$this->LoginHtml = 'Welcome, <a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
-				$this->LoginUri = '?func=logout&return='.urlencode($return_url);
-				$this->login_val = $logon['username'];
-				$this->username = $logon['username'];
-				$this->login_check = 1;
-				return 1;
-			}
-		}
+		$logon = $result->fetch(2);
+
+        #var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
+        if($logon['hash'] == $cookie_pass)
+        {
+            $this->check_privs();
+            $this->LoginLabel = "Logout";
+            $this->LoginHtml = 'Welcome, <a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
+            $this->LoginUri = '?func=logout&return='.urlencode($return_url);
+            $this->login_val = $logon['username'];
+            $this->username = $logon['username'];
+            $this->login_check = 1;
+            return 1;
+        }
         $this->LoginLabel = "";
 		$this->LoginHtml = "";
 		$this->LoginUri = '?return='.urlencode($return_url);

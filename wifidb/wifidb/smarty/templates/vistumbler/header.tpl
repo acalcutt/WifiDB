@@ -97,7 +97,7 @@
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
-                                {$wifidb_login_html|default:""}
+                                {$wifidb_login_html|default:""}{$admin_login_link|default:''}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
                                 <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>

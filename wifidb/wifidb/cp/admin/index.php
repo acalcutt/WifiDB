@@ -1,6 +1,6 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
+cp\admin\index.php, Index page for the Admin Control Panel
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -19,16 +19,13 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
+
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "cp");
 
 include('../../lib/init.inc.php');
 include('../../lib/security.inc.php');
 include('../../lib/wdb_xml.inc.php');
-
-$sec = new security();
-$xml = new WDB_XML();
-$database = new database();
 
 $func = strtolower(addslashes(@$_GET['func']));
 $mode = strtolower(addslashes(@$_GET['mode']));
