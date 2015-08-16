@@ -95,7 +95,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results = $dbcore->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $dbcore->createKML->createFolder("All Exports", $results, 0);}
+			if($results == ""){$results = $dbcore->createKML->createFolder($results, "No Exports with GPS", 0);}else{$results = $dbcore->createKML->createFolder($results, "All Exports", 0);}
 			$results = $dbcore->createKML->createKMLstructure("All Exports", $results);
 			if($labeled){$file_name = "All_Exports_Labeled.kmz";}else{$file_name = "All_Exports.kmz";}
 			break;
@@ -130,7 +130,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results = $dbcore->createKML->createFolder("No Daily Exports with GPS", $results, 0);}else{$results = $dbcore->createKML->createFolder("Daily Exports", $results, 0);}
+			if($results == ""){$results = $dbcore->createKML->createFolder($results, "No Daily Exports with GPS", 0);}else{$results = $dbcore->createKML->createFolder($results, "Daily Exports", 0);}
 			$results = $dbcore->createKML->createKMLstructure("Daily Exports", $results);
 			if($labeled){$file_name = "Daily_Exports_Labeled.kmz";}else{$file_name = "Daily_Exports.kmz";}
 			break;
@@ -170,7 +170,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results .= $dbcore->createKML->createFolder("No User Exports with GPS", $results, 0);}
+			if($results == ""){$results .= $dbcore->createKML->createFolder($results, "No User Exports with GPS", 0);}
 			
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			$results = $dbcore->createKML->createKMLstructure("$user_fn AP's", $results);
@@ -188,10 +188,10 @@ switch($func)
 			
 			if($all){$only_new = 0;}else{$only_new = 1;}
 			$results = $dbcore->export->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date'], $labeled, $only_new, $new_icons, 1);
-			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $results, 0);}
+			if($results == ""){$results .= $dbcore->createKML->createFolder($results, "No APs with GPS", 0);}
 			
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-			$results = $dbcore->createKML->createFolder($title, $results, 0);
+			$results = $dbcore->createKML->createFolder($results, $title, 0);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
