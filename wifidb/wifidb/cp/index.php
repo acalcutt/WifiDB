@@ -26,7 +26,7 @@ define("SWITCH_EXTRAS", "cp");
 
 include('../lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'User Control Panel');
-
+$dbcore->smarty->assign('message', "");
 #$theme = $GLOBALS['theme'];
 $theme = "vistumbler";
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -138,7 +138,7 @@ if($login_check)
 			if($newArray['statistics']){$cp_profile['statistics'] = 'checked';}else{$cp_profile['statistics'] = 'unchecked';};
 			$cp_profile['username'] = $newArray['username'];
 			$cp_profile['id'] = $newArray['id'];
-			
+
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_email_prefs.tpl');
 

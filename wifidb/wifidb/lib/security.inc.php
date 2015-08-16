@@ -22,9 +22,10 @@ class security
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
-        $this->HOSTURL           = $dbcore->HOSTURL;
+        $this->HOSTURL            = $dbcore->HOSTURL;
         $this->root               = $dbcore->root;
-        $ssl_flag                = parse_url($dbcore->URL_PATH, PHP_URL_SCHEME);
+        $this->URL_PATH           = $dbcore->URL_PATH;
+        $ssl_flag                 = parse_url($this->URL_PATH, PHP_URL_SCHEME);
         if($ssl_flag == "https")
         {
             $this->ssl = "1";
@@ -32,8 +33,8 @@ class security
         {
             $this->ssl = "0";
         }
-        $this->domain     = parse_url($dbcore->URL_PATH, PHP_URL_HOST);
-        $folder = parse_url($dbcore->URL_PATH, PHP_URL_PATH);
+        $this->domain     = parse_url($this->URL_PATH, PHP_URL_HOST);
+        $folder = parse_url($this->URL_PATH, PHP_URL_PATH);
         $this->PATH = $folder;
     }
     
