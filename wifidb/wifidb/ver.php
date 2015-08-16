@@ -49,7 +49,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland, Andrew Calcutt</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30v Build 1</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Date: 08-15-2015</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 08-27-2014</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/andrew-test">WiFiDB GitHub : Branch 'andrew-test'</a></td>
@@ -63,9 +63,6 @@ $dbcore->smarty->smarty->display('header.tpl');
 								<li>Fixes to GPS conversions</li>
 								<li>Fixes to user login (though this needs a lot of work)</li>
 								<li>Removed Mysicache from menu since it still needs a lot of work</li>
-                                <li>Changed the API construction a little.</li>
-                                <li>Signal Plots have more options now, well actually available.</li>
-                                <li>Changed the default layout of the index when there are no APs.</li>
                             </ol>
 						</td>
                     </tr>
