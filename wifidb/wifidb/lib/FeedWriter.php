@@ -427,9 +427,9 @@
 	// End # private functions ----------------------------------------------
 	
  } // end of class FeedWriter
-
+ 
 // autoload classes
-#function __autoload($class_name)
-#{
-#	require_once $class_name . '.php';
-#}
+function __autoload($class_name) 
+{
+	require_once $class_name . '.php';
+}

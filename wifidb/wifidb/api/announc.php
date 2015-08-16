@@ -18,17 +18,12 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-define("SWITCH_SCREEN", "API");
-define("SWITCH_EXTRAS", "announce");
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
-$all   = (@(int)$_REQUEST['all'] ? (int)$_REQUEST['all'] : 0);
+$dbcore->Output($dbcore->GetAnnouncement());
 
-if($all === 1)
-{
-    $dbcore->Output($dbcore->GetAllActiveAnnouncments());
-}elseif( $all === 0)
-{
-    $dbcore->Output($dbcore->GetLatestAnnouncment());
-}
+
+?>

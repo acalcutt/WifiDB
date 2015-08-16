@@ -23,14 +23,15 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -o		(null)		Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
-  -d		(null)		Run the Import script as a Daemon. ( Will override the -i argument. )
-  -i        	(integer)      	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
-  -t		(integer)	Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
-  -v		(null)		Run Verbosely (SHOW EVERYTHING!)
-  -l		(null)		Show License Information.
-  -h		(null)		Show this screen.
-  --version	(null)		Version Info.
+  -f		(null)			Force daemon to run without being scheduled.
+  -o		(null)			Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
+  -d		(null)			Run the Import script as a Daemon. ( Will override the -i argument. )
+  -i        	(integer)       	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
+  -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
+  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
+  -l		(null)			Show License Information.
+  -h		(null)			Show this screen.
+  --version	(null)			Version Info.
 
 * = Not working yet.
 ";
@@ -76,6 +77,14 @@ if(@$arguments['i'])
 else
 {
 	$dbcore->ImportID = 0;
+}
+
+if(@$arguments['f'])
+{
+	$dbcore->ForceDaemonRun = 1;
+}else
+{
+	$dbcore->ForceDaemonRun = 0;
 }
 
 if(@$arguments['t'])
@@ -148,15 +157,15 @@ $prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 $dbcore->sql->checkError(__LINE__, __FILE__);
 
-if($prepgj->rowCount() === 0 && !$dbcore->daemonize)
+if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 	exit(-6);
 }
 else
 {
-#	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
-	if(!$dbcore->daemonize)
+	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
+	if(!$dbcore->ForceDaemonRun)
 	{
 		#Job Settings
 		$job = $prepgj->fetch(2);
@@ -173,13 +182,12 @@ else
 		if($dbcore->checkDaemonKill())
 		{
 			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
-			if(!$dbcore->daemonize){$dbcore->SetNextJob($job_id);}
+			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
 			unlink($dbcore->pid_file);
 			echo "Daemon was told to kill itself\n";
 			exit(-7);
 		}
-#		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
-        echo "Attempting to get the next Import ID.\r\n";
+		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
 		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
 		{
 			$NextID = $dbcore->ImportID;
@@ -187,14 +195,7 @@ else
 		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
 			$NextID = $dbcore->GetNextImportID();
 		}
-		if(empty($NextID) && $dbcore->daemonize)
-        {
-            echo "No new Imports. Waiting.\r\n";
-            sleep(30);
-            continue;
-        }
-
-        var_dump($NextID);
+		var_dump($NextID);
 		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `wifi`.`files_importing` WHERE `id` = ?";
 		$result = $dbcore->sql->conn->prepare($daemon_sql);
 		$result->bindParam(1, $NextID, PDO::PARAM_INT);
@@ -247,7 +248,7 @@ else
 					case 0:
 						continue;
 					case 1:
-#						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
+						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
 				}
 			}
 		}
@@ -261,7 +262,7 @@ else
 			sleep($dbcore->DaemonSleepTime);
 		}
 	}
-	if(!$dbcore->daemonize)
+	if(!$dbcore->ForceDaemonRun)
 	{
 		#Finished Job
 		$dbcore->verbosed("Finished - Id:".$job_id, 1);

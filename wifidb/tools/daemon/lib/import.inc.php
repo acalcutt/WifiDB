@@ -500,13 +500,12 @@ class import extends dbcore
 						`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
 						`username`,`ap_hash`, `rssi_high`, `signal_high`)
 						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
-					$user_exp = explode("|", $user);
-                    if(@$user_exp[1] == "")
+					if(@explode("|", $user)[1] == "")
 					{
 						$user = str_replace("|", "", $user);
 					}else
 					{
-						$user = $user_exp[0];
+						$user = explode("|", $user)[0];
 					}
 					$rssi = $this->convert->Sig2dBm($sig_high);
 

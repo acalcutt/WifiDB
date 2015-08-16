@@ -145,28 +145,6 @@ class dbcore
 		return $hash;
 	}
 
-
-	public function GetLatestAnnouncement()
-	{
-        $fetched = $this->GetAllActiveAnnouncments();
-        $i = count($fetched)-1;
-        return $fetched[$i];
-	}
-
-    public function GetAllAnnouncments()
-    {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`announce` ORDER BY `id` ASC");
-        $fetched = $result->fetchAll(2);
-        return $fetched;
-    }
-
-    public function GetAllActiveAnnouncments()
-    {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`announce` WHERE `set` = '1' ORDER BY `id` ASC");
-        $fetched = $result->fetchAll(2);
-        return $fetched;
-    }
-
 	###################################
 	/**
 	 * @param string $value
@@ -638,6 +616,7 @@ class dbcore
 		$c;
 		return $c;
 	}
+
 
 
 	public static function RotateSpinner($r = 0)

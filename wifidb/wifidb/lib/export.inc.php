@@ -411,7 +411,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				$sql3 .= ", $from";
 			}
 		}
-		#var_dump($sql3);
+		#echo $sql3;
 		$data[$ap_fetch['ap_hash']] = $ap_fetch;
 		$data[$ap_fetch['ap_hash']]['new_ap'] = $new_ap;
 		$data[$ap_fetch['ap_hash']]['lat'] = $ap_fetch['lat'];
@@ -420,7 +420,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$prep3 = $this->sql->conn->query($sql3);
 		$this->sql->checkError();
 		$sig_gps_data = $prep3->fetchAll(2);
-        #var_dump($sig_gps_data);
 		if(count($sig_gps_data) < 1)
 		{
 			#echo "No GPS\n";
@@ -1045,7 +1044,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		return $results;
 	}
 
-	public function SingleApKml($id, $limit = NULL, $from = NULL, $named=0, $new_icons=0, $signalPlotType=1)
+	public function SingleApKml($id, $limit = NULL, $from = NULL, $named=0, $new_icons=0)
 	{
 		if(!is_int($id))
 		{
@@ -1054,21 +1053,25 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 
 		$KML_data = "";
+		$export_id="";
+		$export_ssid="";
 		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
 		$result = $this->sql->conn->query($sql);
-		$array = $result->fetch(2);
-        $export_ssid = $array['ssid'];
-        $ret = $this->ExportSingleAP($id, $new_icons, $limit, $from);
-        #var_dump($ret[$array['ap_hash']]['gdata']);
-        if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
-        {
-            $this->createKML->ClearData();
-            $this->createKML->LoadData($ret);
-            $KML_data .= $this->createKML->PlotAllAPs($signalPlotType, 1, $named);
-        }
+		while($array = $result->fetch(2))
+		{
+			$export_id = (int)$array['id'];
+			$export_ssid = $array['ssid'];
+			$ret = $this->ExportSingleAP($id, $new_icons, $limit, $from);
+			if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
+			{
+				$this->createKML->ClearData();
+				$this->createKML->LoadData($ret);
+				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $named);
+			}
+		}
 
 		if($KML_data == ""){$KML_data = $this->createKML->createFolder("AP has no GPS", $KML_data, 0);}
-
+		
 		return array($KML_data, $export_ssid);
 	}
 

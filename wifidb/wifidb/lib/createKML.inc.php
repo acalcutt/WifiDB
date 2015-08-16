@@ -206,7 +206,7 @@ class createKML
 	}
 
 
-	public function createFolder($data = "", $name = "", $open = 0, $radiofolder = 0)
+	public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
 	{
 		if($data === NULL)
 		{
@@ -265,16 +265,16 @@ class createKML
 			switch($WithSignal)
 			{
 				case 1:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named), dbcore::normalize_ssid($ap['ssid']), 0);
+					$data .= $this->PlotAPpoint($key, $named);
 					break;
 				case 2:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail"), dbcore::normalize_ssid($ap['ssid']), 0);
+					$data .= $this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0);
 					break;
 				case 3:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Plot"), dbcore::normalize_ssid($ap['ssid']), 0);
+					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
 					break;
 				case 4:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail").$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3d Signal Plot"), dbcore::normalize_ssid($ap['ssid']), 0);
+					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
 					break;
 			}
 			#$r = dbcore::RotateSpinner($r);
@@ -321,13 +321,13 @@ class createKML
 			}
 			elseif(!ctype_print($this->data->apdata[$hash]['ssid']))
 			{
-				$ap_ssid = '&#91;'.htmlentities($this->data->apdata[$hash]['ssid']).'&#93;';
+				$ap_ssid = '&#91;'.dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']).'&#93;';
 			}
 			else
 			{
-				$ap_ssid = htmlentities($this->data->apdata[$hash]['ssid']);
-			}
-			$named = "<name>".$ap_ssid."</name>";
+				$ap_ssid = dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']);
+			}		
+			$named = "			<name>".$ap_ssid."</name>";
 		}else
 		{
 			$named = "";
@@ -341,9 +341,8 @@ class createKML
 			$icon_style = $sec_type_label."StyleDead";
 		}
 
-		$tmp = "<Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">
-            $named
-            <styleUrl>".$icon_style."</styleUrl>
+		$tmp = "<Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
+			<styleUrl>".$icon_style."</styleUrl>
 			<description>
 				<![CDATA[
 					<b>SSID: </b>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."<br />
@@ -389,16 +388,9 @@ class createKML
 		$LastTimeInt = 0;
 		$SigData = 0;
 		$ExpString = "";
-        #var_dump($this->data->apdata[$hash]);
-        $tmp .= '<Placemark id="'.$this->data->apdata[$hash]['mac'].'_signal_trail">
-            <name>'.$this->data->apdata[$hash]['ssid'].'</name>
-			<styleUrl>Location</styleUrl>
-			<LineString>
-				<altitudeMode>relative</altitudeMode>
-				<coordinates>';
-		foreach($this->data->apdata[$hash]['gdata'] as $key=>$gps)
+
+		foreach($this->data->apdata[$hash]['gdata'] as $gps)
 		{
-#            var_dump($gps);
 			$LastSigData = $SigData;
 			$SigData = 1;
 			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
@@ -411,6 +403,17 @@ class createKML
 			}
 			If(($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
 			{
+				if($LastSigData == 1)
+				{
+					$tmp .= '</coordinates>
+						</LineString>
+					</Placemark>';
+				}
+				$tmp .= '<Placemark id="'.$this->data->apdata[$hash]['mac'].'_signal_trail">
+			<styleUrl>Location</styleUrl>
+			<LineString>
+				<altitudeMode>relative</altitudeMode>
+				<coordinates>';
 				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
 				{
 					$tmp .= $ExpString;
@@ -430,13 +433,13 @@ class createKML
 				</LineString>
 			</Placemark>';
 		}
-#        var_dump($tmp);
-		return $tmp;
+		$ret = $tmp;
+		return $ret;
 	}
 
 	public function PlotAPsignal3D($hash = "", $UseRSSI = 0)
 	{
-        $this->SigMapTimeBeforeMarkedDead = 30;
+
 		if($hash === "")
 		{
 			throw new ErrorException("AP Hash pointer for createKML::PlotAPsignal3D is empty.");
@@ -451,16 +454,14 @@ class createKML
 		}
 
 		$tmp = "";
-		$all = "";
-        $LastTimeInt = 0;
+		$LastTimeInt = 0;
 		$LastSigStrengthLevel = 0;
-        $lastGeodord = "";
 		$SigData = 0;
 		$ExpString = "";
 
 		foreach($this->data->apdata[$hash]['gdata'] as $gps)
 		{
-            $LastSigData = $SigData;
+			$LastSigData = $SigData;
 			$SigData = 1;
 			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
 			$NewTimeInt = strtotime($string);
@@ -496,31 +497,25 @@ class createKML
 			{
 				$cal = -1*$cal;
 			}
-#            var_dump($LastSigStrengthLevel, $SigStrengthLevel, $cal , $this->SigMapTimeBeforeMarkedDead, $LastSigData);
-            if(($LastSigStrengthLevel !== $SigStrengthLevel) OR ($cal >= $this->SigMapTimeBeforeMarkedDead))
-            {
-                if($LastSigData) {
-                    $tmp .= '
-                    </coordinates>
-                </LineString>
-            </Placemark>';
-                }
-            }
-
-			If($LastSigStrengthLevel !== $SigStrengthLevel OR ($cal >= $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			If($LastSigStrengthLevel <> $SigStrengthLevel OR ($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
 			{
-				$tmp .= '
-            <Placemark>
+				if($LastSigData == 1)
+				{
+					$tmp .= '</coordinates>
+						</LineString>
+					</Placemark>';
+				}
+				$tmp .= '<Placemark>
 				<styleUrl>'.$SigCat.'</styleUrl>
 				<LineString>
 					<extrude>1</extrude>
 					<tessellate>0</tessellate>
 					<altitudeMode>relativeToGround</altitudeMode>
 					<coordinates>';
-				If($lastGeodord !== '' AND $LastSigStrengthLevel !== $SigStrengthLevel OR $cal <= $this->SigMapTimeBeforeMarkedDead AND $LastSigData == 1)
+				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
 				{
-					$tmp .= $lastGeodord;
-                }
+					$tmp .= $ExpString;
+				}
 			}
 			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
 			if($UseRSSI == 1)
@@ -533,22 +528,19 @@ class createKML
 				$ExpString = "
 					".$gps_coords.",".$gps['signal'];
 			}
-            $tmp .= $ExpString;
-
-            $lastGeodord = $ExpString;
-            $LastSigStrengthLevel = $SigStrengthLevel;
-            $LastTimeInt = $NewTimeInt;
-
- #           var_dump($tmp);
- #           var_dump("----------------------------------------");
-            $all .= $tmp;
-            $tmp = "";
-        }
-        $all .= '
-                    </coordinates>
-                </LineString>
-            </Placemark>';
-		return $all;
+			$tmp .= $ExpString;
+			$LastSigStrengthLevel = $SigStrengthLevel;
+			$LastTimeInt = $NewTimeInt;
+		}
+		if($tmp != "\r\n , ,")
+		{
+			$tmp .= '
+					</coordinates>
+				</LineString>
+			</Placemark>';
+		}
+		$ret = $tmp;
+		return $ret;
 	}
 
 	public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')

@@ -2,8 +2,6 @@ SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "-05:00";
 
 
-drop database IF EXISTS wifi;
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -690,7 +688,7 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
   `gps_id` int(11) NOT NULL,
   `file_id` int(255) NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT 'WiFiDB',
-  `time_stamp` DATETIME,
+  `time_stamp` DATETIME(6),
   PRIMARY KEY (`id`),
   KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`username`,`time_stamp`),
   KEY `FK_GPS` (`gps_id`),

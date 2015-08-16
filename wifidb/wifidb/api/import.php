@@ -1,13 +1,10 @@
 <?php
-define("SWITCH_SCREEN", "API");
-define("SWITCH_EXTRAS", "import");
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
-if(isset($_REQUEST['func']))
-{$func = $_REQUEST['func'];}
-else{$func=NULL;}
-
+if(isset($_REQUEST['func'])){$func = $_REQUEST['func'];}else{$func=NULL;}
 switch($func)
 {
 		case "check_hash":
