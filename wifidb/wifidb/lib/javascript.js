@@ -61,6 +61,7 @@ function doCompletion() {
         req.send(null);
 }
 
+
 function initRequest() {
     if (window.XMLHttpRequest) {
         if (navigator.userAgent.indexOf('MSIE') != -1) {

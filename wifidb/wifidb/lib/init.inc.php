@@ -22,7 +22,7 @@ if not, write to the
 //***DEV USE ONLY*** TODO: remove dev stuff
 ini_set('display_errors', 1);//***DEV USE ONLY***
 #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
-error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
+error_reporting(E_ALL|| E_STRICT);# || E_STRICT);//***DEV USE ONLY***
 //***DEV USE ONLY***
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 if(!function_exists('WiFiDBexception_handler')) {
