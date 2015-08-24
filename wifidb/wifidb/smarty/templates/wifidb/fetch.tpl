@@ -1,5 +1,5 @@
 <!--
-Database.inc.php, holds the database interactive functions.
+fetch.tpl: template for a single AP's data results.
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -19,21 +19,21 @@ if not, write to the
 -->
 {include file="header.tpl"}
                                 <script language="JavaScript">
-				// Row Hide function.
-				// by tcadieux
-				function expandcontract(tbodyid,ClickIcon)
-				{
-					if (document.getElementById(ClickIcon).innerHTML == "+")
-					{
-						document.getElementById(tbodyid).style.display = "";
-						document.getElementById(ClickIcon).innerHTML = "-";
-					}else{
-						document.getElementById(tbodyid).style.display = "none";
-						document.getElementById(ClickIcon).innerHTML = "+";
-					}
-				}
-				</script>
-                                <h1>{$wifidb_ap.ssid}<img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_ap_globe}.png"></h1>
+                // Row Hide function.
+                // by tcadieux
+                function expandcontract(tbodyid,ClickIcon)
+                {
+                    if (document.getElementById(ClickIcon).innerHTML == "+")
+                    {
+                        document.getElementById(tbodyid).style.display = "";
+                        document.getElementById(ClickIcon).innerHTML = "-";
+                    }else{
+                        document.getElementById(tbodyid).style.display = "none";
+                        document.getElementById(ClickIcon).innerHTML = "+";
+                    }
+                }
+                </script>
+                                <h1>{$wifidb_ap.ssid}{$wifidb_ap_globe_html}</h1>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
                                     <tbody>
@@ -50,7 +50,7 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?row=1&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_all_signal,{$wifidb_ap.id}">KML</a></td>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap.limit}&amp;from=0&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a></td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -63,13 +63,15 @@ if not, write to the
                                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
                                                     <tbody>
                                                         <tr>
-                                                            <td class="style4" onclick="expandcontract('Row{$wifidb_ap_signal.id}','ClickIcon{$wifidb_ap_signal.id}')" id="ClickIcon{$wifidb_ap_signal.id}" style="cursor: pointer; cursor: hand;">+</td>
-                                                            <th colspan="6" class="style4">Signal History ({$wifidb_ap_signal.desc})</th>
+                                                            <th class="style4" onclick="expandcontract('Row{$wifidb_ap_signal.id}','ClickIcon{$wifidb_ap_signal.id}')" id="ClickIcon{$wifidb_ap_signal.id}" style="cursor: pointer; cursor: hand;">+</th>
+                                                            <th colspan="5" class="style4">Signal History ({$wifidb_ap_signal.desc})</th>
+                                                            <td class="style4"><b>Export:</b> <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">KMZ</a> / <a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">Graph</a></td>
                                                         </tr>
                                                     </tbody>
                                                     <tbody id="Row{$wifidb_ap_signal.id}" style="display:none">
                                                         <tr class="style4">
                                                             <th>Signal</th>
+                                                            <th>RSSI</th>
                                                             <th>Lat</th>
                                                             <th>Long</th>
                                                             <th>Sats</th>
@@ -79,11 +81,12 @@ if not, write to the
                                                         {foreach name='gps_points' item=wifidb_ap_gps from=$wifidb_ap_signal.gps}
                                                         <tr class="{$wifidb_ap_gps.class}">
                                                             <td align="center">{$wifidb_ap_gps.signal}</td>
-                                                            <td>{$wifidb_ap_gps.lat}</td>
-                                                            <td>{$wifidb_ap_gps.long}</td>
+                                                            <td align="center">{$wifidb_ap_gps.rssi}</td>
+                                                            <td align="center">{$wifidb_ap_gps.lat}</td>
+                                                            <td align="center">{$wifidb_ap_gps.long}</td>
                                                             <td align="center">{$wifidb_ap_gps.sats}</td>
-                                                            <td>{$wifidb_ap_gps.date}</td>
-                                                            <td>{$wifidb_ap_gps.time}</td>
+                                                            <td align="center">{$wifidb_ap_gps.date}</td>
+                                                            <td align="center">{$wifidb_ap_gps.time}</td>
                                                         </tr>
                                                         {foreachelse}
                                                         <tr class="bad">
@@ -94,7 +97,7 @@ if not, write to the
                                                 </table>
                                                 {foreachelse}
                                                 <tr class="style4">
-                                                    <td colspan="5"> There are no GPS Points for this AP :/</td>
+                                                    <td> There are no GPS Points for this AP :/</td>
                                                 </tr>    
                                                 {/foreach}
                                             </td>
@@ -132,7 +135,7 @@ if not, write to the
                                             </td>
                                             <td>
                                                 <a class="links" 
-                                                   href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.title_id}">
+                                                   href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">
                                                     {$wifidb_assoc.title}
                                                 </a>
                                             </td>
