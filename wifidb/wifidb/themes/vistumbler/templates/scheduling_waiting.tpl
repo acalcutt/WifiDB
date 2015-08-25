@@ -18,7 +18,6 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-		<meta http-equiv="refresh" content="15">
                 <table border="1" width="90%">
                     <tr class="style4">
                         <th colspan="4">Scheduled Imports</th>
@@ -33,50 +32,112 @@ if not, write to the
                         <td class="light" colspan="2">
                             <form action="scheduling.php?func=refresh" method="post" enctype="multipart/form-data">
                                 <SELECT NAME="refresh">  
-                                    {$wifidb_refresh_options}
+                                    {$wifidb_refresh_options|default:"<option>Error Fetching Refresh Values</option>"}
                                 </SELECT>
                                 <INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
                             </form>
                         </td>
                     </tr>
-                </table>
-                <br />
-                <table border="1" width="90%">
-                    <tr class="style4">
-                        <th colspan="4">WiFiDB {$wifidb_daemon.OS} Daemon Status:</th>
-                    </tr>
-                    <tr class="style4">
-                        <th>PID</th>
-                        <th>TIME</th>
-                        <th>Memory</th>
-                        <th>CMD</th>
-                    </tr>
-                    <tr align="center">
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                </table>
-                <br />
-				<table border="1" width="90%">
-					<tr class="style4">
-						<th border="1" colspan="7" align="center">Files being imported</th>
-					</tr>
-					<tr id="import_active" align="center">
-						<td border="1">
-
+					<tr>
+						<td class="style3" colspan="1">Local Time Zone</td>
+						<td class="light" colspan="1">
+							<form action="scheduling.php?func=timezone" method="post" enctype="multipart/form-data">
+								<select name="timezone">
+									{$wifidb_timezone_options|default:"<option>Error Fetching TimeZones</option>"}
+								</select>
+								<input type="checkbox" name="dst" value="1" checked="">DST
+								<input type="SUBMIT" name="submit" value="Submit">
+							</form>
 						</td>
 					</tr>
-				</table>
-                <table border="1" width="90%">
-                    <tr class="style4">
-                        <th border="1" colspan="7" align="center">Files waiting for import</th>
-                    </tr>
-                    <tr id="import_waiting" align="center">
-                        <td border="1">
-
-                        </td>
-                    </tr>
                 </table>
+                <br />
+				<table border="1" width="100%">
+					<tbody id="daemon_schedule" width="100%">
+						<tr class="style4" width="100%">
+							<th colspan="7">Daemon Schedule</th>
+						</tr>
+						<tr class="style4"  width="100%">
+							<th>Node</th>
+							<th>Daemon</th>
+							<th>Interval</th>
+							<th>Status</th>
+							<th>Next Run (UTC)</th>
+							<th>Next Run (Local)</th>
+						</tr>
+						<tr >
+							<td>
+
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table border="1" width="100%">
+					<tbody id="daemon_stats">
+						<tr class="style4">
+							<th colspan="7">Daemon Status</th>
+						</tr>
+						<tr class="style4">
+							<th>Node</th>
+							<th>PID File</th>
+							<th>PID</th>
+							<th>Time</th>
+							<th>MEM</th>
+							<th>CMD</th>
+							<th>Updated</th>
+						</tr>
+						<tr>
+							<td>
+
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table border="1" width="100%">
+					<tbody id="import_active">
+						<tr class="style4">
+							<th border="1" colspan="10" align="center">Files being imported</th>
+						</tr>
+						<tr>
+							<th>ID</th>
+							<th>File Name</th>
+							<th>User Name</th>
+							<th>Title</th>
+							<th>File Size</th>
+							<th>DateTime</th>
+							<th>File Hash</th>
+							<th>Current AP</th>
+							<th>This of Total</th>
+						</tr>
+						<tr align="center">
+							<td>
+
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<br />
+				<table border="1" width="100%">
+					<tbody id="import_waiting">
+						<tr class="style4">
+							<th border="1" colspan="8" align="center">Files waiting for import</th>
+						</tr>
+						<tr>
+							<th>ID</th>
+							<th>File Name</th>
+							<th>User Name</th>
+							<th>Title</th>
+							<th>File Size</th>
+							<th>DateTime</th>
+							<th>File Hash</th>
+						</tr>
+						<tr align="center">
+							<td>
+
+							</td>
+						</tr>
+					</tbody>
+				</table>
 {include file="footer.tpl"}

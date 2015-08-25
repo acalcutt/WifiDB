@@ -130,7 +130,7 @@ function parseImportWaiting(response, WaitingTable) {
                 //console.log(file.childNodes[0]);
 
                 //create row
-                WaitingTable.style.display = 'table';
+                //WaitingTable.style.display = 'table';
                 var row = document.createElement("tr");
                 row.setAttribute("style", "background-color: yellow");
                 CreateCell(WaitingTable, row, file.childNodes[0].innerHTML) // File ID
@@ -166,7 +166,6 @@ function parseImportActive(response, ActiveTable) {
                 var file = $active.childNodes[loop];
 
                 console.log(file.childNodes.length);
-                ActiveTable.style.display = 'table';
                 row = document.createElement("tr");
                 row.setAttribute("style", "background-color: lime");
                 CreateCell(ActiveTable, row, file.childNodes[0].innerHTML) // File ID
@@ -199,7 +198,7 @@ function parseDaemonStats(response, DaemonStatsTable) {
 //            for (loop = 0; loop < $Stats.childNodes.length; loop++) {
 //                console.log(loop);
                 var file = $Stats.childNodes;
-                DaemonStatsTable.style.display = 'table';
+//                DaemonStatsTable.style.display = 'table';
 
                 var row = document.createElement("tr");
                 row.setAttribute("colspan", "7");
@@ -234,8 +233,9 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
                 //console.log(file.childNodes[0]);
 
                 //create row
-                DaemonScheduleTable.style.display = 'table';
+//                DaemonScheduleTable.style.display = 'table';
                 var row = document.createElement("tr");
+                //row.setAttribute("width", "100%");
                 row.setAttribute("colspan", "7");
                 row.setAttribute("style", "background-color: yellow");
                 CreateCell(DaemonScheduleTable, row, file.childNodes[0].innerHTML) // Node
@@ -273,6 +273,7 @@ function createTable(tableName, span)
     var td, tr, autoRow;
     //console.log("tableName: "+tableName);
     tr = document.createElement("tr");
+    //tr.setAttribute("width", "100%");
     autoRow = document.getElementById(tableName);
     //console.log(autoRow.childNodes);
     td = document.createElement("td");

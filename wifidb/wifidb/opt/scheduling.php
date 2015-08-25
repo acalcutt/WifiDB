@@ -290,6 +290,12 @@ switch($func)
     break;
 
     default:
+        $dbcore->smarty->assign('WebSocketScripts', '<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+		<script type="text/javascript">
+			var host = "ws://172.16.1.77:9000/wifidb/api/websocket/"; // SET THIS TO YOUR SERVER
+		</script>
+		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
+        $dbcore->smarty->assign('OnLoad', "onload='init()'");
         #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
         $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
         $result = $dbcore->sql->conn->query($sql);

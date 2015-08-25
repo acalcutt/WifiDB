@@ -2,11 +2,13 @@
 <html>
     <head>
         <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
+		{$WebSocketScripts}
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
         {$wifidb_meta_header}
         {$redirect_func}
     </head>
-    <body style="background-color: #145285" {$redirect_html}>
+
+    <body style="background-color: #145285" {$redirect_html} {$OnLoad}>
         {$install_header}
         {$wifidb_announce_header}
         

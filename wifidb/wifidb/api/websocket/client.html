@@ -9,18 +9,12 @@
     <script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>
 </head>
     <body onload="init()">
-        <table border="1" width="90%">
+        <table border="1" width="10%" align="center">
             <tr class="style4">
-                <th colspan="4">Scheduled Imports</th>
+                <th colspan="4">Select Refresh Rate</th>
             </tr>
             <tr>
-                <td class="style3">Next Import scheduled on:</td>
-                <td class="light">{$wifidb_next_run.utc}</td>
-                <td class="light">{$wifidb_next_run.local}</td>
-            </tr>
-            <tr>
-                <td  class="style3" colspan="1">Select Refresh Rate:</td>
-                <td class="light" colspan="2">
+                <td class="light" colspan="2" align="center">
                     <form action="scheduling.php?func=refresh" method="post" enctype="multipart/form-data">
                         <SELECT NAME="refresh">
                             {$wifidb_refresh_options}
@@ -28,15 +22,16 @@
                         <INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
                     </form>
                 </td>
+
             </tr>
         </table>
         <br />
-        <table border="1" width="90%">
-            <tbody id="daemon_schedule">
-                <tr class="style4">
+        <table border="1" width="100%">
+            <tbody id="daemon_schedule" width="100%">
+                <tr class="style4" width="100%">
                     <th colspan="7">Daemon Schedule</th>
                 </tr>
-                <tr class="style4">
+                <tr class="style4"  width="100%">
                     <th>Node</th>
                     <th>Daemon</th>
                     <th>Interval</th>
@@ -53,7 +48,7 @@
         </table>
 
         <br />
-        <table border="1" width="90%">
+        <table border="1" width="100%">
             <tbody id="daemon_stats">
                 <tr class="style4">
                     <th colspan="7">Daemon Status</th>
@@ -75,7 +70,7 @@
             </tbody>
         </table>
         <br />
-        <table border="1" width="90%">
+        <table border="1" width="100%">
             <tbody id="import_active">
                 <tr class="style4">
                     <th border="1" colspan="10" align="center">Files being imported</th>
@@ -99,7 +94,7 @@
             </tbody>
         </table>
         <br />
-        <table border="1" width="90%">
+        <table border="1" width="100%">
             <tbody id="import_waiting">
                 <tr class="style4">
                     <th border="1" colspan="8" align="center">Files waiting for import</th>
