@@ -20,8 +20,8 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
-		parent::__construct($config);
+	public function __construct($config, $createKMLObj, $convertObj, $ZipObj, &$SQL){
+		parent::__construct($config, $SQL);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;

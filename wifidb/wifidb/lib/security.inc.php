@@ -4,10 +4,10 @@ class security
 {
     #private $pass_hash;
     public  $username;
-    function __construct($dbcore, $config)
+    function __construct(&$dbcore, $config)
     {
-        $this->sql                = $dbcore->sql;
-        $this->cli                = $dbcore->cli;
+        $this->sql                = &$dbcore->sql;
+        $this->cli                = &$dbcore->cli;
         $this->log_level          = 42;
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;

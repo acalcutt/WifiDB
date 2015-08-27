@@ -21,11 +21,11 @@ if not, write to the
 
 class import extends dbcore
 {
-	function __construct($config, $convert_obj = NULL, $verbose)
+	function __construct($config, $convert_obj = NULL, $verbose, &$SQL)
 	{
 		if($convert_obj === NULL)
 		{die("Convert Object is null...");}
-		parent::__construct($config);
+		parent::__construct($config, $SQL);
 		$this->verbose = $verbose;
 		$this->convert = $convert_obj;
 		$this->log_level	= $config['log_level'];

@@ -1,10 +1,9 @@
 <?php
 class api_server extends wdbcli
 {
-    function __construct($argv)
+    function __construct($argv, $config, $daemon_config, &$SQL)
     {
-        global $screen_output;
-        $screen_output = "CLI";
+        parent::__construct($config, $daemon_config, $SQL);
 
         $this->ver = '2.0.0';
         $this->author = 'Phil Ferland';

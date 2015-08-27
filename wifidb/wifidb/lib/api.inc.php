@@ -20,9 +20,9 @@ if not, write to the
 */
 class api extends dbcore
 {
-	function __construct($config)
+	function __construct($config, &$SQL)
 	{
-		parent::__construct($config);
+		parent::__construct($config, $SQL);
 		$this->startdate	= "2011-Apr-14";
 		$this->lastedit	 = "2013-Apr-21";
 		$this->vernum	   = "1.0";
@@ -44,6 +44,11 @@ class api extends dbcore
 			if(!$key_result[0]){ $this->Output($key_result[1]); }
 		}
 	}
+
+    function createPIDFile()
+    {
+
+    }
 
 	private function fetch_geoname($lat_low = "", $lat_high = "", $long_low = "", $long_high = "")
 	{
@@ -769,4 +774,3 @@ class api extends dbcore
 		return $open.implode($sep, $res).$close;
 	}
 }
-?>

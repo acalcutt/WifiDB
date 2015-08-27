@@ -7,9 +7,9 @@
  */
 class wdbcli extends dbcore
 {
-    function __construct($config, $daemon_config)
+    function __construct($config, $daemon_config, &$SQL)
     {
-        parent::__construct($config);
+        parent::__construct($config, $SQL);
         if(strtolower(SWITCH_SCREEN) == "cli")
         {
             $this->pid_file =   "";

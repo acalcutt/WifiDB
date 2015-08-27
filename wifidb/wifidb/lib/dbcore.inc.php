@@ -22,68 +22,74 @@ if not, write to the
 class dbcore
 {
 	public $cli;
-	public function __construct($config = NULL)
+	public function __construct($config = NULL, &$SQL = NULL)
 	{
-		if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
-		$this->sql					  = new SQL($config);
+        if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
+        if($SQL === NULL)
+        {
+            $this->sql					= "NONSQLMODE";
+        }else
+        {
+            $this->sql					= $SQL;
+        }
 		$this->verbose					= 0;
-		$this->mesg					 = "";
-		$this->switches				 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
-		$this->reserved_users		   = $config['reserved_users'];
-		$this->supported_extentions	 = array('csv','db3','vsz','vs1','gpx','ns1');
-		$this->login_check			  = 0;
-		$this->alerts_message_flag	  = 0;
-		$this->bypass_check			 = 0;
+		$this->mesg					    = "";
+		$this->switches				    = array(SWITCH_SCREEN, SWITCH_EXTRAS);
+		$this->reserved_users		    = $config['reserved_users'];
+		$this->supported_extentions	    = array('csv','db3','vsz','vs1','gpx','ns1');
+		$this->login_check			    = 0;
+		$this->alerts_message_flag	    = 0;
+		$this->bypass_check			    = 0;
 		$this->debug					= 1;
-		$this->rebuild				  = $config['rebuild'];
+		$this->rebuild				    = $config['rebuild'];
 		$this->log_level				= $config['log_level'];
-		$this->log_interval			 = $config['log_interval'];
+		$this->log_interval			    = $config['log_interval'];
 
-		$this->default_refresh		  = $config['default_refresh'];
-		$this->default_timezone		 = $config['default_timezone'];
-		$this->default_dst			  = $config['default_dst'];
-		$this->date_format			  = "Y-m-d";
-		$this->time_format			  = "H:i:s";
-		$this->datetime_format		  = $this->date_format." ".$this->time_format;
-		$this->timeout				  = $config['timeout'];
+		$this->default_refresh		    = $config['default_refresh'];
+		$this->default_timezone		    = $config['default_timezone'];
+		$this->default_dst			    = $config['default_dst'];
+		$this->date_format			    = "Y-m-d";
+		$this->time_format			    = "H:i:s";
+		$this->datetime_format		    = $this->date_format." ".$this->time_format;
+		$this->timeout				    = $config['timeout'];
 
-		$this->TOOLS_PATH			   = $config['wifidb_tools'];
-		$this->pid_file_loc			 = $config['pid_file_loc'];
-		$this->apache_user			  = $config['apache_user'];
-		$this->apache_group			 = $config['apache_group'];
+		$this->TOOLS_PATH			    = $config['wifidb_tools'];
+        $this->pid_file_loc			    = $config['pid_file_loc'];
+		$this->apache_user			    = $config['apache_user'];
+		$this->apache_group			    = $config['apache_group'];
 
-		$this->dim					  = DIRECTORY_SEPARATOR;
-		$this->HOSTURL				  = $config['hosturl'];
-		$this->root					 = $config['root'];
-		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';
-		$this->PATH					 = $config['wifidb_install'];
-		$this->gpx_out				  = $this->PATH.$config['gpx_out'];
-		$this->gpx_htmlpath			 = $this->URL_PATH.$config['gpx_out'];
-		$this->daemon_out			   = $this->PATH.$config['daemon_out'];
-		$this->daemon_htmlpath		  = $this->URL_PATH.$config['daemon_out'];
-		$this->region_out			   = $this->PATH.$config['region_out'];
+		$this->dim					    = DIRECTORY_SEPARATOR;
+		$this->HOSTURL				    = $config['hosturl'];
+		$this->root					    = $config['root'];
+		$this->URL_PATH				    = $this->HOSTURL.$this->root.'/';
+		$this->PATH					    = $config['wifidb_install'];
+		$this->gpx_out				    = $this->PATH.$config['gpx_out'];
+		$this->gpx_htmlpath			    = $this->URL_PATH.$config['gpx_out'];
+		$this->daemon_out			    = $this->PATH.$config['daemon_out'];
+		$this->daemon_htmlpath		    = $this->URL_PATH.$config['daemon_out'];
+		$this->region_out			    = $this->PATH.$config['region_out'];
 		$this->region_htmlpath			= $this->URL_PATH.$config['region_out'];
-		$this->vs1_out				  = $this->PATH.$config['vs1_out'];
-		$this->vs1_htmlpath			 = $this->URL_PATH.$config['vs1_out'];
-		$this->kml_out				  = $this->PATH.$config['kml_out'];
-		$this->kml_htmlpath			 = $this->URL_PATH.$config['kml_out'];
-		$this->csv_out				  = $this->PATH.$config['csv_out'];
-		$this->csv_htmlpath			 = $this->URL_PATH.$config['csv_out'];
+		$this->vs1_out				    = $this->PATH.$config['vs1_out'];
+		$this->vs1_htmlpath			    = $this->URL_PATH.$config['vs1_out'];
+		$this->kml_out				    = $this->PATH.$config['kml_out'];
+		$this->kml_htmlpath			    = $this->URL_PATH.$config['kml_out'];
+		$this->csv_out				    = $this->PATH.$config['csv_out'];
+		$this->csv_htmlpath			    = $this->URL_PATH.$config['csv_out'];
 
 		$this->theme					= (@$_REQUEST['wifidb_theme']!='' ? @$_REQUEST['wifidb_theme'] : $config['default_theme']);
-		$this->PATH_THEMES			  = $this->PATH.'themes/'.$this->theme;
+		$this->PATH_THEMES			    = $this->PATH.'themes/'.$this->theme;
 
-		$this->open_loc				 = $config['open_loc'];
-		$this->WEP_loc				  = $config['WEP_loc'];
-		$this->WPA_loc				  = $config['WPA_loc'];
-		$this->KML_SOURCE_URL		   = $config['KML_SOURCE_URL'];
+		$this->open_loc				    = $config['open_loc'];
+		$this->WEP_loc				    = $config['WEP_loc'];
+		$this->WPA_loc				    = $config['WPA_loc'];
+		$this->KML_SOURCE_URL		    = $config['KML_SOURCE_URL'];
 
-		$this->smarty_path			  = $config['smarty_path'];
+		$this->smarty_path			    = $config['smarty_path'];
 
-		$this->wifidb_email_updates	 = 0;
-		$this->email_validation		 = 1;
-		$this->WDBadmin				 = $config['admin_email'];
-		$this->smtp					 = $config['wifidb_smtp'];
+		$this->wifidb_email_updates	    = 0;
+		$this->email_validation		    = 1;
+		$this->WDBadmin				    = $config['admin_email'];
+		$this->smtp					    = $config['wifidb_smtp'];
 		if(empty($config['colors_setting']) or PHP_OS != "Linux")
 		{
 			$this->colors = array(
@@ -104,19 +110,18 @@ class dbcore
 			);
 		}
 
-		$this->ver_array				=   array(
+		$this->ver_array			    =   array(
 			"wifidb"					=>  " *Alpha* 0.30v Build 1 *Pre-Release* ",
-			"codename"				  =>  "Peabody",
+			"codename"				    =>  "Peabody",
 			"Last_Core_Edit"			=>  "08-27-2014"
 			);
-		$this->ver_str				  = $this->ver_array['wifidb'];
-		$this->This_is_me			   = getmypid();
-		$this->sec					  = new security($this, $config);
-		$this->lang					 = new languages($config['wifidb_install']);
-		$this->xml					  = new xml();
-		$this->languages = $this->lang;
-		$this->dBmMaxSignal = $config['dBmMaxSignal'];
-		$this->dBmDissociationSignal = $config['dBmDissociationSignal'];
+		$this->ver_str				    = $this->ver_array['wifidb'];
+		$this->This_is_me			    = getmypid();
+		$this->sec					    = new security($this, $config);
+		$this->xml					    = new xml();
+		$this->languages                = new languages($config['wifidb_install']);
+		$this->dBmMaxSignal             = $config['dBmMaxSignal'];
+		$this->dBmDissociationSignal    = $config['dBmDissociationSignal'];
 	}
 
 	##############################

@@ -28,9 +28,9 @@ class frontend extends dbcore
 	#===========================#
 	#   __construct (default)   #
 	#===========================#
-	function __construct($config)
+	function __construct($config, &$SQL)
 	{
-		parent::__construct($config);
+		parent::__construct($config, $SQL);
 		if(strtolower(SWITCH_EXTRAS) != "api")
 		{
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');

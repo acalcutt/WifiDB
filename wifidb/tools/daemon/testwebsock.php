@@ -26,7 +26,7 @@ $dbcore->lastedit		=	"2015-08-18";
 $dbcore->daemon_name	=	"WebSocket";
 $dbcore->createPIDFile();
 
-$arguments = $dbcore->parseArgs($argv);
+#$arguments = $dbcore->parseArgs($argv);
 
 class echoServer extends WebSocketServer {
   //protected $maxBufferSize = 1048576; //1MB... overkill for an echo server, but potentially plausible for other applications.

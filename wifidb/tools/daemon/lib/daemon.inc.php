@@ -21,9 +21,9 @@ if not, write to the
 
 class daemon extends wdbcli
 {
-	public function __construct($config, $daemon_config)
+	public function __construct($config, $daemon_config, &$SQL)
 	{
-		parent::__construct($config, $daemon_config);
+		parent::__construct($config, $daemon_config, $SQL);
 		$this->default_user		 		=	$daemon_config['default_user'];
 		$this->default_title			=	$daemon_config['default_title'];
 		$this->default_notes			=	$daemon_config['default_notes'];
