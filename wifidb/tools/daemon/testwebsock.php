@@ -39,7 +39,7 @@ class echoServer extends WebSocketServer {
 
   protected function process ($user, $message)
   {
-      var_dump($message);
+      #var_dump($message);
       switch(strtolower($message))
       {
           case "import_waiting":

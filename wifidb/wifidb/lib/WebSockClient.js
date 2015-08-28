@@ -188,12 +188,12 @@ function parseDaemonStats(response, DaemonStatsTable) {
     if (response == null) {
         return false;
     } else {
-        console.log(response);
+        //console.log(response);
         xmlDoc = $.parseXML(response),
             $xml = $(xmlDoc),
             $search1 = $xml.find(currentRequest);
-        $Stats = $search1[0];
-        console.log($Stats.childNodes.length);
+        var $Stats = $search1[0];
+        //console.log($Stats.childNodes.length);
         if ($Stats.childNodes.length > 0) {
 
 //            for (loop = 0; loop < $Stats.childNodes.length; loop++) {
@@ -222,13 +222,13 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
     if (response == null) {
         return false;
     } else {
-        xmlDoc = $.parseXML(response),
+        var xmlDoc = $.parseXML(response),
             $xml = $(xmlDoc),
             $search1 = $xml.find(currentRequest);
-        $Stats = $search1[0];
+        var $Stats = $search1[0];
         if ($Stats.childNodes.length > 0) {
 
-            for (loop = 0; loop < $Stats.childNodes.length; loop++) {
+            for (var loop = 0; loop < $Stats.childNodes.length; loop++) {
                 //console.log(loop);
                 var file = $Stats.childNodes[loop];
                 //console.log(file.childNodes[0]);
@@ -250,8 +250,8 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
 
                 var pad = "00";
                 var UTCDate = new Date(file.childNodes[4].innerHTML);
-                console.log(UTCDate);
-                console.log(UTCDate.getMonth()+1);
+                //console.log(UTCDate);
+                //console.log(UTCDate.getMonth()+1);
                 var month_pre = "" + (UTCDate.getMonth()+1); //WTF JavaScript, why is the Month off by one? January is 0 WTF... Seriously...
                 var month = pad.substring(0, pad.length - month_pre.length) + month_pre;
 
