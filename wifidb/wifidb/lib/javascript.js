@@ -27,7 +27,6 @@ var authField;
 var encryField;
 var radioField;
 var chanField;
-var completeField;
 var completeTable;
 var autoRow;
 

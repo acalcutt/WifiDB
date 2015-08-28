@@ -315,9 +315,7 @@ CREATE TABLE IF NOT EXISTS `live_aps` (
   `sectype` int(1) NOT NULL,
   `radio` varchar(7) COLLATE utf8_unicode_ci NOT NULL,
   `chan` int(255) NOT NULL,
-  `sig` text COLLATE utf8_unicode_ci NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `user_id` int(255) NOT NULL,
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `BTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `OTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -328,12 +326,12 @@ CREATE TABLE IF NOT EXISTS `live_aps` (
   `lat` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N 0.0000',
   `long` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'E 0.0000',
   PRIMARY KEY (`ap_hash`),
-  KEY `id` (`id`)
+  KEY `live_aps` (`id`, `ssid`, `mac`, `auth`, `encry`, `sectype`, `radio`, `chan`, `user_id`, `ap_hash`, `lat`, `long`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
---
+-- --
 -- Table structure for table `live_gps`
 --
 
@@ -348,11 +346,10 @@ CREATE TABLE IF NOT EXISTS `live_gps` (
   `kmh` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `mph` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `track` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `date` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `time` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `date` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
+  `time` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `id` (`id`)
+  KEY `live_gps` (`id`, `lat`, `long`, `sats`, `date`, `time`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -369,8 +366,7 @@ CREATE TABLE IF NOT EXISTS `live_signals` (
   `gps_id` int(11) NOT NULL,
   `time_stamp` int(255) NOT NULL,
   KEY `id` (`id`),
-  KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`time_stamp`),
-  KEY `FK_ap_hash_gps` (`gps_id`)
+  KEY `ap_hash` (`ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp` )
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -381,12 +377,25 @@ CREATE TABLE IF NOT EXISTS `live_signals` (
 
 CREATE TABLE IF NOT EXISTS `live_titles` (
   `id` int(255) NOT NULL AUTO_INCREMENT,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `username` int(255) NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `notes` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  KEY `id` (`id`)
+  KEY `id` (`id`, `username`, `title`, `notes`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `live_users`
+--
+
+CREATE TABLE IF NOT EXISTS `live_users` (
+  `id` int(255) NOT NULL AUTO_INCREMENT,
+  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `live_users` (`id`, `username`, `session_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
 
