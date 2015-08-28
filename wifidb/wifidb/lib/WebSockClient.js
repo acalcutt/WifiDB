@@ -1,4 +1,4 @@
-var socket, WaitingTable, ActiveTable, curentRequest;
+var socket, currentRequest;
 
 function init() {
     connect();
@@ -13,7 +13,7 @@ function connect() {
 
         socket.onopen    = function() {
             //console.log("Connected - status "+this.readyState);
-            curentRequest = "import_waiting";
+            currentRequest = "import_waiting";
             send('import_waiting');
         };
 
@@ -28,58 +28,59 @@ function connect() {
             if($search1.length > 0)
             {
                 //return;
-                //alert("Notice in "+curentRequest);
+                //alert("Notice in "+currentRequest);
             }
             $search2 = $xml.find( "error");
             //console.log($search2.length);
             if($search2.length > 0)
             {
                 //return;
-                //alert("Error in "+curentRequest);
+                //alert("Error in "+currentRequest);
             }
 
             //$search2 = $xml.find("import_active");
-            //console.log("Current Request: " + curentRequest);
-            var CurrentTable = createTable(curentRequest, "10");
-            clearTable(curentRequest);
-            switch(curentRequest)
+            //console.log("Current Request: " + currentRequest);
+            var CurrentTable = createTable(currentRequest, "10");
+            clearTable(currentRequest);
+            switch(currentRequest)
             {
                 case "import_waiting":
                     parseImportWaiting(msg.data, CurrentTable);
-                    curentRequest = "import_active";
+                    currentRequest = "import_active";
                     send('import_active');
                     break;
                 case "import_active":
                     parseImportActive(msg.data, CurrentTable);
-                    curentRequest = "daemon_stats";
+                    currentRequest = "daemon_stats";
                     send('daemon_stats');
                     break;
                 case "daemon_stats":
                     parseDaemonStats(msg.data, CurrentTable);
-                    curentRequest = "daemon_schedule";
+                    currentRequest = "daemon_schedule";
                     send('daemon_schedule');
                     break;
                 case "daemon_schedule":
                     parseDaemonSchedule(msg.data, CurrentTable);
                     break;
                 default:
-                    console.log(curentRequest + "< ---- >"+msg.data);
+                    console.log(currentRequest + "< ---- >"+msg.data);
                     break;
             }
         };
         socket.onclose   = function() {
-            //console.log("Disconnected - status "+this.readyState);
+            console.log("Disconnected - status "+this.readyState);
             if(tries>=30)
             {
                 return;
             }
-            //console.log("Re-Connecting (try "+tries+" of 30)...."+this.readyState);
+            console.log("Re-Connecting (try "+tries+" of 30)...."+this.readyState);
             reconnect();
             tries++;
         };
     }
     catch(ex){
-        //console.log(ex);
+        console.log("WebSockets Not Supported.");
+        window.location.replace("/wifidb/opt/scheduling.php?func=old_schedule");
     }
 }
 
@@ -118,7 +119,7 @@ function parseImportWaiting(response, WaitingTable) {
     } else {
         xmlDoc = $.parseXML( response ),
         $xml = $( xmlDoc ),
-        $search1 = $xml.find(curentRequest);
+        $search1 = $xml.find(currentRequest);
         $waiting = $search1[0];
 //        console.log($waiting);
         if ($waiting.childNodes.length > 0) {
@@ -155,7 +156,7 @@ function parseImportActive(response, ActiveTable) {
     } else {
         xmlDoc = $.parseXML( response ),
             $xml = $( xmlDoc ),
-            $search1 = $xml.find(curentRequest);
+            $search1 = $xml.find(currentRequest);
         $active = $search1[0];
         if ($active.childNodes.length > 0) {
             //console.log("Active Response Length: "+$active.childNodes.length);
@@ -190,7 +191,7 @@ function parseDaemonStats(response, DaemonStatsTable) {
         console.log(response);
         xmlDoc = $.parseXML(response),
             $xml = $(xmlDoc),
-            $search1 = $xml.find(curentRequest);
+            $search1 = $xml.find(currentRequest);
         $Stats = $search1[0];
         console.log($Stats.childNodes.length);
         if ($Stats.childNodes.length > 0) {
@@ -223,7 +224,7 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
     } else {
         xmlDoc = $.parseXML(response),
             $xml = $(xmlDoc),
-            $search1 = $xml.find(curentRequest);
+            $search1 = $xml.find(currentRequest);
         $Stats = $search1[0];
         if ($Stats.childNodes.length > 0) {
 
@@ -231,26 +232,81 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
                 //console.log(loop);
                 var file = $Stats.childNodes[loop];
                 //console.log(file.childNodes[0]);
-
                 //create row
-//                DaemonScheduleTable.style.display = 'table';
                 var row = document.createElement("tr");
-                //row.setAttribute("width", "100%");
+                if(file.childNodes[3].innerHTML === "Running")
+                {
+                    row.setAttribute("bgcolor", "lime");
+                }else
+                {
+                    row.setAttribute("style", "background-color: yellow");
+                }
                 row.setAttribute("colspan", "7");
-                row.setAttribute("style", "background-color: yellow");
+
                 CreateCell(DaemonScheduleTable, row, file.childNodes[0].innerHTML) // Node
                 CreateCell(DaemonScheduleTable, row, file.childNodes[1].innerHTML) // Daemon
                 CreateCell(DaemonScheduleTable, row, file.childNodes[2].innerHTML) // Interval
                 CreateCell(DaemonScheduleTable, row, file.childNodes[3].innerHTML) // Status
-                CreateCell(DaemonScheduleTable, row, file.childNodes[4].innerHTML) // NextUTC
-                var date = new Date(file.childNodes[4].innerHTML + ' UTC');
 
-                CreateCell(DaemonScheduleTable, row, date.toString()) // NextLocal
+                var pad = "00";
+                var UTCDate = new Date(file.childNodes[4].innerHTML);
+                console.log(UTCDate);
+                console.log(UTCDate.getMonth()+1);
+                var month_pre = "" + (UTCDate.getMonth()+1); //WTF JavaScript, why is the Month off by one? January is 0 WTF... Seriously...
+                var month = pad.substring(0, pad.length - month_pre.length) + month_pre;
+
+                var day_pre = "" + UTCDate.getDate();
+                var day = pad.substring(0, pad.length - day_pre.length) + day_pre;
+
+                var hours_pre = "" + UTCDate.getHours();
+                var hours = pad.substring(0, pad.length - hours_pre.length) + hours_pre;
+
+                var min_pre = "" + UTCDate.getMinutes();
+                var min = pad.substring(0, pad.length - min_pre.length) + min_pre;
+
+                var sec_pre = "" + UTCDate.getSeconds();
+                var sec = pad.substring(0, pad.length - sec_pre.length) + sec_pre;
+
+                var UTCDateString = UTCDate.getFullYear()+"-"+month+"-"+day+" "+hours+":"+min+":"+sec;
+                var tz_cookie = readCookie('wifidb_client_timezone');
+                if(tz_cookie === "zero")
+                {
+                    tz_cookie = 0;
+                }
+                var offset_cal = (3600000 * (tz_cookie));
+                var timestamp = UTCDate.getTime();
+
+                //console.log("Offset_Calc: "+ offset_cal);
+                //console.log("TimeStamp SQL: "+ timestamp );
+
+                var LocalDate = new Date((timestamp) + offset_cal);
+
+                var month_pre = "" + (LocalDate.getMonth()+1); // Again WTF Javascript...
+                var month = pad.substring(0, pad.length - month_pre.length) + month_pre;
+
+                var day_pre = "" + LocalDate.getDate();
+                var day = pad.substring(0, pad.length - day_pre.length) + day_pre;
+
+                var hours_pre = "" + LocalDate.getHours();
+                var hours = pad.substring(0, pad.length - hours_pre.length) + hours_pre;
+
+                var min_pre = "" + LocalDate.getMinutes();
+                var min = pad.substring(0, pad.length - min_pre.length) + min_pre;
+
+                var sec_pre = "" + LocalDate.getSeconds();
+                var sec = pad.substring(0, pad.length - sec_pre.length) + sec_pre;
+                var LocalDateString = LocalDate.getFullYear()+"-"+month+"-"+day+" "+hours+":"+min+":"+sec;
+                CreateCell(DaemonScheduleTable, row, UTCDateString) // NextUTC
+                CreateCell(DaemonScheduleTable, row, LocalDateString) // NextLocal
             }
         }
     }
 }
 
+
+function readCookie(name) {
+    return (name = new RegExp('(?:^|;\\s*)' + ('' + name).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '=([^;]*)').exec(document.cookie)) && name[1];
+}
 
 
 function CreateCell(table, row, data) {
@@ -303,6 +359,6 @@ function clearTable(tableName) {
 function myLoop () {           //  create a loop function
     setInterval(function () {    //  call a 3s setTimeout when the loop is called
         send('import_waiting');          //  your code here
-        curentRequest = "import_waiting";
+        currentRequest = "import_waiting";
     }, 2000);
 }

@@ -23,7 +23,6 @@ define("SWITCH_EXTRAS", "");
 include('../lib/init.inc.php');
 
 $func = strtolower(filter_input(INPUT_GET, 'func', FILTER_SANITIZE_ENCODED));
-
 $TZone= (@$_COOKIE['wifidb_client_timezone'] ? @$_COOKIE['wifidb_client_timezone'] : $dbcore->default_timezone);
 $dst = (@$_COOKIE['wifidb_client_dst']!='' ? @$_COOKIE['wifidb_client_dst'] : $dbcore->default_dst);
 $refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $dbcore->default_refresh);
@@ -33,16 +32,18 @@ switch($func)
     case 'refresh':
         $POST_refresh = filter_input(INPUT_POST, 'refresh', FILTER_SANITIZE_ENCODED);
         if( (!isset($POST_refresh)) or $POST_refresh=='' ) { $POST_refresh = $refresh; }
-        setcookie( 'wifidb_refresh' , $POST_refresh , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+        setcookie( 'wifidb_refresh' , $POST_refresh , (time()+($dbcore->timeout)), "/".$dbcore->root );
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
     case 'timezone':
-        $POST_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_ENCODED);
-        $POST_dst = filter_input(INPUT_POST, 'dst', FILTER_SANITIZE_ENCODED);
-        if( (!isset($POST_timezone)) or $POST_timezone=='' ) { $POST_timezone = $TZone; }
-        if( (!isset($POST_dst)) or $POST_dst=='' ) { $POST_dst = 0; }
-        setcookie( 'wifidb_client_timezone' , $POST_timezone , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
-        setcookie( 'wifidb_client_dst' , $POST_dst , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+        $POST_timezone = @filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_ENCODED)+0;
+        if($POST_timezone === 0)
+        {
+            $POST_timezone = "zero";
+        }
+        $POST_dst = @$_POST['dst']+0;
+        setcookie( 'wifidb_client_timezone' , $POST_timezone , (time()+($dbcore->timeout)), "/".$dbcore->root);
+        setcookie( 'wifidb_client_dst' , $POST_dst , (time()+($dbcore->timeout)), "/".$dbcore->root);
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
     case 'done':
@@ -289,13 +290,7 @@ switch($func)
         $dbcore->smarty->display('scheduling_kml.tpl');
     break;
 
-    default:
-        $dbcore->smarty->assign('WebSocketScripts', '<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
-		<script type="text/javascript">
-			var host = "ws://172.16.1.77:9000/wifidb/api/websocket/"; // SET THIS TO YOUR SERVER
-		</script>
-		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
-        $dbcore->smarty->assign('OnLoad', "onload='init()'");
+    case "old_schedule":
         #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
         $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
         $result = $dbcore->sql->conn->query($sql);
@@ -311,7 +306,215 @@ switch($func)
             {
                 $select = "";
             }
+            $timezone_opt .= '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
+            ';
+        }
+        if($dst == 1)
+        {
+            $dst_opt = "checked";
+        }else
+        {
+            $dst_opt = "";
+        }
+        $refresh_opt = "";
+        $val = 15;
+        $max = 30720;
+        while($val < $max)
+        {
+            if($refresh == $val)
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }
+            if($val > 60)
+            {
+                $time_inc_name = "Minutes";
+                $d=60;
+            }
+            else
+            {
+                $time_inc_name = "Seconds";
+                $d=1;
+            }
+            $refresh_opt .= '<OPTION '.$select.' VALUE="'.$val.'"> '.($val/$d).' '.$time_inc_name.'</option>
+            ';
+            $val = $val*2;
+        }
+        $importing_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`files_importing` ORDER BY `date` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            if($newArray['importing'] == '1' )
+            {
+                $color = 'lime';
+            }else
+            {
+                $color = 'yellow';
+            }
+            $importing_row[$n]['color'] = $color;
+            $importing_row[$n]['id'] = $newArray['id'];
+            $importing_row[$n]['file'] = $newArray['file'];
+            $importing_row[$n]['title'] = $newArray['title'];
+            $importing_row[$n]['date'] = $newArray['date'];
+            $importing_row[$n]['size'] = $newArray['size'];
+            $importing_row[$n]['hash'] = $newArray['hash'];
+            $importing_row[$n]['user'] = $newArray['user'];
+            $tot = "";
+            $ssid = "";
+            switch($newArray['ap'])
+            {
+                case "":
+                    $ssid = "<td colspan='2' align='center'>Processing...</td>";
+                    break;
+                case "Preparing for Import":
+                    $ssid = "<td colspan='2' align='center'>Preparing for Import...</td>";
+                    break;
+                case "File is already in table array (":
+                    $ssid = "<td colspan='2' align='center'>File is already in table...</td>";
+                    break;
+                case "@#@#_CONVERTING TO VS1_@#@#":
+                    $ssid = "<td colspan='2' align='center'>Converting file to VS1 Format...</td>";
+                    break;
+                default:
+                    $ssid = '<td align="center">'.$newArray['ap'].'</td>';
+                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = '<td align="center">'.$newArray['tot'].'</td>';}
+                    break;
+            }
+            $importing_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
 
+        $waiting_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            $color = 'yellow';
+            $waiting_row[$n]['color'] = $color;
+            $waiting_row[$n]['id'] = $newArray['id'];
+            $waiting_row[$n]['file'] = $newArray['file'];
+            $waiting_row[$n]['title'] = $newArray['title'];
+            $waiting_row[$n]['date'] = $newArray['date'];
+            $waiting_row[$n]['size'] = $newArray['size'];
+            $waiting_row[$n]['hash'] = $newArray['hash'];
+            $waiting_row[$n]['user'] = $newArray['user'];
+            $tot = "";
+            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
+            $waiting_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
+        $schedule_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`schedule` ORDER BY `nodename` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            $nextrun_utc = strtotime($newArray['nextrun']);
+            $curtime = time();
+            $min_diff = round(($nextrun_utc - $curtime) / 60);
+            $interval = (int)$newArray['interval'];
+            $status = $newArray['status'];
+            $enabled = $newArray['enabled'];
+            if($enabled==0 or $status=="Error")
+            {
+                $color = 'red';
+            }
+            else
+            {
+                if(($min_diff <= $interval and $min_diff >= 0) or $status=="Running")
+                {
+                    $color = 'lime';
+                }
+                else
+                {
+                    $color = 'yellow';
+                }
+            }
+            #convert to local time
+            $timezonediff = $TZone+$dst;
+            $alter_by = (($timezonediff*60)*60);
+            $altered = $nextrun_utc+$alter_by;
+            $nextrun_local = date("Y-m-d H:i:s", $altered);
+            $schedule_row[$n]['color'] = $color;
+            $schedule_row[$n]['id'] = $newArray['id'];
+            $schedule_row[$n]['nodename'] = $newArray['nodename'];
+            $schedule_row[$n]['daemon'] = $newArray['daemon'];
+            $schedule_row[$n]['enabled'] = $newArray['enabled'];
+            $schedule_row[$n]['interval'] = $newArray['interval'];
+            $schedule_row[$n]['status'] = $newArray['status'];
+            $schedule_row[$n]['nextrun_utc'] = $newArray['nextrun'];
+            $schedule_row[$n]['nextrun_local'] = $nextrun_local;
+            $n++;
+        }
+        $pid_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`daemon_pid_stats` ORDER BY `nodename` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            $lastupdatetime = strtotime($newArray['date']);
+            $curtime = time();
+            if($newArray['pid'] == 0)
+            {
+                $color = 'red';
+            }else
+            {
+                if(($curtime-$lastupdatetime) < 60) {
+                    $color = 'lime';
+                }else
+                {
+                    $color = 'yellow';
+                }
+            }
+            $pid_row[$n]['color'] = $color;
+            $pid_row[$n]['nodename'] = $newArray['nodename'];
+            $pid_row[$n]['pidfile'] = $newArray['pidfile'];
+            $pid_row[$n]['pid'] = $newArray['pid'];
+            $pid_row[$n]['pidtime'] = $newArray['pidtime'];
+            $pid_row[$n]['pidmem'] = $newArray['pidmem'];
+            $pid_row[$n]['pidcmd'] = $newArray['pidcmd'];
+            $pid_row[$n]['date'] = $newArray['date'];
+            $n++;
+        }
+        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
+        $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
+        $dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
+        $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
+        $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
+        $dbcore->smarty->assign('wifidb_daemons', $pid_row);
+        $dbcore->smarty->assign('wifidb_importing', $importing_row);
+        $dbcore->smarty->assign('wifidb_waiting', $waiting_row);
+        $dbcore->smarty->display('scheduling_waiting_old.tpl');
+        break;
+
+    default:
+        $dbcore->smarty->assign('WebSocketScripts', '<script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+		<script type="text/javascript">
+			var host = "ws://172.16.1.77:9000/wifidb/api/websocket/"; // SET THIS TO YOUR SERVER
+		</script>
+		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
+        $dbcore->smarty->assign('OnLoad', "onload='init()'");
+        #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
+        $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
+        $result = $dbcore->sql->conn->query($sql);
+        $file_array = $result->fetch(2);
+        $timezone_opt = '';
+        $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+        foreach($offsets as $key=>$value)
+        {
+
+            if(((int)$TZone === $value))
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }
             $timezone_opt .= '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
             ';
         }
