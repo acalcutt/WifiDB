@@ -1,7 +1,7 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+config.inc.php, holds the database configuration settings.
+Copyright (C) 2015 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -19,36 +19,42 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
+define('WDB_DEBUG', 1); /* Debugging for development or bug fixes. 0 is off, 1 is on.*/
+
 $config = array
-(    
-    'lastedit'              =>   '2015-03-03',
+(
+    'configVersion'         =>   '2.0',
+    'lastedit'              =>   '2015-08-29',
 
     #----------General Settings------------#
     'wifidb_tools'          =>   '/opt/wifidb/tools/',
-    'wifidb_install'        =>   '/var/www/htdocs/wifidb/',
+    'wifidb_install'        =>   '/var/www/wifidb/',
     'smarty_path'           =>   '/usr/share/php/smarty/libs/',
     'timezn'                =>   'UTC',
     'root'                  =>   'wifidb',
-    'hosturl'               =>   'http://wifidb.foo.lan',
+    'WebSocketPort'         =>   9000,
+    'hostname'              =>   '<-HOSTNAME FQDN->',
+    'hosturl'               =>   'http://<-HOSTNAME FQDN->/',
     'dim'                   =>   DIRECTORY_SEPARATOR,
     'timetilldead'          =>   2,
-    'admin_email'           =>   'wifidb@someemail.net',
+    'admin_email'           =>   'wifidb@randominervals.com',
     'config_fails'          =>   3,
-    'wifidb_from'           =>   'wifidb@someemail.com',
-    'wifidb_from_pass'      =>   'supersecretpw',
-    'wifidb_smtp'           =>   'smtp.someemail.com',
+    'wifidb_from'           =>   'wifidb@randomintervals.com',
+    'wifidb_from_pass'      =>   '<-SMTP From Password->',
+    'wifidb_smtp'           =>   'smtp.example.com',
     'email_validation'      =>   1,
     'wifidb_email_updates'  =>   0,
     'GeoNamesLoopGiveUp'    =>   5000,
     'reserved_users'        =>   'WiFiDB::wifidb:Recovery:root:system',
-    'dBmMaxSignal'			=>   '-30',
-    'dBmDissociationSignal'	=>   '-85',
-	'verbose'      			=>   1,
+    'dBmMaxSignal'          =>   '-30',
+    'dBmDissociationSignal' =>   '-85',
+    'verbose'               =>   1,
+    'EnableAPIKey'          =>   1,
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
     'log_level'             =>   0,
-    'log_interval'          =>   1,
+    'log_interval'          =>   0,
     'apache_user'           =>   'www-data',
     'apache_group'          =>   'www-data',
     'pid_file_loc'          =>   '/var/run/wifidb/',
@@ -58,7 +64,7 @@ $config = array
     'default_refresh'       =>   15,
     'default_timezone'      =>   0,
     'default_dst'           =>   0,
-    'timeout'               =>   31536000, #(86400 [seconds in a day] * 365 [days in a year])
+    'timeout'               =>   31536000, #Cookie Timeout, (86400 [seconds in a day] * 365 [days in a year])
 
     #-------------Console Viewer Settings--------------#
     'console_refresh'       =>   15,
@@ -70,7 +76,6 @@ $config = array
     #---------------- Debug Info ----------------#
     'bypass_check'          =>   0,
     'rebuild'               =>   0,
-    'debug'                 =>   0,
     'bench'                 =>   0,
 
     #---------------- Tables ----------------#
@@ -92,9 +97,9 @@ $config = array
 
     #---------------- SQL Info ----------------#
     'srvc'                  =>   'mysql',
-    'host'                  =>   'localhost',
-    'db_user'               =>   'wdbuser',
-    'db_pwd'                =>   'supersecretpw',
+    'host'                  =>   '<-MySQL/MariaDB Host IP/Name->',
+    'db_user'               =>   '<-SQL Username->',
+    'db_pwd'                =>   '<-SQL Password->',
     'collate'               =>   'utf8_bin',
     'engine'                =>   'innodb',
 
@@ -108,6 +113,7 @@ $config = array
     'daemon_out'            =>   'out/daemon/',
     'gpx_out'               =>   'out/gpx/',
     'csv_out'               =>   'out/csv/',
+    'region_out'            =>   '/out/region/',
 
     #---------------- Header and Footer Additional Info -----------------#
     'ads'                   => '', # <-- put the code for your ads in here www.google.com/adsense

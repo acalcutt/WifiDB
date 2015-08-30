@@ -71,13 +71,15 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 {
 	require 'config.inc.php';
 }
-if(WDB_DEBUG) {
+#if(WDB_DEBUG)
+if(1)
+{
     /*-----------------------*/
     // Show all error's with strict santex
     //***DEV USE ONLY enable with debug flag in config***
     ini_set('display_errors', 1);//***DEV USE ONLY***
-    #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
-    error_reporting(E_ALL || E_STRICT);# || E_STRICT);//***DEV USE ONLY***
+    ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
+    error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
     /*-----------------------*/
 }
 

@@ -16,14 +16,13 @@ use `wifi`;
 CREATE TABLE IF NOT EXISTS `annunc` (
   `id` int NOT NULL AUTO_INCREMENT,
   `set` tinyint NOT NULL DEFAULT '0',
-  `auth` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Annon Coward',
-  `title` varchar(120) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Blank',
+  `auth` varchar(16) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Annon Coward',
+  `title` varchar(128) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Blank',
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `body` text COLLATE utf8_unicode_ci NOT NULL,
-  `comments` text COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `title` (`title`),
-  KEY `id` (`id`)
+  `body` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `comments` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY ( `id`, `title`),
+  KEY `annunc` (`set`, `auth`, `title`, `date`, `body`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 
@@ -37,10 +36,9 @@ CREATE TABLE IF NOT EXISTS `boundaries` (
   `id` int  NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `polygon` text COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `id` (`id`)
+  PRIMARY KEY ( `id`),
+  KEY `boundaries` (`name`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
-
 
 -- --------------------------------------------------------
 
@@ -49,46 +47,16 @@ CREATE TABLE IF NOT EXISTS `boundaries` (
 --
 
 CREATE TABLE IF NOT EXISTS `DB_stats` (
-  `id` int  NOT NULL AUTO_INCREMENT,
-  `timestamp` varchar(60) CHARACTER SET utf8 NOT NULL,
-  `graph_min` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `graph_max` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `graph_avg` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `graph_num` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `graph_total` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `kmz_min` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `kmz_max` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `kmz_avg` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `kmz_num` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `kmz_total` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `file_min` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `file_max` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `file_avg` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `file_num` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `file_up_totals` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `gpx_size` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `gpx_num` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `gpx_min` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `gpx_max` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `gpx_avg` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `daemon_size` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `daemon_num` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `daemon_min` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `daemon_max` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `daemon_avg` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `total_aps` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `wep_aps` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `open_aps` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `secure_aps` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `nuap` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `num_priv_geo` varchar(255) CHARACTER SET utf8 NOT NULL,
-  `num_pub_geo` varchar(255) CHARACTER SET utf8 NOT NULL,
+  `id` int NOT NULL AUTO_INCREMENT,
+  `timestamp` int NOT NULL,
+  `total_aps` int NOT NULL,
+  `wep_aps` int NOT NULL,
+  `open_aps` int NOT NULL,
+  `secure_aps` int NOT NULL,
   `num_users` int NOT NULL,
-  `aps_totals` int NOT NULL,
   `gps_totals` int NOT NULL,
-  `top_ssids` blob NOT NULL,
-  `geos` blob NOT NULL,
-  PRIMARY KEY (`id`, `timestamp`)
+  PRIMARY KEY ( `id`),
+  KEY `dbstats` ( `timestamp`, `total_aps`, `wep_aps`, `open_aps`, `secure_aps`, `num_users`, `gps_totals`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -112,8 +80,14 @@ CREATE TABLE IF NOT EXISTS `files` (
   `gps` int NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `completed` tinyint NOT NULL DEFAULT 0,
-  PRIMARY KEY (`id`, `file`),
-  KEY `files` (`file`, `node_name`, `user`, `title`, `date`, `size`, `aps`, `gps`, `hash`, `completed`)
+  PRIMARY KEY ( `id`, `file`),
+  KEY (`file`),
+  KEY (`node_name`),
+  KEY (`user`),
+  KEY (`title`),
+  KEY (`date`),
+  KEY (`size`),
+  KEY (`aps`, `gps`, `hash`, `completed`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -136,7 +110,7 @@ CREATE TABLE IF NOT EXISTS `files_bad` (
   `node_name` varchar(255) NOT NULL DEFAULT '0',
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
   `error_msg` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`, `hash`)
+  PRIMARY KEY ( `id`, `hash`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -160,8 +134,17 @@ CREATE TABLE IF NOT EXISTS `files_importing` (
   `importing` tinyint NOT NULL,
   `ap` VARCHAR(64) COLLATE utf8_unicode_ci NOT NULL,
   `tot` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`, `hash`),
-  KEY `files_importing` ( `tmp_id`, `file`, `user`, `title`, `size`, `date`, `hash`, `importing`, `ap`, `tot` )
+  PRIMARY KEY ( `id`, `hash`),
+  KEY ( `tmp_id`),
+  KEY (`file`),
+  KEY (`user`),
+  KEY (`title`),
+  KEY (`size`),
+  KEY (`date`),
+  KEY (`hash`),
+  KEY (`importing`),
+  KEY (`ap`),
+  KEY (`tot`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 -- --------------------------------------------------------
 
@@ -180,8 +163,12 @@ CREATE TABLE IF NOT EXISTS `files_tmp` (
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `converted` tinyint NOT NULL DEFAULT 0,
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`, `hash`),
-  KEY `files_tmp` ( `file`, `user`, `title`, `size`, `date` )
+  PRIMARY KEY ( `id`, `hash`),
+  KEY ( `file`),
+  KEY (`user`),
+  KEY (`title`),
+  KEY (`size`),
+  KEY (`date` )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 -- --------------------------------------------------------
 
@@ -210,7 +197,7 @@ CREATE TABLE IF NOT EXISTS `geonames` (
   `gtopo30` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `timezone` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `mod_date` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`geonameid`),
+  PRIMARY KEY ( `id`, `geonameid`),
   KEY `id` (`id`),
   KEY `name` (`name`),
   KEY `asciiname` (`asciiname`),
@@ -241,8 +228,11 @@ CREATE TABLE IF NOT EXISTS `geonames_admin1` (
   `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
   `asciiname` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
   `geonameid` int  NOT NULL,
-  PRIMARY KEY (`id`, `admin1`),
-  KEY `geonames_admin1` ( `admin1`, `name`, `asciiname`, `geonameid` )
+  PRIMARY KEY ( `id`, `admin1`),
+  KEY (`admin1`),
+  KEY (`name`),
+  KEY (`asciiname`),
+  KEY (`geonameid` )
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -257,7 +247,7 @@ CREATE TABLE IF NOT EXISTS `geonames_admin2` (
   `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
   `asciiname` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
   `geonameid` int  NOT NULL,
-  PRIMARY KEY (`id`, `admin2`),
+  PRIMARY KEY ( `id`, `admin2`),
   KEY `geonames_admin1` ( `admin2`, `name`, `asciiname`, `geonameid` )
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
@@ -288,8 +278,9 @@ CREATE TABLE IF NOT EXISTS `geonames_country_names` (
   `geonamesid` varchar(255) COLLATE utf8_bin NOT NULL,
   `neighbors` varchar(255) COLLATE utf8_bin NOT NULL,
   `EquivalentFipsCode` varchar(255) COLLATE utf8_bin NOT NULL,
-  KEY `id` (`id`),
-  KEY `geonames_country_name` (`geonamesid`, `Country`)
+  PRIMARY KEY ( `id`),
+  KEY (`geonamesid`),
+  KEY (`Country`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_bin AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -307,18 +298,28 @@ CREATE TABLE IF NOT EXISTS `live_aps` (
   `sectype` int NOT NULL,
   `radio` varchar(7) COLLATE utf8_unicode_ci NOT NULL,
   `chan` int  NOT NULL,
-  `user_id` int  NOT NULL,
+  `session_id` int  NOT NULL,
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `BTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `OTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `NT` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `BTx` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `OTx` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `NT` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `Label` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `FA` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `LA` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `lat` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N 0.0000',
-  `long` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'E 0.0000',
-  PRIMARY KEY (`id`, `ap_hash`),
-  KEY `live_aps` (`ssid`, `mac`, `auth`, `encry`, `sectype`, `radio`, `chan`, `user_id`, `ap_hash`, `lat`, `long`)
+  `FA` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `LA` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `lat` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N 0.0000',
+  `long` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'E 0.0000',
+  PRIMARY KEY ( `id`, `ap_hash`),
+  KEY (`ssid`),
+  KEY (`mac`),
+  KEY (`auth`),
+  KEY (`encry`),
+  KEY (`sectype`),
+  KEY (`radio`),
+  KEY (`chan`),
+  KEY (`session_id`),
+  KEY (`ap_hash`),
+  KEY (`lat`),
+  KEY (`long`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -329,19 +330,24 @@ CREATE TABLE IF NOT EXISTS `live_aps` (
 
 CREATE TABLE IF NOT EXISTS `live_gps` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `lat` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `long` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `ap_hash` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `lat` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `long` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `sats` int NOT NULL,
-  `hdp` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `alt` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `geo` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `kmh` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `mph` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `track` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `hdp` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `alt` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `geo` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `kmh` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `mph` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `track` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   `date` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
   `time` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `live_gps` (`lat`, `long`, `sats`, `date`, `time`)
+  PRIMARY KEY ( `id`),
+  KEY (`lat`),
+  KEY (`long`),
+  KEY (`sats`),
+  KEY (`date`),
+  KEY (`time`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -352,13 +358,17 @@ CREATE TABLE IF NOT EXISTS `live_gps` (
 
 CREATE TABLE IF NOT EXISTS `live_signals` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `ap_hash` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `signal` int NOT NULL,
-  `rssi` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  `rssi` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
   `gps_id` int NOT NULL,
   `time_stamp` int  NOT NULL,
-  KEY `id` (`id`),
-  KEY `ap_hash` (`ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp` )
+  PRIMARY KEY ( `id`),
+  KEY (`ap_hash`),
+  KEY (`signal`),
+  KEY (`rssi`),
+  KEY (`gps_id`),
+  KEY (`time_stamp` )
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -372,7 +382,10 @@ CREATE TABLE IF NOT EXISTS `live_titles` (
   `username` int  NOT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `notes` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  KEY `id` (`id`, `username`, `title`, `notes`)
+  PRIMARY KEY ( `id`),
+  KEY (`username`),
+  KEY (`title`),
+  KEY (`notes`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -385,8 +398,8 @@ CREATE TABLE IF NOT EXISTS `live_users` (
   `id` int  NOT NULL AUTO_INCREMENT,
   `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `live_users` (`id`, `username`, `session_id`)
+  PRIMARY KEY ( `id`, `session_id`),
+  KEY (`username`, `session_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -398,9 +411,9 @@ CREATE TABLE IF NOT EXISTS `live_users` (
 CREATE TABLE IF NOT EXISTS `log` (
   `id` int NOT NULL AUTO_INCREMENT,
   `message` text COLLATE utf8_unicode_ci NOT NULL,
-  `level` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `timestamp` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  `prefix` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `level` int COLLATE utf8_unicode_ci NOT NULL,
+  `timestamp` int COLLATE utf8_unicode_ci NOT NULL,
+  `prefix` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
@@ -412,11 +425,12 @@ CREATE TABLE IF NOT EXISTS `log` (
 
 CREATE TABLE IF NOT EXISTS `manufactures`
 (
-  id INT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  id INT NOT NULL AUTO_INCREMENT,
   manuf VARCHAR(255) NOT NULL,
   address VARCHAR(9) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `manuf` (`manuf`, `address`)
+  PRIMARY KEY ( `id`),
+  KEY (`manuf`),
+  KEY (`address`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0;
 
 -- --------------------------------------------------------
@@ -426,12 +440,14 @@ CREATE TABLE IF NOT EXISTS `manufactures`
 --
 
 CREATE TABLE IF NOT EXISTS `settings` (
-  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id` int NOT NULL AUTO_INCREMENT,
   `daemon_state` int NOT NULL,
   `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `node_name` VARCHAR(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `settings` (`daemon_state`, `version`, `node_name`)
+  PRIMARY KEY ( `id`),
+  KEY (`daemon_state`),
+  KEY (`version`),
+  KEY (`node_name`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -453,8 +469,14 @@ CREATE TABLE IF NOT EXISTS `user_imports` (
   `file_id` int  DEFAULT NULL,
   `converted` tinyint NOT NULL DEFAULT '0',
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_imports` (`username`, `points`, `notes`, `title`, `date`, `aps`, `gps`, `hash`, `file_id`)
+  PRIMARY KEY ( `id`),
+  KEY (`username`),
+  KEY (`title`),
+  KEY (`date`),
+  KEY (`aps`),
+  KEY (`gps`),
+  KEY (`hash`),
+  KEY (`file_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -494,7 +516,16 @@ CREATE TABLE IF NOT EXISTS `user_info` (
   `Vis_ver` varchar(16) COLLATE utf8_unicode_ci NOT NULL,
   `apikey` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `user_info_login` (`username`, `password`, `help`, `uid`, `disabled`, `validated`, `locked`, `login_fails`, `permissions` )
+  KEY (`id`),
+  KEY (`username`),
+  KEY (`password`),
+  KEY (`help`),
+  KEY (`uid`),
+  KEY (`disabled`),
+  KEY (`validated`),
+  KEY (`locked`),
+  KEY (`login_fails`),
+  KEY (`permissions`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -508,8 +539,10 @@ CREATE TABLE IF NOT EXISTS `user_login_hashes` (
   `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `utime` int NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `login_hashes` (`username`, `hash`, `utime`)
+  PRIMARY KEY ( `id`),
+  KEY (`username`),
+  KEY (`hash`),
+  KEY (`utime`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -522,8 +555,9 @@ CREATE TABLE IF NOT EXISTS `user_stats` (
   `id` int NOT NULL AUTO_INCREMENT,
   `newest` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `largest` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `user_stats` (`newest`, `largest`)
+  PRIMARY KEY ( `id`),
+  KEY (`newest`),
+  KEY (`largest`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -534,11 +568,13 @@ CREATE TABLE IF NOT EXISTS `user_stats` (
 
 CREATE TABLE IF NOT EXISTS `user_validate` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `user_id` int NOT NULL,
   `code` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`, `username`),
-  KEY `id` (`id`)
+  PRIMARY KEY ( `id`, `user_id`),
+  KEY (`user_id`),
+  KEY (`code`),
+  KEY (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -561,7 +597,7 @@ CREATE TABLE IF NOT EXISTS `wifi_gps` (
   `date` varchar(10) COLLATE utf8_unicode_ci NOT NULL,
   `time` varchar(8) COLLATE utf8_unicode_ci NOT NULL,
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY ( `id`),
   KEY `GPS_INDEX` (`lat`,`sats`,`alt`,`date`,`time`),
   KEY `ap_hash` (`ap_hash`),
   KEY `id` (`id`)
@@ -600,7 +636,8 @@ CREATE TABLE IF NOT EXISTS `wifi_pointers` (
   `rssi_high` int  NOT NULL,
   `alt` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
   `manuf` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`id`),
+  PRIMARY KEY ( `id`),
+  KEY `id` (`id`),
   KEY `ssid` (`ssid`),
   KEY `mac` (`mac`),
   KEY `chan` (`chan`),
@@ -635,12 +672,15 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
   `file_id` int  NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT 'WiFiDB',
   `time_stamp` DATETIME,
-  PRIMARY KEY (`id`),
-  KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`username`,`time_stamp`),
-  KEY `FK_GPS` (`gps_id`),
-  KEY `id` (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
-
+  PRIMARY KEY ( `id`),
+  KEY `ap_hash` (`ap_hash`),
+  KEY (`signal`),
+  KEY (`gps_id`),
+  KEY (`username`),
+  KEY (`time_stamp`),
+  KEY (`gps_id`),
+  KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0;
 -- --------------------------------------------------------
 
 --
@@ -649,14 +689,22 @@ CREATE TABLE IF NOT EXISTS `wifi_signals` (
 
 CREATE TABLE IF NOT EXISTS `daemon_pid_stats` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidfile` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidtime` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidmem` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidcmd` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `nodename` varchar(16) COLLATE utf8_unicode_ci NOT NULL,
+  `pidfile` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `pid` varchar(16) COLLATE utf8_unicode_ci NOT NULL,
+  `pidtime` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `pidmem` varchar(16) COLLATE utf8_unicode_ci NOT NULL,
+  `pidcmd` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY ( `id`),
+  KEY `id` (`id`),
+  KEY (`nodename`),
+  KEY (`pidfile`),
+  KEY (`pid`),
+  KEY (`pidtime`),
+  KEY (`pidmem`),
+  KEY (`pidcmd`),
+  KEY (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 -- --------------------------------------------------------
@@ -673,14 +721,21 @@ CREATE TABLE IF NOT EXISTS `schedule` (
   `interval` int NOT NULL,
   `status` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY ( `id`),
+  KEY `id` (`id`),
+  KEY (`nodename`),
+  KEY (`daemon`),
+  KEY (`enabled`),
+  KEY (`interval`),
+  KEY (`status`),
+  KEY (`nextrun`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci AUTO_INCREMENT=0 ;
 
 --
 -- Insert Initial Data
 --
 
-INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES ('1', 1, '0.30 b1 Alpha', 0, '1');
+INSERT INTO `settings` (`id`, `daemon_state`, `version`, `node_name`) VALUES ('1', 1, '0.30 b1 Alpha', '1');
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
 (1, '1', 'Import', 1, 10, 'Waiting', CURRENT_TIMESTAMP+900),

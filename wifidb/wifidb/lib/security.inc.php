@@ -11,6 +11,7 @@ class security
         $this->log_level          = 42;
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;
+        $this->EnableAPIKey       = $config['EnableAPIKey'];
         $this->login_val          = "No Cookie";
         $this->login_check        = 0;
         $this->LoginLabel         = "AnonCoward";
@@ -18,6 +19,7 @@ class security
         $this->priv_name          = "AnonCoward";
         $this->privs              = 0;
         $this->username           = "AnonCoward";
+        $this->apikey             = "";
         $this->email_validation   = 0;#$dbcore->email_validation;
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
@@ -173,8 +175,7 @@ class security
             return $message;
         }
     }
-    
-    
+
     function GenerateKey($len = 16)
     {
         // http://snippets.dzone.com/posts/show/3123
@@ -326,9 +327,6 @@ class security
     
     function APILoginCheck($username = '', $apikey = '', $authoritah = 0)
     {
-        # hash is the hashed password + salt from the API.
-        # salt is the salt that the API used.
-        # admin is for logging into the admin console
         if($username != '')
         {
             $sql0 = "SELECT * FROM `wifi`.`user_login_hash` WHERE `username` = ? LIMIT 1";
@@ -336,23 +334,28 @@ class security
             $result->bindParam(1, $username, PDO::PARAM_STR);
             $result->execute();
             $newArray = $result->fetch(2);
-            
-            if($apikey === $newArray['apikey'])
-            {
+            if($this->EnableAPIKey) {
+                if ($apikey === $newArray['apikey']) {
+                    $this->privs = $this->check_privs();
+                    $this->apikey = $newArray['apikey'];
+                    $this->LoginLabel = $newArray['username'];
+                    $this->login_val = $newArray['username'];
+                    $this->username = $newArray['username'];
+                    $this->last_login = $newArray['last_login'];
+                    $this->login_check = 1;
+                    return 1;
+                } else {
+                    $this->LoginLabel = "";
+                    $this->login_val = "Bad API Key.";
+                    $this->login_check = 0;
+                    return -1;
+                }
+            }else{
                 $this->privs = $this->check_privs();
-                $this->apikey = $newArray['apikey'];
-                $this->LoginLabel = $newArray['username'];
-                $this->login_val = $newArray['username'];
-                $this->username = $newArray['username'];
-                $this->last_login = $newArray['last_login'];
+                $this->LoginLabel = $username;
+                $this->login_val = $username;
+                $this->username = $username;
                 $this->login_check = 1;
-                return 1;
-            }else
-            {
-                $this->LoginLabel = "";
-                $this->login_val = "Bad API Key.";
-                $this->login_check = 0;
-                return -1;
             }
         }else
         {
@@ -445,32 +448,17 @@ class security
         return 1;
     }
     
- /**
- * (WiFiDB 0.30)<br/>
- * Checks the Users API key and sees if it is valid or not.
- * @link http://www.wifidb.net/manual/en/function.security.ValidateAPIKey.php
- * @param string $username <p>
- * The Username to be checked
- * </p>
- * @param string $apikey <p>
- * The api key to be checked.
- * </p>
- * @return <b>1</b> if the key has been validated, <b>Array</b> and <b>[0]</b> is the code, 
- * <b>[1]</b> is the message.
- */
     function ValidateAPIKey()
     {
         if($this->username === "" || $this->username === "Unknown" || $this->username === "AnonCoward")
         {
-            $this->message = "Invalid Username set.";
-            $array = array(0, $this->message);
-            return $array;
+            $this->mesg[] = "Invalid Username set.";
+            return -1;
         }
         if($this->apikey === "")
         {
-            $this->message = "Invalid API Key set.";
-            $array = array(0, $this->message);
-            return $array;
+            $this->mesg[] = "Invalid API Key set.";
+            return -2;
         }
         $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql);
@@ -479,36 +467,35 @@ class security
         $err = $this->sql->conn->errorCode();
         if($err !== "00000")
         {
+            $this->mesg[] = "Error Selecting User API Key";
             $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
-            $array =  array(0, "Error Selecting User API Key");
-            return $array;
+            return -1;
         }
         $key = $result->fetch(2);
         if($key['apikey'] !== $this->apikey)
         {
-            $this->message = "Authentication Failed.";
-            $array =  array(0, $this->message);
-            return $array;
+            $this->mesg[] = "Authentication Failed.";
+            $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
+            return -2;
         }
         if($key['locked'])
         {
-            $this->message = "Account Locked.";
-            $array =  array(0, $this->message);
-            return $array;
+            $this->mesg[] = "Account Locked.";
+            $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
+            return -3;
         }
         if($key['disabled'])
         {
-            $this->message = "Account Disabled.";
-            $array =  array(0, $this->message);
-            return $array;
+            $this->mesg[] = "Account Disabled.";
+            $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
+            return -4;
         }
         if($key['validated'])
         {
-            $this->message = "User not validated yet.";
-            $array =  array(0, $this->message);
-            return $array;
+            $this->mesg[] = "User not validated yet.";
+            $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
+            return -5;
         }
         return 1;
     }
 }
-?>

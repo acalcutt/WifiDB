@@ -49,21 +49,20 @@ $geo    =   (@$_REQUEST['GEO'] ? $_REQUEST['GEO'] : 0 );
 $kmh    =   (@$_REQUEST['KMH'] ? $_REQUEST['KMH'] : 0 );
 $mph    =   (@$_REQUEST['MPH'] ? $_REQUEST['MPH'] : 0 );
 $track  =   (@$_REQUEST['Track'] ? $_REQUEST['Track'] : 0 );
-$date   =   (@$_REQUEST['Date'] ? $_REQUEST['Date'] : date("Y-m-d") );
-$time   =   (@$_REQUEST['Time'] ? $_REQUEST['Time'] : date("H:i:s") );
+$time   =   (@$_REQUEST['Time'] ? date("Y-m-d H:i:s" , $_REQUEST['Time']) : date("Y-m-d H:i:s") );
 $session_id   =   (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "" );
 if($session_id === "")
 {
-    $dbcore->mesg['message'] = "Session ID is blank :/";
+    $dbcore->mesg[] = array("error"=>"Session ID is blank :<");
+    $dbcore->Output();
 } 
 echo $session_id;
-if($ssid == "UNAMED" && $mac == "00:00:00:00:00:00" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "0.0"
-   && $OTX == "0.0" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
+if($ssid == "UNAMED" && $mac == "00:00:00:00:00:00" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "0.0" && $OTX == "0.0" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
-	echo "no data";
     $dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
     $dbcore->Output();
 }
+
 $data = array(
     #ap data
     'ssid'=>$ssid,
@@ -90,14 +89,13 @@ $data = array(
     'alt'=>$alt,
     'geo'=>$geo,
     'track'=>$track,
-    'date'=>$date,
     'time'=>$time,
     
     #user data
-    #'username'=>$dbcore->username,
-	'username'=>'Unknown',
+    'username'=>$dbcore->username,
+	#'username'=>'Unknown',
     'session_id'=>$session_id
 );
+$dbcore->ManageSession($dbcore->username);
 $dbcore->InsertLiveAP($data);
 $dbcore->Output();
-?>

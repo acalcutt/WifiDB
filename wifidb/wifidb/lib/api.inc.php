@@ -31,14 +31,15 @@ class api extends dbcore
 		$this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
 		$this->username	 = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
 		$this->apikey	   = (@$_REQUEST['apikey']	? @$_REQUEST['apikey'] : "");
-		$this->session_id   = (@$_REQUEST['SessionID'] ? @$_REQUEST['SessionID'] : "");
-		$this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
+        $this->EnableAPIKey = $config['EnableAPIKey'];
+        $this->SessionID   = "";
+        $this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
 		$this->message	  = "";
 		$this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
-		//Lets see if we can find a user with this name.
+        $this->verbose    = 1;
+        //Lets see if we can find a user with this name.
 		//If so, lets check to see if the API key they provided is correct.
-		$this->use_keys = 0; // 0 = DEV USE ONLY SET TO 1 for PRODUCTION USE, other wise bad things happen.
-		if($this->use_keys)
+		if($this->EnableAPIKey)
 		{
 			$key_result = $this->sec->ValidateAPIKey();
 			if(!$key_result[0]){ $this->Output($key_result[1]); }
@@ -319,49 +320,39 @@ class api extends dbcore
 	public function InsertLiveAP($data = array())
 	{
 		if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
-		$ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
-		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `sectype`, `auth`, `encry`, `radio`, `session_id`, `sig`, `lat`, `long` FROM
-				`wifi`.`live_aps`
-				WHERE `ap_hash` = ?
-				AND `session_id` = ?
-				AND `username` = ? LIMIT 1";
+
+        $ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
+		$sql = "SELECT `t1`.`id`, `t1`.`ssid`, `t1`.`mac`, `t1`.`chan`, `t1`.`sectype`, `t1`.`auth`, `t1`.`encry`, `t1`.`radio`, `t1`.`session_id`, `t1`.`lat`, `t1`.`long` FROM `wifi`.`live_aps` as `t1`
+                  INNER JOIN `wifi`.`live_users` as `t2`
+                  ON `t1`.`session_id` = `t2`.`session_id`
+
+                  LIMIT 1";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $ap_hash, PDO::PARAM_STR);
 		$result->bindParam(2, $data['session_id'], PDO::PARAM_STR);
 		$result->bindParam(3, $data['username'], PDO::PARAM_STR);
 		$result->execute();
 		$err = $this->sql->conn->errorCode();
-		if($err !== "00000")
+        var_dump($err);
+        if($err !== "00000")
 		{
 			$this->mesg[] = array("error"=>array("desc"=>"Error selecting AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 			return -1;
 		}
-		$array = $result->fetch(2);
-		if(@$array['id'])
+
+        $array = $result->fetch(2);
+        #var_dump($array);
+        if(@$array['id'])
 		{
 			$AP_id = $array['id'];
-			$this->mesg[] = "It's an old AP :/" ;
+			$this->mesg[] = "Update_AP" ;
 
-			$all_sigs = $array['sig'];
-
-			$sig_exp = explode("~", $all_sigs);
-
-			$sig_c = count($sig_exp)-1;
-			if(!$sig_c)
-			{
-				$sig_exp_id = explode("|", $array['sig']);
-				$id = $sig_exp_id[1];
-			}else
-			{
-				$sig_exp_id = explode("|", $sig_exp[$sig_c]);
-				$id = $sig_exp_id[1];
-			}
-
-			$sql = "SELECT * FROM `wifi`.`live_gps` WHERE `id` = ?";
+			$sql = "SELECT `id`, `lat`, `log` FROM `wifi`.`live_gps` WHERE `ap_hash` = ? ORDER BY `time_stamp` DESC";
 			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $id, PDO::PARAM_STR);
+			$result->bindParam(1, $ap_hash, PDO::PARAM_STR);
 			$result->execute();
 			$err = $this->sql->conn->errorCode();
+            var_dump($err);
 			if($err !== "00000")
 			{
 				$this->mesg[] = array("error"=>array("desc"=>"Error selecting data from Live GPS Table.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
@@ -370,19 +361,20 @@ class api extends dbcore
 			$array = $result->fetch(2);
 			if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
 			{
-				$sql_sig = "INSERT INTO `wifi`.`live_signals`
+                $sql_sig = "INSERT INTO `wifi`.`live_signals`
 						(`id`, `signal`, `rssi`, `gps_id`, `ap_hash`, `time_stamp`)
 						VALUES ('', ?, ?, ?, ?, ?)";
 				$time_stamp = strtotime($data['date']." ".$data['time']);
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
-				$prep_sig->bindParam(3, $id, PDO::PARAM_INT);
+				$prep_sig->bindParam(3, $array['id'], PDO::PARAM_INT);
 				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
 				$prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
 				$prep_sig->execute();
 				$err = $this->sql->conn->errorCode();
-				if($err !== "00000")
+                var_dump($err);
+                if($err !== "00000")
 				{
 					$this->mesg[] = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 					return -1;
@@ -391,17 +383,16 @@ class api extends dbcore
 					$this->mesg[] = "Added Signal data.";
 				}
 
-				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$id;
 				$date_time = strtotime($data['date']." ".$data['time']);
 				$this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
-				$sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `sig` = ? WHERE `id` = ?";
+				$sql = "UPDATE `wifi`.`live_aps` SET `LA` = ? WHERE `id` = ?";
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $date_time, PDO::PARAM_STR);
-				$prep->bindParam(2, $sig, PDO::PARAM_STR);
-				$prep->bindParam(3, $AP_id, PDO::PARAM_INT);
+				$prep->bindParam(2, $AP_id, PDO::PARAM_INT);
 				$prep->execute();
 				$err = $this->sql->conn->errorCode();
-				if($err !== "00000")
+                var_dump($err);
+                if($err !== "00000")
 				{
 					$this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 					return -1;
@@ -411,12 +402,8 @@ class api extends dbcore
 				}
 			}else
 			{
-				$this->mesg[] = "Lat/Long are different, what aboot the Sats and Date/Time, Eh?";
-				$url_time   = strtotime($data['date']." ".$data['time']);
-				$wifi_time	= strtotime($array['date']." ".$array['time']);
-				$timecalc   = ($url_time - $wifi_time);
-				$this->mesg[] = "Oooo its time is newer o_0, lets go insert it ;)";
-				$sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
+				$this->mesg[] = "New_AP";
+				$sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `time`)
 											   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 				$prep = $this->sql->conn->prepare($sql);
@@ -429,13 +416,12 @@ class api extends dbcore
 				$prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
 				$prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
 				$prep->bindParam(9, $data['track'], PDO::PARAM_INT);
-				$prep->bindParam(10, $data['date'], PDO::PARAM_STR);
-				$prep->bindParam(11, $data['time'], PDO::PARAM_STR);
-				$prep->bindParam(12, $data['session_id'], PDO::PARAM_STR);
+				$prep->bindParam(10, $data['time'], PDO::PARAM_STR);
 				$prep->execute();
 				$gps_id = $this->sql->conn->lastInsertId();
 				$err = $this->sql->conn->errorCode();
-				if($err !== "00000")
+                var_dump($err);
+                if($err !== "00000")
 				{
 					$this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 					return -1;
@@ -451,13 +437,14 @@ class api extends dbcore
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
-				$prep_sig->bindParam(3, $data['gps_id'], PDO::PARAM_INT);
+				$prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
 				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
 				$prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
 				$prep_sig->execute();
 
 				$err = $this->sql->conn->errorCode();
-				if($err !== "00000")
+                var_dump($err);
+                if($err !== "00000")
 				{
 					$this->mesg[] = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 					return -1;
@@ -466,20 +453,18 @@ class api extends dbcore
 					$this->mesg[] = "Added Signal data.";
 				}
 
-				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$gps_id;
-
-				$sql = "UPDATE `wifi`.`live_aps` SET `sig` = ?, `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
+				$sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
 				#echo $sql."<br /><br />";
 				$date_time = strtotime($data['date']." ".$data['time']);
 				$prep = $this->sql->conn->prepare($sql);
-				$prep->bindParam(1, $sig, PDO::PARAM_STR);
-				$prep->bindParam(2, $date_time, PDO::PARAM_STR);
-				$prep->bindParam(3, $data['lat'], 2);
-				$prep->bindParam(4, $data['long'], 2);
-				$prep->bindParam(5, $AP_id, 1);
+				$prep->bindParam(1, $date_time, PDO::PARAM_STR);
+				$prep->bindParam(2, $data['lat'], 2);
+				$prep->bindParam(3, $data['long'], 2);
+				$prep->bindParam(4, $AP_id, 1);
 				$prep->execute();
 				$err = $this->sql->conn->errorCode();
-				if($err !== "00000")
+                #var_dump($err);
+                if($err !== "00000")
 				{
 					$this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 					return -1;
@@ -490,9 +475,38 @@ class api extends dbcore
 			}
 		}else
 		{
-			$this->mesg[] = "Add new AP. :]";
-			$sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
-												   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $insert_sql = "INSERT INTO `wifi`.`live_aps` (id, ssid, mac, auth, encry, sectype, radio, chan, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, `long`) VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $insert_prep = $this->sql->conn->prepare($insert_sql);
+            $insert_prep->bindParam(1 , $data['ssid'], PDO::PARAM_STR);
+            $insert_prep->bindParam(2 , $data['mac'], PDO::PARAM_STR);
+            $insert_prep->bindParam(3 , $data['auth'], PDO::PARAM_STR);
+            $insert_prep->bindParam(4 , $data['encry'], PDO::PARAM_STR);
+            $insert_prep->bindParam(5 , $data['sectype'], PDO::PARAM_INT);
+            $insert_prep->bindParam(6 , $data['radio'], PDO::PARAM_STR);
+            $insert_prep->bindParam(7 , $data['chan'], PDO::PARAM_INT);
+            $insert_prep->bindParam(8 , $data['session_id'], PDO::PARAM_STR);
+            $insert_prep->bindParam(9 , $ap_hash, PDO::PARAM_STR);
+            $insert_prep->bindParam(10 , $data['BTx'], PDO::PARAM_STR);
+            $insert_prep->bindParam(11 , $data['OTx'], PDO::PARAM_STR);
+            $insert_prep->bindParam(12 , $data['NT'], PDO::PARAM_STR);
+            $insert_prep->bindParam(13 , $data['Label'], PDO::PARAM_STR);
+            $insert_prep->bindParam(14 , $data['FA'], PDO::PARAM_STR);
+            $insert_prep->bindParam(15 , $data['LA'], PDO::PARAM_STR);
+            $insert_prep->bindParam(16 , $data['lat'], PDO::PARAM_STR);
+            $insert_prep->bindParam(17 , $data['long'], PDO::PARAM_STR);
+            $insert_prep->execute();
+            $err = $this->sql->conn->errorCode();
+
+            #var_dump($err);
+            if($err !== "00000")
+            {
+                $this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+                return -1;
+            }else
+            {
+                $this->mesg[] = "Added AP data.";
+            }
+            $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `ap_hash`) VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
 			$prep->bindParam(2, $data['long'], PDO::PARAM_STR);
@@ -505,13 +519,14 @@ class api extends dbcore
 			$prep->bindParam(9, $data['track'], PDO::PARAM_STR);
 			$prep->bindParam(10, $data['date'], PDO::PARAM_STR);
 			$prep->bindParam(11, $data['time'], PDO::PARAM_STR);
-			$prep->bindParam(12, $data['session_id'], PDO::PARAM_STR);
+			$prep->bindParam(12, $data['ap_hash'], PDO::PARAM_STR);
 			$prep->execute();
 
 			$gps_id = $this->sql->conn->lastInsertId();
 
 			$err = $this->sql->conn->errorCode();
-			if($err !== "00000")
+            #var_dump($err);
+            if($err !== "00000")
 			{
 				$this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 				return -1;
@@ -533,6 +548,7 @@ class api extends dbcore
 			$prep_sig->execute();
 
 			$err = $this->sql->conn->errorCode();
+            #var_dump($err);
 			if($err !== "00000")
 			{
 				$this->mesg[] = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
@@ -540,43 +556,6 @@ class api extends dbcore
 			}else
 			{
 				$this->mesg[] = "Added Signal data.";
-			}
-			$sig = $this->sql->conn->lastInsertId()."|".$gps_id;
-			$date_time = strtotime($data['date']." ".$data['time']);
-			$sql = "INSERT INTO  `wifi`.`live_aps` ( `id`, `ssid`, `mac`,  `chan`, `radio`, `auth`, `encry`, `sectype`,
-				`BTx`, `OTx`, `NT`, `label`, `sig`, `username`, `FA`, `LA`, `lat`, `long`, `session_id`, `ap_hash`)
-											VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
-			$chan = (int)$data['chan'];
-			var_dump($chan, $data['username']);
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $data['ssid'], PDO::PARAM_STR);
-			$prep->bindParam(2, $data['mac'], PDO::PARAM_STR);
-			$prep->bindParam(3, $chan, PDO::PARAM_INT);
-			$prep->bindParam(4, $data['radio'], PDO::PARAM_STR);
-			$prep->bindParam(5, $data['auth'], PDO::PARAM_STR);
-			$prep->bindParam(6, $data['encry'], PDO::PARAM_STR);
-			$prep->bindParam(7, $data['sectype'], PDO::PARAM_INT);
-			$prep->bindParam(8, $data['BTx'], PDO::PARAM_STR);
-			$prep->bindParam(9, $data['OTx'], PDO::PARAM_STR);
-			$prep->bindParam(10, $data['NT'], PDO::PARAM_STR);
-			$prep->bindParam(11, $data['label'], PDO::PARAM_STR);
-			$prep->bindParam(12, $sig, PDO::PARAM_STR);
-			$prep->bindParam(13, $data['username'], PDO::PARAM_STR);
-			$prep->bindParam(14, $date_time, PDO::PARAM_STR);
-			$prep->bindParam(15, $date_time, PDO::PARAM_STR);
-			$prep->bindParam(16, $data['lat'], PDO::PARAM_STR);
-			$prep->bindParam(17, $data['long'], PDO::PARAM_STR);
-			$prep->bindParam(18, $data['session_id'], PDO::PARAM_STR);
-			$prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
-			$prep->execute();
-			$err = $this->sql->conn->errorCode();
-			if($err !== "00000")
-			{
-				$this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-				return -1;
-			}else
-			{
-				$this->mesg[] = "Added AP data.";
 			}
 		}
 		return 1;
@@ -745,6 +724,29 @@ class api extends dbcore
 		$this->mesg = $results_all;
 		return $results_all;
 	}
+
+    public function ManageSession()
+    {
+
+        $this->sec->ValidateAPIKey();
+        if($this->sec->login_check)
+        {
+            $sql = "SELECT `id`, `username`, `session_id` FROM `wifi`.`live_users` WHERE `session_id` = ?";
+            $prep = $this->sql->conn->prepare($sql);
+            $prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
+            $prep->execute();
+            $fetch = $prep->fetch(2);
+            var_dump($this);
+            if($fetch)
+            {
+                $this->SessionID = $fetch['session_id'];
+            }
+        }else
+        {
+
+        }
+        die();
+    }
 
 	private function recursive_raw($sep = "", $open = "", $close = "", $data = array())
 	{
