@@ -138,7 +138,7 @@ try
 				break;
 				####
 				case "cli":
-					$dbcore = new wdbcli($config, $daemon_config);
+					$dbcore = new wdbcli($config, $daemon_config, $SQL);
 				break;
 				####
 				case "api":
