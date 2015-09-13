@@ -60,9 +60,9 @@ if not, write to the
 					<th>Next Run (UTC)</th>
 					<th>Next Run (Local)</th>
 				</tr>
-				<tr >
-					<td>
-
+				<tr align="center">
+					<td colspan="6">
+						WebSocket Daemon is Not Running, or is attempting connection.
 					</td>
 				</tr>
 			</tbody>
@@ -82,9 +82,9 @@ if not, write to the
 					<th>CMD</th>
 					<th>Updated</th>
 				</tr>
-				<tr>
-					<td>
-
+				<tr align="center">
+					<td colspan="7">
+						WebSocket Daemon is Not Running, or is attempting connection.
 					</td>
 				</tr>
 			</tbody>
@@ -107,8 +107,8 @@ if not, write to the
 					<th>This of Total</th>
 				</tr>
 				<tr align="center">
-					<td>
-
+					<td colspan="9">
+						WebSocket Daemon is Not Running, or is attempting connection.
 					</td>
 				</tr>
 			</tbody>
@@ -129,8 +129,8 @@ if not, write to the
 					<th>File Hash</th>
 				</tr>
 				<tr align="center">
-					<td>
-
+					<td colspan="7">
+						WebSocket Daemon is Not Running, or is attempting connection.
 					</td>
 				</tr>
 			</tbody>

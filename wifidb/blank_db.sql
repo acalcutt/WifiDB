@@ -23,7 +23,6 @@ CREATE TABLE `DB_stats` (
   PRIMARY KEY (`id`),
   KEY `dbstats` (`timestamp`,`total_aps`,`wep_aps`,`open_aps`,`secure_aps`,`num_users`,`gps_totals`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `annunc`
@@ -40,7 +39,6 @@ CREATE TABLE `annunc` (
   PRIMARY KEY (`id`,`title`),
   KEY `annunc` (`set`,`auth`,`title`,`date`,`body`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `boundaries`
@@ -53,7 +51,6 @@ CREATE TABLE `boundaries` (
   PRIMARY KEY (`id`),
   KEY `boundaries` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `daemon_pid_stats`
@@ -324,7 +321,7 @@ CREATE TABLE `live_aps` (
   KEY `ap_hash` (`ap_hash`),
   KEY `lat` (`lat`),
   KEY `long` (`long`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `live_gps`
@@ -348,7 +345,7 @@ CREATE TABLE `live_gps` (
   KEY `long` (`long`),
   KEY `sats` (`sats`),
   KEY `time` (`timestamp`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `live_signals`
@@ -367,7 +364,7 @@ CREATE TABLE `live_signals` (
   KEY `rssi` (`rssi`),
   KEY `gps_id` (`gps_id`),
   KEY `time_stamp` (`time_stamp`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `live_titles`
@@ -377,10 +374,12 @@ CREATE TABLE `live_titles` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `notes` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `completed` TINYINT DEFAULT 0,
   PRIMARY KEY (`id`),
   KEY `title` (`title`),
-  KEY `notes` (`notes`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  KEY `notes` (`notes`),
+  KEY `completed` (`completed`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `live_users`
@@ -393,7 +392,7 @@ CREATE TABLE `live_users` (
   `title_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`,`session_id`),
   KEY `username` (`username`,`session_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `log`
@@ -441,7 +440,7 @@ CREATE TABLE `schedule` (
   KEY `interval` (`interval`),
   KEY `status` (`status`),
   KEY `nextrun` (`nextrun`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `settings`
@@ -456,7 +455,7 @@ CREATE TABLE `settings` (
   KEY `daemon_state` (`daemon_state`),
   KEY `version` (`version`),
   KEY `node_name` (`node_name`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `user_imports`
@@ -530,7 +529,7 @@ CREATE TABLE `user_info` (
   KEY `locked` (`locked`),
   KEY `login_fails` (`login_fails`),
   KEY `permissions` (`permissions`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `user_login_hashes`
@@ -545,7 +544,7 @@ CREATE TABLE `user_login_hashes` (
   KEY `username` (`username`),
   KEY `hash` (`hash`),
   KEY `utime` (`utime`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `user_stats`

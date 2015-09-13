@@ -63,23 +63,23 @@ function connect() {
                     parseDaemonSchedule(msg.data, CurrentTable);
                     break;
                 default:
-                    console.log(currentRequest + "< ---- >"+msg.data);
+                   // console.log(currentRequest + "< ---- >"+msg.data);
                     break;
             }
         };
         socket.onclose   = function() {
-            console.log("Disconnected - status "+this.readyState);
+           // console.log("Disconnected - status "+this.readyState);
             if(tries>=30)
             {
                 return;
             }
-            console.log("Re-Connecting (try "+tries+" of 30)...."+this.readyState);
+           // console.log("Re-Connecting (try "+tries+" of 30)...."+this.readyState);
             reconnect();
             tries++;
         };
     }
     catch(ex){
-        console.log("WebSockets Not Supported.");
+       // console.log("WebSockets Not Supported.");
         window.location.replace("/wifidb/opt/scheduling.php?func=old_schedule");
     }
 }
@@ -91,7 +91,7 @@ function send(msg){
     }
     try {
         socket.send(msg);
-        console.log('Sent: '+msg);
+       // console.log('Sent: '+msg);
     } catch(ex) {
         //console.log(ex);
     }
@@ -121,26 +121,35 @@ function parseImportWaiting(response, WaitingTable) {
         $xml = $( xmlDoc ),
         $search1 = $xml.find(currentRequest);
         $waiting = $search1[0];
-//        console.log($waiting);
+        //console.log($waiting);
         if ($waiting.childNodes.length > 0) {
             WaitingTable.setAttribute("bordercolor", "black");
             WaitingTable.setAttribute("border", "1");
             for (loop = 0; loop < $waiting.childNodes.length; loop++) {
-                //console.log(loop);
                 var file = $waiting.childNodes[loop];
-                //console.log(file.childNodes[0]);
+               // console.log(file.childNodes.length);
+                if(file.childNodes.length == 1)
+                {
+                    //create row
+                    //WaitingTable.style.display = 'table';
+                    var row = document.createElement("tr");
+                    row.setAttribute("style", "background-color: yellow");
+                    CreateCell(WaitingTable, row, "No Imports Waiting. Go import some...", 7) // File ID
 
-                //create row
-                //WaitingTable.style.display = 'table';
-                var row = document.createElement("tr");
-                row.setAttribute("style", "background-color: yellow");
-                CreateCell(WaitingTable, row, file.childNodes[0].innerHTML) // File ID
-                CreateCell(WaitingTable, row, file.childNodes[1].innerHTML) // FileName
-                CreateCell(WaitingTable, row, file.childNodes[2].innerHTML) // Username
-                CreateCell(WaitingTable, row, file.childNodes[3].innerHTML) // Title
-                CreateCell(WaitingTable, row, file.childNodes[4].innerHTML) // Size
-                CreateCell(WaitingTable, row, file.childNodes[5].innerHTML) // Date/Time
-                CreateCell(WaitingTable, row, file.childNodes[6].innerHTML) // Hash
+                }else
+                {
+                    //create row
+                    //WaitingTable.style.display = 'table';
+                    var row = document.createElement("tr");
+                    row.setAttribute("style", "background-color: yellow");
+                    CreateCell(WaitingTable, row, file.childNodes[0].innerHTML) // File ID
+                    CreateCell(WaitingTable, row, file.childNodes[1].innerHTML) // FileName
+                    CreateCell(WaitingTable, row, file.childNodes[2].innerHTML) // Username
+                    CreateCell(WaitingTable, row, file.childNodes[3].innerHTML) // Title
+                    CreateCell(WaitingTable, row, file.childNodes[4].innerHTML) // Size
+                    CreateCell(WaitingTable, row, file.childNodes[5].innerHTML) // Date/Time
+                    CreateCell(WaitingTable, row, file.childNodes[6].innerHTML) // Hash
+                }
             }
         }
         return true;
@@ -165,19 +174,27 @@ function parseImportActive(response, ActiveTable) {
             for (loop = 0; loop < $active.childNodes.length; loop++) {
                 //console.log(loop);
                 var file = $active.childNodes[loop];
+                if(file.childNodes.length == 1)
+                {
+                    row = document.createElement("tr");
+                    row.setAttribute("style", "background-color: yellow");
+                    CreateCell(ActiveTable, row, "No Active Imports yet, Daemon needs to rest a little bit. Poor thing works too hard.", 9) // File ID
 
-                console.log(file.childNodes.length);
-                row = document.createElement("tr");
-                row.setAttribute("style", "background-color: lime");
-                CreateCell(ActiveTable, row, file.childNodes[0].innerHTML) // File ID
-                CreateCell(ActiveTable, row, file.childNodes[1].innerHTML) // FileName
-                CreateCell(ActiveTable, row, file.childNodes[2].innerHTML) // Username
-                CreateCell(ActiveTable, row, file.childNodes[3].innerHTML) // Title
-                CreateCell(ActiveTable, row, file.childNodes[4].innerHTML) // Size
-                CreateCell(ActiveTable, row, file.childNodes[5].innerHTML) // Date/Time
-                CreateCell(ActiveTable, row, file.childNodes[6].innerHTML) // Hash
-                CreateCell(ActiveTable, row, file.childNodes[7].innerHTML) // Current AP
-                CreateCell(ActiveTable, row, file.childNodes[8].innerHTML) // AP of Total APs
+                }else
+                {
+                    row = document.createElement("tr");
+                    row.setAttribute("style", "background-color: lime");
+                    CreateCell(ActiveTable, row, file.childNodes[0].innerHTML) // File ID
+                    CreateCell(ActiveTable, row, file.childNodes[1].innerHTML) // FileName
+                    CreateCell(ActiveTable, row, file.childNodes[2].innerHTML) // Username
+                    CreateCell(ActiveTable, row, file.childNodes[3].innerHTML) // Title
+                    CreateCell(ActiveTable, row, file.childNodes[4].innerHTML) // Size
+                    CreateCell(ActiveTable, row, file.childNodes[5].innerHTML) // Date/Time
+                    CreateCell(ActiveTable, row, file.childNodes[6].innerHTML) // Hash
+                    CreateCell(ActiveTable, row, file.childNodes[7].innerHTML) // Current AP
+                    CreateCell(ActiveTable, row, file.childNodes[8].innerHTML) // AP of Total APs
+
+                }
             }
         }
         return true;
@@ -193,17 +210,17 @@ function parseDaemonStats(response, DaemonStatsTable) {
             $xml = $(xmlDoc),
             $search1 = $xml.find(currentRequest);
         var $Stats = $search1[0];
-        //console.log($Stats.childNodes.length);
-        if ($Stats.childNodes.length > 0) {
+       // console.log($Stats.childNodes);
+        if ($Stats.childNodes.length > 1) {
 
 //            for (loop = 0; loop < $Stats.childNodes.length; loop++) {
-//                console.log(loop);
+//              //  console.log(loop);
                 var file = $Stats.childNodes;
 //                DaemonStatsTable.style.display = 'table';
 
                 var row = document.createElement("tr");
                 row.setAttribute("colspan", "7");
-                row.setAttribute("style", "background-color: yellow");
+                row.setAttribute("style", "background-color: " + file[7].innerHTML);
 
                 CreateCell(DaemonStatsTable, row, file[0].innerHTML) // Node
                 CreateCell(DaemonStatsTable, row, file[1].innerHTML) // PID File
@@ -213,10 +230,14 @@ function parseDaemonStats(response, DaemonStatsTable) {
                 CreateCell(DaemonStatsTable, row, file[5].innerHTML) // Command
                 CreateCell(DaemonStatsTable, row, file[6].innerHTML) // Updated
 //            }
+        }else
+        {
+            var row = document.createElement("tr");
+            row.setAttribute("style", "background-color: yellow");
+            CreateCell(DaemonStatsTable, row, "Daemons are not running, how odd...", 7) // Node
         }
     }
 }
-
 
 function parseDaemonSchedule(response, DaemonScheduleTable) {
     if (response == null) {
@@ -226,7 +247,7 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
             $xml = $(xmlDoc),
             $search1 = $xml.find(currentRequest);
         var $Stats = $search1[0];
-        if ($Stats.childNodes.length > 0) {
+        if ($Stats.childNodes.length > 1) {
 
             for (var loop = 0; loop < $Stats.childNodes.length; loop++) {
                 //console.log(loop);
@@ -299,25 +320,34 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
                 CreateCell(DaemonScheduleTable, row, UTCDateString) // NextUTC
                 CreateCell(DaemonScheduleTable, row, LocalDateString) // NextLocal
             }
+        }else
+        {
+            var row = document.createElement("tr");
+            row.setAttribute("style", "background-color: yellow");
+            CreateCell(DaemonScheduleTable, row, "Well thats not good, there are not Daemons scheduled to run...", 7) // Node
+
         }
     }
 }
-
 
 function readCookie(name) {
     return (name = new RegExp('(?:^|;\\s*)' + ('' + name).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '=([^;]*)').exec(document.cookie)) && name[1];
 }
 
-
-function CreateCell(table, row, data) {
+function CreateCell(table, row, data, colspan) {
     if(!data)
     {
         return;
     }
+    if(!colspan)
+    {
+        colspan = 1;
+    }
     var cell;
     //console.log("Data: "+ data);
     cell = document.createElement("td");
-    cell.setAttribute("align", "center")
+    cell.setAttribute("align", "center");
+    cell.setAttribute("colspan", colspan);
     cell.appendChild(document.createTextNode(data));
 
     row.appendChild(cell);

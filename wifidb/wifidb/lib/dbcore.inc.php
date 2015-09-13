@@ -157,20 +157,36 @@ class dbcore
 	{
         $fetched = $this->GetAllActiveAnnouncments();
         $i = count($fetched)-1;
-        return $fetched[$i];
+        if($i === -1)
+        {
+            $ret = array('body' => '');
+        }else {
+            $ret = $fetched[$i];
+        }
+        return $ret;
 	}
 
     public function GetAllAnnouncments()
     {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`announce` ORDER BY `id` ASC");
-        $fetched = $result->fetchAll(2);
+        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`annunc` ORDER BY `id` ASC");
+        if(!$this->sql->checkError(__LINE__,__FILE__)) {
+            $fetched = $result->fetchAll(2);
+        }else
+        {
+            $fetched = array(0);
+        }
         return $fetched;
     }
 
     public function GetAllActiveAnnouncments()
     {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`announce` WHERE `set` = '1' ORDER BY `id` ASC");
-        $fetched = $result->fetchAll(2);
+        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`annunc` WHERE `set` = '1' ORDER BY `id` ASC");
+        if(!$this->sql->checkError(__LINE__,__FILE__)) {
+            $fetched = $result->fetchAll(2);
+        }else
+        {
+            $fetched = array(0);
+        }
         return $fetched;
     }
 
@@ -207,7 +223,7 @@ class dbcore
 			foreach($props as $key=>$val)
 			{
 				echo "\n".str_repeat("\t",$level+1).$key.' => ';
-				dump($value->$key,$level+1);
+				dbcore::dump($value->$key,$level+1);
 			}
 			$value= '';
 		}
@@ -238,7 +254,8 @@ class dbcore
 			return $ret;
 		}
 		$WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
-		$os = PHP_OS; #find out what OS we are running under.
+		var_dump($WFDBD_PID);
+        $os = PHP_OS; #find out what OS we are running under.
 		if ( $os[0] == 'L') #Linux :)
 		{
 			$output = array();

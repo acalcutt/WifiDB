@@ -148,6 +148,11 @@ class daemon extends wdbcli
 	}
 
 
+    public function ExportLiveAPs()
+    {
+
+    }
+
 	public function GetNextImportID()
 	{
 		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp  WRITE");
@@ -157,7 +162,6 @@ class daemon extends wdbcli
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 		$LastInsert = $this->sql->conn->lastInsertID();
-		var_dump($LastInsert);
 
 		$select = "SELECT tmp_id FROM wifi.files_importing WHERE id = ?";
 		$prep = $this->sql->conn->prepare($select);

@@ -528,8 +528,8 @@ switch($func)
         }
 
         $refresh_opt = "";
-        $val = 15;
-        $max = 30720;
+        $val = 1;
+        $max = 300;
         while($val < $max)
         {
             if($refresh == $val)
@@ -574,7 +574,6 @@ switch($func)
             $importing_row[$n]['size'] = $newArray['size'];
             $importing_row[$n]['hash'] = $newArray['hash'];
             $importing_row[$n]['user'] = $newArray['user'];
-
             $tot = "";
             $ssid = "";
             switch($newArray['ap'])

@@ -36,7 +36,7 @@ class api extends dbcore
 		$this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;
         #$this->EnableAPIKey = 0;
-        if($this->EnableAPIKey)
+        if($this->EnableAPIKey && !(SWITCH_SCREEN === "CLI"))
         {
             $this->sec->ValidateAPIKey();
             if(!$this->sec->login_check)
@@ -51,11 +51,9 @@ class api extends dbcore
             #var_dump($this->sec->login_check);
             #var_dump($this->sec->mesg);
         }
-
-
     }
 
-    function createPIDFile()
+    public function createPIDFile()
     {
 
     }

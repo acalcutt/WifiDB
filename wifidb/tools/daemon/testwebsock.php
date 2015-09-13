@@ -129,9 +129,21 @@ class echoServer extends WebSocketServer {
         $fetch = $result->fetch(2);
         if(empty($fetch))
         {
-            $fetch = array("notice"=>"no_daemon_stats_data");
+            $ret = array("notice"=>"no_daemon_stats_data");
+        }else
+        {
+            $get_stats = $this->dbcore->getdaemonstats($fetch['pidfile']);
+            $ret = array('nodename'=>$fetch['nodename'],
+                'pidfile'=>$fetch['pidfile'],
+                'pid'=>$fetch['pid'],
+                'time'=>$get_stats['time'],
+                'mem'=>$get_stats['mem'],
+                'cmd'=>$get_stats['cmd'],
+                'date'=>$fetch['date'],
+                'color'=>$get_stats['color']);
+            var_dump($ret);
         }
-        return array("daemon_stats"=>$fetch);
+        return array("daemon_stats"=>$ret);
     }
 
     protected function connected ($user) {
