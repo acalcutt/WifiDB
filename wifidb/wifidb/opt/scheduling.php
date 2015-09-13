@@ -291,10 +291,6 @@ switch($func)
     break;
 
     case "old_schedule":
-        #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
-        $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
-        $result = $dbcore->sql->conn->query($sql);
-        $file_array = $result->fetch(2);
         $timezone_opt = '';
         $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
         foreach($offsets as $key=>$value)
@@ -414,7 +410,7 @@ switch($func)
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
-            $nextrun_utc = strtotime($newArray['nextrun']);
+            $nextrun_utc = $newArray['nextrun'];
             $curtime = time();
             $min_diff = round(($nextrun_utc - $curtime) / 60);
             $interval = (int)$newArray['interval'];
@@ -435,6 +431,7 @@ switch($func)
                     $color = 'yellow';
                 }
             }
+
             #convert to local time
             $timezonediff = $TZone+$dst;
             $alter_by = (($timezonediff*60)*60);
@@ -447,7 +444,7 @@ switch($func)
             $schedule_row[$n]['enabled'] = $newArray['enabled'];
             $schedule_row[$n]['interval'] = $newArray['interval'];
             $schedule_row[$n]['status'] = $newArray['status'];
-            $schedule_row[$n]['nextrun_utc'] = $newArray['nextrun'];
+            $schedule_row[$n]['nextrun_utc'] = date($dbcore->date_format." ".$dbcore->time_format, $newArray['nextrun']) ;
             $schedule_row[$n]['nextrun_local'] = $nextrun_local;
             $n++;
         }
@@ -459,19 +456,8 @@ switch($func)
         {
             $lastupdatetime = strtotime($newArray['date']);
             $curtime = time();
-            if($newArray['pid'] == 0)
-            {
-                $color = 'red';
-            }else
-            {
-                if(($curtime-$lastupdatetime) < 60) {
-                    $color = 'lime';
-                }else
-                {
-                    $color = 'yellow';
-                }
-            }
-            $pid_row[$n]['color'] = $color;
+            $daemon_stats = $dbcore->getdaemonstats($newArray['pid']);
+            $pid_row[$n]['color'] = $daemon_stats['color'];
             $pid_row[$n]['nodename'] = $newArray['nodename'];
             $pid_row[$n]['pidfile'] = $newArray['pidfile'];
             $pid_row[$n]['pid'] = $newArray['pid'];
@@ -499,10 +485,7 @@ switch($func)
 		</script>
 		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
         $dbcore->smarty->assign('OnLoad', "onload='init()'");
-        #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
-        $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
-        $result = $dbcore->sql->conn->query($sql);
-        $file_array = $result->fetch(2);
+
         $timezone_opt = '';
         $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
         foreach($offsets as $key=>$value)
