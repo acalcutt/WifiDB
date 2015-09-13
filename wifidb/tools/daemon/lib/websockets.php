@@ -16,6 +16,8 @@ abstract class WebSocketServer{
   protected $headerOriginRequired                 = false;
   protected $headerSecWebSocketProtocolRequired   = false;
   protected $headerSecWebSocketExtensionsRequired = false;
+    public $currentCount                          = 0;
+    public $prevCount                             = -1;
 
   function __construct($addr, $port, $bufferLength = 2048) {
     $this->maxBufferSize = $bufferLength;
@@ -40,7 +42,8 @@ abstract class WebSocketServer{
   
   protected function send($user, $message) {
     if ($user->handshake) {
-      $message = $this->frame($message,$user);
+      $message = $this->frame($message, $user, "text");
+      //  var_dump($message);
       $result = @socket_write($user->socket, $message, strlen($message));
     }
     else {
@@ -80,6 +83,16 @@ abstract class WebSocketServer{
    */
   public function run() {
     while(true) {
+
+        $this->currentCount = count($this->users);
+        if($this->prevCount !== $this->currentCount)
+        {
+            echo "Current Client count: ".$this->currentCount."\r\n";
+            $this->prevCount = $this->currentCount;
+            var_dump("emalloc: ". ((memory_get_usage()/1024)/1024) ."Mb" );
+            var_dump("Full Memory: ".((memory_get_usage(1)/1024)/1024) ."Mb" );
+            echo "------------------\r\n";
+        }
       if (empty($this->sockets)) {
         $this->sockets['m'] = $this->master;
       }
@@ -372,7 +385,7 @@ abstract class WebSocketServer{
         $lengthField = chr(0) . $lengthField;
       }
     }
-
+    //var_dump($b1, $b2, $lengthField);
     return chr($b1) . chr($b2) . $lengthField . $message;
   }
   

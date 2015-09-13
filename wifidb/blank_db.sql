@@ -431,7 +431,7 @@ CREATE TABLE `schedule` (
   `enabled` tinyint(4) NOT NULL,
   `interval` int(11) NOT NULL,
   `status` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `nextrun` int(64) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `id` (`id`),
   KEY `nodename` (`nodename`),

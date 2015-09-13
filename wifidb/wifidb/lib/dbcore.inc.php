@@ -254,7 +254,7 @@ class dbcore
 			return $ret;
 		}
 		$WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
-		var_dump($WFDBD_PID);
+		#var_dump($WFDBD_PID);
         $os = PHP_OS; #find out what OS we are running under.
 		if ( $os[0] == 'L') #Linux :)
 		{
@@ -264,27 +264,23 @@ class dbcore
 				$pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
 		#	echo $pid_open[0]."<br>";
 				exec('ps vp '.$pid_open[0] , $output, $sta); #execute PS for the PID given.
-				if(isset($output[1])) #if there was data returned from PS lets parse it.
+                if(isset($output[1])) #if there was data returned from PS lets parse it.
 				{
 					$start = trim($output[1], " ");
-					preg_match_all("/(\d+?)(\.)(\d+?)/", $start, $mat); #we try and parse for the memory useage.
-					$mem = $mat[0][0];
 
-					preg_match_all("/(php.*)/", $start, $mat); #parse for the CMD path of the daemon
-					$CMD = $mat[0][0];
+                    preg_match_all("/(php.*)/", $start, $mat); #parse for the CMD path of the daemon
+                    if(isset($mat[0][0])) {
+                        $CMD = $mat[0][0];
+                    }else
+                    {
+                        $CMD = "No process found.";
+                    }
 
-					preg_match_all("/(\d+)(\:)(\d+)/", $start, $mat); # get the uptime of the daemon.
-					$time = $mat[0][0];
+					preg_match_all("/(\d+?)(\.)(\d+?)/", $start, $MemMat); #we try and parse for the memory useage.
+					$mem = $MemMat[0][0];
 
-					//$patterns[1] = '/  /';
-					//$patterns[2] = '/ /';
-					//$ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
-					//$ps_Sta_exp = explode("|", $ps_stats);
-
-					//$returns = array(  # lets now throw all this
-					//	$mem,$CMD,$time,$ps_Sta_exp # into one array
-					//);
-					//var_dump($returns);
+					preg_match_all("/(\d+)(\:)(\d+)/", $start, $TimeMat); # get the up-time of the daemon.
+					$time = $TimeMat[0][0];
 
 					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
 					return $ret; # and return it
@@ -298,7 +294,7 @@ class dbcore
 				$ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
 				return $ret; # PID File could not be found.
 			}
-		}elseif( $os[0] == 'W')
+		}elseif( $os[0] == 'W') // Windows code has not been tested in a very very very very long time. Not recommended.
 		{
 			$output = array();
 			if(file_exists($WFDBD_PID)) #Check to see if the file exists.

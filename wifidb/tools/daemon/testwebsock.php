@@ -39,7 +39,9 @@ class echoServer extends WebSocketServer {
 
   protected function process ($user, $message)
   {
-      #var_dump($message);
+      #echo "---------------------------------------------------------------------------------------------------\r\n";
+      #var_dump("Message: ".$message);
+      #var_dump($user->id);
       switch(strtolower($message))
       {
           case "import_waiting":
@@ -58,13 +60,15 @@ class echoServer extends WebSocketServer {
               $return = "bad_switch_selected";
               break;
       }
-      #echo "---------------------------------------------------------------------------------------------------\r\n";
 //creating object of SimpleXMLElement
       $xml = new SimpleXMLElement("<?xml version=\"1.0\"?><Scheduling></Scheduling>");
 //function call to convert array to xml
       #var_dump($return);
       $this->array_to_xml($return, $xml);
       #echo $xml->asXML();
+      #var_dump("emalloc: ". ((memory_get_usage()/1024)/1024) ."Mb" );
+      #echo "------------------\r\n";
+      #var_dump("Full Memory: ".((memory_get_usage(1)/1024)/1024) ."Mb" );
       #echo "---------------------------------------------------------------------------------------------------\r\n";
       $this->send($user, $xml->asXML());
   }
@@ -88,7 +92,7 @@ class echoServer extends WebSocketServer {
 
     protected function FetchDaemonSchedule()
     {
-        $result = $this->sql->conn->query("SELECT `schedule`.`nodename`, `schedule`.`daemon`, `interval`, `status`, `nextrun` FROM `wifi`.`schedule`;");
+        $result = $this->sql->conn->query("SELECT `nodename`, `daemon`, `interval`, `status`, `nextrun` FROM `wifi`.`schedule`;");
         $fetch_waiting = $result->fetchAll(2);
         if(empty($fetch_waiting))
         {
@@ -141,7 +145,7 @@ class echoServer extends WebSocketServer {
                 'cmd'=>$get_stats['cmd'],
                 'date'=>$fetch['date'],
                 'color'=>$get_stats['color']);
-            var_dump($ret);
+            #var_dump($ret);
         }
         return array("daemon_stats"=>$ret);
     }
@@ -153,10 +157,9 @@ class echoServer extends WebSocketServer {
     }
 
     protected function closed ($user) {
-        // Do nothing: This is where cleanup would go, in case the user had any sort of
-        // open files or other objects associated with them.  This runs after the socket
-        // has been closed, so there is no need to clean up the socket itself here.
-}
+        var_dump("pseudo close connection for :".$user->id);
+        unset($user);
+    }
 }
 
 $echo = new echoServer($dbcore, "172.16.1.77","9000");

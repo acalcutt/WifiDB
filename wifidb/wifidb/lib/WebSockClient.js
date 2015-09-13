@@ -252,7 +252,7 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
             for (var loop = 0; loop < $Stats.childNodes.length; loop++) {
                 //console.log(loop);
                 var file = $Stats.childNodes[loop];
-                //console.log(file.childNodes[0]);
+                //console.log(file.childNodes[0].innerHTML);
                 //create row
                 var row = document.createElement("tr");
                 if(file.childNodes[3].innerHTML === "Running")
@@ -270,9 +270,10 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
                 CreateCell(DaemonScheduleTable, row, file.childNodes[3].innerHTML) // Status
 
                 var pad = "00";
-                var UTCDate = new Date(file.childNodes[4].innerHTML);
-                //console.log(UTCDate);
-                //console.log(UTCDate.getMonth()+1);
+                var UTCDate = new Date(file.childNodes[4].innerHTML * 1000);
+                console.log(file.childNodes[4].innerHTML);
+                console.log(UTCDate);
+                console.log( UTCDate.getMonth());
                 var month_pre = "" + (UTCDate.getMonth()+1); //WTF JavaScript, why is the Month off by one? January is 0 WTF... Seriously...
                 var month = pad.substring(0, pad.length - month_pre.length) + month_pre;
 

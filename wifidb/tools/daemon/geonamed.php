@@ -128,13 +128,13 @@ PID: [ $dbcore->This_is_me ]
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Geoname Jobs
-$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
+$currentrun = time(); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
 $sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
 $prepgj->execute();
 $dbcore->sql->checkError(__LINE__, __FILE__);
 
