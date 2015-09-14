@@ -76,10 +76,10 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30 Build 1</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Date: 05-21-2013</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 09-13-2015</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/dev">WiFiDB GitHub : Branch 'dev'</a></td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/0.30b1_PF_Branch">WiFiDB GitHub : Branch '0.30b1_PF_Branch'</a></td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
@@ -136,6 +136,10 @@ $dbcore->smarty->smarty->display('header.tpl');
                                 <li>Moved the <i>header()</i> and <i>footer()</i> functions back from the themes folder and into the mainline code. Themes will just have a header and footer `.tpl` file now.</li>
                                 <li>Implemented PDO prepared statements in all interactions with the SQL Servers.</li>
                                 <li>Removed all HTML elements from the import/export functions.</li>
+                                <li>Added WebSocket support to the Scheduling Waiting page.</li>
+                                <li>Fixed some login security issues, one was the permissions were not being set correctly, and apikeys were not being checked correctly.</li>
+                                <li>Updated and fixed indexes for the table structures.</li>
+                                <li>Re-wrote the backend for the LiveAPs. Now supports submitting the title of the import first to get a session ID to have all APs imported to that Title. Many Sessions can be run at once to support multiple titles. Titles will then be exported with the LiveAPExportd Daemon to be inserted for import.</li>
                             </ol>
 						</td>
 					</tr>
