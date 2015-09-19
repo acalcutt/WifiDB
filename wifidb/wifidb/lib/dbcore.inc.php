@@ -30,6 +30,7 @@ class dbcore
             $this->sql					= "NONSQLMODE";
         }else
         {
+            /** @var SQL */
             $this->sql					= $SQL;
         }
 		$this->verbose					= 0;

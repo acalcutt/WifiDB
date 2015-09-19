@@ -18,6 +18,15 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 $lastedit			=	"2015-08-30";
 $dbcore->daemon_name	=	"LiveAPExport";
 
+echo "
+WiFiDB".$dbcore->ver_array['wifidb']."
+Codename: ".$dbcore->ver_array['codename']."
+ - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
+PID File: [ $dbcore->pid_file ]
+PID: [ $dbcore->This_is_me ]
+ Log Level is: ".$dbcore->log_level."\n\n\n";
+
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
@@ -117,25 +126,28 @@ if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
 
 $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
 
-echo "
-WiFiDB".$dbcore->ver_array['wifidb']."
-Codename: ".$dbcore->ver_array['codename']."
- - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
-Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
-PID File: [ $dbcore->pid_file ]
-PID: [ $dbcore->This_is_me ]
- Log Level is: ".$dbcore->log_level."\n\n\n";
-
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 
-$sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes`, `t2`.`completed` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id`";
+$sql = "SELECT
+            `t1`.`id`,
+            `t1`.`username`,
+            `t1`.`session_id`,
+            `t2`.`timestamp`,
+            `t2`.`title`,
+            `t2`.`notes`,
+            `t2`.`completed`
+        FROM `wifi`.`live_users` AS `t1`
+            LEFT JOIN `wifi`.`live_titles` AS `t2`
+            ON `t2`.`id` = `t1`.`title_id`
+            ORDER BY `t2`.`timestamp` DESC";
 $return = $dbcore->sql->conn->query($sql);
 $AllUsers = $return->fetchAll(2);
 foreach($AllUsers as $user)
 {
-    var_dump($user);
-    if($user['completed'])
+    $timestamp_int = strtotime($user['timestamp']);
+
+    if($user['completed'] || ($timestamp_int < (time() + $dbcore->LiveTimeOut)))
     {
         echo "Getting APs for Title...\r\n";
 
@@ -154,7 +166,7 @@ foreach($AllUsers as $user)
                     `live_aps`.`chan`, `live_aps`.`radio`, `live_aps`.`BTx`, `live_aps`.`OTx`, `live_aps`.`NT`, `live_aps`.`Label`,
                     `live_aps`.`FA`, `live_aps`.`LA`, `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
                     `live_gps`.`alt`, `live_gps`.`geo`, `live_gps`.`kmh`, `live_gps`.`mph`, `live_gps`.`track`, `live_gps`.`timestamp` AS `GPS_timestamp`,
-                    `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`time_stamp` AS `signal_timestamp`
+                    `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`timestamp` AS `signal_timestamp`
                      FROM `wifi`.`live_aps` INNER JOIN `wifi`.`live_signals` ON
                          `live_signals`.`ap_id`=`live_aps`.`id` INNER JOIN
                          `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
@@ -164,9 +176,13 @@ foreach($AllUsers as $user)
             $fetch_ap = $ap_prep->fetchAll(2);
             foreach($fetch_ap as $sigHistory)
             {
-                var_dump($sigHistory);
+                #var_dump($sigHistory);
             }
             echo "-----------------------------------------------------------------\r\n";
         }
+    }else
+    {
+        echo $user['title']." is not ready to be exported yet...\r\n";
     }
 }
+echo "DONE!!\r\n";

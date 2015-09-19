@@ -19,6 +19,7 @@ class SQL
 				PDO::ATTR_PERSISTENT => TRUE,
 			);
 		}
+        /** @var PDO */
 		$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
 		$this->conn->query("SET NAMES 'utf8'");
 	}
