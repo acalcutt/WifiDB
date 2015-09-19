@@ -55,7 +55,8 @@ $geo    =   (isset($_REQUEST['GEO']) ? $_REQUEST['GEO'] : 0 );
 $kmh    =   (isset($_REQUEST['KMH']) ? $_REQUEST['KMH'] : 0 );
 $mph    =   (isset($_REQUEST['MPH']) ? $_REQUEST['MPH'] : 0 );
 $track  =   (isset($_REQUEST['Track']) ? $_REQUEST['Track'] : 0 );
-$time   =   (isset($_REQUEST['Time']) ? date("Y-m-d H:i:s" , $_REQUEST['Time']) : date("Y-m-d H:i:s") );
+$date   =   (isset($_REQUEST['Date']) ? $_REQUEST['Date'] : date($dbcore->date_format));
+$time   =   (isset($_REQUEST['Time']) ? $_REQUEST['Time'] : date($dbcore->time_format));
 
 if($ssid == "UNAMED" && $mac == "00:00:00:00:00:00" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "0.0" && $OTX == "0.0" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
@@ -89,6 +90,7 @@ $data = array(
     'alt'=>$alt,
     'geo'=>$geo,
     'track'=>$track,
+    'date'=>$date,
     'time'=>$time,
     
     #user data
@@ -96,6 +98,6 @@ $data = array(
 	#'username'=>'Unknown',
     'session_id'=>$session_id
 );
-$dbcore->ManageSession();
+$dbcore->ManageSession($date, $time);
 $dbcore->InsertLiveAP($data);
 $dbcore->Output();
