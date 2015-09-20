@@ -45,7 +45,7 @@ class dbcore
 		$this->rebuild				    = $config['rebuild'];
 		$this->log_level				= $config['log_level'];
 		$this->log_interval			    = $config['log_interval'];
-
+        $this->LiveTimeOut              = $config['LiveTimeOut'];
 		$this->default_refresh		    = $config['default_refresh'];
 		$this->default_timezone		    = $config['default_timezone'];
 		$this->default_dst			    = $config['default_dst'];

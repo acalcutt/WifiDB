@@ -32,8 +32,7 @@ class api extends dbcore
 		$this->username	    = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
         #var_dump($this->username);
         $this->EnableAPIKey = $config['EnableAPIKey'];
-        $this->LiveTimeOut  = $config['LiveTimeOut'];
-		$this->mesg	        = array();
+        $this->mesg	        = array();
 		$this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;
         #$this->EnableAPIKey = 0;

@@ -141,25 +141,27 @@ $sql = "SELECT
             LEFT JOIN `wifi`.`live_titles` AS `t2`
             ON `t2`.`id` = `t1`.`title_id`
             ORDER BY `t2`.`timestamp` DESC";
+var_dump("Before Fetch: ".microtime(1));
 $return = $dbcore->sql->conn->query($sql);
+var_dump("After Fetch: ".microtime(1));
 $AllUsers = $return->fetchAll(2);
 foreach($AllUsers as $user)
 {
     $timestamp_int = strtotime($user['timestamp']);
-
+    echo "---------------------------------------------------------------------------------------------------------\r\n";
     if($user['completed'] || ($timestamp_int < (time() + $dbcore->LiveTimeOut)))
     {
         echo "Getting APs for Title...\r\n";
-
         $user_sql = "SELECT `id` FROM `wifi`.`live_aps` WHERE `session_id` = ?";
         $user_prep = $dbcore->sql->conn->prepare($user_sql);
         $user_prep->bindParam(1, $user['session_id'], PDO::PARAM_STR);
+        var_dump("Before Fetch Title Details: ".microtime(1));
         $user_prep->execute();
+        var_dump("After Fetch Table Details: ".microtime(1));
         $fetch = $user_prep->fetchAll(2);
         foreach($fetch as $row)
         {
-            echo "---------------------------------------------------------------------------------------------------------\r\n";
-            var_dump($row);
+            var_dump($row['id']);
             echo "-----------------------------------------------------------------\r\n";
             $ap_sql = "SELECT
                     `live_aps`.`id`, `live_aps`.`ssid`, `live_aps`.`mac`, `live_aps`.`auth`, `live_aps`.`encry`, `live_aps`.`sectype`,
@@ -172,13 +174,15 @@ foreach($AllUsers as $user)
                          `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
             $ap_prep = $dbcore->sql->conn->prepare($ap_sql);
             $ap_prep->bindParam(1, $row['id'], PDO::PARAM_STR);
+            var_dump("Before JOIN query: ".microtime(1));
             $ap_prep->execute();
+            var_dump("After JOIN query: ".microtime(1));
             $fetch_ap = $ap_prep->fetchAll(2);
             foreach($fetch_ap as $sigHistory)
             {
                 #var_dump($sigHistory);
+                break;
             }
-            echo "-----------------------------------------------------------------\r\n";
         }
     }else
     {
