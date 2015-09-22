@@ -22,6 +22,12 @@ define("SWITCH_SCREEN", "API");
 define("SWITCH_EXTRAS", "live");
 define("WDB_DEBUG", 1);
 include('../lib/init.inc.php');
+if(isset($_REQUEST['LiveVersion']))
+{
+    $dbcore->mesg['version'] = "2.0";
+    $dbcore->output();
+}
+
 $session_id   =   (isset($_REQUEST['SessionID']) ? $_REQUEST['SessionID'] : "" );
 if($session_id === "")
 {
