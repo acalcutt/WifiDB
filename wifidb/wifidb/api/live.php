@@ -20,7 +20,7 @@ if not, write to the
 */
 define("SWITCH_SCREEN", "API");
 define("SWITCH_EXTRAS", "live");
-
+define("WDB_DEBUG", 1);
 include('../lib/init.inc.php');
 $session_id   =   (isset($_REQUEST['SessionID']) ? $_REQUEST['SessionID'] : "" );
 if($session_id === "")
@@ -57,6 +57,11 @@ $mph    =   (isset($_REQUEST['MPH']) ? $_REQUEST['MPH'] : 0 );
 $track  =   (isset($_REQUEST['Track']) ? $_REQUEST['Track'] : 0 );
 $date   =   (isset($_REQUEST['Date']) ? $_REQUEST['Date'] : date($dbcore->date_format));
 $time   =   (isset($_REQUEST['Time']) ? $_REQUEST['Time'] : date($dbcore->time_format));
+
+if($dbcore->ManageSession($date, $time) === 2)
+{
+    $dbcore->output();
+}
 
 if($ssid == "UNAMED" && $mac == "00:00:00:00:00:00" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "0.0" && $OTX == "0.0" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
@@ -98,6 +103,6 @@ $data = array(
 	#'username'=>'Unknown',
     'session_id'=>$session_id
 );
-$dbcore->ManageSession($date, $time);
+
 $dbcore->InsertLiveAP($data);
 $dbcore->Output();

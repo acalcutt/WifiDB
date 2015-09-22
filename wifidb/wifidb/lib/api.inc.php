@@ -24,14 +24,14 @@ class api extends dbcore
 	{
 		parent::__construct($config, $SQL);
 		$this->startdate	= "2011-Apr-14";
-		$this->lastedit	    = "2015-Aug-30";
-		$this->vernum	    = "1.0";
+		$this->lastedit	    = "2015-Sept-21";
+		$this->vernum	    = "2.0";
 		$this->Author	    = "Phil Ferland";
 		$this->contact	    = "pferland@randomintervals.com";
 		$this->output	    = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
 		$this->username	    = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
         #var_dump($this->username);
-        $this->EnableAPIKey = $config['EnableAPIKey'];
+        $this->EnableAPIKey = 1; #$config['EnableAPIKey'];
         $this->mesg	        = array();
 		$this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;
@@ -640,18 +640,52 @@ class api extends dbcore
 		return $use;
 	}
 
+    public function GetTitleIDFromSessionID()
+    {
+        $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
+        $prep->execute();
+        $this->sql->checkError(__LINE__, __FILE__);
+        $fetch = $prep->fetch(2);
+        return $fetch['title_id'];
+    }
+
     public function ManageSession($date = "", $time = "")
     {
         $timestamp = $date." ".$time;
-        if(isset($_REQUEST['SessionID'])) {
+        if(isset($_REQUEST['SessionID']))
+        {
+            if(isset($_REQUEST['completed']))
+            {
+                $TitleID = $this->GetTitleIDFromSessionID();
+                $completed = (int)$_REQUEST['completed'];
+                $sql = "UPDATE `wifi`.`live_titles` SET `completed` = ? WHERE `id` = ?";
+                $prep = $this->sql->conn->prepare($sql);
+                $prep->bindParam(1, $completed, PDO::PARAM_INT);
+                $prep->bindParam(2, $TitleID, PDO::PARAM_INT);
+                $prep->execute();
+                $this->sql->checkError(__LINE__, __FILE__);
+                $dbcore->mesg[] = "Session_Completed";
+                return 2;
+            }
+
             $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
             $prep->execute();
             $title_data = $prep->fetch(2);
+
+            if($prep->rowCount < 1)
+            {
+                $this->mesg['error'] = "Session_Expired";
+                return 0;
+            }
+
             $title_id = $title_data['title_id'];
             #var_dump($title_id);
-            if ($this->sec->login_check) {
+            if ($this->sec->login_check)
+            {
                 #var_dump("LoginCheck True");
                 $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
                 $prep = $this->sql->conn->prepare($sql);
@@ -660,8 +694,9 @@ class api extends dbcore
                 $this->sql->checkError(__LINE__, __FILE__);
                 $fetch = $prep->fetch(2);
                 #var_dump($fetch);
-                if ($fetch) {
-                    var_dump($timestamp);
+                if ($fetch)
+                {
+                    #var_dump($timestamp);
                     $this->sec->SessionID = $fetch['session_id'];
                     $sql = "UPDATE `wifi`.`live_titles` SET `timestamp` = ? WHERE id = ?";
                     $prep = $this->sql->conn->prepare($sql);
@@ -691,7 +726,9 @@ class api extends dbcore
                 }
                 return 0;
             }
-        }elseif(isset($_REQUEST['title'])) {
+        }elseif(isset($_REQUEST['title']))
+        {
+            #var_dump("New Title.");
             $this->InsertLiveTitle();
 
         }else{
@@ -703,7 +740,7 @@ class api extends dbcore
 
     public function InsertLiveTitle()
     {
-        if (!isset($_REQUEST['title'])) {
+        if(!isset($_REQUEST['title'])) {
             $this->sec->SessionID = "OldAPI-".rand(0, 99999999);
             #var_dump("Generated: " . $this->sec->SessionID);
             $this->OldAPIGenerate();
@@ -712,10 +749,12 @@ class api extends dbcore
             }
             return 0;
         } else {
-            $insertTitle = "INSERT INTO `wifi`.`live_titles` (id, title, notes) VALUES ('', ?, ?)";
+			$timestamp = date("Y-m-d H:i:s");
+            $insertTitle = "INSERT INTO `wifi`.`live_titles` (`id`, `title`, `notes`, `timestamp`, `completed` ) VALUES ('', ?, ?, ?, 0)";
             $prep_Title = $this->sql->conn->prepare($insertTitle);
             $prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
             $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
+			$prep_Title->bindParam(3, $timestamp, PDO::PARAM_STR);
             $prep_Title->execute();
             $this->sql->checkError(__LINE__, __FILE__);
             $TitleID = $this->sql->conn->lastInsertID();
@@ -731,7 +770,7 @@ class api extends dbcore
         $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
         $prep_user->execute();
         $this->sql->checkError(__LINE__, __FILE__);
-        $this->mesg[] = $this->sec->SessionID;
+        $this->mesg["SessionID"] = $this->sec->SessionID;
         return 1;
     }
 

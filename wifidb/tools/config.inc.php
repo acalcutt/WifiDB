@@ -12,7 +12,7 @@ $daemon_config = array(
 	'default_notes'	=> 'WiFiDB Recovery run by an administrator.',
 
 	//path to the folder that wifidb is installed in default is /var/www/wifidb/ , because I use Debian. fuck windows
-	'wifidb_install'		=>	'/var/www/wifidb/',
+	'wifidb_install'		=>	'/wifidb/www/wifidb/',
 
 	//Another one that I think is not used anymore, but will wait to see if it is or not..
 	'console_line_limit'	=>	3000,
@@ -27,10 +27,10 @@ $daemon_config = array(
 	'NodeSyncing'		=> 0,
 
 	//Location of the wifidb folder for the pids of the daemons.
-	'pid_file_loc'		  =>	'/var/run/',
+	'pid_file_loc'		  =>	'/wifidb/run/',
 
 	//Path for the daemon logs to go and take a dump in
-	'daemon_log_folder'	 =>	'/opt/wifidb/tools/log/',
+	'daemon_log_folder'	 =>	'/wifidb/code/tools/log/',
 
 	// DANGER The Number of import processes its equal to ho much you want to kill your system.
 	// Really though, For a 8 CPU, 16GB test environment, 20 threads used 90% CPU for MariaDB and about 4GB of RAM at about 340,000 Access Points and their signal/GPS history.
