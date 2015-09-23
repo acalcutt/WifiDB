@@ -5,28 +5,45 @@ class SQL
 	{
 		$this->host			  = $config['host'];
 		$this->service		   = $config['srvc'];
-		$dsn					 = $this->service.':host='.$this->host;
-		if($this->service === "mysql")
-		{
-			$options = array(
-				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
-				PDO::ATTR_PERSISTENT => TRUE,
-			);
-		}
-		else
-		{
-			$options = array(
-				PDO::ATTR_PERSISTENT => TRUE,
-			);
-		}
+        $this->driver           = $config['driver'];
+        $this->database         = $config['db'];
         /** @var PDO */
-		$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-		$this->conn->query("SET NAMES 'utf8'");
+        switch($this->driver)
+        {
+            case "PDO":
+                if($this->service === "mysql")
+                {
+                    $options = array(
+                        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+                        PDO::ATTR_PERSISTENT => FALSE,
+                    );
+                }
+                else
+                {
+                    $options = array(
+                        PDO::ATTR_PERSISTENT => FALSE,
+                    );
+                }
+                $dsn    = $this->service.':host='.$this->host;
+                $this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+                break;
+
+            case "mysqli":
+                $this->conn = new mysqli($this->host, $config['db_user'], $config['db_pwd'], $this->database);
+                $this->conn->query("SET NAMES 'utf8'");
+
+                break;
+
+            default:
+
+                break;
+        }
 	}
 
 	function checkError($line=0, $file="")
 	{
 		$err = $this->conn->errorCode();
+        #var_dump($err);
 		if($err === "00000")
 		{
 			return 0;

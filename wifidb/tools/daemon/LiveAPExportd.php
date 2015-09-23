@@ -148,9 +148,9 @@ $AllUsers = $return->fetchAll(2);
 foreach($AllUsers as $user)
 {
     $timestamp_int = strtotime($user['timestamp']);
-    echo "---------------------------------------------------------------------------------------------------------\r\n";
-    if($user['completed'] || ($timestamp_int < (time() + $dbcore->LiveTimeOut)))
+    if((int)$user['completed'] === 1)
     {
+        var_dump($user);
         echo "Getting APs for Title...\r\n";
         $user_sql = "SELECT `id` FROM `wifi`.`live_aps` WHERE `session_id` = ?";
         $user_prep = $dbcore->sql->conn->prepare($user_sql);
@@ -159,34 +159,18 @@ foreach($AllUsers as $user)
         $user_prep->execute();
         var_dump("After Fetch Table Details: ".microtime(1));
         $fetch = $user_prep->fetchAll(2);
+        var_dump($fetch);
         foreach($fetch as $row)
         {
-            var_dump($row['id']);
             echo "-----------------------------------------------------------------\r\n";
-            $ap_sql = "SELECT
-                    `live_aps`.`id`, `live_aps`.`ssid`, `live_aps`.`mac`, `live_aps`.`auth`, `live_aps`.`encry`, `live_aps`.`sectype`,
-                    `live_aps`.`chan`, `live_aps`.`radio`, `live_aps`.`BTx`, `live_aps`.`OTx`, `live_aps`.`NT`, `live_aps`.`Label`,
-                    `live_aps`.`FA`, `live_aps`.`LA`, `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
-                    `live_gps`.`alt`, `live_gps`.`geo`, `live_gps`.`kmh`, `live_gps`.`mph`, `live_gps`.`track`, `live_gps`.`timestamp` AS `GPS_timestamp`,
-                    `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`timestamp` AS `signal_timestamp`
-                     FROM `wifi`.`live_aps` INNER JOIN `wifi`.`live_signals` ON
-                         `live_signals`.`ap_id`=`live_aps`.`id` INNER JOIN
-                         `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
-            $ap_prep = $dbcore->sql->conn->prepare($ap_sql);
-            $ap_prep->bindParam(1, $row['id'], PDO::PARAM_STR);
-            var_dump("Before JOIN query: ".microtime(1));
-            $ap_prep->execute();
-            var_dump("After JOIN query: ".microtime(1));
-            $fetch_ap = $ap_prep->fetchAll(2);
+            var_dump($row['id']);
+            $fetch_ap = $dbcore->GetLiveAP();
             foreach($fetch_ap as $sigHistory)
             {
                 #var_dump($sigHistory);
                 break;
             }
         }
-    }else
-    {
-        echo $user['title']." is not ready to be exported yet...\r\n";
     }
 }
 echo "DONE!!\r\n";

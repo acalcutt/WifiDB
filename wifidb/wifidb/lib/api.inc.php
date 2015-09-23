@@ -58,6 +58,40 @@ class api extends dbcore
 
     }
 
+    public function GetLiveAP($ap_id = 0)
+    {
+        if($ap_id === 0)
+        {
+            $this->mesg['error'] = "AP ID was 0, that cant be...";
+            return 0;
+        }
+        $APSelectSQL = "SELECT `ssid`, `mac`, `auth`, `encry`, `sectype`,
+                          `chan`, `radio`, `BTx`, `OTx`, `NT`, `Label`, `FA`, `LA`
+                        FROM `wifi`.`live_aps` WHERE `id` = ?";
+        $ap_prep = $this->sql->conn->prepare($APSelectSQL);
+        $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
+        var_dump("Before JOIN query: ".microtime(1));
+        $ap_prep->execute();
+        var_dump("After JOIN query: ".microtime(1));
+        $APFetch = $ap_prep->fetchAll(2);
+
+
+        $SigHistSQL = "SELECT
+                    `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
+                    `live_gps`.`alt`, `live_gps`.`geo`, `live_gps`.`kmh`, `live_gps`.`mph`, `live_gps`.`track`, `live_gps`.`timestamp` AS `GPS_timestamp`,
+                    `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`timestamp` AS `signal_timestamp`
+                     FROM `wifi`.`live_aps` INNER JOIN `wifi`.`live_signals` ON
+                         `live_signals`.`ap_id`=`live_aps`.`id` INNER JOIN
+                         `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
+        $ap_prep = $this->sql->conn->prepare($SigHistSQL);
+        $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
+        var_dump("Before JOIN query: ".microtime(1));
+        $ap_prep->execute();
+        var_dump("After JOIN query: ".microtime(1));
+        $fetch_ap = $ap_prep->fetchAll(2);
+        return $fetch_ap;
+    }
+
 	private function fetch_geoname($lat_low = "", $lat_high = "", $long_low = "", $long_high = "")
 	{
 		#
@@ -502,7 +536,7 @@ class api extends dbcore
             $insert_prep->bindParam(5 , $data['sectype'], PDO::PARAM_INT);
             $insert_prep->bindParam(6 , $data['radio'], PDO::PARAM_STR);
             $insert_prep->bindParam(7 , $data['chan'], PDO::PARAM_INT);
-            $insert_prep->bindParam(8 , $this->sec->SessionID, PDO::PARAM_STR);
+            $insert_prep->bindParam(8 , $_REQUEST['SessionID'], PDO::PARAM_STR);
             $insert_prep->bindParam(9 , $ap_hash, PDO::PARAM_STR);
             $insert_prep->bindParam(10 , $data['BTx'], PDO::PARAM_STR);
             $insert_prep->bindParam(11 , $data['OTx'], PDO::PARAM_STR);
@@ -653,9 +687,9 @@ class api extends dbcore
 
     public function ManageSession($date = "", $time = "")
     {
-        $timestamp = $date." ".$time;
         if(isset($_REQUEST['SessionID']))
         {
+            $timestamp = $date." ".$time;
             if(isset($_REQUEST['completed']))
             {
                 $TitleID = $this->GetTitleIDFromSessionID();
@@ -666,17 +700,18 @@ class api extends dbcore
                 $prep->bindParam(2, $TitleID, PDO::PARAM_INT);
                 $prep->execute();
                 $this->sql->checkError(__LINE__, __FILE__);
-                $dbcore->mesg[] = "Session_Completed";
+                $this->mesg[] = "Session_Completed";
                 return 2;
             }
 
-            $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ?";
+            $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ? WHERE completed = 1";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
-            $prep->execute();
+            var_dump($prep->execute());
+            #$this->sql->checkError(__LINE__, __FILE__);
             $title_data = $prep->fetch(2);
 
-            if($prep->rowCount < 1)
+            if(count($title_data) !== 1)
             {
                 $this->mesg['error'] = "Session_Expired";
                 return 0;

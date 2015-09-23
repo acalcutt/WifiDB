@@ -22,11 +22,15 @@ if not, write to the
 /*
  * Class autoloader
  *
- */
+*/
 if(!function_exists('__autoload'))
 {
     function __autoload($class)
     {
+        if($class === "mysqli")
+        {
+            return -1;
+        }
         if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
         {
             include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
