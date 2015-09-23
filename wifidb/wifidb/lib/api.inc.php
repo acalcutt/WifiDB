@@ -364,25 +364,27 @@ class api extends dbcore
         $ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
         $LA = $data['date']." ".$data['time'];
 
-        var_dump("AP_HASH: ".$ap_hash);
-        var_dump($this->sec->SessionID);
+        #var_dump("AP_HASH: ".$ap_hash);
 		$sql = "SELECT `t1`.`id`, `t1`.`ssid`, `t1`.`mac`, `t1`.`chan`, `t1`.`sectype`, `t1`.`auth`, `t1`.`encry`, `t1`.`radio`, `t1`.`session_id`, `t1`.`lat`, `t1`.`long` FROM `wifi`.`live_aps` as `t1`
                   INNER JOIN `wifi`.`live_users` as `t2`
                   ON `t1`.`session_id` = ?
                   WHERE ap_hash = ?
                   LIMIT 1";
-        $result = $this->sql->conn->prepare($sql);
+		$result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
         $result->bindParam(2, $ap_hash, PDO::PARAM_STR);
-		$res = $result->execute();
-        if(!$res)
+		$result->execute();
+		$err = $this->sql->conn->errorCode();
+        #var_dump($err);
+        if($err !== "00000")
 		{
 			$this->mesg[] = array("error"=>array("desc"=>"Error selecting AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
 			return -1;
 		}
 
         $array = $result->fetch(2);
-        var_dump($array);
+        #var_dump($array);
+        #die();
         if(isset($array['id']))
 		{
 			$ap_id = $array['id'];
@@ -687,11 +689,9 @@ class api extends dbcore
     {
         if(isset($_REQUEST['SessionID']))
         {
-            var_dump("SessionID Set.");
             $timestamp = $date." ".$time;
             if(isset($_REQUEST['completed']))
             {
-                var_dump("Completed Set");
                 $TitleID = $this->GetTitleIDFromSessionID();
                 $completed = (int)$_REQUEST['completed'];
                 $sql = "UPDATE `wifi`.`live_titles` SET `completed` = ? WHERE `id` = ?";
@@ -707,7 +707,7 @@ class api extends dbcore
             $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ? WHERE completed = 1";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
-            #var_dump($prep->execute());
+            var_dump($prep->execute());
             #$this->sql->checkError(__LINE__, __FILE__);
             $title_data = $prep->fetch(2);
 
@@ -721,7 +721,7 @@ class api extends dbcore
             #var_dump($title_id);
             if ($this->sec->login_check)
             {
-                var_dump("LoginCheck True");
+                #var_dump("LoginCheck True");
                 $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $this->username, PDO::PARAM_STR);
@@ -732,21 +732,19 @@ class api extends dbcore
                 if ($fetch)
                 {
                     #var_dump($timestamp);
-                    var_dump("Title Update");
                     $this->sec->SessionID = $fetch['session_id'];
                     $sql = "UPDATE `wifi`.`live_titles` SET `timestamp` = ? WHERE id = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                     $prep->bindParam(2, $title_id, PDO::PARAM_INT);
                     $prep->execute();
-                    var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
+                    #var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
                     return 1;
                 } else {
-                    var_dump("Title Insert.");
                     $this->InsertLiveTitle();
                 }
             } else {
-                var_dump("LoginCheck False");
+                #var_dump("LoginCheck False");
                 $this->sec->SessionID = $_REQUEST['SessionID'];
 
                 #var_dump("Timestamp: ".$timestamp);
@@ -765,21 +763,20 @@ class api extends dbcore
             }
         }elseif(isset($_REQUEST['title']))
         {
-            var_dump("New Title.");
+            #var_dump("New Title.");
             $this->InsertLiveTitle();
-            return 1;
+
         }else{
             $this->sec->SessionID = $_REQUEST['SessionID']; #"OldAPI-".rand(0, 99999999);
-            var_dump("Re-use SessionID Request (bad): ".$this->sec->SessionID);
+           #var_dump("Generated: " . $this->sec->SessionID);
             $this->OldAPIGenerate();
-            return 1;
         }
     }
 
     public function InsertLiveTitle()
     {
         if(!isset($_REQUEST['title'])) {
-            $this->sec->SessionID = $_REQUEST['SessionID']; //TODO: CHANGE, SHOULD NOT JUST TAKE IN SESSIONID FROM USSE!!!!
+            $this->sec->SessionID = "OldAPI-".rand(0, 99999999);
             #var_dump("Generated: " . $this->sec->SessionID);
             $this->OldAPIGenerate();
             if(WDB_DEBUG) {
