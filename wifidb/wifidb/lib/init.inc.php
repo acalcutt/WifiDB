@@ -92,7 +92,7 @@ $query = "SELECT `version` FROM `wifi`.`settings` LIMIT 1";
 $res = $SQL->conn->query($query);
 $fetch = $res->fetch(2);
 
-if($fetch['version'] != '0.30 b1 Alpha')
+if($fetch['version'] !== '0.30 build 2')
 {
 	$cwd = getcwd().'/';
 	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';

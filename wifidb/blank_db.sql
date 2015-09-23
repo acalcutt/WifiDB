@@ -678,7 +678,7 @@ CREATE TABLE `wifi_signals` (
 -- Insert Initial Data
 --
 
-INSERT INTO `settings` (`id`, `daemon_state`, `version`, `node_name`) VALUES ('1', 1, '0.30 b1 Alpha', '1');
+INSERT INTO `settings` (`id`, `daemon_state`, `version`, `node_name`) VALUES ('1', 1, '0.30 build 2', '1');
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
   (1, '1', 'Import', 1, 10, 'Waiting', CURRENT_TIMESTAMP+900),
