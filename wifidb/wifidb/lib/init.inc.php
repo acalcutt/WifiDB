@@ -90,6 +90,7 @@ if(1)
 $SQL = new SQL($config);
 $query = "SELECT `version` FROM `wifi`.`settings` LIMIT 1";
 $res = $SQL->conn->query($query);
+$SQL->checkError($res, __LINE__, __FILE__);
 $fetch = $res->fetch(2);
 
 if($fetch['version'] !== '0.30 build 2')

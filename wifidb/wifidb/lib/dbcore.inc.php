@@ -148,6 +148,7 @@ class dbcore
 	{
 		$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
 		$result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ret = $result->fetch(2);
 		$hash = $ret['ap_hash'];
 		return $hash;
@@ -170,24 +171,16 @@ class dbcore
     public function GetAllAnnouncments()
     {
         $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`annunc` ORDER BY `id` ASC");
-        if(!$this->sql->checkError(__LINE__,__FILE__)) {
-            $fetched = $result->fetchAll(2);
-        }else
-        {
-            $fetched = array(0);
-        }
+        $this->sql->checkError($result, __LINE__,__FILE__);
+        $fetched = $result->fetchAll(2);
         return $fetched;
     }
 
     public function GetAllActiveAnnouncments()
     {
         $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`annunc` WHERE `set` = '1' ORDER BY `id` ASC");
-        if(!$this->sql->checkError(__LINE__,__FILE__)) {
-            $fetched = $result->fetchAll(2);
-        }else
-        {
-            $fetched = array(0);
-        }
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $fetched = $result->fetchAll(2);
         return $fetched;
     }
 
@@ -501,16 +494,8 @@ class dbcore
 		$prep->bindParam(2, $type, PDO::PARAM_STR);
 		$prep->bindParam(3, $datetime, PDO::PARAM_STR);
 		$prep->bindParam(4, $prefix, PDO::PARAM_INT);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Error writing to the Log table 0_o", -1);
-			throw new ErrorException("Error writing to the Log table. ".var_export($this->sql->conn->errorInfo() ,1));
-			return 0;
-		}else
-		{
-			return 1;
-		}
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+        return 1;
 	}
 
 	private function log_file($message = "", $type = "", $prefix = 0, $datetime = "")
@@ -585,10 +570,8 @@ class dbcore
 		#var_dump($this->manuf_array[$man_mac[0]]);
 		$result = $this->sql->conn->prepare("SELECT manuf FROM `wifi`.`manufactures` WHERE `mac` = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
-		$result->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		#var_dump("----------", $result->fetch(2), "----------");
-		if($result->rowCount() > 0)
+        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+        if($result->rowCount() > 0)
 		{
 			$fetch = $result->fetch(2);
 			$manuf = $fetch['manuf'];

@@ -143,6 +143,7 @@ $sql = "SELECT
             ORDER BY `t2`.`timestamp` DESC";
 var_dump("Before Fetch: ".microtime(1));
 $return = $dbcore->sql->conn->query($sql);
+$this->sql->checkError( $return, __LINE__, __FILE__);
 var_dump("After Fetch: ".microtime(1));
 $AllUsers = $return->fetchAll(2);
 foreach($AllUsers as $user)
@@ -156,7 +157,7 @@ foreach($AllUsers as $user)
         $user_prep = $dbcore->sql->conn->prepare($user_sql);
         $user_prep->bindParam(1, $user['session_id'], PDO::PARAM_STR);
         var_dump("Before Fetch Title Details: ".microtime(1));
-        $user_prep->execute();
+        $this->sql->checkError( $user_prep->execute(), __LINE__, __FILE__);
         var_dump("After Fetch Table Details: ".microtime(1));
         $fetch = $user_prep->fetchAll(2);
         var_dump($fetch);

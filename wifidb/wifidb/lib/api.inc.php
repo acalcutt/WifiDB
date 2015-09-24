@@ -71,10 +71,10 @@ class api extends dbcore
         $ap_prep = $this->sql->conn->prepare($APSelectSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
         var_dump("Before JOIN query: ".microtime(1));
-        $ap_prep->execute();
+        $this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
+
         var_dump("After JOIN query: ".microtime(1));
         $APFetch = $ap_prep->fetchAll(2);
-
 
         $SigHistSQL = "SELECT
                     `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
@@ -86,10 +86,10 @@ class api extends dbcore
         $ap_prep = $this->sql->conn->prepare($SigHistSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
         var_dump("Before JOIN query: ".microtime(1));
-        $ap_prep->execute();
+        $this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
         var_dump("After JOIN query: ".microtime(1));
-        $fetch_ap = $ap_prep->fetchAll(2);
-        return $fetch_ap;
+        $SignalDataFetch = $ap_prep->fetchAll(2);
+        return array('apdata'=> $APFetch, 'gdata'=> $SignalDataFetch);
     }
 
     private function fetch_geoname($lat_low = "", $lat_high = "", $long_low = "", $long_high = "")
@@ -106,7 +106,7 @@ class api extends dbcore
         $result->bindParam(2, $lat_high, PDO::PARAM_STR);
         $result->bindParam(3, $long_low, PDO::PARAM_STR);
         $result->bindParam(4, $long_high, PDO::PARAM_STR);
-        $result->execute();
+        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
         $geo_array = $result->fetchall(2);
 
         if(@$geo_array[0] == "")
@@ -178,7 +178,7 @@ class api extends dbcore
             $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin1` WHERE `admin1`= ?";
             $admin1_res = $this->sql->conn->prepare($sql);
             $admin1_res->bindParam(1, $admin1, PDO::PARAM_STR);
-            $admin1_res->execute();
+            $this->sql->checkError($admin1_res->execute(), __LINE__, __FILE__);
             $admin1_array = $admin1_res->fetch(1);
         }
         if(is_numeric($geo_array['admin2 code']))
@@ -187,14 +187,14 @@ class api extends dbcore
             $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin2` WHERE `admin2`= ? ";
             $admin2_res = $this->sql->conn->prepare($sql);
             $admin2_res->bindParam(1, $admin2, PDO::PARAM_STR);
-            $admin2_res->execute();
+            $this->sql->checkError($admin2_res->execute(), __LINE__, __FILE__);
             $admin2_array = $admin2_res->fetch(1);
         }
         $sql = "SELECT `Country` FROM `wifi`.`geonames_country_names` WHERE `ISO` LIKE ? LIMIT 1";
         $country_res = $this->sql->conn->prepare($sql);
         $code = $geo_array['country code']."%";
         $country_res->bindParam(1, $code, PDO::PARAM_STR);
-        $country_res->execute();
+        $this->sql->checkError($country_res->execute(), __LINE__, __FILE__);
         $country_array = $country_res->fetch(1);
 
         $this->mesg = array(
@@ -229,10 +229,10 @@ class api extends dbcore
             $bad_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_bad` WHERE `hash` = ? LIMIT 1");
             $bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-            $files_prep->execute();
-            $imp_prep->execute();
-            $tmp_prep->execute();
-            $bad_prep->execute();
+            $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
+            $this->sql->checkError($imp_prep->execute(), __LINE__, __FILE__);
+            $this->sql->checkError($tmp_prep->execute(), __LINE__, __FILE__);
+            $this->sql->checkError($bad_prep->execute(), __LINE__, __FILE__);
 
             $files_ret = $files_prep->fetch(2);
             $imp_ret = $imp_prep->fetch(2);
@@ -280,8 +280,9 @@ class api extends dbcore
         $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1");
         $files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-        $tmp_prep->execute();
-        $files_prep->execute();
+        $this->sql->checkError($tmp_prep->execute(), __LINE__, __FILE__);
+        $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
+
         $tmp_ret = $tmp_prep->fetch(2);
         $files_ret = $files_prep->fetch(2);
         if($tmp_ret['hash'] != "")
@@ -338,18 +339,11 @@ class api extends dbcore
                 $result->bindValue(5, $title, PDO::PARAM_STR);
                 $result->bindValue(6, $size, PDO::PARAM_STR);
                 $result->bindValue(7, $hash, PDO::PARAM_STR);
-                $result->execute();
-                $error = $this->sql->conn->errorCode();
-                if($error[0] == "00000")
-                {
-                    $this->mesg["message"] = "File has been inserted for importing at a scheduled time.";
-                    $this->mesg["importnum"] = $this->sql->conn->lastInsertId();
-                    $this->mesg["filehash"] = $hash;
-                }else
-                {
-                    $this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
-                    ;
-                }
+                $this->sql->checkError($result->execute(), __LINE__, __FILE__);
+
+                $this->mesg["message"] = "File has been inserted for importing at a scheduled time.";
+                $this->mesg["importnum"] = $this->sql->conn->lastInsertId();
+                $this->mesg["filehash"] = $hash;
                 break;
             default:
                 $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files");
@@ -374,12 +368,8 @@ class api extends dbcore
         $result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
         $result->bindParam(2, $ap_hash, PDO::PARAM_STR);
-        $res = $result->execute();
-        if(!$res)
-        {
-            $this->mesg[] = array("error"=>array("desc"=>"Error selecting AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-            return -1;
-        }
+        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
+
 
         $array = $result->fetch(2);
         var_dump($array);
@@ -391,14 +381,7 @@ class api extends dbcore
             $sql = "SELECT `id`, `lat`, `long` FROM `wifi`.`live_gps` WHERE `ap_id` = ? ORDER BY `timestamp` DESC";
             $result = $this->sql->conn->prepare($sql);
             $result->bindParam(1, $ap_id, PDO::PARAM_INT);
-            $result->execute();
-            $err = $this->sql->conn->errorCode();
-            #var_dump($err);
-            if($err !== "00000")
-            {
-                $this->mesg[] = array("error"=>array("desc"=>"Error selecting data from Live GPS Table.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                return -1;
-            }
+            $this->sql->checkError($result->execute(), __LINE__, __FILE__);
             $array = $result->fetch(2);
             if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
             {
@@ -407,8 +390,8 @@ class api extends dbcore
                 $gps_prep = $this->sql->conn->prepare($gps_select);
                 $gps_prep->bindParam(1, $array['lat'], PDO::PARAM_STR);
                 $gps_prep->bindParam(2, $array['long'], PDO::PARAM_STR);
-                $gps_prep->execute();
-                #var_dump($this->sql->conn->errorCode());
+
+                $this->sql->checkError( $gps_prep->execute(), __LINE__, __FILE__);
                 $fetch = $gps_prep->fetch(2);
 
                 $sql_sig = "INSERT INTO `wifi`.`live_signals`
@@ -420,33 +403,17 @@ class api extends dbcore
                 $prep_sig->bindParam(3, $fetch['id'], PDO::PARAM_INT);
                 $prep_sig->bindParam(4, $ap_id, PDO::PARAM_INT);
                 $prep_sig->bindParam(5, $LA, PDO::PARAM_STR);
-                $prep_sig->execute();
-                $err = $this->sql->conn->errorCode();
-                #var_dump($err);
-                if($err !== "00000")
-                {
-                    $this->mesg[] = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                    return -1;
-                }else
-                {
-                    $this->mesg[] = "Added Signal data.";
-                }
+                $this->sql->checkError( $prep_sig->execute(), __LINE__, __FILE__);
+
+                $this->mesg[] = "Added Signal data.";
+
                 $this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
                 $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ? WHERE `id` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $LA, PDO::PARAM_STR);
                 $prep->bindParam(2, $ap_id, PDO::PARAM_INT);
-                $prep->execute();
-                $err = $this->sql->conn->errorCode();
-                #var_dump($err);
-                if($err !== "00000")
-                {
-                    $this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                    return -1;
-                }else
-                {
-                    $this->mesg[] = "Updated AP Last Active and Signal.";
-                }
+                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+                $this->mesg[] = "Updated AP Last Active and Signal.";
             }
             else
             {
@@ -466,18 +433,10 @@ class api extends dbcore
                 $prep->bindParam(9, $data['track'], PDO::PARAM_INT);
                 $prep->bindParam(10, $LA, PDO::PARAM_STR);
                 $prep->bindParam(11, $ap_id, PDO::PARAM_INT);
-                $prep->execute();
+                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
                 $gps_id = $this->sql->conn->lastInsertId();
-                $err = $this->sql->conn->errorCode();
-                #var_dump($err);
-                if($err !== "00000")
-                {
-                    $this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                    return -1;
-                }else
-                {
-                    $this->mesg[] = "Added GPS data.";
-                }
+
+                $this->mesg[] = "Added GPS data.";
 
                 $sql_sig = "INSERT INTO `wifi`.`live_signals`
 					(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
@@ -488,18 +447,9 @@ class api extends dbcore
                 $prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
                 $prep_sig->bindParam(4, $ap_id, PDO::PARAM_INT);
                 $prep_sig->bindParam(5, $LA, PDO::PARAM_STR);
-                $prep_sig->execute();
+                $this->sql->checkError( $prep_sig->execute(), __LINE__, __FILE__);
 
-                $err = $this->sql->conn->errorCode();
-                #var_dump($err);
-                if($err !== "00000")
-                {
-                    $this->mesg[] = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                    return -1;
-                }else
-                {
-                    $this->mesg[] = "Added Signal data.";
-                }
+                $this->mesg[] = "Added Signal data.";
 
                 $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
                 #echo $sql."<br /><br />";
@@ -508,17 +458,9 @@ class api extends dbcore
                 $prep->bindParam(2, $data['lat'], 2);
                 $prep->bindParam(3, $data['long'], 2);
                 $prep->bindParam(4, $ap_id, 1);
-                $prep->execute();
-                $err = $this->sql->conn->errorCode();
-                #var_dump($err);
-                if($err !== "00000")
-                {
-                    $this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                    return -1;
-                }else
-                {
-                    $this->mesg[] = "Updated AP data.";
-                }
+                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+
+                $this->mesg[] = "Updated AP data.";
             }
         }else
         {
@@ -544,19 +486,12 @@ class api extends dbcore
             $insert_prep->bindParam(15 , $LA, PDO::PARAM_STR);
             $insert_prep->bindParam(16 , $data['lat'], PDO::PARAM_STR);
             $insert_prep->bindParam(17 , $data['long'], PDO::PARAM_STR);
-            $insert_prep->execute();
-            $err = $this->sql->conn->errorCode();
-            $ap_id = $this->sql->conn->lastInsertID();
-            #var_dump($err);
+            $this->sql->checkError( $insert_prep->execute(), __LINE__, __FILE__);
 
-            if($err !== "00000")
-            {
-                $this->mesg[] = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                return -1;
-            }else
-            {
-                $this->mesg[] = "Added AP data.";
-            }
+            $ap_id = $this->sql->conn->lastInsertID();
+
+            $this->mesg[] = "Added AP data.";
+
             $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`,`timestamp`, `ap_id`) VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
@@ -571,19 +506,11 @@ class api extends dbcore
             $prep->bindParam(10, $LA, PDO::PARAM_STR);
             $prep->bindParam(11, $ap_id, PDO::PARAM_STR);
             $prep->execute();
+            $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
             $gps_id = $this->sql->conn->lastInsertId();
 
-            $err = $this->sql->conn->errorCode();
-            #var_dump($err);
-            if($err !== "00000")
-            {
-                $this->mesg[] = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                return -1;
-            }else
-            {
-                $this->mesg[] = "Added GPS data.";
-            }
+            $this->mesg[] = "Added GPS data.";
 
             $sql_sig = "INSERT INTO `wifi`.`live_signals`
 						(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
@@ -595,18 +522,10 @@ class api extends dbcore
             $prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
             $prep_sig->bindParam(4, $ap_id, PDO::PARAM_STR);
             $prep_sig->bindParam(5 , $LA, PDO::PARAM_STR);
-            $prep_sig->execute();
+            $this->sql->checkError( $prep_sig->execute(), __LINE__, __FILE__);
 
-            $err = $this->sql->conn->errorCode();
-            #var_dump($err);
-            if($err !== "00000")
-            {
-                $this->mesg[] = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
-                return -1;
-            }else
-            {
-                $this->mesg[] = "Added Signal data.";
-            }
+            $this->mesg[] = "Added Signal data.";
+
         }
         return 1;
     }
@@ -631,8 +550,7 @@ class api extends dbcore
             $sql	=   "SELECT `signals` FROM `wifi`.`wifi_pointers` WHERE `mac` LIKE ? LIMIT 1";
             $result =   $this->sql->conn->prepare($sql);
             $result->bindParam(1, $macandsig[1]);
-            $result->execute();
-            $this->sql->checkError();
+            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 
             $array  =   $result->fetch(1);
             if($array['signals'] == ""){continue;}
@@ -646,7 +564,7 @@ class api extends dbcore
 						FROM  `wifi`.`wifi_gps` WHERE `id` = '$gps_id' ";
 
                 $result = $this->sql->conn->query($sql);
-                if($this->sql->checkError())
+                if($this->sql->checkError($result, __LINE__, __FILE__))
                 {
                     $this->mesg[] = array("error"=>var_export($this->sql->conn->errorInfo(), 1));
                     return -1;
@@ -677,8 +595,7 @@ class api extends dbcore
         $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
-        $prep->execute();
-        $this->sql->checkError(__LINE__, __FILE__);
+        $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
         $fetch = $prep->fetch(2);
         return $fetch['title_id'];
     }
@@ -698,8 +615,7 @@ class api extends dbcore
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $completed, PDO::PARAM_INT);
                 $prep->bindParam(2, $TitleID, PDO::PARAM_INT);
-                $prep->execute();
-                $this->sql->checkError(__LINE__, __FILE__);
+                $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
                 $this->mesg[] = "Session_Completed";
                 return 2;
             }
@@ -707,8 +623,7 @@ class api extends dbcore
             $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ? WHERE completed = 1";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
-            #var_dump($prep->execute());
-            #$this->sql->checkError(__LINE__, __FILE__);
+            $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
             $title_data = $prep->fetch(2);
 
             if(count($title_data) !== 1)
@@ -725,8 +640,7 @@ class api extends dbcore
                 $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $this->username, PDO::PARAM_STR);
-                $prep->execute();
-                $this->sql->checkError(__LINE__, __FILE__);
+                $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
                 $fetch = $prep->fetch(2);
                 #var_dump($fetch);
                 if ($fetch)
@@ -738,7 +652,7 @@ class api extends dbcore
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                     $prep->bindParam(2, $title_id, PDO::PARAM_INT);
-                    $prep->execute();
+                    $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
                     var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
                     return 1;
                 } else {
@@ -754,7 +668,7 @@ class api extends dbcore
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                 $prep->bindParam(2, $title_id, PDO::PARAM_INT);
-                $prep->execute();
+                $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
 
                 #var_dump("Old API Generate: ".$this->OldAPIGenerate());
 
@@ -779,12 +693,9 @@ class api extends dbcore
     public function InsertLiveTitle()
     {
         if(!isset($_REQUEST['title'])) {
-            $this->sec->SessionID = $_REQUEST['SessionID']; //TODO: CHANGE, SHOULD NOT JUST TAKE IN SESSIONID FROM USSE!!!!
-            #var_dump("Generated: " . $this->sec->SessionID);
+
+            $this->sec->SessionID = preg_replace("/[^a-zA-Z0-9]+/", "", $_REQUEST['SessionID']); //SessionID's should be letters and numbers only. Remove anything else.
             $this->OldAPIGenerate();
-            if(WDB_DEBUG) {
-                $this->mesg['debug'][] = "User Logged In with OldAPI.";
-            }
             return 0;
         } else {
             $timestamp = date("Y-m-d H:i:s");
@@ -793,8 +704,8 @@ class api extends dbcore
             $prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
             $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
             $prep_Title->bindParam(3, $timestamp, PDO::PARAM_STR);
-            $prep_Title->execute();
-            $this->sql->checkError(__LINE__, __FILE__);
+
+            $this->sql->checkError($prep_Title->execute());
             $TitleID = $this->sql->conn->lastInsertID();
             #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
         }
@@ -806,8 +717,8 @@ class api extends dbcore
         $prep_user->bindParam(1, $this->sec->username, PDO::PARAM_STR);
         $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
         $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
-        $prep_user->execute();
-        $this->sql->checkError(__LINE__, __FILE__);
+
+        $this->sql->checkError($prep_user->execute());
         $this->mesg["SessionID"] = $this->sec->SessionID;
         return 1;
     }
@@ -818,8 +729,8 @@ class api extends dbcore
         $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `session_id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
-        $prep->execute();
-        $this->sql->checkError(__LINE__, __FILE__);
+
+        $this->sql->checkError($prep->execute());
         $fetch = $prep->fetch(2);
         #var_dump($fetch);
         if ($fetch) {
@@ -832,8 +743,7 @@ class api extends dbcore
             $prep_Title = $this->sql->conn->prepare($insertTitle);
             $prep_Title->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
             $prep_Title->bindParam(2, $note, PDO::PARAM_STR);
-            $prep_Title->execute();
-            $this->sql->checkError(__LINE__, __FILE__);
+            $this->sql->checkError($prep_Title->execute());
             $TitleID = $this->sql->conn->lastInsertID();
             #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
 
@@ -842,8 +752,7 @@ class api extends dbcore
             $prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
             $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
             $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
-            $prep_user->execute();
-            $this->sql->checkError(__LINE__, __FILE__);
+            $this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
             return 0;
         }
     }
@@ -903,7 +812,7 @@ class api extends dbcore
         $prep2->bindParam(5, $auth, PDO::PARAM_STR);
         $encry = $encry."%";
         $prep2->bindParam(6, $encry, PDO::PARAM_STR);
-        $prep2->execute();
+        $this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
         $total_rows = $prep2->rowCount();
         if(!$total_rows)
         {

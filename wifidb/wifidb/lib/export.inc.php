@@ -65,6 +65,7 @@ class export extends dbcore
 		$this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
 
 		$results = $this->sql->conn->query("SELECT * FROM `wifi`.`boundaries`");
+        $this->sql->checkError( $results, __LINE__, __FILE__);
 		$fetched = $results->fetchAll(2);
 		$KML_data = "";
 		foreach($fetched as $boundary)
@@ -90,11 +91,7 @@ class export extends dbcore
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
 		$result = $this->sql->conn->query($sql);
 
-		if($this->sql->checkError(__LINE__, __FILE__))
-		{
-			$this->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-		}
+		$this->sql->checkError($result, __LINE__, __FILE__);
 		$NN = $result->rowCount();
 		$this->verbosed("APs with GPS: ".$NN);
 
@@ -170,11 +167,7 @@ class export extends dbcore
 		$select_daily = "SELECT `id` , `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search'";
 		$result = $this->sql->conn->query($select_daily);
 
-		if($this->sql->checkError(__LINE__, __FILE__))
-		{
-			$this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-			Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-		}
+		$this->sql->checkError($result, __LINE__, __FILE__);
 
 		if($this->named)
 		{
@@ -208,6 +201,7 @@ class export extends dbcore
 				list($id, $new_old) = explode(":", $point);
 				$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 				$result = $this->sql->conn->query($sql);
+                $this->sql->checkError( $result, __LINE__, __FILE__);
 				while($array = $result->fetch(2))
 				{
 					$ret = $this->ExportSingleAP((int)$array['id'], 1);
@@ -267,12 +261,9 @@ class export extends dbcore
 		$select_daily = "SELECT `id` , `points`, `username`, `title`, `date`, `hash` FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search'";
 		$result = $this->sql->conn->query($select_daily);
 
-		if($this->sql->checkError(__LINE__, __FILE__))
-		{
-			$this->verbosed("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-			Throw new ErrorException("There was an error running the SQL".var_export($this->sql->conn->errorInfo(), 1));
-		}
-		if($result->rowCount() < 1)
+		$this->sql->checkError($result, __LINE__, __FILE__);
+
+        if($result->rowCount() < 1)
 		{
 			return -1;
 		}
@@ -317,6 +308,7 @@ class export extends dbcore
 				list($id, $new_old) = explode(":", $point);
 				$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 				$result = $this->sql->conn->query($sql);
+                $this->sql->checkError( $result, __LINE__, __FILE__);
 				while($array = $result->fetch(2))
 				{
 					$ret = $this->ExportSingleAP((int)$id, 1);
@@ -394,7 +386,7 @@ class export extends dbcore
 		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
 
 		$prep2 = $this->sql->conn->query($sql2);
-		$this->sql->checkError(__LINE__, __FILE__);
+        $this->sql->checkError( $prep2, __LINE__, __FILE__);
 		$ap_fetch = $prep2->fetch(2);
 		$sql3 = "SELECT
   `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
@@ -418,7 +410,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$data[$ap_fetch['ap_hash']]['long'] = $ap_fetch['long'];
 		$data[$ap_fetch['ap_hash']]['alt'] = $ap_fetch['alt'];
 		$prep3 = $this->sql->conn->query($sql3);
-		$this->sql->checkError();
+        $this->sql->checkError( $prep3, __LINE__, __FILE__);
 		$sig_gps_data = $prep3->fetchAll(2);
         #var_dump($sig_gps_data);
 		if(count($sig_gps_data) < 1)
@@ -438,16 +430,10 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 	{
 		$this->verbosed("Starting GPX Export of WiFiDB.");
 		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
-		$prep = $this->sql->conn->execute($sql);
+		$prep = $this->sql->conn->query($sql);
+        $this->sql->checkError( $prep, __LINE__, __FILE__);
 		$aparray_all = $prep->fetchAll(2);
 		$this->verbosed("Pointers Table Queried.");
-		$err = $this->sql->conn->errorCode();
-		if($err[0] !== "00000")
-		{
-			$this->logd("Error fetching from Pointers table to generate GPX All: ".var_export($this->sql->conn->errorInfo(), 1));
-			$this->verbosed("Error Fetching data from Pointers Table :(", -1);
-			return -1;
-		}
 
 		foreach($aparray_all as $aparray)
 		{
@@ -508,7 +494,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				$sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ? LIMIT 1";
 				$prepgps = $this->sql->conn->prepare($sql);
 				$prepgps->bindParam(1, $gpsid, PDO::PARAM_INT);
-				$prepgps->execute();
+                $this->sql->checkError( $prepgps->execute(), __LINE__, __FILE__);
 				$gps = $prepgps->fetch(2);
 
 				$alt = $gps['alt'] * 3.28;
@@ -547,6 +533,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 	{
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
 		$result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ap_array = $result->fetch(2);
 		if($ap_array['ap_hash'])
 		{
@@ -568,6 +555,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 	{
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` ORDER BY `id` DESC LIMIT 1";
 		$result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ap_array = $result->fetch(2);
 		$hash = $ap_array['ap_hash'];
 
@@ -651,7 +639,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			if($file === "newestAP.kmz"){continue;}
 			if($file === "update.kml"){continue;}
 			if($file === "update.kmz"){continue;}
-			var_dump($file);
+			#var_dump($file);
 			foreach(scandir($this->daemon_out.$file) as $subfile)
 			{
 				if($subfile === "."){continue;}
@@ -663,16 +651,13 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 						var_dump($subfile);
 						continue;
 					}
-
 				} else {
 					if ($subfile === "daily_db_label.kmz") {
 						var_dump($subfile);
 						continue;
 					}
 				}
-
 			}
-			echo "\n";
 		}
 	}
 
@@ -955,9 +940,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		$user_imports = $prep->fetchAll();
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+        $user_imports = $prep->fetchAll();
 		$uicount = count($user_imports);
 
 		$KML_data="";
@@ -974,6 +958,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 					list($id, $new_old) = explode(":", $point);
 					$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 					$result = $this->sql->conn->query($sql);
+                    $this->sql->checkError( $result, __LINE__, __FILE__);
 					while($array = $result->fetch(2))
 					{
 						$ret = $this->ExportSingleAP((int)$array['id'], 1);
@@ -1056,6 +1041,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$KML_data = "";
 		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
 		$result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$array = $result->fetch(2);
         $export_ssid = $array['ssid'];
         $ret = $this->ExportSingleAP($id, $new_icons, $limit, $from);
@@ -1084,6 +1070,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			if($only_new == 1 and $new_old == 1){continue;}
 			$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
+            $this->sql->checkError( $result, __LINE__, __FILE__);
 			while($array = $result->fetch(2))
 			{
 				$ret = $this->ExportSingleAP((int)$array['id'], $new_icons);
@@ -1122,9 +1109,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $row, PDO::PARAM_INT);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		$fetch = $prep->fetch();
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+        $fetch = $prep->fetch();
 
 		$KML_data = $this->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date']);
 		if($KML_data == "")
