@@ -91,7 +91,6 @@ class security
         $prep = $this->sql->conn->prepare($sql1);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-        $this->sql->checkError();
         $result = $prep->fetch(2);
         #var_dump($result['hash']);
         if($result['hash'] == $cookie_pass_seed)
