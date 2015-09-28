@@ -17,5 +17,3 @@ if($dbcore->GenerateDaemonKMLData())
 {
     echo "Failed :(\r\n";
 }
-
-?>

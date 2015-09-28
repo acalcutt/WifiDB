@@ -70,10 +70,10 @@ class api extends dbcore
                         FROM `wifi`.`live_aps` WHERE `id` = ?";
         $ap_prep = $this->sql->conn->prepare($APSelectSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
-        var_dump("Before JOIN query: ".microtime(1));
+        #var_dump("Before JOIN query: ".microtime(1));
         $this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
 
-        var_dump("After JOIN query: ".microtime(1));
+        #var_dump("After JOIN query: ".microtime(1));
         $APFetch = $ap_prep->fetchAll(2);
 
         $SigHistSQL = "SELECT
@@ -85,9 +85,9 @@ class api extends dbcore
                          `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
         $ap_prep = $this->sql->conn->prepare($SigHistSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
-        var_dump("Before JOIN query: ".microtime(1));
+        #var_dump("Before JOIN query: ".microtime(1));
         $this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
-        var_dump("After JOIN query: ".microtime(1));
+        #var_dump("After JOIN query: ".microtime(1));
         $SignalDataFetch = $ap_prep->fetchAll(2);
         return array('apdata'=> $APFetch, 'gdata'=> $SignalDataFetch);
     }
@@ -358,13 +358,14 @@ class api extends dbcore
         $ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
         $LA = $data['date']." ".$data['time'];
 
-        var_dump("AP_HASH: ".$ap_hash);
-        var_dump($this->sec->SessionID);
+        #var_dump("AP_HASH: ".$ap_hash);
+        #var_dump($this->sec->SessionID);
         $sql = "SELECT `t1`.`id`, `t1`.`ssid`, `t1`.`mac`, `t1`.`chan`, `t1`.`sectype`, `t1`.`auth`, `t1`.`encry`, `t1`.`radio`, `t1`.`session_id`, `t1`.`lat`, `t1`.`long` FROM `wifi`.`live_aps` as `t1`
                   INNER JOIN `wifi`.`live_users` as `t2`
                   ON `t1`.`session_id` = ?
                   WHERE ap_hash = ?
                   LIMIT 1";
+
         $result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
         $result->bindParam(2, $ap_hash, PDO::PARAM_STR);
@@ -372,7 +373,7 @@ class api extends dbcore
 
 
         $array = $result->fetch(2);
-        var_dump($array);
+        #var_dump($array);
         if(isset($array['id']))
         {
             $ap_id = $array['id'];
@@ -600,15 +601,15 @@ class api extends dbcore
         return $fetch['title_id'];
     }
 
-    public function ManageSession($date = "", $time = "")
+    public function ManageLiveSession($date = "", $time = "")
     {
         if(isset($_REQUEST['SessionID']))
         {
-            var_dump("SessionID Set.");
+            #var_dump("SessionID Set.");
             $timestamp = $date." ".$time;
             if(isset($_REQUEST['completed']))
             {
-                var_dump("Completed Set");
+                #var_dump("Completed Set");
                 $TitleID = $this->GetTitleIDFromSessionID();
                 $completed = (int)$_REQUEST['completed'];
                 $sql = "UPDATE `wifi`.`live_titles` SET `completed` = ? WHERE `id` = ?";
@@ -620,9 +621,10 @@ class api extends dbcore
                 return 2;
             }
 
-            $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ? WHERE completed = 1";
+            $sql = "SELECT `title_id` FROM `wifi`.`live_users` LEFT JOIN `wifi`.`live_titles` ON `live_users`.`session_id` = ? AND `live_titles`.`completed` = 0 WHERE `live_users`.`session_id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
+            $prep->bindParam(2, $_REQUEST['SessionID']);
             $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
             $title_data = $prep->fetch(2);
 
@@ -636,7 +638,7 @@ class api extends dbcore
             #var_dump($title_id);
             if ($this->sec->login_check)
             {
-                var_dump("LoginCheck True");
+                #var_dump("LoginCheck True");
                 $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $this->username, PDO::PARAM_STR);
@@ -646,21 +648,21 @@ class api extends dbcore
                 if ($fetch)
                 {
                     #var_dump($timestamp);
-                    var_dump("Title Update");
+                    #var_dump("Title Update");
                     $this->sec->SessionID = $fetch['session_id'];
                     $sql = "UPDATE `wifi`.`live_titles` SET `timestamp` = ? WHERE id = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                     $prep->bindParam(2, $title_id, PDO::PARAM_INT);
                     $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-                    var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
+                    #var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
                     return 1;
                 } else {
-                    var_dump("Title Insert.");
+                    #var_dump("Title Insert.");
                     $this->InsertLiveTitle();
                 }
             } else {
-                var_dump("LoginCheck False");
+                #var_dump("LoginCheck False");
                 $this->sec->SessionID = $_REQUEST['SessionID'];
 
                 #var_dump("Timestamp: ".$timestamp);
@@ -679,12 +681,15 @@ class api extends dbcore
             }
         }elseif(isset($_REQUEST['title']))
         {
-            var_dump("New Title.");
+            #var_dump("New Title.");
             $this->InsertLiveTitle();
             return 1;
         }else{
-            $this->sec->SessionID = $_REQUEST['SessionID']; #"OldAPI-".rand(0, 99999999);
-            var_dump("Re-use SessionID Request (bad): ".$this->sec->SessionID);
+            if(isset($_REQUEST['completed']))
+            {
+                $this->mesg['error'] = "Completed flag was set, but no session ID to complete...";
+                return 0;
+            }
             $this->OldAPIGenerate();
             return 1;
         }
@@ -705,7 +710,7 @@ class api extends dbcore
             $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
             $prep_Title->bindParam(3, $timestamp, PDO::PARAM_STR);
 
-            $this->sql->checkError($prep_Title->execute());
+            $this->sql->checkError($prep_Title->execute(), __LINE__, __FILE__);
             $TitleID = $this->sql->conn->lastInsertID();
             #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
         }
@@ -718,43 +723,30 @@ class api extends dbcore
         $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
         $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
 
-        $this->sql->checkError($prep_user->execute());
+        $this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
         $this->mesg["SessionID"] = $this->sec->SessionID;
         return 1;
     }
 
     public function OldAPIGenerate()
     {
-        #var_dump("OLD API GENERATE");
-        $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `session_id` = ?";
-        $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
+        $date = date("Y-m-d H:i:s");
+        $this->sec->SessionID = $this->sec->GenerateKey(64);
+        $note = "Live Imports Using Old API";
+        $insertTitle = "INSERT INTO `wifi`.`live_titles` (id, title, notes) VALUES ('', ?, ?)";
+        $prep_Title = $this->sql->conn->prepare($insertTitle);
+        $prep_Title->bindParam(1, $date, PDO::PARAM_STR);
+        $prep_Title->bindParam(2, $note, PDO::PARAM_STR);
+        $this->sql->checkError($prep_Title->execute(), __LINE__, __FILE__);
+        $TitleID = $this->sql->conn->lastInsertID();
+        #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
 
-        $this->sql->checkError($prep->execute());
-        $fetch = $prep->fetch(2);
-        #var_dump($fetch);
-        if ($fetch) {
-            $this->sec->SessionID = $fetch['session_id'];
-            #var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
-            return 1;
-        }else{
-            $note = "Live Imports Using Old API";
-            $insertTitle = "INSERT INTO `wifi`.`live_titles` (id, title, notes) VALUES ('', ?, ?)";
-            $prep_Title = $this->sql->conn->prepare($insertTitle);
-            $prep_Title->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
-            $prep_Title->bindParam(2, $note, PDO::PARAM_STR);
-            $this->sql->checkError($prep_Title->execute());
-            $TitleID = $this->sql->conn->lastInsertID();
-            #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
-
-            $sessionInsert = "INSERT INTO `wifi`.`live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
-            $prep_user = $this->sql->conn->prepare($sessionInsert);
-            $prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
-            $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
-            $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
-            $this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
-            return 0;
-        }
+        $sessionInsert = "INSERT INTO `wifi`.`live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+        $prep_user = $this->sql->conn->prepare($sessionInsert);
+        $prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
+        $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
+        $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
+        $this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
     }
 
     public function Output($mesg = NULL)

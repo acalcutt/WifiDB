@@ -6,18 +6,21 @@ require_once('./lib/users.php');
 
 abstract class WebSocketServer{
 
-  protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
-  protected $maxBufferSize;        
-  protected $master;
-  protected $sockets                              = array();
-  protected $users                                = array();
-  protected $heldMessages                         = array();
-  protected $interactive                          = true;
-  protected $headerOriginRequired                 = false;
-  protected $headerSecWebSocketProtocolRequired   = false;
-  protected $headerSecWebSocketExtensionsRequired = false;
-    public $currentCount                          = 0;
-    public $prevCount                             = -1;
+    protected $userClass = 'WebSocketUser'; // redefine this if you want a custom user class.  The custom user class should inherit from WebSocketUser.
+    protected $maxBufferSize;
+    protected $master;
+    protected $message;
+
+    protected $sockets                              = array();
+    protected $users                                = array();
+    protected $user                                 = array();
+    protected $heldMessages                         = array();
+    protected $interactive                          = true;
+    protected $headerOriginRequired                 = false;
+    protected $headerSecWebSocketProtocolRequired   = false;
+    protected $headerSecWebSocketExtensionsRequired = false;
+    public $currentCount                            = 0;
+    public $prevCount                               = -1;
 
   function __construct($addr, $port, $bufferLength = 2048) {
     $this->maxBufferSize = $bufferLength;
@@ -27,11 +30,9 @@ abstract class WebSocketServer{
     socket_listen($this->master,20)                               or die("Failed: socket_listen()");
     $this->sockets['m'] = $this->master;
     $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
-
-    
   }
 
-  abstract protected function process($user,$message); // Called immediately when the data is recieved. 
+  abstract protected function process($user,$message); // Called immediately when the data is recieved.
   abstract protected function connected($user);        // Called after the handshake response is sent to the client.
   abstract protected function closed($user);           // Called after the connection is closed.
 

@@ -481,7 +481,7 @@ switch($func)
     default:
         $dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/jquery-1.11.3.js"></script>
 		<script type="text/javascript">
-			var host = "ws://'.$dbcore->hostname.':'.$dbcore->WebSocketPort.'/'.$dbcore->root.'/api/websocket/"; // SET THIS TO YOUR SERVER
+			var host = "ws://'.$dbcore->hostname.':'.$dbcore->WebSocketPort.'/'.$dbcore->root.'/api/Scheduling"; // SET THIS TO YOUR SERVER
 		</script>
 		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
         $dbcore->smarty->assign('OnLoad', "onload='init()'");

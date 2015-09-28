@@ -32,6 +32,8 @@ $daemon_config = array(
 	//Path for the daemon logs to go and take a dump in
 	'daemon_log_folder'	 =>	'/wifidb/code/tools/log/',
 
+    'WebSocketPort'     =>  9000,
+
 	// DANGER The Number of import processes its equal to ho much you want to kill your system.
 	// Really though, For a 8 CPU, 16GB test environment, 20 threads used 90% CPU for MariaDB and about 4GB of RAM at about 340,000 Access Points and their signal/GPS history.
 	// If you have a smaller system (1-2CPU 4GB of RAM) running WiFiDB, I would recommend no more than 2-4 processes.

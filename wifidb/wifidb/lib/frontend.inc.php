@@ -81,8 +81,12 @@ class frontend extends dbcore
 												);
 	}
 
-	function APFetch($id = "")
+	function APFetch($id = 0)
 	{
+        if($id===0)
+        {
+            throw new ErrorException("APFetch ID is not set.");
+        }
 		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);

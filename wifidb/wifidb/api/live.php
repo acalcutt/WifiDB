@@ -31,12 +31,12 @@ if(isset($_REQUEST['LiveVersion']))
 $session_id   =   (isset($_REQUEST['SessionID']) ? $_REQUEST['SessionID'] : "" );
 if($session_id === "")
 {
-    $dbcore->ManageSession();
+    $dbcore->ManageLiveSession();
     $dbcore->output();
 }
 
 // AP Detail Variables
-$ssid   =   (isset($_REQUEST['SSID']) ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "UNAMED");
+$ssid   =   (isset($_REQUEST['SSID']) ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "UNNAMED");
 $mac    =   (isset($_REQUEST['Mac']) ? $_REQUEST['Mac'] : "00:00:00:00:00:00");
 $radio  =   (isset($_REQUEST['Rad']) ? $_REQUEST['Rad'] : "802.11u");
 $sectype=   (isset($_REQUEST['SecType']) ? $_REQUEST['SecType'] : 0);
@@ -63,8 +63,8 @@ $mph    =   (isset($_REQUEST['MPH']) ? $_REQUEST['MPH'] : 0 );
 $track  =   (isset($_REQUEST['Track']) ? $_REQUEST['Track'] : 0 );
 $date   =   (isset($_REQUEST['Date']) ? $_REQUEST['Date'] : date($dbcore->date_format));
 $time   =   (isset($_REQUEST['Time']) ? $_REQUEST['Time'] : date($dbcore->time_format));
-
-if($dbcore->ManageSession($date, $time) === 2)
+$SessionResult = $dbcore->ManageLiveSession($date, $time);
+if($SessionResult === 2 || $SessionResult === 0)
 {
     $dbcore->output();
 }

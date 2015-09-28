@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 /*
-TestCreateBoardersKML.php, WiFiDB Import Daemon
+Test_ExportAllkml.php, WiFiDB Import Daemon
 Copyright (C) 2015 Phil Ferland.
 Used to generate the world boarders KML file.
 
