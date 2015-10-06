@@ -104,9 +104,9 @@ $config = array
     'engine'                =>   'innodb',
 
     #---------------- Export Info ----------------#
-    'open_loc'              =>   'http://vistumbler.sourceforge.net/images/program-images/open.png',
-    'WEP_loc'               =>   'http://vistumbler.sourceforge.net/images/program-images/secure-wep.png',
-    'WPA_loc'               =>   'http://vistumbler.sourceforge.net/images/program-images/secure.png',
+    'open_loc'              =>   'https://raw.githubusercontent.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png',
+    'WEP_loc'               =>   'https://raw.githubusercontent.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png',
+    'WPA_loc'               =>   'https://raw.githubusercontent.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png',
     'KML_SOURCE_URL'        =>   'http://www.opengis.net/kml/2.2',
     'kml_out'               =>   'out/kml/',
     'vs1_out'               =>   'out/vs1/',

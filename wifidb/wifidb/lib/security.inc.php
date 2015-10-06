@@ -12,7 +12,7 @@ class security
         $this->log_level          = 42;
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;
-        $this->EnableAPIKey       = $config['EnableAPIKey'];
+        $this->EnableAPIKey       = 1; #$config['EnableAPIKey'];
         $this->login_val          = "No Cookie";
         $this->last_login         = 0;
         $this->login_check        = 0;
@@ -83,14 +83,14 @@ class security
         $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1 , $username);
-        $result->execute();
+        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
         $newArray = $result->fetch(2);
+
         #var_dump($newArray);
         $sql1 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
         $prep = $this->sql->conn->prepare($sql1);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
-        $prep->execute();
-        $this->sql->checkError();
+        $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
         $result = $prep->fetch(2);
         #var_dump($result['hash']);
         if($result['hash'] == $cookie_pass_seed)
@@ -160,22 +160,12 @@ class security
         $prep->bindParam(5, $email, PDO::PARAM_STR);
         $prep->bindParam(6, $join_date, PDO::PARAM_STR);
         $prep->bindParam(7, $api_key, PDO::PARAM_STR);
-        $prep->execute();
-        
-        if($this->sql->checkError() !== 0)
-        {
-            #$password = "";
-            $this->logd("Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_export(get_defined_vars(), 1), "Error");
-            #echo "Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ".#var_dump(get_defined_vars());
-            $this->mesg[] = "Failed to create user :(";
-            return -1;
-        }else
-        {
-            $this->logd("User created! $username : $email : $join_date", "Info");
-            #var_dump(get_defined_vars());
-            $this->mesg[] = "User created! | $username : $email : $join_date";
-            return 1;
-        }
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+
+        $this->logd("User created! $username : $email : $join_date", "Info");
+        #var_dump(get_defined_vars());
+        $this->mesg[] = "User created! | $username : $email : $join_date";
+        return 1;
     }
 
     function GenerateKey($len = 16)
@@ -203,16 +193,8 @@ class security
         $prep->bindParam(1, $this->username, PDO::PARAM_STR);
         $prep->bindParam(2, $this->SessionID, PDO::PARAM_STR);
         $prep->bindParam(3, $cookie_timeout, PDO::PARAM_INT);
-        $prep->execute();
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
-        if($this->sql->checkError())
-        {
-            $this->login_val    = "hash_tbl_fail";
-            $this->login_check  = 0;
-            $this->logd("Failed to add Cookie value to Table: ". var_export($this->sql->conn->errorInfo(), 1), "error");
-            $this->mesg[] = "Failed to add Cookie value to Table.";
-            return 0;
-        }
         if(!$this->cli)
         {
             if($authoritah)
@@ -259,7 +241,7 @@ class security
         $sql0 = "SELECT `id`, `validated`, `locked`, `login_fails`, `username`, `password` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1 , $username);
-        $result->execute();
+        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
         
         $newArray = $result->fetch(2);
         $validate = $newArray['validated']+0;
@@ -298,23 +280,13 @@ class security
             $prep = $this->sql->conn->prepare($sql1);
             $prep->bindParam(1, $date, PDO::PARAM_STR);
             $prep->bindParam(2, $id, PDO::PARAM_INT);
-            $prep->execute();
+            $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
             
-            if(!$this->sql->checkError())
-            {
-                $this->login_val = "good";
-                $this->login_check = 1;
-                $this->logd("User has successfully logged in: ". var_export($username, 1), "error");
-                $this->mesg[] = "User is logged in.";
-                return 1;
-            }else
-            {
-                $this->login_val = "u_u_r_fail";
-                $this->login_check = 0;
-                $this->logd("Failed to update last login for user: ". var_export($this->sql->conn->errorInfo(), 1), "error");
-                $this->mesg[] = "Failed to update last login for user.";
-                return 0;
-            }
+            $this->login_val = "good";
+            $this->login_check = 1;
+            $this->logd("User has successfully logged in: ". var_export($username, 1), "error");
+            $this->mesg[] = "User is logged in.";
+            return 1;
         }else
         {
             #Failed Password check.
@@ -325,22 +297,12 @@ class security
                 $sql1 = "UPDATE `wifi`.`user_info` SET `locked` = '1' WHERE `id` = ? LIMIT 1";
                 $prepare = $this->sql->conn->prepare($sql1);
                 $prepare->bindParam(1, $id);
-                $prepare->execute();
-                if(!$this->sql->checkError())
-                {
-                    $this->login_val = "locked";
-                    $this->login_check = 0;
-                    $this->mesg[] = "User is locked.";
-                    $this->logd("User is locked: ".$username , "error");
-                    return 1;
-                }else
-                {
-                    $this->login_val = "locked";
-                    $this->login_check = 0;
-                    $this->mesg[] = "User is locked.";
-                    $this->logd("Failed to update locked flag in table: ". var_export($this->sql->conn->errorInfo(), 1), "error");
-                    return 0;
-                }
+                $this->sql->checkError( $prepare->execute(), __LINE__, __FILE__);
+                $this->login_val = "locked";
+                $this->login_check = 0;
+                $this->mesg[] = "User is locked.";
+                $this->logd("User is locked: ".$username , "error");
+                return 1;
             }else
             {
                 # Increment the failed count.
@@ -348,22 +310,13 @@ class security
                 $prepare = $this->sql->conn->prepare($sql1);
                 $prepare->bindParam(1, $fails);
                 $prepare->bindParam(2, $id);
-                $prepare->execute();
-                if(!$this->sql->checkError())
-                {
-                    $this->login_val = "p_fail";
-                    $this->login_check = 0;
-                    $this->mesg[] = "Username or Password is incorrect.";
-                    $this->logd("Incorrect password for user : ".$username." | ".$password, "error");
-                    return 1;
-                }else
-                {
-                    $this->login_val = "u_u_r_fail";
-                    $this->login_check = 0;
-                    $this->logd("Failed to update login fails for user: ". var_export($this->sql->conn->errorInfo(), 1), "error");
-                    $this->mesg[] = "Failed to update login fails for user.";
-                    return 0;
-                }
+                $this->sql->checkError( $prepare->execute(), __LINE__, __FILE__);
+
+                $this->login_val = "p_fail";
+                $this->login_check = 0;
+                $this->mesg[] = "Username or Password is incorrect.";
+                $this->logd("Incorrect password for user : ".$username." | ".$password, "error");
+                return 1;
             }
         }
     }
@@ -375,7 +328,7 @@ class security
             $sql0 = "SELECT * FROM `wifi`.`user_login_hash` WHERE `username` = ? LIMIT 1";
             $result = $this->sql->conn->prepare($sql0);
             $result->bindParam(1, $username, PDO::PARAM_STR);
-            $result->execute();
+            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
             $newArray = $result->fetch(2);
             if($this->EnableAPIKey) {
                 if ($apikey === $newArray['apikey']) {
@@ -418,7 +371,7 @@ class security
         $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `utime` < ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $time, PDO::PARAM_INT);
-        $prep->execute();
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
         if($authoritah == 1)
         {
             $cookie_name = 'WiFiDB_admin_login_yes';
@@ -450,8 +403,8 @@ class security
         $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1, $username, PDO::PARAM_STR);
-        $result->execute();
-		$logon = $result->fetch(2);
+        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+        $logon = $result->fetch(2);
 
         #var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
         if($logon['hash'] == $cookie_pass)
@@ -482,37 +435,34 @@ class security
         $sql = "UPDATE `wifi`.`user_info` SET `locked` = '0', `login_fails` = '0' WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $id, PDO::PARAM_INT);
-        $prep->execute();
-        if($this->sql->checkError())
-        {
-            $this->logd("Error Unlocking user id: $id ". var_export($this->sql->conn->errorInfo(), 1), "error");
-            return 0;
-        }
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
         return 1;
     }
     
     function ValidateAPIKey()
     {
-        $username = $_REQUEST['username'];
-        $apikey = $_REQUEST['apikey'];
+        $username = @$_REQUEST['username'];
+        $apikey = @$_REQUEST['apikey'];
 
         if($this->EnableAPIKey)
         {
-            if($username === "" || $username === "Unknown" || $username === "AnonCoward")
+            if($username === "AnonCoward" && $apikey === "scaredycat")
             {
-                if(WDB_DEBUG)
-                {
-                    $this->mesg['debug'][] = "Invalid Username set.";
-                }
+                $this->login_check = 1;
+                $this->login_val = "apilogin";
+                return 1;
+            }
+
+            if($username === "" || $username === "Unknown")
+            {
+                $this->mesg['error'] = "Invalid Username set.";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 return -1;
             }
             if($apikey === "")
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Invalid API Key set.";
-                }
+                $this->mesg['error'] = "Invalid API Key set.";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 return -2;
@@ -520,52 +470,33 @@ class security
             $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
             $result = $this->sql->conn->prepare($sql);
             $result->bindParam(1, $username, PDO::PARAM_STR);
-            $result->execute();
-            $err = $this->sql->conn->errorCode();
-            if($err !== "00000")
-            {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Error Selecting User API Key";
-                }
-                $this->login_val = "failed";
-                $this->login_check = 0;
-                $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
-                return -1;
-            }
+            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 
             $key = $result->fetch(2);
             if($key['apikey'] !== $apikey)
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Authentication Failed.";
-                }
+                $this->mesg['error'] = "Authentication Failed.";
                 $this->login_val = "failed";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
                 return -2;
             }elseif($key['locked'])
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Account Locked.";
-                }
+                $this->mesg['error'] = "Account Locked.";
                 $this->login_val = "locked";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
                 return -3;
             }elseif($key['disabled'])
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Account Disabled.";
-                }
+                $this->mesg['error'] = "Account Disabled.";
                 $this->login_val = "disabeld";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
                 return -4;
             }elseif($key['validated'])
             {
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "User not validated yet.";
-                }
+                $this->mesg['error'] = "User not validated yet.";
                 $this->login_val = "NotValidated";
                 $this->login_check = 0;
                 $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
@@ -581,9 +512,6 @@ class security
                 $this->last_login = time();
                 $this->login_check = 1;
                 $this->login_val = "apilogin";
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "Authentication Succeeded.";
-                }
                 $this->logd("Authentication Succeeded.", "message");
                 return 1;
             }
@@ -598,9 +526,7 @@ class security
             $this->last_login = time();
             $this->login_check = 1;
             $this->login_val = "apilogin";
-            if(WDB_DEBUG) {
-                $this->mesg['debug'][] = "Authentication Succeeded. (API Keys Disabled.)";
-            }
+            $this->mesg['message'] = "Authentication Succeeded. (API Keys Disabled.)";
             $this->logd("Authentication Succeeded. (API Keys Disabled.)", "message");
         }
         return 0;

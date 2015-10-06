@@ -20,6 +20,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 $func=$_GET['func'];
 
 switch($func)

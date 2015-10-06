@@ -1,18 +1,15 @@
 <?php
-global $switches;
-$switches = array('extras'=>'cli','screen'=>"CLI");
+define("SWITCH_SCREEN", "cli");
+define("SWITCH_EXTRAS", "cli");
+error_reporting("E_ALL");
 
-require('../daemon/config.inc.php');
+require('../config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
+
 
 $dbcore->verbose = 1;
 $dbcore->named = 1;
-$username = "pferland2";
-$password = "wires";
-echo "Test login:\r\n";
-#var_dump($dbcore->sec->Login($username, $password));
-#var_dump($dbcore->sec->username);
-#var_dump($dbcore->sec->pass_hash);
+$username = "pferland";
 
 echo "-----
     get data from user_login_hashes\r\n";
@@ -23,7 +20,7 @@ $prep->execute();
 $array = $prep->fetch(2);
 var_dump($array);
 
-$hashed_pass = $array['apikey'];
+$_REQUEST['apikey'] = $array['apikey'];
 
 echo "-----
     Test API Login Check with UserName and API Key\r\n";

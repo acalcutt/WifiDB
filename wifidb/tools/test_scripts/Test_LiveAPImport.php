@@ -19,6 +19,8 @@ $longs = array('-71.94303', '-71.94313', '-71.94323', '-71.94333', '-71.94343', 
 
 while($n !== 0)
 {
+    $date = date("Y-m-d");
+    $time = date("H:i:s");
     echo "----------------------------------------\r\nID: $n\r\n";
     $url_data = "SSID=".urlencode(gen_str(rand(5, 32))).
     "&Mac=".urlencode(gen_mac()).
@@ -31,7 +33,8 @@ while($n !== 0)
     "&Long=".urlencode(convert_dd_dm($longs[array_rand($longs)])).
     "&BTx=5.5".
     "&OTx=".urlencode("1 2 5.5 10 20 30 48 54").
-    "&Time=".time().
+    "&Date=".$date.
+    "&Time=".$time.
     "&NT=Infrastructure".
     "&Label=unknown".
     "&Sig=".rand(9, 100).
@@ -43,9 +46,9 @@ while($n !== 0)
     "&MPH=".rand(25,75).
     "&Track=".rand(0,100).
     "&username=pferland".
-    "&apikey=".urlencode("9e%m)KW6dn3fjb3G(6!7A7OFAqDy*DLt4!tGq").
-    "&SessionID=SessionID";
-    $url = "http://172.16.1.77/wifidb/api/live.php?".$url_data;
+    "&apikey=GSn8NQeYzY8gq5Y8NFpf5gZZqH33kdBctEOwWzsOTmxCnrs4BYk32rgeNLNhLkzj".
+    "&SessionID=OLDAPISESSIONID";
+    $url = "http://dev.randomintervals.com/wifidb/api/live.php?".$url_data;
     echo $url."\r\n";
     var_dump(file($url));
     die();

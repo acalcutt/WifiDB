@@ -42,7 +42,7 @@ $gps = array(
     array(62.95723752, 103.13603913)
 );
 $k = 0;
-for ($i=0; $i < 21; $i++)
+for ($i=0; $i < 2000; $i++)
 {
     $pid = pcntl_fork();
     
@@ -56,4 +56,3 @@ for ($i=0; $i < 21; $i++)
     $dbcore->Output();
     $k++;
 }
-?>

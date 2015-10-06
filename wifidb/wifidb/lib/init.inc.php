@@ -22,11 +22,15 @@ if not, write to the
 /*
  * Class autoloader
  *
- */
+*/
 if(!function_exists('__autoload'))
 {
     function __autoload($class)
     {
+        if($class === "mysqli")
+        {
+            return -1;
+        }
         if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
         {
             include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
@@ -86,9 +90,10 @@ if(1)
 $SQL = new SQL($config);
 $query = "SELECT `version` FROM `wifi`.`settings` LIMIT 1";
 $res = $SQL->conn->query($query);
+$SQL->checkError($res, __LINE__, __FILE__);
 $fetch = $res->fetch(2);
 
-if($fetch['version'] != '0.30 b1 Alpha')
+if($fetch['version'] !== '0.30 build 2')
 {
 	$cwd = getcwd().'/';
 	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';

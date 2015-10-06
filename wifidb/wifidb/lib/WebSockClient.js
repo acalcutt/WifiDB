@@ -1,20 +1,30 @@
 var socket, currentRequest;
 
 function init() {
-    connect();
-    myLoop();
+    console.log(host);
+    var last = host.substring(host.lastIndexOf("/") + 1, host.length);
+    connect(last);
 }
 
-function connect() {
+function connect(last) {
     var tries = 0;
     try {
+
         socket = new WebSocket(host);
         //console.log('WebSocket - status '+socket.readyState);
 
         socket.onopen    = function() {
             //console.log("Connected - status "+this.readyState);
-            currentRequest = "import_waiting";
-            send('import_waiting');
+            //currentRequest = "import_waiting";
+            //send('import_waiting');
+            console.log(last);
+            if(last == 'LiveAPs')
+            {
+                LiveLoop();
+            }else if(last == 'Schedule')
+            {
+                ScheduleLoop();
+            }
         };
 
         socket.onmessage = function(msg) {
@@ -41,31 +51,39 @@ function connect() {
             //$search2 = $xml.find("import_active");
             //console.log("Current Request: " + currentRequest);
             var CurrentTable = createTable(currentRequest, "10");
-            clearTable(currentRequest);
             switch(currentRequest)
             {
                 case "import_waiting":
+                    clearTable(currentRequest, 4);
                     parseImportWaiting(msg.data, CurrentTable);
                     currentRequest = "import_active";
                     send('import_active');
                     break;
                 case "import_active":
+                    clearTable(currentRequest, 4);
                     parseImportActive(msg.data, CurrentTable);
                     currentRequest = "daemon_stats";
                     send('daemon_stats');
                     break;
                 case "daemon_stats":
+                    clearTable(currentRequest, 4);
                     parseDaemonStats(msg.data, CurrentTable);
                     currentRequest = "daemon_schedule";
                     send('daemon_schedule');
                     break;
                 case "daemon_schedule":
+                    clearTable(currentRequest, 4);
                     parseDaemonSchedule(msg.data, CurrentTable);
                     break;
+                case "LiveList":
+                    clearTable(currentRequest, 2);
+                    parseLiveList(msg.data, CurrentTable);
+                    break;
                 default:
-                   // console.log(currentRequest + "< ---- >"+msg.data);
+                    console.log(currentRequest + "< ---- >"+msg.data);
                     break;
             }
+
         };
         socket.onclose   = function() {
            // console.log("Disconnected - status "+this.readyState);
@@ -271,9 +289,9 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
 
                 var pad = "00";
                 var UTCDate = new Date(file.childNodes[4].innerHTML * 1000);
-                console.log(file.childNodes[4].innerHTML);
-                console.log(UTCDate);
-                console.log( UTCDate.getMonth());
+                //console.log(file.childNodes[4].innerHTML);
+                //console.log(UTCDate);
+                //console.log( UTCDate.getMonth());
                 var month_pre = "" + (UTCDate.getMonth()+1); //WTF JavaScript, why is the Month off by one? January is 0 WTF... Seriously...
                 var month = pad.substring(0, pad.length - month_pre.length) + month_pre;
 
@@ -331,6 +349,79 @@ function parseDaemonSchedule(response, DaemonScheduleTable) {
     }
 }
 
+function parseLiveList(response, LiveListTable) {
+    var $waiting, $search1, xmlDoc, $xml, loop, r, g, b, rgb, ssid, i;
+
+    if (response == null) {
+        return false;
+    } else {
+        //console.log(response);
+
+        xmlDoc = $.parseXML(response),
+        $xml = $(xmlDoc),
+        $search1 = $xml.find(currentRequest);
+
+        $waiting = $search1[0];
+        i = 0;
+        //console.log($waiting);
+        if ($waiting.childNodes.length > 0) {
+            LiveListTable.setAttribute("bordercolor", "black");
+            LiveListTable.setAttribute("border", "1");
+            for (loop = 0; loop < $waiting.childNodes.length; loop++) {
+                var file = $waiting.childNodes[loop];
+                //console.log(file.childNodes);
+                if (file.childNodes.length == 1) {
+                    //create row for empty response
+                    var row = document.createElement("tr");
+                    row.setAttribute("style", "background-color: yellow");
+                    CreateCell(LiveListTable, row, "No Live APs. Go import some...", 11) // File ID
+                } else {
+                    //create row for data
+                    var row = document.createElement("tr");
+                    if(file.childNodes[1].innerHTML == "")
+                    {
+                        //console.log("Unknown SSID Name");
+                        ssid = "Unknown";
+                    }else {
+                        ssid = file.childNodes[1].innerHTML;
+                    }
+                    if(i == 1)
+                    {
+                        r = 20;
+                        g = 160;
+                        b = 180;
+                        i = 0;
+                    }else
+                    {
+                        r = 20;
+                        g = 80;
+                        b = 190;
+                        i = 1;
+                    }
+
+                    rgb = r.toString(16) + g.toString(16) + b.toString(16);
+
+                    row.setAttribute("style", "background-color: #" + rgb);
+                    CreateCell(LiveListTable, row, file.childNodes[0].innerHTML) // ID
+                    CreateCell(LiveListTable, row, ssid) // SSID
+                    CreateCell(LiveListTable, row, file.childNodes[2].innerHTML) // Mac
+                    CreateCell(LiveListTable, row, file.childNodes[3].innerHTML) // auth
+                    CreateCell(LiveListTable, row, file.childNodes[4].innerHTML) // encry
+                    CreateCell(LiveListTable, row, file.childNodes[5].innerHTML) // radio
+                    CreateCell(LiveListTable, row, file.childNodes[6].innerHTML) // chan
+                    CreateCell(LiveListTable, row, file.childNodes[7].innerHTML) // FA
+                    CreateCell(LiveListTable, row, file.childNodes[8].innerHTML) // LA
+                    CreateCell(LiveListTable, row, file.childNodes[9].innerHTML) // lat
+                    CreateCell(LiveListTable, row, file.childNodes[10].innerHTML) // long
+                    CreateCell(LiveListTable, row, file.childNodes[11].innerHTML) // Title
+                    CreateCell(LiveListTable, row, file.childNodes[12].innerHTML) // Username
+                }
+            }
+        }
+        return true;
+    }
+}
+
 function readCookie(name) {
     return (name = new RegExp('(?:^|;\\s*)' + ('' + name).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '=([^;]*)').exec(document.cookie)) && name[1];
 }
@@ -355,8 +446,7 @@ function CreateCell(table, row, data, colspan) {
     table.appendChild(row);
 }
 
-function createTable(tableName, span)
-{
+function createTable(tableName, span) {
     var td, tr, autoRow;
     //console.log("tableName: "+tableName);
     tr = document.createElement("tr");
@@ -371,14 +461,13 @@ function createTable(tableName, span)
     return autoRow;
 }
 
-function clearTable(tableName) {
-    var table_to_clean;
-
+function clearTable(tableName, skip) {
+    var table_to_clean, loop;
     table_to_clean = document.getElementById(tableName);
     //console.log(tableName+" Length: "+table_to_clean.childNodes.length);
     if (table_to_clean.childNodes.length > 0) {
         for (loop = table_to_clean.childNodes.length -1; loop >= 0 ; loop--) {
-            if(loop < 4)
+            if(loop <= skip)
             {
                 continue;
             }
@@ -387,9 +476,16 @@ function clearTable(tableName) {
     }
 }
 
-function myLoop () {           //  create a loop function
+function ScheduleLoop () {           //  create a loop function
     setInterval(function () {    //  call a 3s setTimeout when the loop is called
         send('import_waiting');          //  your code here
         currentRequest = "import_waiting";
     }, 2000);
+}
+
+function LiveLoop () {           //  create a loop function
+    setInterval(function () {    //  call a 3s setTimeout when the loop is called
+        send('list|25');          //  your code here
+        currentRequest = "LiveList";
+    }, 1000);
 }

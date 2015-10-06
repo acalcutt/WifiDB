@@ -18,6 +18,15 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 $lastedit			=	"2015-08-30";
 $dbcore->daemon_name	=	"LiveAPExport";
 
+echo "
+WiFiDB".$dbcore->ver_array['wifidb']."
+Codename: ".$dbcore->ver_array['codename']."
+ - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
+PID File: [ $dbcore->pid_file ]
+PID: [ $dbcore->This_is_me ]
+ Log Level is: ".$dbcore->log_level."\n\n\n";
+
 $arguments = $dbcore->parseArgs($argv);
 
 if(@$arguments['h'])
@@ -117,56 +126,52 @@ if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
 
 $dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
 
-echo "
-WiFiDB".$dbcore->ver_array['wifidb']."
-Codename: ".$dbcore->ver_array['codename']."
- - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
-Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
-PID File: [ $dbcore->pid_file ]
-PID: [ $dbcore->This_is_me ]
- Log Level is: ".$dbcore->log_level."\n\n\n";
-
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 
-$sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes`, `t2`.`completed` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id`";
+$sql = "SELECT
+            `t1`.`id`,
+            `t1`.`username`,
+            `t1`.`session_id`,
+            `t2`.`timestamp`,
+            `t2`.`title`,
+            `t2`.`notes`,
+            `t2`.`completed`
+        FROM `wifi`.`live_users` AS `t1`
+            LEFT JOIN `wifi`.`live_titles` AS `t2`
+            ON `t2`.`id` = `t1`.`title_id`
+            ORDER BY `t2`.`timestamp` DESC";
+var_dump("Before Fetch: ".microtime(1));
 $return = $dbcore->sql->conn->query($sql);
+$this->sql->checkError( $return, __LINE__, __FILE__);
+var_dump("After Fetch: ".microtime(1));
 $AllUsers = $return->fetchAll(2);
 foreach($AllUsers as $user)
 {
-    var_dump($user);
-    if($user['completed'])
+    $timestamp_int = strtotime($user['timestamp']);
+    if((int)$user['completed'] === 1)
     {
+        var_dump($user);
         echo "Getting APs for Title...\r\n";
-
         $user_sql = "SELECT `id` FROM `wifi`.`live_aps` WHERE `session_id` = ?";
         $user_prep = $dbcore->sql->conn->prepare($user_sql);
         $user_prep->bindParam(1, $user['session_id'], PDO::PARAM_STR);
-        $user_prep->execute();
+        var_dump("Before Fetch Title Details: ".microtime(1));
+        $this->sql->checkError( $user_prep->execute(), __LINE__, __FILE__);
+        var_dump("After Fetch Table Details: ".microtime(1));
         $fetch = $user_prep->fetchAll(2);
+        var_dump($fetch);
         foreach($fetch as $row)
         {
-            echo "---------------------------------------------------------------------------------------------------------\r\n";
-            var_dump($row);
             echo "-----------------------------------------------------------------\r\n";
-            $ap_sql = "SELECT
-                    `live_aps`.`id`, `live_aps`.`ssid`, `live_aps`.`mac`, `live_aps`.`auth`, `live_aps`.`encry`, `live_aps`.`sectype`,
-                    `live_aps`.`chan`, `live_aps`.`radio`, `live_aps`.`BTx`, `live_aps`.`OTx`, `live_aps`.`NT`, `live_aps`.`Label`,
-                    `live_aps`.`FA`, `live_aps`.`LA`, `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
-                    `live_gps`.`alt`, `live_gps`.`geo`, `live_gps`.`kmh`, `live_gps`.`mph`, `live_gps`.`track`, `live_gps`.`timestamp` AS `GPS_timestamp`,
-                    `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`time_stamp` AS `signal_timestamp`
-                     FROM `wifi`.`live_aps` INNER JOIN `wifi`.`live_signals` ON
-                         `live_signals`.`ap_id`=`live_aps`.`id` INNER JOIN
-                         `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
-            $ap_prep = $dbcore->sql->conn->prepare($ap_sql);
-            $ap_prep->bindParam(1, $row['id'], PDO::PARAM_STR);
-            $ap_prep->execute();
-            $fetch_ap = $ap_prep->fetchAll(2);
+            var_dump($row['id']);
+            $fetch_ap = $dbcore->GetLiveAP();
             foreach($fetch_ap as $sigHistory)
             {
-                var_dump($sigHistory);
+                #var_dump($sigHistory);
+                break;
             }
-            echo "-----------------------------------------------------------------\r\n";
         }
     }
 }
+echo "DONE!!\r\n";

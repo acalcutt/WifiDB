@@ -1,4 +1,4 @@
-{include file="vistumbler_header.tpl"}
+{include file="header.tpl"}
                         <tr>
                             <td class="cell_side_left">&nbsp;</td>
                             <td class="cell_color_centered" align="center" colspan="2">
@@ -24,4 +24,4 @@
                             </td>
                             <td class="cell_side_right">&nbsp;</td>
                         </tr>
-{include file="vistumbler_footer.tpl"}
+{include file="footer.tpl"}
