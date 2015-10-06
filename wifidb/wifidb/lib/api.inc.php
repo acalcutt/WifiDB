@@ -67,7 +67,7 @@ class api extends dbcore
         }
         $APSelectSQL = "SELECT `ssid`, `mac`, `auth`, `encry`, `sectype`,
                           `chan`, `radio`, `BTx`, `OTx`, `NT`, `Label`, `FA`, `LA`
-                        FROM `wifi`.`live_aps` WHERE `id` = ?";
+                        FROM `live_aps` WHERE `id` = ?";
         $ap_prep = $this->sql->conn->prepare($APSelectSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
         #var_dump("Before JOIN query: ".microtime(1));
@@ -80,9 +80,9 @@ class api extends dbcore
                     `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
                     `live_gps`.`alt`, `live_gps`.`geo`, `live_gps`.`kmh`, `live_gps`.`mph`, `live_gps`.`track`, `live_gps`.`timestamp` AS `GPS_timestamp`,
                     `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`timestamp` AS `signal_timestamp`
-                     FROM `wifi`.`live_aps` INNER JOIN `wifi`.`live_signals` ON
+                     FROM `live_aps` INNER JOIN `live_signals` ON
                          `live_signals`.`ap_id`=`live_aps`.`id` INNER JOIN
-                         `wifi`.`live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
+                         `live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
         $ap_prep = $this->sql->conn->prepare($SigHistSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
         #var_dump("Before JOIN query: ".microtime(1));
@@ -96,7 +96,7 @@ class api extends dbcore
     {
         #
         $sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code`, `asciiname`, `latitude`, `longitude`
-		FROM `wifi`.`geonames`
+		FROM `geonames`
 		WHERE `latitude` >= ?
 		AND `latitude` <= ?
 		AND `longitude` <= ?
@@ -176,7 +176,7 @@ class api extends dbcore
         {
             $admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
 
-            $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin1` WHERE `admin1`= ?";
+            $sql = "SELECT `asciiname` FROM `geonames_admin1` WHERE `admin1`= ?";
             $admin1_res = $this->sql->conn->prepare($sql);
             $admin1_res->bindParam(1, $admin1, PDO::PARAM_STR);
             $this->sql->checkError($admin1_res->execute(), __LINE__, __FILE__);
@@ -185,13 +185,13 @@ class api extends dbcore
         if(is_numeric($geo_array['admin2 code']))
         {
             $admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
-            $sql = "SELECT `asciiname` FROM `wifi`.`geonames_admin2` WHERE `admin2`= ? ";
+            $sql = "SELECT `asciiname` FROM `geonames_admin2` WHERE `admin2`= ? ";
             $admin2_res = $this->sql->conn->prepare($sql);
             $admin2_res->bindParam(1, $admin2, PDO::PARAM_STR);
             $this->sql->checkError($admin2_res->execute(), __LINE__, __FILE__);
             $admin2_array = $admin2_res->fetch(1);
         }
-        $sql = "SELECT `Country` FROM `wifi`.`geonames_country_names` WHERE `ISO` LIKE ? LIMIT 1";
+        $sql = "SELECT `Country` FROM `geonames_country_names` WHERE `ISO` LIKE ? LIMIT 1";
         $country_res = $this->sql->conn->prepare($sql);
         $code = $geo_array['country code']."%";
         $country_res->bindParam(1, $code, PDO::PARAM_STR);
@@ -221,13 +221,13 @@ class api extends dbcore
         }
         else
         {
-            $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1");
+            $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
             $files_prep->bindParam(1, $hash, PDO::PARAM_STR);
-            $imp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_importing` WHERE `hash` = ? LIMIT 1");
+            $imp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_importing` WHERE `hash` = ? LIMIT 1");
             $imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-            $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_tmp` WHERE `hash` = ? LIMIT 1");
+            $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
             $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-            $bad_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_bad` WHERE `hash` = ? LIMIT 1");
+            $bad_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_bad` WHERE `hash` = ? LIMIT 1");
             $bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
             $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
@@ -276,9 +276,9 @@ class api extends dbcore
         $ext			= $details['ext'];
         $filename	   = $details['filename'];
 
-        $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files_tmp` WHERE `hash` = ? LIMIT 1");
+        $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
         $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `wifi`.`files` WHERE `hash` = ? LIMIT 1");
+        $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
         $files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
         $this->sql->checkError($tmp_prep->execute(), __LINE__, __FILE__);
@@ -328,7 +328,7 @@ class api extends dbcore
                 {
                     $this->mesg['otherusers'] = $otherusers;
                 }
-                $sql = "INSERT INTO `wifi`.`files_tmp`
+                $sql = "INSERT INTO `files_tmp`
 								( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
 						VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
                 $result = $this->sql->conn->prepare( $sql );
@@ -361,8 +361,8 @@ class api extends dbcore
 
         #var_dump("AP_HASH: ".$ap_hash);
         #var_dump($this->sec->SessionID);
-        $sql = "SELECT `t1`.`id`, `t1`.`ssid`, `t1`.`mac`, `t1`.`chan`, `t1`.`sectype`, `t1`.`auth`, `t1`.`encry`, `t1`.`radio`, `t1`.`session_id`, `t1`.`lat`, `t1`.`long` FROM `wifi`.`live_aps` as `t1`
-                  INNER JOIN `wifi`.`live_users` as `t2`
+        $sql = "SELECT `t1`.`id`, `t1`.`ssid`, `t1`.`mac`, `t1`.`chan`, `t1`.`sectype`, `t1`.`auth`, `t1`.`encry`, `t1`.`radio`, `t1`.`session_id`, `t1`.`lat`, `t1`.`long` FROM `live_aps` as `t1`
+                  INNER JOIN `live_users` as `t2`
                   ON `t1`.`session_id` = ?
                   WHERE ap_hash = ?
                   LIMIT 1";
@@ -380,7 +380,7 @@ class api extends dbcore
             $ap_id = $array['id'];
             $this->mesg[] = "Update_AP" ;
 
-            $sql = "SELECT `id`, `lat`, `long` FROM `wifi`.`live_gps` WHERE `ap_id` = ? ORDER BY `timestamp` DESC";
+            $sql = "SELECT `id`, `lat`, `long` FROM `live_gps` WHERE `ap_id` = ? ORDER BY `timestamp` DESC";
             $result = $this->sql->conn->prepare($sql);
             $result->bindParam(1, $ap_id, PDO::PARAM_INT);
             $this->sql->checkError($result->execute(), __LINE__, __FILE__);
@@ -388,7 +388,7 @@ class api extends dbcore
             if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
             {
                 $this->mesg[] = "Old Location, New Signal";
-                $gps_select = "SELECT id FROM `wifi`.`live_gps` WHERE `lat` = ? AND `long` = ?";
+                $gps_select = "SELECT id FROM `live_gps` WHERE `lat` = ? AND `long` = ?";
                 $gps_prep = $this->sql->conn->prepare($gps_select);
                 $gps_prep->bindParam(1, $array['lat'], PDO::PARAM_STR);
                 $gps_prep->bindParam(2, $array['long'], PDO::PARAM_STR);
@@ -396,7 +396,7 @@ class api extends dbcore
                 $this->sql->checkError( $gps_prep->execute(), __LINE__, __FILE__);
                 $fetch = $gps_prep->fetch(2);
 
-                $sql_sig = "INSERT INTO `wifi`.`live_signals`
+                $sql_sig = "INSERT INTO `live_signals`
 						(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
 						VALUES ('', ?, ?, ?, ?, ?)";
                 $prep_sig = $this->sql->conn->prepare($sql_sig);
@@ -410,7 +410,7 @@ class api extends dbcore
                 $this->mesg[] = "Added Signal data.";
 
                 $this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
-                $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ? WHERE `id` = ?";
+                $sql = "UPDATE `live_aps` SET `LA` = ? WHERE `id` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $LA, PDO::PARAM_STR);
                 $prep->bindParam(2, $ap_id, PDO::PARAM_INT);
@@ -420,7 +420,7 @@ class api extends dbcore
             else
             {
                 $this->mesg[] = "New_location";
-                $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `timestamp`, `ap_id`)
+                $sql = "INSERT INTO `live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `timestamp`, `ap_id`)
 											   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 $prep = $this->sql->conn->prepare($sql);
@@ -440,7 +440,7 @@ class api extends dbcore
 
                 $this->mesg[] = "Added GPS data.";
 
-                $sql_sig = "INSERT INTO `wifi`.`live_signals`
+                $sql_sig = "INSERT INTO `live_signals`
 					(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
 					VALUES ('', ?, ?, ?, ?, ?)";
                 $prep_sig = $this->sql->conn->prepare($sql_sig);
@@ -453,7 +453,7 @@ class api extends dbcore
 
                 $this->mesg[] = "Added Signal data.";
 
-                $sql = "UPDATE `wifi`.`live_aps` SET `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
+                $sql = "UPDATE `live_aps` SET `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
                 #echo $sql."<br /><br />";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $LA, PDO::PARAM_STR);
@@ -468,7 +468,7 @@ class api extends dbcore
         {
             $FA = $data['date']." ".$data['time'];
             $label = ( isset($data['Label']) ? $data['Label'] : "" );
-            $insert_sql = "INSERT INTO `wifi`.`live_aps` (id, ssid, mac, auth, encry, sectype, radio, chan, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, `long`)
+            $insert_sql = "INSERT INTO `live_aps` (id, ssid, mac, auth, encry, sectype, radio, chan, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, `long`)
                               VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $insert_prep = $this->sql->conn->prepare($insert_sql);
             $insert_prep->bindParam(1 , $data['ssid'], PDO::PARAM_STR);
@@ -494,7 +494,7 @@ class api extends dbcore
 
             $this->mesg[] = "Added AP data.";
 
-            $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`,`timestamp`, `ap_id`) VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO `live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`,`timestamp`, `ap_id`) VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
             $prep->bindParam(2, $data['long'], PDO::PARAM_STR);
@@ -514,7 +514,7 @@ class api extends dbcore
 
             $this->mesg[] = "Added GPS data.";
 
-            $sql_sig = "INSERT INTO `wifi`.`live_signals`
+            $sql_sig = "INSERT INTO `live_signals`
 						(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
 						VALUES ('', ?, ?, ?, ?, ?)";
 
@@ -549,7 +549,7 @@ class api extends dbcore
         $use = array();
         foreach($listings as $macandsig)
         {
-            $sql	=   "SELECT `signals` FROM `wifi`.`wifi_pointers` WHERE `mac` LIKE ? LIMIT 1";
+            $sql	=   "SELECT `signals` FROM `wifi_pointers` WHERE `mac` LIKE ? LIMIT 1";
             $result =   $this->sql->conn->prepare($sql);
             $result->bindParam(1, $macandsig[1]);
             $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
@@ -563,7 +563,7 @@ class api extends dbcore
                 $gps_id = $ids_exp[0];
 
                 $sql = "SELECT `lat`, `long`, `sats`, `date`, `time`
-						FROM  `wifi`.`wifi_gps` WHERE `id` = '$gps_id' ";
+						FROM  `wifi_gps` WHERE `id` = '$gps_id' ";
 
                 $result = $this->sql->conn->query($sql);
                 if($this->sql->checkError($result, __LINE__, __FILE__))
@@ -594,7 +594,7 @@ class api extends dbcore
 
     public function GetTitleIDFromSessionID()
     {
-        $sql = "SELECT `title_id` FROM `wifi`.`live_users` WHERE `session_id` = ?";
+        $sql = "SELECT `title_id` FROM `live_users` WHERE `session_id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
         $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
@@ -613,7 +613,7 @@ class api extends dbcore
                 #var_dump("Completed Set");
                 $TitleID = $this->GetTitleIDFromSessionID();
                 $completed = (int)$_REQUEST['completed'];
-                $sql = "UPDATE `wifi`.`live_titles` SET `completed` = ? WHERE `id` = ?";
+                $sql = "UPDATE `live_titles` SET `completed` = ? WHERE `id` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $completed, PDO::PARAM_INT);
                 $prep->bindParam(2, $TitleID, PDO::PARAM_INT);
@@ -622,7 +622,7 @@ class api extends dbcore
                 return 2;
             }
 
-            $sql = "SELECT `title_id` FROM `wifi`.`live_users` LEFT JOIN `wifi`.`live_titles` ON `live_users`.`session_id` = ? AND `live_titles`.`completed` = 0 WHERE `live_users`.`session_id` = ?";
+            $sql = "SELECT `title_id` FROM `live_users` LEFT JOIN `live_titles` ON `live_users`.`session_id` = ? AND `live_titles`.`completed` = 0 WHERE `live_users`.`session_id` = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
             $prep->bindParam(2, $_REQUEST['SessionID']);
@@ -640,7 +640,7 @@ class api extends dbcore
             if ($this->sec->login_check)
             {
                 #var_dump("LoginCheck True");
-                $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `wifi`.`live_users` AS `t1` LEFT JOIN `wifi`.`live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
+                $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `live_users` AS `t1` LEFT JOIN `live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $this->username, PDO::PARAM_STR);
                 $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
@@ -651,7 +651,7 @@ class api extends dbcore
                     #var_dump($timestamp);
                     #var_dump("Title Update");
                     $this->sec->SessionID = $fetch['session_id'];
-                    $sql = "UPDATE `wifi`.`live_titles` SET `timestamp` = ? WHERE id = ?";
+                    $sql = "UPDATE `live_titles` SET `timestamp` = ? WHERE id = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                     $prep->bindParam(2, $title_id, PDO::PARAM_INT);
@@ -667,7 +667,7 @@ class api extends dbcore
                 $this->sec->SessionID = $_REQUEST['SessionID'];
 
                 #var_dump("Timestamp: ".$timestamp);
-                $sql = "UPDATE `wifi`.`live_titles` SET `timestamp` = ? WHERE `id` = ?";
+                $sql = "UPDATE `live_titles` SET `timestamp` = ? WHERE `id` = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                 $prep->bindParam(2, $title_id, PDO::PARAM_INT);
@@ -705,7 +705,7 @@ class api extends dbcore
             return 0;
         } else {
             $timestamp = date("Y-m-d H:i:s");
-            $insertTitle = "INSERT INTO `wifi`.`live_titles` (`id`, `title`, `notes`, `timestamp`, `completed` ) VALUES ('', ?, ?, ?, 0)";
+            $insertTitle = "INSERT INTO `live_titles` (`id`, `title`, `notes`, `timestamp`, `completed` ) VALUES ('', ?, ?, ?, 0)";
             $prep_Title = $this->sql->conn->prepare($insertTitle);
             $prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
             $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
@@ -718,7 +718,7 @@ class api extends dbcore
         $this->sec->SessionID = $this->sec->GenerateKey(64);
         #var_dump("Generated: " . $this->sec->SessionID);
 
-        $sessionInsert = "INSERT INTO `wifi`.`live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+        $sessionInsert = "INSERT INTO `live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
         $prep_user = $this->sql->conn->prepare($sessionInsert);
         $prep_user->bindParam(1, $this->sec->username, PDO::PARAM_STR);
         $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
@@ -734,7 +734,7 @@ class api extends dbcore
         $date = date("Y-m-d H:i:s");
         $this->sec->SessionID = $this->sec->GenerateKey(64);
         $note = "Live Imports Using Old API";
-        $insertTitle = "INSERT INTO `wifi`.`live_titles` (id, title, notes) VALUES ('', ?, ?)";
+        $insertTitle = "INSERT INTO `live_titles` (id, title, notes) VALUES ('', ?, ?)";
         $prep_Title = $this->sql->conn->prepare($insertTitle);
         $prep_Title->bindParam(1, $date, PDO::PARAM_STR);
         $prep_Title->bindParam(2, $note, PDO::PARAM_STR);
@@ -742,7 +742,7 @@ class api extends dbcore
         $TitleID = $this->sql->conn->lastInsertID();
         #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
 
-        $sessionInsert = "INSERT INTO `wifi`.`live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+        $sessionInsert = "INSERT INTO `live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
         $prep_user = $this->sql->conn->prepare($sessionInsert);
         $prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
         $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
@@ -784,7 +784,7 @@ class api extends dbcore
 
     public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
     {
-        $sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
+        $sql2 = "SELECT * FROM `wifi_pointers` WHERE
 				`ssid` LIKE ? AND
 				`mac` LIKE ? AND
 				`radio` LIKE ? AND

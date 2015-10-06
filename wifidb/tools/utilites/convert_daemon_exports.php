@@ -1,4 +1,7 @@
 <?php
+/*
+ * Convert non-compressed KML files to KMZ files.
+ */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 

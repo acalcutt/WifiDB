@@ -355,7 +355,7 @@ function parseLiveList(response, LiveListTable) {
     if (response == null) {
         return false;
     } else {
-        //console.log(response);
+        console.log(response);
 
         xmlDoc = $.parseXML(response),
         $xml = $(xmlDoc),

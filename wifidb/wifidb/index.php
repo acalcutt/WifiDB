@@ -24,31 +24,31 @@ define("SWITCH_EXTRAS", "");
 include('lib/init.inc.php');
 
 $usersa =  array();
-$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers`";
+$sql = "SELECT count(`id`) FROM `wifi_pointers`";
 #echo $sql;
 $result = $dbcore->sql->conn->query($sql);
 $rows = $result->fetch(2);
 
 
-$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `sectype`='1'";
+$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `sectype`='1'";
 $result = $dbcore->sql->conn->query($sql);
 $open = $result->fetch(2);
 
 
-$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `sectype`='2'";
+$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `sectype`='2'";
 $result = $dbcore->sql->conn->query($sql);
 $wep = $result->fetch(2);
 
 
-$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `sectype`='3'";
+$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `sectype`='3'";
 $result = $dbcore->sql->conn->query($sql);
 $sec = $result->fetch(2);
 
-$sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY ID DESC LIMIT 1";
+$sql = "SELECT * FROM `wifi_pointers` ORDER BY ID DESC LIMIT 1";
 $result = $dbcore->sql->conn->query($sql);
 $last = $result->fetch(2);
 
-$sql = "SELECT `username` FROM `wifi`.`user_imports`";
+$sql = "SELECT `username` FROM `user_imports`";
 $result = $dbcore->sql->conn->query($sql);
 while($user_array = $result->fetch(2))
 {
@@ -57,11 +57,11 @@ while($user_array = $result->fetch(2))
 $usersa = array_unique($usersa);
 $usercount = count($usersa);
 
-$sql = "SELECT * FROM `wifi`.`user_imports` order by id desc limit 1";
+$sql = "SELECT * FROM `user_imports` order by id desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $newest_array = $result->fetch(2);
 
-$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi`.`wifi_pointers` order by `id` desc limit 1";
+$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi_pointers` order by `id` desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
@@ -98,7 +98,7 @@ if ($usercount == NULL)
     $lastid = 0;
 }else
 {
-    $sql = "SELECT * FROM `wifi`.`user_imports` order by `id` desc limit 1";
+    $sql = "SELECT * FROM `user_imports` order by `id` desc limit 1";
     $result = $dbcore->sql->conn->query($sql);
     $lastuser = $result->fetch(2);
     #var_dump($lastuser);

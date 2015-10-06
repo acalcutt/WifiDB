@@ -10,10 +10,12 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 define("SWITCH_SCREEN", "CLI");
-define("SWITCH_EXTRAS", "import");
+define("SWITCH_EXTRAS", "cli");
 
-require('../config.inc.php');
-require( $daemon_config['wifidb_install']."lib/init.inc.php" );
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
 $dbcore->verbosed("Starting Conversion test script.....");
 
 

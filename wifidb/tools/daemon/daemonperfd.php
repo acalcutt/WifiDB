@@ -1,16 +1,11 @@
 <?php
-error_reporting(E_ALL|E_STRICT);
-global $screen_output;
-$screen_output = "CLI";
-ini_set("memory_limit","3072M"); //lots of GPS cords need lots of memory
-###########################
-if(PHP_OS == "WINNT"){$dim = "\\";}else{$dim = "/";}
-if(!(require_once 'config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($GLOBALS['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require_once $GLOBALS['wifidb_install']."/lib/database.inc.php";
-require_once $GLOBALS['wifidb_install']."/lib/config.inc.php";
-require $GLOBALS['wifidb_install']."/lib/config.inc.php";
-require_once $GLOBALS['wifidb_install']."/cp/admin/lib/administration.inc.php";
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
+
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
 if(!file_exists($GLOBALS['daemon_log_folder']))
 {
 	if(mkdir($GLOBALS['daemon_log_folder']))

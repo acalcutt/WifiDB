@@ -145,7 +145,7 @@ switch($func)
 
 			$imports = array();
 			$usernames = array();
-			$sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports` ORDER BY `username`, `title`";
+			$sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `user_imports` ORDER BY `username`, `title`";
 			$result = $dbcore->sql->conn->query($sql);
 			while($user_array = $result->fetch(2))
 			{
@@ -158,7 +158,7 @@ switch($func)
 							 );
 			}
 
-			$sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username`";
+			$sql = "SELECT `username` FROM `user_imports` ORDER BY `username`";
 			$result = $dbcore->sql->conn->query($sql);
 			while($user_array = $result->fetch(2))
 			{

@@ -72,7 +72,7 @@ switch(strtolower($radio))
 
 #$conn = new mysqli($host, wifi_user, wifi_pwd);
 $conn = new mysqli('172.16.1.28', 'root', 'W!res191');
-$sql = "SELECT * FROM `wifi`.`live_aps` where mac = '$mac' AND ssid='$ssids' AND sectype='$sectype' AND radio='$radios' AND chan='$chan' AND username='$username';";
+$sql = "SELECT * FROM `live_aps` where mac = '$mac' AND ssid='$ssids' AND sectype='$sectype' AND radio='$radios' AND chan='$chan' AND username='$username';";
 #echo $sql."<br />";
 
 $result = $conn->query($sql);
@@ -104,7 +104,7 @@ if($ap['id'])
        $long = str_replace("-", "W ", $long);
     }
 
-    $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
+    $sql = "INSERT INTO `live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
     VALUES ('', '$lat', '$long', '$sats', '$hdp', '$alt', '$geo', '$kmh', '$mph', '$track', '$date', '$time', '$session_id');";
     #echo str_replace("
     #","<br />", $sql."<br /><br />");
@@ -113,7 +113,7 @@ if($ap['id'])
     {
         $ins_sig = $ap['sig'].'|'.$sig.'-'.$conn->insert_id;
         $id = $ap['id'];
-        $sql = "UPDATE `wifi`.`live_aps` SET `sig`='$ins_sig', `lu` = '$date $time', `lat` = '$lat', `long` = '$long' WHERE `id`='$id'";
+        $sql = "UPDATE `live_aps` SET `sig`='$ins_sig', `lu` = '$date $time', `lat` = '$lat', `long` = '$long' WHERE `id`='$id'";
         #echo $sql."</br>";
         if($conn->query($sql))
         {
@@ -150,14 +150,14 @@ if($ap['id'])
        $long = str_replace("-", "W ", $long);
     }
 
-    $sql = "INSERT INTO `wifi`.`live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
+    $sql = "INSERT INTO `live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
     VALUES ('', '$lat', '$long', '$sats', '$hdp', '$alt', '$geo', '$kmh', '$mph', '$track', '$date', '$time', '$session_id');";
     #echo str_replace("
     #","<br />", $sql."<br /><br />");
 
     if($conn->query($sql))
     {
-        $sql = "INSERT INTO  `wifi`.`live_aps` ( `id` ,`session_id`, `ssid` , `mac` ,  `chan`, `radio`,`auth`,`encry`, `sectype`, `sig`, `username`, `BTx`, `OTx`, `NT`, `Label`, `fa`, `lu`, `lat`, `long`)
+        $sql = "INSERT INTO  `live_aps` ( `id` ,`session_id`, `ssid` , `mac` ,  `chan`, `radio`,`auth`,`encry`, `sectype`, `sig`, `username`, `BTx`, `OTx`, `NT`, `Label`, `fa`, `lu`, `lat`, `long`)
         VALUES ('', '$session_id', '$ssids', '$mac','$chan', '$radios', '$auth', '$encry', '$sectype', '$sig-$conn->insert_id',  '$username', '$BTx', '$OTx', '$NT', '$label', '$date $time', '$date $time', '$lat', '$long')";
         #echo str_replace("
         #","<br />", $sql."<br /><br />");

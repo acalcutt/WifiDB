@@ -148,7 +148,7 @@ $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
 $currentrun = time(); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
@@ -196,8 +196,15 @@ else
 		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
 			$NextID = $dbcore->GetNextImportID();
 		}
-		var_dump($NextID);
-		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `wifi`.`files_importing` WHERE `id` = ?";
+		if(empty($NextID) && $dbcore->daemonize)
+        {
+            echo "No new Imports. Waiting.\r\n";
+            sleep(30);
+            continue;
+        }
+
+        var_dump($NextID);
+		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `id` = ?";
 		$result = $dbcore->sql->conn->prepare($daemon_sql);
 		$result->bindParam(1, $NextID, PDO::PARAM_INT);
 		$result->execute();

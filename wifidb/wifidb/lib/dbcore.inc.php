@@ -146,7 +146,7 @@ class dbcore
 
 	function GetAPhash($id)
 	{
-		$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+		$sql = "SELECT `ap_hash` FROM `wifi_pointers` WHERE `id` = '$id'";
 		$result = $this->sql->conn->query($sql);
         $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ret = $result->fetch(2);
@@ -169,7 +169,7 @@ class dbcore
 
     public function GetAllAnnouncments()
     {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`annunc` ORDER BY `id` ASC");
+        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `annunc` ORDER BY `id` ASC");
         $this->sql->checkError($result, __LINE__,__FILE__);
         $fetched = $result->fetchAll(2);
         return $fetched;
@@ -177,7 +177,7 @@ class dbcore
 
     public function GetAllActiveAnnouncments()
     {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `wifi`.`annunc` WHERE `set` = '1' ORDER BY `id` ASC");
+        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `annunc` WHERE `set` = '1' ORDER BY `id` ASC");
         $this->sql->checkError( $result, __LINE__, __FILE__);
         $fetched = $result->fetchAll(2);
         return $fetched;
@@ -487,7 +487,7 @@ class dbcore
 
 	private function log_sql($message, $type, $prefix, $datetime)
 	{
-		$sql = "INSERT INTO `wifi`.`log` (`id`, `message`, `level`, `timestamp`, `prefix`) VALUES ('', ?, ?, ?, ?)";
+		$sql = "INSERT INTO `log` (`id`, `message`, `level`, `timestamp`, `prefix`) VALUES ('', ?, ?, ?, ?)";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $message, PDO::PARAM_STR);
 		$prep->bindParam(2, $type, PDO::PARAM_STR);
@@ -567,7 +567,7 @@ class dbcore
 
 		#var_dump("FindManuf Mac: ".$mac);
 		#var_dump($this->manuf_array[$man_mac[0]]);
-		$result = $this->sql->conn->prepare("SELECT manuf FROM `wifi`.`manufactures` WHERE `mac` = ?");
+		$result = $this->sql->conn->prepare("SELECT manuf FROM `manufactures` WHERE `mac` = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
         $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
         if($result->rowCount() > 0)

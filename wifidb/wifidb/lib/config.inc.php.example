@@ -102,6 +102,8 @@ $config = array
     'db_pwd'                =>   '<-SQL Password->',
     'collate'               =>   'utf8_bin',
     'engine'                =>   'innodb',
+	'driver'                =>   'PDO',
+	'db'                =>   'wifi',
 
     #---------------- Export Info ----------------#
     'open_loc'              =>   'https://raw.githubusercontent.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png',
