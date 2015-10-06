@@ -190,21 +190,7 @@ if ($sort=="" or !is_string($sort)){$sort="chan";}
                             <td class="cell_side_left">&nbsp;</td>
                             <td class="cell_color_centered" align="center" colspan="2">
                                 <div align="center">
-<SCRIPT LANGUAGE="JavaScript">
-    // Row Hide function.
-    // by tcadieux
-    function expandcontract(tbodyid,ClickIcon)
-    {
-        if (document.getElementById(ClickIcon).innerHTML == "+")
-        {
-            document.getElementById(tbodyid).style.display = "";
-            document.getElementById(ClickIcon).innerHTML = "-";
-        }else{
-            document.getElementById(tbodyid).style.display = "none";
-            document.getElementById(ClickIcon).innerHTML = "+";
-        }
-    }
-</SCRIPT>
+
 <h2>Showing the Last <?php echo $view; ?> Seconds worth of APs.</h2>
 <table border="1" width="100%" cellspacing="0">
     <tr class="style4">

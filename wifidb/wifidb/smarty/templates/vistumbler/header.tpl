@@ -2,14 +2,14 @@
 <html>
     <head>
         <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
+		{$WebSocketScripts|default:""}
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
-        {$wifidb_meta_header}
-        {$redirect_func}
+        {$wifidb_meta_header|default:""}
+        {$redirect_func|default:""}
     </head>
-    <body style="background-color: #145285" {$redirect_html}>
-        {$install_header}
-        {$wifidb_announce_header}
-        
+    <body style="background-color: #145285" {$redirect_html|default:""} {$OnLoad|default:""}>
+        {$install_header|default:""}
+        {$wifidb_announce_header|default:""}
         <table style="width: 90%; " class="no_border" align="center">
             <tr>
                 <td>
@@ -59,21 +59,20 @@
                                     <a href="{$wifidb_host_url}opt/export.php?func=index">Export</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/search.php">Search</a></strong></div>
-                                <!--<div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>-->
+                                <div class="inside_text_bold"><strong>
+                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/userstats.php?func=allusers">View All Users</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a class="links" href="http://forum.techidiots.net/forum/viewforum.php?f=47">Help / Support</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}ver.php">WiFiDB Version</a></strong></div>
-								<!--
+
                                 {if $login_val eq "1"}
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}login.php?func=logout&return=%2Fwifidb%2F">Log Out</a></strong></div>
                                 {/if}
-								-->
-                                    
+
                                 <!--=========================-->
                             </td>
                             <td class="cell_side_right">&nbsp;</td>
@@ -97,7 +96,7 @@
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
-                                {$wifidb_login_html|default:""}
+                                {$wifidb_login_html|default:""}{$admin_login_link|default:''}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
                                 <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>

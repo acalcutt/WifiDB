@@ -1,3 +1,9 @@
+html,body {
+    font:normal 0.9em arial,helvetica;
+    background-color: #145285;
+}
+
+
 .content_head{
 				color: #A9C6FA;
 }

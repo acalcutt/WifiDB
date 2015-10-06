@@ -5,7 +5,16 @@
         <title>Wireless DataBase  *Alpha* 0.21 Build 2  --> Main Page</title>
         <meta name="description" content="A Wireless Database based off of scans from Vistumbler." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, database, db, php, mysql" />        <link rel="stylesheet" href="https://live.wifidb.net/wifidb/themes/wifidb/styles.css"/>
     </head>
-    <body>
+	{php}
+	var_dump($_SERVER['PHP_SELF']);
+	if($_SERVER['PHP_SELF'] === '/opt/scheduling.php' )
+	{
+	echo '<body onload="init()">';
+	}else
+	{
+		echo '<body>';
+	}
+	{/php}
     <div align="center">
     <table width="100%" border="0" cellspacing="5" cellpadding="2">
         <tr style="background-color: #315573;">

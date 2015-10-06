@@ -18,5 +18,4 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $dbcore->verbose = 1;
 
-var_dump($dbcore->sec->CreateUser("pferland2", "blank", "pferland@outlook.com"));
-?>
+var_dump($dbcore->sec->CreateUser("pferland2", "blank", "pferland2@outlook.com"));

@@ -6,11 +6,12 @@
         <meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, database, db, php, mysql" />
         {$redirect_func}
     </head>
-    <body style="background-color: #145285" {$redirect_html}>
-        <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
-        
-        <table style="width: 90%; " class="no_border" align="center"><tr><td><p class='annunc_text'>Well... here we go again.... -phil</p></td></tr></table>
+	{php}
+		if($_SERVER['request_page'])
 
+	{/php}
+    <body {$redirect_html}>
+        <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
         <table style="width: 90%; " class="no_border" align="center">
             <tr>
                 <td>

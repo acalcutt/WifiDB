@@ -1,6 +1,6 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
+cp\index.php, Index page for the User Control Panel
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -19,14 +19,12 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
-global $switches;
-$switches = array('screen'=>"HTML",'extras'=>'');
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "cp");
 
 include('../lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'User Control Panel');
-
+$dbcore->smarty->assign('message', "");
 #$theme = $GLOBALS['theme'];
 $theme = "vistumbler";
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
@@ -138,7 +136,7 @@ if($login_check)
 			if($newArray['statistics']){$cp_profile['statistics'] = 'checked';}else{$cp_profile['statistics'] = 'unchecked';};
 			$cp_profile['username'] = $newArray['username'];
 			$cp_profile['id'] = $newArray['id'];
-			
+
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_email_prefs.tpl');
 

@@ -28,13 +28,14 @@ class frontend extends dbcore
 	#===========================#
 	#   __construct (default)   #
 	#===========================#
-	function __construct($config)
+	function __construct($config, &$SQL)
 	{
-		parent::__construct($config);
+		parent::__construct($config, $SQL);
 		if(strtolower(SWITCH_EXTRAS) != "api")
 		{
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
-			$this->sec->LoginCheck();
+            $this->all_users_data = NULL;
+            $this->sec->LoginCheck();
 			$this->meta = new stdClass();
 			$this->meta->ads = $config['ads'];
 			$this->meta->tracker = $config['tracker'];
@@ -297,99 +298,123 @@ class frontend extends dbcore
 	#   Grab the stats for All Users	#
 	#===================================#
 	Public function AllUsers()
-	{
-		$sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username` ASC";
-		$result = $this->sql->conn->query($sql);
+    {
+        $sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username` ASC";
+        $result = $this->sql->conn->query($sql);
 
-		$users_all = $result->fetchAll(2);
-		foreach($users_all as $user)
-		{
-			$user_all[] = $user['username'];
-		}
+        $users_all = $result->fetchAll(2);
+        var_dump(count($users_all));
+        if(count($users_all) !== 0)
+        {
+            foreach ($users_all as $user) {
+                $user_all[] = $user['username'];
+            }
 
-		$users = array_unique($user_all);
-		$tablerowid = 0;
-		$row_color = 0;
-		$this->all_users_data = array();
-		$prev_id = 0;
-		foreach($users as $user)
-		{
-			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username`= ? ORDER BY `id` ASC";
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user, PDO::PARAM_STR);
-			$prep->execute();
+            $users = array_unique($user_all);
+            $tablerowid = 0;
+            $row_color = 0;
+            $this->all_users_data = array();
+            $prev_id = 0;
+            foreach ($users as $user) {
+                $sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username`= ? ORDER BY `id` ASC";
+                $prep = $this->sql->conn->prepare($sql);
+                $prep->bindParam(1, $user, PDO::PARAM_STR);
+                $prep->execute();
 
-			$imports = (int) $prep->rowCount();
-			if($imports === 0){continue;}
+                $imports = (int)$prep->rowCount();
+                if ($imports === 0) {
+                    continue;
+                }
 
-			$row_color2 = 1;
-			$pre_user = 1;
-			$tablerowid++;
-			while ($user_array = $prep->fetch(2))
-			{
-				if($user_array['points'] === ""){continue;}
-				$username = $user_array['username'];
+                $row_color2 = 1;
+                $pre_user = 1;
+                $tablerowid++;
+                while ($user_array = $prep->fetch(2)) {
+                    if ($user_array['points'] === "") {
+                        continue;
+                    }
+                    $username = $user_array['username'];
 
-				if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
-				if ($user_array['date'] === ""){ $user_array['date']="No date, hmm..";}
+                    if ($user_array['title'] === "" or $user_array['title'] === " ") {
+                        $user_array['title'] = "UNTITLED";
+                    }
+                    if ($user_array['date'] === "") {
+                        $user_array['date'] = "No date, hmm..";
+                    }
 
-				$search = array('\n','\r','\n\r');
-				$user_array['notes'] = str_replace($search, "", $user_array['notes']);
+                    $search = array('\n', '\r', '\n\r');
+                    $user_array['notes'] = str_replace($search, "", $user_array['notes']);
 
-				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
-				$notes = $user_array['notes'];
-				$points = explode("-",$user_array['points']);
-				$pc = count($points);
+                    if ($user_array['notes'] == "") {
+                        $user_array['notes'] = "No Notes, hmm..";
+                    }
+                    $notes = $user_array['notes'];
+                    $points = explode("-", $user_array['points']);
+                    $pc = count($points);
 
-				if($pre_user)
-				{
-					if($prev_id == $user_array['id'] )
-					{$prev_id = $user_array['id'];continue 2;}
-					else{$prev_id = $user_array['id'];}
+                    if ($pre_user) {
+                        if ($prev_id == $user_array['id']) {
+                            $prev_id = $user_array['id'];
+                            continue 2;
+                        } else {
+                            $prev_id = $user_array['id'];
+                        }
 
-					if($row_color2 == 1)
-					{$row_color2 = 0; $color2 = "light";}
-					else{$row_color2 = 1; $color2 = "dark";}
+                        if ($row_color2 == 1) {
+                            $row_color2 = 0;
+                            $color2 = "light";
+                        } else {
+                            $row_color2 = 1;
+                            $color2 = "dark";
+                        }
 
-					if($row_color == 1)
-					{$row_color = 0; $color = "light";}
-					else{$row_color = 1; $color = "dark";}
+                        if ($row_color == 1) {
+                            $row_color = 0;
+                            $color = "light";
+                        } else {
+                            $row_color = 1;
+                            $color = "dark";
+                        }
 
-					$this->all_users_data[$user] = array(
-								'rowid'	=> $tablerowid,
-								'class'	=> $color,
-								'id'	   => $user_array['id'],
-								'imports'  => $imports,
-								'username' => $username,
-								'data'	 => array(
-													array(
-														'id'	=> $user_array['id'],
-														'class' => $color2,
-														'title' => $user_array['title'],
-														'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-														'aps'   => $pc,
-														'date'  => $user_array['date']
-													),
-												),
-							);
-					$pre_user = 0;
-				}else
-				{
-					if($row_color2 == 1)
-					{$row_color2 = 0; $color2 = "light";}
-					else{$row_color2 = 1; $color2 = "dark";}
+                        $this->all_users_data[$user] = array(
+                            'rowid' => $tablerowid,
+                            'class' => $color,
+                            'id' => $user_array['id'],
+                            'imports' => $imports,
+                            'username' => $username,
+                            'data' => array(
+                                array(
+                                    'id' => $user_array['id'],
+                                    'class' => $color2,
+                                    'title' => $user_array['title'],
+                                    'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+                                    'aps' => $pc,
+                                    'date' => $user_array['date']
+                                ),
+                            ),
+                        );
+                        $pre_user = 0;
+                    } else {
+                        if ($row_color2 == 1) {
+                            $row_color2 = 0;
+                            $color2 = "light";
+                        } else {
+                            $row_color2 = 1;
+                            $color2 = "dark";
+                        }
 
-					$this->all_users_data[$user]['data'][] = array(
-								'id'	=> $user_array['id'],
-								'class' => $color2,
-								'title' => $user_array['title'],
-								'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-								'aps'   => $pc,
-								'date'  => $user_array['date']
-							);
-				}
-			}
-		}
+                        $this->all_users_data[$user]['data'][] = array(
+                            'id' => $user_array['id'],
+                            'class' => $color2,
+                            'title' => $user_array['title'],
+                            'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+                            'aps' => $pc,
+                            'date' => $user_array['date']
+                        );
+                    }
+                }
+            }
+        }
 		return 1;
 	}
 

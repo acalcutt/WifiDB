@@ -22,7 +22,8 @@ if not, write to the
 <table  BORDER=0 CELLPADDING=0 CELLSPACING=0 style="width: 100%">
 	<tr>
 		<td colspan="6" class="style4">
-			{$user_cp_profile.message}
+			{$user_cp_profile.message|default:''}
+
 			<form method="post" action="?func=update_user_pref">
 				<table BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 100%">
 					<tr>

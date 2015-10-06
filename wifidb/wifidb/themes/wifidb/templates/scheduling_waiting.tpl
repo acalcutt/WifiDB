@@ -19,7 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
 		<meta http-equiv="refresh" content="15">
-                <table border="1" width="90%">
+                <table id="scheduling" border="1" width="90%">
                     <tr class="style4">
                         <th colspan="4">Scheduled Imports</th>
                     </tr>
@@ -67,7 +67,7 @@ if not, write to the
                         <td border="1">
                             {foreach item=wifidb_done from=$wifidb_done_all}
                             <br>
-                            <table style="background-color: {$wifidb_done.color}" border="1"  width="100%">
+                            <table style="background-color: {$wifidb_done.color}" border="1" width="100%">
                                 <tr class="style4">
                                     <th>ID</th>
                                     <th>Filename</th>

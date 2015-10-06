@@ -21,9 +21,9 @@ if not, write to the
 
 class daemon extends wdbcli
 {
-	public function __construct($config, $daemon_config)
+	public function __construct($config, $daemon_config, &$SQL)
 	{
-		parent::__construct($config, $daemon_config);
+		parent::__construct($config, $daemon_config, $SQL);
 		$this->default_user		 		=	$daemon_config['default_user'];
 		$this->default_title			=	$daemon_config['default_title'];
 		$this->default_notes			=	$daemon_config['default_notes'];
@@ -147,6 +147,11 @@ class daemon extends wdbcli
 	}
 
 
+    public function ExportLiveAPs()
+    {
+
+    }
+
 	public function GetNextImportID()
 	{
 		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp  WRITE");
@@ -156,7 +161,6 @@ class daemon extends wdbcli
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 		$LastInsert = $this->sql->conn->lastInsertID();
-		var_dump($LastInsert);
 
 		$select = "SELECT tmp_id FROM wifi.files_importing WHERE id = ?";
 		$prep = $this->sql->conn->prepare($select);
@@ -536,12 +540,12 @@ class daemon extends wdbcli
 
 	public function SetNextJob($job_id)
 	{
-		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"));
+		$nextrun = strtotime("+".$this->job_interval." minutes");
 		$this->verbosed("Setting Job Next Run to ".$nextrun, 1);
 
 		$sql = "UPDATE `wifi`.`schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
 		$prepnr = $this->sql->conn->prepare($sql);
-		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
+		$prepnr->bindParam(1, $nextrun, PDO::PARAM_INT);
 		$prepnr->bindParam(2, $this->StatusWaiting, PDO::PARAM_STR);
 		$prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
 
@@ -551,13 +555,13 @@ class daemon extends wdbcli
 
 	public function SetStartJob($job_id)
 	{
-		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"))."";
+		$nextrun = strtotime("+".$this->job_interval." minutes");
 		$this->verbosed("Starting - Job:".$this->daemon_name." Id:".$job_id, 1);
 
 		$sql = "UPDATE `wifi`.`schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
 		$prepsr = $this->sql->conn->prepare($sql);
 		$prepsr->bindParam(1, $this->StatusRunning, PDO::PARAM_STR);
-		$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
+		$prepsr->bindParam(2, $nextrun, PDO::PARAM_INT);
 		$prepsr->bindParam(3, $job_id, PDO::PARAM_INT);
 
 		$prepsr->execute();

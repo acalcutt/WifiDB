@@ -20,8 +20,8 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
-		parent::__construct($config);
+	public function __construct($config, $createKMLObj, $convertObj, $ZipObj, &$SQL){
+		parent::__construct($config, $SQL);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;
@@ -72,7 +72,7 @@ class export extends dbcore
 			$KML_data .= $this->createKML->PlotBoundary($boundary);
 		}
 
-		$KMLFolderdata = $this->createKML->createFolder("World Boundaries", $KML_data, 0);
+		$KMLFolderdata = $this->createKML->createFolder($KML_data, "World Boundaries", 0);
 		$this->createKML->createKML($boundaries_kml_file, "World Boundaries", $KMLFolderdata);
 		chmod($boundaries_kml_file, 0664);
 		return $boundaries_kml_file;
@@ -121,7 +121,7 @@ class export extends dbcore
 		}
 		$this->verbosed("Compiling Data for Export.");
 		$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
-		$KML_data = $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
+		$KML_data = $this->createKML->createFolder($regions_link, "WifiDB Newest AP", 1, 1);
 
 		while($array = $result->fetch(2))
 		{
@@ -135,7 +135,7 @@ class export extends dbcore
 		}
 		$kmz_filename = $daily_folder."/full_db".$labeled.".kmz";
 		$this->verbosed("Writing the Full KMZ File. ($NN APs) : ".$kmz_filename);
-		$KML_data = $this->createKML->createFolder("Full Database Export", $KML_data, 0);
+		$KML_data = $this->createKML->createFolder( $KML_data, "Full Database Export", 0);
 		$KML_data = $this->createKML->createKMLstructure("WiFiDB Full Database Export", $KML_data);
 		$this->Zip->addFile($KML_data, 'doc.kml');
 		$this->Zip->setZipFile($kmz_filename);
@@ -219,12 +219,12 @@ class export extends dbcore
 					}
 				}
 			}
-			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
+			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($Import_KML_Data, $import['username']." - ".$import['title'], 0);}
 		}
-		if($KML_data == ""){$KML_data .= $this->createKML->createFolder("No Daily Exports with GPS", $KML_data, 0);}
+		if($KML_data == ""){$KML_data .= $this->createKML->createFolder($KML_data, "No Daily Exports with GPS", 0);}
 		$kmz_filename = $daily_folder."/daily_db".$labeled.".kmz";
 		$this->verbosed("Writing the Daily KML File: ".$kmz_filename);
-		$KML_data = $this->createKML->createFolder("Daily Export", $KML_data, 0);
+		$KML_data = $this->createKML->createFolder($KML_data, "Daily Export", 0);
 		$KML_data = $this->createKML->createKMLstructure("WiFiDB Daily Export ($date)", $KML_data);
 		$this->Zip->addFile($KML_data, 'doc.kml');
 		$this->Zip->setZipFile($kmz_filename);
@@ -301,7 +301,7 @@ class export extends dbcore
 		$fetch_imports = $result->fetchAll();
 
 		#$KML_data = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
-		#$KML_data = $this->createKML->createFolder("Regions to save precious CPU cycles.", $regions_link, 0, 0);
+		#$KML_data = $this->createKML->createFolder($regions_link, "Regions to save precious CPU cycles.", 0, 0);
 		$exports = array();
 		foreach($fetch_imports as $import)
 		{
@@ -337,7 +337,7 @@ class export extends dbcore
 			#var_dump($distance_calc, $minLodPix, $distance);
 
 			$KML_data .= $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, $import['id']);
-			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($import['username']." - ".$import['title'], $Import_KML_Data, 0);}
+			if($Import_KML_Data != ""){$KML_data .= $this->createKML->createFolder($Import_KML_Data, $import['username']." - ".$import['title'], 0);}
 			
 			$kmz_filename = $daily_folder."/".$import['hash'].$labeled.".kmz";
 			$this->verbosed("Writing KMZ for ".$import['title']." : ".$kmz_filename);
@@ -356,7 +356,7 @@ class export extends dbcore
 		
 		$kmz_filename = $daily_folder."/daily_db".$labeled.".kmz";
 		$this->verbosed("Writing the Daily KML File: ".$kmz_filename);
-		$KML_data = $this->createKML->createFolder("Daily Export", $KML_data, 0);
+		$KML_data = $this->createKML->createFolder($KML_data, "Daily Export", 0);
 		$KML_data = $this->createKML->createKMLstructure("WiFiDB Daily Export ($date)", $KML_data);
 		$this->Zip->addFile($KML_data, 'doc.kml');
 		$this->Zip->setZipFile($kmz_filename);
@@ -557,7 +557,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 		else
 		{
-			$KML_string = $this->createKML->createFolder("No Access Points Found", "", 0, 0);
+			$KML_string = $this->createKML->createFolder("", "No Access Points Found", 0, 0);
 		}
 		if($labelap){$KML_string = $this->createKML->createKMLstructure("Newest AP Labeled", $KML_string);}else{$KML_string = $this->createKML->createKMLstructure("Newest AP", $KML_string);}
 		Return $KML_string;
@@ -906,20 +906,20 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 	{
 		$full_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db.kmz', "Full DB Export (No Label)", 0, 0, "onInterval", 3600).
 			$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 3600);
-		$full_folder = $this->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
+		$full_folder = $this->createKML->createFolder($full_link, "WifiDB Full DB Export", 1, 1);
 
 		$daily_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).
 			$this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
-		$daily_folder = $this->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
+		$daily_folder = $this->createKML->createFolder($daily_link, "WifiDB Daily DB Export", 1, 1);
 
 		$new_AP_link = $this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60).
 			$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP w/ Fly To (Labeled)", 0, 1, "onInterval", 60).
 			$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=0',"Newest AP (No Label)", 0, 0, "onInterval", 60).
 			$this->createKML->createNetworkLink($this->URL_PATH.'api/latest.php?labeled=1',"Newest AP (Labeled)", 1, 0, "onInterval", 60);
-		$new_AP_folder = $this->createKML->createFolder("WifiDB Newest AP", $new_AP_link, 1, 1);
+		$new_AP_folder = $this->createKML->createFolder($new_AP_link, "WifiDB Newest AP", 1, 1);
 
 		//$archive_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/history.kmz', "Archived History", 0, 0, "onInterval", 86400);
-		//$archive_folder = $this->createKML->createFolder("Historical Archives", $archive_link, 1);
+		//$archive_folder = $this->createKML->createFolder($archive_link, "Historical Archives", 1);
 
 		//$KML_data = $full_folder.$daily_folder.$new_AP_folder.$regions_folder;#.$archive_folder;
 		$KML_data = $new_AP_folder.$daily_folder.$full_folder;#.$archive_folder;
@@ -1070,8 +1070,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			}
 		}
 
-		if($KML_data == ""){$KML_data = $this->createKML->createFolder("AP has no GPS", $KML_data, 0);}
-		
+		if($KML_data == ""){$KML_data = $this->createKML->createFolder($KML_data, "AP has no GPS", 0);}
+
 		return array($KML_data, $export_ssid);
 	}
 
@@ -1136,7 +1136,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 		else
 		{
-			$KML_data = $this->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
+			$KML_data = $this->createKML->createFolder($KML_data, $fetch['username']." - ".$fetch['title']." - ".$fetch['date'], 0);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 
 			$kmz_filename = $this->kml_out.$title.".kmz";
@@ -1177,7 +1177,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 		else
 		{
-			$KML_data = $this->createKML->createFolder("Search Export", $KML_data, 0);
+			$KML_data = $this->createKML->createFolder($KML_data, "Search Export", 0);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), "Search_Export");
 			$kmz_filename = $this->kml_out.$title.".kmz";
 			#$this->verbosed("Writing KMZ for ".$title." : ".$kmz_filename);
