@@ -80,14 +80,14 @@ class security
             @list($cookie_pass_seed, $username) = explode(':', base64_decode(@$_COOKIE['WiFiDB_login_yes']));
         }
         #var_dump($username);
-        $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $sql0 = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1 , $username);
         $this->sql->checkError($result->execute(), __LINE__, __FILE__);
         $newArray = $result->fetch(2);
 
         #var_dump($newArray);
-        $sql1 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
+        $sql1 = "SELECT * FROM `user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
         $prep = $this->sql->conn->prepare($sql1);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
@@ -149,7 +149,7 @@ class security
         $api_key            = $this->GenerateKey(64);
         
         #now lets start creating the users info
-        $sql = "INSERT INTO `wifi`.`user_info` (`id`, `username`, `password`, `uid`, `validated`, 
+        $sql = "INSERT INTO `user_info` (`id`, `username`, `password`, `uid`, `validated`, 
                                         `locked`, `permissions`, `email`, `join_date`, `apikey`) 
                                         VALUES (NULL, ?, ?, ?, ?, '0', '0001', ?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
@@ -188,7 +188,7 @@ class security
         {
             $cookie_timeout = time()+(60*60*24*364.25);
         }
-        $sql = "INSERT INTO `wifi`.`user_login_hashes` (`id`, `username`, `hash`, `utime`) VALUES ('', ?, ?, ?)";
+        $sql = "INSERT INTO `user_login_hashes` (`id`, `username`, `hash`, `utime`) VALUES ('', ?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $this->username, PDO::PARAM_STR);
         $prep->bindParam(2, $this->SessionID, PDO::PARAM_STR);
@@ -238,7 +238,7 @@ class security
             return 0;
         }
         
-        $sql0 = "SELECT `id`, `validated`, `locked`, `login_fails`, `username`, `password` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $sql0 = "SELECT `id`, `validated`, `locked`, `login_fails`, `username`, `password` FROM `user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1 , $username);
         $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
@@ -276,7 +276,7 @@ class security
             }
             
             $date = date($this->datetime_format);
-            $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
+            $sql1 = "UPDATE `user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
             $prep = $this->sql->conn->prepare($sql1);
             $prep->bindParam(1, $date, PDO::PARAM_STR);
             $prep->bindParam(2, $id, PDO::PARAM_INT);
@@ -294,7 +294,7 @@ class security
             if($fails >= $this->config_fails)
             {
                 #Failed too many times, lock the account.
-                $sql1 = "UPDATE `wifi`.`user_info` SET `locked` = '1' WHERE `id` = ? LIMIT 1";
+                $sql1 = "UPDATE `user_info` SET `locked` = '1' WHERE `id` = ? LIMIT 1";
                 $prepare = $this->sql->conn->prepare($sql1);
                 $prepare->bindParam(1, $id);
                 $this->sql->checkError( $prepare->execute(), __LINE__, __FILE__);
@@ -306,7 +306,7 @@ class security
             }else
             {
                 # Increment the failed count.
-                $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = ? WHERE `id` = ? LIMIT 1";
+                $sql1 = "UPDATE `user_info` SET `login_fails` = ? WHERE `id` = ? LIMIT 1";
                 $prepare = $this->sql->conn->prepare($sql1);
                 $prepare->bindParam(1, $fails);
                 $prepare->bindParam(2, $id);
@@ -325,7 +325,7 @@ class security
     {
         if($username != '')
         {
-            $sql0 = "SELECT * FROM `wifi`.`user_login_hash` WHERE `username` = ? LIMIT 1";
+            $sql0 = "SELECT * FROM `user_login_hash` WHERE `username` = ? LIMIT 1";
             $result = $this->sql->conn->prepare($sql0);
             $result->bindParam(1, $username, PDO::PARAM_STR);
             $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
@@ -368,7 +368,7 @@ class security
 		if($_SERVER['PHP_SELF'] == '/'.$this->root.'/login.php'){$return_url = '/'.$this->root.'/';};#Set return url to main page if this is the login page.
 		
         $time = time()-1;
-        $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `utime` < ?";
+        $sql = "DELETE FROM `user_login_hashes` WHERE `utime` < ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $time, PDO::PARAM_INT);
         $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
@@ -400,7 +400,7 @@ class security
             $this->login_check = 0;
             return 0;
         }
-        $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
+        $sql0 = "SELECT * FROM `user_login_hashes` WHERE `username` = ? ORDER BY `id` DESC LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
         $result->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
@@ -432,7 +432,7 @@ class security
         {
             return 0;
         }
-        $sql = "UPDATE `wifi`.`user_info` SET `locked` = '0', `login_fails` = '0' WHERE `id` = ?";
+        $sql = "UPDATE `user_info` SET `locked` = '0', `login_fails` = '0' WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $id, PDO::PARAM_INT);
         $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
@@ -467,7 +467,7 @@ class security
                 $this->login_check = 0;
                 return -2;
             }
-            $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+            $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `user_info` WHERE `username` = ? LIMIT 1";
             $result = $this->sql->conn->prepare($sql);
             $result->bindParam(1, $username, PDO::PARAM_STR);
             $this->sql->checkError( $result->execute(), __LINE__, __FILE__);

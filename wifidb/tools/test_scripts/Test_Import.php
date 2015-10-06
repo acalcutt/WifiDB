@@ -16,6 +16,7 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
+
 $lastedit  = "2015-02-10";
 
 echo "

@@ -38,12 +38,12 @@ $dbcore->smarty->assign('inc', $inputs['to']);
 $dbcore->smarty->assign('ord', $inputs['ord']);
 $dbcore->smarty->assign('sort', $inputs['sort']);
 
-$sql = "SELECT COUNT(*) FROM `wifi`.`wifi_pointers`";
+$sql = "SELECT COUNT(*) FROM `wifi_pointers`";
 $sqlprep = $dbcore->sql->conn->prepare($sql);       
 $sqlprep->execute();
 $total_rows = $sqlprep->fetchColumn();
 
-$sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+$sql = "SELECT * FROM `wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 $pre_page_list = $dbcore->sql->conn->query($sql);
 
 

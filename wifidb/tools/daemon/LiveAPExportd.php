@@ -137,8 +137,8 @@ $sql = "SELECT
             `t2`.`title`,
             `t2`.`notes`,
             `t2`.`completed`
-        FROM `wifi`.`live_users` AS `t1`
-            LEFT JOIN `wifi`.`live_titles` AS `t2`
+        FROM `live_users` AS `t1`
+            LEFT JOIN `live_titles` AS `t2`
             ON `t2`.`id` = `t1`.`title_id`
             ORDER BY `t2`.`timestamp` DESC";
 var_dump("Before Fetch: ".microtime(1));
@@ -153,7 +153,7 @@ foreach($AllUsers as $user)
     {
         var_dump($user);
         echo "Getting APs for Title...\r\n";
-        $user_sql = "SELECT `id` FROM `wifi`.`live_aps` WHERE `session_id` = ?";
+        $user_sql = "SELECT `id` FROM `live_aps` WHERE `session_id` = ?";
         $user_prep = $dbcore->sql->conn->prepare($user_sql);
         $user_prep->bindParam(1, $user['session_id'], PDO::PARAM_STR);
         var_dump("Before Fetch Title Details: ".microtime(1));

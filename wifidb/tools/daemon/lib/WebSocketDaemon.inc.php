@@ -66,6 +66,7 @@ class WebSocketDaemon extends WebSocketServer {
                 $return = "Unknown WebSocket Path: ".$user['headers']['get'];
                 break;
         }
+        echo ".";
         //creating object of SimpleXMLElement
         $xml = new SimpleXMLElement('<?xml version="1.0"?>'.$type);
         //function call to convert array to xml
@@ -117,7 +118,7 @@ class WebSocketDaemon extends WebSocketServer {
 
     protected function FetchDaemonSchedule()
     {
-        $result = $this->sql->conn->query("SELECT `nodename`, `daemon`, `interval`, `status`, `nextrun` FROM `wifi`.`schedule`;");
+        $result = $this->sql->conn->query("SELECT `nodename`, `daemon`, `interval`, `status`, `nextrun` FROM `schedule`;");
         $fetch_waiting = $result->fetchAll(2);
         if(empty($fetch_waiting))
         {
@@ -151,7 +152,7 @@ class WebSocketDaemon extends WebSocketServer {
 
     protected function FetchDaemonStats()
     {
-        $daemon_sql = "SELECT `nodename`, `pidfile`, `pid`, `pidtime`, `pidmem`, `pidcmd`, `date` FROM `wifi`.`daemon_pid_stats`";
+        $daemon_sql = "SELECT `nodename`, `pidfile`, `pid`, `pidtime`, `pidmem`, `pidcmd`, `date` FROM `daemon_pid_stats`";
         $result = $this->sql->conn->prepare($daemon_sql);
         $result->bindParam(1, $this->dbcore->node_name, PDO::PARAM_STR);
         $result->execute();

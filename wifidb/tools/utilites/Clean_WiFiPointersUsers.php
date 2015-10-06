@@ -17,7 +17,7 @@ if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon con
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 echo "Start fixing the Usernames in the WiFi Pointers table.\n";
-$result = $dbcore->sql->conn->query("SELECT id, username FROM wifi.wifi_pointers");
+$result = $dbcore->sql->conn->query("SELECT id, username FROM wifi_pointers");
 $fetch = $result->fetchAll(2);
 foreach($fetch as $row)
 {
@@ -26,11 +26,11 @@ foreach($fetch as $row)
     echo $row['username']."\n";
     if(@explode("|", $row['username'])[1] == "")
     {
-        echo "One user found with a semicolon ( | )\n";
+        echo "One user found with a Pipe ( | )\n";
         $user = str_replace("|", "", $row['username']);
     }else
     {
-        echo "Found More than one user with a pipe ( | ) Setting first user as owner\n";
+        echo "Found More than one user with a Pipe ( | ) Setting first user as owner\n";
         $user = explode( "|", $row['username'] )[0];
     }
 
@@ -44,7 +44,7 @@ foreach($fetch as $row)
         $user = explode( ";", $row['username'] )[0];
     }
 
-    $dbcore->sql->conn->query("UPDATE wifi.wifi_pointers SET `username` = '$user' WHERE `id` = '".$row['id']."'");
+    $dbcore->sql->conn->query("UPDATE wifi_pointers SET `username` = '$user' WHERE `id` = '".$row['id']."'");
     if(!$dbcore->sql->checkError(__LINE__, __FILE__))
     {
         echo "Updated to $user\n";

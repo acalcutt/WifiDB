@@ -1,10 +1,11 @@
 <?php
-define("SWITCH_SCREEN", "cli");
+define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
-error_reporting("E_ALL");
 
-require('../config.inc.php');
-require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
 
 
 $dbcore->verbose = 1;
@@ -13,7 +14,7 @@ $username = "pferland";
 
 echo "-----
     get data from user_login_hashes\r\n";
-$sql = "SELECT `apikey` FROM `wifi`.`user_info` WHERE `username` = ?";
+$sql = "SELECT `apikey` FROM `user_info` WHERE `username` = ?";
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $dbcore->sec->username, PDO::PARAM_STR);
 $prep->execute();

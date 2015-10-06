@@ -1,16 +1,13 @@
 <?php
 $t1 = microtime(1);
 
-error_reporting(E_ALL|E_STRICT);
-ini_set("memory_limit","3072M"); //lots of GPS cords need lots of memory
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "cli");
 
-global $screen_output, $dim, $COLORS, $daemon_ver;
-$screen_output = "CLI";
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-if(!(@require_once 'daemon/config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($GLOBALS['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require_once $GLOBALS['wifidb_install']."/lib/database.inc.php";
-require_once $GLOBALS['wifidb_install']."/lib/config.inc.php";
 
 $conn = $GLOBALS['conn'];
 $db = $GLOBALS['db'];
@@ -81,14 +78,14 @@ To use:
 	To do a Single File check use --file= then find the ID number 
 	of the import that you want to check in the 'Files already imported' page.
 	If you have a MySQL adminstration app (ie phpmyadmin) this would be the `id`
-	column in the `wifi`.`files` table.
+	column in the `files` table.
 		wifidb:~ # php check_file_gps.php --file=554
 :-p");
 }
 else
 {
 	echo "Running Full DB check...\r\n";
-	$sqls = "SELECT * FROM `$db`.`files`";
+	$sqls = "SELECT * FROM `files`";
 }
 
 
@@ -148,7 +145,7 @@ if($result)
 				$date = $temp_gps['date'];
 				$time = trim($temp_gps['time']);
 				
-				$insert = "INSERT INTO `wifi`.`gps_table` ( `id` ,`lat` ,`long` ,`date`,`time`,`sats` ,`hdp` ,`alt` ,`geo` ,`kmh` ,`mph` ,`track`) 
+				$insert = "INSERT INTO `gps_table` ( `id` ,`lat` ,`long` ,`date`,`time`,`sats` ,`hdp` ,`alt` ,`geo` ,`kmh` ,`mph` ,`track`) 
 													VALUES ('', '".$temp_gps['lat']."', '".$temp_gps['long']."', '".$date."' , '".$time."', '".$temp_gps['sats']."', '".$temp_gps['hdp']."', '".$temp_gps['alt']."', '".$temp_gps['geo']."', '".$temp_gps['kmh']."', '".$temp_gps['mph']."', '".$temp_gps['track']."' )";
 				mysql_query($insert, $conn) or die("insert error, faital\n\t".mysql_error($conn));
 			}
