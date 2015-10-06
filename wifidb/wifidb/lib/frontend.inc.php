@@ -231,11 +231,8 @@ class frontend extends dbcore
 	function GetAnnouncement()
 	{
 		$result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
+		$this->sql->checkError( $result, __LINE__, __FILE__);
 		$array = $result->fetch(2);
-		if($this->sql->checkError() || $array['body'] == "")
-		{
-			return 0;
-		}
 		return $array;
 	}
 

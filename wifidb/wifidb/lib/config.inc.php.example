@@ -33,6 +33,7 @@ $config = array
     'timezn'                =>   'UTC',
     'root'                  =>   'wifidb',
     'WebSocketPort'         =>   9000,
+    'LiveTimeOut'         =>   86400,
     'hostname'              =>   '<-HOSTNAME FQDN->',
     'hosturl'               =>   'http://<-HOSTNAME FQDN->/',
     'dim'                   =>   DIRECTORY_SEPARATOR,
