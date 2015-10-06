@@ -682,5 +682,5 @@ INSERT INTO `settings` (`id`, `daemon_state`, `version`, `node_name`) VALUES ('1
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
   (1, '1', 'Import', 1, 10, 'Waiting', CURRENT_TIMESTAMP+900),
-  (2, '1', 'Export', 1, 30, 'Waiting', CURRENT_TIMESTAMP+1000);
+  (2, '1', 'Export', 1, 30, 'Waiting', CURRENT_TIMESTAMP+1000),
   (3, '1', 'Geonames', 1, 30, 'Waiting', CURRENT_TIMESTAMP+1200);
