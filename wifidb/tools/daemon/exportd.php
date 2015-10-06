@@ -135,8 +135,7 @@ $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
-$prepgj->execute();
-$dbcore->sql->checkError(__LINE__, __FILE__);
+$dbcore->sql->checkError( $prepgj->execute(), __LINE__, __FILE__);
 
 if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
@@ -172,11 +171,7 @@ else
 		#Find How Many APs had GPS on the last run
 		$sql = "SELECT `apswithgps` FROM `settings` LIMIT 1";
 		$result =  $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
+		$this->sql->checkError( $result, __LINE__, __FILE__);
 		$settingarray = $result->fetch(2);
 		$apswithgps_last = $settingarray['apswithgps'];
 		$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
@@ -184,11 +179,7 @@ else
 		#Find How Many APs have GPS now
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000'";
 		$result = $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
+		$this->sql->checkError( $result, __LINE__, __FILE__);
 		$apswithgps_now = $result->rowCount();
 		$dbcore->verbosed("APs with GPS on Current Run: ".$apswithgps_now);
 
