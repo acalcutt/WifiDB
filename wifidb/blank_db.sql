@@ -450,6 +450,7 @@ CREATE TABLE `settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `daemon_state` int(11) NOT NULL,
   `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `apswithgps` int(11) NOT NULL,
   `node_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `daemon_state` (`daemon_state`),

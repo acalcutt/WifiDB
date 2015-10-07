@@ -155,7 +155,7 @@ $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
 $prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
 $prepgj->execute();
-$dbcore->sql->checkError(__LINE__, __FILE__);
+$dbcore->sql->checkError( $prepgj->execute(), __LINE__, __FILE__);
 
 if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
@@ -193,7 +193,7 @@ else
 		{
 			$NextID = $dbcore->ImportID;
 
-		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
+		}else{
 			$NextID = $dbcore->GetNextImportID();
 		}
 		if(empty($NextID) && $dbcore->daemonize)
@@ -208,7 +208,7 @@ else
 		$result = $dbcore->sql->conn->prepare($daemon_sql);
 		$result->bindParam(1, $NextID, PDO::PARAM_INT);
 		$result->execute();
-		if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+		if ($dbcore->sql->checkError( $result, __LINE__, __FILE__)) {
 			$dbcore->verbosed("There was an error getting an import file");
 			$dbcore->return_message = -8;
 			break;

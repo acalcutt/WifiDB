@@ -171,7 +171,7 @@ else
 		#Find How Many APs had GPS on the last run
 		$sql = "SELECT `apswithgps` FROM `settings` LIMIT 1";
 		$result =  $dbcore->sql->conn->query($sql);
-		$this->sql->checkError( $result, __LINE__, __FILE__);
+		$dbcore->sql->checkError( $result, __LINE__, __FILE__);
 		$settingarray = $result->fetch(2);
 		$apswithgps_last = $settingarray['apswithgps'];
 		$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
@@ -179,7 +179,7 @@ else
 		#Find How Many APs have GPS now
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000'";
 		$result = $dbcore->sql->conn->query($sql);
-		$this->sql->checkError( $result, __LINE__, __FILE__);
+		$dbcore->sql->checkError( $result, __LINE__, __FILE__);
 		$apswithgps_now = $result->rowCount();
 		$dbcore->verbosed("APs with GPS on Current Run: ".$apswithgps_now);
 

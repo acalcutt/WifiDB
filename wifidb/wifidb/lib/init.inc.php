@@ -124,8 +124,9 @@ try
 					$dbcore = new daemon($config, $daemon_config, $SQL);
 					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
+					$dbcore->ZipArchive = new ZipArchive;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, $SQL);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, $dbcore->ZipArchive, $SQL);
 				break;
 				####
 				case "import":
@@ -138,7 +139,7 @@ try
 					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, $SQL);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose, $SQL);
 				break;
 				####
@@ -177,7 +178,7 @@ try
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				break;
 
 				case "export":
@@ -188,7 +189,7 @@ try
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, $SQL);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				    break;
 				case "graph":
 					__autoload("graphs");
@@ -225,7 +226,7 @@ try
                     $dbcore->convert = new convert($config);
                     $dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, $SQL);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
                     break;
                 case "geonames":
                     break;
@@ -240,7 +241,7 @@ try
                     $dbcore->convert = new convert($config);
                     $dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
                     break;
                 case "live":
                     break;

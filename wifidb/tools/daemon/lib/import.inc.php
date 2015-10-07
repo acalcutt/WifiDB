@@ -260,8 +260,7 @@ class import extends dbcore
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
 			$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-			$prep->execute();
-			if($this->sql->checkError() !== 0)
+			if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__) !== 0)
 			{
 				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
 				$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
@@ -283,8 +282,7 @@ class import extends dbcore
 			$prep->bindParam(9,$gps['track'],PDO::PARAM_STR);
 			$prep->bindParam(10,$gps['date'],PDO::PARAM_STR);
 			$prep->bindParam(11,$gps['time'],PDO::PARAM_STR);
-			$prep->execute();
-			if($this->sql->checkError())
+			if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__))
 			{
 				$this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
 				$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
@@ -305,8 +303,7 @@ class import extends dbcore
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
 			$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
 			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-			$prep->execute();
-			if($this->sql->checkError() !== 0)
+			if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__) !== 0)
 			{
 				$this->verbosed("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
 				$this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
@@ -335,8 +332,7 @@ class import extends dbcore
 			$sql = "SELECT `id`, `LA` FROM `wifi_pointers` WHERE `ap_hash` = ? LIMIT 1";
 			$res = $this->sql->conn->prepare($sql);
 			$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
-			$res->execute();
-			$this->sql->checkError();
+			$this->sql->checkError( $res->execute(), __LINE__, __FILE__);
 
 			$fetch = $res->fetch(2);
 			if($fetch['id'])
@@ -398,9 +394,7 @@ class import extends dbcore
 				$preps->bindParam(4, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_INT);
 				$preps->bindParam(5, $datetime, PDO::PARAM_INT);
 				$preps->bindParam(6, $file_id, PDO::PARAM_INT);
-				$preps->execute();
-
-				if($this->sql->checkError() !== 0)
+				if($this->sql->checkError( $preps->execute(), __LINE__, __FILE__) !== 0)
 				{
 					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
 					$this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
@@ -411,9 +405,7 @@ class import extends dbcore
 				$prepg = $this->sql->conn->prepare($sql);
 				$prepg->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$prepg->bindParam(2, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_STR);
-				$prepg->execute();
-
-				if($this->sql->checkError() !== 0)
+				if($this->sql->checkError( $prepg->execute(), __LINE__, __FILE__) !== 0)
 				{
 					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
 					$this->logd("Error Updating GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
@@ -451,8 +443,7 @@ class import extends dbcore
 				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi_signals` INNER JOIN `wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as SIGNED) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`sats` DESC LIMIT 1";
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $ap_hash, PDO::PARAM_STR);
-				$resgps->execute();
-				$this->sql->checkError(__LINE__, __FILE__);
+				$this->sql->checkError( $resgps->execute(), __LINE__, __FILE__);
 				$fetchgps = $resgps->fetch(2);
 				#var_dump($fetchgps);
 
@@ -483,8 +474,7 @@ class import extends dbcore
 					$prep->bindParam(6, $rssi, PDO::PARAM_INT);
 					$prep->bindParam(7, $sig_high, PDO::PARAM_INT);
 					$prep->bindParam(8, $ap_hash, PDO::PARAM_STR);
-					$prep->execute();
-					if($this->sql->checkError() !== 0)
+					if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__) !== 0)
 					{
 						$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
 						$this->logd("Error Updating AP Pointer Signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
@@ -531,8 +521,7 @@ class import extends dbcore
 					$prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
 					$prep->bindParam(20, $rssi, PDO::PARAM_INT);
 					$prep->bindParam(21, $sig_high, PDO::PARAM_INT);
-					$prep->execute();
-					if($this->sql->checkError())
+					if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__))
 					{
 						$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
 						$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
