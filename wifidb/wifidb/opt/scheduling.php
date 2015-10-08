@@ -479,9 +479,16 @@ switch($func)
         break;
 
     default:
+        if(!$proxypass)
+        {
+            $wspath = $dbcore->hostname.':'.$dbcore->WebSocketPort.'/'.$dbcore->root;
+        }else
+        {
+            $wspath = $dbcore->hostname.'/'.$dbcore->root;
+        }
         $dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/jquery-1.11.3.js"></script>
 		<script type="text/javascript">
-			var host = "ws://'.$dbcore->hostname.':'.$dbcore->WebSocketPort.'/'.$dbcore->root.'/api/Scheduling"; // SET THIS TO YOUR SERVER
+			var host = "ws://'.$wspath.'/websocket/Scheduling";
 		</script>
 		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
         $dbcore->smarty->assign('OnLoad', "onload='init()'");
@@ -536,166 +543,14 @@ switch($func)
             ';
             $val = $val*2;
         }
-        $importing_row = array();
-        $n=0;
-        $sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
-        {
-            if($newArray['importing'] == '1' )
-            {
-                $color = 'lime';
-            }else
-            {
-                $color = 'yellow';
-            }
-            $importing_row[$n]['color'] = $color;
-            $importing_row[$n]['id'] = $newArray['id'];
-            $importing_row[$n]['file'] = $newArray['file'];
-            $importing_row[$n]['title'] = $newArray['title'];
-            $importing_row[$n]['date'] = $newArray['date'];
-            $importing_row[$n]['size'] = $newArray['size'];
-            $importing_row[$n]['hash'] = $newArray['hash'];
-            $importing_row[$n]['user'] = $newArray['user'];
-            $tot = "";
-            $ssid = "";
-            switch($newArray['ap'])
-            {
-                case "":
-                    $ssid = "<td colspan='2' align='center'>Processing...</td>";
-                    break;
-                case "Preparing for Import":
-                    $ssid = "<td colspan='2' align='center'>Preparing for Import...</td>";
-                    break;
-                case "File is already in table array (":
-                    $ssid = "<td colspan='2' align='center'>File is already in table...</td>";
-                    break;
-                case "@#@#_CONVERTING TO VS1_@#@#":
-                    $ssid = "<td colspan='2' align='center'>Converting file to VS1 Format...</td>";
-                    break;
-                default:
-                    $ssid = '<td align="center">'.$newArray['ap'].'</td>';
-                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = '<td align="center">'.$newArray['tot'].'</td>';}
-                    break;
-            }
-            $importing_row[$n]['last_cell'] = $ssid.$tot;
-            $n++;
-        }
-		
-        $waiting_row = array();
-        $n=0;
-        $sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
-        {
-            $color = 'yellow';
-            $waiting_row[$n]['color'] = $color;
-            $waiting_row[$n]['id'] = $newArray['id'];
-            $waiting_row[$n]['file'] = $newArray['file'];
-            $waiting_row[$n]['title'] = $newArray['title'];
-            $waiting_row[$n]['date'] = $newArray['date'];
-            $waiting_row[$n]['size'] = $newArray['size'];
-            $waiting_row[$n]['hash'] = $newArray['hash'];
-            $waiting_row[$n]['user'] = $newArray['user'];
-
-            $tot = "";
-            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
-            $waiting_row[$n]['last_cell'] = $ssid.$tot;
-            $n++;
-        }
-
-        $schedule_row = array();
-        $n=0;
-        $sql = "SELECT * FROM `schedule` ORDER BY `nodename` ASC";
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
-        {
-
-            $nextrun_utc = strtotime($newArray['nextrun']);
-            $curtime = time();
-            $min_diff = round(($nextrun_utc - $curtime) / 60);
-            $interval = (int)$newArray['interval'];
-            $status = $newArray['status'];
-            $enabled = $newArray['enabled'];
-
-            if($enabled==0 or $status=="Error")
-            {
-                $color = 'red';
-            }
-            else
-            {
-                if(($min_diff <= $interval and $min_diff >= 0) or $status=="Running")
-                {
-                    $color = 'lime';
-                }
-                else
-                {
-                    $color = 'yellow';
-                }
-            }
-
-        #convert to local time
-        $timezonediff = $TZone+$dst;
-        $alter_by = (($timezonediff*60)*60);
-        $altered = $nextrun_utc+$alter_by;
-        $nextrun_local = date("Y-m-d H:i:s", $altered);
-
-            $schedule_row[$n]['color'] = $color;
-            $schedule_row[$n]['id'] = $newArray['id'];
-            $schedule_row[$n]['nodename'] = $newArray['nodename'];
-            $schedule_row[$n]['daemon'] = $newArray['daemon'];
-            $schedule_row[$n]['enabled'] = $newArray['enabled'];
-            $schedule_row[$n]['interval'] = $newArray['interval'];
-            $schedule_row[$n]['status'] = $newArray['status'];
-            $schedule_row[$n]['nextrun_utc'] = $newArray['nextrun'];
-            $schedule_row[$n]['nextrun_local'] = $nextrun_local;
-
-            $n++;
-        }
-
-        $pid_row = array();
-        $n=0;
-        $sql = "SELECT * FROM `daemon_pid_stats` ORDER BY `nodename` ASC";
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
-        {
-
-            $lastupdatetime = strtotime($newArray['date']);
-            $curtime = time();
-
-            if($newArray['pid'] == 0)
-            {
-                $color = 'red';
-            }else
-            {
-                if(($curtime-$lastupdatetime) < 60) {
-                    $color = 'lime';
-                }else
-                {
-                    $color = 'yellow';
-                }
-            }
-
-            $pid_row[$n]['color'] = $color;
-            $pid_row[$n]['nodename'] = $newArray['nodename'];
-            $pid_row[$n]['pidfile'] = $newArray['pidfile'];
-            $pid_row[$n]['pid'] = $newArray['pid'];
-            $pid_row[$n]['pidtime'] = $newArray['pidtime'];
-            $pid_row[$n]['pidmem'] = $newArray['pidmem'];
-            $pid_row[$n]['pidcmd'] = $newArray['pidcmd'];
-            $pid_row[$n]['date'] = $newArray['date'];
-
-            $n++;
-        }
-
         $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
         $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
         $dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
         $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
-        $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
-        $dbcore->smarty->assign('wifidb_daemons', $pid_row);
-        $dbcore->smarty->assign('wifidb_importing', $importing_row);
-		$dbcore->smarty->assign('wifidb_waiting', $waiting_row);
+        $dbcore->smarty->assign('wifidb_schedules', "");
+        $dbcore->smarty->assign('wifidb_daemons', "");
+        $dbcore->smarty->assign('wifidb_importing', "");
+		$dbcore->smarty->assign('wifidb_waiting', "");
         $dbcore->smarty->display('scheduling_waiting.tpl');
     break;
 }

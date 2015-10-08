@@ -22,15 +22,21 @@ abstract class WebSocketServer{
     public $currentCount                            = 0;
     public $prevCount                               = -1;
 
-  function __construct($addr, $port, $bufferLength = 2048) {
-    $this->maxBufferSize = $bufferLength;
-    $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
-    socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
-    socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
-    socket_listen($this->master,20)                               or die("Failed: socket_listen()");
-    $this->sockets['m'] = $this->master;
-    $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
-  }
+    function __construct($addr, $port, $ssl = 0, $bufferLength = 2048)
+    {
+        $this->maxBufferSize = $bufferLength;
+        $this->master = socket_create(AF_INET, SOCK_STREAM, SOL_TCP)  or die("Failed: socket_create()");
+        socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
+        socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
+
+        stream_set_blocking ($this->master, true);
+        stream_socket_enable_crypto ($this->master, true, STREAM_CRYPTO_METHOD_TLS_SERVER);
+        stream_set_blocking ($this->master, false);
+
+        socket_listen($this->master, 20)                              or die("Failed: socket_listen()");
+        $this->sockets['m'] = $this->master;
+        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
+    }
 
   abstract protected function process($user,$message); // Called immediately when the data is recieved.
   abstract protected function connected($user);        // Called after the handshake response is sent to the client.
@@ -105,6 +111,7 @@ abstract class WebSocketServer{
       foreach ($read as $socket) {
         if ($socket == $this->master) {
           $client = socket_accept($socket);
+
           if ($client < 0) {
             $this->stderr("Failed: socket_accept()");
             continue;

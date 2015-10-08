@@ -415,6 +415,7 @@ function parseLiveList(response, LiveListTable) {
                     CreateCell(LiveListTable, row, file.childNodes[10].innerHTML) // long
                     CreateCell(LiveListTable, row, file.childNodes[11].innerHTML) // Title
                     CreateCell(LiveListTable, row, file.childNodes[12].innerHTML) // Username
+
                 }
             }
         }
