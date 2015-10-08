@@ -32,6 +32,8 @@ $daemon_config = array(
 	//Path for the daemon logs to go and take a dump in
 	'daemon_log_folder'	 =>	'/wifidb/code/tools/log/',
 
+	//WebSocket Settings
+	'WebSocketBindIP'     =>  '127.0.0.1',
     'WebSocketPort'     =>  9000,
 
 	// DANGER The Number of import processes its equal to ho much you want to kill your system.
