@@ -118,140 +118,139 @@ class export extends dbcore
 		}
 		
 		#Create directory to store temp kmz files
-		$kmzfiles_folder =  $daily_folder.'/files';
-		if(!@file_exists($kmzfiles_folder))
+		$kmztmp_folder =  $daily_folder.'/tmp';
+		if(!@file_exists($kmztmp_folder))
 		{
 			$this->verbosed("Need to make kmz file folder...", 1);
-			if(!@mkdir($kmzfiles_folder))
+			if(!@mkdir($kmztmp_folder))
 			{
 				$this->verbosed("Error making kmz file folder...", -1);
 			}
 		}
-		
 
 		$this->verbosed("Compiling Data for Export.");
-		$kml_filepath = $daily_folder."/".$type."_db".$labeled.".kml";
-		$kmz_filepath = $daily_folder."/".$type."_db".$labeled.".kmz";
-		$kmz_open = $this->ZipArchive->open($kmz_filepath, ZipArchive::CREATE);
-		if ($kmz_open === TRUE) {$this->ZipArchive->addEmptyDir('files');}
-		$this->ZipArchive->close();
-		#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
-		#$results = $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
-		
-		#Get list of users and go through them
-		if($type == "full")
+		$kmz_tmp = $kmztmp_folder."/".$type."_db".$labeled.".kmz";
+		$kmz_open = $this->ZipArchive->open($kmz_tmp, ZipArchive::CREATE);
+		if ($kmz_open === TRUE)
 		{
-			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
-			$user_list_query = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
-		}
-		elseif($type == "daily")
-		{
-			$date_search = $date."%";
-			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
-			$user_list_query = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `date` LIKE '$date_search'";
-		}	
-		$prep = $this->sql->conn->prepare($user_query);
-		$prep->execute();
-		$fetch_user = $prep->fetchAll();
-		$results="";
-		$lists = 0;
-		foreach($fetch_user as $user)
-		{
-			#Get users lists and go through them
-			$username = $user['username'];
-			$prep2 = $this->sql->conn->prepare($user_list_query);
-			$prep2->bindParam(1, $username, PDO::PARAM_STR);
-			$prep2->execute();
-			$fetch_imports = $prep2->fetchAll();
-			$user_results = "";
-			$user_files = 0;
-			foreach($fetch_imports as $import)
+			$this->ZipArchive->addEmptyDir('files');
+			if($type == "full")
 			{
-				if($import['points'])
+				$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
+				$user_list_query = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
+			}
+			elseif($type == "daily")
+			{
+				$date_search = $date."%";
+				$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
+				$user_list_query = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `date` LIKE '$date_search'";
+			}	
+			
+			#Get list of users and go through them
+			$results="";
+			$lists = 0;
+			$prep_user = $this->sql->conn->query($user_query);
+			$fetch_user = $prep_user->fetchAll();
+			$prep_user_list = $this->sql->conn->prepare($user_list_query);
+			foreach($fetch_user as $user)
+			{
+				#Get users lists and go through them
+				$user_results = "";
+				$user_files = 0;
+				$username = $user['username'];
+				$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
+				$prep_user_list->execute();
+				$fetch_imports = $prep_user_list->fetchAll();
+				foreach($fetch_imports as $import)
 				{
-					$id = $import['id'];
-					$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['title']);
-					$list_results = $this->UserListKml($import['points'], $import['username'], $import['title'], $import['date'], $this->named, $only_new, $new_icons, 1);
-					if($list_results !== "")
+					if($import['points'])
 					{
-						$list_results = $this->createKML->createFolder($title, $list_results, 0);
-						$list_results = $this->createKML->createKMLstructure($title, $list_results);
-						
-						#Create List KML Structure
-						#$list_results = $this->createKML->createFolder("ListID:".$id." Title:".$title, $list_results, 0);
-						#$list_results = $this->createKML->createKMLstructure("ListID:".$id." Title:".$title, $list_results);
-						
-						#Create KML
-						$list_kml_path = $kmzfiles_folder."/".$id."_".$title.$labeled.".kml";
-						$filewrite = fopen($list_kml_path, "w");
-						fwrite($filewrite, $list_results);
-						fclose($filewrite);
-						if (file_exists($list_kml_path))
+						$id = $import['id'];
+						$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['title']);
+						$list_results = $this->UserListKml($import['points'], $import['username'], $import['title'], $import['date'], $this->named, $only_new, $new_icons, 1);
+						if($list_results !== "")
 						{
-							#Create KMZ
-							$list_kmz_name = $id."_".$title.$labeled.".kmz";
-							$list_kmz_path = $kmzfiles_folder."/".$list_kmz_name;
-							$kmz = $this->ZipArchive->open($list_kmz_path, ZipArchive::CREATE);
-							if ($kmz === TRUE) {$this->ZipArchive->addFile($list_kml_path, 'doc.kml');}
-							$this->ZipArchive->close();
-							unlink($list_kml_path);
-							if (file_exists($list_kmz_path))
+							#Create List KML Structure
+							$list_results = $this->createKML->createFolder($title, $list_results, 0);
+							$list_results = $this->createKML->createKMLstructure($title, $list_results);
+
+							#Create KML
+							$list_kml_name = $id."_".$title.$labeled.".kml";
+							$list_kml_path = $kmztmp_folder."/".$list_kml_name;
+							$filewrite = fopen($list_kml_path, "w");
+							fwrite($filewrite, $list_results);
+							fclose($filewrite);
+							if (file_exists($list_kml_path))
 							{
-								#Add the list kmz into the final file
-								$kmz_open = $this->ZipArchive->open($kmz_filepath);
-								if ($kmz_open === TRUE) {$this->ZipArchive->addFile($list_kmz_path, 'files/'.$list_kmz_name);}
-								$this->ZipArchive->close();
-								
-								#Create Network Link to this KMZ in the final file
-								$user_results .= $this->createKML->createNetworkLink('files/'.$list_kmz_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400);
+								#Add the list kml into the temp kmz file
+								$this->ZipArchive->addFile($list_kml_path, 'files/'.$list_kml_name);
+								#Create Network Link to this kml for the final doc.kml
+								$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400);
+								#Remove Temp List File
+								unlink($list_kml_path);
+								#Increment variables (duh)
 								++$user_files;
 								++$lists;
-								
-								#Remove Temp List File
-								unlink($list_kmz_path);
 							}
 						}
+						unset($list_results);
 					}
 				}
+				#If this user had results, create a folder with their data
+				if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
+				unset($user_results);
 			}
-			#If this user had results, create a folder with their data
-			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
-		}
-		#Create the final KMZ
-		if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 0);}
-		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
-		$results = $this->createKML->createFolder($type." Database Export", $results, 0);
-		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
-		
-		$filewrite = fopen($kml_filepath, "w");
-		fwrite($filewrite, $results);
-		fclose($filewrite);
-		
-		if (file_exists($kml_filepath))
-		{
-			$kmz_open = $this->ZipArchive->open($kmz_filepath);
-			if ($kmz_open === TRUE) {$this->ZipArchive->addFile($kml_filepath, 'doc.kml');}
-			$this->ZipArchive->close();
-			unlink($kml_filepath);
+			#Create the final KMZ
+			if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 0);}
+			#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
+			#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
 			
-			if (file_exists($kmz_filepath)) 
+			$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
+			$results = $this->createKML->createFolder($type." Database Export", $results, 0);
+			$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
+			
+			$kml_tmp = $kmztmp_folder."/doc.kml";
+			$filewrite = fopen($kml_tmp, "w");
+			fwrite($filewrite, $results);
+			fclose($filewrite);
+			unset($results);
+			
+			if (file_exists($kml_tmp))
 			{
-				$this->verbosed("KMZ created at ".$kmz_filepath);
-				chmod($kmz_filepath, 0664);
-				###
-				$link = $this->daemon_out.$type.'_db'.$labeled.'.kmz';
-				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
-				unlink($link);
-				symlink($kmz_filepath, $link);
-				chmod($link, 0664);
+				$this->ZipArchive->addFile($kml_tmp, 'doc.kml');
+				$this->ZipArchive->close();
+				unlink($kml_tmp);
+				if (file_exists($kmz_tmp)) 
+				{
+					$kmz_filepath = $daily_folder."/".$type."_db".$labeled.".kmz";
+					rename($kmz_tmp , $kmz_filepath);
+					if (file_exists($kmz_filepath)) 
+					{
+						$this->verbosed("KMZ created at ".$kmz_filepath);
+						chmod($kmz_filepath, 0664);
+						###
+						$link = $this->daemon_out.$type.'_db'.$labeled.'.kmz';
+						$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
+						unlink($link);
+						symlink($kmz_filepath, $link);
+						chmod($link, 0664);
+					}
+					else
+					{
+						$this->verbosed("Final KMZ file file does not exist :/ ");
+					}
+				}
+				else
+				{
+					$this->verbosed("KMZ temp file does not exist :/ ");
+				}
 			}
 			else
 			{
-				$this->verbosed("Failed to Create KMZ file :/ ");
+				$this->verbosed("doc.kml temp file does not exist :/ ");
 			}
+			#if (file_exists($kmztmp_folder)){rmdir($kmztmp_folder);}
 		}
-		if (file_exists($kmzfiles_folder)){rmdir($kmzfiles_folder);}
-
 		return $daily_folder;
 	}
 
