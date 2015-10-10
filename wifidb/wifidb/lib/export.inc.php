@@ -20,13 +20,12 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj, $ZipObj, $ZipArchiveObj){
+	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
 		parent::__construct($config);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;
 		$this->Zip = $ZipObj;
-		$this->ZipArchive = $ZipArchiveObj;
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
 		$this->month_names  = array(
@@ -119,21 +118,30 @@ class export extends dbcore
 		
 		#Create directory to store temp kmz files
 		$kmztmp_folder =  $daily_folder.'/tmp';
-		mkdir($kmztmp_folder);
+		if(!@file_exists($kmztmp_folder))
+		{
+			$this->verbosed("Need to make kmz file folder...", 1);
+			if(!@mkdir($kmztmp_folder))
+			{
+				$this->verbosed("Error making kmz file folder...", -1);
+			}
+		}
 
 		$this->verbosed("Compiling Data for Export.");
 
 		if($type == "full")
 		{
 			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
-			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
+			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `points` != ''";
 		}
 		elseif($type == "daily")
 		{
 			$date_search = $date."%";
 			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
-			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `date` LIKE '$date_search'";
+			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `points` != '' AND `date` LIKE '$date_search'";
 		}	
+		
+		$ZipC = clone $this->Zip;
 		
 		#Get list of users and go through them
 		$results="";
@@ -152,30 +160,28 @@ class export extends dbcore
 			$fetch_imports = $prep_user_list->fetchAll();
 			foreach($fetch_imports as $import)
 			{
-				if($import['points'])
+				$id = $import['id'];
+				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
+				$ListKML = $this->UserListKml($import['points'], $this->named, $only_new, $new_icons);
+				$list_results = $ListKML['region'].$ListKML['data'];
+				if($list_results !== "")
 				{
-					$id = $import['id'];
-					$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['title']);
-					$list_results = $this->UserListKml($import['points'], $this->named, $only_new, $new_icons);
-					if($list_results !== "")
-					{
-						#Create List KML Structure
-						$list_results = $this->createKML->createFolder($title, $list_results, 0);
-						$list_results = $this->createKML->createKMLstructure($title, $list_results);
+					#Create List KML Structure
+					$list_results = $this->createKML->createFolder($title, $list_results, 0);
+					$list_results = $this->createKML->createKMLstructure($title, $list_results);
 
-						#Add list kml into final kmz
-						$list_kml_name = $id."_".$title.$labeled.".kml";
-						$this->Zip->addFile($list_results, 'files/'.$list_kml_name);
-						
-						#Create Network Link to this kml for the final doc.kml
-						$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400);
+					#Add list kml into final kmz
+					$list_kml_name = $username."_".$title.$labeled.".kml";
+					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
+					
+					#Create Network Link to this kml for the final doc.kml
+					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 0, 0, "onChange", 86400, 0, $ListKML['region']);
 
-						#Increment variables (duh)
-						++$user_files;
-						++$lists;
-					}
-					unset($list_results);
+					#Increment variables (duh)
+					++$user_files;
+					++$lists;
 				}
+				unset($list_results);
 			}
 			#If this user had results, create a folder with their data
 			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
@@ -186,14 +192,14 @@ class export extends dbcore
 		#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
 		#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
 		
-		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
 		$results = $this->createKML->createFolder($type." Database Export", $results, 0);
 		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
 		
 		$kmz_tmp = $kmztmp_folder."/".$type."_db".$labeled.".kmz";
-		$this->Zip->addFile($results, 'doc.kml');
-		$this->Zip->setZipFile($kmz_tmp);
-		$this->Zip->getZipFile();
+		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_tmp);
+		$ZipC->addFile($results, 'doc.kml');
+		$ZipC->setZipFile($kmz_tmp);
+		$ZipC->getZipFile();
 		if (file_exists($kmz_tmp)) 
 		{
 			$kmz_filepath = $daily_folder."/".$type."_db".$labeled.".kmz";
@@ -916,7 +922,10 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 
 	public function UserListKml($points, $named=0, $only_new=0, $new_icons=0)
 	{
+		$KML_data="";
+		$KML_region="";
 		$Import_KML_Data="";
+		$box_latlon = array();
 		$points = explode("-", $points);
 		foreach($points as $point)
 		{
@@ -949,9 +958,29 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				"manuf" => $ap_fetch['manuf'],
 				);
 				$Import_KML_Data .=$this->createKML->PlotAP($ap_info);
+				
+				$latlon_info = array(
+				"lat" => $ap_fetch['lat'],
+				"long" => $ap_fetch['long'],
+				);
+				$box_latlon[] = $latlon_info;
 			}
 		}
-		return $Import_KML_Data;
+		
+		if($Import_KML_Data != "")
+		{
+			$KML_data = $Import_KML_Data;
+			$final_box = $this->FindBox($box_latlon);
+			list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+			$KML_region = $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+		}
+		
+		$ret_data = array(
+		"data" => $KML_data,
+		"region" => $KML_region,
+		);
+		
+		return $ret_data;
 	}
 
 	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
@@ -968,7 +997,8 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$this->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
 
-		$KML_data = $this->UserListKml($fetch['points']);
+		$ListKML = $this->UserListKml($fetch['points']);
+		$KML_data = $ListKML['region'].$ListKML['data'];
 		if($KML_data == "")
 		{
 			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
@@ -1035,58 +1065,6 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			}
 		}
 		return $results;
-	}
-
-	function FindMostBox($points = array())
-	{
-		$North = NULL;
-		$South = NULL;
-		$East = NULL;
-		$West = NULL;
-		foreach($points as $elements)
-		{
-			#var_dump($elements);
-			if(@$elements[0] == '' || @$elements[1] == '')
-			{
-				return -1;
-			}
-			if($North == NULL)
-			{
-				$North = $elements[0];
-			}
-			if($South == NULL)
-			{
-				$South = $elements[1];
-			}
-
-			if($East == NULL)
-			{
-				$East = $elements[2];
-			}
-			if($West == NULL)
-			{
-				$West = $elements[3];
-			}
-
-			if((float)$North < (float)$elements[0])
-			{
-				$North = $elements[0];
-			}
-			if((float)$South > (float)$elements[1])
-			{
-				$South = $elements[1];
-			}
-			if((float)$East < (float)$elements[2])
-			{
-				$East = $elements[2];
-			}
-			if((float)$West > (float)$elements[3])
-			{
-				$West = $elements[3];
-			}
-		}
-		#var_dump(array( $North, $South, $East, $West));
-		return array( $North, $South, $East, $West);
 	}
 
 	function FindBox($points = array())
@@ -1160,23 +1138,23 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		{
 			$ret = $miles;
 		}
-		if($ret < 100)
-		{
-			$distance_calc = 1000;
-			$minLodPix = 768;
-		}
-
-		if($ret > 100 && $ret < 400)
-		{
-			$distance_calc = 1000;
-			$minLodPix = 768;
-		}
-
+		
 		if($ret > 400)
 		{
 			$distance_calc = 3000;
-			$minLodPix = 512;
+			$minLodPix = 256;
 		}
+		elseif($ret > 100)
+		{
+			$distance_calc = 1000;
+			$minLodPix = 256;
+		}
+		else
+		{
+			$distance_calc = 1000;
+			$minLodPix = 256;
+		}
+		
 		return array($distance_calc, $minLodPix, $ret);
 	}
 	

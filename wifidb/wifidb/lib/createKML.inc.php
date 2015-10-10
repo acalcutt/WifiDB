@@ -623,7 +623,11 @@ class createKML
 		{
 			$idLabel = 'id="'.$idName.'"';
 		}
-		$data = '				<Region '.$idLabel.'>
+		else
+		{
+			$idLabel = 'id="'.uniqid().'"';
+		}
+		$data = '<Region '.$idLabel.'>
 				<LatLonAltBox>
 					<north>'.$this->convert->dm2dd($box[0]).'</north>
 					<south>'.$this->convert->dm2dd($box[1]).'</south>
@@ -638,7 +642,8 @@ class createKML
 					<minFadeExtent>0</minFadeExtent>
 					<maxFadeExtent>0</maxFadeExtent>
 				</Lod>
-			</Region>';
+			</Region>
+			';
 		#var_dump($data);
 		return $data;
 	}
@@ -672,7 +677,8 @@ class createKML
 					<maxFadeExtent>0</maxFadeExtent>
 				</Lod>
 			</Region>
-		</Placemark>';
+		</Placemark>
+		';
 		return $placemark;
 	}
 
@@ -686,7 +692,7 @@ class createKML
 	 * @return string
 	 */
 
-	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0)
+	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0, $regionkml = "")
 	{
 		if($radiofolder == 1)
 		{
@@ -698,7 +704,7 @@ class createKML
 			<styleUrl>#check</styleUrl>";
 		}
 		$tmp = '
-		<NetworkLink>'.$radiofolder.'
+		<NetworkLink>'.$radiofolder.$regionkml.'
 				<name>'.$title.'</name>
 				<visibility>'.$visibility.'</visibility>
 				<flyToView>'.$flytoview.'</flyToView>

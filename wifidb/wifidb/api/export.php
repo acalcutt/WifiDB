@@ -187,7 +187,8 @@ switch($func)
 			$fetch = $prep->fetch();
 			
 			if($all){$only_new = 0;}else{$only_new = 1;}
-			$results = $dbcore->export->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date'], $labeled, $only_new, $new_icons, 1);
+			$ListKML = $dbcore->export->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date'], $labeled, $only_new, $new_icons, 1);
+			$results = $ListKML['region'].$ListKML['data'];
 			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $results, 0);}
 			
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
