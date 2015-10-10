@@ -45,7 +45,7 @@ class export extends dbcore
 		);
 		$this->ver_array['export']  =   array(
 			"last_edit"			 =>  "2015-03-06",
-			"ExportAllkml"		  =>  "2.1",
+			"Exportkml"		  =>  "1.0",
 			"ExportDailykml"		=>  "1.1",
 			"ExportSingleAP"		=>  "1.0",
 			"ExportCurrentAPkml"	=>  "1.0",
@@ -119,138 +119,108 @@ class export extends dbcore
 		
 		#Create directory to store temp kmz files
 		$kmztmp_folder =  $daily_folder.'/tmp';
-		if(!@file_exists($kmztmp_folder))
-		{
-			$this->verbosed("Need to make kmz file folder...", 1);
-			if(!@mkdir($kmztmp_folder))
-			{
-				$this->verbosed("Error making kmz file folder...", -1);
-			}
-		}
+		mkdir($kmztmp_folder);
 
 		$this->verbosed("Compiling Data for Export.");
-		$kmz_tmp = $kmztmp_folder."/".$type."_db".$labeled.".kmz";
-		$kmz_open = $this->ZipArchive->open($kmz_tmp, ZipArchive::CREATE);
-		if ($kmz_open === TRUE)
-		{
-			$this->ZipArchive->addEmptyDir('files');
-			if($type == "full")
-			{
-				$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
-				$user_list_query = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
-			}
-			elseif($type == "daily")
-			{
-				$date_search = $date."%";
-				$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
-				$user_list_query = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `date` LIKE '$date_search'";
-			}	
-			
-			#Get list of users and go through them
-			$results="";
-			$lists = 0;
-			$prep_user = $this->sql->conn->query($user_query);
-			$fetch_user = $prep_user->fetchAll();
-			$prep_user_list = $this->sql->conn->prepare($user_list_query);
-			foreach($fetch_user as $user)
-			{
-				#Get users lists and go through them
-				$user_results = "";
-				$user_files = 0;
-				$username = $user['username'];
-				$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
-				$prep_user_list->execute();
-				$fetch_imports = $prep_user_list->fetchAll();
-				foreach($fetch_imports as $import)
-				{
-					if($import['points'])
-					{
-						$id = $import['id'];
-						$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['title']);
-						$list_results = $this->UserListKml($import['points'], $import['username'], $import['title'], $import['date'], $this->named, $only_new, $new_icons, 1);
-						if($list_results !== "")
-						{
-							#Create List KML Structure
-							$list_results = $this->createKML->createFolder($title, $list_results, 0);
-							$list_results = $this->createKML->createKMLstructure($title, $list_results);
 
-							#Create KML
-							$list_kml_name = $id."_".$title.$labeled.".kml";
-							$list_kml_path = $kmztmp_folder."/".$list_kml_name;
-							$filewrite = fopen($list_kml_path, "w");
-							fwrite($filewrite, $list_results);
-							fclose($filewrite);
-							if (file_exists($list_kml_path))
-							{
-								#Add the list kml into the temp kmz file
-								$this->ZipArchive->addFile($list_kml_path, 'files/'.$list_kml_name);
-								#Create Network Link to this kml for the final doc.kml
-								$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400);
-								#Remove Temp List File
-								unlink($list_kml_path);
-								#Increment variables (duh)
-								++$user_files;
-								++$lists;
-							}
-						}
-						unset($list_results);
-					}
-				}
-				#If this user had results, create a folder with their data
-				if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
-				unset($user_results);
-			}
-			#Create the final KMZ
-			if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 0);}
-			#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
-			#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
-			
-			$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
-			$results = $this->createKML->createFolder($type." Database Export", $results, 0);
-			$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
-			
-			$kml_tmp = $kmztmp_folder."/doc.kml";
-			$filewrite = fopen($kml_tmp, "w");
-			fwrite($filewrite, $results);
-			fclose($filewrite);
-			unset($results);
-			
-			if (file_exists($kml_tmp))
+		if($type == "full")
+		{
+			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
+			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ?";
+		}
+		elseif($type == "daily")
+		{
+			$date_search = $date."%";
+			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
+			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `date` LIKE '$date_search'";
+		}	
+		
+		#Get list of users and go through them
+		$results="";
+		$lists = 0;
+		$prep_user = $this->sql->conn->query($user_query);
+		$fetch_user = $prep_user->fetchAll();
+		$prep_user_list = $this->sql->conn->prepare($user_list_query);
+		foreach($fetch_user as $user)
+		{
+			#Get users lists and go through them
+			$user_results = "";
+			$user_files = 0;
+			$username = $user['username'];
+			$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
+			$prep_user_list->execute();
+			$fetch_imports = $prep_user_list->fetchAll();
+			foreach($fetch_imports as $import)
 			{
-				$this->ZipArchive->addFile($kml_tmp, 'doc.kml');
-				$this->ZipArchive->close();
-				unlink($kml_tmp);
-				if (file_exists($kmz_tmp)) 
+				if($import['points'])
 				{
-					$kmz_filepath = $daily_folder."/".$type."_db".$labeled.".kmz";
-					rename($kmz_tmp , $kmz_filepath);
-					if (file_exists($kmz_filepath)) 
+					$id = $import['id'];
+					$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['title']);
+					$list_results = $this->UserListKml($import['points'], $this->named, $only_new, $new_icons);
+					if($list_results !== "")
 					{
-						$this->verbosed("KMZ created at ".$kmz_filepath);
-						chmod($kmz_filepath, 0664);
-						###
-						$link = $this->daemon_out.$type.'_db'.$labeled.'.kmz';
-						$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
-						unlink($link);
-						symlink($kmz_filepath, $link);
-						chmod($link, 0664);
+						#Create List KML Structure
+						$list_results = $this->createKML->createFolder($title, $list_results, 0);
+						$list_results = $this->createKML->createKMLstructure($title, $list_results);
+
+						#Add list kml into final kmz
+						$list_kml_name = $id."_".$title.$labeled.".kml";
+						$this->Zip->addFile($list_results, 'files/'.$list_kml_name);
+						
+						#Create Network Link to this kml for the final doc.kml
+						$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400);
+
+						#Increment variables (duh)
+						++$user_files;
+						++$lists;
 					}
-					else
-					{
-						$this->verbosed("Final KMZ file file does not exist :/ ");
-					}
+					unset($list_results);
 				}
-				else
-				{
-					$this->verbosed("KMZ temp file does not exist :/ ");
-				}
+			}
+			#If this user had results, create a folder with their data
+			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
+			unset($user_results);
+		}
+		#Create the final KMZ
+		if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 0);}
+		#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
+		#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
+		
+		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
+		$results = $this->createKML->createFolder($type." Database Export", $results, 0);
+		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
+		
+		$kmz_tmp = $kmztmp_folder."/".$type."_db".$labeled.".kmz";
+		$this->Zip->addFile($results, 'doc.kml');
+		$this->Zip->setZipFile($kmz_tmp);
+		$this->Zip->getZipFile();
+		if (file_exists($kmz_tmp)) 
+		{
+			$kmz_filepath = $daily_folder."/".$type."_db".$labeled.".kmz";
+			rename($kmz_tmp , $kmz_filepath);
+			if (file_exists($kmz_filepath)) 
+			{
+				$this->verbosed("KMZ created at ".$kmz_filepath);
+				chmod($kmz_filepath, 0664);
+				###
+				$link = $this->daemon_out.$type.'_db'.$labeled.'.kmz';
+				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
+				unlink($link);
+				symlink($kmz_filepath, $link);
+				chmod($link, 0664);
 			}
 			else
 			{
-				$this->verbosed("doc.kml temp file does not exist :/ ");
+				$this->verbosed("Final KMZ file file does not exist :/ ");
 			}
-			#if (file_exists($kmztmp_folder)){rmdir($kmztmp_folder);}
 		}
+		else
+		{
+			$this->verbosed("KMZ temp file does not exist :/ ");
+		}
+
+		if (file_exists($kmztmp_folder)){rmdir($kmztmp_folder);}
+		
 		return $daily_folder;
 	}
 
@@ -264,7 +234,7 @@ class export extends dbcore
 			throw new ErrorException("AP ID is empty or not an Integer, supply one.");
 			return 0;
 		}
-		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+		$sql2 = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
 
 		$prep2 = $this->sql->conn->query($sql2);
 		$this->sql->checkError(__LINE__, __FILE__);
@@ -555,14 +525,14 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 	{
 		$date = date($this->date_format);
 		$this->named = 0;
-		$this->Exportkml($date, "full");
+		$this->Exportkml($date, "full" ,1 ,0);
 		$this->named = 1;
-		$this->Exportkml($date, "full");
+		$this->Exportkml($date, "full" ,1 ,0);
 
 		$this->named = 0;
-		$this->Exportkml($date, "daily");
+		$this->Exportkml($date, "daily" ,0 ,1);
 		$this->named = 1;
-		$this->Exportkml($date, "daily");
+		$this->Exportkml($date, "daily" ,0 ,1);
 
 		if($this->HistoryKMLLink() === -1)
 		{
@@ -944,44 +914,44 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		return array($KML_data, $export_ssid);
 	}
 
-	public function UserListKml($points, $username, $title, $date, $named=0, $only_new=0, $new_icons=0, $regions=0)
+	public function UserListKml($points, $named=0, $only_new=0, $new_icons=0)
 	{
-		$box = array();
-		$KML_data="";
 		$Import_KML_Data="";
 		$points = explode("-", $points);
 		foreach($points as $point)
 		{
 			list($id, $new_old) = explode(":", $point);
 			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
-			while($array = $result->fetch(2))
+			while($ap_fetch = $result->fetch(2))
 			{
-				$ret = $this->ExportSingleAP((int)$array['id'], $new_icons);
-				$box[] = $this->FindBox($ret[$array['ap_hash']]['gdata']);
-				if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
-				{
-					$this->createKML->ClearData();
-					$this->createKML->LoadData($ret);
-					$Import_KML_Data .= $this->createKML->PlotAllAPs(1, 1, $named);
-				}
+				#Get AP KML
+				$ap_info = array(
+				"id" => $id,
+				"new_ap" => $new_icons,
+				"named" => $named,
+				"mac" => $ap_fetch['mac'],
+				"ssid" => $ap_fetch['ssid'],
+				"chan" => $ap_fetch['chan'],
+				"radio" => $ap_fetch['radio'],
+				"NT" => $ap_fetch['NT'],
+				"sectype" => $ap_fetch['sectype'],
+				"auth" => $ap_fetch['auth'],
+				"encry" => $ap_fetch['encry'],
+				"BTx" => $ap_fetch['BTx'],
+				"OTx" => $ap_fetch['OTx'],
+				"FA" => $ap_fetch['FA'],
+				"LA" => $ap_fetch['LA'],
+				"lat" => $ap_fetch['lat'],
+				"long" => $ap_fetch['long'],
+				"alt" => $ap_fetch['alt'],
+				"manuf" => $ap_fetch['manuf'],
+				);
+				$Import_KML_Data .=$this->createKML->PlotAP($ap_info);
 			}
 		}
-		if($Import_KML_Data)
-		{
-			if($regions)
-			{
-				$final_box = $this->FindMostBox($box);
-				#list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-				$KML_data = $this->createKML->PlotRegionBox($final_box, 100, 0, $title).$Import_KML_Data;
-			}
-			else
-			{
-				$KML_data = $Import_KML_Data;
-			}
-		}
-		return $KML_data;
+		return $Import_KML_Data;
 	}
 
 	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
@@ -998,7 +968,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		$this->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
 
-		$KML_data = $this->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date']);
+		$KML_data = $this->UserListKml($fetch['points']);
 		if($KML_data == "")
 		{
 			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');

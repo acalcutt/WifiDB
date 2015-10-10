@@ -369,6 +369,79 @@ class createKML
 		return $tmp;
 	}
 
+	public function PlotAP($ap_info_array)
+	{
+		switch($ap_info_array['sectype'])
+		{
+			case 1:
+				$sec_type_label = "open";
+				break;
+			case 2:
+				$sec_type_label = "wep";
+				break;
+			case 3;
+				$sec_type_label = "secure";
+				break;
+			default:
+				$sec_type_label = "open";
+				break;
+		}
+		if($ap_info_array['named'])
+		{
+			if($ap_info_array['ssid'] == '')
+			{
+				$ap_ssid = '&#91;Blank SSID&#93;';
+			}
+			elseif(!ctype_print($ap_info_array['ssid']))
+			{
+				$ap_ssid = '&#91;'.dbcore::normalize_ssid($ap_info_array['ssid']).'&#93;';
+			}
+			else
+			{
+				$ap_ssid = dbcore::normalize_ssid($ap_info_array['ssid']);
+			}		
+			$named = "			<name>".$ap_ssid."</name>";
+		}else
+		{
+			$named = "";
+		}
+
+		if($ap_info_array['new_ap'])
+		{
+			$icon_style = $sec_type_label."Style";
+		}else
+		{
+			$icon_style = $sec_type_label."StyleDead";
+		}
+
+		$tmp = "<Placemark id=\"".$ap_info_array['mac']."_Placemark\">$named
+			<styleUrl>".$icon_style."</styleUrl>
+			<description>
+				<![CDATA[
+					<b>SSID: </b>".dbcore::normalize_ssid($ap_info_array['ssid'])."<br />
+					<b>Mac Address: </b>".$ap_info_array['mac']."<br />
+					<b>Network Type: </b>".$ap_info_array['NT']."<br />
+					<b>Radio Type: </b>".$ap_info_array['radio']."<br />
+					<b>Channel: </b>".$ap_info_array['chan']."<br />
+					<b>Authentication: </b>".$ap_info_array['auth']."<br />
+					<b>Encryption: </b>".$ap_info_array['encry']."<br />
+					<b>Basic Transfer Rates: </b>".$ap_info_array['BTx']."<br />
+					<b>Other Transfer Rates: </b>".$ap_info_array['OTx']."<br />
+					<b>First Active: </b>".$ap_info_array['FA']."<br />
+					<b>Last Updated: </b>".$ap_info_array['LA']."<br />
+					<b>Latitude: </b>".$ap_info_array['lat']."<br />
+					<b>Longitude: </b>".$ap_info_array['long']."<br />
+					<b>Manufacturer: </b>".$ap_info_array['manuf']."<br />
+					<a href=\"".$this->URL_BASE."opt/fetch.php?id=".$ap_info_array['id']."\">WiFiDB Link</a>
+				]]>
+			</description>
+			<Point id=\"".$ap_info_array['mac']."_signal_gps\">
+				<coordinates>".$this->convert->dm2dd($ap_info_array['long']).",".$this->convert->dm2dd($ap_info_array['lat']).",".$ap_info_array['alt']."</coordinates>
+			</Point>
+		</Placemark>";
+		return $tmp;
+	}
+
 	public function PlotAPsignalTrail($hash = "")
 	{
 		if($hash === "")
