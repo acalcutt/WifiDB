@@ -52,7 +52,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Date: 08-27-2014</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/andrew-test">WiFiDB GitHub : Branch 'andrew-test'</a></td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/ac-wifidb-prod">WiFiDB GitHub : Branch 'ac-wifidb-prod'</a></td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
