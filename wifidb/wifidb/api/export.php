@@ -248,19 +248,32 @@ switch($func)
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
-			
+
 		case "exp_ap":
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			
+			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $labeled, $new_icons);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
+			$results = $dbcore->createKML->createKMLstructure($title, $results);
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			break;
+
+		case "exp_ap_signal":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			if(isset($_REQUEST['from'])){$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);}else{$from=NULL;}
 			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
 			
 			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $labeled, $new_icons);
+			$KML_Signal_data = $dbcore->export->SingleApSignal3dKml($id, $limit, $from);
+			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
 			
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");
+			if($limit){$title .= "-$limit";}
+			if($from){$title .= "-$from";}
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
-			
+
 		default:
 			echo 'No function or incorrect function has been given...what am I supposed to do with this request?';
 			die();

@@ -139,7 +139,7 @@ class export extends dbcore
 		{
 			#Get the date of the latest import
 			$sql = "SELECT `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
-			$date_query = $dbcore->sql->conn->query($sql);
+			$date_query = $this->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$datestamp = $date_fetch['date'];
 			$datestamp_split = explode(" ", $datestamp);
@@ -186,7 +186,7 @@ class export extends dbcore
 					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
 					
 					#Create Network Link to this kml for the final doc.kml
-					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 0, 0, "onChange", 86400, 0, $ListKML['region']);
+					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $ListKML['region']);
 
 					#Increment variables (duh)
 					++$user_files;
@@ -195,15 +195,15 @@ class export extends dbcore
 				unset($list_results);
 			}
 			#If this user had results, create a folder with their data
-			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
+			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 1);}
 			unset($user_results);
 		}
 		#Create the final KMZ
-		if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 0);}
+		if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 1);}
 		#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
 		#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
 		
-		$results = $this->createKML->createFolder($type." Database Export", $results, 0);
+		$results = $this->createKML->createFolder($type." Database Export", $results, 1);
 		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
 		
 		$kmz_tmp = $kmztmp_folder."/".$type."_db".$labeled.".kmz";
@@ -239,55 +239,6 @@ class export extends dbcore
 		if (file_exists($kmztmp_folder)){rmdir($kmztmp_folder);}
 		
 		return $daily_folder;
-	}
-
-	/*
-	 * Export All Daily Aps to KML
-	 */
-	public function ExportSingleAP( $id = 0, $new_ap = 0, $limit = NULL, $from = NULL)
-	{
-		if($id === 0 || !is_int($id))
-		{
-			throw new ErrorException("AP ID is empty or not an Integer, supply one.");
-			return 0;
-		}
-		$sql2 = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
-
-		$prep2 = $this->sql->conn->query($sql2);
-		$this->sql->checkError(__LINE__, __FILE__);
-		$ap_fetch = $prep2->fetch(2);
-		$sql3 = "SELECT
-  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
-  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
-  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
-FROM `wifi`.`wifi_signals`
-  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
-WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat` != '0.0000'";
-		if(!empty($limit))
-		{
-			$sql3 .= " LIMIT $limit";
-			if(!empty($from))
-			{
-				$sql3 .= ", $from";
-			}
-		}
-		#echo $sql3;
-		$data[$ap_fetch['ap_hash']] = $ap_fetch;
-		$data[$ap_fetch['ap_hash']]['new_ap'] = $new_ap;
-		$data[$ap_fetch['ap_hash']]['lat'] = $ap_fetch['lat'];
-		$data[$ap_fetch['ap_hash']]['long'] = $ap_fetch['long'];
-		$data[$ap_fetch['ap_hash']]['alt'] = $ap_fetch['alt'];
-		$prep3 = $this->sql->conn->query($sql3);
-		$this->sql->checkError();
-		$sig_gps_data = $prep3->fetchAll(2);
-		if(count($sig_gps_data) < 1)
-		{
-			#echo "No GPS\n";
-			return -1;
-		}
-		$data[$ap_fetch['ap_hash']]['gdata'] = $sig_gps_data;
-
-		return $data;
 	}
 
 	/*
@@ -760,7 +711,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			throw new ErrorException('$user value for export::UserAll() is not a string');
 			return 0;
 		}
-		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` = ?";
+		$sql = "SELECT `points` FROM `wifi`.`user_imports` WHERE `username` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
 		$prep->execute();
@@ -780,17 +731,12 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 				foreach($points as $point)
 				{
 					list($id, $new_old) = explode(":", $point);
-					$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$sql = "SELECT `id` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 					$result = $this->sql->conn->query($sql);
 					while($array = $result->fetch(2))
 					{
-						$ret = $this->ExportSingleAP((int)$array['id'], 1);
-						if(is_array($ret) && count($ret[$array['ap_hash']]['gdata']) > 0)
-						{
-							$this->createKML->ClearData();
-							$this->createKML->LoadData($ret);
-							$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
-						}
+						list($KML_AP_data, $export_ssid) = $this->SingleApKml($array['id'], $this->named);
+						if($KML_AP_data){$KML_data .= $KML_AP_data;}
 					}
 				}
 			}
@@ -826,6 +772,7 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		}
 		return $results;
 	}
+	
 
 	public function SingleAp($id, $named=0, $new_icons=0)
 	{
@@ -885,75 +832,75 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 			"alt" => $ap_fetch['alt'],
 			"manuf" => $ap_fetch['manuf'],
 			);
-			$KML_data = $this->createKML->PlotAP($ap_info);
+			$KML_data = $this->createKML->CreateApPlacemark($ap_info);
 		}
 
 		if($KML_data == ""){$KML_data = $this->createKML->createFolder("AP has no GPS", $KML_data, 0);}
 		
 		return array($KML_data, $export_ssid);
 	}
-
-	public function UserListKml($points, $named=0, $only_new=0, $new_icons=0)
+	
+	public function SingleApSignal3d($id, $limit=NULL, $from=NULL, $named=0, $new_icons=0)
 	{
-		$KML_data="";
-		$KML_region="";
-		$Import_KML_Data="";
-		$box_latlon = array();
-		$points = explode("-", $points);
-		foreach($points as $point)
+		list($KML_data, $export_ssid) = $dbcore->export->SingleApKml($id, $named, $new_icons);
+		$KML_Signal_data = $dbcore->export->SingleApSignal3dKml($id, $limit, $from);
+		$KML_data .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");
+		if($limit){$title .= "-$limit";}
+		if($from){$title .= "-$from";}
+		$KML_data = $this->createKML->createKMLstructure($title, $KML_data);
+		$kmz_filename = $this->kml_out.$title.".kmz";
+		$this->Zip->addFile($KML_data, 'doc.kml');
+		$this->Zip->setZipFile($kmz_filename);
+		$this->Zip->getZipFile();
+		if (file_exists($kmz_filename)) 
 		{
-			list($id, $new_old) = explode(":", $point);
-			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-			$result = $this->sql->conn->query($sql);
-			while($ap_fetch = $result->fetch(2))
-			{
-				#Get AP KML
-				$ap_info = array(
-				"id" => $id,
-				"new_ap" => $new_icons,
-				"named" => $named,
-				"mac" => $ap_fetch['mac'],
-				"ssid" => $ap_fetch['ssid'],
-				"chan" => $ap_fetch['chan'],
-				"radio" => $ap_fetch['radio'],
-				"NT" => $ap_fetch['NT'],
-				"sectype" => $ap_fetch['sectype'],
-				"auth" => $ap_fetch['auth'],
-				"encry" => $ap_fetch['encry'],
-				"BTx" => $ap_fetch['BTx'],
-				"OTx" => $ap_fetch['OTx'],
-				"FA" => $ap_fetch['FA'],
-				"LA" => $ap_fetch['LA'],
-				"lat" => $ap_fetch['lat'],
-				"long" => $ap_fetch['long'],
-				"alt" => $ap_fetch['alt'],
-				"manuf" => $ap_fetch['manuf'],
-				);
-				$Import_KML_Data .=$this->createKML->PlotAP($ap_info);
+			$results = array("mesg" => 'File is ready: <a href="'.$this->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+		}
+		else
+		{
+			$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
+		}
+		return $results;
+	}
+
+	public function SingleApSignal3dKml($id, $limit = NULL, $from = NULL)
+	{
+		#Get the AP hash
+		$sql = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+		$hash_query = $this->sql->conn->query($sql);
+		$this->sql->checkError(__LINE__, __FILE__);
+		$hash_fetch = $hash_query->fetch(2);
+		$ap_hash = $hash_fetch['ap_hash'];
+		
+		#Get AP Signal
+		$sql = "SELECT
+				  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
+				  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
+				  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
+				FROM `wifi`.`wifi_signals`
+				  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_gps`.`lat` != '0.0000'";
 				
-				$latlon_info = array(
-				"lat" => $ap_fetch['lat'],
-				"long" => $ap_fetch['long'],
-				);
-				$box_latlon[] = $latlon_info;
+		if(!empty($limit))
+		{
+			$sql .= " LIMIT $limit";
+			if(!empty($from))
+			{
+				$sql .= ", $from";
 			}
 		}
-		
-		if($Import_KML_Data != "")
+		$KML_data = "";
+		$ap_query = $this->sql->conn->query($sql);
+		$this->sql->checkError();
+		$sig_gps_data = $ap_query->fetchAll(2);
+		if(count($sig_gps_data) > 0)
 		{
-			$KML_data = $Import_KML_Data;
-			$final_box = $this->FindBox($box_latlon);
-			list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-			$KML_region = $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+			#Plot AP 3D Signal
+			$KML_data = $this->createKML->CreateApSignal3D($sig_gps_data, $UseRSSI = 1);
 		}
-		
-		$ret_data = array(
-		"data" => $KML_data,
-		"region" => $KML_region,
-		);
-		
-		return $ret_data;
+
+		return $KML_data;
 	}
 
 	public function UserList($row, $OutputPath = 0, $file_hash = '', $date = '')
@@ -1000,17 +947,75 @@ WHERE `wifi_signals`.`ap_hash` = '".$ap_fetch['ap_hash']."' AND `wifi_gps`.`lat`
 		return $results;
 	}
 
+	public function UserListKml($points, $named=0, $only_new=0, $new_icons=0)
+	{
+		$KML_data="";
+		$KML_region="";
+		$Import_KML_Data="";
+		$box_latlon = array();
+		$points = explode("-", $points);
+		foreach($points as $point)
+		{
+			list($id, $new_old) = explode(":", $point);
+			if($only_new == 1 and $new_old == 1){continue;}
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$result = $this->sql->conn->query($sql);
+			while($ap_fetch = $result->fetch(2))
+			{
+				#Get AP KML
+				$ap_info = array(
+				"id" => $id,
+				"new_ap" => $new_icons,
+				"named" => $named,
+				"mac" => $ap_fetch['mac'],
+				"ssid" => $ap_fetch['ssid'],
+				"chan" => $ap_fetch['chan'],
+				"radio" => $ap_fetch['radio'],
+				"NT" => $ap_fetch['NT'],
+				"sectype" => $ap_fetch['sectype'],
+				"auth" => $ap_fetch['auth'],
+				"encry" => $ap_fetch['encry'],
+				"BTx" => $ap_fetch['BTx'],
+				"OTx" => $ap_fetch['OTx'],
+				"FA" => $ap_fetch['FA'],
+				"LA" => $ap_fetch['LA'],
+				"lat" => $ap_fetch['lat'],
+				"long" => $ap_fetch['long'],
+				"alt" => $ap_fetch['alt'],
+				"manuf" => $ap_fetch['manuf'],
+				);
+				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
+				
+				$latlon_info = array(
+				"lat" => $ap_fetch['lat'],
+				"long" => $ap_fetch['long'],
+				);
+				$box_latlon[] = $latlon_info;
+			}
+		}
+		
+		if($Import_KML_Data != "")
+		{
+			$KML_data = $Import_KML_Data;
+			$final_box = $this->FindBox($box_latlon);
+			list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+			$KML_region = $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+		}
+		
+		$ret_data = array(
+		"data" => $KML_data,
+		"region" => $KML_region,
+		);
+		
+		return $ret_data;
+	}
+
 	public function exp_search($ResultList)
 	{
 		$KML_data = "";
 		foreach($ResultList as $ResultAP) {
-			$ret = $this->ExportSingleAP((int)$ResultAP['id'], 1);
-			if(is_array($ret) && count($ret[$ResultAP['ap_hash']]['gdata']) > 0)
-			{
-				$this->createKML->ClearData();
-				$this->createKML->LoadData($ret);
-				$KML_data .= $this->createKML->PlotAllAPs(1, 1, $this->named);
-			}
+			list($KML_AP_data, $export_ssid) = $this->SingleApKml($ResultAP['id'], $this->named);
+			if($KML_AP_data){$KML_data .= $KML_AP_data;}
 		}
 
 		if($KML_data == "")
