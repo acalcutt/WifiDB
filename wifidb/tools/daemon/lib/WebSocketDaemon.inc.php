@@ -127,7 +127,7 @@ class WebSocketDaemon extends WebSocketServer {
         return array("daemon_schedule"=>$fetch_waiting);
     }
 
-    protected function FetchImportWaitingData($limit = 10)
+    protected function FetchImportWaitingData($limit = 1000)
     {
         if($limit === 0)
         {

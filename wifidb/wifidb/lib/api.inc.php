@@ -101,6 +101,7 @@ class api extends dbcore
 		AND `latitude` <= ?
 		AND `longitude` <= ?
 		AND `longitude` >= ?";
+
         $result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $lat_low, PDO::PARAM_STR);
         $result->bindParam(2, $lat_high, PDO::PARAM_STR);
@@ -790,6 +791,7 @@ class api extends dbcore
 				`chan` LIKE ? AND
 				`auth` LIKE ? AND
 				`encry` LIKE ?";
+
         $prep2 = $this->sql->conn->prepare($sql2);
 
         $ssid = $ssid."%";

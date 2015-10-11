@@ -21,6 +21,7 @@ if not, write to the
 define("SWITCH_SCREEN", "API");
 define("SWITCH_EXTRAS", "live");
 define("WDB_DEBUG", 1);
+
 include('../lib/init.inc.php');
 if(isset($_REQUEST['LiveVersion']))
 {

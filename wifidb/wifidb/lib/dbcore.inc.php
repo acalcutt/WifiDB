@@ -154,7 +154,6 @@ class dbcore
 		return $hash;
 	}
 
-
 	public function GetLatestAnnouncement()
 	{
         $fetched = $this->GetAllActiveAnnouncments();
@@ -570,7 +569,7 @@ class dbcore
 		#var_dump($this->manuf_array[$man_mac[0]]);
 		$result = $this->sql->conn->prepare("SELECT manuf FROM `manufactures` WHERE `mac` = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
-        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+		$result->execute();
         if($result->rowCount() > 0)
 		{
 			$fetch = $result->fetch(2);
@@ -642,6 +641,7 @@ class dbcore
 		$c;
 		return $c;
 	}
+
 
 
 	public static function RotateSpinner($r = 0)

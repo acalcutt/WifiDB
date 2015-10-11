@@ -27,9 +27,7 @@ $dbcore->createPIDFile();
 
 #$arguments = $dbcore->parseArgs($argv);
 
-
-$localIP = getHostByName(getHostName());
-$echo = new WebSocketDaemon($dbcore, $localIP, $daemon_config['WebSocketPort']);
+$echo = new WebSocketDaemon($dbcore, $daemon_config['WebSocketBindIP'], $daemon_config['WebSocketPort']);
 
 try {
   $echo->run();

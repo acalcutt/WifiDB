@@ -21,7 +21,7 @@ function connect(last) {
             if(last == 'LiveAPs')
             {
                 LiveLoop();
-            }else if(last == 'Schedule')
+            }else if(last == 'Scheduling')
             {
                 ScheduleLoop();
             }

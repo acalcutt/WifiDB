@@ -205,8 +205,22 @@ class createKML
 		$this->data->placemarks = array();
 	}
 
+	public function createKMLstructure($title, $alldata)
+	{
+		$KML_DATA =
+'<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+	<Document>
+		<name>'.$title.'</name>
+		'.$this->style_data.'
+		'.$alldata.'
+	</Document>
+</kml>';
 
-	public function createFolder($data = "", $name = "", $open = 0, $radiofolder = 0)
+		Return $KML_DATA;
+	}
+
+	public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
 	{
 		if($data === NULL)
 		{
@@ -237,68 +251,34 @@ class createKML
 		return $tmp;
 	}
 
-	/**
-	 * @param null $data
-	 * @return int
-	 * @throws ErrorException
-	 */
-	public function LoadData($data = NULL)
+	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0, $regionkml = "")
 	{
-		if($data === NULL)
+		if($radiofolder == 1)
 		{
-			throw new ErrorException("Access Point Data array for createKML::LoadData is empty.");
+			$radiofolder = "
+			<styleUrl>#radio</styleUrl>";
+		}else
+		{
+		   $radiofolder = "
+			<styleUrl>#check</styleUrl>";
 		}
-		$this->data->apdata = $data;
-		return 1;
+		$tmp = '
+		<NetworkLink>'.$radiofolder.$regionkml.'
+				<name>'.$title.'</name>
+				<visibility>'.$visibility.'</visibility>
+				<flyToView>'.$flytoview.'</flyToView>
+				<Link>
+						<href>'.$url.'</href>
+						<refreshMode>'.$refreshMode.'</refreshMode>
+						<refreshInterval>'.$refreshInterval.'</refreshInterval>
+				</Link>
+		</NetworkLink>';
+		return $tmp;
 	}
 
-	public function PlotAllAPs($WithSignal = 1, $UseRSSI = 0, $named = 0)
+	public function CreateApPlacemark($ap_info_array)
 	{
-		if(!is_int($WithSignal) || $WithSignal > 4 || $WithSignal < 1)
-		{
-			throw new ErrorException("WithSignal value for createKML::PlotAllAPs is not an integer or of the value 0, 1, 2, or 3.");
-		}
-		$data = "";
-		#$r = 0;
-		foreach($this->data->apdata as $key=>$ap)
-		{
-			switch($WithSignal)
-			{
-				case 1:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named), dbcore::normalize_ssid($ap['ssid']), 0);
-					break;
-				case 2:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail"), dbcore::normalize_ssid($ap['ssid']), 0);
-					break;
-				case 3:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Plot"), dbcore::normalize_ssid($ap['ssid']), 0);
-					break;
-				case 4:
-					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail").$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3d Signal Plot"), dbcore::normalize_ssid($ap['ssid']), 0);
-					break;
-			}
-			#$r = dbcore::RotateSpinner($r);
-		}
-		return $data;
-	}
-
-	public function PlotAPpoint($hash = "", $named = 0)
-	{
-		if($hash === "")
-		{
-
-			throw new ErrorException("AP Hash pointer for createKML::PlotAPpoint is empty.");
-		}
-		if($this->data->apdata[$hash] === NULL)
-		{
-			throw new ErrorException("apdata element in the data object for createKML::PlotAPpoint is empty");
-		}
-		if($this->data->apdata[$hash]['gdata'] === NULL)
-		{
-			throw new ErrorException("gdata element in the data object for createKML::PlotAPpoint is empty");
-		}
-
-		switch($this->data->apdata[$hash]['sectype'])
+		switch($ap_info_array['sectype'])
 		{
 			case 1:
 				$sec_type_label = "open";
@@ -313,27 +293,27 @@ class createKML
 				$sec_type_label = "open";
 				break;
 		}
-		if($named)
+		if($ap_info_array['named'])
 		{
-			if($this->data->apdata[$hash]['ssid'] == '')
+			if($ap_info_array['ssid'] == '')
 			{
 				$ap_ssid = '&#91;Blank SSID&#93;';
 			}
-			elseif(!ctype_print($this->data->apdata[$hash]['ssid']))
+			elseif(!ctype_print($ap_info_array['ssid']))
 			{
-				$ap_ssid = '&#91;'.htmlentities($this->data->apdata[$hash]['ssid']).'&#93;';
+				$ap_ssid = '&#91;'.dbcore::normalize_ssid($ap_info_array['ssid']).'&#93;';
 			}
 			else
 			{
-				$ap_ssid = htmlentities($this->data->apdata[$hash]['ssid']);
-			}
-			$named = "<name>".$ap_ssid."</name>";
+				$ap_ssid = dbcore::normalize_ssid($ap_info_array['ssid']);
+			}		
+			$named = "			<name>".$ap_ssid."</name>";
 		}else
 		{
 			$named = "";
 		}
 
-		if($this->data->apdata[$hash]['new_ap'])
+		if($ap_info_array['new_ap'])
 		{
 			$icon_style = $sec_type_label."Style";
 		}else
@@ -341,126 +321,45 @@ class createKML
 			$icon_style = $sec_type_label."StyleDead";
 		}
 
-		$tmp = "<Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">
-            $named
-            <styleUrl>".$icon_style."</styleUrl>
+		$tmp = "<Placemark id=\"".$ap_info_array['mac']."_Placemark\">$named
+			<styleUrl>".$icon_style."</styleUrl>
 			<description>
 				<![CDATA[
-					<b>SSID: </b>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."<br />
-					<b>Mac Address: </b>".$this->data->apdata[$hash]['mac']."<br />
-					<b>Network Type: </b>".$this->data->apdata[$hash]['NT']."<br />
-					<b>Radio Type: </b>".$this->data->apdata[$hash]['radio']."<br />
-					<b>Channel: </b>".$this->data->apdata[$hash]['chan']."<br />
-					<b>Authentication: </b>".$this->data->apdata[$hash]['auth']."<br />
-					<b>Encryption: </b>".$this->data->apdata[$hash]['encry']."<br />
-					<b>Basic Transfer Rates: </b>".$this->data->apdata[$hash]['BTx']."<br />
-					<b>Other Transfer Rates: </b>".$this->data->apdata[$hash]['OTx']."<br />
-					<b>First Active: </b>".$this->data->apdata[$hash]['FA']."<br />
-					<b>Last Updated: </b>".$this->data->apdata[$hash]['LA']."<br />
-					<b>Latitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['lat'])."<br />
-					<b>Longitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['long'])."<br />
-					<b>Manufacturer: </b>".$this->data->apdata[$hash]['manuf']."<br />
-					<a href=\"".$this->URL_BASE."opt/fetch.php?id=".$this->data->apdata[$hash]['id']."\">WiFiDB Link</a>
+					<b>SSID: </b>".dbcore::normalize_ssid($ap_info_array['ssid'])."<br />
+					<b>Mac Address: </b>".$ap_info_array['mac']."<br />
+					<b>Network Type: </b>".$ap_info_array['NT']."<br />
+					<b>Radio Type: </b>".$ap_info_array['radio']."<br />
+					<b>Channel: </b>".$ap_info_array['chan']."<br />
+					<b>Authentication: </b>".$ap_info_array['auth']."<br />
+					<b>Encryption: </b>".$ap_info_array['encry']."<br />
+					<b>Basic Transfer Rates: </b>".$ap_info_array['BTx']."<br />
+					<b>Other Transfer Rates: </b>".$ap_info_array['OTx']."<br />
+					<b>First Active: </b>".$ap_info_array['FA']."<br />
+					<b>Last Updated: </b>".$ap_info_array['LA']."<br />
+					<b>Latitude: </b>".$ap_info_array['lat']."<br />
+					<b>Longitude: </b>".$ap_info_array['long']."<br />
+					<b>Manufacturer: </b>".$ap_info_array['manuf']."<br />
+					<a href=\"".$this->URL_BASE."opt/fetch.php?id=".$ap_info_array['id']."\">WiFiDB Link</a>
 				]]>
 			</description>
-			<Point id=\"".$this->data->apdata[$hash]['mac']."_signal_gps\">
-				<coordinates>".$this->convert->dm2dd($this->data->apdata[$hash]['long']).",".$this->convert->dm2dd($this->data->apdata[$hash]['lat']).",".$this->data->apdata[$hash]['alt']."</coordinates>
+			<Point id=\"".$ap_info_array['mac']."_signal_gps\">
+				<coordinates>".$this->convert->dm2dd($ap_info_array['long']).",".$this->convert->dm2dd($ap_info_array['lat']).",".$ap_info_array['alt']."</coordinates>
 			</Point>
 		</Placemark>";
 		return $tmp;
 	}
 
-	public function PlotAPsignalTrail($hash = "")
+	public function CreateApSignal3D($signal_array = array(), $UseRSSI = 1)
 	{
-		if($hash === "")
-		{
-			throw new ErrorException("AP Hash pointer for createKML::PlotAPsignalTrail is empty.");
-		}
-		if($this->data->apdata[$hash] === NULL)
-		{
-			throw new ErrorException("apdata element in the data object for createKML::PlotAPsignalTrail is empty");
-		}
-		if($this->data->apdata[$hash]['gdata'] === NULL)
-		{
-			throw new ErrorException("gdata element in the data object for createKML::PlotAPsignalTrail is empty");
-		}
-
 		$tmp = "";
 		$LastTimeInt = 0;
-		$SigData = 0;
-		$ExpString = "";
-        #var_dump($this->data->apdata[$hash]);
-        $tmp .= '<Placemark id="'.$this->data->apdata[$hash]['mac'].'_signal_trail">
-            <name>'.$this->data->apdata[$hash]['ssid'].'</name>
-			<styleUrl>Location</styleUrl>
-			<LineString>
-				<altitudeMode>relative</altitudeMode>
-				<coordinates>';
-		foreach($this->data->apdata[$hash]['gdata'] as $key=>$gps)
-		{
-#            var_dump($gps);
-			$LastSigData = $SigData;
-			$SigData = 1;
-			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
-			$NewTimeInt = strtotime($string);
-
-			$cal = ($NewTimeInt - $LastTimeInt);
-			if($cal < 0)
-			{
-				$cal = -1*$cal;
-			}
-			If(($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
-			{
-				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
-				{
-					$tmp .= $ExpString;
-				}
-			}
-			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
-			$ExpString = "
-					".$gps_coords.",0";
-
-			$tmp .= $ExpString;
-			$LastTimeInt = $NewTimeInt;
-		}
-		if($tmp != "\r\n , ,")
-		{
-			$tmp .= '
-					</coordinates>
-				</LineString>
-			</Placemark>';
-		}
-#        var_dump($tmp);
-		return $tmp;
-	}
-
-	public function PlotAPsignal3D($hash = "", $UseRSSI = 0)
-	{
-        $this->SigMapTimeBeforeMarkedDead = 30;
-		if($hash === "")
-		{
-			throw new ErrorException("AP Hash pointer for createKML::PlotAPsignal3D is empty.");
-		}
-		if($this->data->apdata[$hash] === NULL)
-		{
-			throw new ErrorException("apdata element in the data object for createKML::PlotAPsignal3D is empty");
-		}
-		if(empty($this->data->apdata[$hash]['gdata']))
-		{
-			return "";
-		}
-
-		$tmp = "";
-		$all = "";
-        $LastTimeInt = 0;
 		$LastSigStrengthLevel = 0;
-        $lastGeodord = "";
 		$SigData = 0;
 		$ExpString = "";
 
-		foreach($this->data->apdata[$hash]['gdata'] as $gps)
+		foreach($signal_array as $gps)
 		{
-            $LastSigData = $SigData;
+			$LastSigData = $SigData;
 			$SigData = 1;
 			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
 			$NewTimeInt = strtotime($string);
@@ -496,31 +395,25 @@ class createKML
 			{
 				$cal = -1*$cal;
 			}
-#            var_dump($LastSigStrengthLevel, $SigStrengthLevel, $cal , $this->SigMapTimeBeforeMarkedDead, $LastSigData);
-            if(($LastSigStrengthLevel !== $SigStrengthLevel) OR ($cal >= $this->SigMapTimeBeforeMarkedDead))
-            {
-                if($LastSigData) {
-                    $tmp .= '
-                    </coordinates>
-                </LineString>
-            </Placemark>';
-                }
-            }
-
-			If($LastSigStrengthLevel !== $SigStrengthLevel OR ($cal >= $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			If($LastSigStrengthLevel <> $SigStrengthLevel OR ($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
 			{
-				$tmp .= '
-            <Placemark>
+				if($LastSigData == 1)
+				{
+					$tmp .= '</coordinates>
+						</LineString>
+					</Placemark>';
+				}
+				$tmp .= '<Placemark>
 				<styleUrl>'.$SigCat.'</styleUrl>
 				<LineString>
 					<extrude>1</extrude>
 					<tessellate>0</tessellate>
 					<altitudeMode>relativeToGround</altitudeMode>
 					<coordinates>';
-				If($lastGeodord !== '' AND $LastSigStrengthLevel !== $SigStrengthLevel OR $cal <= $this->SigMapTimeBeforeMarkedDead AND $LastSigData == 1)
+				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
 				{
-					$tmp .= $lastGeodord;
-                }
+					$tmp .= $ExpString;
+				}
 			}
 			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
 			if($UseRSSI == 1)
@@ -533,22 +426,19 @@ class createKML
 				$ExpString = "
 					".$gps_coords.",".$gps['signal'];
 			}
-            $tmp .= $ExpString;
-
-            $lastGeodord = $ExpString;
-            $LastSigStrengthLevel = $SigStrengthLevel;
-            $LastTimeInt = $NewTimeInt;
-
- #           var_dump($tmp);
- #           var_dump("----------------------------------------");
-            $all .= $tmp;
-            $tmp = "";
-        }
-        $all .= '
-                    </coordinates>
-                </LineString>
-            </Placemark>';
-		return $all;
+			$tmp .= $ExpString;
+			$LastSigStrengthLevel = $SigStrengthLevel;
+			$LastTimeInt = $NewTimeInt;
+		}
+		if($tmp != "\r\n , ,")
+		{
+			$tmp .= '
+					</coordinates>
+				</LineString>
+			</Placemark>';
+		}
+		$ret = $tmp;
+		return $ret;
 	}
 
 	public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
@@ -558,7 +448,11 @@ class createKML
 		{
 			$idLabel = 'id="'.$idName.'"';
 		}
-		$data = '				<Region '.$idLabel.'>
+		else
+		{
+			$idLabel = 'id="'.uniqid().'"';
+		}
+		$data = '<Region '.$idLabel.'>
 				<LatLonAltBox>
 					<north>'.$this->convert->dm2dd($box[0]).'</north>
 					<south>'.$this->convert->dm2dd($box[1]).'</south>
@@ -573,7 +467,8 @@ class createKML
 					<minFadeExtent>0</minFadeExtent>
 					<maxFadeExtent>0</maxFadeExtent>
 				</Lod>
-			</Region>';
+			</Region>
+			';
 		#var_dump($data);
 		return $data;
 	}
@@ -607,51 +502,10 @@ class createKML
 					<maxFadeExtent>0</maxFadeExtent>
 				</Lod>
 			</Region>
-		</Placemark>';
+		</Placemark>
+		';
 		return $placemark;
 	}
-
-	/**
-	 * @param string $url
-	 * @param string $title
-	 * @param int $visibility
-	 * @param int $flytoview
-	 * @param string $refreshMode
-	 * @param int $refreshInterval
-	 * @return string
-	 */
-
-	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0)
-	{
-		if($radiofolder == 1)
-		{
-			$radiofolder = "
-			<styleUrl>#radio</styleUrl>";
-		}else
-		{
-		   $radiofolder = "
-			<styleUrl>#check</styleUrl>";
-		}
-		$tmp = '
-		<NetworkLink>'.$radiofolder.'
-				<name>'.$title.'</name>
-				<visibility>'.$visibility.'</visibility>
-				<flyToView>'.$flytoview.'</flyToView>
-				<Link>
-						<href>'.$url.'</href>
-						<refreshMode>'.$refreshMode.'</refreshMode>
-						<refreshInterval>'.$refreshInterval.'</refreshInterval>
-				</Link>
-		</NetworkLink>';
-		return $tmp;
-	}
-
-
-	public function ClearData()
-	{
-		$this->data->apdata = array();
-	}
-
 	/**
 	 * @throws ErrorException
 	 */
@@ -679,21 +533,6 @@ class createKML
 			return 0;
 		}
 
-	}
-
-	public function createKMLstructure($title, $alldata)
-	{
-		$KML_DATA =
-'<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-	<Document>
-		<name>'.$title.'</name>
-		'.$this->style_data.'
-		'.$alldata.'
-	</Document>
-</kml>';
-
-		Return $KML_DATA;
 	}
 
 	/*
@@ -725,4 +564,269 @@ class createKML
 			return -2;
 		}
 	}
+
+	
+	/*
+	public function LoadData($data = NULL)
+	{
+		if($data === NULL)
+		{
+			throw new ErrorException("Access Point Data array for createKML::LoadData is empty.");
+		}
+		$this->data->apdata = $data;
+		return 1;
+	}
+
+	public function PlotAllAPs($WithSignal = 1, $UseRSSI = 0, $named = 0)
+	{
+		if(!is_int($WithSignal) || $WithSignal > 4 || $WithSignal < 1)
+		{
+			throw new ErrorException("WithSignal value for createKML::PlotAllAPs is not an integer or of the value 0, 1, 2, or 3.");
+		}
+		$data = "";
+		#$r = 0;
+		foreach($this->data->apdata as $key=>$ap)
+		{
+			switch($WithSignal)
+			{
+				case 1:
+					$data .= $this->PlotAPpoint($key, $named);
+					break;
+				case 2:
+					$data .= $this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0);
+					break;
+				case 3:
+					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
+					break;
+				case 4:
+					$data .= $this->createFolder($this->PlotAPpoint($key, $named).$this->createFolder($this->PlotAPsignalTrail($key), "Signal Trail", 0).$this->createFolder($this->PlotAPsignal3D($key, $UseRSSI), "3D Signal Trail", 0), dbcore::normalize_ssid($ap['ssid']), 0);
+					break;
+			}
+			#$r = dbcore::RotateSpinner($r);
+		}
+		return $data;
+	}
+
+	public function PlotAPpoint($hash = "", $named = 0)
+	{
+		if($hash === "")
+		{
+
+			throw new ErrorException("AP Hash pointer for createKML::PlotAPpoint is empty.");
+		}
+		if($this->data->apdata[$hash] === NULL)
+		{
+			throw new ErrorException("apdata element in the data object for createKML::PlotAPpoint is empty");
+		}
+		if($this->data->apdata[$hash]['gdata'] === NULL)
+		{
+			throw new ErrorException("gdata element in the data object for createKML::PlotAPpoint is empty");
+		}
+		
+		$ap_info = array(
+		"named" => $named,
+		"id" => $this->data->apdata[$hash]['id'],
+		"new_ap" => $this->data->apdata[$hash]['new_ap'],
+		"mac" => $this->data->apdata[$hash]['mac'],
+		"ssid" => $this->data->apdata[$hash]['ssid'],
+		"chan" => $this->data->apdata[$hash]['chan'],
+		"radio" => $this->data->apdata[$hash]['radio'],
+		"NT" => $this->data->apdata[$hash]['NT'],
+		"sectype" => $this->data->apdata[$hash]['sectype'],
+		"auth" => $this->data->apdata[$hash]['auth'],
+		"encry" => $this->data->apdata[$hash]['encry'],
+		"BTx" => $this->data->apdata[$hash]['BTx'],
+		"OTx" => $this->data->apdata[$hash]['OTx'],
+		"FA" => $this->data->apdata[$hash]['FA'],
+		"LA" => $this->data->apdata[$hash]['LA'],
+		"lat" => $this->data->apdata[$hash]['lat'],
+		"long" => $this->data->apdata[$hash]['long'],
+		"alt" => $this->data->apdata[$hash]['alt'],
+		"manuf" => $this->data->apdata[$hash]['manuf'],
+		);
+		$KML_Data = $this->createKML->CreateApPlacemark($ap_info);		
+
+		return $KML_Data;
+	}
+
+	public function PlotAPsignalTrail($hash = "")
+	{
+		if($hash === "")
+		{
+			throw new ErrorException("AP Hash pointer for createKML::PlotAPsignalTrail is empty.");
+		}
+		if($this->data->apdata[$hash] === NULL)
+		{
+			throw new ErrorException("apdata element in the data object for createKML::PlotAPsignalTrail is empty");
+		}
+		if($this->data->apdata[$hash]['gdata'] === NULL)
+		{
+			throw new ErrorException("gdata element in the data object for createKML::PlotAPsignalTrail is empty");
+		}
+
+		$tmp = "";
+		$LastTimeInt = 0;
+		$SigData = 0;
+		$ExpString = "";
+
+		foreach($this->data->apdata[$hash]['gdata'] as $gps)
+		{
+			$LastSigData = $SigData;
+			$SigData = 1;
+			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
+			$NewTimeInt = strtotime($string);
+
+			$cal = ($NewTimeInt - $LastTimeInt);
+			if($cal < 0)
+			{
+				$cal = -1*$cal;
+			}
+			If(($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			{
+				if($LastSigData == 1)
+				{
+					$tmp .= '</coordinates>
+						</LineString>
+					</Placemark>';
+				}
+				$tmp .= '<Placemark id="'.$this->data->apdata[$hash]['mac'].'_signal_trail">
+			<styleUrl>Location</styleUrl>
+			<LineString>
+				<altitudeMode>relative</altitudeMode>
+				<coordinates>';
+				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
+				{
+					$tmp .= $ExpString;
+				}
+			}
+			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
+			$ExpString = "
+					".$gps_coords.",0";
+
+			$tmp .= $ExpString;
+			$LastTimeInt = $NewTimeInt;
+		}
+		if($tmp != "\r\n , ,")
+		{
+			$tmp .= '
+					</coordinates>
+				</LineString>
+			</Placemark>';
+		}
+		$ret = $tmp;
+		return $ret;
+	}
+
+	public function PlotAPsignal3D($hash = "", $UseRSSI = 0)
+	{
+
+		if($hash === "")
+		{
+			throw new ErrorException("AP Hash pointer for createKML::PlotAPsignal3D is empty.");
+		}
+		if($this->data->apdata[$hash] === NULL)
+		{
+			throw new ErrorException("apdata element in the data object for createKML::PlotAPsignal3D is empty");
+		}
+		if(empty($this->data->apdata[$hash]['gdata']))
+		{
+			return "";
+		}
+
+		$tmp = "";
+		$LastTimeInt = 0;
+		$LastSigStrengthLevel = 0;
+		$SigData = 0;
+		$ExpString = "";
+
+		foreach($this->data->apdata[$hash]['gdata'] as $gps)
+		{
+			$LastSigData = $SigData;
+			$SigData = 1;
+			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
+			$NewTimeInt = strtotime($string);
+			$signal = (int) $gps['signal'];
+			if($signal >= 0 And $signal <= 16)
+			{
+				$SigStrengthLevel = 1;
+				$SigCat = '#SigCat1';
+			} elseif($signal >= 17 And $signal <= 32)
+			{
+				$SigStrengthLevel = 2;
+				$SigCat = '#SigCat2';
+			} elseif($signal >= 33 And $signal <= 48)
+			{
+				$SigStrengthLevel = 3;
+				$SigCat = '#SigCat3';
+			} elseif($signal >= 49 And $signal <= 64)
+			{
+				$SigStrengthLevel = 4;
+				$SigCat = '#SigCat4';
+			} elseif($signal >= 65 And $signal <= 80)
+			{
+				$SigStrengthLevel = 5;
+				$SigCat = '#SigCat5';
+			} elseif($signal >= 80 And $signal <= 100)
+			{
+				$SigStrengthLevel = 6;
+				$SigCat = '#SigCat6';
+			}
+
+			$cal = ($NewTimeInt - $LastTimeInt);
+			if($cal < 0)
+			{
+				$cal = -1*$cal;
+			}
+			If($LastSigStrengthLevel <> $SigStrengthLevel OR ($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			{
+				if($LastSigData == 1)
+				{
+					$tmp .= '</coordinates>
+						</LineString>
+					</Placemark>';
+				}
+				$tmp .= '<Placemark>
+				<styleUrl>'.$SigCat.'</styleUrl>
+				<LineString>
+					<extrude>1</extrude>
+					<tessellate>0</tessellate>
+					<altitudeMode>relativeToGround</altitudeMode>
+					<coordinates>';
+				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
+				{
+					$tmp .= $ExpString;
+				}
+			}
+			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
+			if($UseRSSI == 1)
+			{
+				$ExpRSSIAlt = (100 + $gps['rssi'])."";
+				$ExpString = "
+					".$gps_coords.",".$ExpRSSIAlt;
+			}else
+			{
+				$ExpString = "
+					".$gps_coords.",".$gps['signal'];
+			}
+			$tmp .= $ExpString;
+			$LastSigStrengthLevel = $SigStrengthLevel;
+			$LastTimeInt = $NewTimeInt;
+		}
+		if($tmp != "\r\n , ,")
+		{
+			$tmp .= '
+					</coordinates>
+				</LineString>
+			</Placemark>';
+		}
+		$ret = $tmp;
+		return $ret;
+	}
+
+	public function ClearData()
+	{
+		$this->data->apdata = array();
+	}
+	 */
+
 }

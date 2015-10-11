@@ -63,8 +63,7 @@ class daemon extends wdbcli
 		$D_SQL = "SELECT `daemon_state` FROM `settings` WHERE `node_name` = ? LIMIT 1";
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
-		$Dresult->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+		$this->sql->checkError( $Dresult->execute(), __LINE__, __FILE__);
 		$daemon_state = $Dresult->fetch();
 		if($daemon_state['daemon_state'] == 0)
 		{
@@ -94,8 +93,7 @@ class daemon extends wdbcli
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-		$prep->execute();
-		if ($this->sql->checkError()) {
+		if ($this->sql->checkError( $prep->execute(), __LINE__, __FILE__)) {
 			$this->verbosed("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1), -1);
 			$this->logd("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1));
 			throw new ErrorException("Failed to add bad file to bad import table.");
@@ -108,9 +106,7 @@ class daemon extends wdbcli
 		$prep->bindParam(1, $this->thread_id, PDO::PARAM_INT);
 		$prep->bindParam(2, $this->node_name, PDO::PARAM_STR);
 		$prep->bindParam(3, $thread_row_id, PDO::PARAM_INT);
-		$prep->execute();
-
-		if ($this->sql->checkError()) {
+		if ($this->sql->checkError( $prep->execute(), __LINE__, __FILE__)) {
 			$this->verbosed("Failed to update bad file with the Thread ID." . var_export($this->sql->conn->errorInfo(), 1), -1);
 			$this->logd("Failed to update bad file with the Thread ID." . var_export($this->sql->conn->errorInfo(), 1));
 			throw new ErrorException("Failed to update bad file with the Thread ID.");
@@ -123,7 +119,7 @@ class daemon extends wdbcli
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
-			if ($this->sql->checkError()) {
+			if ($this->sql->checkError( $prep->execute(), __LINE__, __FILE__)) {
 				$this->verbosed("Failed to remove file from the files_importing table." . var_export($this->sql->conn->errorInfo(), 1), -1);
 				$this->logd("Failed to remove bad file from the files_importing table." . var_export($this->sql->conn->errorInfo(), 1));
 				throw new ErrorException("Failed to remove bad file from the files_importing table.");
@@ -137,7 +133,7 @@ class daemon extends wdbcli
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep->execute();
-			if ($this->sql->checkError()) {
+			if ($this->sql->checkError( $prep->execute(), __LINE__, __FILE__)) {
 				$this->verbosed("Failed to remove bad file from the files table." . var_export($this->sql->conn->errorInfo(), 1), -1);
 				$this->logd("Failed to remove bad file from the files table." . var_export($this->sql->conn->errorInfo(), 1));
 				throw new ErrorException("Failed to remove bad file from the files table.");
@@ -159,22 +155,19 @@ class daemon extends wdbcli
 
 		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
 		$result = $this->sql->conn->prepare($daemon_sql);
-		$result->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+		$this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 		$LastInsert = $this->sql->conn->lastInsertID();
 
 		$select = "SELECT tmp_id FROM wifi.files_importing WHERE id = ?";
 		$prep = $this->sql->conn->prepare($select);
 		$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
-		$tmp_id = $prep->fetch(2);
+		$tmp_id = $prep->fetch(2)['tmp_id'];
 		$delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
 		$prep = $this->sql->conn->prepare($delete);
-		$prep->bindParam(1, $tmp_id['tmp_id'], PDO::PARAM_INT);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+		$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
+		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
 		$this->sql->conn->query("UNLOCK TABLES");
 		return $LastInsert;
@@ -214,9 +207,7 @@ class daemon extends wdbcli
             $prep->bindParam(3, $title, PDO::PARAM_STR);
             $prep->bindParam(4, $hash, PDO::PARAM_STR);
             $prep->bindParam(5, $file_row, PDO::PARAM_INT);
-            $prep->execute();
-
-            if($this->sql->checkError())
+            if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__))
             {
                 $this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
                 $this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
@@ -311,8 +302,7 @@ class daemon extends wdbcli
 			$update_tmp = "UPDATE `files_importing` SET `ap` = 'Preparing for Import', `importing` = '1' WHERE `id` = ?";
 			$prep4 = $this->sql->conn->prepare($update_tmp);
 			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
-			$prep4->execute();
-			if($this->sql->checkError(__LINE__, __FILE__))
+			if($this->sql->checkError( $prep4->execute(), __LINE__, __FILE__))
 			{
 				$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.",
 					-1);
@@ -325,8 +315,7 @@ class daemon extends wdbcli
 			$sql_check = "SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1";
 			$prep = $this->sql->conn->prepare($sql_check);
 			$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
-			$prep->execute();
-			if($this->sql->checkError(__LINE__, __FILE__))
+			if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__))
 			{
 				$this->logd("Failed to select file hash from files table. :(",
 					"Error", $this->This_is_me);
@@ -350,8 +339,7 @@ class daemon extends wdbcli
 				$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `files_importing` WHERE `hash` = ?";
 				$prep_ext = $this->sql->conn->prepare($sql_select_tmp_file_ext);
 				$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
-				$prep_ext->execute();
-				if($this->sql->checkError())
+				if($this->sql->checkError( $prep_ext->execute(), __LINE__, __FILE__))
 				{
 					$this->logd("Failed to select previous convert extension. :(",
 						"Error", $this->This_is_me);
@@ -382,9 +370,7 @@ class daemon extends wdbcli
 				$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
 				$prep1->bindParam(9, $PrevExt, PDO::PARAM_STR);
 				$prep1->bindParam(10, $this->node_name, PDO::PARAM_STR);
-				$prep1->execute();
-
-				if($this->sql->checkError(__LINE__, __FILE__))
+				if($this->sql->checkError( $prep1->execute(), __LINE__, __FILE__))
 				{
 					$this->logd("Failed to Insert the results of the new Import into the files table. :(",
 						"Error", $this->This_is_me);
@@ -416,9 +402,7 @@ class daemon extends wdbcli
 					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
-
-					$prep_update_files_table->execute();
-					$this->sql->checkError(__LINE__, __FILE__);
+					$this->sql->checkError( $prep_update_files_table->execute(), __LINE__, __FILE__);
 
 					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ? WHERE `id` = ?";
 					$prep3 = $this->sql->conn->prepare($sql);
@@ -432,8 +416,7 @@ class daemon extends wdbcli
 						$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
 						$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
 						$prep3->bindParam(8, $id, PDO::PARAM_INT);
-						$prep3->execute();
-						$this->sql->checkError(__LINE__, __FILE__);
+						$this->sql->checkError( $prep3->execute(), __LINE__, __FILE__);
 						$this->verbosed("Updated User Import row. ($id : $file_hash)", 2);
 					}
 
@@ -441,8 +424,7 @@ class daemon extends wdbcli
 					#echo $del_file_tmp."\r\n";
 					$prep = $this->sql->conn->prepare($del_file_tmp);
 					$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					if($this->sql->checkError(__LINE__, __FILE__))
+					if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__))
 					{
 						//**TODO
 						#mail_users("Error removing file: $source ($importing_id)", "Error removing file: $source ($importing_id)", "import", 1);
@@ -549,9 +531,7 @@ class daemon extends wdbcli
 		$prepnr->bindParam(1, $nextrun, PDO::PARAM_INT);
 		$prepnr->bindParam(2, $this->StatusWaiting, PDO::PARAM_STR);
 		$prepnr->bindParam(3, $job_id, PDO::PARAM_INT);
-
-		$prepnr->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+		$this->sql->checkError( $prepnr->execute(), __LINE__, __FILE__);
 	}
 
 	public function SetStartJob($job_id)
@@ -564,9 +544,7 @@ class daemon extends wdbcli
 		$prepsr->bindParam(1, $this->StatusRunning, PDO::PARAM_STR);
 		$prepsr->bindParam(2, $nextrun, PDO::PARAM_INT);
 		$prepsr->bindParam(3, $job_id, PDO::PARAM_INT);
-
-		$prepsr->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+		$this->sql->checkError( $prepsr->execute(), __LINE__, __FILE__);
 	}
 
     public function GetWaitingImportRowCount()
@@ -581,8 +559,7 @@ class daemon extends wdbcli
         $sql = "DELETE FROM `user_imports` WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $import_ID, PDO::PARAM_STR);
-        $prep->execute();
-        if($this->sql->checkError())
+        if($this->sql->checkError( $prep->execute(), __LINE__, __FILE__))
         {
             $this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
             $this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
