@@ -129,7 +129,14 @@ class WebSocketDaemon extends WebSocketServer {
 
     protected function FetchImportWaitingData($limit = 1000)
     {
-        $result = $this->sql->conn->query("SELECT `id`, `file`, `user`, `title`, `size`, `date`, `hash` FROM wifi.files_tmp LIMIT $limit;");
+        if($limit === 0)
+        {
+            $sql = "SELECT `id`, `file`, `user`, `title`, `size`, `date`, `hash` FROM wifi.files_tmp";
+        }else
+        {
+            $sql = "SELECT `id`, `file`, `user`, `title`, `size`, `date`, `hash` FROM wifi.files_tmp";
+        }
+        $result = $this->sql->conn->query($sql);
         $fetch_waiting = $result->fetchAll(2);
         if(empty($fetch_waiting))
         {
