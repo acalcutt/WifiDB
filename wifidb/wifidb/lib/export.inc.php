@@ -285,7 +285,7 @@ class export extends dbcore
 	public function ExportApSignal3d($id, $limit = NULL, $from = NULL)
 	{
 		#Get the AP hash
-		$sql = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";
+		$sql = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id'";
 		$hash_query = $this->sql->conn->query($sql);
 		$this->sql->checkError(__LINE__, __FILE__);
 		$hash_fetch = $hash_query->fetch(2);
@@ -296,8 +296,8 @@ class export extends dbcore
 				  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
 				  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
 				  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
-				FROM `wifi`.`wifi_signals`
-				  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+				FROM `wifi_signals`
+				  LEFT JOIN `wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
 				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_gps`.`lat` != '0.0000'";
 				
 		if(!empty($limit))
@@ -328,7 +328,7 @@ class export extends dbcore
 			throw new ErrorException('$user value for export::UserAll() is not a string');
 			return 0;
 		}
-		$sql = "SELECT `points` FROM `wifi`.`user_imports` WHERE `username` = ?";
+		$sql = "SELECT `points` FROM `user_imports` WHERE `username` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
 		$prep->execute();
@@ -348,7 +348,7 @@ class export extends dbcore
 				foreach($points as $point)
 				{
 					list($id, $new_old) = explode(":", $point);
-					$sql = "SELECT `id` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$sql = "SELECT `id` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 					$result = $this->sql->conn->query($sql);
 					while($array = $result->fetch(2))
 					{
@@ -372,7 +372,7 @@ class export extends dbcore
 		{
 			list($id, $new_old) = explode(":", $point);
 			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
 			{
@@ -556,7 +556,7 @@ class export extends dbcore
 		$boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
 		$this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
 
-		$results = $this->sql->conn->query("SELECT * FROM `wifi`.`boundaries`");
+		$results = $this->sql->conn->query("SELECT * FROM `boundaries`");
 		$fetched = $results->fetchAll(2);
 		$KML_data = "";
 		foreach($fetched as $boundary)
@@ -576,7 +576,7 @@ class export extends dbcore
 	public function ExportGPXAll()
 	{
 		$this->verbosed("Starting GPX Export of WiFiDB.");
-		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
+		$sql = "SELECT * FROM `wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
 		$prep = $this->sql->conn->execute($sql);
 		$aparray_all = $prep->fetchAll(2);
 		$this->verbosed("Pointers Table Queried.");
@@ -644,7 +644,7 @@ class export extends dbcore
 				$sig_exp	= explode(",",$signal);
 				$gpsid	  = $sig_exp[0];
 
-				$sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ? LIMIT 1";
+				$sql = "SELECT * FROM `wifi_gps` WHERE `id` = ? LIMIT 1";
 				$prepgps = $this->sql->conn->prepare($sql);
 				$prepgps->bindParam(1, $gpsid, PDO::PARAM_INT);
 				$prepgps->execute();
