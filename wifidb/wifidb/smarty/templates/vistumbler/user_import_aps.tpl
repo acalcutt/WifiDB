@@ -40,7 +40,7 @@ if not, write to the
                                         </tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Export This list To...</b></td>
-                                            <td><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list&amp;row={$wifidb_all_user_row}">KMZ</a></td>
+                                            <td><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list&amp;row={$wifidb_all_user_row}&amp;all=1">KMZ</a></td>
                                         </tr>
                                     </tbody>
                                 </table>

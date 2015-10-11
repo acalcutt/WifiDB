@@ -65,7 +65,7 @@ if not, write to the
                                                         <tr>
                                                             <th class="style4" onclick="expandcontract('Row{$wifidb_ap_signal.id}','ClickIcon{$wifidb_ap_signal.id}')" id="ClickIcon{$wifidb_ap_signal.id}" style="cursor: pointer; cursor: hand;">+</th>
                                                             <th colspan="5" class="style4">Signal History ({$wifidb_ap_signal.desc})</th>
-                                                            <td class="style4"><b>Export:</b> <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">KMZ</a> / <a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">Graph</a></td>
+                                                            <td class="style4"><b>Export:</b> <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap_signal&amp;limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">KMZ</a> / <a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">Graph</a></td>
                                                         </tr>
                                                     </tbody>
                                                     <tbody id="Row{$wifidb_ap_signal.id}" style="display:none">

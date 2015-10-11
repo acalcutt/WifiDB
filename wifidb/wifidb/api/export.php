@@ -78,7 +78,7 @@ switch($func)
 			break;
 			
 		case "exp_all":
-			$sql = "SELECT DISTINCT(username) FROM `user_imports` ORDER BY `username` ASC";
+			$sql = "SELECT DISTINCT(username) FROM `user_imports` WHERE `points` != '' ORDER BY `username` ASC";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll();
@@ -86,7 +86,7 @@ switch($func)
 			foreach($fetch_user as $user)
 			{
 				$username = $user['username'];
-				$sql = "SELECT * FROM `wifi_pointers` WHERE `username` LIKE '$username' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' LIMIT 1";
+				$sql = "SELECT `id` FROM `wifi_pointers` WHERE `username` LIKE '$username' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' LIMIT 1";
 				$result = $dbcore->sql->conn->query($sql);
 				if($result->rowCount() > 0)
 				{
@@ -101,32 +101,63 @@ switch($func)
 			break;
 
 		case "exp_daily":
-			$date = (empty($_REQUEST['date'])) ? date($dbcore->export->date_format) : $_REQUEST['date'];
+			if(!empty($_REQUEST['date']))
+			{
+				$date = $_REQUEST['date'];
+			}
+			else
+			{	
+				#Get the date of the newest import
+				$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+				$date_query = $dbcore->sql->conn->query($sql);
+				$date_fetch = $date_query->fetch(2);
+				$datestamp = $date_fetch['date'];
+				$datestamp_split = explode(" ", $datestamp);
+				$date = $datestamp_split[0];
+			}
+			$date = (empty($date)) ? date($dbcore->export->date_format) : $date;
+			
+			#Get lists from the date specified
 			$date_search = $date."%";
-			$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` LIKE '$date_search'";
+			$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` LIKE '$date_search' AND `points` != ''";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_imports = $prep->fetchAll();
 			$results="";
 			foreach($fetch_imports as $import)
 			{
+				$Export_List = 0;
+				$box_latlon = array();
 				#Check is list has access points with gps and non blank mac
 				$stage_pts = explode("-", $import['points']);
 				foreach($stage_pts as $point)
 				{
-					if($point)
+					list($id, $new_old) = explode(":", $point);
+					if($new_old == 1){continue;}
+					$sql = "SELECT `lat`, `long` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$result = $dbcore->sql->conn->query($sql);
+					while($latlon_fetch = $result->fetch(2))
 					{
-						list($id, $new_old) = explode(":", $point);
-						if($new_old == 1){continue;}
-						$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-						$result = $dbcore->sql->conn->query($sql);
-						if($result->rowCount() > 0)
-						{
-							#valid results found, add network link and exit check
-							$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onInterval", 86400);
-							break;
-						}
+						#Add gps to region array
+						$latlon_info = array(
+						"lat" => $latlon_fetch['lat'],
+						"long" => $latlon_fetch['long'],
+						);
+						$box_latlon[] = $latlon_info;
+
+						#Set List to be exported
+						$Export_List = 1;
 					}
+				}
+				if($Export_List)
+				{
+					#Create Region Box
+					$final_box = $dbcore->export->FindBox($box_latlon);
+					list($distance_calc, $minLodPix, $distance) = $dbcore->export->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+					
+					#valid results found, add network link and exit check
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
 				}
 			}
 			
@@ -136,44 +167,65 @@ switch($func)
 			break;
 			
 		case "exp_latest":
-			$results = $dbcore->export->ExportCurrentAPkmlApi($labeled, $new_icons);
+			$results = $dbcore->export->ExportCurrentAPkml($labeled, $new_icons);
+			#if($results==""){$results = $dbcore->createKML->createFolder("No Access Points Found", "", 0, 0);}
+			if($labeled){$results = $dbcore->createKML->createKMLstructure("Newest AP Labeled", $results);}else{$results = $dbcore->createKML->createKMLstructure("Newest AP", $results);}
 			if($labeled){$file_name = "Latest_Labeled.kmz";}else{$file_name = "Latest.kmz";}
 			break;
 
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$sql = "SELECT * FROM `user_imports` WHERE `username` LIKE ?";
+			$sql = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != ''";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
 			$fetch_imports = $prep->fetchAll();
 			$results="";
+			$list_count = 0;
 			foreach($fetch_imports as $import)
 			{
+				$Export_List = 0;
+				$box_latlon = array();
 				#Check is list has access points with gps and non blank mac
 				$stage_pts = explode("-", $import['points']);
 				foreach($stage_pts as $point)
 				{
-					if($point)
+					list($id, $new_old) = explode(":", $point);
+					if($new_old == 1){continue;}
+					$sql = "SELECT `lat`, `long` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$result = $dbcore->sql->conn->query($sql);
+					while($latlon_fetch = $result->fetch(2))
 					{
-						list($id, $new_old) = explode(":", $point);
-						if($new_old == 1){continue;}
-						$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-						$result = $dbcore->sql->conn->query($sql);
-						if($result->rowCount() > 0)
-						{
-							#valid results found, add network link and exit check
-							$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['date'].'-'.$import['title'].'-'.$import['id'], 1, 0, "onChange", 86400);
-							break;
-						}
+						#Add gps to region array
+						$latlon_info = array(
+						"lat" => $latlon_fetch['lat'],
+						"long" => $latlon_fetch['long'],
+						);
+						$box_latlon[] = $latlon_info;
+
+						#Set List to be exported
+						$Export_List = 1;
 					}
+				}
+				if($Export_List)
+				{
+					#Create Region Box
+					$final_box = $dbcore->export->FindBox($box_latlon);
+					list($distance_calc, $minLodPix, $distance) = $dbcore->export->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+					
+					#valid results found, add network link and exit check
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
+					
+					#Increment number of lists
+					++$list_count;
 				}
 			}
 			
 			if($results == ""){$results .= $dbcore->createKML->createFolder($results, "No User Exports with GPS", 0);}
 			
-			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-			$results = $dbcore->createKML->createKMLstructure("$user_fn AP's", $results);
+			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['username']);
+			$results = $dbcore->createKML->createKMLstructure("$user_fn AP's ( $list_count Files)", $results);
 			if($labeled){$file_name = $user_fn."_Labeled.kmz";}else{$file_name = $user_fn.".kmz";}
 			break;
 			
@@ -187,27 +239,41 @@ switch($func)
 			$fetch = $prep->fetch();
 			
 			if($all){$only_new = 0;}else{$only_new = 1;}
-			$results = $dbcore->export->UserListKml($fetch['points'], $fetch['username'], $fetch['title'], $fetch['date'], $labeled, $only_new, $new_icons, 1);
-			if($results == ""){$results .= $dbcore->createKML->createFolder($results, "No APs with GPS", 0);}
+			$ListKML = $dbcore->export->UserListKml($fetch['points'], $labeled, $only_new, $new_icons);
+			$results = $ListKML['region'].$ListKML['data'];
+			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $results, 0);}
 			
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 			$results = $dbcore->createKML->createFolder($results, $title, 0);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
-			
+
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			if(isset($_REQUEST['from'])){$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);}else{$from=NULL;}
-			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
 			
-			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $limit, $from, $labeled, $new_icons);
-			
+			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $labeled, $new_icons);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
+
+		case "exp_ap_signal":
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			if(isset($_REQUEST['from'])){$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);}else{$from=NULL;}
+			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
 			
+			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $labeled, $new_icons);
+			$KML_Signal_data = $dbcore->export->SingleApSignal3dKml($id, $limit, $from);
+			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
+			
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");
+			if($limit){$title .= "-$limit";}
+			if($from){$title .= "-$from";}
+			$results = $dbcore->createKML->createKMLstructure($title, $results);
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			break;
+
 		default:
 			echo 'No function or incorrect function has been given...what am I supposed to do with this request?';
 			die();

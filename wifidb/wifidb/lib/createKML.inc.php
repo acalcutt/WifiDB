@@ -205,6 +205,20 @@ class createKML
 		$this->data->placemarks = array();
 	}
 
+	public function createKMLstructure($title, $alldata)
+	{
+		$KML_DATA =
+'<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+	<Document>
+		<name>'.$title.'</name>
+		'.$this->style_data.'
+		'.$alldata.'
+	</Document>
+</kml>';
+
+		Return $KML_DATA;
+	}
 
 	public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
 	{
@@ -237,11 +251,322 @@ class createKML
 		return $tmp;
 	}
 
+	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0, $regionkml = "")
+	{
+		if($radiofolder == 1)
+		{
+			$radiofolder = "
+			<styleUrl>#radio</styleUrl>";
+		}else
+		{
+		   $radiofolder = "
+			<styleUrl>#check</styleUrl>";
+		}
+		$tmp = '
+		<NetworkLink>'.$radiofolder.$regionkml.'
+				<name>'.$title.'</name>
+				<visibility>'.$visibility.'</visibility>
+				<flyToView>'.$flytoview.'</flyToView>
+				<Link>
+						<href>'.$url.'</href>
+						<refreshMode>'.$refreshMode.'</refreshMode>
+						<refreshInterval>'.$refreshInterval.'</refreshInterval>
+				</Link>
+		</NetworkLink>';
+		return $tmp;
+	}
+
+	public function CreateApPlacemark($ap_info_array)
+	{
+		switch($ap_info_array['sectype'])
+		{
+			case 1:
+				$sec_type_label = "open";
+				break;
+			case 2:
+				$sec_type_label = "wep";
+				break;
+			case 3;
+				$sec_type_label = "secure";
+				break;
+			default:
+				$sec_type_label = "open";
+				break;
+		}
+		if($ap_info_array['named'])
+		{
+			if($ap_info_array['ssid'] == '')
+			{
+				$ap_ssid = '&#91;Blank SSID&#93;';
+			}
+			elseif(!ctype_print($ap_info_array['ssid']))
+			{
+				$ap_ssid = '&#91;'.dbcore::normalize_ssid($ap_info_array['ssid']).'&#93;';
+			}
+			else
+			{
+				$ap_ssid = dbcore::normalize_ssid($ap_info_array['ssid']);
+			}		
+			$named = "			<name>".$ap_ssid."</name>";
+		}else
+		{
+			$named = "";
+		}
+
+		if($ap_info_array['new_ap'])
+		{
+			$icon_style = $sec_type_label."Style";
+		}else
+		{
+			$icon_style = $sec_type_label."StyleDead";
+		}
+
+		$tmp = "<Placemark id=\"".$ap_info_array['mac']."_Placemark\">$named
+			<styleUrl>".$icon_style."</styleUrl>
+			<description>
+				<![CDATA[
+					<b>SSID: </b>".dbcore::normalize_ssid($ap_info_array['ssid'])."<br />
+					<b>Mac Address: </b>".$ap_info_array['mac']."<br />
+					<b>Network Type: </b>".$ap_info_array['NT']."<br />
+					<b>Radio Type: </b>".$ap_info_array['radio']."<br />
+					<b>Channel: </b>".$ap_info_array['chan']."<br />
+					<b>Authentication: </b>".$ap_info_array['auth']."<br />
+					<b>Encryption: </b>".$ap_info_array['encry']."<br />
+					<b>Basic Transfer Rates: </b>".$ap_info_array['BTx']."<br />
+					<b>Other Transfer Rates: </b>".$ap_info_array['OTx']."<br />
+					<b>First Active: </b>".$ap_info_array['FA']."<br />
+					<b>Last Updated: </b>".$ap_info_array['LA']."<br />
+					<b>Latitude: </b>".$ap_info_array['lat']."<br />
+					<b>Longitude: </b>".$ap_info_array['long']."<br />
+					<b>Manufacturer: </b>".$ap_info_array['manuf']."<br />
+					<a href=\"".$this->URL_BASE."opt/fetch.php?id=".$ap_info_array['id']."\">WiFiDB Link</a>
+				]]>
+			</description>
+			<Point id=\"".$ap_info_array['mac']."_signal_gps\">
+				<coordinates>".$this->convert->dm2dd($ap_info_array['long']).",".$this->convert->dm2dd($ap_info_array['lat']).",".$ap_info_array['alt']."</coordinates>
+			</Point>
+		</Placemark>";
+		return $tmp;
+	}
+
+	public function CreateApSignal3D($signal_array = array(), $UseRSSI = 1)
+	{
+		$tmp = "";
+		$LastTimeInt = 0;
+		$LastSigStrengthLevel = 0;
+		$SigData = 0;
+		$ExpString = "";
+
+		foreach($signal_array as $gps)
+		{
+			$LastSigData = $SigData;
+			$SigData = 1;
+			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
+			$NewTimeInt = strtotime($string);
+			$signal = (int) $gps['signal'];
+			if($signal >= 0 And $signal <= 16)
+			{
+				$SigStrengthLevel = 1;
+				$SigCat = '#SigCat1';
+			} elseif($signal >= 17 And $signal <= 32)
+			{
+				$SigStrengthLevel = 2;
+				$SigCat = '#SigCat2';
+			} elseif($signal >= 33 And $signal <= 48)
+			{
+				$SigStrengthLevel = 3;
+				$SigCat = '#SigCat3';
+			} elseif($signal >= 49 And $signal <= 64)
+			{
+				$SigStrengthLevel = 4;
+				$SigCat = '#SigCat4';
+			} elseif($signal >= 65 And $signal <= 80)
+			{
+				$SigStrengthLevel = 5;
+				$SigCat = '#SigCat5';
+			} elseif($signal >= 80 And $signal <= 100)
+			{
+				$SigStrengthLevel = 6;
+				$SigCat = '#SigCat6';
+			}
+
+			$cal = ($NewTimeInt - $LastTimeInt);
+			if($cal < 0)
+			{
+				$cal = -1*$cal;
+			}
+			If($LastSigStrengthLevel <> $SigStrengthLevel OR ($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			{
+				if($LastSigData == 1)
+				{
+					$tmp .= '</coordinates>
+						</LineString>
+					</Placemark>';
+				}
+				$tmp .= '<Placemark>
+				<styleUrl>'.$SigCat.'</styleUrl>
+				<LineString>
+					<extrude>1</extrude>
+					<tessellate>0</tessellate>
+					<altitudeMode>relativeToGround</altitudeMode>
+					<coordinates>';
+				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
+				{
+					$tmp .= $ExpString;
+				}
+			}
+			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
+			if($UseRSSI == 1)
+			{
+				$ExpRSSIAlt = (100 + $gps['rssi'])."";
+				$ExpString = "
+					".$gps_coords.",".$ExpRSSIAlt;
+			}else
+			{
+				$ExpString = "
+					".$gps_coords.",".$gps['signal'];
+			}
+			$tmp .= $ExpString;
+			$LastSigStrengthLevel = $SigStrengthLevel;
+			$LastTimeInt = $NewTimeInt;
+		}
+		if($tmp != "\r\n , ,")
+		{
+			$tmp .= '
+					</coordinates>
+				</LineString>
+			</Placemark>';
+		}
+		$ret = $tmp;
+		return $ret;
+	}
+
+	public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
+	{
+		#var_dump($box, $this->convert->dm2dd($box[0]));
+		if($idName != "")
+		{
+			$idLabel = 'id="'.$idName.'"';
+		}
+		else
+		{
+			$idLabel = 'id="'.uniqid().'"';
+		}
+		$data = '<Region '.$idLabel.'>
+				<LatLonAltBox>
+					<north>'.$this->convert->dm2dd($box[0]).'</north>
+					<south>'.$this->convert->dm2dd($box[1]).'</south>
+					<east>'.$this->convert->dm2dd($box[2]).'</east>
+					<west>'.$this->convert->dm2dd($box[3]).'</west>
+					<minAltitude>0</minAltitude>
+					<maxAltitude>'.$distance.'</maxAltitude>
+				</LatLonAltBox>
+				<Lod>
+					<minLodPixels>'.$minLodPix.'</minLodPixels>
+					<maxLodPixels>-1</maxLodPixels>
+					<minFadeExtent>0</minFadeExtent>
+					<maxFadeExtent>0</maxFadeExtent>
+				</Lod>
+			</Region>
+			';
+		#var_dump($data);
+		return $data;
+	}
+
+	public function PlotBoundary($bounds = array())
+	{
+		list($North, $South, $East, $West) = explode(",", $bounds['box']);
+		$placemark = '		<Placemark>
+			<name>'.$bounds['name'].'</name>
+			<styleUrl>#default</styleUrl>
+			<Polygon>
+				<outerBoundaryIs>
+					<LinearRing>
+						<coordinates>'.$bounds['polygon'].'</coordinates>
+					</LinearRing>
+				</outerBoundaryIs>
+			</Polygon>
+			<Region>
+				<LatLonAltBox>
+					<north>'.$this->convert->all2dm($this->convert->dm2dd($North)).'</north>
+					<south>'.$this->convert->all2dm($this->convert->dm2dd($South)).'</south>
+					<east>'.$this->convert->all2dm($this->convert->dm2dd($East)).'</east>
+					<west>'.$this->convert->all2dm($this->convert->dm2dd($West)).'</west>
+					<minAltitude>0</minAltitude>
+					<maxAltitude>'.$bounds['distance'].'</maxAltitude>
+				</LatLonAltBox>
+				<Lod>
+					<minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
+					<maxLodPixels>-1</maxLodPixels>
+					<minFadeExtent>0</minFadeExtent>
+					<maxFadeExtent>0</maxFadeExtent>
+				</Lod>
+			</Region>
+		</Placemark>
+		';
+		return $placemark;
+	}
 	/**
-	 * @param null $data
-	 * @return int
 	 * @throws ErrorException
 	 */
+	public function createKML($filename, $title, $alldata)
+	{
+		if($filename === "")
+		{
+			throw new ErrorException("Filename for export::createFinalKML was empty.");
+		}
+		if($title === "")
+		{
+			throw new ErrorException("Title for export::createFinalKML was empty.");
+		}
+		if($alldata === "")
+		{
+			throw new ErrorException("All AP data string is empty in export::createFinalKML");
+		}
+
+		$KML_DATA = $this->createKMLstructure($title, $alldata);
+		if(file_put_contents($filename, $KML_DATA))
+		{
+			return 1;
+		}else
+		{
+			return 0;
+		}
+
+	}
+
+	/*
+	 * Create a compressed file from a filename and the destination extention
+	 */
+	public function CreateKMZ($file = "")
+	{
+		if($file === ""){return -1;}
+
+		#create new kmz filename
+		$parts = pathinfo($file);
+		$parts_base = $parts['dirname'];
+		$parts_name = $parts['filename'];
+		$file_create = $parts_base."/".$parts_name.".zip";
+
+		#Create KMZ zip file
+		$zip = new ZipArchive();
+		$zip->open($file_create, ZipArchive::CREATE);
+		#var_dump("FileCreate: ".$file_create);
+		#var_dump($zip->getStatusString());
+		$zip->addFile($file, 'doc.kml');
+		#var_dump($zip->getStatusString());
+		$zip->close();
+		$new_filename = $parts_base."/".$parts_name.".kmz";
+		rename($file_create, $new_filename);
+		if (file_exists($new_filename)) {
+			return $new_filename;
+		} else {
+			return -2;
+		}
+	}
+
+	
+	/*
 	public function LoadData($data = NULL)
 	{
 		if($data === NULL)
@@ -297,76 +622,31 @@ class createKML
 		{
 			throw new ErrorException("gdata element in the data object for createKML::PlotAPpoint is empty");
 		}
+		
+		$ap_info = array(
+		"named" => $named,
+		"id" => $this->data->apdata[$hash]['id'],
+		"new_ap" => $this->data->apdata[$hash]['new_ap'],
+		"mac" => $this->data->apdata[$hash]['mac'],
+		"ssid" => $this->data->apdata[$hash]['ssid'],
+		"chan" => $this->data->apdata[$hash]['chan'],
+		"radio" => $this->data->apdata[$hash]['radio'],
+		"NT" => $this->data->apdata[$hash]['NT'],
+		"sectype" => $this->data->apdata[$hash]['sectype'],
+		"auth" => $this->data->apdata[$hash]['auth'],
+		"encry" => $this->data->apdata[$hash]['encry'],
+		"BTx" => $this->data->apdata[$hash]['BTx'],
+		"OTx" => $this->data->apdata[$hash]['OTx'],
+		"FA" => $this->data->apdata[$hash]['FA'],
+		"LA" => $this->data->apdata[$hash]['LA'],
+		"lat" => $this->data->apdata[$hash]['lat'],
+		"long" => $this->data->apdata[$hash]['long'],
+		"alt" => $this->data->apdata[$hash]['alt'],
+		"manuf" => $this->data->apdata[$hash]['manuf'],
+		);
+		$KML_Data = $this->createKML->CreateApPlacemark($ap_info);		
 
-		switch($this->data->apdata[$hash]['sectype'])
-		{
-			case 1:
-				$sec_type_label = "open";
-				break;
-			case 2:
-				$sec_type_label = "wep";
-				break;
-			case 3;
-				$sec_type_label = "secure";
-				break;
-			default:
-				$sec_type_label = "open";
-				break;
-		}
-		if($named)
-		{
-			if($this->data->apdata[$hash]['ssid'] == '')
-			{
-				$ap_ssid = '&#91;Blank SSID&#93;';
-			}
-			elseif(!ctype_print($this->data->apdata[$hash]['ssid']))
-			{
-				$ap_ssid = '&#91;'.dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']).'&#93;';
-			}
-			else
-			{
-				$ap_ssid = dbcore::normalize_ssid($this->data->apdata[$hash]['ssid']);
-			}		
-			$named = "			<name>".$ap_ssid."</name>";
-		}else
-		{
-			$named = "";
-		}
-
-		if($this->data->apdata[$hash]['new_ap'])
-		{
-			$icon_style = $sec_type_label."Style";
-		}else
-		{
-			$icon_style = $sec_type_label."StyleDead";
-		}
-
-		$tmp = "<Placemark id=\"".$this->data->apdata[$hash]['mac']."_Placemark\">$named
-			<styleUrl>".$icon_style."</styleUrl>
-			<description>
-				<![CDATA[
-					<b>SSID: </b>".dbcore::normalize_ssid($this->data->apdata[$hash]['ssid'])."<br />
-					<b>Mac Address: </b>".$this->data->apdata[$hash]['mac']."<br />
-					<b>Network Type: </b>".$this->data->apdata[$hash]['NT']."<br />
-					<b>Radio Type: </b>".$this->data->apdata[$hash]['radio']."<br />
-					<b>Channel: </b>".$this->data->apdata[$hash]['chan']."<br />
-					<b>Authentication: </b>".$this->data->apdata[$hash]['auth']."<br />
-					<b>Encryption: </b>".$this->data->apdata[$hash]['encry']."<br />
-					<b>Basic Transfer Rates: </b>".$this->data->apdata[$hash]['BTx']."<br />
-					<b>Other Transfer Rates: </b>".$this->data->apdata[$hash]['OTx']."<br />
-					<b>First Active: </b>".$this->data->apdata[$hash]['FA']."<br />
-					<b>Last Updated: </b>".$this->data->apdata[$hash]['LA']."<br />
-					<b>Latitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['lat'])."<br />
-					<b>Longitude: </b>".$this->convert->dm2dd($this->data->apdata[$hash]['long'])."<br />
-					<b>Manufacturer: </b>".$this->data->apdata[$hash]['manuf']."<br />
-					<a href=\"".$this->URL_BASE."opt/fetch.php?id=".$this->data->apdata[$hash]['id']."\">WiFiDB Link</a>
-				]]>
-			</description>
-			<Point id=\"".$this->data->apdata[$hash]['mac']."_signal_gps\">
-				<coordinates>".$this->convert->dm2dd($this->data->apdata[$hash]['long']).",".$this->convert->dm2dd($this->data->apdata[$hash]['lat']).",".$this->data->apdata[$hash]['alt']."</coordinates>
-			</Point>
-		</Placemark>";
-		return $tmp;
+		return $KML_Data;
 	}
 
 	public function PlotAPsignalTrail($hash = "")
@@ -543,178 +823,10 @@ class createKML
 		return $ret;
 	}
 
-	public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
-	{
-		#var_dump($box, $this->convert->dm2dd($box[0]));
-		if($idName != "")
-		{
-			$idLabel = 'id="'.$idName.'"';
-		}
-		$data = '				<Region '.$idLabel.'>
-				<LatLonAltBox>
-					<north>'.$this->convert->dm2dd($box[0]).'</north>
-					<south>'.$this->convert->dm2dd($box[1]).'</south>
-					<east>'.$this->convert->dm2dd($box[2]).'</east>
-					<west>'.$this->convert->dm2dd($box[3]).'</west>
-					<minAltitude>0</minAltitude>
-					<maxAltitude>'.$distance.'</maxAltitude>
-				</LatLonAltBox>
-				<Lod>
-					<minLodPixels>'.$minLodPix.'</minLodPixels>
-					<maxLodPixels>-1</maxLodPixels>
-					<minFadeExtent>0</minFadeExtent>
-					<maxFadeExtent>0</maxFadeExtent>
-				</Lod>
-			</Region>';
-		#var_dump($data);
-		return $data;
-	}
-
-	public function PlotBoundary($bounds = array())
-	{
-		list($North, $South, $East, $West) = explode(",", $bounds['box']);
-		$placemark = '		<Placemark>
-			<name>'.$bounds['name'].'</name>
-			<styleUrl>#default</styleUrl>
-			<Polygon>
-				<outerBoundaryIs>
-					<LinearRing>
-						<coordinates>'.$bounds['polygon'].'</coordinates>
-					</LinearRing>
-				</outerBoundaryIs>
-			</Polygon>
-			<Region>
-				<LatLonAltBox>
-					<north>'.$this->convert->all2dm($this->convert->dm2dd($North)).'</north>
-					<south>'.$this->convert->all2dm($this->convert->dm2dd($South)).'</south>
-					<east>'.$this->convert->all2dm($this->convert->dm2dd($East)).'</east>
-					<west>'.$this->convert->all2dm($this->convert->dm2dd($West)).'</west>
-					<minAltitude>0</minAltitude>
-					<maxAltitude>'.$bounds['distance'].'</maxAltitude>
-				</LatLonAltBox>
-				<Lod>
-					<minLodPixels>'.$bounds['minLodPix'].'</minLodPixels>
-					<maxLodPixels>-1</maxLodPixels>
-					<minFadeExtent>0</minFadeExtent>
-					<maxFadeExtent>0</maxFadeExtent>
-				</Lod>
-			</Region>
-		</Placemark>';
-		return $placemark;
-	}
-
-	/**
-	 * @param string $url
-	 * @param string $title
-	 * @param int $visibility
-	 * @param int $flytoview
-	 * @param string $refreshMode
-	 * @param int $refreshInterval
-	 * @return string
-	 */
-
-	public function createNetworkLink($url = "", $title = "", $visibility = 0, $flytoview = 1, $refreshMode = "onInterval", $refreshInterval = 2, $radiofolder = 0)
-	{
-		if($radiofolder == 1)
-		{
-			$radiofolder = "
-			<styleUrl>#radio</styleUrl>";
-		}else
-		{
-		   $radiofolder = "
-			<styleUrl>#check</styleUrl>";
-		}
-		$tmp = '
-		<NetworkLink>'.$radiofolder.'
-				<name>'.$title.'</name>
-				<visibility>'.$visibility.'</visibility>
-				<flyToView>'.$flytoview.'</flyToView>
-				<Link>
-						<href>'.$url.'</href>
-						<refreshMode>'.$refreshMode.'</refreshMode>
-						<refreshInterval>'.$refreshInterval.'</refreshInterval>
-				</Link>
-		</NetworkLink>';
-		return $tmp;
-	}
-
-
 	public function ClearData()
 	{
 		$this->data->apdata = array();
 	}
-
-	/**
-	 * @throws ErrorException
 	 */
-	public function createKML($filename, $title, $alldata)
-	{
-		if($filename === "")
-		{
-			throw new ErrorException("Filename for export::createFinalKML was empty.");
-		}
-		if($title === "")
-		{
-			throw new ErrorException("Title for export::createFinalKML was empty.");
-		}
-		if($alldata === "")
-		{
-			throw new ErrorException("All AP data string is empty in export::createFinalKML");
-		}
 
-		$KML_DATA = $this->createKMLstructure($title, $alldata);
-		if(file_put_contents($filename, $KML_DATA))
-		{
-			return 1;
-		}else
-		{
-			return 0;
-		}
-
-	}
-
-	public function createKMLstructure($title, $alldata)
-	{
-		$KML_DATA =
-'<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-	<Document>
-		<name>'.$title.'</name>
-		'.$this->style_data.'
-		'.$alldata.'
-	</Document>
-</kml>';
-
-		Return $KML_DATA;
-	}
-
-	/*
-	 * Create a compressed file from a filename and the destination extention
-	 */
-	public function CreateKMZ($file = "")
-	{
-		if($file === ""){return -1;}
-
-		#create new kmz filename
-		$parts = pathinfo($file);
-		$parts_base = $parts['dirname'];
-		$parts_name = $parts['filename'];
-		$file_create = $parts_base."/".$parts_name.".zip";
-
-		#Create KMZ zip file
-		$zip = new ZipArchive();
-		$zip->open($file_create, ZipArchive::CREATE);
-		#var_dump("FileCreate: ".$file_create);
-		#var_dump($zip->getStatusString());
-		$zip->addFile($file, 'doc.kml');
-		#var_dump($zip->getStatusString());
-		$zip->close();
-		$new_filename = $parts_base."/".$parts_name.".kmz";
-		rename($file_create, $new_filename);
-		if (file_exists($new_filename)) {
-			return $new_filename;
-		} else {
-			return -2;
-		}
-	}
 }
