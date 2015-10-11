@@ -1,9 +1,27 @@
 <?php
+#Database.inc.php, holds the database interactive functions.
+#Copyright (C) 2011 Phil Ferland
+#
+#This program is free software; you can redistribute it and/or modify it under the terms
+#of the GNU General Public License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with this program;
+#if not, write to the
+#
+#   Free Software Foundation, Inc.,
+#   59 Temple Place, Suite 330,
+#   Boston, MA 02111-1307 USA
+
 #========================================================================================================================#
 #											Header (writes the Headers for all pages)									 #
 #========================================================================================================================#
 
-function pageheader($title, $maps="", $output="detailed", $install=0)
+function pageheader($title, $output="detailed", $install=0)
 {
 	global $login_check, $install;
 	include_once($GLOBALS['half_path'].'/lib/database.inc.php');
@@ -21,28 +39,18 @@ function pageheader($title, $maps="", $output="detailed", $install=0)
 
         if($output == "detailed")
 	{
-            ?>
-<html>
+		?><html>
     <head>
-                    <?php
-                        if($maps == "maps")
-                        {?>
-        <meta name="viewport" content="initial-scale=1.0, user-scalable=yes" />
-        <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-        <link href="https://code.google.com/apis/maps/documentation/javascript/examples/default.css" rel="stylesheet" type="text/css" />
-<?php
-                        }
-                        ?>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-        <title>Wireless DataBase <?php echo $GLOBALS["ver"]["wifidb"]; ?> --> <?php echo $title; ?></title>
-        <?php echo $head;
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+                <?php
+                echo "<title>Wireless DataBase ".$GLOBALS["ver"]["wifidb"]." --> $title</title>\r\n$head\r\n";
                 if($title == "Search Page")
                 {
-        ?><script type="text/javascript" src="<?php echo $GLOBALS['UPATH'];?>/lib/javascript.js"></script><?php
+                    ?><script type="text/javascript" src="<?php echo $GLOBALS['UPATH'];?>/lib/javascript.js"></script><?php
                 }
                 ?>
-        <link rel="stylesheet" href="<?php echo $GLOBALS['UPATH'];?>/themes/wifidb/styles.css"/>
-    </head>
+                <link rel="stylesheet" href="<?php echo $GLOBALS['UPATH'];?>/themes/wifidb/styles.css">
+                </head>
                 <?php
                 if($title == "Search Page")
                 {
@@ -81,7 +89,6 @@ function pageheader($title, $maps="", $output="detailed", $install=0)
 				<a class="links" href="<?php echo $GLOBALS['UPATH'];?>">Main Page</a><br>
 				<a class="links" href="<?php echo $GLOBALS['UPATH'];?>/all.php?sort=SSID&ord=ASC&from=0&to=100">View All APs</a><br>
 				<a class="links" href="<?php echo $GLOBALS['UPATH'];?>/import/">Import</a><br>
-                                <a class="links" href="<?php echo $GLOBALS['UPATH'];?>/opt/live.php">Live AP's</a><br>
 				<a class="links" href="<?php echo $GLOBALS['UPATH'];?>/opt/scheduling.php">Files Waiting for Import</a><br>
 				<a class="links" href="<?php echo $GLOBALS['UPATH'];?>/opt/scheduling.php?func=done">Files Already Imported</a><br>
 				<a class="links" href="<?php echo $GLOBALS['UPATH'];?>/opt/scheduling.php?func=daemon_kml">Daemon Generated KML</a><br>

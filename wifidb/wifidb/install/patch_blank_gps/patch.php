@@ -1,4 +1,22 @@
 <?php
+#Database.inc.php, holds the database interactive functions.
+#Copyright (C) 2011 Phil Ferland
+#
+#This program is free software; you can redistribute it and/or modify it under the terms
+#of the GNU General Public License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with this program;
+#if not, write to the
+#
+#   Free Software Foundation, Inc.,
+#   59 Temple Place, Suite 330,
+#   Boston, MA 02111-1307 USA
+
 $stime = time()*60;
 include('../../lib/config.inc.php');
 include('../../lib/database.inc.php');
@@ -55,7 +73,7 @@ $II = 0;
 foreach($id as $APFORID)
 {
 	if($II == ($numAP)){continue;}
-	
+
 	$table = $ssid[$II].'-'.$mac[$II].'-'.$sectype[$II].'-'.$radio[$II].'-'.$chan[$II];
 	$table_gps = $table.$gps_ext;
 	echo '<tr><td>Checking AP:'.$table.'</td><td>';
@@ -125,13 +143,13 @@ foreach($id as $APFORID)
 							{
 								echo "Replaced With `valid` data<br>";
 								$gpsid = $gpspoint['id'];
-								
+
 								$lat = "N 0.0000";
 								$long = "E 0.0000";
 								$sats = "0";
 								$date = "1/1/1971";
 								$time = "00:00:00";
-								
+
 								$update_gps1 = "DELETE FROM `$table_gps` WHERE `$table_gps`.`id` = '$gpsid' AND CONVERT(`$table_gps`.`lat` USING utf8) = '' AND CONVERT(`$table_gps`.`long` USING utf8) = '' AND `$table_gps`.`sats` = 0 AND CONVERT(`$table_gps`.`date` USING utf8) = '' AND CONVERT(`$table_gps`.`time` USING utf8) = '' LIMIT 1";
 								$update_result1 = mysql_query($update_gps1, $conn);
 								if($update_result1)
@@ -161,7 +179,7 @@ foreach($id as $APFORID)
 						$update_sig = "UPDATE `$table` SET `sig`= '$sig_repair'  WHERE `id`='$id'";
 						$update_result = mysql_query($update_sig, $conn);
 						if($update_result){echo "Fixed Data and entered back in DB";}else{echo mysql_error()."error";}
-						
+
 					}
 				}
 			}
@@ -191,13 +209,13 @@ foreach($id as $APFORID)
 				{
 					mysql_select_db($db_st,$conn);
 					$gpsid = $gpspoint['id'];
-					
+
 					$lat = "N 0.0000";
 					$long = "E 0.0000";
 					$sats = "0";
 					$date = "1971-01-01";
 					$time = "00:00:00";
-					
+
 					$update_gps1 = "DELETE FROM `$table_gps` WHERE `$table_gps`.`id` = '$gpsid' AND CONVERT(`$table_gps`.`lat` USING utf8) = '' AND CONVERT(`$table_gps`.`long` USING utf8) = '' AND `$table_gps`.`sats` = 0 AND CONVERT(`$table_gps`.`date` USING utf8) = '' AND CONVERT(`$table_gps`.`time` USING utf8) = '' LIMIT 1";
 					$update_result1 = mysql_query($update_gps1, $conn);
 					if($update_result1)
@@ -231,7 +249,7 @@ foreach($id as $APFORID)
 					if($remove_gps_result)
 					{
 						echo "Access Point, GPS Points removed<br>";
-					}else{echo mysql_error()."error";}					
+					}else{echo mysql_error()."error";}
 					break;
 				}
 			}

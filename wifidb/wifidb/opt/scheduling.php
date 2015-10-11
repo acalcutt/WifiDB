@@ -1,445 +1,510 @@
 <?php
-include('../lib/daemon.inc.php');
-include('../lib/database.inc.php');
-include('../lib/config.inc.php');
+#Database.inc.php, holds the database interactive functions.
+#Copyright (C) 2011 Phil Ferland
+#
+#This program is free software; you can redistribute it and/or modify it under the terms
+#of the GNU General Public License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with this program;
+#if not, write to the
+#
+#   Free Software Foundation, Inc.,
+#   59 Temple Place, Suite 330,
+#   Boston, MA 02111-1307 USA
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
 
-$func			= '';
-$refresh_post	= '';
-$tz_post		= '';
-$root = $GLOBALS['root'];
-$hosturl = $GLOBALS['hosturl'];
 
-if( !isset($_GET['func']) ) { $_GET['func'] = ""; }
+include('../lib/init.inc.php');
 
-$func = strip_tags(addslashes($_GET['func']));
+$func = strtolower(filter_input(INPUT_GET, 'func', FILTER_SANITIZE_ENCODED));
 
+$TZone= (@$_COOKIE['wifidb_client_timezone'] ? @$_COOKIE['wifidb_client_timezone'] : $dbcore->default_timezone);
+$dst = (@$_COOKIE['wifidb_client_dst']!='' ? @$_COOKIE['wifidb_client_dst'] : $dbcore->default_dst);
+$refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $dbcore->default_refresh);
+#echo $func;
 switch($func)
 {
-	case 'refresh':
-		if( (!isset($_POST['refresh'])) or $_POST['refresh']=='' ) { $_POST['refresh'] = "wifidb"; }
-		$refresh_post = strip_tags(addslashes($_POST['refresh']));
-		setcookie( 'wifidb_refresh' , $refresh_post , (time()+($timeout)), "/".$root."/opt/scheduling.php" );
-		#echo $refresh_post."<BR>";
-		header('Location: '.$hosturl.$root.'/opt/scheduling.php');
-	break;
+    case 'refresh':
+        $POST_refresh = filter_input(INPUT_POST, 'refresh', FILTER_SANITIZE_ENCODED);
+        if( (!isset($POST_refresh)) or $POST_refresh=='' ) { $POST_refresh = $refresh; }
+        setcookie( 'wifidb_refresh' , $POST_refresh , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+        header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
+    break;
+    case 'timezone':
+        $POST_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_ENCODED);
+        $POST_dst = filter_input(INPUT_POST, 'dst', FILTER_SANITIZE_ENCODED);
+        if( (!isset($POST_timezone)) or $POST_timezone=='' ) { $POST_timezone = $TZone; }
+        if( (!isset($POST_dst)) or $POST_dst=='' ) { $POST_dst = 0; }
+        setcookie( 'wifidb_client_timezone' , $POST_timezone , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+        setcookie( 'wifidb_client_dst' , $POST_dst , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
+        header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
+    break;
+    case 'done':
+        $sql = "SELECT * FROM `wifi`.`files` WHERE `completed` = 1 ORDER BY `id` DESC";
+        #echo $sql;
+        $result = $dbcore->sql->conn->query($sql);
+        $class_f = 0;
+        $files_all = array();
+        while ($newArray = $result->fetch(2))
+        {
+            $users_array = explode("|", $newArray["user"]);
+            $users_array = array_filter($users_array);
 
-}
-$TZone = (@$_COOKIE['wifidb_client_timezone'] ? @$_COOKIE['wifidb_client_timezone'] : $default_timezone);
-$dst = (@$_COOKIE['wifidb_client_dst']!='' ? @$_COOKIE['wifidb_client_dst'] : -1);
-$refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $default_refresh);
-
-pageheader("Scheduling Page");
-
-$func = '';
-if(!isset($_GET['func'])){$_GET['func']="";}
-$func = strip_tags(addslashes($_GET['func']));
-if($GLOBALS['wifidb_tools'] == 'NO PATH' or $GLOBALS['wifidb_tools'] == NULL){$func = "no_daemon";}
-if(is_string($func))
-{
-	$daemon = new daemon();
-	switch($func)
-	{
-		case 'done':
-			?>
-			<br><table border="1" width="90%"><tr class="style4">
-			<th colspan="9" align="center">Files already imported</th></tr>
-			<?php
-			$sql = "SELECT * FROM `$db`.`files` ORDER BY `id` DESC";
-			$result = mysql_query($sql, $conn) or die(mysql_error());
-			$total_rows = mysql_num_rows($result);
-			if($total_rows === 0)
-			{
-				?><tr><td colspan="9" align="center">There where no files that where imported, Go and import a file</td></tr></table><?php
-			}else
-			{
-				$class_f = 0;
-				while ($newArray = mysql_fetch_array($result))
-				{
-					if($class_f){$class = "light"; $class_f =0;}else{$class = "dark"; $class_f =1;}
-					?><tr class="sub_head"><th>ID</th><th>Filename</th><th>Date</th><th>user</th><th>title</th></tr>
-					<tr class="<?php echo $class;?>"><td align="center">
-					<?php
-					echo $newArray['id'];
-					?>
-					</td><td align="center">
-					<a class="links" href="../opt/userstats.php?func=useraplist&row=<?php echo $newArray["user_row"];?>"><?php echo html_entity_decode($newArray['file']);?></a>
-					</td><td align="center">
-					<?php
-					echo $newArray['date'];
-					?>
-					</td><td align="center">
-					<a class="links" href ="../opt/userstats.php?func=alluserlists&user=<?php echo $newArray["user"];?>"><?php echo $newArray["user"];?></a>
-					</td><td align="center">
-					<?php
-					echo $newArray['title'];
-					?></td></tr>
-					<tr><th></th><th class="sub_head">Total AP's</th><th class="sub_head">Total GPS</th><th class="sub_head">Size</th><th class="sub_head">Hash Sum</th></tr>
-					<tr><td></td><td class="<?php echo $class;?>" align="center">
-					<?php
-					echo $newArray['aps'];
-					?>
-					</td><td class="<?php echo $class;?>" align="center">
-					<?php
-					echo $newArray['gps'];
-					?>
-					</td><td class="<?php echo $class;?>" align="center">
-					<?php
-					echo format_size(($newArray['size']*1024), 2);
-					?>
-					</td><td class="<?php echo $class;?>" align="center">
-					<?php
-					echo $newArray['hash'];
-					?>
-					</td></tr><tr></tr><tr></tr><tr></tr><tr></tr>
-					<?php
-				}
-				?>
-				</table><?php
-			}
-			footer($_SERVER['SCRIPT_FILENAME']);
-		break;
-		
-		case 'daemon_kml':
-			$date = date("Y-m-d");
-			$DATES = array();
-			$DGK_folder = array();
-			$file_count = 0;
-			$dh = opendir("../out/daemon") or die("couldn't open directory");
-			while ($file = readdir($dh))
-			{
-				if($file == "."){continue;}
-				if($file == ".."){continue;}
-				if($file == ".svn"){continue;}
-				if($file == "fulldb.kmz"){continue;}
-				if($file == "update.kml"){continue;}
-				if($file == "newestAP.kml"){continue;}
-				if($file == "newestAP_label.kml"){continue;}
-				$kmz_file = '../out/daemon/'.$file.'/fulldb.kmz';
-				if(file_exists($kmz_file))
-				{
-					$DATES[] = $file;
-					$DGK_folder[] = array(
-											"file" => $file,
-											"kmz_file" => $kmz_file,
-											"kmz_date" => date ("H:i:s", filemtime($kmz_file)),
-											"kmz_size" => format_size(dos_filesize("../out/daemon/".$file."/fulldb.kmz"), 2)
-										);
-						
-					$file_count++;
-				}
-			}
-			rsort($DGK_folder);
-			rsort($DATES);
-			if(@$DATES[0] != $date){$today = $date;}else{$today = $DATES[0];}
-			?>
-			<table width="700px" border="1" cellspacing="0" cellpadding="0" align="center">
-			<tr>
-				<td>
-				<table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
-					<tr>
-						<td class="style4">Daemon Generated KML<br><font size="2">All times are local system time.</font></td>
-					</tr>
-				</table>
-				<table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
-					<tr class="light">
-						<td class="daemon_kml" colspan="3">
-							<?php
-							if(file_exists("../out/daemon/update.kml"))
-							{
-							?>
-							<a class="links" href="../out/daemon/update.kml">Current WiFiDB Network Link</a>
-							<?php
-							}else
-							{
-							?>
-								The Daemon Needs to be on and you need to import something with GPS for the first update.kml file to be created.
-							<?php
-							}
-							?>
-						</td>
-					</tr>
-					<tr class="light">
-						<td class="daemon_kml">Newest AP KML Last Edit: </td>
-							<?php
-							$newest = '../out/daemon/newestAP.kml';
-							if(file_exists($newest))
-							{
-								echo "<td>".date ("Y-m-d H:i:s", filemtime($newest))."</td><td>".format_size(dos_filesize($newest), 2);
-							}else
-							{
-								echo "<td>None generated yet</td><td> 0.00 kb";
-							}
-							?>
-						</td>
-					</tr>
-					<tr class="light">
-						<td class='daemon_kml'>Full KML Last Edit: </td>
-							<?php
-							$full = '../out/daemon/'.$today.'/full_db.kml';
-							if(file_exists($full))
-							{
-								echo "<td >".date ("Y-m-d H:i:s", filemtime($full))."</td><td>".format_size(dos_filesize($full), 2);
-							}else
-							{
-								echo "<td>None generated for ".$today." yet, <br>be patient young grasshopper.</td><td> 0.00 kb";
-							}
-							?>
-							</td>
-					</tr>
-					<tr class="light">
-						<td class='daemon_kml'>Daily KML Last Edit: </td>
-							<?php
-							$daily = '../out/daemon/'.$today.'/daily_db.kml';
-							if(file_exists($daily))
-							{
-								echo "<td>".date ("Y-m-d H:i:s", filemtime($daily))."</td><td>".format_size(dos_filesize($daily), 2);
-							}else
-							{
-								echo "<td>None generated for ".$today." yet, <br>be patient young grasshopper.</td><td> 0.00 kb";
-							}
-							?>
-							</td>
-						</td>
-					</tr>
-					<tr>
-						<td colspan="3" class="style4">History</td>
-					</tr>
-					<tr>
-						<td colspan="3" class="dark">
-						<table align="center" border="1" cellspacing="0" cellpadding="0" width="50%">
-							<tr class="style4">
-								<td width="33%">Date Created</td>
-								<td width="33%">Last Edit Time</td>
-								<td width="33%">Size</td>
-							</tr>
-						<?php
-						#var_dump($DGK_folder);
-						if($file_count == 0)
-						{
-							?>
-								<tr>
-									<td colspan='3'>There have been no KMZ files created.</td>
-								</tr>
-							<?php
-						}else
-						{
-							$row_color = 0;
-							foreach($DGK_folder as $Day)
-							{
-								if($row_color == 1)
-								{$row_color = 0; $color = "light";}
-								else{$row_color = 1; $color = "dark";}
-								
-								echo '<tr class="'.$color.'">
-					<td width="33%"><a class="links" href="'.$Day['kmz_file'].'">'.$Day['file'].'</a></td>
-					<td width="33%">'.$Day['kmz_date'].'</td>
-					<td width="33%">'.$Day['kmz_size'].'</td>
-				</tr>';
-							}
-						}
-						?>
-						</table>
-						</td></tr>
-					</table></td>
-						</tr>
-					</table>
-			<?php
-			footer($_SERVER['SCRIPT_FILENAME']);
-		break;
-
-		case "no_daemon":
-			?>
-			<h2>You do not have the Daemon Option enabled, you will not be able to use this page until you enable it.</h2>
-			<?php
-			footer($_SERVER['SCRIPT_FILENAME']);
-		break;
-		
-		default:
-			include $GLOBALS['wifidb_tools']."/daemon/config.inc.php";
-			echo '<meta http-equiv="refresh" content="'.$refresh.'"><table border="1" width="90%"><tr class="style4"><th colspan="4">Scheduled Imports</th></tr>';
-			mysql_select_db($db,$conn);
-			$sql = "SELECT * FROM `$db`.`settings` WHERE `id` = '1'";
-			$result = mysql_query($sql, $conn) or die(mysql_error());
-			$file_array = mysql_fetch_array($result);		
-			?>
-				<tr><td class="style3">Next Import scheduled on:</td><td class="light"><?php echo $file_array['size'];?> UTC</td><td class="light">
-			<?php
-				if($dst == 1){$dst = 0;}
-			#	echo "Before: ".$file_array['size']."<BR>";
-				$str_time = strtotime($file_array['size']);
-			#	echo "Convert: ".$str_time."<BR>";
-				$alter_by = ((($TZone+$dst)*60)*60);
-			#	echo "CALC: ".$alter_by."<BR>";
-				$altered = $str_time+$alter_by;
-			#	echo "ADD: ".$altered."<BR>";
-				$next_run = date("Y-m-d H:i:s", $altered);
-				echo $next_run.'  [ '.getTZ('-5').' ]';
-			?>
-				</td></tr>
-				<tr><td  class="style3" colspan="1">Select Refresh Rate:</td><td class="light" colspan="2">
-					<?php #echo $refresh."<BR>"; ?>
-					<form action="scheduling.php?func=refresh" method="post" enctype="multipart/form-data">
-					<SELECT NAME="refresh">  
-					<OPTION <?php if($refresh == 5){ echo "selected ";}?> VALUE="5"> 5 Seconds
-					<OPTION <?php if($refresh == 10){ echo "selected ";}?> VALUE="10"> 10 Seconds
-					<OPTION <?php if($refresh == 15){ echo "selected ";}?> VALUE="15"> 15 Seconds
-					<OPTION <?php if($refresh == 30){ echo "selected ";}?> VALUE="30"> 30 Seconds
-					<OPTION <?php if($refresh == 60){ echo "selected ";}?> VALUE="60"> 60 Seconds
-					<OPTION <?php if($refresh == 120){ echo "selected ";}?> VALUE="120"> 2 Minutes
-					<OPTION <?php if($refresh == 240){ echo "selected ";}?> VALUE="240"> 4 Minutes
-					<OPTION <?php if($refresh == 480){ echo "selected ";}?> VALUE="480"> 8 Minutes
-					<OPTION <?php if($refresh == 960){ echo "selected ";}?> VALUE="960"> 16 Minutes
-					<OPTION <?php if($refresh == 1920){ echo "selected ";}?> VALUE="1920"> 32 Minutes
-					<OPTION <?php if($refresh == 3840){ echo "selected ";}?> VALUE="3840"> 64 Minutes
-					<OPTION <?php if($refresh == 5760){ echo "selected ";}?> VALUE="5760"> 96 Minutes
-					<OPTION <?php if($refresh == 7680){ echo "selected ";}?> VALUE="7680"> 128 Minutes
-					<OPTION <?php if($refresh == 30720){ echo "selected ";}?> VALUE="30720"> 512 Minutes
-					</SELECT>
-					<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
-					</form>
-				</td></tr>
-			</table><br />
-			<table border="1" width="90%">
-			<tr class="style4"><th colspan="4">Daemon Status:</TH></tr>
-			<?php
-			$daemon->getdaemonstats('imp_expd');
-			?>
-			</table>
-			<br>
-			<?php
-			if($func == 'waiting')
-			{
-			    $sql = "SELECT * FROM `$db`.`files_tmp` ORDER BY `date` asc";
-			}else
-			{
-			    $sql = "SELECT * FROM `$db`.`files_tmp` ORDER BY `date` asc limit 20";
-			}
-			$result_1 = mysql_query($sql, $conn) or die(mysql_error($conn));
-			$total_rows = mysql_num_rows($result_1);
-			if($total_rows > 10)
-			{
-				echo '<a class="links" href="scheduling.php?func=waiting">View other files waiting for import.</a><br>';
-			}
+			$sql = "SELECT `id`  FROM `wifi`.`user_imports` WHERE `file_id` = ? And `username` = ? LIMIT 1";
+			$prepgi = $dbcore->sql->conn->prepare($sql);
+			$prepgi->bindParam(1, $newArray['id'], PDO::PARAM_INT);
+			$prepgi->bindParam(2, $users_array[0], PDO::PARAM_STR);
+			$prepgi->execute();
+			$user_import = $prepgi->fetch(2);
+			$user_import_id = $user_import['id'];
 			
-			$sql1 = "SELECT * FROM `$db`.`files`";
-			$result2 = mysql_query($sql1, $conn) or die(mysql_error($conn));
-			$done_rows = mysql_num_rows($result2);
-			if($done_rows > 0)
-			{
-				echo '<a class="links" href="scheduling.php?func=done">View other files that have finished importing.</a><br>';
-			}
-			?>
-			<br>
-			<table border="1" width="90%"><tr class="style4"><th border="1" colspan="7" align="center">Files waiting for import</th></tr><?php
-			
-			if($total_rows === 0)
-			{
-				?><tr class="light"><td border="1" colspan="7" align="center">There are no files waiting to be imported, Go and import a file</td></tr></table><?php
-			}else
-			{
-				?><tr align="center"><td border="1"><br><?php
-				while ($newArray = mysql_fetch_array($result_1))
-				{
-					if($newArray['importing'] == '1' )
-					{
-						$color = 'style="background-color: lime"';
-					}else
-					{
-						$color = 'style="background-color: yellow"';
-					}
-						?>
-					<table <?php echo $color;?> border="1"  width="100%">
-					<tr class="style4"><th>ID</th><th>Filename</th><th>Title</th><th>Date</th><th>size</th></tr>
-					<tr <?php echo $color;?>>
-					<td align="center">
-					<?php
-					echo $newArray['id'];
-					$id = $newArray['id'];
-					$sql1 = "select * from `$db`.`$wtable` where `id` = '$id'";
-					$result1 = mysql_query($sql1, $conn);
-					$newArray1 = mysql_fetch_array($result1);
-					list($ssid_ptb) = make_ssid($newArray1["ssid"]);
-					$table = $ssid_ptb.'-'.$newArray1["mac"].'-'.$newArray1["sectype"].'-'.$newArray1["radio"].'-'.$newArray1['chan'].$gps_ext;
-					$sql_gps = "select * from `$db_st`.`$table` where `lat` NOT LIKE 'N 0.0000' limit 1";
-					#echo $sql_gps;
-					$resultgps = mysql_query($sql_gps, $conn);
-					$lastgps = @mysql_fetch_array($resultgps);
-					#var_dump($lastgps);
-					$lat_check = explode(" ", $lastgps['lat']);
-                                        $lat_c = @$lat_check[1]+0;
-					if($lat_c != "0"){$gps_yes = 1;}else{$gps_yes = 0;}
-					?>
-					</td><td align="center">
-					<?php
-					echo html_entity_decode($newArray['file']);
-					?>
-					</td><td align="center">
-					<?php
-					echo $newArray['title'];
-					?>
-					</td><td align="center">
-					<?php
-					echo $newArray['date'];
-					?>
-					</td><td align="center">
-					<?php
-					echo $newArray['size'];
-					?>
-					</td></tr>
-					<tr class="style4">
-					<th <?php echo $color;?>>
-					</th>
-					<th>Hash Sum</th><th>User</th><th >Current SSID</th><th>AP / Total AP's</th></tr>
-					    <tr <?php echo $color;?>>
-						<td></td>
-						<td align="center">
-					<?php
-					echo $newArray['hash'];
-					?>
-						</td>
-						<td align="center">
-					<?php
-					echo $newArray['user'];
-					?>
-						</td>
-					<?php
-                                        #var_dump($newArray);
-                                        $tot = "";
-                                        $ssid = "";
-                                        switch($newArray['ap'])
-                                        {
-                                            case "":
-                                                $ssid = "<td colspan='2' align='center'>Not being imported</td>";
-                                                break;
-                                            
-                                            case "@#@#_CONVERTING TO VS1_@#@#":
-                                                $ssid = "<td colspan='2' align='center'>Converting file to VS1 Format...</td>";
-                                                break;
-                                            
-                                            default:
-                                                if($gps_yes)
-                                                {
-                                                    $ssid = '<td align="center">'.$newArray['ap'].'<img width="20px" src="../img/globe_on.png"></td>';
-                                                }
-                                                else
-                                                {
-                                                    $ssid = '<td align="center"><table align="center"><tr><td valign="center" align="right">'.$newArray['ap'].'</td><td valign="center" align="left"><img width="20px" src="../img/globe_off.png"></td></tr></table></td>';
-                                                }
-                                                if($newArray['tot'] == NULL){$tot = "";}else{$tot = '<td align="center">'.$newArray['tot'].'</td>';}
-                                                break;
-                                        }
-					echo $ssid;
-					echo $tot;
-					?>
-					    </tr>
-					</table>
-					<br>
-					<?php
-				}
-				?></td></tr></table><br><?php
-			}
-			footer($_SERVER['SCRIPT_FILENAME']);
-		break;
-	}
+            if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
+            $files_all[] = array(
+                                    'class'=>$class,
+                                    'id'=>$newArray['id'],
+                                    'user_row'=>$user_import_id,
+                                    'file'=>html_entity_decode($newArray['file']),
+                                    'date'=>$newArray['date'],
+                                    'user'=>$users_array,
+                                    'title'=>$newArray['title'],
+                                    'aps'=>$newArray['aps'],
+                                    'gps'=>$newArray['gps'],
+                                    'size'=>$dbcore->format_size($newArray['size']*1024, 2),
+                                    'hash'=>$newArray['hash']
+                                );
+        }
+        $dbcore->smarty->assign('wifidb_page_label', "Files Imported Page");
+        $dbcore->smarty->assign("wifidb_done_all_array", $files_all);
+        $dbcore->smarty->display('scheduling_done.tpl');
+    break;
+#######################################################################
+    case 'daemon_kml':
+        $kml_head = array();
+        $daemon_out = $dbcore->PATH."out/daemon/";
+        $url_base = $dbcore->URL_PATH."out/daemon/";;
+        $kml_all = array();
+        $dh = opendir($daemon_out) or die("couldn't open directory");
+        $files = array();
+        while ($file = readdir($dh))
+        {
+            if($file === "."){continue;}
+            if($file === ".."){continue;}
+            if($file === "history"){continue;}
+            if($file === "history.kml"){continue;}
+            if($file === "history.kmz"){continue;}
+            if($file === "boundaries.kml"){continue;}
+            if($file === "full_db.kml"){continue;}
+            if($file === "full_db.kmz"){continue;}
+            if($file === "full_db_label.kml"){continue;}
+            if($file === "full_db_label.kmz"){continue;}
+            if($file === "daily_db_label.kmz"){continue;}
+            if($file === "daily_db_label.kml"){continue;}
+            if($file === "daily_db.kmz"){continue;}
+            if($file === "daily_db.kml"){continue;}
+            if($file === "newestAP_label.kml"){continue;}
+            if($file === "newestAP_label.kmz"){continue;}
+            if($file === "newestAP.kml"){continue;}
+            if($file === "newestAP.kmz"){continue;}
+            if($file === "update.kml"){continue;}
+            if($file === "update.kmz"){continue;}
+            #var_dump(array(
+            #    "file"     => $file,
+            #    "file_url" => $url_base.$file.'/full_db.kmz',
+            #    "time"     => date ("H:i:s", filectime($kmz_file)),
+            #    "size"     => $dbcore->format_size(filesize($daemon_out.$file."/full_db.kmz"), 2)
+            #));
+
+            $files[] = $file;
+        }
+        rsort($files);
+        $flip = 0;
+        foreach ($files as $file)
+        {
+            if($flip)
+            {
+                $class="dark";
+                $flip=0;
+            }else
+            {
+                $class="light";
+                $flip=1;
+            }
+
+            $daily_label = $daemon_out.$file."/daily_db_label.kmz";
+            if(file_exists($daily_label))
+            {
+                $daily_label_url = $url_base.$file.'/daily_db_label.kmz';
+                $daily_label_size = $dbcore->format_size(@filesize($daily_label), 2);
+            }else
+            {
+                $daily_label_url = "#";
+                $daily_label_size = "0.00 kB";
+            }
+            $daily = $daemon_out.$file."/daily_db.kmz";
+            if(file_exists($daily))
+            {
+                $daily_url = $url_base.$file.'/daily_db.kmz';
+                $daily_size = $dbcore->format_size(@filesize($daily), 2);
+            }else
+            {
+                $daily_url = "#";
+                $daily_size = "0.00 kB";
+            }
+            $full_label = $daemon_out.$file."/full_db_label.kmz";
+            if(file_exists($full_label))
+            {
+                $full_label_url = $url_base.$file.'/full_db_label.kmz';
+                $full_label_size = $dbcore->format_size(@filesize($full_label), 2);
+            }else
+            {
+                $full_label_url = "#";
+                $full_label_size = "0.00 kB";
+            }
+            $full = $daemon_out.$file."/full_db.kmz";
+            if(file_exists($full))
+            {
+                $full_url = $url_base.$file.'/full_db.kmz';
+                $full_size = $dbcore->format_size(@filesize($full), 2);
+            }else
+            {
+                $full_url = "#";
+                $full_size = "0.00 kB";
+            }
+
+            $kml_all[] = array(
+                "class"             => $class,
+                "file"              => $file,
+                "daily_name"        => "daily_db.kmz",
+                "daily_label_name"  => "daily_db_label.kmz",
+                "file_name"         => "full_db.kmz",
+                "file_label_name"   => "full_db_label.kmz",
+                "daily_label_url"   => $daily_label_url,
+                "daily_url"         => $daily_url,
+                "file_label_url"    => $full_label_url,
+                "file_url"          => $full_url,
+                "full_size"         => $full_size,
+                "full_size_label"   => $full_label_size,
+                "daily_size"        => $daily_size,
+                "daily_size_label"  => $daily_label_size
+            );
+        }
+
+        $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">Download!</a>';
+        $kmldate=date ("Y-m-d");
+		#-----------
+        $sql = "SELECT `LA` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+        $result = $dbcore->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
+
+        if($ap_array['LA'])
+        {
+            if(strpos($ap_array['LA'], ".")){$lastapdate = substr($ap_array['LA'], 0, strpos($ap_array['LA'], "."));}else{$lastapdate = $ap_array['LA'];}
+
+            $kml_head['newest_date'] = $lastapdate;
+            $kml_head['newest_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=0";
+            $kml_head['newest_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_link'])));
+
+            $kml_head['newest_labeled_date'] = $lastapdate;
+            $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=1";
+            $kml_head['newest_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
+        }
+        else
+        {
+            $kml_head['newest_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['newest_link'] = "#";
+            $kml_head['newest_size'] = "0.00 kB";
+
+            $kml_head['newest_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['newest_labeled_link'] = "#";
+            $kml_head['newest_labeled_size'] = "0.00 kB";
+        }
+		#-----------
+		$date_search = $kmldate."%";
+        $sql = "SELECT `id`, `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+        $result = $dbcore->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
+
+        if($ap_array['id'])
+        {
+            if(strpos($ap_array['date'], ".")){$lastapdate = substr($ap_array['date'], 0, strpos($ap_array['date'], "."));}else{$lastapdate = $ap_array['date'];}
+
+            
+            $kml_head['daily_date'] = $lastapdate;
+            $kml_head['daily_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=0";
+            $kml_head['daily_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_link'])));
+
+            $kml_head['daily_labeled_date'] = $lastapdate;
+            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=1";
+            $kml_head['daily_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_labeled_link'])));
+        }
+        else
+        {
+            $kml_head['daily_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['daily_link'] = "#";
+            $kml_head['daily_size'] = "0.00 kB";
+
+            $kml_head['daily_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['daily_labeled_link'] = "#";
+            $kml_head['daily_labeled_size'] = "0.00 kB";
+        }
+		#-----------
+        $sql = "SELECT `id`, `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+        $result = $dbcore->sql->conn->query($sql);
+        $ap_array = $result->fetch(2);
+
+        if($ap_array['id'])
+        {
+            if(strpos($ap_array['date'], ".")){$lastapdate = substr($ap_array['date'], 0, strpos($ap_array['date'], "."));}else{$lastapdate = $ap_array['date'];}
+
+            
+            $kml_head['full_date'] = $lastapdate;
+            $kml_head['full_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=0";
+            $kml_head['full_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['full_link'])));
+
+            $kml_head['full_labeled_date'] = $lastapdate;
+            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=1";
+            $kml_head['full_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['full_labeled_link'])));
+        }
+        else
+        {
+            $kml_head['full_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['full_link'] = "#";
+            $kml_head['full_size'] = "0.00 kB";
+
+            $kml_head['full_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['full_labeled_link'] = "#";
+            $kml_head['full_labeled_size'] = "0.00 kB";
+        }
+		#-----------
+
+        $dbcore->smarty->assign('wifidb_page_label', "Daemon KML Exports");
+        $dbcore->smarty->assign('wifidb_kml_head', $kml_head);
+        $dbcore->smarty->assign('wifidb_kml_all_array', $kml_all);
+        $dbcore->smarty->display('scheduling_kml.tpl');
+    break;
+
+    default:
+        #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
+        $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
+        $result = $dbcore->sql->conn->query($sql);
+        $file_array = $result->fetch(2);
+        $timezone_opt = '';
+        $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+        foreach($offsets as $key=>$value)
+        {
+            if($TZone == $value)
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }
+
+            $timezone_opt .= '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
+            ';
+        }
+
+        if($dst == 1)
+        {
+            $dst_opt = "checked";
+        }else
+        {
+            $dst_opt = "";
+        }
+
+        $refresh_opt = "";
+        $val = 15;
+        $max = 30720;
+        while($val < $max)
+        {
+            if($refresh == $val)
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }
+            if($val > 60)
+            {
+                $time_inc_name = "Minutes";
+                $d=60;
+            }
+            else
+            {
+                $time_inc_name = "Seconds";
+                $d=1;
+            }
+            $refresh_opt .= '<OPTION '.$select.' VALUE="'.$val.'"> '.($val/$d).' '.$time_inc_name.'</option>
+            ';
+            $val = $val*2;
+        }
+        $importing_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`files_importing` ORDER BY `date` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            if($newArray['importing'] == '1' )
+            {
+                $color = 'lime';
+            }else
+            {
+                $color = 'yellow';
+            }
+            $importing_row[$n]['color'] = $color;
+            $importing_row[$n]['id'] = $newArray['id'];
+            $importing_row[$n]['file'] = $newArray['file'];
+            $importing_row[$n]['title'] = $newArray['title'];
+            $importing_row[$n]['date'] = $newArray['date'];
+            $importing_row[$n]['size'] = $newArray['size'];
+            $importing_row[$n]['hash'] = $newArray['hash'];
+            $importing_row[$n]['user'] = $newArray['user'];
+
+            $tot = "";
+            $ssid = "";
+            switch($newArray['ap'])
+            {
+                case "":
+                    $ssid = "<td colspan='2' align='center'>Processing...</td>";
+                    break;
+                case "Preparing for Import":
+                    $ssid = "<td colspan='2' align='center'>Preparing for Import...</td>";
+                    break;
+                case "File is already in table array (":
+                    $ssid = "<td colspan='2' align='center'>File is already in table...</td>";
+                    break;
+                case "@#@#_CONVERTING TO VS1_@#@#":
+                    $ssid = "<td colspan='2' align='center'>Converting file to VS1 Format...</td>";
+                    break;
+                default:
+                    $ssid = '<td align="center">'.$newArray['ap'].'</td>';
+                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = '<td align="center">'.$newArray['tot'].'</td>';}
+                    break;
+            }
+            $importing_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
+		
+        $waiting_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            $color = 'yellow';
+            $waiting_row[$n]['color'] = $color;
+            $waiting_row[$n]['id'] = $newArray['id'];
+            $waiting_row[$n]['file'] = $newArray['file'];
+            $waiting_row[$n]['title'] = $newArray['title'];
+            $waiting_row[$n]['date'] = $newArray['date'];
+            $waiting_row[$n]['size'] = $newArray['size'];
+            $waiting_row[$n]['hash'] = $newArray['hash'];
+            $waiting_row[$n]['user'] = $newArray['user'];
+
+            $tot = "";
+            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
+            $waiting_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
+
+        $schedule_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`schedule` ORDER BY `nodename` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+
+            $nextrun_utc = strtotime($newArray['nextrun']);
+            $curtime = time();
+            $min_diff = round(($nextrun_utc - $curtime) / 60);
+            $interval = (int)$newArray['interval'];
+            $status = $newArray['status'];
+            $enabled = $newArray['enabled'];
+
+            if($enabled==0 or $status=="Error")
+            {
+                $color = 'red';
+            }
+            else
+            {
+                if(($min_diff <= $interval and $min_diff >= 0) or $status=="Running")
+                {
+                    $color = 'lime';
+                }
+                else
+                {
+                    $color = 'yellow';
+                }
+            }
+
+        #convert to local time
+        $timezonediff = $TZone+$dst;
+        $alter_by = (($timezonediff*60)*60);
+        $altered = $nextrun_utc+$alter_by;
+        $nextrun_local = date("Y-m-d H:i:s", $altered);
+
+            $schedule_row[$n]['color'] = $color;
+            $schedule_row[$n]['id'] = $newArray['id'];
+            $schedule_row[$n]['nodename'] = $newArray['nodename'];
+            $schedule_row[$n]['daemon'] = $newArray['daemon'];
+            $schedule_row[$n]['enabled'] = $newArray['enabled'];
+            $schedule_row[$n]['interval'] = $newArray['interval'];
+            $schedule_row[$n]['status'] = $newArray['status'];
+            $schedule_row[$n]['nextrun_utc'] = $newArray['nextrun'];
+            $schedule_row[$n]['nextrun_local'] = $nextrun_local;
+
+            $n++;
+        }
+
+        $pid_row = array();
+        $n=0;
+        $sql = "SELECT * FROM `wifi`.`daemon_pid_stats` ORDER BY `nodename` ASC";
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+
+            $lastupdatetime = strtotime($newArray['date']);
+            $curtime = time();
+
+            if($newArray['pid'] == 0)
+            {
+                $color = 'red';
+            }else
+            {
+                if(($curtime-$lastupdatetime) < 60) {
+                    $color = 'lime';
+                }else
+                {
+                    $color = 'yellow';
+                }
+            }
+
+            $pid_row[$n]['color'] = $color;
+            $pid_row[$n]['nodename'] = $newArray['nodename'];
+            $pid_row[$n]['pidfile'] = $newArray['pidfile'];
+            $pid_row[$n]['pid'] = $newArray['pid'];
+            $pid_row[$n]['pidtime'] = $newArray['pidtime'];
+            $pid_row[$n]['pidmem'] = $newArray['pidmem'];
+            $pid_row[$n]['pidcmd'] = $newArray['pidcmd'];
+            $pid_row[$n]['date'] = $newArray['date'];
+
+            $n++;
+        }
+
+        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
+        $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
+        $dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
+        $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
+        $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
+        $dbcore->smarty->assign('wifidb_daemons', $pid_row);
+        $dbcore->smarty->assign('wifidb_importing', $importing_row);
+		$dbcore->smarty->assign('wifidb_waiting', $waiting_row);
+        $dbcore->smarty->display('scheduling_waiting.tpl');
+    break;
 }
-?>

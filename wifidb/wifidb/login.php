@@ -1,719 +1,391 @@
 <?php
-global $conn, $user_logins_table, $db;
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
 
-include_once('lib/database.inc.php');
-include_once('lib/security.inc.php');
-include_once('lib/config.inc.php');
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
 
-$seed = $GLOBALS['login_seed'];
-$func =	'';
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
+
+include('lib/init.inc.php');
+
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
-$return = @$_GET['return'];
-$sec = new security();
+if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
 
-if($return == '' and !@$_POST['return']){$return = $GLOBALS['hosturl'].''.$GLOBALS['root'];}
-
+if($return == ''){$return = $dbcore->root;}
 switch($func)
 {
-	case "login_proc":
-		$return = @$_POST['return'];
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-		$login = $sec->login($username, $password, $seed, 0);
-		pageheader(" --> User Login");
-		switch($login)
-		{
-			case "locked":
-				?><h2>This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.<br></h2><?php
-			break;
-			
-			case "validate":
-				?><h2>This user is not validated yet. You should be getting an email soon if not already from the Database with a link
-	to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.</h2><?php
-			break;
-			
-			case is_array($login):
-				$to_go = $login[1];
-				?><p align="center"><font color="red"><h2>Bad Username or Password!</h2></font></p>
-				<p align="center"><font color="red"><h3>You have <?php echo $to_go;?> more attmpt(s) till you are locked out.</h3></font></p>
-				<?php
-				$return = str_replace("%5C", "%5C", $return);
-				?>
-				<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=login_proc">
-				<table align="center">
-					<tr>
-						<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-					</tr>
-					<tr>
-						<td>Username</td>
-						<td><input type="text" name="time_user"></td>
-					</tr>
-					<tr>
-						<td>Password</td>
-						<td><input type="password" name="time_pass"></td>
-					</tr>
-					<tr>
-						<td colspan="2"><p align="center"><input type="hidden" name="return" value="<?php echo $return;?>"><input type="submit" value="Login"></p></td>
-					</tr>
-					<tr>
-						<td colspan="2"><p align="center"><a class="links" href="<?php echo $_SERVER['PHP_SELF'];?>?func=create_user_form">Create a user account</a><br><a class="links" href="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_user_pass">Forgot your password?</a></p></td>
-					</tr>
-				</table>
-				</form>
-				<?php
-			break;
-			
-			case"u_fail":
-				?><h2>Username does not exsist.</h2><?php
-			break;
-			
-			case "u_u_r_fail":
-				echo "failed to update User row";
-			break;
-			
-			case "good":
-				redirect_page($return, 2000, 'Login Successful!');
-			break;
-			
-			case "cookie_fail":
-				echo "Set Cookie fail, check the bottom of the glass, or your browser.";
-			break;
-			
-			default:
-				echo "Unknown Return.";
-			break;
-		}
-		
-	break;
-	
-	#---#
-	case "logout_proc":
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-	#	$login = $sec->login($username, $password, $seed, $return);
-		$admin_cookie = filter_input(INPUT_GET, 'a_c', FILTER_SANITIZE_SPECIAL_CHARS);
-		if($admin_cookie==1)
-		{
-			$cookie_name = 'WiFiDB_admin_login_yes';
-			$msg = 'Admin Logout Successful!';
-			if($GLOBALS["root"] != '')
-			{$path		 = '/'.$GLOBALS["root"].'/cp/admin/';}
-			else{$path		 = '/cp/admin/';}
-		}else
-		{
-			$cookie_name = 'WiFiDB_login_yes';
-			$msg = 'Logout Successful!';
-			if($GLOBALS["root"] != '')
-			{$path		 = '/'.$GLOBALS["root"].'/';}
-			else{$path		 = '/';}
-		}
-		if(setcookie($cookie_name, md5("@LOGGEDOUT!").":".$username, time()-3600, $path))
-		{
-			pageheader("User Logout");
-			redirect_page($GLOBALS['UPATH'], 2000, $msg);
-		}
-		else
-		{
-			pageheader("User Logout");
-			echo "Could not log you out.. :-(";
-		}
-	break;
-	
-	#---#
-	case "create_user_form":
-		pageheader("Security Page");
-		?>
-		<font color="green"><h2>Create User</h2></font>
-		<?php
-		$sec->user_create_form();
-	break;
-	
-	#---#
-	case "create_user_proc":
-		pageheader("Security Page");
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password2 = filter_input(INPUT_POST, 'time_pass2', FILTER_SANITIZE_SPECIAL_CHARS);
-		$email = filter_input(INPUT_POST, 'time_email', FILTER_SANITIZE_SPECIAL_CHARS);
-		if($password !== $password2)
-		{
-			?>
-			<font color="red"><h2>Passwords did not match</h2></font>
-			<?php
-			$sec->user_create_form($username, $email);
-		}else
-		{
-			$create = $sec->create_user($username, $password, $email, $user_array=array(0,0,0,1), $seed);
-			switch($create)
-			{
-				case 1:
-					?>
-					<p align="center"><font  color="green"><h2>User Created! Go ahead and login.</h2></font></p>
-					<?php
-					if($GLOBALS['email_validation'])
-					{
-						mail_validation($email, $username);
-						?>
-						<p align="center"><font  color="yellow"><h2>Email Validation has been enabled, check your email for a link and activate your account first.</h2></font></p>
-						<?php
-					}
-					?>
-					<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=login_proc">
-					<table align="center">
-						<tr>
-							<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-						</tr>
-						<tr>
-							<td>Username</td>
-							<td><input type="text" name="time_user"></td>
-						</tr>
-						<tr>
-							<td>Password</td>
-							<td><input type="password" name="time_pass"></td>
-						</tr>
-						<tr>
-							<td colspan="2"><p align="center"><input type="submit" value="Login"></p></td>
-						</tr>
-						<tr>
-							<td colspan="2"><p align="center"><a class="links" href="<?php echo $_SERVER['PHP_SELF'];?>?func=create_user_form">Create a user account</a><br><a class="links" href="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_user_pass">Forgot your password?</a></p></td>
-						</tr>
-					</table>
-					</form>
-					<?php
-				break;
-				
-				case is_array($create):
-					list($er, $msg) = $create;
-					switch($er)
-					{
-						case "create_tb":
-							echo $msg.'<BR>This is a serious error, contact Phil on the <a href="http://forum.techidiots.net/">forums</a><br>MySQL Error Message: '.$msg."<br><br><h1>D'oh!</h1>";
-						break;
-						
-						case "dup_u":
-							?><h2><font color="red">There is a user already with that username or email address. Pick another one.</font></h2><BR>
-							<?php
-							$sec->user_create_form($username, $email);
-						break;
-						
-						case "err_email":
-							?><h2><font color="red">The email address you provided is not valid. Please enter a real email.</font></h2><BR>
-							<?php
-							$sec->user_create_form($username, $email);
-						break;
-						
-						case "un_err":
-							?><h2><font color="red">The username you provided is blank. How are you supposed to login?</font></h2><BR>
-							<?php
-							$sec->user_create_form($username, $email);
-						break;
-						
-						case "pw_err":
-							?><h2><font color="red">The password you provided is blank. How are you supposed to login?</font></h2><BR>
-							<?php
-							$sec->user_create_form($username, $email);
-						break;
-					}
-				break;
-			}
-		}
-	break;
-	
-	case "validate_user":
-		pageheader("Security Page");
-		$validate_code = htmlentities($_GET['validate_code'], ENT_QUOTES);
-		$sql = "SELECT * FROM `$db`.`$validate_table` WHERE `code` = '$validate_code'";
-		$result = mysql_query($sql, $conn);
-		$v_array = mysql_fetch_array($result);
-		$username = $v_array['username'];
-		if($username)
-		{
-			$update = "UPDATE `$db`.`$user_logins_table` SET `validated` = '0' WHERE `username` = '$username'";
-	#		echo $update."<br>";
-			if(mysql_query($update, $conn))
-			{
-				$delete = "DELETE FROM `$db`.`$validate_table` WHERE `username` = '$username'";
-			#	echo $delete."<BR>";
-				if(mysql_query($delete, $conn))
-				{
-					echo "<font color='Green'><h2>Username: $username\r\n<BR>Has been activated! Go login -></h2></font>";
-				}else
-				{
-					echo "<font color='Yellow'><h2>Username: $username\r\n<BR>Activated, but failed to remove from activation table, <br>
-					This isnt a critical issue, but should be looked into by an administrator.
-					<br>".mysql_error($conn)."</h2></font>";
-				}
-			}else
-			{
-				echo "<font color='red'><h2>Username: $username\r\n<BR>Failed to activate...<br>".mysql_error($conn)."</h2></font>";
-			}
-		}else
-		{
-			echo "<font color='red'><h2>Invalid Activation Code, Would you like to <a class='links' href='?func=revalidate'>send another</a> validation code?.</h2></font>";
-		}
-	break;
-	
-	case "revalidate_proc":
-		pageheader("Security Page");
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_pass', FILTER_SANITIZE_SPECIAL_CHARS);
-		$email = filter_input(INPUT_POST, 'time_email', FILTER_SANITIZE_SPECIAL_CHARS);
-		$seed == $GLOBALS['login_seed'];
-		$pass_seed = md5($password.$seed);
-		
-		$sql0 = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` = '$username' LIMIT 1";
-		$result = mysql_query($sql0, $conn);
-		$newArray = mysql_fetch_array($result);
-		$username_db = $newArray['username'];
-		$user_email = $newArray['email'];
-		$user_pwd_db = $newArray['password'];
-	#	echo $pass_seed." == ".$user_pwd_db."<BR>";
-		if($pass_seed == $user_pwd_db)
-		{
-			if(mail_validation($user_email, $username))
-			{
-				echo "<font color='green'><h2>Validation Email sent again.</h2>";
-			}else
-			{
-				echo "<font color='red'><h2>Failed to send Validation Email.</h2>";
-			}
-		}else
-		{
-			echo "<font color='red'><h2>You entered the wrong password.</h2>";
-		}
-		echo "</font>";
-	break;
+    case "login_proc":
+        $username = $_POST['time_user'];
+        $password = $_POST['time_pass'];
+        $Bender_remember_me = (@$_POST['Bender_remmeber_me'] == "Yes" ? 1 : 0 );
+        
+        $dbcore->sec->Login($username, $password, $Bender_remember_me);
+        switch($dbcore->sec->login_val)
+        {
+            case "locked":
+                $message = 'This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.';
+            break;
 
-	case "revalidate":
-		pageheader("Security Page");
-		?>
-		<p align='center'><font color='red'><h2>Resend User Email Validation Code</h2></font></p>
-		<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=revalidate_proc">
-		<table align="center">
-			<tr>
-				<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-			</tr>
-			<tr>
-				<td>Username</td>
-				<td><input type="text" name="time_user"></td>
-			</tr>
-			<tr>
-				<td>Password</td>
-				<td><input type=PASSWORD name="time_pass"></td>
-			</tr>
-			<tr>
-				<td>Email Address</td>
-				<td><input type="text" name="time_email"></td>
-			</tr>
-			<tr>
-				<td colspan="2"><p align="center"><input type="submit" value="Login"></p></td>
-			</tr>
-		</table>
-		</form>
-		<?php
-	break;
+            case "validate":
+                $message = 'This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.';
+            break;
+            
+            case "hash_tbl_fail":
+                $message = "Failed to set Hash for the Login Cookie to the table...";
+            break;
 
-	
-	#---#
-	case "reset_user_pass_proc":
-		pageheader("Security Page");
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$email = filter_input(INPUT_POST, 'time_email', FILTER_SANITIZE_SPECIAL_CHARS);
-		
-		$sql0 = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` = '$username' LIMIT 1";
-		$result = mysql_query($sql0, $conn);
-		$newArray = mysql_fetch_array($result);
-		$username_db = $newArray['username'];
-		$user_email = $newArray['email'];
-		if($username_db == '')
-		{
-			?>
-			<p align='center'><font color='red'><h2>User not found, try again.</h2></font></p>
-			<p align='center'><font color='red'><h2>Reset User password</h2></font></p>
-			<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_user_pass_proc">
-			<table align="center">
-				<tr>
-					<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-				</tr>
-				<tr>
-					<td>Username</td>
-					<td><input type="text" name="time_user"></td>
-				</tr>
-				<tr>
-					<td>Password</td>
-					<td><input type=PASSWORD name="time_pass"></td>
-				</tr>
-				<tr>
-					<td>Email Address</td>
-					<td><input type="text" name="time_email"></td>
-				</tr>
-				<tr>
-					<td colspan="2"><p align="center"><input type="submit" value="Login"></p></td>
-				</tr>
-			</table>
-			</form>
-			<?php
-		}else
-		{
-			if($email == $user_email)
-			{
-				##########################
-				$validatecode = $sec->gen_keys(12);
-				##########################
-				require_once('lib/MAIL5.php');
-				
-				$conn				= 	$GLOBALS['conn'];
-				$db					= 	$GLOBALS['db'];
-				$user_logins_table	=	$GLOBALS['user_logins_table'];
-				$seed				=	$GLOBALS['login_seed'];
-				$from				=	$GLOBALS['admin_email'];
-				$wifidb_smtp		=	$GLOBALS['wifidb_smtp'];
-				$sender				=	$from;
-				$sender_pass		=	$GLOBALS['wifidb_from_pass'];
-				$to					=	array();
-				$mail				=	new MAIL5();
-				
-				if(!$mail->from($from))
-				{die("Failed to add From address\r\n");}
-				if(!$mail->addto($user_email))
-				{die("Failed to add To address\r\n");}
-				
-				if(!$mail->subject("WiFiDB User Password Reset"))
-				{die("Failed to add subject\r\n");}
-				
-				$contents = "You have requested a reset of your password, here it is...
-Your account: $username
-Temp Password: $validatecode
+            case "p_fail":
+                $message = 'Bad Username or Password!';
+            break;
 
-Go here to reset it to one you choose:
-".$GLOBALS['UPATH']."/login.php?func=reset_password
+            case "u_fail":
+                $message = 'Username does not exsist.';
+            break;
+
+            case "u_u_r_fail":
+                $message = "Failed to update User row";
+            break;
+
+            case "good":
+                $message = 'Login Successful!';
+                $dbcore->redirect_page($return, 2000);
+            break;
+
+            case "cookie_fail":
+                $message = "Set Cookie fail, check the bottom of the glass, or your browser.";
+            break;
+
+            default:
+                $message = "Unknown Return.";
+            break;
+        }
+        $dbcore->smarty->assign('message', $message);
+        $dbcore->smarty->display('login_result.tpl');
+    break;
+
+    #---#
+    case "logout":
+        $admin_cookie = (int) $_REQUEST['a_c']+0;
+        if($admin_cookie === 1)
+        {
+            $cookie_name = 'WiFiDB_admin_login_yes';
+            $msg = 'Admin Logout Successful!';
+            if($dbcore->root != '')
+            {$path  = '/'.$dbcore->root.'/cp/admin/';}
+            else{$path  = '/cp/admin/';}
+        }else
+        {
+            $cookie_name = 'WiFiDB_login_yes';
+            $msg = 'Logout Successful!';
+            if($dbcore->root != '')
+            {$path  = '/'.$dbcore->root.'/';}
+            else{$path  = '/';}
+        }
+        list($cookie_pass_hash, $username) = explode(":", base64_decode($_COOKIE[$cookie_name]));
+        $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
+        $prep = $dbcore->sql->conn->prepare($sql);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->execute();
+        $dbcore->sql->checkError();
+        
+        if(setcookie($cookie_name, "@LOGGEDOUT!:".$username, time()-3600, $path, $dbcore->sec->domain, $dbcore->sec->ssl))
+        {
+            $message = $msg;
+            $dbcore->redirect_page("", 2000);
+        }
+        else
+        {
+            $message = "Could not log you out.. :-(";
+        }
+		$dbcore->redirect_page($return, 2000);
+        $dbcore->smarty->assign('message', $message);
+        $dbcore->smarty->display('login_result.tpl');
+    break;
+
+    #---#
+    case "create_user_form":
+		$dbcore->smarty->assign('message', "");
+        $dbcore->smarty->display('create_user.tpl');
+    break;
+
+    #---#
+    case "create_user_proc":
+        $username   = $_REQUEST['time_user'];
+        $password   = $_REQUEST['time_pass'];
+        $password2  = $_REQUEST['time_pass2'];
+        $email      = $_REQUEST['time_email'];
+        if(!$dbcore->checkEmail($email))
+        {
+            $dbcore->smarty->assign('message', 'Email is not valid.');
+            $dbcore->smarty->display('create_user.tpl');
+        }
+        if($password !== $password2)
+        {
+            $dbcore->smarty->assign('message', 'Passwords did not match.');
+            $dbcore->smarty->display('create_user.tpl');
+        }else
+        {
+            $ret = $dbcore->sec->CreateUser($username, $password, $email);
+            $return = $ret[0];
+            $message = $ret[1];
+
+            switch($return)
+            {
+                case 1:
+                    #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
+                    if($dbcore->sec->email_validation)
+                    {
+                        if($dbcore->wdbmail->mail_validation($email, $username))
+                        {
+                            $message = "User Created! You should be getting a Validation email soon, click on the link to confirm your account and to start you uploads!.";
+                        }else
+                        {
+                            $message = "Email Validation has been enabled, but failed to send the email. Contact the Admins for help.";
+                        }
+                    }else
+                    {
+                        $message = "User Created! Go ahead and login.";
+                    }
+                    $dbcore->smarty->assign('message', $message);
+                    $dbcore->smarty->display('login_index.tpl');
+                break;
+
+                case 0:
+                    #Failed to create a user for some reason, tell them why.
+                    $dbcore->smarty->assign('message', $message);
+                    $dbcore->smarty->display('create_user.tpl');
+                break;
+                default:
+                    die("ummmmm...");
+                    break;
+            }
+        }
+    break;
+
+    case "validate_user":
+        $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
+        $sql = "SELECT * FROM `wifi`.`user_validate` WHERE `code` = ?";
+        $result = $dbcore->sql->conn->prepare($sql);
+        $result->execute(array($validate_code));
+        $v_array = $result->fetch(2);
+        $username = $v_array['username'];
+        if($username)
+        {
+            $update = "UPDATE `wifi`.`user_info` SET `validated` = '0' WHERE `username` = ?";
+            $result = $dbcore->sql->conn->prepare($update);
+            $result->bindParam(1, $username);
+            $result->execute();
+            $err = $dbcore->sql->conn->errorCode();
+#		echo $update."<br>";
+            if($err[0] == "00000")
+            {
+                $delete = "DELETE FROM `wifi`.`user_validate` WHERE `username` = ?";
+                $result = $dbcore->sql->conn->prepare($delete);
+                $result->bindParam(1, $username);
+                $result->execute();
+                $err = $dbcore->sql->conn->errorCode();
+#		
+        #	echo $delete."<BR>";
+                if($err[0] == "00000")
+                {
+                    $message = "<font color='Green'><h2>Username: {$username}\r\n<BR>Has been activated! Go login -></h2></font>";
+                }else
+                {
+                    $message = "<font color='Yellow'><h2>Username: {$username}\r\n<BR>Activated, but failed to remove from activation table, <br>
+                    This isnt a critical issue, but should be looked into by an administrator.
+                    <br>".var_export($dbcore->sql->conn->errorInfo())."</h2></font>";
+                }
+            }else
+            {
+                $message = "<font color='red'><h2>Username: {$username}\r\n<BR>Failed to activate...<br>".var_export($dbcore->sql->conn->errorInfo())."</h2></font>";
+            }
+        }else
+        {
+            $message = "<font color='red'><h2>Invalid Activation Code, Would you like to <a class='links' href='?func=revalidate'>send another</a> validation code?.</h2></font>";
+        }
+    break;
+
+    case "revalidate_proc":
+            $seed = $dbcore->global_seed;
+            $pass_seed = md5($_POST['time_pass'].$seed);
+
+            $sql = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+            $result = $dbcore->sql->conn->prepare($sql);
+            $result->execute(array($_POST['time_user']));
+            $newArray = $result->fetch(2);
+
+            $username_db = $newArray['username'];
+            $user_email = $newArray['email'];
+            $user_pwd_db = $newArray['password'];
+    #	echo $pass_seed." == ".$user_pwd_db."<BR>";
+            if($pass_seed == $user_pwd_db)
+            {
+                if($dbcore->mail->mail_validation($user_email, $username))
+                {
+                    $message = "<font color='green'><h2>Validation Email sent again.</h2></font>";
+                }else
+                {
+                    $message = "<font color='red'><h2>Failed to send Validation Email.</h2></font>";
+                }
+            }else
+            {
+                $message = "<font color='red'><h2>You entered the wrong password.</h2></font>";
+            }
+    break;
+
+    case "revalidate":
+        ##########################
+        ##########################
+        $message = "Resend User Email Validation Code";
+        $dbcore->smarty->assign('message', $message);
+        $dbcore->smarty->display('login_result.tpl');
+    break;
+
+    case "reset_password_form":
+        $token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_SPECIAL_CHARS);
+        $dbcore->smarty->assign("token", $token);
+        $dbcore->smarty->display("reset_password_form.tpl");
+    break;
+
+    case "reset_password_proc":
+        $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
+        $token = filter_input(INPUT_POST, 'token', FILTER_SANITIZE_SPECIAL_CHARS);
+        $newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
+        $newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
+
+        $from           =   $this->WDBadmin;
+        $wifidb_smtp    =   $this->smtp;
+        $sender         =   $from;
+        $sender_pass    =   $dbcore->smtp_pass;
+        $seed           =   $dbcore->login_seed;
+        $success        =   0;
+        $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $prep = $dbcore->sql->conn->prepare($sql0);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->execute();
+        $err = $dbcore->sql->conn->errorCode();
+        if($err[0] !== "00000")
+        {
+            throw new Exception($this->sql->conn->errorInfo());
+        }
+        $newArray = $prep->fetch(2);
+        $username_db = $newArray['username'];
+        $user_email = $newArray['email'];
+        $password_db = $newArray['password'];
+        if($username_db == '')
+        {
+            $message = "";
+            $dbcore->smarty->display("reset_password_form.tpl");
+            die();
+        }else
+        {
+            if($newpassword === $newpassword2)
+            {
+                $password = sha1($password.$seed);
+                if($password === $password_db)
+                {
+                    $setpassword = sha1($newpassword.$seed);
+                    $update = "UPDATE `wifi`.`user_info` SET `password` = ? WHERE `username` = ?";
+                #   echo $update."<BR>";
+                    $prep1 = $dbcore->sql->conn->prepare($update);
+                    $prep1->bindParam(1, $setpassword.":sha1", PDO::PARAM_STR);
+                    $prep1->bindParam(2, $username_db, PDO::PARAM_STR);
+                    $prep1->execute();
+
+                    $err = $dbcore->sql->conn->errorCode();
+                    if($err[0] === "00000")
+                    {
+                        #clear the token from the table.
+                        $remove = "DELETE FROM `wifi`.`reset_token` where `token` = ? and `username` = ?";
+                        $prep2 = $dbcore->sql->conn->prepare($remove);
+                        $prep2->bindParam(1, $token, PDO::PARAM_STR);
+                        $prep2->bindParam(2, $username, PDO::PARAM_STR);
+                        $prep2->execute();
+                        $err = $this->sql->conn->errorCode();
+                        if($err[0] !== "00000")
+                        {
+                            $dbcore->logd("Error removing user password reset token from table: ".var_export($dbcore->sql->conn->errorInfo(), 1).var_export($dbcore, 1), "error");
+                        }
+                        if($dbcore->mail->from($from))
+                        {$dbcore->logd("Failed to add From address". var_export($dbcore,1), "error");}
+                        if(!$dbcore->mail->addto($user_email))
+                        {$dbcore->logd("Failed to add To address". var_export($dbcore,1), "error");}
+
+                        if(!$dbcore->mail->subject("WiFiDB User Password Reset"))
+                        {$dbcore->logd("Failed to add subject". var_export($dbcore,1), "error");}
+
+                        $contents = "You have just reset your password, if you did not do this, I would email the admin...
+
+Your account: $username_db
 
 -WiFiDB Service";
 
-				if(!$mail->text($contents))
-				{die("Failed to add message\r\n");}
-				
-				$smtp_conn = $mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
-				if ($smtp_conn)
-				{
-					if($mail->send($smtp_conn))
-					{
-						$password = md5($validatecode.$seed);
-						$update = "UPDATE `$db`.`$user_logins_table` SET `password` = '$password' WHERE `username` = '$username'";
-					#	echo $update."<BR>";
-						if(mysql_query($update, $conn))
-						{
-							echo "<font color='green'><h2>Password reset email sent.</h2></font>";
-						}else
-						{
-							echo "Mysql Error: ".mysql_error($conn);
-						}
-					}
-					else
-					{
-						echo "<font color='red'><h2>Password reset email Failed to send.</h2></font>";
-					}
-				}
-				else
-				{
-					echo "<font color='red'><h2>Failed to connect to SMTP Host.</h2></font>";
-				}
-				$mail->disconnect();
-			}else
-			{
-				?>
-				<p align='center'><font color='red'><h2>Email address could not be matched, try again.</h2></font></p>
-				<p align='center'><font color='red'><h2>Reset User password</h2></font></p>
-				<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_user_pass_proc">
-				<table align="center">
-					<tr>
-						<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-					</tr>
-					<tr>
-						<td>Username</td>
-						<td><input type="text" name="time_user"></td>
-					</tr>
-					<tr>
-						<td>Password</td>
-						<td><input type=PASSWORD name="time_pass"></td>
-					</tr>
-					<tr>
-						<td>Email Address</td>
-						<td><input type="text" name="time_email"></td>
-					</tr>
-					<tr>
-						<td colspan="2"><p align="center"><input type="submit" value="Login"></p></td>
-					</tr>
-				</table>
-				</form>
-				<?php
-			}
-		}
-	break;
+                        if(!$dbcore->mail->text($contents))
+                        {$dbcore->logd("Failed to add message". var_export($dbcore,1), "error");}
 
-	#---#
-	case "reset_user_pass":
-		pageheader("Security Page");
-		?>
-		<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-		<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_user_pass_proc">
-		<table align="center">
-			<tr>
-				<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-			</tr>
-			<tr>
-				<td>Username</td>
-				<td><input type="text" name="time_user"></td>
-			</tr>
-			<tr>
-				<td>Email Address</td>
-				<td><input type="text" name="time_email"></td>
-			</tr>
-			<tr>
-				<td colspan="2"><p align="center"><input type="submit" value="Send Email"></p></td>
-			</tr>
-		</table>
-		</form>
-		<?php
-	break;
-	
-	case "reset_password_proc":
-		pageheader("Security Page");
-		require_once("lib/MAIL5.php");
-		$username = filter_input(INPUT_POST, 'time_user', FILTER_SANITIZE_SPECIAL_CHARS);
-		$password = filter_input(INPUT_POST, 'time_current_pwd', FILTER_SANITIZE_SPECIAL_CHARS);
-		$newpassword = filter_input(INPUT_POST, 'time_new_pwd', FILTER_SANITIZE_SPECIAL_CHARS);
-		$newpassword2 = filter_input(INPUT_POST, 'time_new_pwd_again', FILTER_SANITIZE_SPECIAL_CHARS);
-		
-		$from				=	$GLOBALS['admin_email'];
-		$wifidb_smtp		=	$GLOBALS['wifidb_smtp'];
-		$sender				=	$from;
-		$sender_pass		=	$GLOBALS['wifidb_from_pass'];
-		$mail				=	new MAIL5();
-		$seed = $GLOBALS['login_seed'];
-		
-		$sql0 = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` = '$username' LIMIT 1";
-		$result = mysql_query($sql0, $conn);
-		$newArray = mysql_fetch_array($result);
-		$username_db = $newArray['username'];
-		$user_email = $newArray['email'];
-		$password_db = $newArray['password'];
-		if($username_db == '')
-		{
-			?>
-			<p align='center'><font color='red'><h2>Username was blank, try again.</h2></font></p>
-			<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-			<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_password_proc">
-			<table align="center">
-				<tr>
-					<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-				</tr>
-				<tr>
-					<td>Username</td>
-					<td><input type="text" name="time_user"></td>
-				</tr>
-				<tr>
-					<td>Temp Password</td>
-					<td><input type=PASSWORD name="time_current_pwd"></td>
-				</tr>
-				<tr>
-					<td>New Password</td>
-					<td><input type=PASSWORD name="time_new_pwd"></td>
-				</tr>
-				<tr>
-					<td>Retype New Password</td>
-					<td><input type=PASSWORD name="time_new_pwd_again"></td>
-				</tr>
-				<tr>
-					<td colspan="2"><p align="center"><input type="submit" value="Re-set Password"></p></td>
-				</tr>
-			</table>
-			</form>
-			<?php
-		}else
-		{
-			if($newpassword === $newpassword2)
-			{
-				$password = md5($password.$seed);
-				if($password === $password_db)
-				{
-					$setpassword = md5($newpassword.$seed);
-					$update = "UPDATE `$db`.`$user_logins_table` SET `password` = '$setpassword' WHERE `username` = '$username_db'";
-				#	echo $update."<BR>";
-					if(mysql_query($update, $conn))
-					{
-						if(!$mail->from($from))
-						{die("Failed to add From address\r\n");}
-						if(!$mail->addto($user_email))
-						{die("Failed to add To address\r\n");}
-						
-						if(!$mail->subject("WiFiDB User Password Reset"))
-						{die("Failed to add subject\r\n");}
-						
-						$contents = "You have just reset your password, if you did not do this, i would email the admin...
+                        $smtp_conn = $dbcore->mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
+                        if ($smtp_conn)
+                        {
+                            if($dbcore->mail->send($smtp_conn))
+                            {
+                                $message = "Your password has been reset, you can now go login.";
+                            }else
+                            {
+                                $message = "Your password has been reset, but failed to send confirmation email.";
+                            }
+                        }else
+                        {
+                            $dbcore->logd("Failed to connect to SMTP Host". var_export($dbcore,1), "error");
+                            $message = "Failed to connect to SMTP Host.";
+                        }
+                        $success =  1;
+                    }else
+                    {
+                        $message = "There was an error, please try again.";
+                        $dbcore->logd("SQL Error: ". var_export($dbcore->sql->conn->errorInfo(),1). var_export($dbcore, 1));
+                    }
+                }else
+                {
+                    $message = "Username or Password did not match.";
+                    $dbcore->logd("User failed to reset password. ". $_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
+                }
+            }else
+            {
+                $message = "New Passwords did not match.";
+            }
+        }
+        if($success) $dbcore-redirect_page("", 5);
+        $dbcore->smarty->assign("message", $message);
+        $dbcore->smarty->display("login_results.tpl");
+    break;
 
-Your account: $username
+    case "reset_user_pass_request":
+        $dbcore->smarty->display("reset_password_request.tpl");
+    break;
 
--WiFiDB Service";
-						
-						if(!$mail->text($contents))
-						{die("Failed to add message\r\n");}
-						
-						$smtp_conn = $mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
-						if ($smtp_conn)
-						{
-							if($mail->send($smtp_conn))
-							{
-								?>
-									<p align='center'><font color='green'><h2>Your password has been reset, you can now go login.</h2></font></p>
-								<?php
-							}else
-							{
-								?>
-									<p align='center'><font color='red'><h2>Your password has been reset, but failed to send email to user.</h2></font></p>
-								<?php
-							}
-						}else
-						{
-							?>
-								<p align='center'><font color='red'><h2>Failed to connect to SMTP Host.</h2></font></p>
-							<?php
-						}
-					}else
-					{
-						?><h2>Mysql Error:</h2><font color='red'> <?php echo mysql_error($conn); ?></font><?php
-					}
-				}else
-				{
-					?>
-					<p align='center'><font color='red'><h2>Password did not match DB.</h2></font></p>
-					<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-					<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_password_proc">
-					<table align="center">
-						<tr>
-							<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-						</tr>
-						<tr>
-							<td>Username</td>
-							<td><input type="text" name="time_user"></td>
-						</tr>
-						<tr>
-							<td>Temp Password</td>
-							<td><input type=PASSWORD name="time_current_pwd"></td>
-						</tr>
-						<tr>
-							<td>New Password</td>
-							<td><input type=PASSWORD name="time_new_pwd"></td>
-						</tr>
-						<tr>
-							<td>Retype New Password</td>
-							<td><input type=PASSWORD name="time_new_pwd_again"></td>
-						</tr>
-						<tr>
-							<td colspan="2"><p align="center"><input type="submit" value="Re-set Password"></p></td>
-						</tr>
-					</table>
-					</form>
-					<?php
-				}
-			}else
-			{
-				?>
-				<p align='center'><font color='red'><h2>New Passwords did not match.</h2></font></p>
-				<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-				<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_password_proc">
-				<table align="center">
-					<tr>
-						<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-					</tr>
-					<tr>
-						<td>Username</td>
-						<td><input type="text" name="time_user"></td>
-					</tr>
-					<tr>
-						<td>Temp Password</td>
-						<td><input type=PASSWORD name="time_current_pwd"></td>
-					</tr>
-					<tr>
-						<td>New Password</td>
-						<td><input type=PASSWORD name="time_new_pwd"></td>
-					</tr>
-					<tr>
-						<td>Retype New Password</td>
-						<td><input type=PASSWORD name="time_new_pwd_again"></td>
-					</tr>
-					<tr>
-						<td colspan="2"><p align="center"><input type="submit" value="Re-set Password"></p></td>
-					</tr>
-				</table>
-				</form>
-				<?php
-			}
-		}
-	break;
-	
-	case "reset_password":
-		pageheader("Security Page");
-		?>
-		<p align='center'><font color='red'><h2>Reset forgoten password</h2></font></p>
-		<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_password_proc">
-		<table align="center">
-			<tr>
-				<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-			</tr>
-			<tr>
-				<td>Username</td>
-				<td><input type="text" name="time_user"></td>
-			</tr>
-			<tr>
-				<td>Temp Password</td>
-				<td><input type=PASSWORD name="time_current_pwd"></td>
-			</tr>
-			<tr>
-				<td>New Password</td>
-				<td><input type=PASSWORD name="time_new_pwd"></td>
-			</tr>
-			<tr>
-				<td>Retype New Password</td>
-				<td><input type=PASSWORD name="time_new_pwd_again"></td>
-			</tr>
-			<tr>
-				<td colspan="2"><p align="center"><input type="submit" value="Re-set Password"></p></td>
-			</tr>
-		</table>
-		</form>
-		<?php
-	break;
-	
-	
-	#---#
-	default :
-		pageheader("Security Page");
-		$return = str_replace("%	5C", "%5C", $return);
-		?>
-		<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=login_proc">
-		<table align="center">
-			<tr>
-				<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-			</tr>
-			<tr>
-				<td>Username</td>
-				<td><input type="text" name="time_user"></td>
-			</tr>
-			<tr>
-				<td>Password</td>
-				<td><input type="password" name="time_pass"></td>
-			</tr>
-			<tr>
-				<td colspan="2"><p align="center"><input type="hidden" name="return" value="<?php echo $return;?>"><input type="submit" value="Login"></p></td>
-			</tr>
-			<tr>
-				<td colspan="2"><p align="center"><a class="links" href="<?php echo $_SERVER['PHP_SELF'];?>?func=create_user_form">Create a user account</a><br><a class="links" href="<?php echo $_SERVER['PHP_SELF'];?>?func=reset_user_pass">Forgot your password?</a></p></td>
-			</tr>
-		</table>
-		</form>
-		<?php
-	break;
+    case "reset_password_request_proc":
+
+    break;
+
+    default :
+		$dbcore->smarty->assign('message', "");
+		$dbcore->smarty->assign("logon_return_url", $return);
+        $dbcore->smarty->display("login_index.tpl");
+    break;
 }
-footer($_SERVER['SCRIPT_FILENAME']);
 ?>

@@ -1,8 +1,29 @@
 <?php
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+
 function admin_pageheader($page = '')
 {
 	global $login_check;
-	
+
 	$ver 		=	$GLOBALS['ver']['wifidb'];
 	$root		= 	$GLOBALS['root'];
 	$hosturl	= 	$GLOBALS['hosturl'];
@@ -12,13 +33,13 @@ function admin_pageheader($page = '')
 	$half_path	=	$GLOBALS['half_path'];
 	$mode = $GLOBALS['mode'];
 	$func = $GLOBALS['func'];
-	
+
 	include_once($half_path.'/lib/database.inc.php');
 	include_once($half_path.'/lib/security.inc.php');
-	include_once($half_path.'/lib/config.inc.php');	
-	
+	include_once($half_path.'/lib/config.inc.php');
+
 	$sec = new security();
-	
+
 	?>
 	<html>
 		<head>
@@ -75,7 +96,7 @@ function admin_pageheader($page = '')
 				$result = mysql_query($sql0, $conn);
 				$newArray = mysql_fetch_array($result);
 				$last_login = $newArray['last_login'];
-				
+
 				?>
 				<td>Welcome, <a class="links" href="javascript:confirmation()"><?php echo $username;?></a><font size="1"> (Last Login: <?php echo $last_login;?>)</font></td>
 				<td align="right"><a class="links" href="<?php echo $GLOBALS['UPATH']; ?>/login.php?func=logout_proc&a_c=1">Logout</a></td>
@@ -127,7 +148,7 @@ function admin_footer($filename = '', $output = "detailed")
 		<td bgcolor="#315573" height="23"></td>
 		<td bgcolor="#315573" width="0" align="center">
 		<?php
-		if (file_exists($filename_1)) 
+		if (file_exists($filename_1))
 		{
 		?>
 			<h6><i><u><?php echo $filename_1;?></u></i> was last modified:  <?php echo date ("Y F d @ H:i:s", getlastmod());?></h6>

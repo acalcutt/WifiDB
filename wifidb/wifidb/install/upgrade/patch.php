@@ -1,82 +1,55 @@
 <?php
-global $screen_output;
-$screen_output = "CLI";
+#Database.inc.php, holds the database interactive functions.
+#Copyright (C) 2011 Phil Ferland
+#
+#This program is free software; you can redistribute it and/or modify it under the terms
+#of the GNU General Public License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with this program;
+#if not, write to the
+#
+#   Free Software Foundation, Inc.,
+#   59 Temple Place, Suite 330,
+#   Boston, MA 02111-1307 USA
+
+define(WIFIDB_SCREEN_OUTPUT, "CLI");
+define(WIFIDB_INSTALL, "installing");
 include('../../lib/database.inc.php');
 pageheader("Upgrade Page", "detailed", 1);
-
-include($half_path.'/lib/config.inc.php');
 ?>
+
 <h3>If one of the steps shows "Duplicate column name '***'," you can ignore this error.</h3>
 <table border="1">
 <tr class="style4"><TH colspan="2">Upgrade DB for all versions <b>--&#60;</b> 0.20 Build 1</TH>
 <tr class="style4"><th colspan="2">Upgrade Database Tables</th></tr>
 <tr class="style4"><th>Status</th><th>Step of Upgrade</th></tr>
+
 <?php
-
-/*
-
-CREATE TABLE  `wifi`.`live_gps` (
-`id` INT( 255 ) NOT NULL AUTO_INCREMENT ,
-`lat` VARCHAR( 255 ) NOT NULL ,
-`long` VARCHAR( 255 ) NOT NULL ,
-`sats` INT( 25 ) NOT NULL ,
-`hdp` VARCHAR( 255 ) NOT NULL ,
-`alt` VARCHAR( 255 ) NOT NULL ,
-`geo` VARCHAR( 255 ) NOT NULL ,
-`kmh` VARCHAR( 255 ) NOT NULL ,
-`mph` VARCHAR( 255 ) NOT NULL ,
-`track` VARCHAR( 255 ) NOT NULL ,
-`date` VARCHAR( 255 ) NOT NULL ,
-`time` VARCHAR( 255 ) NOT NULL ,
-PRIMARY KEY (  `id` ) ,
-INDEX (  `id` )
-) ENGINE = INNODB;
-
-
-
-
-
-CREATE TABLE  `wifi`.`live_aps` (
-`id` INT( 255 ) NOT NULL AUTO_INCREMENT ,
-`ssid` VARCHAR( 255 ) NOT NULL ,
-`mac` VARCHAR( 255 ) NOT NULL ,
-`auth` INT( 25 ) NOT NULL ,
-`encry` VARCHAR( 255 ) NOT NULL ,
-`sectype` VARCHAR( 255 ) NOT NULL ,
-`chan` VARCHAR( 255 ) NOT NULL ,
-`radio` VARCHAR( 255 ) NOT NULL ,
-`BTx` VARCHAR( 255 ) NOT NULL ,
-`OTx` VARCHAR( 255 ) NOT NULL ,
-`NT` VARCHAR( 255 ) NOT NULL ,
-`Label` VARCHAR( 255 ) NOT NULL,
-`sig` VARCHAR( 255 ) NOT NULL ,
-`username` VARCHAR( 255 ) NOT NULL ,
-PRIMARY KEY (  `id` ) ,
-INDEX (  `id` )
-) ENGINE = INNODB;
-*/
-
-
-
 global $wifidb_smtp, $wifidb_email_updates, $reserved_users;
-$ENG = "InnoDB";
-$date = date("Y-m-d");
 
-$root_sql_user	=	addslashes(strip_tags($_POST['root_sql_user']));
-$root_sql_pwd	=	addslashes(strip_tags($_POST['root_sql_pwd']));
-$sqlhost		=	addslashes(strip_tags($_POST['sqlhost']));
-$sqlu			=	addslashes(strip_tags($_POST['sqlu']));
-$sqlp			=	addslashes(strip_tags($_POST['sqlp']));
-$wifi			=	addslashes(strip_tags($_POST['wifi']));
-$wifi_st		=	addslashes(strip_tags($_POST['wifist']));
-$theme			=	addslashes(strip_tags($_POST['theme']));
-$password		=	addslashes(strip_tags($_POST['wdb_admn_pass']));
-$email			=	addslashes(strip_tags($_POST['wdb_admn_emailadrs']));
-$wifidb_from			=	addslashes(strip_tags($_POST['wdb_from_emailadrs']));
-$wifidb_from_pass		=	addslashes(strip_tags($_POST['wdb_from_pass']));
-$wifidb_smtp			=	addslashes(strip_tags($_POST['wdb_smtp']));
+$ENG                    =   "InnoDB";
+$date                   =   date("Y-m-d");
+$root_sql_user          =   addslashes(strip_tags($_POST['root_sql_user']));
+$root_sql_pwd           =   addslashes(strip_tags($_POST['root_sql_pwd']));
+$sqlhost		=   addslashes(strip_tags($_POST['sqlhost']));
+$sqlu			=   addslashes(strip_tags($_POST['sqlu']));
+$sqlp			=   addslashes(strip_tags($_POST['sqlp']));
+$wifi			=   addslashes(strip_tags($_POST['wifi']));
+$wifi_st		=   addslashes(strip_tags($_POST['wifist']));
+$theme			=   addslashes(strip_tags($_POST['theme']));
+$password		=   addslashes(strip_tags($_POST['wdb_admn_pass']));
+$email			=   addslashes(strip_tags($_POST['wdb_admn_emailadrs']));
+$wifidb_from		=   addslashes(strip_tags($_POST['wdb_from_emailadrs']));
+$wifidb_from_pass	=   addslashes(strip_tags($_POST['wdb_from_pass']));
+$reserved_users		=   'WiFiDB:Recovery';
 
-$reserved_users		=	'WiFiDB:Recovery';
+define(WIFIDB_RESERVED_USERS, 'WiFiDB:Recovery:root:admin');
+define(WIFIDB_SMTP_SRV, addslashes(strip_tags($_POST['wdb_smtp'])));
 
 if($_POST['email_validation'] == 'on')
 {
@@ -85,6 +58,8 @@ if($_POST['email_validation'] == 'on')
 {
 	$email_validation	=	0;
 }
+define(WIFIDB_EMAIL_VALIDATE, $email_validation);
+
 if($_POST['wdb_email_updates'] == 'on')
 {
 	$wifidb_email_updates	=	1;
@@ -92,21 +67,26 @@ if($_POST['wdb_email_updates'] == 'on')
 {
 	$wifidb_email_updates	=	0;
 }
+define(WIFIDB_EMAIL_UPDATES, $wifidb_email_updates);
 
 if(!@isset($timeout)){$timeout		=   "(86400 * 365)";}
+define(WIFIDB_COOKIE_TIMEOUT, $timeout);
 
 if($theme == '')
 {
 	$theme = 'wifidb';
 }
+define(WIFIDB_THEME, $theme);
 
 if($hosturl == '')
 {
 	$hosturl = (@$_SERVER["SERVER_NAME"]!='' ? $_SERVER["SERVER_NAME"] : $_SERVER["SERVER_ADDR"]);
 }
+define(WIFIDB_HOST_URL, $hosturl);
 
 if($sqlhost == '')
 {$sqlhost = '127.0.0.1';}
+define(WIFIDB_SQL_HOST, $sqlhost);
 
 if(isset($_POST['daemon']))
 {
@@ -156,7 +136,7 @@ echo "<tr class=\"bad\"><td>Failure..........</td><td>Alter user: $sqlu @ $phpho
 }
 
 
-$sqls =	"GRANT SELECT , 
+$sqls =	"GRANT SELECT ,
 INSERT ,
 UPDATE ,
 DELETE ,
@@ -193,7 +173,7 @@ echo "<tr class=\"bad\"><td>Failure..........</td><td>Alter user: $sqlu @ $phpho
 }
 
 
-$sqls =	"GRANT SELECT , 
+$sqls =	"GRANT SELECT ,
 INSERT ,
 UPDATE ,
 DELETE ,
@@ -255,7 +235,7 @@ $sql1 = "CREATE TABLE IF NOT EXISTS `$wifi`.`files_tmp` (
 		`ap` VARCHAR ( 32 ) NOT NULL,
 		`tot` VARCHAR ( 128 ) NOT NULL,
 		`file_row` INT ( 255 ) NOT NULL,
-		UNIQUE ( `file` )	
+		UNIQUE ( `file` )
 		) ENGINE = InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1";
 $insert = mysql_query($sql1, $conn1);
 if($insert)
@@ -289,15 +269,14 @@ echo "<tr class=\"bad\"><td>Failure..........</td><td>Alter `$wifi`.`$wtable` to
 }
 
 
-$alter_sql = "ALTER TABLE `$wifi`.`wifi0` 
+$alter_sql = "ALTER TABLE `$wifi`.`wifi0`
 ADD `countrycode` VARCHAR( 5 ) NOT NULL ,
 ADD `countryname` VARCHAR( 64 ) NOT NULL ,
 ADD `admincode` VARCHAR( 5 ) NOT NULL ,
 ADD `adminname` VARCHAR( 64 ) NOT NULL ,
 ADD `iso3166-2` VARCHAR( 3 ) NOT NULL ,
 ADD `lat` VARCHAR( 32 ) NOT NULL DEFAULT 'N 0.0000' ,
-ADD `long` VARCHAR( 32 ) NOT NULL DEFAULT 'E 0.0000',
-ADD `active` tinyint(1) NOT NULL DEFAULT 0";
+ADD `long` VARCHAR( 32 ) NOT NULL DEFAULT 'E 0.0000' ";
 $alter = mysql_query($alter_sql, $conn1);
 if($alter)
 {echo "<tr class=\"good\"><td>Success..........</td><td>To alter <b>`$wifi`</b>.`wtable` to add location filter data for KML's</td></tr>\r\n";}
@@ -325,7 +304,7 @@ else{
 echo "<tr class=\"bad\"><td>Failure..........</td><td>Alter `$wifi`.`$users_t` to add file hash field;<br>".mysql_error($conn1)."</td></tr>\r\n";
 }
 
-$sql1 = "ALTER TABLE `$wifi`.`$users_t` ADD `aps` INT NOT NULL, 
+$sql1 = "ALTER TABLE `$wifi`.`$users_t` ADD `aps` INT NOT NULL,
 CHANGE `username` `username` VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL ,
 CHANGE `title` `title` VARCHAR( 255 ) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL";
 $insert = mysql_query($sql1, $conn1);
@@ -680,24 +659,24 @@ global $"."wifidb_install, $"."conn, $"."db, $"."db_st, $"."DB_stats_table, $"."
 #MISC GLOBALS
 global $"."header, $"."ads, $"."tracker, $"."hosturl, $"."dim, $"."admin_email, $"."email_validation, $"."WiFiDB_LNZ_User, $"."apache_grp, $"."div, $"."wifidb_tools, $"."daemon, $"."root, $"."console_lines, $"."console_log, $"."bypass_check, $"."wifidb_email_updates, $"."wifidb_from,$"."wifidb_from_pass;
 
-$"."lastedit	=	'$date';
+$"."lastedit                =   '$date';
 
 #----------General Settings------------#
-$"."wifidb_tools	=	'$toolsdir';
-$"."wifidb_install	=	'".$wifidb_install_."';
-$"."timezn			=	'UTC';
-$"."root			=	'$root';
-$"."hosturl		=	'$hosturl';
-$"."dim			=	DIRECTORY_SEPARATOR;
-$"."admin_email	=	'$email';
-$"."config_fails	=	3;
-$"."login_seed		=	'$activatecode';
-$"."wifidb_from	=	'$wifidb_from';
-$"."wifidb_from_pass	=	'$wifidb_from_pass';
-$"."wifidb_smtp		=	'$wifidb_smtp';
-$"."email_validation =	$email_validation;
-$"."wifidb_email_updates = $wifidb_email_updates;
-$"."reserved_users		=	'WiFiDB:Recovery';\r\n\r\n");
+$"."wifidb_tools            =   '$toolsdir';
+$"."wifidb_install          =   '".$wifidb_install_."';
+$"."timezn                  =   'UTC';
+$"."root                    =   '$root';
+$"."hosturl                 =   '$hosturl';
+$"."dim                     =   DIRECTORY_SEPARATOR;
+$"."admin_email             =   '$email';
+$"."config_fails            =   3;
+$"."login_seed              =   '$activatecode';
+$"."wifidb_from             =   '$wifidb_from';
+$"."wifidb_from_pass        =   '$wifidb_from_pass';
+$"."wifidb_smtp             =   '".WIFIDB_SMTP_SRV."';
+$"."email_validation        =   ".WIFIDB_EMAIL_VALIDATE.";
+$"."wifidb_email_updates    =   ".WIFIDB_EMAIL_UPDATES.";
+$"."reserved_users          =   '".WIFIDB_RESERVED_USERS."';\r\n\r\n");
 
 if($CR_CF_FL_Re)
 {echo "<tr class=\"good\"><td>Success..........</td><td>Add Global variables and general variables values.</td></tr>";}
@@ -841,7 +820,7 @@ switch($create)
 	case 1:
 		echo "<tr class=\"good\"><td>Success..........</td><td>Created Default Wifidb Administrator user</td></tr>\r\n";
 	break;
-	
+
 	case is_array($create):
 		list($er, $msg) = $create;
 		switch($er)
@@ -849,11 +828,11 @@ switch($create)
 			case "create_wpt":
 				echo '<tr class="bad"><td>Failure..........</td><td>There was an error in Creating the Geocache table.<BR>This is a serious error, contact Phil on the <a href="http://forum.techidiots.net/">forums</a><br>MySQL Error Message: '.$msg."<br><h1>D'oh!</h1></td></tr>\r\n";
 			break;
-			
+
 			case "dup_u":
 				echo '<tr class="bad"><td>Failure..........</td><td>To create Wifidb Admin User. :-(<br>MySQL Error: '.$msg.'<br><h1>Do`h!</h1></td></tr>';
 			break;
-			
+
 			case "err_email":
 				echo '<tr class="bad"><td>Failure..........</td><td>To create Wifidb Admin User. :-(<br>Email Error: '.$msg.'<br><h1>Do`h!</h1></td></tr>';
 			break;

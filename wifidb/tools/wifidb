@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start/stop WiFiDB server instance
-# WiFiDB v0.20 Build 2.
+# WiFiDB v0.30v Build 1.
 #
 # create as: /etc/init.d/wifidb
 # to activate it, run: chkconfig -add wifidb
@@ -14,102 +14,124 @@
 # Short-Description: Start/stop wifidb server instance
 ### END INIT INFO
 
-# LSB Source function library
-. /lib/lsb/init-functions
+# Some things that run always
+touch /var/lock/wifidb
 
-RETVAL=0
+wifidbpath="/opt/wifidb-0-30/tools/daemon"
+pid_imp_expd="/var/run/wifidb/imp_expd.pid"
+pid_geonamed="/var/run/wifidb/geonamed.pid"
+pid_monitord="/var/run/wifidb/monitord.pid"
 
-# SCRIPT DEFAULT SETTINGS
-prog="Wifidb Daemons"
-wifidbpath="/opt/wifidb/tools"
-wdbpid="/var/run/wifidbd/imp_expd.pid"
-lockfile="/var/lock/WiFiDB"
+cd ${wifidbpath}
 
-start() {
-	echo $"Starting $prog: "
-    if [ -f $wdbpid ]
-    then
-		# failed
-		log_failure_msg "$prog is already running..."
-		echo
-		RETVAL=2
-    else
-        output=`php ${wifidbpath}/rund.php start ied`
-        if [ -f $wdbpid ]
-        then
-			# success
-            touch $lockfile
-            log_success_msg "$prog started..."
-            echo
-            RETVAL=0
-        else
-			# failed
-			log_failure_msg "$prog failed to start..."
-			echo
-			RETVAL=1
-        fi
-    fi
-    return $RETVAL
-}
-
-stop() {
-    echo $"Stopping $prog: "
-    output=`php ${wifidbpath}/rund.php stop ied`
-	if [ -f $wdbpid ]
-	then
-        # failed
-        log_failure_msg "$wdbpid still exists. $prog was not stopped properly..."
-		echo		
-		RETVAL=1
-    else
-        # success
-		rm $lockfile
-        log_success_msg "$prog stopped..."
-        echo
-        RETVAL=0
-    fi
-    return $RETVAL
-}
-
-restart() {
-   stop
-   start
-}
-
-status() {
-	echo "checking: $wdbpid.."
-    if [ -f $wdbpid ]
-    then
-		echo "$wdbpid file exists."
-		echo "WifiDB is running"
-    else
-        echo "$wdbpid file does not exist"
-		echo "WifiDB is not running"
-    fi
-}
-
+# Carry out specific functions when asked to by the system
 case "$1" in
   start)
-    start
+	prog="Import Export Daemon"
+    if [ -f $pid_imp_expd ]
+    then
+		# failed
+		echo "$prog is already running..."
+    else
+		echo "Starting $prog"
+		php ${wifidbpath}/rund.php start ied
+        if [ -f $pid_imp_expd ]
+        then
+			# success
+            echo "$prog started..."
+        else
+			# failed
+			echo "$prog failed to start..."
+        fi
+	fi
+	
+	prog="Geoname Daemon"
+    if [ -f $pid_geonamed ]
+    then
+		# failed
+		echo "$prog is already running..."
+    else
+		echo "Starting $prog"
+		php ${wifidbpath}/rund.php start geo
+        if [ -f $pid_geonamed ]
+        then
+			# success
+            echo "$prog started..."
+        else
+			# failed
+			echo "$prog failed to start..."
+        fi
+	fi
+	
+	prog="Monitor Daemon"
+    if [ -f $pid_monitord ]
+    then
+		# failed
+		echo "$prog is already running..."
+    else
+		echo "Starting $prog"
+		php ${wifidbpath}/rund.php start mon
+        if [ -f $pid_monitord ]
+        then
+			# success
+            echo "$prog started..."
+        else
+			# failed
+			echo "$prog failed to start..."
+        fi
+	fi
     ;;
   stop)
-    stop
-    ;;
-  status)
-    status
+	prog="Import Export Daemon"
+    echo $"Stopping $prog: "
+    php ${wifidbpath}/rund.php stop ied
+	if [ -f $pid_imp_expd ]
+	then
+        # failed
+        echo "$pid_imp_expd still exists. $prog was not stopped properly..."
+    else
+        # success
+        echo "$prog stopped..."
+    fi
+	
+	prog="Geoname Daemon"
+    echo $"Stopping $prog: "
+    php ${wifidbpath}/rund.php stop geo
+	if [ -f $pid_geonamed ]
+	then
+        # failed
+        echo "$pid_geonamed still exists. $prog was not stopped properly..."
+    else
+        # success
+        echo "$prog stopped..."
+    fi
+	
+	prog="Monitor Daemon"
+	#sleep so monitor daemon can get state before shutting down
+	sleep 30
+    echo $"Stopping $prog: "
+    php ${wifidbpath}/rund.php stop mon
+	if [ -f $pid_monitord ]
+	then
+        # failed
+        echo "$pid_monitord still exists. $prog was not stopped properly..."
+    else
+        # success
+        echo "$prog stopped..."
+    fi
     ;;
   restart)
-    restart
+   /etc/init.d/wifidb stop
+   /etc/init.d/wifidb start
     ;;
-  condrestart)
-    [ -e $lockfile ] && restart
-    ;;
-  force-reload)
-    echo "WiFiDB doesn't support force-reload, use restart instead."
+  status)
+    php ${wifidbpath}/rund.php status ied
+    php ${wifidbpath}/rund.php status mon
     ;;
   *)
-    echo $"Usage: $0 {start|stop|status|restart|condrestart}"
-    RETVAL=2
+    echo "Usage: /etc/init.d/blah {start|stop|restart}"
+    exit 1
+    ;;
 esac
 
-exit $RETVAL
+exit 0

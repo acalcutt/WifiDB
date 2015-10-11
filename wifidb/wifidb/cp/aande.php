@@ -1,6 +1,28 @@
 <?php
-include('../lib/config.inc.php');
-include('../lib/database.inc.php');
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+global $switches;
+$switches = array('screen'=>"HTML",'extras'=>'');
+
+include('../lib/init.inc.php');
 include('../lib/security.inc.php');
 $sec = new security();
 
@@ -26,11 +48,11 @@ switch($func)
 		$emailsearch = 0;
 		if($usersearch == '1')
 		{
-			$user_search = addslashes($_POST['username']);	
+			$user_search = addslashes($_POST['username']);
 			$emailsearch = 0;
 			$usersearch = 1;
 			$first = ' + ';
-			
+
 			if($_POST['email'] != '')
 			{
 				$emailsearch = 1;
@@ -53,15 +75,15 @@ switch($func)
 			$rows_a = mysql_num_rows($return_a);
 			$results[$letter] = $rows_a;
 		}
-		
+
 		$sql_all = "SELECT `id` FROM `$db`.`$user_logins_table` WHERE `disabled` != '1'";
 		$ret_all = mysql_query($sql_all, $conn);
 		$rows_all =  mysql_num_rows($ret_all);
-		
+
 		$sql_num = "SELECT `id` FROM `$db`.`$user_logins_table` WHERE `disabled` != '1' AND `username` REGEXP '[0-9][[:>:]]'";
 		$ret_num = mysql_query($sql_num, $conn);
 		$rows_num =  mysql_num_rows($ret_num);
-		
+
 		$tracker = 0;
 		$user_number = 0;
 		if($first == '')
@@ -83,7 +105,7 @@ switch($func)
 	#	echo $sql0."<BR>";
 		$result = mysql_query($sql0, $conn);
 		$rows = mysql_num_rows($result);
-		
+
 		$uf_sql = "SELECT * FROM `$db`.`$user_login_table` WHERE `username` = '$username'";
 		$uf_result = mysql_query($uf_sql, $conn);
 		$uf_array = mysql_fetch_array($uf_result);
@@ -125,32 +147,32 @@ switch($func)
 						<td align="center" colspan="6">
 							<strong style="font-size: 0.95em;">
 							<?php if($rows_all > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=">All</a><?php }else{ ?>All<?php } ?>&nbsp;
-							<?php if($results["a"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=a">A</a><?php }else{ ?>A<?php } ?>&nbsp; 
-							<?php if($results["b"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=b">B</a><?php }else{ ?>B<?php } ?>&nbsp; 
-							<?php if($results["c"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=c">C</a><?php }else{ ?>C<?php } ?>&nbsp; 
-							<?php if($results["d"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=d">D</a><?php }else{ ?>D<?php } ?>&nbsp; 
-							<?php if($results["e"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=e">E</a><?php }else{ ?>E<?php } ?>&nbsp; 
-							<?php if($results["f"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=f">F</a><?php }else{ ?>F<?php } ?>&nbsp; 
-							<?php if($results["g"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=g">G</a><?php }else{ ?>G<?php } ?>&nbsp; 	
+							<?php if($results["a"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=a">A</a><?php }else{ ?>A<?php } ?>&nbsp;
+							<?php if($results["b"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=b">B</a><?php }else{ ?>B<?php } ?>&nbsp;
+							<?php if($results["c"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=c">C</a><?php }else{ ?>C<?php } ?>&nbsp;
+							<?php if($results["d"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=d">D</a><?php }else{ ?>D<?php } ?>&nbsp;
+							<?php if($results["e"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=e">E</a><?php }else{ ?>E<?php } ?>&nbsp;
+							<?php if($results["f"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=f">F</a><?php }else{ ?>F<?php } ?>&nbsp;
+							<?php if($results["g"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=g">G</a><?php }else{ ?>G<?php } ?>&nbsp;
 							<?php if($results["h"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=h">H</a><?php }else{ ?>H<?php } ?>&nbsp;
-							<?php if($results["i"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=i">I</a><?php }else{ ?>I<?php } ?>&nbsp; 
-							<?php if($results["j"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=j">J</a><?php }else{ ?>J<?php } ?>&nbsp; 
-							<?php if($results["k"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=k">K</a><?php }else{ ?>K<?php } ?>&nbsp; 
-							<?php if($results["l"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=l">L</a><?php }else{ ?>L<?php } ?>&nbsp; 
-							<?php if($results["m"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=m">M</a><?php }else{ ?>M<?php } ?>&nbsp; 
-							<?php if($results["n"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=n">N</a><?php }else{ ?>N<?php } ?>&nbsp; 
-							<?php if($results["o"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=o">O</a><?php }else{ ?>O<?php } ?>&nbsp; 
-							<?php if($results["p"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=p">P</a><?php }else{ ?>P<?php } ?>&nbsp; 
-							<?php if($results["q"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=q">Q</a><?php }else{ ?>Q<?php } ?>&nbsp; 
-							<?php if($results["r"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=r">R</a><?php }else{ ?>R<?php } ?>&nbsp; 
-							<?php if($results["s"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=s">S</a><?php }else{ ?>S<?php } ?>&nbsp; 
-							<?php if($results["t"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=t">T</a><?php }else{ ?>T<?php } ?>&nbsp; 
-							<?php if($results["u"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=u">U</a><?php }else{ ?>U<?php } ?>&nbsp;						
-							<?php if($results["v"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=v">V</a><?php }else{ ?>V<?php } ?>&nbsp; 
-							<?php if($results["w"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=w">W</a><?php }else{ ?>W<?php } ?>&nbsp; 
-							<?php if($results["x"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=x">X</a><?php }else{ ?>X<?php } ?>&nbsp; 
-							<?php if($results["y"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=y">Y</a><?php }else{ ?>Y<?php } ?>&nbsp; 
-							<?php if($results["z"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=z">Z</a><?php }else{ ?>Z<?php } ?>&nbsp; 
+							<?php if($results["i"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=i">I</a><?php }else{ ?>I<?php } ?>&nbsp;
+							<?php if($results["j"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=j">J</a><?php }else{ ?>J<?php } ?>&nbsp;
+							<?php if($results["k"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=k">K</a><?php }else{ ?>K<?php } ?>&nbsp;
+							<?php if($results["l"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=l">L</a><?php }else{ ?>L<?php } ?>&nbsp;
+							<?php if($results["m"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=m">M</a><?php }else{ ?>M<?php } ?>&nbsp;
+							<?php if($results["n"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=n">N</a><?php }else{ ?>N<?php } ?>&nbsp;
+							<?php if($results["o"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=o">O</a><?php }else{ ?>O<?php } ?>&nbsp;
+							<?php if($results["p"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=p">P</a><?php }else{ ?>P<?php } ?>&nbsp;
+							<?php if($results["q"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=q">Q</a><?php }else{ ?>Q<?php } ?>&nbsp;
+							<?php if($results["r"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=r">R</a><?php }else{ ?>R<?php } ?>&nbsp;
+							<?php if($results["s"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=s">S</a><?php }else{ ?>S<?php } ?>&nbsp;
+							<?php if($results["t"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=t">T</a><?php }else{ ?>T<?php } ?>&nbsp;
+							<?php if($results["u"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=u">U</a><?php }else{ ?>U<?php } ?>&nbsp;
+							<?php if($results["v"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=v">V</a><?php }else{ ?>V<?php } ?>&nbsp;
+							<?php if($results["w"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=w">W</a><?php }else{ ?>W<?php } ?>&nbsp;
+							<?php if($results["x"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=x">X</a><?php }else{ ?>X<?php } ?>&nbsp;
+							<?php if($results["y"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=y">Y</a><?php }else{ ?>Y<?php } ?>&nbsp;
+							<?php if($results["z"] > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=z">Z</a><?php }else{ ?>Z<?php } ?>&nbsp;
 							<?php if($rows_num > 0 ) { ?><a class="links" href="?func=update&type=<?php if($type == "foes"){ echo "foes";}else{echo "friends";} ?>&first=num">#</a><?php }else{ ?>#<?php } ?>
 							</strong>
 						</td>
@@ -164,7 +186,7 @@ switch($func)
 							while($newArray = mysql_fetch_array($result))
 							{
 								$user_number++;
-								
+
 								$user_name = $newArray['username'];
 								if($username == $user_name){continue;}
 								foreach($friends_array as $friends)
@@ -184,7 +206,7 @@ switch($func)
 										<th>Users currently in Friends:</th>
 										<th>Users Not In Friends:</th>
 									</tr>
-									<tr>	
+									<tr>
 										<td class="light" align="center" width="50%">
 										<form method="post" action="" name="remove_from_friends_group"  enctype="multipart/form-data">
 											<select name="del[]" multiple size="10" style="width: 100%;">
@@ -218,7 +240,7 @@ switch($func)
 							}
 						}else
 						{
-							
+
 						}
 						?>
 							</td>
@@ -233,7 +255,7 @@ switch($func)
 							<td align="center">
 							<CENTER>
 							<!--pages-->
-							
+
 							</CENTER>
 							</td>
 						</tr>
@@ -243,29 +265,29 @@ switch($func)
 		</table>
 	<?php
 	break;
-	
+
 	case "add_friends":
 		?>
 		<link rel="stylesheet" href="<?php echo $GLOBALS['UPATH']; ?>/themes/wifidb/styles.css">
 		<table width="75%">
 		<tr>
 		<td style="background-color: #A9C6FA;width: 80%;vertical-align: top;" align="center">
-			
+
 			<?php
 			$_POST['users'];
-			
-			
+
+
 			$sql = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` = '$username'";
 			$result = mysql_query($sql, $conn);
 			$array = mysql_fetch_array($result);
-			
+
 			$db_f = explode(":", $array['friends']);
 			foreach($db_f as $db_freind)
 			{
 				#foreach($
 			}
 			$friends = ":".$users;
-			
+
 			$update = "UPDATE `$db`.`$user_logins_table` SET `friends` = '$friends' WHERE `username` = '$username'";
 			echo $update."<BR>";
 			if(mysql_query($update, $conn))

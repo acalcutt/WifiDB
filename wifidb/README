@@ -1,5 +1,5 @@
-RanInt -> WiFiDB -> Read-me
-===================
+Random Intervals -> WiFiDB -> Read-me
+=====================================
 
   A set of PHP-scripts to manage a MySQL based Wireless Database over the web.
 

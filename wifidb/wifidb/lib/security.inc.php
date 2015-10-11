@@ -1,467 +1,510 @@
 <?php
-global $sec_ver;
-$sec_ver = array(
-					"login_check"		=>	"1.0",
-					"login"				=>	"1.0",
-					"define_priv_name"	=>	"1.0",
-					"create_user"		=>	"1.0",
-					"remove_user"		=>	"1.0",
-					"redirect_page"		=>	"1.0",
-					"ff_exists"			=>	"1.0"
-				);
-
-
-function ff_exists($string, $array)
-{
-	foreach($array as $key=>$val)
-	{
-		if($string === $val){return 1;}
-	}
-	return 0;
-}
-
-
-function checkEmail($email)
-{
-	// First, we check that there's one @ symbol, and that the lengths are right 
-	if (!ereg("^[^@]{1,64}@[^@]{1,255}$", $email)) 
-	{
-		// Email invalid because wrong number of characters in one section, or wrong number of @ symbols. 
-		return false; 
-	}
-	// Split it into sections to make life easier 
-	$email_array = explode("@", $email); 
-	$local_array = explode(".", $email_array[0]); 
-	for ($i = 0; $i < sizeof($local_array); $i++) 
-	{
-		if (!ereg("^(([A-Za-z0-9!#$%&'*+/=?^_`{|}~-][A-Za-z0-9!#$%&'*+/=?^_`{|}~\.-]{0,63})|(\"[^(\\|\")]{0,62}\"))$", $local_array[$i])) 
-		{
-			return false; 
-		} 
-	}
-	if (!ereg("^\[?[0-9\.]+\]?$", $email_array[1])) 
-	{
-		// Check if domain is IP. If not, it should be valid domain name 
-		$domain_array = explode(".", $email_array[1]);
-		if (sizeof($domain_array) < 2) 
-		{
-			return false; // Not enough parts to domain 
-		} 
-		for ($i = 0; $i < sizeof($domain_array); $i++) 
-		{ 
-			if (!ereg("^(([A-Za-z0-9][A-Za-z0-9-]{0,61}[A-Za-z0-9])|([A-Za-z0-9]+))$", $domain_array[$i]))
-			{ 
-				return false; 
-			} 
-		} 
-	} 
-	return true; 
-}
-
 
 class security
 {
-	#######################################
-	function gen_keys($len = 12)
-	{
-		// http://snippets.dzone.com/posts/show/3123
-		$base			=	'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
-		$max			=	strlen($base)-1;
-		$activatecode	=	'';
-		mt_srand((double)microtime()*1000000);
-		while (strlen($activatecode) < $len+1)
-		{$activatecode.=$base{mt_rand(0,$max)};}
-		return $activatecode;
-	}
+    #private $pass_hash;
+    public  $username;
+    function __construct($dbcore, $config)
+    {
+        $this->sql                = $dbcore->sql;
+        $this->cli                = $dbcore->cli;
+        $this->log_level          = 42;
+        $this->This_is_me         = $dbcore->This_is_me;
+        $this->datetime_format    = $dbcore->datetime_format;
+        $this->login_val          = "No Cookie";
+        $this->login_check        = 0;
+        $this->LoginLabel         = "AnonCoward";
+        $this->activatecode       = "";
+        $this->priv_name          = "AnonCoward";
+        $this->privs              = 0;
+        $this->username           = "AnonCoward";
+        $this->email_validation   = 0;#$dbcore->email_validation;
+        $this->reserved_users     = $dbcore->reserved_users;
+        $this->timeout            = $dbcore->timeout;
+        $this->config_fails       = $config['config_fails'];
+        $this->HOSTURL           = $dbcore->HOSTURL;
+        $this->root               = $dbcore->root;
+        $ssl_flag                = parse_url($dbcore->URL_PATH, PHP_URL_SCHEME);
+        if($ssl_flag == "https")
+        {
+            $this->ssl = "1";
+        }else
+        {
+            $this->ssl = "0";
+        }
+        $this->domain     = parse_url($dbcore->URL_PATH, PHP_URL_HOST);
+        $folder = parse_url($dbcore->URL_PATH, PHP_URL_PATH);
+        $this->PATH = $folder;
+    }
+    
+    
+    function logd($message = "", $type = "", $prefix = "")
+    {
+        return @dbcore::logd($message, $type, $prefix);
+    }
+    
+    function define_priv_name($member)
+    {
+        $groups = explode("," , $member);
+        foreach($groups as $group)
+        {
+            if($group == 'admins')
+            {
+                return "Administrator";
+            }elseif($group == 'devs')
+            {
+                return "Developer";
+            }elseif($group == 'mods')
+            {
+                return "Moderator";
+            }elseif($group == 'users')
+            {
+                return "User";
+            }
+        }
+    }
+    
+    // Only moved, not updated, NEED TO UPDATE!!!!!!!!!
+    // UPDATE THIS YOU LAZY BASTARD.
+    function check_privs($admin = 0)
+    {
+        if($admin == 1)
+        {
+            $cookie_seed = "@LOGGEDIN";
+            list($cookie_pass_seed, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_admin_login_yes']));
+        }else
+        {
+            $cookie_seed = "@LOGGEDIN!";
+            list($cookie_pass_seed, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_login_yes']));
+        }
+        $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $result = $this->sql->conn->prepare($sql0);
+        $result->bindParam(1 , $username);
+        $newArray = $result->fetch(2);
+        $table_pass = crypt($newArray['password']);
+        
+        if($table_pass == $cookie_pass_seed)
+        {
+            $this->privs = $newArray['users']+0;
+            #echo $privs;
+            if($this->privs >= 1000)
+                {$this->priv_name = "Administrator";}
+            elseif($this->privs >= 100)
+                {$this->priv_name = "Developer";}
+            elseif($this->privs >= 10)
+                {$this->priv_name = "Moderator";}
+            else
+                {$this->priv_name = "User";}
+        }
+        else
+        {
+            $this->check_error = "Wrong pass or no Cookie, go get one.";
+        }
+    }
+    
+    function CheckReservedUser($username = '')
+    {
+        if($username == ''){return -1;}
+        $reserved = explode(":", $this->reserved_users);
+        foreach($reserved as $resv)
+        {
+            if($username == $resv)
+            {return 1;}
+        }
+        return 0;
+    }
+        
+    function CreateUser($username = "", $password = "", $email = "local@localhost.local")
+    {
+        if($username == "")
+        {
+            $ret = array(0, "Username is empty.");
+            return $ret;
+        }
+        if($password == "")
+        {
+            $ret = array(0, "Password is empty.");
+            return $ret;
+        }
+        if($email == "local@localhost.local")
+        {
+            $ret = array(0, "Email is empty.");
+            return $ret;
+        }
+        $salt               = $this->GenerateKey(29);
+        $password_hashed    = crypt($password, '$2a$07$'.$salt.'$');
+        $uid                = implode(str_split($this->GenerateKey(25), 5), "-");
+        $join_date          = date($this->datetime_format);
+        $api_key            = $this->GenerateKey(64);
+        
+        #now lets start creating the users info
+        $sql = "INSERT INTO `wifi`.`user_info` (`id`, `username`, `password`, `uid`, `validated`, 
+                                        `locked`, `permissions`, `email`, `join_date`, `apikey`) 
+                                        VALUES (NULL, ?, ?, ?, ?, '0', '0001', ?, ?, ?)";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
+        $prep->bindParam(3, $uid, PDO::PARAM_STR);
+        $prep->bindParam(4, $this->email_validation, PDO::PARAM_STR);
+        $prep->bindParam(5, $email, PDO::PARAM_STR);
+        $prep->bindParam(6, $join_date, PDO::PARAM_STR);
+        $prep->bindParam(7, $api_key, PDO::PARAM_STR);
+        $prep->execute();
+        
+        if($this->sql->checkError() !== 0)
+        {
+            $password = "";
+            $this->logd("Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars()), "Error");
+            echo "Failed to create user with error: ".var_export($this->sql->conn->errorInfo(), 1)." </br>\r\n ". var_dump(get_defined_vars());
+            $message = array(0, "Failed to create user :(");
+            return $message;
+        }else
+        {
+            $this->logd("User created! $username : $email : $join_date", "Info");
+            #var_dump(get_defined_vars());
+            $message = array(1, "User created!$username : $email : $join_date");
+            return $message;
+        }
+    }
+    
+    
+    function GenerateKey($len = 16)
+    {
+        // http://snippets.dzone.com/posts/show/3123
+        $base           =   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
+        $max            =   strlen($base)-1;
+        $activatecode	=   '';
+        mt_srand((double)microtime()*1000000);
+        while( strlen($activatecode) < $len ){$activatecode .= $base{mt_rand(0,$max)};}
+        return $activatecode;
+    }
+    
+    function Login($username = '', $password = '', $Bender_remember_me = 0, $authoritah = 0 )
+    {
+        if($username == '' || $username == "AnonCoward" || $username == "unknown")
+        {
+            # Username Fail.
+            $this->login_val = "u_fail";
+            $this->login_check = 0;
+            return 0;
+        }
+        
+        $sql0 = "SELECT `id`, `validated`, `locked`, `login_fails`, `username`, `password` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $result = $this->sql->conn->prepare($sql0);
+        $result->bindParam(1 , $username);
+        $result->execute();
+        
+        $newArray = $result->fetch(2);
+        $validate = $newArray['validated']+0;
+        if($validate === 1)
+        {
+            $this->login_val = 'validate';
+            $this->login_check = 0;
+            return 0;
+        }
+        $locked = $newArray['locked']+0;
+        if($locked === 1)
+        {
+            $this->login_val = 'locked';
+            $this->login_check = 0;
+            return 0;
+        }
+        $id = $newArray['id'];
+        $db_pass = $newArray['password'];
+        $fails = $newArray['login_fails'];
+        $this->username = $newArray['username'];
+        $pass_hash = crypt($password, $newArray['password']);
+        if($db_pass === $pass_hash)
+        {
+            if(!$Bender_remember_me)
+            {
+                $cookie_timeout = time()+$this->timeout;
+            }else
+            {
+                $cookie_timeout = time()+(60*60*24*364.25);
+            }
+            
+            $salt = $this->GenerateKey(22);
+            $gen = $this->GenerateKey(64);
+            $pass_hash = crypt($gen, '$2a$07$'.$salt.'$');
+            
+            $sql = "INSERT INTO `wifi`.`user_login_hashes` (`id`, `username`, `hash`, `utime`) VALUES ('', ?, ?, ?)";
+            $prep = $this->sql->conn->prepare($sql);
+            $prep->bindParam(1, $this->username, PDO::PARAM_STR);
+            $prep->bindParam(2, $pass_hash, PDO::PARAM_STR);
+            $prep->bindParam(3, $cookie_timeout, PDO::PARAM_INT);
+            $prep->execute();
+            
+            if($this->sql->checkError())
+            {
+                $this->login_val    = "hash_tbl_fail";
+                $this->login_check  = 0;
+                return 0;
+            }
+            
+            if(!$this->cli)
+            {
+                if($authoritah === 1)
+                {
+                    $cookie_name = 'WiFiDB_admin_login_yes';
 
-	#######################################
-	function login_check($admin = 0)
-	{
-		global $global_loggedin;
-		if($admin == 1)
-		{
-			$cookie_name = 'WiFiDB_admin_login_yes';
-			$cookie_seed = "@LOGGEDIN";
-		}else
-		{
-			$cookie_name = 'WiFiDB_login_yes';
-			$cookie_seed = "@LOGGEDIN!";
-		}
-		global $username, $privs_a;
-		if(@$GLOBALS['user_logins_table'])
-		{
-			$user_logins_table = $GLOBALS['user_logins_table'];
-		}else
-		{
-			return array(0, "upgrade");
-		}
-		$db = $GLOBALS['db'];
-		$conn = $GLOBALS['conn'];
-	#	echo "<br>".$cookie_name.":  ".$_COOKIE[$cookie_name]."<br>";
-		if($admin and !@isset($_COOKIE[$cookie_name]))
-		{
-		#	die('You are trying to access a page that needs a cookie, without having a cookie, you cant do that... 
-		#	<a href="'.$GLOBALS["hosturl"].$GLOBALS["root"].'/cp/?func=admin_cp">go get a cookie</a>. make it a double stuff.<br>');
-			return "No Cookie";
-		#	break;
-		}
-		if(@isset($_COOKIE[$cookie_name]))
-		{
-			list($cookie_pass_seed, $username) = explode(':', $_COOKIE[$cookie_name]);
-			if($username != '')
-			{
-			#	echo $username;
-				$sql0 = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` = '$username' LIMIT 1";
-				$result = mysql_query($sql0, $conn);
-				$newArray = mysql_fetch_array($result);
-				$db_pass = $newArray['password'];
-				$username_db = $newArray['username'];
-				
-				if(md5($db_pass.$cookie_seed) === $cookie_pass_seed)
-				{
-					$privs_a = security::check_privs();
-				#	var_dump($privs_a);
-					$global_loggedin = 0;
-					return $username_db;
-				}else
-				{
-					return array(0, "Bad Cookie Password");
-				}
-			}else
-			{
-				return "No Cookie";
-			}
-		}else
-		{
-			$global_loggedin = 0;
-			return "No Cookie";
-		}
-	}
+                    if($this->URL_PATH != '')
+                    {$path  = '/'.$this->root.'/cp/admin/';}
+                    else{$path  = '/cp/admin/';}
+                    $cookie_timeout = time()-3600;
+                }else
+                {
+                    $cookie_name = 'WiFiDB_login_yes';
 
-	#######################################
-	function define_priv_name($member)
-	{
-		$groups = explode("," , $member);
-		foreach($groups as $group)
+                    if($this->URL_PATH != '')
+                    {$path  = '/'.$this->root.'/';}
+                    else{$path  = '/';}
+                }
+                
+                if(!setcookie($cookie_name, base64_encode($gen.":".$username), $cookie_timeout, $path, $this->domain, $this->ssl))
+                {
+                    $this->login_val = "cookie_fail";
+                    $this->login_check = 0;
+                    return 0;
+                }
+            }
+            
+            
+            $date = date($this->datetime_format);
+            $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
+            $prep = $this->sql->conn->prepare($sql1);
+            $prep->bindParam(1, $date, PDO::PARAM_STR);
+            $prep->bindParam(2, $id, PDO::PARAM_INT);
+            $prep->execute();
+            
+            if(!$this->sql->checkError())
+            {
+                $this->login_val = "good";
+                $this->login_check = 1;
+                return 1;
+            }else
+            {
+                $this->login_val = "u_u_r_fail";
+                $this->login_check = 0;
+                return 0;
+            }
+        }else
+        {
+            #Failed Password check.
+            $fails++;
+            if($fails >= $this->config_fails)
+            {
+                #Failed too many times, lock the account.
+                $sql1 = "UPDATE `wifi`.`user_info` SET `locked` = '1' WHERE `id` = ? LIMIT 1";
+                $prepare = $this->sql->conn->prepare($sql1);
+                $prepare->bindParam(1, $id);
+                $prepare->execute();
+                $this->login_val = "locked";
+                $this->login_check = 0;
+                return 0;
+            }else
+            {
+                # Increment the failed count.
+                $sql1 = "UPDATE `wifi`.`user_info` SET `login_fails` = ? WHERE `id` = ? LIMIT 1";
+                $prepare = $this->sql->conn->prepare($sql1);
+                $prepare->bindParam(1, $fails);
+                $prepare->bindParam(2, $id);
+                $prepare->execute();
+                $this->login_val = "p_fail";
+                $this->login_check = 0;
+                return 0;
+            }
+        }
+    }
+    
+    function APILoginCheck($username = '', $apikey = '', $authoritah = 0)
+    {
+        # hash is the hashed password + salt from the API.
+        # salt is the salt that the API used.
+        # admin is for logging into the admin console
+        if($username != '')
+        {
+            $sql0 = "SELECT * FROM `wifi`.`user_login_hash` WHERE `username` = ? LIMIT 1";
+            $result = $this->sql->conn->prepare($sql0);
+            $result->bindParam(1, $username, PDO::PARAM_STR);
+            $result->execute();
+            $newArray = $result->fetch(2);
+            
+            if($apikey === $newArray['apikey'])
+            {
+                $this->privs = $this->check_privs();
+                $this->apikey = $newArray['apikey'];
+                $this->LoginLabel = $newArray['username'];
+                $this->login_val = $newArray['username'];
+                $this->username = $newArray['username'];
+                $this->last_login = $newArray['last_login'];
+                $this->login_check = 1;
+                return 1;
+            }else
+            {
+                $this->LoginLabel = "";
+                $this->login_val = "Bad API Key.";
+                $this->login_check = 0;
+                return -1;
+            }
+        }else
+        {
+            $this->LoginLabel = "";
+            $this->login_val = "No Username.";
+            $this->login_check = 0;
+            return -1;
+        }
+    }
+    
+    function LoginCheck($authoritah = 0)
+    {
+		$return_url = $_SERVER['REQUEST_URI'];
+		if($_SERVER['PHP_SELF'] == '/'.$this->root.'/login.php'){$return_url = '/'.$this->root.'/';};#Set return url to main page if this is the login page.
+		
+        $time = time()-1;
+        $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `utime` < ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $time, PDO::PARAM_INT);
+        $prep->execute();
+        if($authoritah == 1)
+        {
+            $cookie_name = 'WiFiDB_admin_login_yes';
+        }else
+        {
+            $cookie_name = 'WiFiDB_login_yes';
+        }
+        
+        if(!@isset($_COOKIE[$cookie_name]))
+        {
+            $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.urlencode($return_url);
+            $this->login_val = "No Cookie";
+            $this->login_check = 0;
+            return -1;
+        }
+        list($cookie_pass, $username) = explode(':', base64_decode($_COOKIE[$cookie_name], 1));
+        if($username == '' || $username == "AnonCoward" || $username == "unknown")
+        {
+            # Username Fail.
+            $this->LoginLabel = "";
+			$this->LoginHtml = "";
+			$this->LoginUri = '?return='.urlencode($return_url);
+            $this->login_val = "u_fail";
+            $this->login_check = 0;
+            return 0;
+        }
+        $sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
+        $result = $this->sql->conn->prepare($sql0);
+        $result->bindParam(1, $username, PDO::PARAM_STR);
+        $result->execute();
+		$user_logons = $result->fetchAll();
+		foreach($user_logons as $logon)
 		{
-			if($group == 'admins')
+			$db_pass = $logon['hash'];
+			#var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
+			if(crypt($cookie_pass, $db_pass) == $db_pass)
 			{
-				return "Administrator";
-			}elseif($group == 'devs')
-			{
-				return "Developer";
-			}elseif($group == 'mods')
-			{
-				return "Moderator";
-			}elseif($group == 'users')
-			{
-				return "User";
+				$this->privs = $this->check_privs();
+				$this->LoginLabel = "Logout";
+				$this->LoginHtml = 'Welcome, <a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
+				$this->LoginUri = '?func=logout&return='.urlencode($return_url);
+				$this->login_val = $logon['username'];
+				$this->username = $logon['username'];
+				$this->login_check = 1;
+				return 1;
 			}
 		}
-	}
-	
-	
-	#######################################
-	function check_privs($admin = 0)
-	{
-		global $privs, $priv_name;
-		include_once('config.inc.php');
-		$conn = $GLOBALS['conn'];
-		if($admin == 1)
-		{
-			$cookie_seed = "@LOGGEDIN";
-			list($cookie_pass_seed, $username) = explode(':', $_COOKIE['WiFiDB_admin_login_yes']);
-		}else
-		{
-			$cookie_seed = "@LOGGEDIN!";
-			list($cookie_pass_seed, $username) = explode(':', $_COOKIE['WiFiDB_login_yes']);
-		}
-		$user_logins_table = $GLOBALS['user_logins_table'];
-	#	echo $username;
-		$sql0 = "SELECT * FROM `wifi`.`$user_logins_table` WHERE `username` = '$username' LIMIT 1";
-	#	echo $sql0;
-		$result = mysql_query($sql0, $conn);
-		$newArray = mysql_fetch_array($result);
-		$table_pass = md5($newArray['password'].$cookie_seed);
-		if($table_pass == $cookie_pass_seed)
-		{
-			$groups = array(3=>$newArray['admins'],2=>$newArray['devs'],1=>$newArray['mods'],0=>$newArray['users']);
-			$privs = implode("",$groups);
-			$privs+0;
-	#		echo $privs;
-			if($privs >= 1000){$priv_name = "Administrator";}
-			elseif($privs >= 100){$priv_name = "Developer";}
-			elseif($privs >= 10){$priv_name = "Moderator";}
-			else{$priv_name = "User";}
-			
-			return array($privs, $priv_name);
-		}
-		else
-		{
-			die("Wrong pass or no Cookie, go get one.");
-		}
-	}
-
-	#######################################
-
-	function login($username = '', $password = '', $seed = '', $admin = 0, $no_save_login = 0)
-	{
-		if($seed ==''){$seed == $GLOBALS['login_seed'];}
-		if($seed == ''){$seed = "PIECAVE!";}
-		
-		if($admin == 1)
-		{
-			$cookie_name = 'WiFiDB_admin_login_yes';
-			$cookie_seed = "@LOGGEDIN";
-			if($GLOBALS["root"] != '')
-			{$path		 = '/'.$GLOBALS["root"].'/cp/admin/';}
-			else{$path		 = '/cp/admin/';}
-			$cookie_timeout = time()-3600;
-		}else
-		{
-			$cookie_name = 'WiFiDB_login_yes';
-			$cookie_seed = "@LOGGEDIN!";
-			if($GLOBALS["root"] != '')
-			{$path		 = '/'.$GLOBALS["root"].'/';}
-			else{$path		 = '/';}
-			
-		}
-		$user_logins_table = $GLOBALS['user_logins_table'];
-		$db = $GLOBALS['db'];
-		$conn = $GLOBALS['conn'];
-		
-		$date = date("Y-m-d G:i:s");
-		
-		$pass_seed = md5($password.$seed);
-		
-		$sql0 = "SELECT * FROM `$db`.`$user_logins_table` WHERE `username` = '$username' LIMIT 1";
-	#	echo $sql0;
-		$result = mysql_query($sql0, $conn);
-		$newArray = mysql_fetch_array($result);
-		if($newArray['login_fails'] == $GLOBALS['config_fails'] or $newArray['locked'] == 1)
-		{
-			return 'locked';
-		}
-		if($newArray['validated'] == 1)
-		{
-			return 'validate';
-		}
-		$id = $newArray['id'];
-		$db_pass = $newArray['password'];
-		$fails = $newArray['login_fails'];
-		$username_db = $newArray['username'];
-
-		if($db_pass === $pass_seed)
-		{
-			if($no_save_login == 1)
-			{
-				$cookie_timeout = time()-3600;
-			}else
-			{
-				$cookie_timeout = time()+$GLOBALS['timeout'];
-			}
-			
-			if(setcookie($cookie_name, md5($pass_seed.$cookie_seed).":".$username, $cookie_timeout, $path))
-			{
-				$sql0 = "SELECT `last_active` FROM `$db`.`$user_logins_table` WHERE `id` = '$id' LIMIT 1";
-				$array = mysql_fetch_array(mysql_query($sql0, $conn));
-				$last_active = $array['last_active'];
-				$sql1 = "UPDATE `$db`.`$user_logins_table` SET `login_fails` = '0', `last_active` = '$last_active', `last_login` = '$date' WHERE `$user_logins_table`.`id` = '$id' LIMIT 1";
-				if(mysql_query($sql1, $conn))
-				{
-					return "good";
-				}else
-				{
-					return "u_u_r_fail";
-				}
-			}else
-			{
-				return "cookie_fail";
-			}
-		}else
-		{
-			if($username_db != '')
-			{
-				$fails++;
-				$to_go = $GLOBALS['config_fails'] - $fails;
-		#		echo $fails.' - '.$GLOBALS['config_fails'];
-				if($fails >= $GLOBALS['config_fails'])
-				{
-					$sql1 = "UPDATE `$db`.`$user_logins_table` SET `locked` = '1' WHERE `$user_logins_table`.`id` = '$id' LIMIT 1";
-					mysql_query($sql1, $conn);
-					return "locked";
-				}else
-				{
-					$sql1 = "UPDATE `$db`.`$user_logins_table` SET `login_fails` = '$fails' WHERE `$user_logins_table`.`id` = '$id' LIMIT 1";
-					mysql_query($sql1, $conn);
-					return array("p_fail", $to_go);
-				}
-			}else
-			{
-				return "u_fail";
-			}
-		}
-	}
-
-	function check_user_reserved($username = '')
-	{
-		if($username == ''){return -1;}
-		include('config.inc.php');
-		$reserved = explode(":", $GLOBALS['reserved_users']);
-		foreach($reserved as $resv)
-		{
-			if($username == $resv)
-			{return 1;}
-		}
-		return 0;
-	}
-	
-	
-	function user_create_form($username = '', $email = '')
-	{
-		?>
-		<form method="post" action="<?php echo $_SERVER['PHP_SELF'];?>?func=create_user_proc">
-			<table align="center">
-				<tr>
-					<td colspan="2"><p align="center"><img src="themes/wifidb/img/logo.png"></p></td>
-				</tr>
-				<tr>
-					<td>Username</td>
-					<td><input type="text" name="time_user" value="<?php echo $username;?>"></td>
-				</tr>
-				<tr>
-					<td>Password</td>
-					<td><input type="password" name="time_pass"></td>
-				</tr>
-				<tr>
-					<td>Password (again)</td>
-					<td><input type="password" name="time_pass2"></td>
-				</tr>
-				<tr>
-					<td>Email</td>
-					<td><input type="text" name="time_email" value="<?php echo $email;?>"></td>
-				</tr>
-				<tr>
-					<td colspan="2"><p align="center"><input type="submit" value="Create Me!"></p></td>
-				</tr>
-			</table>
-		</form>
-		<?php
-	}
-	
-	
-	#######################################
-	function create_user($username="", $password="", $email="local@localhost.local", $user_array=array(0,0,0,1), $seed="", $validate_user_flag = 1)
-	{
-		if($username == ""){$return = array("un_err", "Username is blank"); return $return;}
-		if($password == ""){$return = array("pw_err", "Password is blank"); return $return;}
-		if(security::check_user_reserved($username) == 1){$return = array("dup_u", "Reserved user"); return $return;}
-		if(!checkEmail($email)){$return = array("err_email", "Invalid Email address.");return $return;}
-		
-		include('config.inc.php');
-		
-		$conn = $GLOBALS['conn'];
-		$db = $GLOBALS['db'];
-		$user_logins_table = $GLOBALS['user_logins_table'];
-		$UPATH	=	$GLOBALS['UPATH'];
-		$subject = "New WiFiDB User ";
-		$type = "new_users";
-		$date = date("Y-m-d G:i:s");
-		
-		$admin = $user_array[0];
-		$dev = $user_array[1];
-		$mod = $user_array[2];
-		$user = $user_array[3];
-		
-		if($seed == ''){$seed = $GLOBALS['login_seed'];}
-		if($seed == ''){$seed = "PIECAVE!";}
-		
-		if($username == '' or $password == ''){die("Username and/or password cannot be blank.");}
-		
-		$uid_b = md5($date.$username."PIECAVE");
-		$uid_exp = str_split($uid_b, 6);
-		$uid = implode("-", $uid_exp);
-		#echo $uid."<BR>";
-		
-		$user_cache = 'waypoints_'.$username;
-		$user_stats = 'stats_'.$username;
-		
-		$pass_seed = md5($password.$seed);
-		
-		$insert_user = "INSERT INTO `$db`.`$user_logins_table` (`id` ,`username` ,`password`, `admins` , `devs`, `mods`, `users` ,`last_login` ,`email`, `uid`, `join_date`, `validated` )VALUES ( '' , '$username', '$pass_seed', '$admin','$dev','$mod','$user', '$date', '$email', '$uid', '$date', '$validate_user_flag')";
-		echo $insert_user."<BR>";
-		if(mysql_query($insert_user, $conn))
-		{
-			$create_user_cache = "CREATE TABLE `$db`.`$user_cache` 
-							(
-							  `id` int(255) NOT NULL auto_increment,
-							  `author` varchar(255) NOT NULL,
-							  `name` varchar(255) NOT NULL,
-							  `shared_by` varchar(255) NOT NULL,
-							  `gcid` varchar(255) NOT NULL,
-							  `notes` text NOT NULL,
-							  `cat` varchar(255) NOT NULL,
-							  `type` varchar(255) NOT NULL,
-							  `diff` double(3,2) NOT NULL,
-							  `terain` double(3,2) NOT NULL,
-							  `lat` varchar(255) NOT NULL,
-							  `long` varchar(255) NOT NULL,
-							  `link` varchar(255) NOT NULL,
-							  `share` tinyint(1) NOT NULL,
-							  `share_id` int(255) NOT NULL,
-							  `c_date` datetime NOT NULL,
-							  `u_date` datetime NOT NULL,
-							  UNIQUE KEY `id` (`id`),
-							  UNIQUE `gcid` (`gcid`)
-							) ENGINE=INNODB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=0";
-			if(mysql_query($create_user_cache, $conn))
-			{
-				$create_user_stats = "CREATE TABLE `$db`.`$user_stats` 
-							(
-							  `id` int(255) NOT NULL auto_increment,
-							  `newest` varchar(255) NOT NULL,
-							  `largest` varchar(255) NOT NULL,
-							  UNIQUE KEY `id` (`id`)
-							) ENGINE=INNODB  DEFAULT CHARSET=utf8 AUTO_INCREMENT=0";
-				if(mysql_query($create_user_stats, $conn))
-				{
-					if($validate_user_flag)
-					{
-						$msg = "New user has been created!\r\nUsername: $username\r\nDate: $date\r\nLink to Users' info: ".$UPATH."/opt/userstats.php?func=alluserlists&user=$username";
-						mail_users($msg, $subject, $type, 0);
-					}
-					return 1;
-				}else
-				{
-					if($validate_user_flag)
-					{
-						$msg = "Failed to create new user statistics table. ($date)\r\n Username: $username\r\nMySQL Error:\r\n$err";
-						mail_users($msg, $subject, $type, 1);
-					}
-					$return = array("create_tb", $msg);
-					return $return;
-				}
-			}else
-			{
-				if($validate_user_flag)
-				{
-					$msg = "Failed to create new user Geocache table. ($date)\r\n Username: $username\r\nMySQL Error:\r\n$err";
-					mail_users($msg, $subject, $type, 1);
-				}
-				$return = array("create_tb", $msg);
-				return $return;
-			}
-		}else
-		{
-			$err = mysql_error($conn);
-			if($validate_user_flag)
-			{
-				$msg = "Failed to create new user. Duplicate username or email already exists in database. ($date)\r\n Username: $username\r\n Email: $email\r\n MySQL Error:\r\n$err";
-				mail_users($msg, $subject, $type, 1);
-			}
-			$return = array("dup_u", $err);
-			return $return;
-		}
-	}
+        $this->LoginLabel = "";
+		$this->LoginHtml = "";
+		$this->LoginUri = '?return='.urlencode($return_url);
+        $this->login_val = "Bad Cookie Password";
+        $this->login_check = 0;
+        return -1;
+    }
+    
+    function UnlockUser($id)
+    {
+        if($id === 0)
+        {
+            return 0;
+        }
+        $sql = "UPDATE `wifi`.`user_info` SET `locked` = '0', `login_fails` = '0' WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $id, PDO::PARAM_INT);
+        $prep->execute();
+        if($this->sql->checkError())
+        {
+            $this->logd("Error Unlocking user id: $id ". var_export($this->sql->conn->errorInfo(), 1), "error");
+            return 0;
+        }
+        return 1;
+    }
+    
+ /**
+ * (WiFiDB 0.30)<br/>
+ * Checks the Users API key and sees if it is valid or not.
+ * @link http://www.wifidb.net/manual/en/function.security.ValidateAPIKey.php
+ * @param string $username <p>
+ * The Username to be checked
+ * </p>
+ * @param string $apikey <p>
+ * The api key to be checked.
+ * </p>
+ * @return <b>1</b> if the key has been validated, <b>Array</b> and <b>[0]</b> is the code, 
+ * <b>[1]</b> is the message.
+ */
+    function ValidateAPIKey()
+    {
+        if($this->username === "" || $this->username === "Unknown" || $this->username === "AnonCoward")
+        {
+            $this->message = "Invalid Username set.";
+            $array = array(0, $this->message);
+            return $array;
+        }
+        if($this->apikey === "")
+        {
+            $this->message = "Invalid API Key set.";
+            $array = array(0, $this->message);
+            return $array;
+        }
+        $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $this->username, PDO::PARAM_STR);
+        $result->execute();
+        $err = $this->sql->conn->errorCode();
+        if($err !== "00000")
+        {
+            $this->logd("Error selecting Users API key.".var_export($this->sql->conn->errorInfo(),1));
+            $array =  array(0, "Error Selecting User API Key");
+            return $array;
+        }
+        $key = $result->fetch(2);
+        if($key['apikey'] !== $this->apikey)
+        {
+            $this->message = "Authentication Failed.";
+            $array =  array(0, $this->message);
+            return $array;
+        }
+        if($key['locked'])
+        {
+            $this->message = "Account Locked.";
+            $array =  array(0, $this->message);
+            return $array;
+        }
+        if($key['disabled'])
+        {
+            $this->message = "Account Disabled.";
+            $array =  array(0, $this->message);
+            return $array;
+        }
+        if($key['validated'])
+        {
+            $this->message = "User not validated yet.";
+            $array =  array(0, $this->message);
+            return $array;
+        }
+        return 1;
+    }
 }
 ?>

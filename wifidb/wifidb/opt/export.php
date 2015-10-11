@@ -1,153 +1,170 @@
 <?php
-include('../lib/database.inc.php');
-pageheader("Exports Page");
-include('../lib/config.inc.php');
+/*
+export.inc.php
+Copyright (C) 2011 Phil Ferland
+This is all the Export functions, text files, csv, kml, and vs1
 
-$conn			= 	$GLOBALS['conn'];
-$db				= 	$GLOBALS['db'];
-$db_st			= 	$GLOBALS['db_st'];
-$wtable			=	$GLOBALS['wtable'];
-$users_t		=	$GLOBALS['users_t'];
-$gps_ext		=	$GLOBALS['gps_ext'];
-$root			= 	$GLOBALS['root'];
-$half_path		=	$GLOBALS['half_path'];
-?>
-			<h2>Exports Page</h2>
-<?php
-$database = new database();
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+define("SWITCH_SCREEN", "HTML");
 $func=$_GET['func'];
 
-	if(isset($_GET['user'])){$user=$_GET['user'];}elseif(isset($_POST['user'])){$user = $_POST['user'];}
-	
-	if(isset($_GET['row'])){$row=$_GET['row'];}elseif(isset($_POST['row'])){$row = $_POST['row'];}
-	
 switch($func)
 {
-	case "index":
-		?>
-		<form action="export.php?func=exp_user_list" method="post" enctype="multipart/form-data">
-		<table border="1" cellspacing="0" cellpadding="3" align="center">
-		<tr class="style4"><th colspan="2">Export a Users Import List to KML</th></tr>
-		<tr class="light">
-			<td>User Import List: </td>
-			<td>
-				<select name="row">
-				<?php
-				$rows = 0;
-				mysql_select_db($db,$conn);
-				$sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `$db`.`$users_t`";
-				$re = mysql_query($sql, $conn) or die(mysql_error());
-				$rowsl = mysql_num_rows($re);
-				if($rowsl < 1)
-				{
-					echo '<option selected value""> No Imports to export.';
-				}else
-				{
-					while($user_array = mysql_fetch_array($re))
-					{
-						echo '<option value="'.$user_array["id"].'">User: '.$user_array["username"].' - Title: '.$user_array["title"]." - # APs: ".$user_array["aps"]." - # Date: ".$user_array["date"]."\r\n";
-						$rows++;
-					}
-				}
-				?>
-				</select>
-				</td>
-			</tr>
-			<tr class="light">
-				<td colspan="2" align="right">
-				<?php
-				if($rowsl)
-				{
-				?>
-					<input type="submit" value="Export This Users List">
-				<?php
-				}
-				?>
-				</td>
-			</tr>
-		</table>
-		</form>
-		
-		<form action="export.php?func=exp_user_all_kml" method="post" enctype="multipart/form-data">
-		<table border="1" cellspacing="0" cellpadding="3" align="center">
-		<tr class="style4"><th colspan="2">Export All Access Points for a User</th></tr>
-		<tr class="light"><td>Username: </td><td>
-			<select name="user">
-			<?php
-			mysql_select_db($db,$conn);
-			$sql = "SELECT `username` FROM `$db`.`$users_t`";
-			$re = mysql_query($sql, $conn) or die(mysql_error());
-			$rowsu = mysql_num_rows($re);
-			if($rowsu < 1)
+		#--------------------------
+		case "exp_user_all_kml":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export All User APs');
+			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+			$results = $dbcore->export->UserAll($user);
+			$dbcore->smarty->assign('results', $results);
+			$dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
+		case "exp_user_list":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export User List');
+			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
+			$result = $dbcore->export->UserList($row);
+			$dbcore->smarty->assign('results', $result);
+			$dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
+		case "exp_all_signal":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export All Signals for AP');
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
+			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
+			$result = $dbcore->export->SingleApSignal3d($id,$limit,$from);
+			$dbcore->smarty->assign('results', $result);
+			$dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
+		case "exp_single_ap":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export Single AP');
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$result = $dbcore->export->SingleAp($id);
+			$dbcore->smarty->assign('results', $result);
+			$dbcore->smarty->display('export_results.tpl');
+			break;
+		#--------------------------
+		case "exp_search":
+			define("SWITCH_EXTRAS", "export");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export Search Results');
+			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+			
+			if(@$_REQUEST['ssid'])
 			{
-				$USERNAMES[]="No Users";
+				$ssid   =   $_REQUEST['ssid'];
 			}else
 			{
-				while($user_array = mysql_fetch_array($re))
-				{
-					$USERNAMES[]=$user_array["username"];
-				}
+				$ssid   =   "";
 			}
-			$USERNAMES = array_unique($USERNAMES);
 			
-			foreach($USERNAMES as $USERN)
+			if(@$_REQUEST['mac'])
 			{
-				echo '<option value="'.$USERN.'">'.$USERN."\r\n";
-			}
-			?>
-			</select>
-			</td></tr>
-			<tr class="light"><td colspan="2" align="right">
-			<?php
-			if($rowsu)
+				$mac	=   $_REQUEST['mac'];
+			}else
 			{
-			?>
-				<input type="submit" value="Export This Users Access points">
-			<?php
+				$mac	=   "";
 			}
-			?>
-			</td>
-		</table>
-		</form>
-		<?php
-		break;
-	#--------------------------
-	case "exp_user_all_kml":
-		$row = 0;
-		$database->exp_kml($export="exp_user_all_kml", $user,$row, $named=0);
-		break;
-	#--------------------------
-	case "exp_all_db_kml": 
-		$user ='';
-		$row = 0;
-		$database->exp_kml($export="exp_all_db_kml",$user,$row, $named=0);
-		break;
-	#--------------------------
-	case "exp_user_list": 
-		$user ="";
-		$database->exp_kml($export="exp_user_list",$user,$row, $named=0);
-		break;
-	#--------------------------	\
-	case "exp_all_signal_gpx": 
-		$user ="";
-		$database->exp_kml($export="exp_all_signal_gpx",$user,$row, $named=0);
-		break;
-	#--------------------------
-	case "exp_all_signal": 
-		$user ="";
-		$database->exp_kml($export="exp_all_signal",$user,$row, $named=0);
-		break;
-	#--------------------------
-	case "exp_single_ap": 
-		$user ="";
-		$database->exp_kml($export="exp_single_ap",$user,$row, $named=0);
-		break;
-	#--------------------------
-	case NULL:
+			
+			if(@$_REQUEST['radio'])
+			{
+				$radio  =   $_REQUEST['radio'];
+			}else
+			{
+				$radio  =   "";
+			}
+			
+			if(@$_REQUEST['chan'])
+			{
+				$chan   =   $_REQUEST['chan'];
+			}else
+			{
+				$chan   =   "";
+			}
+			
+			if(@$_REQUEST['auth'])
+			{
+				$auth   =   $_REQUEST['auth'];
+			}else
+			{
+				$auth   =   "";
+			}
+			
+			if(@$_REQUEST['encry'])
+			{
+				$encry  =   $_REQUEST['encry'];
+			}else
+			{
+				$encry  =   "";
+			}
+			if ($from == ""){$from = NULL;}
+			if ($inc == ""){$inc = NULL;}
+			if ($ord == ""){$ord = "ASC";}
+			if ($sort == ""){$sort = "ssid";}
+			
+			list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
+			$results = $dbcore->export->exp_search($results_all);
+			$dbcore->smarty->assign('results', $results);
+			$dbcore->smarty->display('export_results.tpl');
+			
+			break;
+		#--------------------------
+		default:
+			define("SWITCH_EXTRAS", "");
+			include('../lib/init.inc.php');
+			$dbcore->smarty->assign('wifidb_page_label', 'Export Page');
 
-	echo "You have done something wrong, go back and try again man.";
-	break;
+			$imports = array();
+			$usernames = array();
+			$sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `wifi`.`user_imports` ORDER BY `username`, `title`";
+			$result = $dbcore->sql->conn->query($sql);
+			while($user_array = $result->fetch(2))
+			{
+				$imports[] = array(
+								"id"=>$user_array["id"],
+								"username"=>$user_array["username"],
+								"title"=>$user_array["title"],
+								"aps"=>$user_array["aps"],
+								"date"=>$user_array["date"]
+							 );
+			}
+
+			$sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username`";
+			$result = $dbcore->sql->conn->query($sql);
+			while($user_array = $result->fetch(2))
+			{
+				$usernames[] = $user_array["username"];
+			}
+			$usernames = array_unique($usernames);
+
+			$dbcore->smarty->assign('wifidb_export_imports_all', $imports);
+			$dbcore->smarty->assign('wifidb_export_users_all', $usernames);
+			$dbcore->smarty->display('export_index.tpl');
+		break;
 }
-$filename = $_SERVER['SCRIPT_FILENAME'];
-footer($filename);
-?>

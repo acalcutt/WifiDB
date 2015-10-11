@@ -1,56 +1,33 @@
 <?php
-global $screen_output, $install;
-$screen_output = 'CLI';
-$install = "installing";
-include('../lib/database.inc.php');
-global $wifidb_smtp, $wifidb_email_updates, $reserved_users, $login_seed;
-echo '<title>Wireless DataBase *Alpha* '.$ver["wifidb"].' --> Install Page</title>';
-
-
 /*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
 
-CREATE TABLE  `wifi`.`live_gps` (
-`id` INT( 255 ) NOT NULL AUTO_INCREMENT ,
-`lat` VARCHAR( 255 ) NOT NULL ,
-`long` VARCHAR( 255 ) NOT NULL ,
-`sats` INT( 25 ) NOT NULL ,
-`hdp` VARCHAR( 255 ) NOT NULL ,
-`alt` VARCHAR( 255 ) NOT NULL ,
-`geo` VARCHAR( 255 ) NOT NULL ,
-`kmh` VARCHAR( 255 ) NOT NULL ,
-`mph` VARCHAR( 255 ) NOT NULL ,
-`track` VARCHAR( 255 ) NOT NULL ,
-`date` VARCHAR( 255 ) NOT NULL ,
-`time` VARCHAR( 255 ) NOT NULL ,
-PRIMARY KEY (  `id` ) ,
-INDEX (  `id` )
-) ENGINE = INNODB;
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
 
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
 
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
 
-
-
-CREATE TABLE  `wifi`.`live_aps` (
-`id` INT( 255 ) NOT NULL AUTO_INCREMENT ,
-`ssid` VARCHAR( 255 ) NOT NULL ,
-`mac` VARCHAR( 255 ) NOT NULL ,
-`auth` INT( 25 ) NOT NULL ,
-`encry` VARCHAR( 255 ) NOT NULL ,
-`sectype` VARCHAR( 255 ) NOT NULL ,
-`chan` VARCHAR( 255 ) NOT NULL ,
-`radio` VARCHAR( 255 ) NOT NULL ,
-`BTx` VARCHAR( 255 ) NOT NULL ,
-`OTx` VARCHAR( 255 ) NOT NULL ,
-`NT` VARCHAR( 255 ) NOT NULL ,
-`Label` VARCHAR( 255 ) NOT NULL,
-`sig` VARCHAR( 255 ) NOT NULL ,
-`username` VARCHAR( 255 ) NOT NULL ,
-PRIMARY KEY (  `id` ) ,
-INDEX (  `id` )
-) ENGINE = INNODB;
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
 */
 
 
+define(WIFIDB_SCREEN_OUTPUT, "CLI");
+define(WIFIDB_INSTALL, "installing");
+
+#include('../lib/init.inc.php');
+
+global $wifidb_smtp, $wifidb_email_updates, $reserved_users, $login_seed;
+
+echo '<title>Wireless DataBase *Alpha* '.$ver["wifidb"].' --> Install Page</title>';
 ?>
 <link rel="stylesheet" href="../themes/wifidb/styles.css">
 <body topmargin="10" leftmargin="0" rightmargin="0" bottommargin="10" marginwidth="10" marginheight="10">
@@ -82,31 +59,31 @@ INDEX (  `id` )
 
 if($_POST['daemon'] == TRUE && $_POST['toolsdir'] == "")
 {
-	echo "<h2>You cannot enable the daemon and not declare a folder for the tools directory. now go back and do it right.</h2>";
-	$filename = $_SERVER['SCRIPT_FILENAME'];
-	$file_ex = explode("/", $filename);
-	$count = count($file_ex);
-	$file = $file_ex[($count)-1];
-	?>
-	</p>
-	</td>
-	</tr>
-	<tr>
-	<td bgcolor="#315573" height="23"><a href="../img/moon.png"><img border="0" src="../img/moon_tn.png"></a></td>
-	<td bgcolor="#315573" width="0" align="center">
-	<?php
-	if (file_exists($filename)) {?>
-		<h6><i><u><?php echo $file;?></u></i> was last modified:  <?php echo date ("Y F d @ H:i:s", filemtime($filename));?></h6>
-	<?php
-	}
-	?>
-	</td>
-	</tr>
-	</table>
-	</body>
-	</html>
-	<?php
-	die();
+    echo "<h2>You cannot enable the daemon and not declare a folder for the tools directory. now go back and do it right.</h2>";
+    $filename = $_SERVER['SCRIPT_FILENAME'];
+    $file_ex = explode("/", $filename);
+    $count = count($file_ex);
+    $file = $file_ex[($count)-1];
+    ?>
+    </p>
+    </td>
+    </tr>
+    <tr>
+    <td bgcolor="#315573" height="23"><a href="../img/moon.png"><img border="0" src="../img/moon_tn.png"></a></td>
+    <td bgcolor="#315573" width="0" align="center">
+    <?php
+    if (file_exists($filename)) {?>
+            <h6><i><u><?php echo $file;?></u></i> was last modified:  <?php echo date ("Y F d @ H:i:s", filemtime($filename));?></h6>
+    <?php
+    }
+    ?>
+    </td>
+    </tr>
+    </table>
+    </body>
+    </html>
+    <?php
+    die();
 }
 	#========================================================================================================================#
 	#													Gather the needed infomation								   	     #
@@ -114,23 +91,23 @@ if($_POST['daemon'] == TRUE && $_POST['toolsdir'] == "")
 $Local_tz=date_default_timezone_get();
 $date = date("Y-m-d");
 
-$root_sql_user	=	addslashes(strip_tags($_POST['root_sql_user']));
-$root_sql_pwd	=	addslashes(strip_tags($_POST['root_sql_pwd']));
-$root			=	addslashes(strip_tags($_POST['root']));
-$hosturl		=	addslashes(strip_tags($_POST['hosturl']));
-$sqlhost		=	addslashes(strip_tags($_POST['sqlhost']));
-$sqlu			=	addslashes(strip_tags($_POST['sqlu']));
-$sqlp			=	addslashes(strip_tags($_POST['sqlp']));
-$wifi			=	addslashes(strip_tags($_POST['wifi']));
-$wifi_st		=	addslashes(strip_tags($_POST['wifist']));
-$theme			=	addslashes(strip_tags($_POST['theme']));
-$password		=	addslashes(strip_tags($_POST['wdb_admn_pass']));
-$email			=	addslashes(strip_tags($_POST['wdb_admn_emailadrs']));
-$wifidb_from	=	addslashes(strip_tags($_POST['wdb_from_emailadrs']));
-$wifidb_from_pass	=	addslashes(strip_tags($_POST['wdb_from_pass']));
-$wifidb_smtp	=	addslashes(strip_tags($_POST['wdb_smtp']));
-$timeout	=   "(86400 * 365)";
-$reserved_users	=	'WiFiDB:Recovery';
+$root_sql_user      =	addslashes(strip_tags($_POST['root_sql_user']));
+$root_sql_pwd       =	addslashes(strip_tags($_POST['root_sql_pwd']));
+$root               =	addslashes(strip_tags($_POST['root']));
+$hosturl            =	addslashes(strip_tags($_POST['hosturl']));
+$sqlhost            =	addslashes(strip_tags($_POST['sqlhost']));
+$sqlu               =	addslashes(strip_tags($_POST['sqlu']));
+$sqlp               =	addslashes(strip_tags($_POST['sqlp']));
+$wifi               =	addslashes(strip_tags($_POST['wifi']));
+$wifi_st            =	addslashes(strip_tags($_POST['wifist']));
+$theme              =	addslashes(strip_tags($_POST['theme']));
+$password           =	addslashes(strip_tags($_POST['wdb_admn_pass']));
+$email              =	addslashes(strip_tags($_POST['wdb_admn_emailadrs']));
+$wifidb_from        =	addslashes(strip_tags($_POST['wdb_from_emailadrs']));
+$wifidb_from_pass   =	addslashes(strip_tags($_POST['wdb_from_pass']));
+$wifidb_smtp        =	addslashes(strip_tags($_POST['wdb_smtp']));
+$timeout            =   "(86400 * 365)";
+$reserved_users     =	'WiFiDB:Recovery';
 
 if($_POST['email_validation'] == 'on')
 {
@@ -196,7 +173,7 @@ $ENG = "INNODB";
 $sqls0 =	"DROP DATABASE IF EXISTS `$wifi_st`";
 $wifi_st_WF_drp = mysql_query($sqls0, $conn);
 if($wifi_st_WF_drp)
-{	
+{
 	echo "<tr class=\"good\"><td>Success..........</td><td>CREATE DATABASE <b>`$wifi`.</b></td></tr>";
 }
 else
@@ -206,7 +183,7 @@ else
 $sqls1 =	"CREATE DATABASE IF NOT EXISTS `$wifi_st`";
 $wifi_st_WF_Re = mysql_query($sqls1, $conn);
 if($wifi_st_WF_Re)
-{	
+{
 	echo "<tr class=\"good\"><td>Success..........</td><td>CREATE DATABASE <b>`$wifi`.</b></td></tr>";
 }
 else
@@ -218,7 +195,7 @@ else
 $sqls0 =	"DROP DATABASE IF EXISTS `$wifi`";
 $wifi_WF_Re = mysql_query($sqls0, $conn);
 if($wifi_WF_Re)
-{	
+{
 	echo "<tr class=\"good\"><td>Success..........</td><td>CREATE DATABASE <b>`$wifi`.</b></td></tr>";
 }
 else
@@ -228,7 +205,7 @@ else
 $sqls1 =	"CREATE DATABASE IF NOT EXISTS `$wifi`";
 $wifi_WF_Re = mysql_query($sqls1, $conn);
 if($wifi_WF_Re)
-{	
+{
 	echo "<tr class=\"good\"><td>Success..........</td><td>CREATE DATABASE <b>`$wifi`.</b></td></tr>";
 }
 else
@@ -306,8 +283,8 @@ $sqls =	"CREATE TABLE IF NOT EXISTS `$wifi`.`users_imports` (
 		`points` TEXT NOT NULL,
 		`notes` TEXT NOT NULL,
 		`title` VARCHAR ( 255 ) NOT NULL,
-		`date` VARCHAR ( 25 ) NOT NULL, 
-		`aps` INT NOT NULL, 
+		`date` VARCHAR ( 25 ) NOT NULL,
+		`aps` INT NOT NULL,
 		`gps` INT NOT NULL,
 		`hash` VARCHAR( 255 ) NOT NULL,
 		INDEX ( `id` )) ENGINE=$ENG DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;";
@@ -324,7 +301,7 @@ echo "<tr class=\"bad\"><td>Failure..........</td><td>CREATE TABLE <b>`$wifi`</b
 ########################## Create Wifi0 table (Pointers to *_ST tables)
 $sqls =	"CREATE TABLE IF NOT EXISTS `$wifi`.`wifi0`
 (
-    `id` int(255) NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+    `id` int(255) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     `ssid` varchar(32) NOT NULL,
     `mac` varchar(25) NOT NULL,
     `chan` varchar(3) NOT NULL,
@@ -332,15 +309,14 @@ $sqls =	"CREATE TABLE IF NOT EXISTS `$wifi`.`wifi0`
     `radio` varchar(1) NOT NULL,
     `auth` varchar(25) NOT NULL,
     `encry` varchar(25) NOT NULL,
-    `countrycode` VARCHAR( 5 ) NOT NULL,
-    `countryname` VARCHAR( 64 ) NOT NULL,
-    `admincode` VARCHAR( 5 ) NOT NULL,
-    `adminname` VARCHAR( 64 ) NOT NULL,
-    `iso3166-2` VARCHAR( 3 ) NOT NULL,
-    `lat` VARCHAR( 32 ) NOT NULL DEFAULT 'N 0.0000',
-    `long` VARCHAR( 32 ) NOT NULL DEFAULT 'E 0.0000',
-    `active` tinyint(1) NOT NULL DEFAULT 0,
-    INDEX (`id`)) ENGINE=$ENG DEFAULT CHARSET=utf8 AUTO_INCREMENT=1";
+	`countrycode` VARCHAR( 5 ) NOT NULL,
+	`countryname` VARCHAR( 64 ) NOT NULL,
+	`admincode` VARCHAR( 5 ) NOT NULL,
+	`adminname` VARCHAR( 64 ) NOT NULL,
+	`iso3166-2` VARCHAR( 3 ) NOT NULL,
+	`lat` VARCHAR( 32 ) NOT NULL DEFAULT 'N 0.0000',
+	`long` VARCHAR( 32 ) NOT NULL DEFAULT 'E 0.0000',
+	INDEX (`id`)) ENGINE=$ENG DEFAULT CHARSET=utf8 AUTO_INCREMENT=1";
 $CR_TB_W0_Re = mysql_query($sqls, $conn);
 
 if($CR_TB_W0_Re)
@@ -378,7 +354,7 @@ if($hosturl !== "" && $root !== "")
 		."(7, '<a class=\"links\" href=\"$hosturl/$root/ver.php\">WiFiDB Version</a>'),"
 		."(8, '<a class=\"links\" href=\"$hosturl/$root/announce.php?func=allusers\">Announcements</a>')";
 }elseif($root !== "")
-{ 
+{
 	$sqls =	"INSERT INTO `$wifi`.`links` (`ID`, `links`) VALUES"
 		."(1, '<a class=\"links\" href=\"/$root/\">Main Page</a>'),"
 		."(2, '<a class=\"links\" href=\"/$root/all.php?sort=SSID&ord=ASC&from=0&to=100\">View All APs</a>'),"
@@ -871,7 +847,7 @@ switch($create)
 	case 1:
 		echo "<tr class=\"good\"><td>Success..........</td><td>Created Default Wifidb Administrator user</td></tr>";
 	break;
-	
+
 	case is_array($create):
 		list($er, $msg) = $create;
 		switch($er)
@@ -879,13 +855,13 @@ switch($create)
 			case "create_tb":
 				echo '<tr class="bad"><td>Failure..........</td><td>'.$msg.'<BR>This is a serious error, contact Phil on the <a href="http://forum.techidiots.net/">forums</a><br>MySQL Error Message: '.$msg."<br><h1>D'oh!</h1></td></tr>";
 			break;
-			
+
 			case "dup_u":
 				echo '<tr class="bad"><td>Failure..........</td><td>To create Wifidb Admin User. :-(<br>MySQl Error: '.$msg.'<br><h1>Do`h!</h1></td></tr>';
 			break;
 		}
 	break;
-	
+
 	default:
 		echo "Errah... therah.. was a problem erah...";
 	break;

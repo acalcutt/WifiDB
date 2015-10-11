@@ -1,119 +1,109 @@
 <?php
-include('lib/database.inc.php');
-	pageheader("Show all APs");
-include('lib/config.inc.php');
-$theme = $GLOBALS['theme'];
-$ord	=	addslashes($_GET['ord']);
-$sort	=	addslashes($_GET['sort']);
-$from	=	addslashes($_GET['from']);
-$from	=	$from+0;
-$from_	=	$from+0;
-$inc	=	addslashes($_GET['to']);
-$inc	=	$inc+0;
-if ($from=="" or !is_int($from)){$from=0;}
-if ($from_=="" or !is_int($from_)){$from_=0;}
-if ($inc=="" or !is_int($inc)){$inc=100;}
-if ($ord=="" or !is_string($ord)){$ord="ASC";}
-if ($sort=="" or !is_string($sort)){$sort="id";}
-?>
-<table border="1" width="100%" cellspacing="0">
-<tr class="style4"><td>SSID<a href="?sort=SSID&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"border="0" src="themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=SSID&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/up.png"></a></td>
-<td>MAC<a href="?sort=mac&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=mac&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/up.png"></a></td>
-<td>Chan<a href="?sort=chan&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=chan&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/up.png"></a></td>
-<td>Radio Type<a href="?sort=radio&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=radio&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/up.png"></a></td>
-<td>Authentication<a href="?sort=auth&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=auth&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/up.png"></a></td>
-<td>Encryption<a href="?sort=encry&ord=ASC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0" src="themes/<?php echo $theme; ?>/img/down.png"></a><a href="?sort=encry&ord=DESC&from=<?php echo $from; ?>&to=<?php echo $inc; ?>"><img height="15" width="15" border="0"src="themes/<?php echo $theme; ?>/img/up.png"></a></td></tr>
-<?php
-$sql0 = "SELECT * FROM `$db`.`$wtable` ORDER BY `$sort` $ord LIMIT $from, $inc";
-$result = mysql_query($sql0, $conn) or die(mysql_error($conn));
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
 
-$sql00 = "SELECT * FROM `$db`.`$wtable` ORDER BY `$sort` $ord";
-$result1 = mysql_query($sql00, $conn) or die(mysql_error($conn));
-$total_rows = mysql_num_rows($result1);
-if($total_rows != 0)
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
+
+include('lib/init.inc.php');
+$dbcore->smarty->assign('wifidb_page_label', 'All Access Points Page');
+
+$args = array(
+    'ord' => FILTER_SANITIZE_ENCODED,
+    'sort' => FILTER_SANITIZE_ENCODED,
+    'to' => FILTER_SANITIZE_NUMBER_INT,
+    'from' => FILTER_SANITIZE_NUMBER_INT
+);
+$inputs = filter_input_array(INPUT_GET, $args);
+
+
+$dbcore->smarty->assign('from', $inputs['from']);
+$dbcore->smarty->assign('inc', $inputs['to']);
+$dbcore->smarty->assign('ord', $inputs['ord']);
+$dbcore->smarty->assign('sort', $inputs['sort']);
+
+$sql = "SELECT COUNT(*) FROM `wifi`.`wifi_pointers`";
+$sqlprep = $dbcore->sql->conn->prepare($sql);       
+$sqlprep->execute();
+$total_rows = $sqlprep->fetchColumn();
+
+$sql = "SELECT * FROM `wifi`.`wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+$pre_page_list = $dbcore->sql->conn->query($sql);
+
+
+$row_color = 0;
+$n=0;
+$wifidb_aps_all = array();
+while ( $array = $pre_page_list->fetch(2) )
 {
-	$row_color = 0;
-	while ($newArray = mysql_fetch_array($result))
-	{
-		if($row_color == 1)
-		{$row_color = 0; $color = "light";}
-		else{$row_color = 1; $color = "dark";}
-		
-		$id = $newArray['id'];
-		$ssid = $newArray['ssid'];
-		$mac = $newArray['mac'];
-		$mac_exp = str_split($mac,2);
-		$mac = implode(":",$mac_exp);
-		$chan = $newArray['chan'];
-		$radio = $newArray['radio'];
-		$auth = $newArray['auth'];
-		$encry = $newArray['encry'];
-		echo '<tr class="'.$color.'"><td><a class="links" href="opt/fetch.php?id='.$id.'">'.$ssid.'</a></td>';
-		echo '<td>'.$mac.'</td>';
-		echo '<td>'.$chan.'</td>';
-		if($radio=="a")
-		{$radio="802.11a";}
-		elseif($radio=="b")
-		{$radio="802.11b";}
-		elseif($radio=="g")
-		{$radio="802.11g";}
-		elseif($radio=="n")
-		{$radio="802.11n";}
-		else
-		{$radio="Unknown Radio";}
-		echo '<td>'.$radio.'</td>';
-		echo '<td>'.$auth.'</td>';
-		echo '<td>'.$encry.'</td></tr>';	
-	}
-}else
-{
-	?>
-	<tr>
-		<td align="center" colspan="6">
-			<b>There are no Access Points imported as of yet, go grab some with Vistumbler and import them.<br />
-			Come on... you know you want too.</b>
-		</td>
-	</tr>
-	</table>
-	<?php
-	$filename = $_SERVER['SCRIPT_FILENAME'];
-	footer($filename);
-	die();
+    if($row_color == 1)
+    {$row_color = 0; $color = "light";}
+    else{$row_color = 1; $color = "dark";}
+    $wifidb_aps_all[$n]['class'] = $color;
+
+    $wifidb_aps_all[$n]['id'] = $array['id'];
+    
+    $wifidb_aps_all[$n]['fa'] = $array['FA'];
+    $wifidb_aps_all[$n]['la'] = $array['LA'];
+    
+    if($array['lat'] == "0.0000")
+    {
+        $wifidb_aps_all[$n]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
+    }else
+    {
+        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+    }
+    
+   // $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
+    if($array['ssid'] == '')
+    {
+        $wifidb_aps_all[$n]['ssid'] = '[Blank SSID]';
+    }
+    elseif(!ctype_print($array['ssid']))
+    {
+        $wifidb_aps_all[$n]['ssid'] = '['.$array['ssid'].']';
+    }
+    else
+    {
+        $wifidb_aps_all[$n]['ssid'] = $array['ssid'];
+    }
+    
+    if(@$array['mac'][2] != ":")
+    {
+        $mac_exp = str_split($array['mac'], 2);
+        $implode_mac = implode(":",$mac_exp);
+        $wifidb_aps_all[$n]['mac'] = ($implode_mac == '' ? '< 00:00:00:00:00:00 >' : $implode_mac );
+    }else
+    {
+        $wifidb_aps_all[$n]['mac'] = $array['mac'];
+    }
+    $wifidb_aps_all[$n]['chan'] = ($array['chan'] == '' ? '< ? >' : $array['chan']);
+
+    $wifidb_aps_all[$n]['auth'] = ($array['auth'] == '' ? 'Unknown :(' : $array['auth']);
+    $wifidb_aps_all[$n]['encry'] = ($array['encry'] == '' ? 'Unknown :(' : $array['encry']);
+
+    $wifidb_aps_all[$n]['radio'] = $array['radio'];
+    $n++;
 }
-?>
-<tr class="sub_head"><td colspan="6" align="center">
-<?php
-$from_fwd=$from;
-$from = 0;
-$page = 1;
-$pages = $total_rows/$inc;
-$pages_exp = explode(".",$pages);
-$pages_end = "0.".$pages_exp[1];
-$pages_end = $pages_end+0;
-$pages = $pages-$pages_end;
-$mid_page = ($from_/$inc)+1;
-$pages_together = 'Page: &lt;&#45;&#45;  &#91<a class="links" href="?from=0&to='.$inc.'&sort='.$sort.'&ord='.$ord.'">First</a>&#93 &#45; ';
-for($I=0; $I<=$pages; $I++)
-{
-	if($I >= ($mid_page - 6) AND $I <= ($mid_page + 4))
-	{
-		if($mid_page == $page)
-		{
-			$pages_together .= ' <i><u>'.$page.'</u></i> - ';
-		}else
-		{
-			$pages_together .= ' <a class="links" href="?from='.$from.'&to='.$inc.'&sort='.$sort.'&ord='.$ord.'">'.$page.'</a> &#45; ';
-		}
-	}
-	$from=$from+$inc;
-	$page++;
-}
-$pages_together .= ' &#91<a class="links" href="?from='.(($pages)*$inc).'&to='.$inc.'&sort='.$sort.'&ord='.$ord.'">Last</a>&#93 &#45;&#45;&gt;';
-?>
-		<?php echo $pages_together; ?>
-		</td>
-	</tr>
-</table>
-<?php
-footer($_SERVER['SCRIPT_FILENAME']);
+
+$dbcore->GeneratePages($total_rows, $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord']);
+$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
+$dbcore->smarty->assign('wifidb_aps_all', $wifidb_aps_all);
+$dbcore->smarty->smarty->display('all_aps.tpl');
 ?>

@@ -1,297 +1,246 @@
+#!/usr/bin/php
 <?php
-$start = microtime(1);
-error_reporting(E_ALL|E_STRICT);
-ini_set("memory_limit","3072M");
-global $screen_output, $COLORS;
-$ver = '1.0';
-$screen_output = "CLI";
-if(!(@require_once 'config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($GLOBALS['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require_once $GLOBALS['wifidb_install']."/lib/database.inc.php";
-require_once $GLOBALS['wifidb_install']."/lib/wdb_xml.inc.php";
-require_once $GLOBALS['wifidb_install']."/lib/config.inc.php";
-if(!file_exists($GLOBALS['daemon_log_folder']))
+/*
+geonamed.php, WiFiDB Geoname Daemon
+Copyright (C) 2015 Andrew Calcutt, Phil Ferland.
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+*/
+define("SWITCH_SCREEN", "CLI");
+define("SWITCH_EXTRAS", "daemon");
+
+if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
+$lastedit			=	"2015-06-08";
+$dbcore->daemon_name	=	"Geoname";
+
+$arguments = $dbcore->parseArgs($argv);
+
+if(@$arguments['h'])
 {
-	if(mkdir($GLOBALS['daemon_log_folder']))
-	{echo "Made WiFiDB Log Folder [".$GLOBALS['daemon_log_folder']."]\r\n";}
-	else{echo "Could not make Log Folder [".$GLOBALS['daemon_log_folder']."]\r\n";}
-}
-if(!file_exists($GLOBALS['pid_file_loc']))
-{
-	if(mkdir($GLOBALS['pid_file_loc']))
-	{echo "Made WiFiDB PID Folder [".$GLOBALS['pid_file_loc']."]\r\n";}
-	else{echo "Could not make PID Folder [".$GLOBALS['pid_file_loc']."]\r\n";}
+	echo "Usage: geonamed.php [args...]
+  -f		(null)			Force daemon to run without being scheduled.
+  -o		(null)			Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
+  -d		(null)			Run the Geoname script as a Daemon.
+  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
+  -l		(null)			Show License Information.
+  -h		(null)			Show this screen.
+  --version	(null)			Version Info.
+
+* = Not working yet.
+";
+	exit(-1);
 }
 
-if($GLOBALS['colors_setting'] == 0 or PHP_OS == "WINNT")
+if(@$arguments['version'])
 {
-	$COLORS = array(
-					"LIGHTGRAY"	=> "",
-					"BLUE"		=> "",
-					"GREEN"		=> "",
-					"RED"		=> "",
-					"YELLOW"	=> ""
-					);
+	echo "WiFiDB".$dbcore->ver_array['wifidb']."
+Codename: ".$dbcore->ver_array['codename']."
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals\n";
+	exit(-2);
+}
+
+if(@$arguments['l'])
+{
+	echo "WiFiDB".$dbcore->ver_array['wifidb']."
+Codename: ".$dbcore->ver_array['codename']."
+{$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
+Copyright (C) 2015 Andrew Calcutt, Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+";
+	exit(-3);
+}
+
+if(@$arguments['v'])
+{
+	$dbcore->verbose = 1;
+}
+else
+{
+	$dbcore->verbose = 0;
+}
+
+if(@$arguments['f'])
+{
+	$dbcore->ForceDaemonRun = 1;
 }else
 {
-	$COLORS = array(
-					"LIGHTGRAY"	=> "\033[0;37m",
-					"BLUE"		=> "\033[0;34m",
-					"GREEN"		=> "\033[0;32m",
-					"RED"		=> "\033[0;31m",
-					"YELLOW"	=> "\033[1;33m"
-					);
+	$dbcore->ForceDaemonRun = 0;
 }
 
-$BAD_CLI_COLOR = $GLOBALS['BAD_CLI_COLOR'];
-$GOOD_CLI_COLOR = $GLOBALS['GOOD_CLI_COLOR'];
-$OTHER_CLI_COLOR = $GLOBALS['OTHER_CLI_COLOR'];
-
-$subject						=	"WiFiDB Statistics Daemon";
-$type							=	"geonamed";
-$pid_file						=	$GLOBALS['pid_file_loc'].'geonamed.pid';
-$This_is_me						=	getmypid();
-if(!file_exists($GLOBALS['pid_file_loc'])){mkdir($GLOBALS['pid_file_loc']);}
-fopen($pid_file, "w");
-$fileappend = fopen($pid_file, "a");
-$write_pid = fwrite($fileappend, "$This_is_me");
-
-if(!$write_pid){die($GLOBALS['COLORS'][$BAD_CLI_COLOR]."Could not write pid file, thats not good... >:[".$GLOBALS['COLORS'][$OTHER_CLI_COLOR]);}
-verbosed($GLOBALS['COLORS'][$GOOD_CLI_COLOR]."
-WiFiDB 'Geoname Daemon'
-Version: 1.0.0
-- Daemon Start: 2010-06-23
-- Last Daemon File Edit: 2010-06-23
-( /tools/daemon/geonamed.php )
-- By: Phillip Ferland ( pferland@randomintervals.com )
-- http://www.randomintervals.com/wifidb/
-
-PID: [ $This_is_me ]
-".$GLOBALS['COLORS'][$OTHER_CLI_COLOR], 1, $screen_output, 1);
-
-##################################################################
-##################################################################
-##################################################################
-
-$sep = $GLOBALS['sep'];
-$wtable = $GLOBALS['wtable'];
-$db = $GLOBALS['db'];
-$db_st = $GLOBALS['db_st'];
-$database = new database();
-$WDB_XML = new WDB_XML();
-$start = microtime(1);
-$date = date('Y-m-d_H-i-s');
-$named = 0;
-$good = 0;
-$bad  = 0;
-$total = 0;
-$no_gps = 0;
-
-while(1)
+if(@$arguments['d'])
 {
-	echo "Start Gather of WiFiDB GeoNames\r\n";
+	$dbcore->daemonize = 1;
+}else
+{
+	$dbcore->daemonize = 0;
+}
 
-	$sql = "SELECT * FROM `$db`.`$wtable` WHERE `countryname` = ''"; # ORDER BY `id` DESC";
-	$result = mysql_query($sql, $conn) or die(mysql_error($conn));
-	$total = mysql_num_rows($result);
+if(@$arguments['o'])
+{
+	$dbcore->RunOnceThrough = 1;
+}else
+{
+	$dbcore->RunOnceThrough = 0;
+}
 
-	$temp_kml = '/tmp/full_db_export.kml';
-	$filewrite = fopen($temp_kml, "w");
-	$fileappend = fopen($temp_kml, "a");
+//Now we need to write the PID file so that the init.d file can control it.
+if(!file_exists($dbcore->pid_file_loc))
+{
+	mkdir($dbcore->pid_file_loc);
+}
+$dbcore->pid_file = $dbcore->pid_file_loc.'geonamed_'.$dbcore->This_is_me.'.pid';
 
-	$moved ='/kmz/'.$date.'_fulldb.kmz';
-
-	echo "Gathered Wtable data\r\n";
-	$total = 0;
-	$x=0;
-	$n=0;
-	$NN=0;
-	while($ap_array = mysql_fetch_array($result))
+if(!file_exists($dbcore->pid_file_loc))
+{
+	if(!mkdir($dbcore->pid_file_loc))
 	{
-		$man 		= $database->manufactures($ap_array['mac']);
-		$id			= $ap_array['id'];
-		list($ssid)  = make_ssid($ap_array['ssid']);
-		$mac		= $ap_array['mac'];
-		$sectype	= $ap_array['sectype'];
-		$radio		= $ap_array['radio'];
-		$chan		= $ap_array['chan'];
-#		echo "GeoNames.org Data Returned:
-#	Country Code: ".$ap_array['countrycode']."--
-#	County Name: ".$ap_array['countryname']."--
-#	Admin Code: ".$ap_array['admincode']."--
-#	Admin Name: ".$ap_array['adminname']."--
-#	ISO Code: ".$ap_array['iso3166-2']."--
-#	Lat: ".$ap_array['lat']."--
-#	Long: ".$ap_array['long']."--\r\n\r\n";
+		#throw new ErrorException("Could not make WiFiDB PID folder. ($dbcore->pid_file_loc)");
+		echo "Could not create PID Folder at path: $dbcore->pid_file_loc \n";
+		exit(-4);
+	}
+}
+if(file_put_contents($dbcore->pid_file, $dbcore->This_is_me) === FALSE)
+{
+	echo "Could not write pid file ($dbcore->pid_file), that's not good... >:[\n";
+	exit(-5);
+}
 
-		if(($ap_array['countryname'] != '' || $ap_array['iso3166-2'] != 0) && $ap_array['lat'] != 'N 0.0000')
+$dbcore->verbosed("Have written the PID file at ".$dbcore->pid_file." (".$dbcore->This_is_me.")");
+
+echo "
+WiFiDB".$dbcore->ver_array['wifidb']."
+Codename: ".$dbcore->ver_array['codename']."
+ - {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2
+Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
+PID File: [ $dbcore->pid_file ]
+PID: [ $dbcore->This_is_me ]
+ Log Level is: ".$dbcore->log_level."\n";
+
+$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
+
+#Checking for Geoname Jobs
+$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
+$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$prepgj = $dbcore->sql->conn->prepare($sql);
+$prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
+$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
+$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
+$prepgj->execute();
+$dbcore->sql->checkError(__LINE__, __FILE__);
+
+if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
+{
+	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
+	unlink($dbcore->pid_file);
+	exit(-6);
+}
+else
+{
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Job Settings
+		$job = $prepgj->fetch(2);
+		$dbcore->job_interval = $job['interval'];
+		$job_id = $job['id'];
+
+		#Set Job to Running
+		$dbcore->SetStartJob($job_id);
+	}
+
+	While(1)
+	{
+		# Safely kill script if Daemon kill flag has been set
+		if($dbcore->checkDaemonKill())
 		{
-			echo $id.' - '.$ssid."\r\n Already updated.\r\n";
-			continue;
+			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
+			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
+			unlink($dbcore->pid_file);
+			echo "Daemon was told to kill itself\n";
+			exit(-7);
 		}
-		
-		$table = $ssid.'-'.$mac.'-'.$sectype.'-'.$radio.'-'.$chan.$gps_ext;
-		
-		echo $id.' - '.$ssid."\r\nRunning GeoFilter check....\r\n";
-		
-		$sql1 = "SELECT * FROM `$db_st`.`$table`";
-	#	echo $sql1."\r\n";
-		$result1 = mysql_query($sql1, $conn);
-		if(!$result1){$bad++;continue;}
-		switch($sectype)
+
+		#Start gathering Geonames
+		$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
+		echo $sql."\r\n";
+		$result = $dbcore->sql->conn->query($sql);
+		$dbcore->verbosed("Gathered Wtable data");
+		echo "Rows that need updating: ".$result->rowCount()."\r\n";
+		sleep(4);
+		while($ap = $result->fetch(1))
 		{
-			case 1:
-				$type = "#openStyleDead";
-				$auth = "Open";
-				$encry = "None";
-				break;
-			case 2:
-				$type = "#wepStyleDead";
-				$auth = "Open";
-				$encry = "WEP";
-				break;
-			case 3:
-				$type = "#secureStyleDead";
-				$auth = "WPA-Personal";
-				$encry = "TKIP-PSK";
-				break;
-		}
-		switch($radio)
-		{
-			case "a":
-				$radio="802.11a";
-				break;
-			case "b":
-				$radio="802.11b";
-				break;
-			case "g":
-				$radio="802.11g";
-				break;
-			case "n":
-				$radio="802.11n";
-				break;
-			default:
-				$radio="Unknown Radio";
-				break;
-		}
-		$zero = 0;
-		while($gps_table_first = mysql_fetch_array($result1))
-		{
-			$lat_exp = explode(" ", $gps_table_first['lat']);
-			if(@$lat_exp[1])
+			$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
+			$lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
+			$long = round($dbcore->convert->dm2dd($ap['long']), 1);
+			$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
+			$sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code` FROM `wifi`.`geonames` WHERE `latitude` LIKE '$lat%' AND `longitude` LIKE '$long%' LIMIT 1";
+			$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
+			$geo_res = $dbcore->sql->conn->query($sql);
+			$geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
+			if(!$geo_array['geonameid'])
+			{continue;}
+
+			$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
+			$admin1_array = array('id'=>'');
+			$admin2_array = array('id'=>'');
+			if($geo_array['admin1 code'])
 			{
-				$test = $lat_exp[1]+0;
+				$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
+				$admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
+
+				$sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
+				$admin1_res = $dbcore->sql->conn->query($sql);
+				$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
+			}
+			if(is_numeric($geo_array['admin2 code']))
+			{
+				$dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
+				$admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
+				$sql = "SELECT `id` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
+				$admin2_res = $dbcore->sql->conn->query($sql);
+				$admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
+			}
+
+			$sql = "UPDATE `wifi`.`wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
+			if($dbcore->sql->conn->query($sql))
+			{
+				$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
 			}else
 			{
-				$test = $lat_exp[0]+0;
+				$dbcore->verbosed("Failed to update AP's Geolocation [{$ap['id']}] ({$ap['ap_hash']})", -1);
+				var_dump($dbcore->sql->conn->errorInfo());
 			}
-			if($test == "0"){$zero = 1; $bad++; continue;}
-			
-			$lat  =& $database->convert_dm_dd($gps_table_first['lat']);
-			$long =& $database->convert_dm_dd($gps_table_first['long']);
-			$start1 = microtime(1);
-			$URL = "http://ws.geonames.org/countrySubdivision?lat=$lat&lng=$long";
-			while(!$geonames_org = @file($URL))
-			{
-				echo "Geonames.org seems to be down... sleeping for an hour, that seems to be how long they go down for. if this is your ISP having problems, stop the daemon.\r\n";
-				sleep(10);
-			}
-			$geo_site = implode("\r\n", $geonames_org);
-			$xml = $WDB_XML->xml2ary($geo_site);
-			if(@$xml['geonames']['_c']['countrySubdivision'])
-			{
-				if(@$xml['geonames']['_c']['countrySubdivision']['_c']['code'][1]['_v'] && !@is_int($xml['geonames']['_c']['countrySubdivision']['_c']['code'][1]['_v']))
-				{
-					$countryCode = addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['countryCode']['_v']);
-					$countryName = mysql_real_escape_string(addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['countryName']['_v']));
-					$adminCode = addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['adminCode1']['_v']);
-					$adminName = mysql_real_escape_string(addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['adminName1']['_v']));
-					$isoCode = addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['code'][1]['_v']);
-					$update = "UPDATE `$db`.`$wtable` SET `countrycode` = '$countryCode',
-							`countryname` = '$countryName',
-							`admincode` = '$adminCode',
-							`adminname` = '$adminName',
-							`iso3166-2` = '$isoCode',
-							`lat` = '$lat',
-							`long` = '$long'
-							 WHERE `$wtable`.`id` = '$id'  LIMIT 1";
-					if(mysql_query($update, $conn))
-					{
-						echo "Updated!\r\n";
-	#	Country Code: ".$xml['geonames']['_c']['countrySubdivision']['_c']['countryCode']['_v']."
-	#	County Name: ".$xml['geonames']['_c']['countrySubdivision']['_c']['countryName']['_v']."
-	#	Admin Code: ".$xml['geonames']['_c']['countrySubdivision']['_c']['adminCode1']['_v']."
-	#	Admin Name: ".$xml['geonames']['_c']['countrySubdivision']['_c']['adminName1']['_v']."
-	#	ISO Code: $isoCode
-	#	Lat: $lat
-	#	Long: $long\r\n\r\n";
-					}else
-					{
-						echo "There was an error inserting the APs Geoname data.\r\n";
-						mail_users("There was an error inserting the APs Geoname data. :-(\r\n".mysql_error($conn)."\r\n\r\n-WiFiDB Service", $subject, $type, 1); 
-					}
-				}else
-				{
-					$countryCode = addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['countryCode']['_v']);
-					$countryName = mysql_real_escape_string(addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['countryName']['_v']));
-					$adminCode = addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['adminCode1']['_v']);
-					$adminName = mysql_real_escape_string(addslashes($xml['geonames']['_c']['countrySubdivision']['_c']['adminName1']['_v']));
-					$isoCode = 0;
-					$update = "UPDATE `$db`.`$wtable` SET `countrycode` = '$countryCode',
-							`countryname` = '$countryName',
-							`admincode` = '$adminCode',
-							`adminname` = '$adminName',
-							`iso3166-2` = '$isoCode',
-							`lat` = '$lat',
-							`long` = '$long'
-							 WHERE `$wtable`.`id` = '$id'  LIMIT 1";
-					#	echo $update."\r\n";
-					if(mysql_query($update, $conn))
-					{
-						echo "Updated!\r\n";
-	#	Country Code: ".$xml['geonames']['_c']['countrySubdivision']['_c']['countryCode']['_v']."
-	#	County Name: ".$xml['geonames']['_c']['countrySubdivision']['_c']['countryName']['_v']."
-	#	Admin Code: ".$xml['geonames']['_c']['countrySubdivision']['_c']['adminCode1']['_v']."
-	#	Admin Name: ".$xml['geonames']['_c']['countrySubdivision']['_c']['adminName1']['_v']."
-	#	ISO Code: $isoCode
-	#	Lat: $lat
-	#	Long: $long\r\n\r\n";
-					}else
-					{
-						echo "There was an error inserting the APs Geoname data.\r\n";
-						mail_users("There was an error inserting the APs Geoname data. :-(\r\n".mysql_error($conn)."\r\n\r\n-WiFiDB Service", $subject, $type, 1); 
-					}
-				}
-			}else
-			{
-				echo "Failed to gather GeoNames data.\r\n";
-			#	mail_users("Failed to gather GeoNames data. [$id] $ssid \r\n:-(\r\n$URL\r\n\r\n-WiFiDB Service", $subject, $type, 1); 
-			}
-			$zero = 0;
-			$NN++;
-			
-			
-			$stop1 = microtime(1);
-			$total = $total + ($stop1  - $start1);
-			$avg = $total / $NN;
-		#	echo "Run : ".($stop1  - $start1)."\r\nTotal: $total\r\nAPS: $NN\r\nAPs / sec: $avg\r\n";
-			echo "##########################\r\n\r\n";
-			sleep(1);
+		}
+		
+		if(!$dbcore->ForceDaemonRun)
+		{
+			#Finished Job
+			$dbcore->verbosed("Finished - Id:".$job_id, 1);
+			#Set Next Run Job to Waiting
+			$dbcore->SetNextJob($job_id);
+			$dbcore->verbosed("Next Job Schedule Set for: ".$dbcore->daemon_name , 1);
+		}
+		
+		if($dbcore->daemonize)
+		{
+			$dbcore->verbosed("We have been told to become a daemon, will sleep for the defined time period of $dbcore->DaemonSleepTime seconds.", 1);
+			sleep($dbcore->DaemonSleepTime);
+		}
+		else
+		{
+			$dbcore->verbosed("not set to run as a daemon, exiting.");
+			$dbcore->return_message = -9;
 			break;
 		}
-		$total++;
-		if($zero == 1)
-		{
-			$zero == 0;
-			$no_gps++;
-			echo "No Valid GPS cant GeoFilter...\r\n";
-			continue;
-		}
-		$good++;
 	}
-	$stop = microtime(1);
-	echo "Finished generating location filter data.\r\nStart: $start\r\nStop: $stop\r\nTotal Run: ".($stop - $start)."\r\n";
-	mail_users("New Statistics have been ran, go check them out!\r\nLink: ".$UPATH."\r\nLogin and go to the admin panel\r\n-WiFiDB Service", $subject, $type); 
-	sleep(86400);
 }
-?>
+unlink($dbcore->pid_file);

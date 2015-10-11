@@ -1,5 +1,28 @@
 <?php
-	function max_string_len($My_Array)
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "");
+
+function max_string_len($My_Array)
 	{
 		$len = 0;
 		$keep_key = 0;
@@ -23,7 +46,7 @@
 	    $scope = false;
 	    $prefix = 'unique';
 	    $suffix = 'value';
-	 
+
 	    if($scope) $vals = $scope;
 	    else $vals = $GLOBALS;
 
@@ -55,14 +78,14 @@
 	    {
 	        $var = array($keyvar => $var, $keyname => $reference);
 	        $avar = &$var[$keyvar];
-	   
+
 	        $type = ucfirst(gettype($avar));
 	        if($type == "String") $type_color = "<span style='color:green'>";
 	        elseif($type == "Integer") $type_color = "<span style='color:red'>";
 	        elseif($type == "Double"){ $type_color = "<span style='color:#0099c5'>"; $type = "Float"; }
 	        elseif($type == "Boolean") $type_color = "<span style='color:#92008d'>";
 	        elseif($type == "NULL") $type_color = "<span style='color:black'>";
-	   
+
 	        if(is_array($avar))
 	        {
 	            $count = count($avar);
@@ -114,16 +137,16 @@
 		$yy=61;
 		$u=60;
 		$uu=61;
-		
+
 #		$bgc="255:255:255";
 		$bgc="000:000:000";
-		
+
 		$textc="255:255:255";
 #		$textc="000:000:000";
-		
+
 		$line1="255:000:000";
 		$line2="000:255:000";
-		
+
 		$text_color = explode(':', $textc);
 		$tr=$text_color[0];
 		$tg=$text_color[1];
@@ -138,14 +161,14 @@
 		$r2=$line2_color[0];
 		$g2=$line2_color[1];
 		$b2=$line2_color[2];
-		
+
 		#FIND OUT IF THE IMG NEEDS TO BE WIDER
-		
+
 		$count = count($aps);
 		$gps_count = count($gps);
-		
+
 		$Span = 20;
-		
+
 		$gps_div = 65;
 		$max_aps = max($aps);
 		if($type == "users")
@@ -160,62 +183,62 @@
 
 		$aps_scale = $max_aps/$aps_div;
 		$gps_scale = $max_gps/$gps_div;
-		
+
 		$gps__ = $gps_div/20;
 		$aps__ = $aps_div/20;
-		
+
 		$aps_value = $aps_scale/$aps__;
 		$gps_value = $gps_scale/$gps__;
-	
+
 		$gps_height = $max_gps/$gps_div;
 		$aps_height = $max_aps/$aps_div;
-		
+
 #	echo $aps_height."<BR>".$gps_height."<BR>";
-		
+
 		$max_height = max($gps_height, $aps_height);
-		
+
 		$longest_file = max_string_len($files);
 		$start_number = $longest_file*9;
-		
+
 		$max_height = $max_height+20;
 #		echo $max_height."<BR>";
-		
+
 		switch($type)
 		{
 			case "files":
 				if(900 < ($count*$Span))
 				{$wid = ($count*$Span)+90;}
 				else{$wid = 900;}
-				
+
 				if(1024 < $max_height)
 				{$Height = $max_height;}
 				else{$Height = 1024;}
 			break;
-			
+
 			case "users":
 				if(800 < ($count*$Span))
 				{$wid = ($count*$Span)+90;}
 				else{$wid = 800;}
-				
+
 				if(700 < $max_height)
 				{$Height = $max_height;}
 				else{$Height = 700;}
 			break;
 		}
-		
+
 		$_20_from_bottom	= $Height - 20;
-		
+
 		$start_of_lines_459	= $Height-$start_number;
 		$start_of_lines_460	= ($Height-$start_number) - 1;
-		
+
 #	echo "<BR>".$start_of_lines_459."<BR>".$start_of_lines_460;
-		
+
 		$img    = ImageCreateTrueColor($wid, $Height);
 		$bg     = imagecolorallocate($img, 0, 0, 0);
 		$tcolor = imagecolorallocate($img, 0, 0, 255);
 		$col1	= imagecolorallocate($img, 255, 0, 0);
 		$col2	= imagecolorallocate($img, 0, 255, 0);
-		
+
 		imagefill($img,0,0,$bg); #PUT HERE SO THAT THE TEXT DOESNT HAVE BLACK FILLINGS (eww)
 		$grid_bottom_y = $max_height-$start_number;
 		$grid_bottom_x = $wid-15;
@@ -234,10 +257,10 @@
 			$II=$II+5;
 		}
 		#end signal strenth numbers--
-		
+
 		$grid   = imagecolorallocate($img,255,255,255);
 		imagesetstyle($img, array($bg, $grid));
-		
+
 		imagesetstyle($img,array($bg,$grid));
 		grid($img, $grid_bottom_x, $start_of_lines_460-20, 20, $grid);
 
@@ -253,7 +276,7 @@
 			imagefilledrectangle($img, 70,70,90,90, $col2);
 			imagerectangle($img, 70,70,90,90, $grid);
 			imagestring($img, 4, 95, 70, "<- Number of GPS points", $grid);
-			
+
 			//AP color box
 			imagefilledrectangle($img, 70,90,90,110, $col1);
 			imagerectangle($img, 70,90,90,110, $grid);
@@ -273,7 +296,7 @@
 		{
 #			if($nn == $count){continue;}
 	#		echo $ap."<BR>".$key."<BR>";
-			
+
 			if($type == "users")
 			{
 				if($aps[$key+1]==0 && $aps[$key+2]==0)
@@ -299,7 +322,7 @@
 				if((@$aps[$key+1]==0 && @$aps[$key+2]==0) && (@$gps[$key+1]==0 && @$gps[$key+2]==0) )
 				{
 					$aps[$key+1]=$aps[$key];
-					
+
 					$y__ = $y;
 					$u__ = $u;
 					$yy__ = $yy;
@@ -315,14 +338,14 @@
 				imageline($img, $u ,$start_of_lines_460-($ap/$aps_div)-20, $u__ ,$start_of_lines_460-($aps[$key+1]/$aps_div)-20 ,$col1);
 				imageline($img, $yy ,$start_of_lines_459-($ap/$aps_div)-20, $yy__ ,$start_of_lines_459-($aps[$key+1]/$aps_div)-20 ,$col1);
 				imageline($img, $uu ,$start_of_lines_460-($ap/$aps_div)-20, $uu__ ,$start_of_lines_460-($aps[$key+1]/$aps_div)-20 ,$col1);
-			
+
 				imageline($img, $y ,$start_of_lines_459-($gps[$key]/$gps_div)-20, $y__ ,$start_of_lines_459-($gps[$key+1]/$gps_div)-20 ,$col2);
 				imageline($img, $u ,$start_of_lines_460-($gps[$key]/$gps_div)-20, $u__ ,$start_of_lines_460-($gps[$key+1]/$gps_div)-20 ,$col2);
 				imageline($img, $yy ,$start_of_lines_459-($gps[$key]/$gps_div)-20, $yy__ ,$start_of_lines_459-($gps[$key+1]/$gps_div)-20 ,$col2);
 				imageline($img, $uu ,$start_of_lines_460-($gps[$key]/$gps_div)-20, $uu__ ,$start_of_lines_460-($gps[$key+1]/$gps_div)-20 ,$col2);
 			}
 			imagestringup($img, 4, $y, $_20_from_bottom, $files[$n], $grid);
-			
+
 			$y=$y+$Span;
 			$yy=$yy+$Span;
 			$u=$u+$Span;
@@ -331,7 +354,7 @@
 			$nn++;
 			$count--;
 		}
-		
+
 		$name='../out/stats/stats_'.$title.'.png';
 		ImagePNG($img, $name);
 		ImageDestroy($img);
@@ -340,13 +363,9 @@
 
 error_reporting(E_ALL|E_STRICT);
 
-#include('../lib/database.inc.php');
-include('../lib/config.inc.php');
-#include('../lib/graph.inc.php');
-
-#	pageheader("Statistics for WiFiDB");
-#	$database = new database();
-#	$graph = new graph();
+$switches = array('screen'=>"HTML");
+include('../lib/init.inc.php');
+#include('../lib/graphs.inc.php');
 
 $aps = array();
 $gps = array();
@@ -365,7 +384,7 @@ if($total_rows != 0)
 	}
 #	dump($filenames);
 #	dump($data);
-	
+
 	stat_graph($title="Untitled", $aps, $gps, $filenames, $type="files");
 }else
 {
@@ -410,7 +429,7 @@ if($total_rows != 0)
 		if($N != -1 ){$ap_s[$N] = $num_pts;}
 	}
 	dump($users);
-	
+
 	$blank = array();
 #	$ap_s = array( 0=>2000,1=>1200,2=>2500,3=>3200,4=>1200,5=>500,6=>1000);
 	dump($ap_s);

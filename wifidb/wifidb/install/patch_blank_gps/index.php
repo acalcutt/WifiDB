@@ -1,4 +1,22 @@
 <?php
+#Database.inc.php, holds the database interactive functions.
+#Copyright (C) 2011 Phil Ferland
+#
+#This program is free software; you can redistribute it and/or modify it under the terms
+#of the GNU General Public License as published by the Free Software Foundation; either
+#version 2 of the License, or (at your option) any later version.
+#
+#This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+#without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#See the GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License along with this program;
+#if not, write to the
+#
+#   Free Software Foundation, Inc.,
+#   59 Temple Place, Suite 330,
+#   Boston, MA 02111-1307 USA
+
 include('../../lib/database.inc.php');
 pageheader("Patch (Blank GPS) Page");
 ?>
@@ -6,13 +24,13 @@ pageheader("Patch (Blank GPS) Page");
   <h2>WiFiDB Settings for Patching Blank GPS</h2>
   <h4>Please Read <a target="_blank" href="notes.html">these notes</a> before Upgrading/fixing the Wireless Database</h4>
 <?php
-$gd = gd_info(); 
+$gd = gd_info();
 if(is_null($gd["GD Version"]))
 {
 	echo "<h4><font color=\"Forest Green\">You Do Not Have GD or GD2 installed, please install this or you will not beable to use the graphing feature!</font></h4>";
 }
 else
-{ 
+{
 	echo "<h4><font color=#00ff00>GD Version: ".$gd['GD Version'].", is installed</font></h4>";
 }
 ?>

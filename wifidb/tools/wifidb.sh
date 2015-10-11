@@ -1,6 +1,6 @@
 #!/bin/bash
 # Start/stop WiFiDB server instance
-# WiFiDB v0.16 Alpha 3.
+# WiFiDB v0.30 Build 1.
 #
 # create as: /etc/init.d/wifidb
 # to activate it, run: chkconfig -add wifidb
@@ -21,10 +21,10 @@ RETVAL=0
 
 # SCRIPT DEFAULT SETTINGS
 prog="WiFiDBd"
-wifidbpath="/CLI"
-logpath="/var/log/wifidb"
+wifidbpath="/opt/wifidb/tools"
+logpath="/var/log/wifidb/wifidbd_console.log"
 wdbpid="/var/run/wifidbd.pid"
-lockfile="/var/lock/WiFiDB"
+lockfile="/var/lock/wifidb.loc"
 
 start() {
 	echo $"Starting $prog: "

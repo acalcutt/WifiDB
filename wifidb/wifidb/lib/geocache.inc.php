@@ -1,13 +1,42 @@
 <?php
+/*
+Database.inc.php, holds the database interactive functions.
+Copyright (C) 2011 Phil Ferland
+
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+ou should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
 
 class geocache
 {
+    function __construct() {
+        $this->ver_array['geocache'] = array(
+                                                "last_edit" =>  "2013-Jan-18",
+                                                "RemoveSharedWPT"   =>  "1.0",
+                                                "RemoveWPT" =>  "1.0",
+                                                "ShareWPT"  =>  "1.0",
+                                                "UpdateWPT" =>  "1.0",
+                                                "FetchWPT"  =>  "1.0"
+                                            );
+    }
 	#############################
 	#	Share Waypoint			#
 	#############################
-	
+
 	function share_wpt($id)
-	{	
+	{
 		global $cachename;
 		include_once($GLOBALS['half_path'].'/lib/security.inc.php');
 		$sec = new security();
@@ -23,7 +52,7 @@ class geocache
 			$select = "SELECT * FROM `$db`.`$User_cache` WHERE `id` = '$id'";
 			$return = mysql_query($select, $conn);
 			$pri_wpt = mysql_fetch_array($return);
-			
+
 			$author = $pri_wpt['author'];
 			$shared_by = $User;
 			$name = addslashes($pri_wpt['name']);
@@ -83,23 +112,23 @@ class geocache
 		global $cachename;
 		include_once($GLOBALS['half_path'].'/lib/security.inc.php');
 		$sec = new security();
-		
+
 		$id+0;
 		$db = $GLOBALS['db'];
 		$conn = $GLOBALS['conn'];
 		$share_cache = $GLOBALS['share_cache'];
-		
+
 		$u_date = date("Y-m-d G:i:s");
 		$User = $sec->login_check();
 	#	echo $User." <-----";
 		if($User)
 		{
 			$User_cache = "waypoints_".$User;
-			
+
 			$select = "SELECT * FROM `$db`.`$User_cache` WHERE `id` = '$id'";
 			$return = mysql_query($select, $conn);
 			$pri_wpt = mysql_fetch_array($return);
-			
+
 			$cachename = $pri_wpt['name'];
 			$remove = "DELETE FROM `$db`.`$share_cache` WHERE `$share_cache`.`pvt_id` = '$id' LIMIT 1";
 			if(mysql_query($remove, $conn))
@@ -126,11 +155,11 @@ class geocache
 	{
 		include_once($GLOBALS['half_path'].'/lib/security.inc.php');
 		$sec = new security();
-		
+
 		$id+0;
 		$db = $GLOBALS['db'];
 		$conn = $GLOBALS['conn'];
-		
+
 		$User = $sec->login_check();
 	#	echo $User." <-----";
 		if($User)
@@ -149,12 +178,12 @@ class geocache
 			return "login";
 		}
 	}
-	
+
 	function update_wpt($id = 0, $author = '', $name = '', $gcid = '', $notes = '', $cat = '', $type = '', $terain = '', $diff = '' , $lat = '', $long = '', $link = '')
 	{
 		include_once($GLOBALS['half_path'].'/lib/security.inc.php');
 		$sec = new security();
-		
+
 		$db = $GLOBALS['db'];
 		$conn = $GLOBALS['conn'];
 		$share_cache = $GLOBALS['share_cache'];
@@ -197,15 +226,15 @@ class geocache
 			return "login";
 		}
 	}
-	
 
-	
-	
-	
+
+
+
+
 	#####################################
 	#		Waypoint Fetch				#
 	#####################################
-	
+
 	function wptfetch($id=0, $public = 1)
 	{
 		$apID = $id;
@@ -253,7 +282,7 @@ class geocache
 					mapTypeId: google.maps.MapTypeId.HYBRID
 				};
 				var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
-				
+
 				var image = '../img/cache.png';
 				var latlng = new google.maps.LatLng(<?php echo $lat.', '.$long; ?>);
 				var cachemarker = new google.maps.Marker({
