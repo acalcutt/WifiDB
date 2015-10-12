@@ -44,7 +44,7 @@ class export extends dbcore
 		);
 		$this->ver_array['export']  =   array(
 			"last_edit"			 =>  "2015-10-11",
-			"ExportFullKMZ"		  =>  "1.0",
+			"ExportDaemonKMZ"		  =>  "1.0",
 			"ExportSingleAP"		=>  "1.0",
 			"ExportCurrentAP"	=>  "1.0",
 			"ExportApSignal3d"	=>  "1.0",			
@@ -65,41 +65,8 @@ class export extends dbcore
 	/*
 	 * Export to Google KML File
 	 */
-	public function ExportFullKMZ($kmz_filepath, $date = NULL, $type = "full", $only_new = 0, $new_icons = 0)
+	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0)
 	{
-	
-		#Set Date if it was not set
-		if($date === NULL)
-		{
-			$date = date($this->date_format);
-		}
-		
-		#Set if APs are Labeled or not
-		if($this->named)
-		{
-			$this->verbosed("Starting Export of Labeled ".$type." KML.");
-			$labeled = "_label";
-		}
-		else
-		{
-			$this->verbosed("Starting Export of Non-Labeled ".$type."  KML.");
-			$labeled = "";
-		}
-
-		#Create directory to store kmz using current date
-		$daily_folder = $this->PATH.'out/daemon/'.$date;
-		if(!@file_exists($daily_folder))
-		{
-			$this->verbosed("Need to make a daily export folder...", 1);
-			if(!@mkdir($daily_folder))
-			{
-				$this->verbosed("Error making new daily export folder...", -1);
-			}
-		}else
-		{
-			if(file_exists($daily_folder."/".$type."_db".$labeled.".kml") && file_exists($daily_folder."/".$type."_db".$labeled.".kmz")){$this->verbosed($type." DB Export for (".$date.") already exists."); return -1;}
-		}
-
 		$this->verbosed("Compiling Data for Export.");
 
 		if($type == "full")
@@ -117,7 +84,7 @@ class export extends dbcore
 			$datestamp = $date_fetch['date'];
 			$datestamp_split = explode(" ", $datestamp);
 			$latest_date = $datestamp_split[0];
-			$latest_date = (empty($latest_date)) ? $date : $latest_date;
+			$latest_date = (empty($latest_date)) ? date($this->date_format) : $latest_date;
 			
 			#Create Queries
 			$date_search = $latest_date."%";
@@ -155,7 +122,7 @@ class export extends dbcore
 					$list_results = $this->createKML->createKMLstructure($title, $list_results);
 
 					#Add list kml into final kmz
-					$list_kml_name = $username."_".$title.$labeled.".kml";
+					if($this->named){$list_kml_name = $username."_".$title."_label.kml";}else{$list_kml_name = $username."_".$title.".kml";}
 					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
 					
 					#Create Network Link to this kml for the final doc.kml
@@ -188,18 +155,18 @@ class export extends dbcore
 			$this->verbosed("KMZ created at ".$kmz_filepath);
 			chmod($kmz_filepath, 0664);
 			###
-			$link = $this->daemon_out.$type.'_db'.$labeled.'.kmz';
+			$link = $this->daemon_out.basename($kmz_filepath);
 			$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
 			unlink($link);
 			symlink($kmz_filepath, $link);
 			chmod($link, 0664);
+			Return true;
 		}
 		else
 		{
 			$this->verbosed("KMZ file does not exist :/ ");
+			Return false;
 		}
-
-		return $daily_folder;
 	}
 	
 	public function ExportSingleAp($id, $named=0, $new_icons=0)
@@ -664,6 +631,14 @@ class export extends dbcore
 	{
 		$date = date($this->date_format);
 		$daily_folder = $this->PATH.'out/daemon/'.$date;
+		if(!@file_exists($daily_folder))
+		{
+			$this->verbosed("Need to make a daily export folder...", 1);
+			if(!@mkdir($daily_folder))
+			{
+				$this->verbosed("Error making new daily export folder...", -1);
+			}
+		}
 		
 		#Generate Full KML if it doesn't already exist
 		$this->named = 0;
@@ -671,7 +646,7 @@ class export extends dbcore
 		if(!file_exists($kmz_filepath))
 		{
 			$this->verbosed("Generating Full DB KML");
-			$this->ExportFullKMZ($kmz_filepath, $date, "full" ,1 ,0);
+			$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
 		}
 		
 		#Generate Full Labeled KML if it doesn't already exist
@@ -680,18 +655,18 @@ class export extends dbcore
 		if(!file_exists($kmz_filepath))
 		{
 			$this->verbosed("Generating Full DB Labeled KML");
-			$this->ExportFullKMZ($kmz_filepath, $date, "full" ,1 ,0);
+			$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
 		}
 		
 		#Generate Daily KML
 		$this->named = 0;
 		$kmz_filepath = $daily_folder."/daily_db.kmz";
-		$this->ExportFullKMZ($kmz_filepath, $date, "daily" ,0 ,1);
+		$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
 		
 		#Generate Daily Labeled KML
 		$this->named = 1;
 		$kmz_filepath = $daily_folder."/daily_db_label.kmz";
-		$this->ExportFullKMZ($kmz_filepath, $date, "daily" ,0 ,1);
+		$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
 
 		#Generate History KML
 		if($this->HistoryKMLLink() === -1)
