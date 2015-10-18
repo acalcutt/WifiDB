@@ -81,13 +81,12 @@ switch($func)
 			$fetch = $prep->fetch();
 
 			$ListKML = $dbcore->export->UserList($fetch['points']);
-			$KML_data = $ListKML['region'].$ListKML['data'];
-			if($KML_data == "")
+			if($ListKML['data'] !== "")
 			{
-				$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
-			}
-			else
-			{
+				$final_box = $this->FindBox($ListKML['box']);
+				$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+				$KML_data = $KML_region.$ListKML['data'];
+				
 				$KML_data = $dbcore->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 
@@ -104,7 +103,11 @@ switch($func)
 				else
 				{
 					$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
-				}			
+				}	
+			}
+			else
+			{
+				$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
 			}
 
 			$dbcore->smarty->assign('results', $results);

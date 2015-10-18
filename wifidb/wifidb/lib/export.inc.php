@@ -52,8 +52,8 @@ class export extends dbcore
 			"UserAll"		=>  "3.0",
 			"UserList"		=>  "3.0",
 			"FindBox"	=>  "1.0",
-			"distance"	=>  "1.0",
-			"get_point"	=>  "1.0",
+			"distance"	=>  "2.0",
+			"get_point"	=>  "2.0",
 			"CreateBoundariesKML"	=>  "1.0",
 			"ExportGPXAll"	=>  "1.0",			
 			"GenerateDaemonKMLData" =>  "1.1",
@@ -114,9 +114,12 @@ class export extends dbcore
 				$id = $import['id'];
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
 				$ListKML = $this->UserList($import['points'], $this->named, $only_new, $new_icons);
-				$list_results = $ListKML['region'].$ListKML['data'];
-				if($list_results !== "")
+				if($ListKML['data'] !== "")
 				{
+					$final_box = $this->FindBox($ListKML['box']);
+					$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+					$list_results = $KML_region.$ListKML['data'];
+
 					#Create List KML Structure
 					$list_results = $this->createKML->createFolder($title, $list_results, 0);
 					$list_results = $this->createKML->createKMLstructure($title, $list_results);
@@ -124,15 +127,16 @@ class export extends dbcore
 					#Add list kml into final kmz
 					if($this->named){$list_kml_name = $username."_".$title."_label.kml";}else{$list_kml_name = $username."_".$title.".kml";}
 					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
+					unset($list_results);
 					
 					#Create Network Link to this kml for the final doc.kml
-					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $ListKML['region']);
+					$Netlink_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $Netlink_region);
 
 					#Increment variables (duh)
 					++$user_files;
 					++$lists;
 				}
-				unset($list_results);
 			}
 			#If this user had results, create a folder with their data
 			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
@@ -351,17 +355,9 @@ class export extends dbcore
 			}
 		}
 		
-		if($Import_KML_Data != "")
-		{
-			$KML_data = $Import_KML_Data;
-			$final_box = $this->FindBox($box_latlon);
-			list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-			$KML_region = $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
-		}
-		
 		$ret_data = array(
-		"data" => $KML_data,
-		"region" => $KML_region,
+		"data" => $Import_KML_Data,
+		"box" => $box_latlon,
 		);
 		
 		return $ret_data;
@@ -375,122 +371,144 @@ class export extends dbcore
 		$West = NULL;
 		foreach($points as $elements)
 		{
-			#var_dump($elements);
-			if(@$elements['long'] == '' || @$elements['lat'] == '')
-			{
-				continue;
-			}
+			$lat = $this->convert->dm2dd($elements['lat']);
+			$long = $this->convert->dm2dd($elements['long']);
+			
 			if($North == NULL)
 			{
-				$North = $elements['lat'];
+				$North = $lat;
 			}
 			if($South == NULL)
 			{
-				$South = $elements['lat'];
+				$South = $lat;
 			}
 
 			if($East == NULL)
 			{
-				$East = $elements['long'];
+				$East = $long;
 			}
 			if($West == NULL)
 			{
-				$West = $elements['long'];
+				$West = $long;
 			}
 
-			if((float)$North < (float)$elements['lat'])
+			if((float)$North < (float)$lat)
 			{
-				$North = $elements['lat'];
+				$North = $lat;
 			}
-			if((float)$South > (float)$elements['lat'])
+			if((float)$South > (float)$lat)
 			{
-				$South = $elements['lat'];
+				$South = $lat;
 			}
-			if((float)$East < (float)$elements['long'])
+			if((float)$East < (float)$long)
 			{
-				$East = $elements['long'];
+				$East = $long;
 			}
-			if((float)$West > (float)$elements['long'])
+			if((float)$West > (float)$long)
 			{
-				$West = $elements['long'];
+				$West = $long;
 			}
 		}
-		#var_dump(array( $North, $South, $East, $West));
-		return array( $North, $South, $East, $West);
+
+		if(($this->distance($North, $East, $South, $East) <= 2) && ($this->distance($North, $East, $North, $West) <= 2))
+		{
+			$minLodPixels = 8;
+			$RegionSize = 2;
+			list($center_lat, $unused) = $this->get_midpoint($North, $East, $South, $East);
+			list($unused, $center_lon) = $this->get_midpoint($North, $East, $North, $West);
+			list($North, $unused) = $this->get_point($center_lat, $center_lon, 0, $RegionSize/2);
+			list($South, $unused) = $this->get_point($center_lat, $center_lon, 180, $RegionSize/2);
+			list($unused, $West) = $this->get_point($center_lat, $center_lon, 270, $RegionSize/2);
+			list($unused, $East) = $this->get_point($center_lat, $center_lon, 90, $RegionSize/2);
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 4) && ($this->distance($North, $East, $North, $West) <= 4))
+		{
+			$minLodPixels = 16;
+			$RegionSize = 4;
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 8) && ($this->distance($North, $East, $North, $West) <= 8))
+		{
+			$minLodPixels = 32;
+			#$RegionSize = 8;
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 16) && ($this->distance($North, $East, $North, $West) <= 16))
+		{
+			$minLodPixels = 64;
+			#$RegionSize = 16;
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 32) && ($this->distance($North, $East, $North, $West) <= 32))
+		{
+			$minLodPixels = 128;
+			#$RegionSize = 32;
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 64) && ($this->distance($North, $East, $North, $West) <= 64))
+		{
+			$minLodPixels = 256;
+			#$RegionSize = 64;
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 128) && ($this->distance($North, $East, $North, $West) <= 128))
+		{
+			$minLodPixels = 512;
+			#$RegionSize = 128;
+		}
+		elseif(($this->distance($North, $East, $South, $East) <= 256) && ($this->distance($North, $East, $North, $West) <= 256))
+		{
+			$minLodPixels = 1024;
+			#$RegionSize = 256;
+		}
+		else
+		{
+			$minLodPixels = 2048;
+			#$RegionSize = 512;
+		}
+		
+		$maxLodPixels = -1;
+		
+		return array( $North, $South, $East, $West, $minLodPixels, $maxLodPixels);
 	}
 
-	function distance($lat1, $lon1, $lat2, $lon2, $unit)
+	function distance($lat1, $lon1, $lat2, $lon2)
 	{
-		$theta = $lon1 - $lon2;
-		$dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
-		$dist = acos($dist);
-		$dist = rad2deg($dist);
-		$miles = $dist * 60 * 1.1515;
-		$unit = strtoupper($unit);
-		if ($unit == "K") {
-			$ret = ($miles * 1.609344);
-		}
-		elseif ($unit == "N")
-		{
-			$ret = ($miles * 0.8684);
-		}
-		else
-		{
-			$ret = $miles;
-		}
+		$radius = 6371;#radius in kilometers
+		$rad1 = deg2rad($lat1);
+		$rad2 = deg2rad($lat2);
+		$del1 =  deg2rad($lat2-$lat1);
+		$del2 =  deg2rad($lon2-$lon1);
+		$a = sin($del1/2) * sin($del1/2) + cos($rad1) * cos($rad2) * sin($del2/2) * sin($del2/2);
+		$c = 2 * atan2(sqrt($a), sqrt(1-$a));
+		$d = $radius * $c;
 		
-		if($ret > 400)
-		{
-			$distance_calc = 3000;
-			$minLodPix = 64;
-		}
-		elseif($ret > 300)
-		{
-			$distance_calc = 1000;
-			$minLodPix = 128;
-		}
-		elseif($ret > 200)
-		{
-			$distance_calc = 1000;
-			$minLodPix = 256;
-		}
-		elseif($ret > 100)
-		{
-			$distance_calc = 1000;
-			$minLodPix = 512;
-		}
-		else
-		{
-			$distance_calc = 1000;
-			$minLodPix = 1024;
-		}
+		Return $d;
+	}
+
+	function get_point($lat1, $lon1, $bearing, $distance)
+	{
+		$radius = 6371;#radius in kilometers
+		$rlat1 = deg2rad($lat1); 
+		$rlon1 = deg2rad($lon1);
+		$radial = deg2rad($bearing);
+		$lat_rad = asin(sin($rlat1) * cos($distance/$radius) + cos($rlat1) * sin($distance/$radius) * cos($radial));
+		$dlon_rad = atan(sin($radial) * sin($distance/$radius) * cos($rlat1)) / (cos($distance/$radius) - sin($rlat1) * sin($lat_rad));
+		$lon_rad = fmod(($rlon1 + $dlon_rad + M_PI), 2 * M_PI) - M_PI;
 		
-		return array($distance_calc, $minLodPix, $ret);
+		$coord[0] = rad2deg($lat_rad);
+		$coord[1] = rad2deg($lon_rad);	
+		return $coord;
 	}
 	
-	function get_point($latitude, $longitude, $bearing, $distance, $unit = 'm')
+	function get_midpoint($lat1, $lon1, $lat2, $lon2)
 	{
-		//	Radius of earth.  3959 miles or 6371 kilometers.
-		//  Pass in coordinates in Decimal form.  Example: -41.5786214
-		if ($unit == 'm')
-		{
-			$radius = 3959;
-		}
-		elseif ($unit == 'km')
-		{
-			$radius = 6371;
-		}
-
-		//	New latitude in degrees.
-		$new_latitude = rad2deg(asin(sin(deg2rad($latitude)) * cos($distance / $radius) + cos(deg2rad($latitude)) * sin($distance / $radius) * cos(deg2rad($bearing))));
-				
-		//	New longitude in degrees.
-		$new_longitude = rad2deg(deg2rad($longitude) + atan2(sin(deg2rad($bearing)) * sin($distance / $radius) * cos(deg2rad($latitude)), cos($distance / $radius) - sin(deg2rad($latitude)) * sin(deg2rad($new_latitude))));
-
-		//  Assign new latitude and longitude to an array to be returned to the caller.
-		$coord['latitude'] = $new_latitude;
-		$coord['longitude'] = $new_longitude;
-
+		$rlat1 = deg2rad($lat1);
+		$rlat2 = deg2rad($lat2);
+		$rlon1 = deg2rad($lon1);
+		$rlon2 = deg2rad($lon2);
+		$Bx = cos($rlat2) * cos($rlon2-$rlon1);
+		$By = cos($rlat2) * sin($rlon2-$rlon1);
+		$rlat3 = atan2(sin($rlat1) + sin($rlat2),sqrt((cos($rlat1)+$Bx)*(cos($rlat1)+$Bx) + $By*$By));
+		$rlon3 = $rlon1 + atan2($By, cos($rlat1) + $Bx);
+		
+		$coord[0] = rad2deg($rlat3);
+		$coord[1] = rad2deg($rlon3);	
 		return $coord;
 	}
 

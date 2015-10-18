@@ -27,12 +27,20 @@ class createKML
 		$this->convert	  =   $convertObj;
 		$this->kml_out	  =   $kml_out;
 		$this->daemon_out   =   $daemon_out;
-		$this->open_path	=   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open.png";
-		$this->wep_path	 =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep.png";
-		$this->secure_path  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure.png";
-		$this->open_path_dead	=   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/open_dead.png";
-		$this->wep_path_dead	 =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure-wep_dead.png";
-		$this->secure_path_dead  =   "https://raw.github.com/RIEI/Vistumbler/master/Vistumbler/Images/secure_dead.png";
+		$this->open_path	=   $URL_PATH."img/kml/ap/open.png";
+		$this->wep_path	 =   $URL_PATH."img/kml/ap/secure-wep.png";
+		$this->secure_path  =   $URL_PATH."img/kml/ap/secure.png";
+		$this->open_path_dead	=   $URL_PATH."img/kml/ap/open_dead.png";
+		$this->wep_path_dead	 =   $URL_PATH."img/kml/ap/secure-wep_dead.png";
+		$this->secure_path_dead  =   $URL_PATH."img/kml/ap/secure_dead.png";
+		$this->minlodpixels_32	=   $URL_PATH."img/kml/minlodpixels/32.png";
+		$this->minlodpixels_64	 =   $URL_PATH."img/kml/minlodpixels/64.png";
+		$this->minlodpixels_128  =   $URL_PATH."img/kml/minlodpixels/128.png";
+		$this->minlodpixels_512	=   $URL_PATH."img/kml/minlodpixels/512.png";
+		$this->minlodpixels_1024	 =   $URL_PATH."img/kml/minlodpixels/1024.png";
+		$this->minlodpixels_2048  =   $URL_PATH."img/kml/minlodpixels/2048.png";
+		$this->minlodpixels_4096  =   $URL_PATH."img/kml/minlodpixels/4096.png";
+		$this->minlodpixels_8192 =   $URL_PATH."img/kml/minlodpixels/8192.png";
 		$this->SigMapTimeBeforeMarkedDead = $tilldead;
 		$this->PolyStyle = '
 		<Style id="default">
@@ -220,16 +228,8 @@ class createKML
 		Return $KML_DATA;
 	}
 
-	public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0)
+	public function createFolder($name = "", $data = "", $open = 0, $radiofolder = 0, $visible = 1)
 	{
-		if($data === NULL)
-		{
-			throw new ErrorException("data value for createKML::addFolder is empty.");
-		}
-		if(!is_int($open))
-		{
-			throw new ErrorException("Open value for createKML::addFolder is not an integer.");
-		}
 		if($name != "")
 		{
 			$name = "
@@ -244,7 +244,18 @@ class createKML
 		   $radiofolder = "
 			<styleUrl>#check</styleUrl>";
 		}
-		$tmp = "<Folder>$radiofolder$name
+		if($visible == 1)
+		{
+			$visible = "
+			<visibility>1</visibility>";
+		}
+		else
+		{
+			$visible = "
+			<visibility>0</visibility>";
+		}
+		
+		$tmp = "<Folder>$visible$radiofolder$name
 			<open>$open</open>
 			$data
 		</Folder>";
@@ -441,7 +452,7 @@ class createKML
 		return $ret;
 	}
 
-	public function PlotRegionBox($box, $distance, $minLodPix, $idName = '')
+	public function PlotRegionBox($box, $idName = '')
 	{
 		#var_dump($box, $this->convert->dm2dd($box[0]));
 		if($idName != "")
@@ -454,24 +465,241 @@ class createKML
 		}
 		$data = '<Region '.$idLabel.'>
 				<LatLonAltBox>
-					<north>'.$this->convert->dm2dd($box[0]).'</north>
-					<south>'.$this->convert->dm2dd($box[1]).'</south>
-					<east>'.$this->convert->dm2dd($box[2]).'</east>
-					<west>'.$this->convert->dm2dd($box[3]).'</west>
-					<minAltitude>0</minAltitude>
-					<maxAltitude>'.$distance.'</maxAltitude>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
 				</LatLonAltBox>
 				<Lod>
-					<minLodPixels>'.$minLodPix.'</minLodPixels>
-					<maxLodPixels>-1</maxLodPixels>
+					<minLodPixels>'.$box[4].'</minLodPixels>
+					<maxLodPixels>'.$box[5].'</maxLodPixels>
 					<minFadeExtent>0</minFadeExtent>
 					<maxFadeExtent>0</maxFadeExtent>
 				</Lod>
-			</Region>
-			';
+			</Region>';
+  
 		#var_dump($data);
 		return $data;
 	}
+	
+	public function minLodPixels($box, $visible = 0)
+	{
+		$data = '  <Folder>
+			<visibility>'.$visible.'</visibility>
+			<name>minLodPixels</name>
+			<open>1</open>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>32</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>32</minLodPixels>
+				  <maxLodPixels>64</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_32.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>64</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>64</minLodPixels>
+				  <maxLodPixels>128</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_64.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>128</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>128</minLodPixels>
+				  <maxLodPixels>512</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_128.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>512</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>512</minLodPixels>
+				  <maxLodPixels>1024</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_512.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>1024</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>1024</minLodPixels>
+				  <maxLodPixels>2048</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_1024.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>2048</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>2048</minLodPixels>
+				  <maxLodPixels>4096</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_2048.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>4096</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>4096</minLodPixels>
+				  <maxLodPixels>8192</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_4096.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+			<ScreenOverlay>
+			  <visibility>0</visibility>
+			  <name>8192</name>
+			  <Region>
+				<LatLonAltBox>
+					<north>'.$box[0].'</north>
+					<south>'.$box[1].'</south>
+					<east>'.$box[2].'</east>
+					<west>'.$box[3].'</west>
+				</LatLonAltBox>
+				<Lod>
+				  <minLodPixels>8192</minLodPixels>
+				  <maxLodPixels>-1</maxLodPixels>
+				</Lod>
+			  </Region>
+			  <Icon>
+				<href>'.$this->minlodpixels_8192.'</href>
+			  </Icon>
+			  <overlayXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <screenXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <rotationXY x="0" y="0" xunits="fraction" yunits="fraction"/>
+			  <size x="0" y="1" xunits="fraction" yunits="fraction"/>
+			</ScreenOverlay>
+
+		  </Folder>
+		  <Placemark>
+			<visibility>0</visibility>
+			<name>BBOX</name>
+			<LineString>
+			  <tessellate>1</tessellate>
+			  <coordinates>
+				'.$box[3].','.$box[0].'
+				'.$box[2].','.$box[0].'
+				'.$box[2].','.$box[1].'
+				'.$box[3].','.$box[1].'
+				'.$box[3].','.$box[0].'
+			  </coordinates>
+			</LineString>
+		  </Placemark>';
+		  
+		return $data;
+	}
+	
 
 	public function PlotBoundary($bounds = array())
 	{

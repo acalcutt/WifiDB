@@ -17,43 +17,44 @@ if((int)@$_REQUEST['all'] === 1){$all = 1;}else{$all = 0;}#Show both old and new
 if((int)@$_REQUEST['new_icons'] === 1){$new_icons = 1;}else{$new_icons = 0;}#use new AP icons instead of old AP icons in kml file. by default old icons are shown.
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}#output xml/kml insteand of creating a kmz. by default a kmz is created.
+if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra debug stuff
 $func=$_REQUEST['func'];
 switch($func)
 {
 		case "exp_combined_netlink":
-			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest_netlink', "Newest AP", 1, 0, "onChange", 86400, 1);
-			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily_netlink', "Daily APs", 1, 0, "onChange", 86400, 1);
-			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all_netlink', "All APs", 0, 0, "onChange", 86400, 1);
+			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest_netlink&#x26;debug='.$debug, "Newest AP", 1, 0, "onChange", 86400, 1);
+			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily_netlink&#x26;debug='.$debug, "Daily APs", 1, 0, "onChange", 86400, 1);
+			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all_netlink&#x26;debug='.$debug, "All APs", 0, 0, "onChange", 86400, 1);
 			$results = $dbcore->createKML->createKMLstructure("Combined Network Link", $results);
 			$file_name = "Combined_NetworkLink.kmz";
 			break;
 			
 		case "exp_all_netlink":
-			$Full = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all&#x26;labeled=0&#x26;all=0&#x26;new_icons=0', "All Exports (No Label)", 1, 0, "onInterval", 86400, 1);
-			$Full_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all&#x26;labeled=1&#x26;all=0&#x26;new_icons=0', "All Exports (Label)", 0, 0, "onInterval", 86400, 1);
+			$Full = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all&#x26;labeled=0&#x26;all=0&#x26;new_icons=0&#x26;debug='.$debug, "All Exports (No Label)", 1, 0, "onInterval", 86400, 1);
+			$Full_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all&#x26;labeled=1&#x26;all=0&#x26;new_icons=0&#x26;debug='.$debug, "All Exports (Label)", 0, 0, "onInterval", 86400, 1);
 			$results = $dbcore->createKML->createKMLstructure("All Exports Network Link", $Full.$Full_Labeled);
 			if($labeled){$file_name = "All_Export_Labeled_NetworkLink.kmz";}else{$file_name = "All_Export_NetworkLink.kmz";}
 			break;
 
 		case "exp_daily_netlink":
-			$Daily = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily&#x26;labeled=0&#x26;all=1&#x26;new_icons=1', "Daily AP (No Label)", 1, 0, "onInterval", 3600, 1);
-			$Daily_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily&#x26;labeled=1&#x26;all=1&#x26;new_icons=1', "Daily AP (Label)", 0, 0, "onInterval", 3600, 1);
+			$Daily = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily&#x26;labeled=0&#x26;all=1&#x26;new_icons=1&#x26;debug='.$debug, "Daily AP (No Label)", 1, 0, "onInterval", 3600, 1);
+			$Daily_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily&#x26;labeled=1&#x26;all=1&#x26;new_icons=1&#x26;debug='.$debug, "Daily AP (Label)", 0, 0, "onInterval", 3600, 1);
 			$results = $dbcore->createKML->createKMLstructure("Daily Exports Network Link", $Daily.$Daily_Labeled);
 			if($labeled){$file_name = "Daily_Export_Labeled_NetworkLink.kmz";}else{$file_name = "Daily_Export_NetworkLink.kmz";}
 			break;
 
 		case "exp_latest_netlink":
-			$Newest_FT = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=0&#x26;new_icons=1', "Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60, 1);
-			$Newest_Labeled_FT = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=1&#x26;new_icons=1', "Newest AP w/ Fly To (Label)", 1, 1, "onInterval", 60, 1);
-			$Newest = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=0&#x26;new_icons=1', "Newest AP (No Label)", 0, 0, "onInterval", 60, 1);
-			$Newest_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=1&#x26;new_icons=1', "Newest AP (Label)", 0, 0, "onInterval", 60, 1);
+			$Newest_FT = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=0&#x26;new_icons=1&#x26;debug='.$debug, "Newest AP w/ Fly To (No Label)", 0, 1, "onInterval", 60, 1);
+			$Newest_Labeled_FT = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=1&#x26;new_icons=1&#x26;debug='.$debug, "Newest AP w/ Fly To (Label)", 1, 1, "onInterval", 60, 1);
+			$Newest = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=0&#x26;new_icons=1&#x26;debug='.$debug, "Newest AP (No Label)", 0, 0, "onInterval", 60, 1);
+			$Newest_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest&#x26;labeled=1&#x26;new_icons=1&#x26;debug='.$debug, "Newest AP (Label)", 0, 0, "onInterval", 60, 1);
 			$results = $dbcore->createKML->createKMLstructure("Latest AP Network Link", $Newest_FT.$Newest_Labeled_FT.$Newest.$Newest_Labeled);
 			if($labeled){$file_name = "Latest_Labeled_NetworkLink.kmz";}else{$file_name = "Latest_NetworkLink.kmz";}
 			break;
 			
 		case "exp_user_netlink":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;user='.$user.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $user, 1, 0, "onInterval", 86400);
+			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;user='.$user.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $user, 1, 0, "onInterval", 86400);
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			$title = $user."'s Network Link";
 			$results = $dbcore->createKML->createKMLstructure($title , $results);
@@ -72,7 +73,7 @@ switch($func)
 			$fetch = $prep->fetch();
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['ssid'].'-'.$id);
 			#Create Network Link
-			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_ap&#x26;id='.$id.'&#x26;labeled='.$labeled.'&#x26;new_icons='.$new_icons, $title, 1, 0, "onInterval", 86400);
+			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_ap&#x26;id='.$id.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $title, 1, 0, "onInterval", 86400);
 			$results = $dbcore->createKML->createKMLstructure($title , $results);
 			if($labeled){$file_name = $title."NetworkLink_Labeled.kmz";}else{$file_name = $title."_NetworkLink.kmz";}
 			break;
@@ -91,7 +92,7 @@ switch($func)
 				if($result->rowCount() > 0)
 				{
 					#valid results found, add network link for this user
-					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;user='.$username.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $username, 1, 0, "onChange", 86400);
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;user='.$username.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $username, 1, 0, "onChange", 86400);
 				}
 			}
 			
@@ -157,7 +158,7 @@ switch($func)
 					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
 					
 					#valid results found, add network link and exit check
-					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
 				}
 			}
 			
@@ -211,11 +212,12 @@ switch($func)
 				{
 					#Create Region Box
 					$final_box = $dbcore->export->FindBox($box_latlon);
-					list($distance_calc, $minLodPix, $distance) = $dbcore->export->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());					
 					
 					#valid results found, add network link and exit check
-					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;row='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
+					
+			
 					
 					#Increment number of lists
 					++$list_count;
@@ -237,14 +239,28 @@ switch($func)
 			$prep->execute();
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$fetch = $prep->fetch();
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 			
 			if($all){$only_new = 0;}else{$only_new = 1;}
+			$results = "";
+			$KML_Box = "";
 			$ListKML = $dbcore->export->UserList($fetch['points'], $labeled, $only_new, $new_icons);
-			$results = $ListKML['region'].$ListKML['data'];
-			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $results, 0);}
-			
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-			$results = $dbcore->createKML->createFolder($results, $title, 0);
+			if($ListKML['data'] !== "")
+			{
+				$final_box = $dbcore->export->FindBox($ListKML['box']);
+				$KML_Region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());
+				$results = $dbcore->createKML->createFolder($title, $KML_Region.$ListKML['data'], 0);
+				If($debug)
+				{
+					$KML_Box = $dbcore->createKML->minLodPixels($final_box, 0);
+					$results .= $dbcore->createKML->createFolder("minLodPixels Box", $KML_Box, 0, 0, 0);
+				}
+			}
+			else
+			{
+				$results = $dbcore->createKML->createFolder("No APs with GPS", $results, 0);
+				$results .= $dbcore->createKML->createFolder($title, $results, 0);
+			}
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
