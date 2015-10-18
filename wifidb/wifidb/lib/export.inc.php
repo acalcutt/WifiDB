@@ -130,7 +130,8 @@ class export extends dbcore
 					unset($list_results);
 					
 					#Create Network Link to this kml for the final doc.kml
-					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $ListKML['region']);
+					$Netlink_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $Netlink_region);
 
 					#Increment variables (duh)
 					++$user_files;
