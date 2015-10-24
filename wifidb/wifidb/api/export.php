@@ -21,12 +21,29 @@ if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra de
 $func=$_REQUEST['func'];
 switch($func)
 {
+		case "exp_history_netlink":
+			$date = (empty($_REQUEST['date'])) ? date($dbcore->export->date_format) : $_REQUEST['date'];
+			$date_url = $dbcore->URL_PATH.'out/daemon/'.$date.'/';
+
+			$daily_link = $dbcore->createKML->createNetworkLink($date_url.'daily_db.kmz', "Daily DB Export (No Label)", 1, 0, "onInterval", 3600).
+				$dbcore->createKML->createNetworkLink($date_url.'daily_db_label.kmz', "Daily DB Export (Label)", 0, 0, "onInterval", 3600);
+			$daily_folder = $dbcore->createKML->createFolder("WifiDB Daily DB Export", $daily_link, 1, 1);
+			
+			$full_link = $dbcore->createKML->createNetworkLink($date_url.'full_db.kmz', "Full DB Export (No Label)", 1, 0, "onInterval", 86400).
+				$dbcore->createKML->createNetworkLink($date_url.'full_db_label.kmz', "Full DB Export (Label)", 0, 0, "onInterval", 86400);
+			$full_folder = $dbcore->createKML->createFolder("WifiDB Full DB Export", $full_link, 1, 1);
+
+			$results = $daily_folder.$full_folder;#.$archive_folder;
+			$results = $dbcore->createKML->createKMLstructure($date." Network Link", $results);
+			$file_name = "Combined_NetworkLink_".$date.".kmz";
+			break;
+
 		case "exp_combined_netlink":
 			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest_netlink&#x26;debug='.$debug, "Newest AP", 1, 0, "onChange", 86400, 1);
 			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily_netlink&#x26;debug='.$debug, "Daily APs", 1, 0, "onChange", 86400, 1);
 			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all_netlink&#x26;debug='.$debug, "All APs", 0, 0, "onChange", 86400, 1);
 			$results = $dbcore->createKML->createKMLstructure("Combined Network Link", $results);
-			$file_name = "Combined_NetworkLink.kmz";
+			$file_name = "Combined_NetworkLink_Latest.kmz";
 			break;
 			
 		case "exp_all_netlink":

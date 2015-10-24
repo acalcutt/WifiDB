@@ -98,7 +98,7 @@ if not, write to the
                                             <table align="center" border="1" cellspacing="0" cellpadding="0" width="100%">
                                                 <tr class="{$wifidb_kml.class}">
                                                     <td align="center" width="33%">
-                                                        {$wifidb_kml.file}
+														<a class="links" href="{$wifidb_kml.link_url}">{$wifidb_kml.file}</a>
                                                     </td>
                                                     <td width="33%">
                                                         <a class="links" href="{$wifidb_kml.file_url}">Non-Labeled SSIDs</a> - {$wifidb_kml.full_size}
