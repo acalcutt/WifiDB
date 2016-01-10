@@ -16,12 +16,14 @@ class SQL
                     $options = array(
                         PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
                         PDO::ATTR_PERSISTENT => FALSE,
+                        PDO::ERRMODE_EXCEPTION => TRUE
                     );
                 }
                 else
                 {
                     $options = array(
                         PDO::ATTR_PERSISTENT => FALSE,
+                        PDO::ERRMODE_EXCEPTION => TRUE
                     );
                 }
                 $dsn    = $this->service.':host='.$this->host;

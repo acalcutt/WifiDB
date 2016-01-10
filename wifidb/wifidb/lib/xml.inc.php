@@ -88,7 +88,7 @@ class xml
             {
                 $tag    = str_replace(" ", "_", $tag);
                 $sp     = str_repeat("\t", $d);
-                $res[]  = "$sp<$tag>$val<$tag>\r\n";
+                $res[]  = "$sp<$tag>$val</$tag>\r\n";
             }
         }
         return implode('', $res);

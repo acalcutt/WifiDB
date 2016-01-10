@@ -381,19 +381,19 @@ class import extends dbcore
 					$vs1data['gpsdata'][$gps_id]['date'] = $date_exp[2]."-".$date_exp[0]."-".$date_exp[1];
 				}
 
-				$datetime = $vs1data['gpsdata'][$gps_id]['date']." ".$vs1data['gpsdata'][$gps_id]['time'];
 				#var_dump($datetime, $file_id);
 
 				$rssi = $this->convert->Sig2dBm($signal);
 
-				$sql = "INSERT INTO `wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `time_stamp`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?)";
+				$sql = "INSERT INTO `wifi_signals` (`id`, `ap_hash`, `signal`, `rssi`, `gps_id`, `date`, `time`, `file_id`) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
 				$preps->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$preps->bindParam(2, $signal, PDO::PARAM_INT);
-				$preps->bindParam(3, $rssi, PDO::PARAM_INT);
+				$preps->bindParam(3, $rssi, PDO::PARAM_STR);
 				$preps->bindParam(4, $vs1data['gpsdata'][$gps_id]['import_id'], PDO::PARAM_INT);
-				$preps->bindParam(5, $datetime, PDO::PARAM_INT);
-				$preps->bindParam(6, $file_id, PDO::PARAM_INT);
+				$preps->bindParam(5, $vs1data['gpsdata'][$gps_id]['date'], PDO::PARAM_STR);
+                $preps->bindParam(6, $vs1data['gpsdata'][$gps_id]['time'], PDO::PARAM_STR);
+                $preps->bindParam(7, $file_id, PDO::PARAM_INT);
 				if($this->sql->checkError( $preps->execute(), __LINE__, __FILE__) !== 0)
 				{
 					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);

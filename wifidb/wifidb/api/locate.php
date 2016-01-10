@@ -37,7 +37,3 @@ else
 {
     $dbcore->Output();
 }
-
-
-
-?>

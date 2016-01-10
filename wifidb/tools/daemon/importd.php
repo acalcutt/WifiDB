@@ -147,17 +147,8 @@ PID: [ $dbcore->This_is_me ]
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
-$currentrun = time(); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
-$prepgj = $dbcore->sql->conn->prepare($sql);
-$prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
-$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
-$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
-$prepgj->execute();
-$dbcore->sql->checkError( $prepgj->execute(), __LINE__, __FILE__);
-
-if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
+$job_id = $dbcore->GetJob();
+if($job_id === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 	unlink($dbcore->pid_file);
@@ -168,11 +159,6 @@ else
 	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
 	if(!$dbcore->ForceDaemonRun)
 	{
-		#Job Settings
-		$job = $prepgj->fetch(2);
-		$dbcore->job_interval = $job['interval'];
-		$job_id = $job['id'];
-
 		#Set Job to Running
 		$dbcore->SetStartJob($job_id);
 	}
@@ -189,33 +175,18 @@ else
 			exit(-7);
 		}
 		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
-		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
-		{
-			$NextID = $dbcore->ImportID;
 
-		}else{
-			$NextID = $dbcore->GetNextImportID();
-		}
-		if(empty($NextID) && $dbcore->daemonize)
+        $NextImport = $dbcore->GetNextImportID();
+        var_dump($NextImport);
+        if(empty($NextImport) && $dbcore->daemonize)
         {
             echo "No new Imports. Waiting.\r\n";
             sleep(30);
             continue;
         }
 
-        var_dump($NextID);
-		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `id` = ?";
-		$result = $dbcore->sql->conn->prepare($daemon_sql);
-		$result->bindParam(1, $NextID, PDO::PARAM_INT);
-		$result->execute();
-		if ($dbcore->sql->checkError( $result, __LINE__, __FILE__)) {
-			$dbcore->verbosed("There was an error getting an import file");
-			$dbcore->return_message = -8;
-			break;
-		}
-		var_dump($result->rowCount());
 		var_dump($dbcore->RunOnceThrough);
-		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
+		if( ( ( empty($NextImport) ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
 			$dbcore->return_message = -9;
@@ -232,8 +203,7 @@ else
 				#####
 			}
 
-			$file_to_Import = $result->fetch(2);
-			if(!@$file_to_Import['id'])
+			if(!@$NextImport['id'])
 			{
 				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
 				if( !$dbcore->daemonize )
@@ -243,9 +213,9 @@ else
 				}
 			}else
 			{
-				$ImportProcessReturn = $dbcore->ImportProcess($file_to_Import);
+				$ImportProcessReturn = $dbcore->ImportProcess($NextImport);
 				#$ImportProcessReturn = 1;
-				$dbcore->return_message = (int)$file_to_Import['id'];
+				$dbcore->return_message = (int)$NextImport['id'];
 
 				switch($ImportProcessReturn)
 				{

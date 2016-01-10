@@ -167,7 +167,7 @@ switch($func)
 			break;
 			
 		case "exp_latest":
-			$results = $dbcore->export->ExportCurrentAPkml($labeled, $new_icons);
+			$results = $dbcore->export->ExportCurrentAP($labeled, $new_icons);
 			#if($results==""){$results = $dbcore->createKML->createFolder("No Access Points Found", "", 0, 0);}
 			if($labeled){$results = $dbcore->createKML->createKMLstructure("Newest AP Labeled", $results);}else{$results = $dbcore->createKML->createKMLstructure("Newest AP", $results);}
 			if($labeled){$file_name = "Latest_Labeled.kmz";}else{$file_name = "Latest.kmz";}
@@ -239,7 +239,7 @@ switch($func)
 			$fetch = $prep->fetch();
 			
 			if($all){$only_new = 0;}else{$only_new = 1;}
-			$ListKML = $dbcore->export->UserListKml($fetch['points'], $labeled, $only_new, $new_icons);
+			$ListKML = $dbcore->export->UserList($fetch['points'], $labeled, $only_new, $new_icons);
 			$results = $ListKML['region'].$ListKML['data'];
 			if($results == ""){$results .= $dbcore->createKML->createFolder("No APs with GPS", $results, 0);}
 			
@@ -252,7 +252,7 @@ switch($func)
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			
-			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $labeled, $new_icons);
+			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
@@ -263,8 +263,8 @@ switch($func)
 			if(isset($_REQUEST['from'])){$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);}else{$from=NULL;}
 			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
 			
-			list($results, $export_ssid) = $dbcore->export->SingleApKml($id, $labeled, $new_icons);
-			$KML_Signal_data = $dbcore->export->SingleApSignal3dKml($id, $limit, $from);
+			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
+			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, $limit, $from);
 			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
 			
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");

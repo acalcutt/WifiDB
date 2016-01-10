@@ -151,26 +151,42 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp  WRITE");
+		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp WRITE");
+        if($this->ImportID)
+        {
+            $daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` WHERE files_tmp.id = ?;";
+            $result = $this->sql->conn->prepare($daemon_sql);
+            $result->bindParam(1, $this->ImportID, PDO::PARAM_INT);
+            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+            $LastInsert = $this->ImportID;
+            $select = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `tmp_id` = ?";
+        }else
+        {
+            $daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
+            $result = $this->sql->conn->query($daemon_sql);
+            $this->sql->checkError( $result, __LINE__, __FILE__);
+            $LastInsert = $this->sql->conn->lastInsertId();
+            $select = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `id` = ?";
+        }
+        var_dump($daemon_sql);
+        var_dump($this->sql->conn->lastInsertId() );
 
-		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
-		$result = $this->sql->conn->prepare($daemon_sql);
-		$this->sql->checkError( $result->execute(), __LINE__, __FILE__);
-		$LastInsert = $this->sql->conn->lastInsertID();
 
-		$select = "SELECT tmp_id FROM wifi.files_importing WHERE id = ?";
-		$prep = $this->sql->conn->prepare($select);
+        var_dump($select);
+        $prep = $this->sql->conn->prepare($select);
 		$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
 		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
-		$tmp_id = $prep->fetch(2)['tmp_id'];
-		$delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
+		$WaitingImport = $prep->fetch(2);
+
+        $delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
+        var_dump($delete);
 		$prep = $this->sql->conn->prepare($delete);
-		$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
+		$prep->bindParam(1, $WaitingImport['tmp_id'], PDO::PARAM_INT);
 		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
 		$this->sql->conn->query("UNLOCK TABLES");
-		return $LastInsert;
+		return $WaitingImport;
 	}
 
     /**
@@ -482,7 +498,7 @@ class daemon extends wdbcli
 			$notes	=	$file_names[$hash]['notes'];
 			$date	=	$file_names[$hash]['date'];
 			$hash_	=	$file_names[$hash]['hash'];
-			#echo "Is in filenames.txt\n";
+			echo "Has user data in filenames.txt\n";
 		}else
 		{
 			$user	=	$this->default_user;
@@ -490,7 +506,7 @@ class daemon extends wdbcli
 			$notes	=	$this->default_notes;
 			$date	=	date("y-m-d H:i:s");
 			$hash_	=	$hash;
-			#echo "Recovery import, no previous data :(\n";
+			echo "Recovery import, no previous data :(\n";
 
 		}
 		$this->logd("=== Start Daemon Prep of ".$file." ===");
@@ -537,6 +553,7 @@ class daemon extends wdbcli
 	public function SetStartJob($job_id)
 	{
 		$nextrun = strtotime("+".$this->job_interval." minutes");
+        var_dump("Calc NextRun: ".$nextrun);
 		$this->verbosed("Starting - Job:".$this->daemon_name." Id:".$job_id, 1);
 
 		$sql = "UPDATE `schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
@@ -546,6 +563,26 @@ class daemon extends wdbcli
 		$prepsr->bindParam(3, $job_id, PDO::PARAM_INT);
 		$this->sql->checkError( $prepsr->execute(), __LINE__, __FILE__);
 	}
+
+    public function GetJob()
+    {
+        $currentrun = time(); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
+        var_dump($currentrun);
+        $sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` = ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+        $prepgj = $this->sql->conn->prepare($sql);
+        $prepgj->bindParam(1, $this->node_name, PDO::PARAM_STR);
+        $prepgj->bindParam(2, $this->daemon_name, PDO::PARAM_STR);
+        $prepgj->bindParam(3, $this->StatusWaiting, PDO::PARAM_STR);
+        $prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
+        $prepgj->execute();
+        $this->sql->checkError( $prepgj->execute(), __LINE__, __FILE__);
+        $job = $prepgj->fetch(2);
+        var_dump($job);
+        #die();
+        $this->job_interval = $job['interval'];
+        $job_id = (empty($job['id']) ? 0 : $job['id'] );
+        return $job_id;
+    }
 
     public function GetWaitingImportRowCount()
     {
