@@ -21,12 +21,19 @@ if not, write to the
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "apiv2");
 
-include('../lib/init.inc.php');
+include('../../lib/init.inc.php');
 
 $dbcore->Func     = (@$_REQUEST['func'] ? $_REQUEST['func'] : "");
 $dbcore->StartDate     = (@$_REQUEST['StartDate'] ? $_REQUEST['StartDate'] : "");
 $dbcore->EndDaate      = (@$_REQUEST['EndDate'] ? $_REQUEST['EndDate'] : "");
 if($dbcore->Func === ""){ die("Try feeding me some good bits."); }
+if(($dbcore->StartDate === "") OR ($dbcore->EndDate === ""))
+{
+    $dbcore->AllDateRange = 1;
+}else
+{
+    $dbcore->AllDateRange = 0;
+}
 
 switch(strtolower($dbcore->Func))
 {

@@ -105,7 +105,7 @@ if($fetch['version'] !== '0.30 build 2')
 	}
 }
 
-if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api")  )
+if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
     if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
         create_base_cookies($config['hosturl'] . $config['root']);
@@ -169,8 +169,7 @@ try
 
 		################
 		case "html":
-            $dbcore = new frontend($config, $SQL);
-			switch(strtolower(SWITCH_EXTRAS))
+            switch(strtolower(SWITCH_EXTRAS))
 			{
 				case "api":
 					__autoload("createKML");
@@ -179,25 +178,41 @@ try
 					__autoload("api");
 					__autoload("Zip");
 
-					$dbcore = new api($config, $dbcore->sql);
-					$dbcore->convert = new convert($config, $dbcore->sql);
+					$dbcore = new api($config, $SQL);
+					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				break;
+
+                case "apiv2":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("api");
+                    __autoload("Zip");
+                    $dbcore = new apiv2($config, $SQL);
+                    $dbcore->convert = new convert($config, $SQL);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
+                    break;
 
 				case "export":
 					__autoload("createKML");
 					__autoload("convert");
 					__autoload("export");
 					__autoload("Zip");
-					$dbcore->convert = new convert($config, $dbcore->sql);
+                    $dbcore = new frontend($config, $sql);
+
+                    $dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				    break;
 				case "graph":
-					__autoload("graphs");
+                    $dbcore = new frontend($config, $SQL);
+                    __autoload("graphs");
 					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
 				    break;
 				case "cp":
@@ -228,7 +243,7 @@ try
                     __autoload("api");
                     __autoload("Zip");
                     $dbcore = new api($config, $SQL);
-                    $dbcore->convert = new convert($config, $dbcore->sql);
+                    $dbcore->convert = new convert($config, $SQL);
                     $dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
@@ -243,7 +258,7 @@ try
                     __autoload("export");
                     __autoload("api");
                     __autoload("Zip");
-                    $dbcore->convert = new convert($config, $dbcore->sql);
+                    $dbcore->convert = new convert($config, $SQL);
                     $dbcore->Zip = new Zip;
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);

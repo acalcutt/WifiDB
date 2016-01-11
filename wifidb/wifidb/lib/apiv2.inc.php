@@ -212,15 +212,11 @@ class apiv2 extends dbcore
         return 1;
     }
 
-    public function GetWaitingScheduleTable($all = 0)
+    public function GetWaitingScheduleTable()
     {
-        if($all === 1)
-        {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_tmp` WHERE `date` >= ? AND `date` <= ?");
-            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
+        if($this->AllDateRange === 1) {
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_tmp`");
             $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-            $this->mesg['schedule'] = $schedule_prep->fetch(2);
         }else {
             if (($this->StartDate == "") OR ($this->EndDate == "")) {
                 $this->mesg['error'] = "StartDate or EndDate are not set.";
@@ -229,17 +225,35 @@ class apiv2 extends dbcore
             $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_tmp` WHERE `date` >= ? AND `date` <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
-            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-            $this->mesg['schedule'] = $schedule_prep->fetch(2);
+        }
+        $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+        $return = $schedule_prep->fetch(2);
+
+        if(count($return) < 1)
+        {
+            $this->mesg['schedule'] = "No Imports running.";
+        }else
+        {
+            $this->mesg['schedule'] = $return;
         }
         return 0;
     }
 
     public function GetImportingScheduleTable()
     {
-        $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_importing`");
+        if($this->AllDateRange === 1) {
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_importing`");
+            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+        }else {
+            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+                $this->mesg['error'] = "StartDate or EndDate are not set.";
+                return -1;
+            }
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_importing` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
+        }
         $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-
         $return = $schedule_prep->fetch(2);
 
         if(count($return) < 1)
@@ -254,31 +268,55 @@ class apiv2 extends dbcore
 
     public function GetFinishedScheduleTable()
     {
-        if(($this->StartDate == "") OR ($this->EndDate == ""))
-        {
-            $this->mesg['error'] = "StartDate or EndDate are not set.";
-            return -1;
+        if($this->AllDateRange === 1) {
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files`");
+            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+        }else {
+            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+                $this->mesg['error'] = "StartDate or EndDate are not set.";
+                return -1;
+            }
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
-        $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files`"); #WHERE `date` >= ? AND `date` <= ?");
-        $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-        $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $this->mesg['schedule'] = $schedule_prep->fetch(2);
+        $return = $schedule_prep->fetch(2);
+
+        if(count($return) < 1)
+        {
+            $this->mesg['schedule'] = "No Imports running.";
+        }else
+        {
+            $this->mesg['schedule'] = $return;
+        }
         return 0;
     }
 
     public function GetBadScheduleTable()
     {
-        if(($this->StartDate == "") OR ($this->EndDate == ""))
-        {
-            $this->mesg['error'] = "StartDate or EndDate are not set.";
-            return -1;
+        if($this->AllDateRange === 1) {
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_bad`");
+            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+        }else {
+            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+                $this->mesg['error'] = "StartDate or EndDate are not set.";
+                return -1;
+            }
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_bad` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
-        $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_bad`"); # WHERE `date` >= ? AND `date` <= ?");
-        $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-        $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $this->mesg['schedule'] = $schedule_prep->fetch(2);
+        $return = $schedule_prep->fetch(2);
+
+        if(count($return) < 1)
+        {
+            $this->mesg['schedule'] = "No Imports running.";
+        }else
+        {
+            $this->mesg['schedule'] = $return;
+        }
         return 0;
     }
 
