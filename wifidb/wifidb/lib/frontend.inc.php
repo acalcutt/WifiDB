@@ -289,7 +289,7 @@ class frontend extends dbcore
 			}
 
 		}
-		$this->footer .= $this->meta->tracker.$this->meta->ads;
+		$this->footer = $this->meta->tracker.$this->meta->ads;
 		return 1;
 	}
 

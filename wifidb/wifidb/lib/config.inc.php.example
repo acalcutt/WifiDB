@@ -93,6 +93,7 @@ $config = array
     #---------------- SQL Info ----------------#
     'srvc'                  =>   'mysql',
     'host'                  =>   'localhost',
+    'db'                  	=>   'wifi',
     'db_user'               =>   'wdbuser',
     'db_pwd'                =>   'supersecretpw',
     'collate'               =>   'utf8_bin',

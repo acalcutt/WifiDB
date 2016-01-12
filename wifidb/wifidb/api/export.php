@@ -82,7 +82,7 @@ switch($func)
 		case "exp_ap_netlink":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			#Get SSID
-			$sql = "SELECT ssid FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
+			$sql = "SELECT ssid FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000'";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $row, PDO::PARAM_INT);
 			$prep->execute();
@@ -96,7 +96,7 @@ switch($func)
 			break;
 			
 		case "exp_all":
-			$sql = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `points` != '' ORDER BY `username` ASC";
+			$sql = "SELECT DISTINCT(username) FROM `user_imports` WHERE `points` != '' ORDER BY `username` ASC";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll();
@@ -104,7 +104,7 @@ switch($func)
 			foreach($fetch_user as $user)
 			{
 				$username = $user['username'];
-				$sql = "SELECT `id` FROM `wifi`.`wifi_pointers` WHERE `username` LIKE '$username' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' LIMIT 1";
+				$sql = "SELECT `id` FROM `wifi_pointers` WHERE `username` LIKE '$username' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' LIMIT 1";
 				$result = $dbcore->sql->conn->query($sql);
 				if($result->rowCount() > 0)
 				{
@@ -126,7 +126,7 @@ switch($func)
 			else
 			{	
 				#Get the date of the newest import
-				$sql = "SELECT `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+				$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
 				$datestamp = $date_fetch['date'];
@@ -137,7 +137,7 @@ switch($func)
 			
 			#Get lists from the date specified
 			$date_search = $date."%";
-			$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' AND `points` != ''";
+			$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` LIKE '$date_search' AND `points` != ''";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_imports = $prep->fetchAll();
@@ -152,7 +152,7 @@ switch($func)
 				{
 					list($id, $new_old) = explode(":", $point);
 					if($new_old == 1){continue;}
-					$sql = "SELECT `lat`, `long` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$sql = "SELECT `lat`, `long` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 					$result = $dbcore->sql->conn->query($sql);
 					while($latlon_fetch = $result->fetch(2))
 					{
@@ -193,7 +193,7 @@ switch($func)
 
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$sql = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `points` != ''";
+			$sql = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != ''";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -210,7 +210,7 @@ switch($func)
 				{
 					list($id, $new_old) = explode(":", $point);
 					if($new_old == 1){continue;}
-					$sql = "SELECT `lat`, `long` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$sql = "SELECT `lat`, `long` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 					$result = $dbcore->sql->conn->query($sql);
 					while($latlon_fetch = $result->fetch(2))
 					{
@@ -250,7 +250,7 @@ switch($func)
 			
 		case "exp_list":
 			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
-			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id` = ?";
+			$sql = "SELECT * FROM `user_imports` WHERE `id` = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $row, PDO::PARAM_INT);
 			$prep->execute();
