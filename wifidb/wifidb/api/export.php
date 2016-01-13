@@ -286,6 +286,8 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			
 			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
+			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id);
+			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
