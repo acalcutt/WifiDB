@@ -227,8 +227,100 @@ class export extends dbcore
 		}
 		Return $KML_data;
 	}
+	
+	public function ExportSignal3dSingleListAp($file_id, $ap_id, $visible = 0)
+	{
+		$KML_data = "";
+		#Get the AP hash
+		$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+		$prep_hash = $this->sql->conn->prepare($sql);
+		$prep_hash->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$prep_hash->execute();
+		$fetch_hash = $prep_hash->fetch(2);
+		$ap_hash = $fetch_hash['ap_hash'];
+		
+		#Get Import Name
+		$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
+		$prep_title = $this->sql->conn->prepare($sql);
+		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
+		$prep_title->execute();
+		$fetch_title = $prep_title->fetch(2);
+		$ap_list_title = $fetch_title['title'];
+		$ap_list_date = $fetch_title['date'];
+		#Get AP Signal History for this file
+		$sql = "SELECT
+				  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
+				  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
+				  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
+				FROM `wifi`.`wifi_signals`
+				  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'
+				ORDER BY `wifi_signals`.`time_stamp` ASC";
+		
+		$ap_query = $this->sql->conn->query($sql);
+		$this->sql->checkError();
+		$sig_gps_data = $ap_query->fetchAll(2);
+		if(count($sig_gps_data) > 0)
+		{
+			#Plot AP 3D Signal
+			$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
+			$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
+		}
+		return $KML_data;
+	}
 
-	public function ExportApSignal3d($id, $limit = NULL, $from = NULL)
+	public function ExportApSignal3dAll($id, $visible = 0)
+	{
+		$KML_data = "";
+		#Get the AP hash
+		$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+		$prep_hash = $this->sql->conn->prepare($sql);
+		$prep_hash->bindParam(1, $id, PDO::PARAM_INT);
+		$prep_hash->execute();
+		$fetch_hash = $prep_hash->fetch(2);
+		$ap_hash = $fetch_hash['ap_hash'];
+		
+		#Get Unique Lists
+		$sql = "SELECT DISTINCT(file_id) FROM `wifi_signals` WHERE `ap_hash` = ? ORDER BY `file_id`";
+		$prep_file_id = $this->sql->conn->prepare($sql);
+		$prep_file_id->bindParam(1, $ap_hash, PDO::PARAM_STR);
+		$prep_file_id->execute();
+		$fetch_file_id = $prep_file_id->fetchAll();
+		foreach($fetch_file_id as $file_id)
+		{
+			$file_id = $file_id['file_id'];
+			#Get Import Name
+			$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
+			$prep_title = $this->sql->conn->prepare($sql);
+			$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
+			$prep_title->execute();
+			$fetch_title = $prep_title->fetch(2);
+			$ap_list_title = $fetch_title['title'];
+			$ap_list_date = $fetch_title['date'];
+			#Get AP Signal History for this file
+			$sql = "SELECT
+					  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
+					  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
+					  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
+					FROM `wifi`.`wifi_signals`
+					  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+					WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'
+					ORDER BY `wifi_signals`.`time_stamp` ASC";
+			
+			$ap_query = $this->sql->conn->query($sql);
+			$this->sql->checkError();
+			$sig_gps_data = $ap_query->fetchAll(2);
+			if(count($sig_gps_data) > 0)
+			{
+				#Plot AP 3D Signal
+				$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
+				$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
+			}
+		}
+		return $KML_data;
+	}
+	
+	public function ExportApSignal3d($id, $visible = 0, $limit = NULL, $from = NULL)
 	{
 		#Get the AP hash
 		$sql = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id'";

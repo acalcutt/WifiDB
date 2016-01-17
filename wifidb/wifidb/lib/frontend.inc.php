@@ -127,75 +127,6 @@ class frontend extends dbcore
 			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
 		}
 
-		$sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
-				FROM `wifi`.`wifi_signals`
-				WHERE `ap_hash` =  ?
-				ORDER BY `time_stamp` ASC";
-		$prep1 = $this->sql->conn->prepare($sql);
-		$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
-		$prep1->execute();
-		if($this->sql->checkError() !== 0)
-		{
-			throw new Exception("Error getting Signal History.");
-		}
-
-		$flip = 0;
-		$prev_date = 0;
-		$date_range = -1;
-		$signal_runs = array();
-		$signals = $prep1->fetchAll(2);
-
-		$sql_gps = "SELECT `lat`, `long`, `sats`, `hdp`, `track`, `date`, `time`, `mph`, `kmh`
-						FROM `wifi`.`wifi_gps`
-						WHERE `id` = ?";
-		$prep_gps = $this->sql->conn->prepare($sql_gps);
-		$from = 0;
-		foreach($signals as $field)
-		{
-			$prep_gps->bindParam(1, $field['gps_id'], PDO::PARAM_INT);
-			$prep_gps->execute();
-			if($this->sql->checkError() !== 0)
-			{
-				throw new Exception("Error getting GPS");
-			}
-			$field_g = $prep_gps->fetch(2);
-			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
-			if($prev_date < strtotime($field_g['date']))
-			{
-				$date_range++;
-				$signal_runs[$date_range]['id'] = $date_range;
-				$signal_runs[$date_range]['start'] = $field_g['date']." ".$field_g['time'];
-				$signal_runs[$date_range]['descstart'] = $field_g['time'];
-				$signal_runs[$date_range]['desc'] = $field_g['time'];
-				$signal_runs[$date_range]['user'] = $field['username'];
-				$signal_runs[$date_range]['start_id'] = $field['id'];
-				$signal_runs[$date_range]['from'] = $from;
-				$signal_runs[$date_range]['limit'] = $from;
-			}else
-			{
-				if($signal_runs[$date_range]['user'] != $field['username'])
-				{
-					$signal_runs[$date_range]['user'] .= " and ".$field['username'];
-				}
-				$signal_runs[$date_range]['desc'] = $field_g['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field_g['time'];
-				$signal_runs[$date_range]['stop'] = $field_g['date']." ".$field_g['time'];
-				$signal_runs[$date_range]['limit'] = $from+1;
-			}
-			$from++;
-			$prev_date = strtotime($field_g['date']);
-
-			$signal_runs[$date_range]['gps'][] = array(
-														'class'=>$class,
-														'lat'=>$field_g["lat"],
-														'long'=>$field_g["long"],
-														'sats'=>$field_g["sats"],
-														'date'=>$field_g["date"],
-														'time'=>$field_g["time"],
-														'signal'=>$field["signal"],
-														'rssi'=>$field["rssi"]
-													);
-		}
-
 		$list = array();
 		$id_find = "%-{$id}:%";
 		$id_find_firstitem = "{$id}:%";
@@ -210,6 +141,18 @@ class frontend extends dbcore
 
 		while ($field = $prep2->fetch(1))
 		{
+			$sql = "SELECT `wifi_signals`.`id`, `wifi_signals`.`signal`, `wifi_signals`.`rssi`, `wifi_signals`.`gps_id`, `wifi_signals`.`username`, `wifi_gps`.`lat`, `wifi_gps`.`long`, `wifi_gps`.`alt`, `wifi_gps`.`sats`, `wifi_gps`.`hdp`, `wifi_gps`.`track`, `wifi_gps`.`date`, `wifi_gps`.`time`, `wifi_gps`.`mph`, `wifi_gps`.`kmh`
+					FROM `wifi_signals`
+					INNER JOIN `wifi_gps`
+					ON `wifi_signals`.`gps_id`=`wifi_gps`.`id`
+					WHERE `wifi_signals`.`ap_hash` = ? AND `wifi_signals`.`file_id` = ?
+					ORDER BY `wifi_signals`.`time_stamp` ASC";
+			$prep1 = $this->sql->conn->prepare($sql);
+			$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
+			$prep1->bindParam(2, $field["file_id"], PDO::PARAM_STR);
+			$prep1->execute();
+			$signals = $prep1->fetchAll(2);
+		
 			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
 			preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
 			$list[]= array(
@@ -220,7 +163,8 @@ class frontend extends dbcore
 							'aps'=>$field['aps'],
 							'username'=>$field['username'],
 							'title'=>$field['title'],
-							'title_id'=>$field['file_id']
+							'title_id'=>$field['file_id'],
+							'signals'=>$signals
 							);
 
 		}
@@ -228,7 +172,6 @@ class frontend extends dbcore
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
 						$newArray['ssid'],
-						$signal_runs,
 						$list,
 						$globe_html,
 						$ap_data

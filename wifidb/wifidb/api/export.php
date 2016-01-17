@@ -286,9 +286,21 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			
 			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
-			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id);
+			$KML_Signal_data = $dbcore->export->ExportApSignal3dAll($id, 0);
 			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
+			$results = $dbcore->createKML->createKMLstructure($title, $results);
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			break;
+			
+		case "exp_list_ap":
+			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			
+			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
+			$KML_Signal_data = $dbcore->export->ExportSignal3dSingleListAp($row, $id, 0);
+			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $row."-".$id."-".$export_ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
@@ -299,8 +311,9 @@ switch($func)
 			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
 			
 			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
-			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, $limit, $from);
-			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
+			#$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, $limit, $from);
+			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, 0, $limit, $from);
+			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 0);
 			
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");
 			if($limit){$title .= "-$limit";}

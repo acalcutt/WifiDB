@@ -360,7 +360,7 @@ class createKML
 		return $tmp;
 	}
 
-	public function CreateApSignal3D($signal_array = array(), $UseRSSI = 1)
+	public function CreateApSignal3D($signal_array = array(), $visible = 1, $UseRSSI = 1)
 	{
 		$tmp = "";
 		$NewTimeInt = -1;
