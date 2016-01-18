@@ -277,7 +277,7 @@ function create_base_cookies($URL_PATH)
 	{
 		$ssl = "";
 	}
-	$domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
+	$domain = ";domain=".$_SERVER['HTTP_HOST'];
 	$folder = parse_url($URL_PATH, PHP_URL_PATH);
 	$c = strlen($folder);
 	if($folder[$c-1] == "/" && $c > 1)
