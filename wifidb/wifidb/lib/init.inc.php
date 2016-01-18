@@ -218,6 +218,7 @@ try
 				case "cp":
 				    break;
 				default:
+                    $dbcore = new frontend($config, $SQL);
 				    break;
 			}
             $dbcore->cli = 0;

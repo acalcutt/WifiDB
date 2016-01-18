@@ -62,7 +62,6 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
 			$this->smarty->assign('wifidb_login_html', $this->sec->LoginHtml);
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
-			#$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
 			$this->htmlheader();
 			$this->htmlfooter();
 			$this->users_import_aps = array();
@@ -744,7 +743,6 @@ class frontend extends dbcore
 		$this->smarty->assign("redirect_func", "<script type=\"text/javascript\">
 			function reload()
 			{
-				//window.open('{$return}')
 				location.href = '{$return}';
 			}
 		</script>");

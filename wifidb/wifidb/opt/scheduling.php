@@ -479,7 +479,7 @@ switch($func)
         break;
 
     default:
-        if(!$proxypass)
+        if(!@$proxypass)
         {
             $wspath = $dbcore->hostname.':'.$dbcore->WebSocketPort.'/'.$dbcore->root;
         }else
