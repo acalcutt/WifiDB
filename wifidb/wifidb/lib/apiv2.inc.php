@@ -214,9 +214,8 @@ class apiv2 extends dbcore
 
     public function GetWaitingScheduleTable()
     {
-        if($this->AllDateRange === 1) {
+        if($this->AllDateRange == 1) {
             $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_tmp`");
-            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
         }else {
             if (($this->StartDate == "") OR ($this->EndDate == "")) {
                 $this->mesg['error'] = "StartDate or EndDate are not set.";
@@ -227,14 +226,21 @@ class apiv2 extends dbcore
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
         $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $return = $schedule_prep->fetch(2);
-
+        $return = $schedule_prep->fetchAll(2);
         if(count($return) < 1)
         {
             $this->mesg['schedule'] = "No Imports running.";
         }else
         {
-            $this->mesg['schedule'] = $return;
+            $i = 1;
+            $altered = array();
+            foreach($return as $value)
+            {
+                $altered["Waiting".$i] = $value;
+                $i++;
+            }
+
+            $this->mesg['schedule'] = $altered;
         }
         return 0;
     }
