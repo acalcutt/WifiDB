@@ -189,7 +189,7 @@ try
                     __autoload("createKML");
                     __autoload("convert");
                     __autoload("export");
-                    __autoload("api");
+                    __autoload("apiv2");
                     __autoload("Zip");
                     $dbcore = new apiv2($config, $SQL);
                     $dbcore->convert = new convert($config, $SQL);

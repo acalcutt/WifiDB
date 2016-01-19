@@ -333,13 +333,13 @@ class apiv2 extends dbcore
             $this->mesg[] = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
             return -1;
         }
-        $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
+        $files_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `node_name`, `prev_ext`, `completed`, `aps`, `gps` FROM `files` WHERE `hash` = ? LIMIT 1");
         $files_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $imp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_importing` WHERE `hash` = ? LIMIT 1");
+        $imp_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `prev_ext`, `importing`, `ap`, `tot` FROM `files_importing` WHERE `hash` = ? LIMIT 1");
         $imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
+        $tmp_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `prev_ext` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
         $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $bad_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_bad` WHERE `hash` = ? LIMIT 1");
+        $bad_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `thread_id`, `node_name`, `prev_ext`, `error_msg` FROM `files_bad` WHERE `hash` = ? LIMIT 1");
         $bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
         $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
@@ -351,26 +351,25 @@ class apiv2 extends dbcore
         $imp_ret = $imp_prep->fetch(2);
         $tmp_ret = $tmp_prep->fetch(2);
         $bad_ret = $bad_prep->fetch(2);
-
         if($files_ret['hash'] != "")
         {
-            $this->mesg[] = array("imported"=>"File Already Imported");
+            $this->mesg['scheduling'] = array("finished"=>$files_ret);
         }
         elseif($imp_ret['hash'] != "")
         {
-            $this->mesg[] = array("importing"=>"File Being Imported");
+            $this->mesg['scheduling'] = array("importing"=>$imp_ret);
         }
         elseif($tmp_ret['hash'] != "")
         {
-            $this->mesg[] = array("waiting"=>"Waiting For Import");
+            $this->mesg['scheduling'] = array("waiting"=>$tmp_ret);
         }
         elseif($bad_ret['hash'] != "")
         {
-            $this->mesg[] = array("bad"=>"Bad File");
+            $this->mesg['scheduling'] = array("bad"=>$bad_ret);
         }
         else
         {
-            $this->mesg[] = array("unknown"=>"Hash not found in WifiDB");
+            $this->mesg['scheduling'] = array("unknown"=>"Hash not found in WifiDB");
         }
         return 1;
     }
