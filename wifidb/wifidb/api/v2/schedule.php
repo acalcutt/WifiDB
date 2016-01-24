@@ -53,6 +53,10 @@ switch(strtolower($dbcore->Func))
         $result = $dbcore->GetBadScheduleTable();
         break;
 
+    case "daemonstatuses":
+        $result = $dbcore->GetDaemonStatuses();
+        break;
+
     default:
         $result = -1;
         break;
