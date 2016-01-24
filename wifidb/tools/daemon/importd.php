@@ -23,15 +23,15 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -f		(null)			Force daemon to run without being scheduled.
-  -o		(null)			Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
-  -d		(null)			Run the Import script as a Daemon. ( Will override the -i argument. )
-  -i        	(integer)       	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
-  -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
-  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
-  -l		(null)			Show License Information.
-  -h		(null)			Show this screen.
-  --version	(null)			Version Info.
+  -f		(null)		Force daemon to run without being scheduled. ( Will override the -d, -i, -o arguments. )
+  -o		(null)		Run a loop through the files waiting table, and end once done. ( Will override the -d & -i arguments. )
+  -d		(null)		Run the Import script as a Daemon. ( Will override the -i argument. )
+  -i        	(integer)      	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
+  -t		(integer)	Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
+  -v		(null)		Run Verbosely (SHOW EVERYTHING!)
+  -l		(null)		Show License Information.
+  -h		(null)		Show this screen.
+  --version	(null)		Version Info.
 
 * = Not working yet.
 ";

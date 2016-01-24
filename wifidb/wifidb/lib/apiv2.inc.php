@@ -353,11 +353,12 @@ class apiv2 extends dbcore
         $bad_ret = $bad_prep->fetch(2);
         if($files_ret['hash'] != "")
         {
-            $this->mesg['scheduling'] = array("finished"=>$files_ret);
-        }
-        elseif($imp_ret['hash'] != "")
-        {
-            $this->mesg['scheduling'] = array("importing"=>$imp_ret);
+            if($imp_ret['hash'] != "")
+            {
+                $this->mesg['scheduling'] = array("importing"=>$imp_ret);
+            }else{
+                $this->mesg['scheduling'] = array("finished"=>$files_ret);
+            }
         }
         elseif($tmp_ret['hash'] != "")
         {
@@ -385,7 +386,14 @@ class apiv2 extends dbcore
         $hash		   = $details['hash'];
         $ext			= $details['ext'];
         $filename	   = $details['filename'];
-
+        if($user[-1] == "|")
+        {
+            $user = str_replace("|", "", $user);
+        }else
+        {
+            $exp = explode("|", $user);
+            $user = $exp[0];
+        }
         $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
         $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
         $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
