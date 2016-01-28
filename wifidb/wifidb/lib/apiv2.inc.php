@@ -355,7 +355,7 @@ class apiv2 extends dbcore
     {
         if($hash == "")
         {
-            $this->mesg[] = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
+            $this->mesg = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
             return -1;
         }
         $files_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `node_name`, `prev_ext`, `completed`, `aps`, `gps` FROM `files` WHERE `hash` = ? LIMIT 1");
@@ -711,7 +711,7 @@ class apiv2 extends dbcore
                 $result = $this->sql->conn->query($sql);
                 if($this->sql->checkError($result, __LINE__, __FILE__))
                 {
-                    $this->mesg[] = array("error"=>"SQL Error, Check Logs.");
+                    $this->mesg = array("error"=>"SQL Error, Check Logs.");
                     return -1;
                 }
 
