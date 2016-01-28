@@ -1,7 +1,7 @@
 <?php
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
-Copyright (C) 2013 Phil Ferland
+Copyright (C) 2016 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
