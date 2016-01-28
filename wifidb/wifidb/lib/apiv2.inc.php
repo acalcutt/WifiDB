@@ -326,6 +326,31 @@ class apiv2 extends dbcore
         return 0;
     }
 
+    public function GetDaemonStatuses()
+    {
+        $sql = "SELECT `nodename`, `pidfile`, `pid`, `pidtime`, `pidmem`, `pidcmd`, `date` FROM `daemon_pid_stats`";
+        $result = $this->sql->conn->query($sql);
+        $result->execute();
+        $fetch = $result->fetchAll(2);
+        //var_dump($fetch);
+        if(count($fetch) < 1)
+        {
+            $this->mesg['daemons'] = "No Daemons running.";
+        }else
+        {
+            $i = 1;
+            $altered = array();
+            foreach($fetch as $value)
+            {
+                $altered["daemon".$i] = $value;
+                $i++;
+            }
+
+            $this->mesg['daemons'] = $altered;
+        }
+        return 0;
+    }
+
     public function CheckHash($hash)
     {
         if($hash == "")
