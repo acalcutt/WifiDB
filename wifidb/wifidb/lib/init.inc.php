@@ -97,18 +97,13 @@ unset($gen_cwd);
 unset($cwd);
 unset($sql);
 
-if(strtolower(SWITCH_SCREEN) != "cli")
+if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
-	if(strtolower(SWITCH_EXTRAS) != "api")
-	{
-		if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
-		{
-			create_base_cookies($config['hosturl'].$config['root'].'/');
-			exit();
-		}
-	}
+    if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
+        create_base_cookies($config['hosturl'] . $config['root']);
+        exit();
+    }
 }
-
 
 /*
  * Class autoloader
