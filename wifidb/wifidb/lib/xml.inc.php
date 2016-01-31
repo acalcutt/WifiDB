@@ -1,7 +1,7 @@
 <?php
 /*
 Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+Copyright (C) 2016 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -88,7 +88,7 @@ class xml
             {
                 $tag    = str_replace(" ", "_", $tag);
                 $sp     = str_repeat("\t", $d);
-                $res[]  = "$sp<$tag>$val<$tag>\r\n";
+                $res[]  = "$sp<$tag>$val</$tag>\r\n";
             }
         }
         return implode('', $res);
