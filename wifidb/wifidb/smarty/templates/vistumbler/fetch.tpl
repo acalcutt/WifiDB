@@ -83,7 +83,7 @@ if not, write to the
 															<td class="light" align="center">{$wifidb_assoc.aps}</td>
 															<td class="light">{$wifidb_assoc.date}</td>
 															<td class="light">{$wifidb_assoc.nu}</td>
-															<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>			
+															<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>			
 															<td class="style4" onclick="expandcontract('Row{$wifidb_assoc.id}','ClickIcon{$wifidb_assoc.id}')" id="ClickIcon{$wifidb_assoc.id}" style="cursor: pointer; cursor: hand;">+</td>
 														</tr>
 													</tbody>
