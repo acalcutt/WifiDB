@@ -285,39 +285,100 @@ switch($func)
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			
+			#Get the AP Center point
 			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
-			$KML_Signal_data = $dbcore->export->ExportApSignal3dAll($id, 0);
+			
+			#Get the AP Signal History
+			$KML_Signal_data = "";
+			# -Get the AP hash-
+			$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+			$prep_hash = $dbcore->sql->conn->prepare($sql);
+			$prep_hash->bindParam(1, $id, PDO::PARAM_INT);
+			$prep_hash->execute();
+			$fetch_hash = $prep_hash->fetch(2);
+			$ap_hash = $fetch_hash['ap_hash'];
+			
+			# -Get Unique Lists-
+			$sql = "SELECT DISTINCT(file_id) FROM `wifi_signals` WHERE `ap_hash` = ? ORDER BY `file_id`";
+			$prep_file_id = $dbcore->sql->conn->prepare($sql);
+			$prep_file_id->bindParam(1, $ap_hash, PDO::PARAM_STR);
+			$prep_file_id->execute();
+			$fetch_file_id = $prep_file_id->fetchAll();
+			foreach($fetch_file_id as $file_id)
+			{
+				$file_id = $file_id['file_id'];
+				$Export_List = 0;
+				$box_latlon = array();
+				# -Get Import Name-
+				$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
+				$prep_title = $dbcore->sql->conn->prepare($sql);
+				$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
+				$prep_title->execute();
+				$fetch_title = $prep_title->fetch(2);
+				$ap_list_title = $fetch_title['title'];
+				$ap_list_date = $fetch_title['date'];
+				# -Get latitudes and longitudes to draw region box-
+				$sql = "SELECT
+						  `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`
+						FROM `wifi`.`wifi_signals`
+						  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+						WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'";
+						
+				$result = $dbcore->sql->conn->query($sql);
+				while($latlon_fetch = $result->fetch(2))
+				{
+					# -Add gps to region array-
+					$latlon_info = array(
+					"lat" => $latlon_fetch['lat'],
+					"long" => $latlon_fetch['long'],
+					);
+					$box_latlon[] = $latlon_info;
+
+					# -Set List to be exported-
+					$Export_List = 1;
+				}
+				
+				if($Export_List)
+				{
+					# -Create Region Box-
+					$final_box = $dbcore->export->FindBox($box_latlon);
+					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());
+					
+					# -Create Network Link to Signal History-
+					$KML_Signal_data .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list_ap_signal&#x26;row='.$file_id.'&#x26;id='.$id, $file_id.' - '.$ap_list_title.' - '.$ap_list_date, 1, 0, "onChange", 86400, 0, $KML_region);
+				}
+			}			
+			if($KML_Signal_data == ""){$KML_Signal_data .= $dbcore->createKML->createFolder("No Signal History", $KML_Signal_data, 0);}
 			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
 			
-		case "exp_list_ap":
+		case "exp_list_ap_signal":
 			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			
-			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
+			#Get AP Name
+			$sql = "SELECT `ssid` FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+			$prep_name = $dbcore->sql->conn->prepare($sql);
+			$prep_name->bindParam(1, $id, PDO::PARAM_INT);
+			$prep_name->execute();
+			$ap_array = $prep_name->fetch(2);
+			$ap_name = $ap_array['ssid'];
+			
+			#Get List Title 
+			$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
+			$prep_title = $dbcore->sql->conn->prepare($sql);
+			$prep_title->bindParam(1, $row, PDO::PARAM_INT);
+			$prep_title->execute();
+			$fetch_title = $prep_title->fetch(2);
+			$ap_list_title = $fetch_title['title'];
+			
+			#Get List AP Signal History
 			$KML_Signal_data = $dbcore->export->ExportSignal3dSingleListAp($row, $id, 0);
-			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $row."-".$id."-".$export_ssid);
-			$results = $dbcore->createKML->createKMLstructure($title, $results);
-			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
-			break;
-
-		case "exp_ap_signal":
-			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			if(isset($_REQUEST['from'])){$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);}else{$from=NULL;}
-			if(isset($_REQUEST['limit'])){$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);}else{$limit=NULL;}
-			
-			list($results, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
-			#$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, $limit, $from);
-			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, 0, $limit, $from);
-			$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 0);
-			
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");
-			if($limit){$title .= "-$limit";}
-			if($from){$title .= "-$from";}
+			$results = $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $row."-".$ap_list_title."-".$id."-".$ap_name);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;

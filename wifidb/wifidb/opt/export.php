@@ -113,44 +113,6 @@ switch($func)
 			$dbcore->smarty->display('export_results.tpl');
 			break;
 		#--------------------------
-		case "exp_all_signal":
-			define("SWITCH_EXTRAS", "export");
-			include('../lib/init.inc.php');
-			$dbcore->smarty->assign('wifidb_page_label', 'Export All Signals for AP');
-			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			$from = (int)($_REQUEST['from'] ? $_REQUEST['from']: NULL);
-			$limit = (int)($_REQUEST['limit'] ? $_REQUEST['limit']: NULL);
-			
-			if(!is_int($id))
-			{
-				throw new ErrorException('$id value for export::SingleAp() is NaN');
-				return 0;
-			}
-			
-			list($KML_data, $export_ssid) = $dbcore->export->ExportSingleAp($id, 0, 0);
-			$KML_Signal_data = $dbcore->export->ExportApSignal3d($id, $limit, $from);
-			$KML_data .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-Signal");
-			if($limit){$title .= "-$limit";}
-			if($from){$title .= "-$from";}
-			$KML_data = $dbcore->createKML->createKMLstructure($title, $KML_data);
-			$kmz_filename = $dbcore->kml_out.$title.".kmz";
-			$dbcore->Zip->addFile($KML_data, 'doc.kml');
-			$dbcore->Zip->setZipFile($kmz_filename);
-			$dbcore->Zip->getZipFile();
-			if (file_exists($kmz_filename)) 
-			{
-				$results = array("mesg" => 'File is ready: <a href="'.$dbcore->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
-			}
-			else
-			{
-				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
-			}
-
-			$dbcore->smarty->assign('results', $results);
-			$dbcore->smarty->display('export_results.tpl');
-			break;
-		#--------------------------
 		case "exp_single_ap":
 			define("SWITCH_EXTRAS", "export");
 			include('../lib/init.inc.php');
