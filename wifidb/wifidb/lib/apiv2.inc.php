@@ -411,7 +411,7 @@ class apiv2 extends dbcore
         $hash		   = $details['hash'];
         $ext			= $details['ext'];
         $filename	   = $details['filename'];
-        if($user[-1] == "|")
+        if(substr($user, -1) == "|")
         {
             $user = str_replace("|", "", $user);
         }else
