@@ -411,6 +411,14 @@ class apiv2 extends dbcore
         $ext			= $details['ext'];
         $filename	   = $details['filename'];
 
+        if(substr($user, -1) == "|")
+        {
+            $user = str_replace("|", "", $user);
+        }else
+        {
+            $exp = explode("|", $user);
+            $user = $exp[0];
+        }
         $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
         $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
         $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
