@@ -31,7 +31,7 @@ class apiv2 extends dbcore
         $this->output	    = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
         $this->username	    = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
         #var_dump($this->username);
-        $this->EnableAPIKey = 1; #$config['EnableAPIKey'];
+        $this->EnableAPIKey = $config['EnableAPIKey'];
         $this->mesg	        = array();
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;

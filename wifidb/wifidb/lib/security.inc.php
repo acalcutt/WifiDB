@@ -443,17 +443,16 @@ class security
     {
         $username = @$_REQUEST['username'];
         $apikey = @$_REQUEST['apikey'];
-
         if($this->EnableAPIKey)
         {
+            var_dump($this->EnableAPIKey);
             if($username === "AnonCoward" && $apikey === "scaredycat")
             {
                 $this->login_check = 1;
                 $this->login_val = "apilogin";
                 return 1;
             }
-
-            if($username === "" || $username === "Unknown")
+            if($username === "" || $username === "Unknown" || $username === NULL)
             {
                 $this->mesg['error'] = "Invalid Username set.";
                 $this->login_val = "failed";
