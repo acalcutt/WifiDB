@@ -450,7 +450,6 @@ class security
         $apikey = @$_REQUEST['apikey'];
         if($this->EnableAPIKey)
         {
-            var_dump($this->EnableAPIKey);
             if($username === "AnonCoward" && $apikey === "scaredycat")
             {
                 $this->login_check = 1;
