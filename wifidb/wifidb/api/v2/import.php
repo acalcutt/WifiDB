@@ -43,7 +43,7 @@ switch($func)
 			$date = date($dbcore->datetime_format);
 			$otherusers = (empty($_REQUEST['otherusers'])) ? "" : $_REQUEST['otherusers'];
 
-			if(!@$_FILES['file']['tmp_name']){$dbcore->Output("No upload file found :(");}
+            if(!@$_FILES['file']['tmp_name']){$this->mesg['error'] = "No upload file found :(" ; $dbcore->Output();}
 
 			$tmp  = $_FILES['file']['tmp_name'];
 			$size = $_FILES['file']['size'];
