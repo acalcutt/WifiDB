@@ -58,7 +58,7 @@ switch(strtolower($dbcore->Func))
         break;
 
     default:
-        $this->mesg['error'] = "Unknown Func parameter called.";
+        $dbcore->mesg['error'] = "Unknown Func parameter called.";
         $result = -1;
         break;
 }
