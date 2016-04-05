@@ -235,7 +235,6 @@ class frontend extends dbcore
 		return $array;
 	}
 
-
 	function htmlheader()
 	{
 		if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
@@ -257,7 +256,6 @@ class frontend extends dbcore
 		$this->login_bar = $login_bar;
 		return 1;
 	}
-
 
 	function htmlfooter()
 	{
@@ -291,7 +289,7 @@ class frontend extends dbcore
         $result = $this->sql->conn->query($sql);
         $this->sql->checkError( $result, __LINE__, __FILE__);
         $users_all = $result->fetchAll(2);
-        var_dump(count($users_all));
+#        var_dump(count($users_all));
         if(count($users_all) !== 0)
         {
             foreach ($users_all as $user) {

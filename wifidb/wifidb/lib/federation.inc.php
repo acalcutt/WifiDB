@@ -13,6 +13,7 @@ class federation
         $this->sql                = &$dbcore->sql;
         $this->cli                = &$dbcore->cli;
         $this->mesg               = array();
+        $this->DataTypes          = array("users", "userlists", "aps");
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;
         $this->shared_key         = "";
@@ -20,7 +21,6 @@ class federation
         $this->FedHostSharedKey   = "";
         $this->FedHostApiVer      = "";
     }
-
 
     function GetFedServersList()
     {
@@ -31,6 +31,44 @@ class federation
         return $newArray;
     }
 
+    function GetUserNameFromID($userid = 0)
+    {
+        $sql = "SELECT `username` FROM `user_info` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $userid, PDO::PARAM_INT );
+        $prep->execute();
+        $this->sql->checkError( $prep, __LINE__, __FILE__);
+        $user = $prep->fetch(2);
+
+        return $user['username'];
+    }
+
+    function GetLocalUsers()
+    {
+        $sql = "SELECT `id`, `username` FROM `user_info` ORDER BY `username` ASC";
+        $result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $users_all = $result->fetchAll(2);
+
+        return $users_all;
+    }
+
+    function GetLocalUserLists($Username = "")
+    {
+        if($Username === "")
+        {
+            throw new Exception("Username is empty.");
+        }
+        $sql = "SELECT `id`, `title`, `aps`, `gps`, `date` FROM `user_imports` WHERE `username` = ? ORDER BY `username` ASC";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_STR);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $userslists = $result->fetchAll(2);
+
+        return $userslists;
+    }
+
     function SelectFedServer($id = 0)
     {
         if($id === 0)
@@ -39,7 +77,7 @@ class federation
         }
         $sql = "SELECT * FROM `federation_servers` WHERE `id` = ?";
         $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam($this->FedServerID, PDO::PARAM_INT);
+        $prep->bindParam(1, $this->FedServerID, PDO::PARAM_INT);
         $result = $prep->execute();
         $return = $result->fetch(2);
         $this->FedHostSharedKey = $return['SharedKeyRemote'];
