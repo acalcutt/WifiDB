@@ -24,8 +24,8 @@ class apiv2 extends dbcore
     {
         parent::__construct($config, $SQL);
         $this->startdate	= "2016-Jan-10";
-        $this->lastedit	    = "2016-Jan-10";
-        $this->vernum	    = "2.1";
+        $this->lastedit	    = "2016-Apr-16";
+        $this->vernum	    = "2.0";
         $this->Author	    = "Phil Ferland";
         $this->contact	    = "pferland@randomintervals.com";
         $this->output	    = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
@@ -36,20 +36,29 @@ class apiv2 extends dbcore
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;
         #$this->EnableAPIKey = 0;
+
         if($this->EnableAPIKey && !(SWITCH_SCREEN === "CLI"))
         {
-            $this->sec->ValidateAPIKey();
-            if(!$this->sec->login_check)
+            if($this->sec->ValidateAPIKey() > 0)
+            {
+                #var_dump($this->sec->login_check);
+                #var_dump($this->sec->mesg);
+            }else
             {
                 $this->mesg = $this->sec->mesg;
                 $this->Output();
             }
-            #var_dump($this->sec->login_check);
-            #var_dump($this->sec->mesg);
         }else
         {
-            #var_dump($this->sec->login_check);
-            #var_dump($this->sec->mesg);
+            $this->privs = 1;
+            $this->apikey = "APIKEysDisabled";
+            $this->LoginLabel = $this->username;
+            $this->username = "DumbDumb";
+            $this->last_login = time();
+            $this->login_check = 1;
+            $this->login_val = "apilogin";
+            $this->mesg['message'] = "Authentication Succeeded. (API Keys Disabled or using CLI.)";
+            $this->logd("Authentication Succeeded. (API Keys Disabled or using CLI.)", "message");
         }
     }
 

@@ -83,13 +83,12 @@ class security
                 break;
         }
 
-        if($username === "fedserver")
+        if($this->username === "fedserver")
         {
             $this->priv_name = "Federation";
             $this->privs = 1;
-        }else {
-
-            #var_dump($username);
+        }else
+        {
             $sql0 = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
             $result = $this->sql->conn->prepare($sql0);
             $result->bindParam(1, $username);
@@ -439,117 +438,99 @@ class security
     
     function ValidateAPIKey()
     {
-        $username = @$_REQUEST['username'];
-        $apikey = @$_REQUEST['apikey'];
-        if($this->EnableAPIKey)
-        {
-            if($username === "AnonCoward" && $apikey === "scaredycat")
-            {
-                $this->login_check = 1;
-                $this->login_val = "apilogin";
-                return 1;
-            }elseif($username === "" || $username === "Unknown" || $username === NULL)
-            {
-                $this->mesg['error'] = "Invalid Username set.";
-                $this->login_val = "failed";
-                $this->login_check = 0;
-                return -1;
-            }
-            if($apikey === "")
-            {
-                $this->mesg['error'] = "Invalid API Key set.";
-                $this->login_val = "failed";
-                $this->login_check = 0;
-                return -2;
-            }
-            if($username === "fedserver")
-            {
-                $sql = "SELECT `SharedKeyRemote` FROM `federation_servers` WHERE `apikey` = ? LIMIT 1";
-                $result = $this->sql->conn->prepare($sql);
-                $result->bindParam(1, $apikey, PDO::PARAM_STR);
-                $this->sql->checkError($result->execute(), __LINE__, __FILE__);
-                $key = $result->fetch(2);
+        $this->username = @$_REQUEST['username'];
+        $this->apikey = @$_REQUEST['apikey'];
 
-                if($key['SharedKeyRemote'] !== $apikey)
-                {
-                    $this->mesg['error'] = "Authentication Failed.";
-                    $this->login_val = "failed";
-                    $this->login_check = 0;
-                    $this->logd("Error with API key." . var_export($this->sql->conn->errorInfo(), 1));
-                    return -2;
-                }else
-                {
-                    $this->username = $username;
-                    $this->check_privs(2);
-                    $this->apikey = $apikey;
-                    $this->LoginLabel = $username;
-                    $this->login_val = $username;
-                    $this->username = $username;
-                    $this->last_login = time();
-                    $this->login_check = 1;
-                    $this->login_val = "apilogin";
-                    $this->logd("Federation Authentication Succeeded.", "message");
-                    return 1;
-                }
-            }else {
-                $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `user_info` WHERE `username` = ? LIMIT 1";
-                $result = $this->sql->conn->prepare($sql);
-                $result->bindParam(1, $username, PDO::PARAM_STR);
-                $this->sql->checkError($result->execute(), __LINE__, __FILE__);
-
-                $key = $result->fetch(2);
-                if ($key['apikey'] !== $apikey) {
-                    $this->mesg['error'] = "Authentication Failed.";
-                    $this->login_val = "failed";
-                    $this->login_check = 0;
-                    $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
-                    return -2;
-                } elseif ($key['locked']) {
-                    $this->mesg['error'] = "Account Locked.";
-                    $this->login_val = "locked";
-                    $this->login_check = 0;
-                    $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
-                    return -3;
-                } elseif ($key['disabled']) {
-                    $this->mesg['error'] = "Account Disabled.";
-                    $this->login_val = "disabeld";
-                    $this->login_check = 0;
-                    $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
-                    return -4;
-                } elseif ($key['validated']) {
-                    $this->mesg['error'] = "User not validated yet.";
-                    $this->login_val = "NotValidated";
-                    $this->login_check = 0;
-                    $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
-                    return -5;
-                } else {
-                    $this->username = $username;
-                    $this->privs = $this->check_privs();
-                    $this->apikey = $apikey;
-                    $this->LoginLabel = $username;
-                    $this->login_val = $username;
-                    $this->username = $username;
-                    $this->last_login = time();
-                    $this->login_check = 1;
-                    $this->login_val = "apilogin";
-                    $this->logd("Authentication Succeeded.", "message");
-                    return 1;
-                }
-            }
-        }else
+        if($this->username === "AnonCoward" && $this->apikey === "scaredycat")
         {
-            $this->username = $username;
-            $this->privs = 1;
-            $this->apikey = "APIKEysDisabled";
-            $this->LoginLabel = $username;
-            $this->login_val = $username;
-            $this->username = $username;
-            $this->last_login = time();
             $this->login_check = 1;
             $this->login_val = "apilogin";
-            $this->mesg['message'] = "Authentication Succeeded. (API Keys Disabled.)";
-            $this->logd("Authentication Succeeded. (API Keys Disabled.)", "message");
+            return 1;
+        }elseif($this->username === "" || $this->username === "Unknown" || $this->username === NULL)
+        {
+            $this->mesg['error'] = "Invalid Username set.";
+            $this->login_val = "failed";
+            $this->login_check = 0;
+            return -1;
         }
-        return 0;
+
+        #var_dump($this->apikey);
+        #var_dump(empty($this->apikey) or is_null($this->apikey));
+        if( (empty($this->apikey) or is_null($this->apikey)) )
+        {
+            $this->mesg['error'] = "Invalid API Key set.";
+            $this->login_val = "failed";
+            $this->login_check = 0;
+            return -2;
+        }
+        if($this->username == "fedserver")
+        {
+            $sql = "SELECT * FROM `federation_servers` WHERE `SharedKeyRemote` = ?";
+            $result = $this->sql->conn->prepare($sql);
+            $result->bindParam(1, $this->apikey, PDO::PARAM_STR);
+            #$this->sql->checkError($result->execute(), __LINE__, __FILE__);
+            $result->execute();
+            $key = $result->fetch(2);
+            #var_dump( $key );
+            if($key['SharedKeyRemote'] !== $this->apikey)
+            {
+                $this->mesg['error'] = "Federation Authentication Failed.";
+                $this->login_val = "failed";
+                $this->login_check = 0;
+                $this->logd("Error with Federation API key." . var_export($this->sql->conn->errorInfo(), 1));
+                return -6;
+            }else
+            {
+                $this->check_privs(2);
+                $this->LoginLabel = $this->username;
+                $this->login_val = $this->username;
+                $this->last_login = time();
+                $this->login_check = 1;
+                $this->login_val = "apilogin";
+                $this->logd("Federation Authentication Succeeded.", "message");
+                return 1;
+            }
+        }else {
+            $sql = "SELECT `locked`, `validated`, `disabled`, `apikey` FROM `user_info` WHERE `username` = ? LIMIT 1";
+            $result = $this->sql->conn->prepare($sql);
+            $result->bindParam(1, $this->username, PDO::PARAM_STR);
+            $this->sql->checkError($result->execute(), __LINE__, __FILE__);
+
+            $key = $result->fetch(2);
+            if ($key['apikey'] !== $this->apikey) {
+                $this->mesg['error'] = "Authentication Failed.";
+                $this->login_val = "failed";
+                $this->login_check = 0;
+                $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
+                return -2;
+            } elseif ($key['locked']) {
+                $this->mesg['error'] = "Account Locked.";
+                $this->login_val = "locked";
+                $this->login_check = 0;
+                $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
+                return -3;
+            } elseif ($key['disabled']) {
+                $this->mesg['error'] = "Account Disabled.";
+                $this->login_val = "disabeld";
+                $this->login_check = 0;
+                $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
+                return -4;
+            } elseif ($key['validated']) {
+                $this->mesg['error'] = "User not validated yet.";
+                $this->login_val = "NotValidated";
+                $this->login_check = 0;
+                $this->logd("Error with User." . var_export($this->sql->conn->errorInfo(), 1));
+                return -5;
+            } else {
+                $this->privs = $this->check_privs();
+                $this->LoginLabel = $this->username;
+                $this->login_val = $this->username;
+                $this->last_login = time();
+                $this->login_check = 1;
+                $this->login_val = "apilogin";
+                $this->logd("Authentication Succeeded.", "message");
+                return 1;
+            }
+        }
     }
 }

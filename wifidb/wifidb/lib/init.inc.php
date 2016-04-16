@@ -117,7 +117,8 @@ try
 {
 	switch(strtolower(SWITCH_SCREEN))
 	{
-		case "cli":
+		################
+        case "cli":
 			switch(strtolower(SWITCH_EXTRAS))
 			{
 				####
@@ -229,8 +230,8 @@ try
                 $dbcore->smarty->assign('admin_login_link', ' <-> <a href="/wifidb/cp/admin/">Admin Control Panel</a>');
             }
 			break;
-		################
 
+        ################
         case "api":
             $dbcore = new api($config, $SQL);
             switch(SWITCH_EXTRAS)
@@ -277,14 +278,63 @@ try
                     break;
             }
             break;
+
+        ################
+        case "apiv2":
+            $dbcore = new apiv2($config, $SQL);
+            switch(SWITCH_EXTRAS)
+            {
+                case "announce":
+                    break;
+                case "atomrss":
+                    break;
+                case "export";
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("api");
+                    __autoload("Zip");
+                    $dbcore->convert = new convert($config, $SQL);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
+                    break;
+                case "geonames":
+                    break;
+                case "import":
+                    break;
+                case "latest":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("api");
+                    __autoload("Zip");
+                    $dbcore->convert = new convert($config, $SQL);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
+                    break;
+                case "live":
+                    break;
+                case "locate":
+                    break;
+                case "search":
+                    break;
+                default:
+                    throw new ErrorException("SWITCH_EXTRAS does not have an additive. eg api:export");
+                    break;
+            }
+            break;
+
+        ################
 		Default:
             throw new ErrorException("Unknown SWITCH_SCREEN Set. gurgle...cough...dead... *checks pulse*");
 			break;
 	}
-	#done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
+    #done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
 }
 catch (Exception $e) {
-	var_dump($e);
+	#var_dump($e);
 }
 
 
