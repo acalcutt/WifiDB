@@ -221,6 +221,89 @@ class apiv2 extends dbcore
         return 1;
     }
 
+    public function GetUserNameFromID($userid = 0)
+    {
+        if($userid === 0)
+        {
+            throw new Exception("User ID is empty.");
+            return -1;
+        }
+
+        $sql = "SELECT `username` FROM `user_info` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $userid, PDO::PARAM_INT );
+        $prep->execute();
+        $this->sql->checkError( $prep, __LINE__, __FILE__);
+        $user = $prep->fetch(2);
+        $this->mesg['user'] = $user;
+        return $user['username'];
+    }
+
+    public function GetLocalUsers()
+    {
+        $sql = "SELECT `id`, `username` FROM `user_info` ORDER BY `username` ASC";
+        $result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $users_all = $result->fetchAll(2);
+        $this->mesg['users_all'] = $users_all;
+        return $users_all;
+    }
+
+    public function GetLocalUserLists($Username = "")
+    {
+        if($Username === "")
+        {
+            throw new Exception("Username is empty.");
+        }
+        $sql = "SELECT `id`, `title`, `aps`, `gps`, `date` FROM `user_imports` WHERE `username` = ? ORDER BY `username` ASC";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_STR);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $userslists = $result->fetchAll(2);
+        $this->mesg['userslists'] = $userslists;
+        return $userslists;
+    }
+
+    public function GetLocalUserListData($ImportID = 0)
+    {
+        if($ImportID === 0)
+        {
+            throw new Exception("ImportID is empty.");
+        }
+        $sql = "SELECT `id`, `username`, `points`, `notes`, `title`, `date`, `aps`, `gps`, `hash`, `file_id`, `converted`, `prev_ext` FROM `user_imports` WHERE `id` = ?";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $ImportID, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $import = $result->fetchAll(2);
+        $this->mesg['import'] = $import;
+        return $import;
+    }
+
+    public function GetAPsList()
+    {
+        $sql = "SELECT id, ap_hash, ssid, mac, chan, auth, radio, encry, sectype, lat, `long`, username, signal_high, rssi_high, alt, manuf
+        FROM `wifi_pointers` ORDER BY id";
+        $result = $this->sql->conn->query($sql);
+        $aplist = $result->fetchAll(2);
+        $this->mesg['aplist'] = $aplist;
+        return $aplist;
+    }
+
+    public function GetAPData($APID = 0)
+    {
+        $sql = "SELECT id, ap_hash, ssid, mac, chan, auth, radio, encry, sectype, lat, `long`, username, signal_high, rssi_high, alt, manuf
+        FROM `wifi_pointers` WHERE `id` = ? ORDER BY id";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $APID, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $ap = $result->fetchAll(2);
+        $this->mesg['ap'] = $ap;
+        return $ap;
+    }
+
     public function GetWaitingScheduleTable()
     {
         if($this->AllDateRange == 1) {
@@ -965,45 +1048,67 @@ class apiv2 extends dbcore
             $this->mesg = "No AP's Found";
             return 0;
         }
-        $row_color = 0;
-        $results_all = array();
-        $i=0;
-        while ($newArray = $prep2->fetch(2))
+        $result = $prep2->fetchAll(2);
+        $this->mesg['AP_Result'] = $result;
+        return $result;
+    }
+
+    public function SearchUsers($username = "")
+    {
+        $sql = "SELECT `username` FROM `user_info` WHERE `username` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->execute();
+        $fetch = $prep->fetchAll(2);
+        var_dump($fetch);
+    }
+
+    public function SearchUserList($title = "%", $user = "%", $min_ap = "%", $max_ap = "%", $min_gps = "%", $max_gps = "%", $min_date = "%", $max_date = "%")
+    {
+        $sql = "SELECT `title`, `username`, `points`, `notes`, `date`, `aps`, `gps`, `hash`, `file_id`, `converted`, `prev_ext` FROM `user_imports` WHERE
+        `title` LIKE ? AND
+        `username` LIKE ? ";
+
+        if($min_ap != '%' && $max_ap != '%')
         {
-            if($row_color == 1)
-            {
-                $row_color = 0;
-                $results_all[$i]['class'] = "light";
-            }
-            else
-            {
-                $row_color = 1;
-                $results_all[$i]['class'] = "dark";
-            }
-            $results_all[$i]['id'] = $newArray['id'];
-            $results_all[$i]['ssid'] = $newArray['ssid'];
-            $results_all[$i]['mac'] = $newArray['mac'];
-            $results_all[$i]['sectype'] = $newArray['sectype'];
-            $results_all[$i]['chan'] = $newArray['chan'];
-            $results_all[$i]['auth'] = $newArray['auth'];
-            $results_all[$i]['encry'] = $newArray['encry'];
-            $results_all[$i]['radio'] = $newArray['radio'];
-            $results_all[$i]['BTx']=$newArray['BTx'];
-            $results_all[$i]['OTx']=$newArray['OTx'];
-            $results_all[$i]['label']=$newArray['label'];
-            $results_all[$i]['FA']=$newArray['FA'];
-            $results_all[$i]['LA']=$newArray['LA'];
-            $results_all[$i]['NT'] = $newArray['NT'];
-            $results_all[$i]['manuf']=$newArray['manuf'];
-            $results_all[$i]['geonames_id']=$newArray['geonames_id'];
-            $results_all[$i]['admin1_id']=$newArray['admin1_id'];
-            $results_all[$i]['admin2_id']=$newArray['admin2_id'];
-            $results_all[$i]['username']=$newArray['username'];
-            $results_all[$i]['ap_hash'] = $newArray['ap_hash'];
-            $i++;
+            $sql .= " AND `aps` => ? AND `aps` <= ?";
         }
-        $this->mesg = $results_all;
-        return $results_all;
+
+        if($min_gps != '%' && $max_gps != '%')
+        {
+            $sql .= " AND `gps` => ? AND `gps` <= ?";
+        }
+
+        if($min_date != '%' && $max_date != '%')
+        {
+            $sql .= " AND `date` BETWEEN ? AND ?";
+        }
+
+        $prep = $this->sql->conn->prepare($sql);
+        $values = array();
+        $values[] = $title;
+        $values[] = $user;
+
+        if($min_ap != '%' && $max_ap != '%') {
+            $values[] = $min_ap;
+            $values[] = $max_ap;
+        }
+
+        if($min_gps != '%' && $max_gps != '%') {
+            $values[] = $min_gps;
+            $values[] = $max_gps;
+        }
+
+        if($min_date != '%' && $max_date != '%') {
+            $values[] = $min_date;
+            $values[] = $max_date;
+        }
+
+        $prep->execute($values);
+
+        $fetch = $prep->fetchAll(2);
+        var_dump($fetch);
+        $this->mesg['ImportListResult'] = $fetch;
     }
 
     private function recursive_raw($sep = "", $open = "", $close = "", $data = array())

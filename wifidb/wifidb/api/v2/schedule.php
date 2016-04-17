@@ -62,11 +62,5 @@ switch(strtolower($dbcore->Func))
         $result = -1;
         break;
 }
-if($result <= 0)
-{
-    $dbcore->Output();#array("error"=>"Error in API;"));
-}
-else
-{
-    $dbcore->Output();
-}
+
+$dbcore->Output();
