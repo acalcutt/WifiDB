@@ -8,7 +8,7 @@
  */
 class federation
 {
-    function __construct(&$dbcore, $config)
+    public function __construct(&$dbcore)
     {
         $this->sql                = &$dbcore->sql;
         $this->cli                = &$dbcore->cli;
@@ -17,12 +17,13 @@ class federation
         $this->This_is_me         = $dbcore->This_is_me;
         $this->datetime_format    = $dbcore->datetime_format;
         $this->shared_key         = "";
+        $this->FedServerID        = 0;
         $this->FedHostURL         = "";
         $this->FedHostSharedKey   = "";
         $this->FedHostApiVer      = "";
     }
 
-    function GetFedServersList()
+    public function GetFedServersList()
     {
         $sql0 = "SELECT `id`, `FriendlyName`, `ServerAddress`, `APIVersion` FROM `federation_servers`";
         $result = $this->sql->conn->query($sql0);
@@ -31,9 +32,22 @@ class federation
         return $newArray;
     }
 
-    function SelectFedServer($id = 0)
+    public function GetFedUsers()
     {
-        if($id === 0)
+        $url = $this->FedHostURL."/api/v2/GetData.php?user=fedserver&apikey={$this->FedHostSharedKey}&func=users";
+
+        $ch = curl_init();
+
+        curl_setopt($ch,CURLOPT_URL, $url);
+
+        $result = curl_exec($ch);
+        var_dump($result);
+        curl_close($ch);
+    }
+
+    public function SelectFedServer($id = NULL)
+    {
+        if($id === NULL)
         {
             return -1;
         }
@@ -48,7 +62,7 @@ class federation
         return 0;
     }
 
-    function GetFedAPLists()
+    public function GetFedAPLists()
     {
         $url = 'http://domain.com/get-post.php';
         $fields = array(

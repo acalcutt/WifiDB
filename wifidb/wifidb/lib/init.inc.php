@@ -206,7 +206,7 @@ try
 					__autoload("convert");
 					__autoload("export");
 					__autoload("Zip");
-                    $dbcore = new frontend($config, $sql);
+                    $dbcore = new frontend($config, $SQL);
 
                     $dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
@@ -218,6 +218,11 @@ try
                     __autoload("graphs");
 					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
 				    break;
+                case "fed":
+                    $dbcore = new frontend($config, $SQL);
+                    __autoload("federation");
+                    $dbcore->federation = new federation($dbcore);
+                    break;
 				case "cp":
 				    break;
 				default:
