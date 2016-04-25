@@ -294,7 +294,7 @@ class import extends dbcore
 
 		$this->verbosed("Importing AP Data [$ap_count]:", 2);
 		$imported_aps = array();
-
+        $NewAPs = 0;
 		foreach($vs1data['apdata'] as $key=>$aps)
 		{
 			$calc = "AP: ".($key+1)." / ".$ap_count;
@@ -343,6 +343,7 @@ class import extends dbcore
 			{
 				$prev_id	  = 0;
 				$no_pointer   = 1;
+                $NewAPs++;
 			}
 
 			if($this->rssi_signals_flag)
@@ -546,7 +547,8 @@ class import extends dbcore
 				'imported'=> $imported,
 				'date'=>$date,
 				'aps'=>$ap_count,
-				'gps'=>$gps_count
+				'gps'=>$gps_count,
+                'newaps'=>$NewAPs
 			);
 		return $ret;
 	}

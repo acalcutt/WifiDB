@@ -343,7 +343,7 @@ class daemon extends wdbcli
 
 			if($file_hash !== @$fileqq['hash'])
 			{
-				if(count(explode(";", $file_to_Import['notes'])) === 1)
+				if(explode(";", $file_to_Import['user'])[1] === "")
 				{
 					$user = str_replace(";", "", $file_to_Import['user']);
 					$this->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
@@ -365,7 +365,7 @@ class daemon extends wdbcli
 				$prev_ext = $prep_ext->fetch(2);
 				$notes = $file_to_Import['notes'];
 				$title = $file_to_Import['title'];
-                if( $prev_ext['prev_ext'] === NULL)
+                if( $prev_ext['prev_ext'] == "")
                 {
                     $PrevExt = "";
                 }else
@@ -412,17 +412,21 @@ class daemon extends wdbcli
 					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
 				}else
 				{
+
 					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
 					$update_files_table_sql = "UPDATE `files` SET `aps` = ?, `gps` = ?, `completed` = 1 WHERE `id` = ?";
 					$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
 					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
+
+
 					$this->sql->checkError( $prep_update_files_table->execute(), __LINE__, __FILE__);
 
-					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ? WHERE `id` = ?";
+					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ?, `NewAPPercent` = ? WHERE `id` = ?";
 					$prep3 = $this->sql->conn->prepare($sql);
-					foreach($import_ids as $id)
+                    $NewAPPercent = (int)($tmp['aps'] / $tmp['newaps']);
+                    foreach($import_ids as $id)
 					{
 						$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
 						$prep3->bindParam(2, $file_date, PDO::PARAM_STR);
@@ -432,6 +436,7 @@ class daemon extends wdbcli
 						$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
 						$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
 						$prep3->bindParam(8, $id, PDO::PARAM_INT);
+                        $prep3->bindParam(9, $NewAPPercent, PDO::PARAM_INT);
 						$this->sql->checkError( $prep3->execute(), __LINE__, __FILE__);
 						$this->verbosed("Updated User Import row. ($id : $file_hash)", 2);
 					}
