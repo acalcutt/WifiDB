@@ -249,6 +249,17 @@ class apiv2 extends dbcore
         return $users_all;
     }
 
+    public function GetLocalImports()
+    {
+        $sql = "SELECT `id`, `title`, `aps`, `gps`, `date` FROM `user_imports` ORDER BY `id` ASC";
+        $result = $this->sql->conn->prepare($sql);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $userslists = $result->fetchAll(2);
+        $this->mesg['userslists'] = $userslists;
+        return $userslists;
+    }
+
     public function GetLocalUserLists($Username = "")
     {
         if($Username === "")
@@ -263,6 +274,38 @@ class apiv2 extends dbcore
         $userslists = $result->fetchAll(2);
         $this->mesg['userslists'] = $userslists;
         return $userslists;
+    }
+
+    public function GetLocalUserStats($Username = '')
+    {
+        $sql = "SELECT sum(`aps`), sum(`gps`) FROM user_imports WHERE username = ?";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $Stats = $result->fetchAll(2);
+        $Return['TotlaAPs'] = $Stats['sum(`aps`)'];
+        $Return['TotlaGPS'] = $Stats['sum(`gps`)'];
+
+        $sql = "SELECT
+ (SELECT `date` FROM user_imports WHERE username = ? ORDER BY `date`) as `first`,
+ (SELECT `date` FROM user_imports WHERE username = ? ORDER BY `date` DESC ) as `last`";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $FirstLastImport = $result->fetchAll(2);
+        $Return['FirstImport'] = $FirstLastImport['first'];
+        $Return['LastImport'] = $FirstLastImport['last'];
+
+        return $Return;
+    }
+
+    public function GetLocalUserData($Username = "")
+    {
+        $Results['UserStats'] = $this->GetLocalUserStats($Username);
+        $Result['UserLists'] = $this->GetLocalUserLists($Username);
+        return $Result;
     }
 
     public function GetLocalUserListData($ImportID = 0)

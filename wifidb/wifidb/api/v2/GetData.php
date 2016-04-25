@@ -19,12 +19,16 @@ switch(strtolower($_REQUEST['func']))
         $result = $dbcore->GetLocalUsers();
     break;
 
-    case "user":
+    case "userdata":
         $username = $dbcore->GetUserNameFromID((int)$_REQUEST['userid']);
-        $result = $dbcore->GetLocalUserLists($username);
+        $result = $dbcore->GetLocalUserData($username);
     break;
 
-    case "userlist":
+    case "imports":
+        $result = $dbcore->GetLocalImports();
+        break;
+
+    case "importdata":
         $result = $dbcore->GetLocalUserListData( (int)$_REQUEST['ImportID'] );
     break;
 

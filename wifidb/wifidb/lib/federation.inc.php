@@ -88,4 +88,70 @@ class federation
         curl_close($ch);
     }
 
+    public function GetUserData($UserID = NULL)
+    {
+        if($UserID === NULL)
+        {
+            throw new Exception("UserID is not set.");
+        }
+        $url = $this->FedHostURL."/api/v2/GetData.php?user=fedserver&apikey={$this->FedHostSharedKey}&func=userdata&userid={$UserID}";
+
+        $ch = curl_init();
+
+        curl_setopt($ch,CURLOPT_URL, $url);
+
+        $result = curl_exec($ch);
+        var_dump($result);
+        curl_close($ch);
+    }
+
+    public function SearchUsers($User = NULL)
+    {
+        if($User === NULL)
+        {
+            throw new Exception("UserID is not set.");
+        }
+        $url = $this->FedHostURL."/api/v2/GetData.php?user=fedserver&apikey={$this->FedHostSharedKey}&func=user&SearchValue={$User}";
+
+        $ch = curl_init();
+
+        curl_setopt($ch,CURLOPT_URL, $url);
+
+        $result = curl_exec($ch);
+        var_dump($result);
+        curl_close($ch);
+    }
+
+    public function GetFedImports()
+    {
+        $url = $this->FedHostURL."/api/v2/GetData.php?user=fedserver&apikey={$this->FedHostSharedKey}&func=listimports";
+
+        $ch = curl_init();
+
+        curl_setopt($ch,CURLOPT_URL, $url);
+
+        $result = curl_exec($ch);
+        var_dump($result);
+        curl_close($ch);
+    }
+
+    public function GetFedImportData($ImportID = NULL)
+    {
+        if($ImportID === NULL)
+        {
+            throw new Exception("UserID is not set.");
+        }
+
+        $url = $this->FedHostURL."/api/v2/GetData.php?user=fedserver&apikey={$this->FedHostSharedKey}&func=userimport";
+
+        $ch = curl_init();
+
+        curl_setopt($ch,CURLOPT_URL, $url);
+
+        $result = curl_exec($ch);
+        var_dump($result);
+        curl_close($ch);
+    }
+
+
 }
