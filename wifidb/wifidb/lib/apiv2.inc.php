@@ -35,9 +35,10 @@ class apiv2 extends dbcore
         $this->mesg	        = array();
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;
+        $this->ImportFolder = $config['wifidb_install']."/import/up/";
         #$this->EnableAPIKey = 0;
 
-        if($this->EnableAPIKey && !(SWITCH_SCREEN === "CLI"))
+        if($this->EnableAPIKey && !( strtolower(SWITCH_SCREEN) == "cli" ) )
         {
             if($this->sec->ValidateAPIKey() > 0)
             {
@@ -535,24 +536,20 @@ class apiv2 extends dbcore
         return 1;
     }
 
-    public function ImportVS1($details = array())
+    public function ImportVS1($user = "", $otherusers = "", $date = "", $title = "", $notes = "", $size = "", $hash = "", $ext = "", $filename = "" )
     {
-        $user		   = $details['user'];
-        $otherusers	 = $details['otherusers'];
-        $date		   = $details['date'];
-        $title		  = $details['title'];
-        $notes		  = $details['notes'];
-        $size		   = $details['size'];
-        $hash		   = $details['hash'];
-        $ext			= $details['ext'];
-        $filename	   = $details['filename'];
-        if(substr($user, -1) == "|")
+        if($otherusers === "")
         {
-            $user = str_replace("|", "", $user);
+            $UserImportStr = $user;
         }else
         {
-            $exp = explode("|", $user);
-            $user = $exp[0];
+            $UserImportStr = $user . ";" . $otherusers;
+        }
+        $LocalHash = $this->GetFileHash($this->ImportFolder.$filename, "md5" );
+        if($LocalHash !== $hash)
+        {
+            $this->mesg['error'] = "File upload hash did not match the locally calculated value.";
+            return -1;
         }
         $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
         $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
@@ -566,68 +563,37 @@ class apiv2 extends dbcore
         $files_ret = $files_prep->fetch(2);
         if($tmp_ret['hash'] != "")
         {
-            $this->mesg = array("error"=>"File Hash already waiting for import: $hash");
+            $this->mesg['error'] = "File Hash already waiting for import: ".$hash;
             return -1;
         }
         if($files_ret['hash'] != "")
         {
-            $this->mesg = array("error"=>"File Hash already exists in WiFiDB:  $hash");
+            $this->mesg['error'] ="File Hash already exists in WiFiDB:  $hash";
             return -1;
         }
-
-        switch($ext)
+        $this->mesg['import']["title"] = $title;
+        $this->mesg['import']["user"] = $user;
+        if($otherusers)
         {
-            case "vs1":
-                $task = "import";
-                break;
-            case "vsz":
-                $task = "import";
-                break;
-            case "vscz":
-                $task = "experimental";
-                break;
-            case "csv":
-                $task = "import";
-                break;
-            case "db3":
-                $task = "import";
-                break;
-            default:
-                $task = "";
-                break;
+            $this->mesg['import']['otherusers'] = $otherusers;
         }
+        $sql = "INSERT INTO `files_tmp`
+                        ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
+                VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
+        $result = $this->sql->conn->prepare( $sql );
 
-        switch($task)
-        {
-            case "import":
-                $this->mesg['import']["title"] = $title;
-                $this->mesg['import']["user"] = $user;
-                if($otherusers)
-                {
-                    $this->mesg['import']['otherusers'] = $otherusers;
-                }
-                $sql = "INSERT INTO `files_tmp`
-								( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-						VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
-                $result = $this->sql->conn->prepare( $sql );
+        $result->bindValue(1, $filename, PDO::PARAM_STR);
+        $result->bindValue(2, $date, PDO::PARAM_STR);
+        $result->bindValue(3, $UserImportStr, PDO::PARAM_STR);
+        $result->bindValue(4, $notes, PDO::PARAM_STR);
+        $result->bindValue(5, $title, PDO::PARAM_STR);
+        $result->bindValue(6, $size, PDO::PARAM_STR);
+        $result->bindValue(7, $hash, PDO::PARAM_STR);
+        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
 
-                $result->bindValue(1, $filename, PDO::PARAM_STR);
-                $result->bindValue(2, $date, PDO::PARAM_STR);
-                $result->bindValue(3, $user."|".$otherusers, PDO::PARAM_STR);
-                $result->bindValue(4, $notes, PDO::PARAM_STR);
-                $result->bindValue(5, $title, PDO::PARAM_STR);
-                $result->bindValue(6, $size, PDO::PARAM_STR);
-                $result->bindValue(7, $hash, PDO::PARAM_STR);
-                $this->sql->checkError($result->execute(), __LINE__, __FILE__);
-
-                $this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
-                $this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
-                $this->mesg['import']["filehash"] = $hash;
-                break;
-            default:
-                $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files");
-                break;
-        }
+        $this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
+        $this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
+        $this->mesg['import']["filehash"] = $hash;
         return 1;
     }
 

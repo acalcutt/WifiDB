@@ -343,7 +343,7 @@ class daemon extends wdbcli
 
 			if($file_hash !== @$fileqq['hash'])
 			{
-				if(explode(";", $file_to_Import['user'])[1] === "")
+				if(@explode(";", $file_to_Import['user'])[1] === "")
 				{
 					$user = str_replace(";", "", $file_to_Import['user']);
 					$this->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
@@ -572,7 +572,7 @@ class daemon extends wdbcli
     public function GetJob()
     {
         $currentrun = time(); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-        var_dump($currentrun);
+        var_dump("CurrentRun: ".$currentrun);
         $sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` = ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
         $prepgj = $this->sql->conn->prepare($sql);
         $prepgj->bindParam(1, $this->node_name, PDO::PARAM_STR);
@@ -582,7 +582,7 @@ class daemon extends wdbcli
         $prepgj->execute();
         $this->sql->checkError( $prepgj->execute(), __LINE__, __FILE__);
         $job = $prepgj->fetch(2);
-        var_dump($job);
+        var_dump("Job Number: ".$job);
         #die();
         $this->job_interval = $job['interval'];
         $job_id = (empty($job['id']) ? 0 : $job['id'] );

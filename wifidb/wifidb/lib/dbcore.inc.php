@@ -582,6 +582,27 @@ class dbcore
 		return $manuf;
 	}
 
+    public static function GetFileHash($file = "", $hashType = "md5")
+    {
+        switch($hashType)
+        {
+            case "md5":
+                return hash_file("md5", $file);
+                break;
+            case "sha2":
+                return hash_file("sha256", $file);
+                break;
+            case "sha512":
+                return hash_file("sha512", $file);
+                break;
+            case "crc32":
+                $hash = hash_file('crc32b', $file);
+                $array = unpack('N', pack('H*', $hash));
+                return $array[1];
+        }
+
+    }
+
 	/**
 	 * @param $lat1
 	 * @param $long1

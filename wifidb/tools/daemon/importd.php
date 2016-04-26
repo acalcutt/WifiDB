@@ -177,6 +177,7 @@ else
 		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
 
         $NextImport = $dbcore->GetNextImportID();
+        echo "Next Import: ";
         var_dump($NextImport);
         if(empty($NextImport) && $dbcore->daemonize)
         {
@@ -185,7 +186,7 @@ else
             continue;
         }
 
-		var_dump($dbcore->RunOnceThrough);
+		var_dump("RunOnceValue: ".$dbcore->RunOnceThrough);
 		if( ( ( empty($NextImport) ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
