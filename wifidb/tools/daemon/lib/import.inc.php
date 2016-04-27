@@ -491,7 +491,7 @@ class import extends dbcore
 						`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
 						`username`,`ap_hash`, `rssi_high`, `signal_high`)
 						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
-					if($user[-1] == "|")
+					if(@$user[-1] == "|")
 					{
 						$user = str_replace("|", "", $user);
 					}else

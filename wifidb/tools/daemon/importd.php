@@ -178,7 +178,7 @@ else
 
         $NextImport = $dbcore->GetNextImportID();
         echo "Next Import: ";
-        var_dump($NextImport);
+        //var_dump($NextImport);
         if(empty($NextImport) && $dbcore->daemonize)
         {
             echo "No new Imports. Waiting.\r\n";
@@ -186,7 +186,7 @@ else
             continue;
         }
 
-		var_dump("RunOnceValue: ".$dbcore->RunOnceThrough);
+		//var_dump("RunOnceValue: ".$dbcore->RunOnceThrough);
 		if( ( ( empty($NextImport) ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
