@@ -187,7 +187,7 @@ else
         }
 
 		//var_dump("RunOnceValue: ".$dbcore->RunOnceThrough);
-		if( ( ( empty($NextImport) ) AND $dbcore->RunOnceThrough))
+		if( !@$NextImport['id']  AND $dbcore->RunOnceThrough)
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
 			$dbcore->return_message = -9;
@@ -203,33 +203,21 @@ else
 				exec($cmd);
 				#####
 			}
+            $ImportProcessReturn = $dbcore->ImportProcess($NextImport);
+            #$ImportProcessReturn = 1;
+            $dbcore->return_message = (int)$NextImport['id'];
 
-			if(!@$NextImport['id'])
-			{
-				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
-				if( !$dbcore->daemonize )
-				{
-					$dbcore->return_message = -10;
-					break;
-				}
-			}else
-			{
-				$ImportProcessReturn = $dbcore->ImportProcess($NextImport);
-				#$ImportProcessReturn = 1;
-				$dbcore->return_message = (int)$NextImport['id'];
-
-				switch($ImportProcessReturn)
-				{
-					#Error converting file for single run through, break loop.
-					case -1:
-						break;
-					#Error Converting file for daemon, continue run.
-					case 0:
-						continue;
-					case 1:
-						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
-				}
-			}
+            switch($ImportProcessReturn)
+            {
+                #Error converting file for single run through, break loop.
+                case -1:
+                    break;
+                #Error Converting file for daemon, continue run.
+                case 0:
+                    continue;
+                case 1:
+                    trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
+            }
 		}
 		if($dbcore->ImportID !== 0)
 		{

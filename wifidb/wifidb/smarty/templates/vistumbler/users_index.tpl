@@ -58,6 +58,7 @@ if not, write to the
                                             <tr class="sub_head">
                                                 <th width="100px">Title</th>
                                                 <th>Number of APs</th>
+												<th>AP Efficiency</th>
                                                 <th>Import Notes</th>
                                                 <th>Imported On</th>
                                             </tr>
@@ -65,6 +66,7 @@ if not, write to the
                                             <tr class="{$wifidb_import.class}">
                                                 <td align="center"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.title}</a></td>
                                                 <td align="center">{$wifidb_import.aps}</td>
+												<td align="center">{$wifidb_import.NewAPPercent}</td>
                                                 <td align="center">{$wifidb_import.notes}</td>
                                                 <td align="center">{$wifidb_import.date}</td>
                                             </tr>

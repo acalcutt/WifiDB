@@ -302,7 +302,7 @@ class frontend extends dbcore
             $this->all_users_data = array();
             $prev_id = 0;
             foreach ($users as $user) {
-                $sql = "SELECT * FROM `user_imports` WHERE `username`= ? ORDER BY `id` ASC";
+                $sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `id` ASC";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $user, PDO::PARAM_STR);
                 $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
@@ -374,6 +374,7 @@ class frontend extends dbcore
                                     'title' => $user_array['title'],
                                     'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
                                     'aps' => $pc,
+                                    'NewAPPercent' => $user_array['NewAPPercent']."%",
                                     'date' => $user_array['date']
                                 ),
                             ),
@@ -580,7 +581,7 @@ class frontend extends dbcore
 	function UserAPList($row=0)
 	{
 		if(!$row){return 0;}
-		$sql = "SELECT * FROM `user_imports` WHERE `id`= ?";
+		$sql = "SELECT `id`, `username`, `aps`, `gps`, `points`, `notes`, `title`, `date`, `hash`, `file_id`, `converted`, `prev_ext`, `NewAPPercent` FROM `user_imports` WHERE `id`= ?";
 		$result = $this->sql->conn->prepare($sql);
         $result->bindParam(1, $row, PDO::PARAM_INT);
         $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
@@ -592,19 +593,19 @@ class frontend extends dbcore
 
 		$all_aps_array['notes'] = $user_array['notes'];
 		$all_aps_array['title'] = $user_array['title'];
+        $all_aps_array['aps'] = $user_array['aps'];
+        $all_aps_array['NewAPPercent'] = $user_array['NewAPPercent']."%";
 
 		$points = explode("-", $user_array['points']);
 		$flip = 0;
 		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
 		$result = $this->sql->conn->prepare($sql);
-		$count = 0;
 		foreach($points as $ap)
 		{
 			$ap_exp = explode(":" , $ap);
 			$apid = $ap_exp[0];
 
 			#if($ap_exp[0] == 0){continue;}
-			$count++;
 
 			if($flip)
 				{$style = "dark";$flip=0;}
@@ -661,7 +662,6 @@ class frontend extends dbcore
 					'la' => $ap_array['LA']
 				);
 		}
-		$all_aps_array['total_aps'] = $count;
 		$this->users_import_aps = $all_aps_array;
 		return 1;
 	}

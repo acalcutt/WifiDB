@@ -36,8 +36,12 @@ if not, write to the
                                         </tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Total Access Points...</b></td>
-                                            <td>{$wifidb_all_user_aps.total_aps}</td>
+                                            <td>{$wifidb_all_user_aps.aps}</td>
                                         </tr>
+										<tr class="sub_head">
+											<td width="190px"><b>Access Point Efficiency...</b></td>
+											<td>{$wifidb_all_user_aps.NewAPPercent}</td>
+										</tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Export This list To...</b></td>
                                             <td><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list&amp;row={$wifidb_all_user_row}&amp;all=1">KMZ</a></td>

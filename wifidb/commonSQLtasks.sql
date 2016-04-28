@@ -14,3 +14,13 @@ SELECT * from files_importing;
 SELECT * FROM files_tmp;
 SELECT * FROM files_bad;
 SELECT * FROM user_imports;
+
+
+SELECT * from wifi_signals;
+
+SELECT * from wifi_pointers;
+
+
+SELECT * from wifi.schedule;
+
+update wifi.schedule set `nextrun` = 0, `status` = 'Waiting';
