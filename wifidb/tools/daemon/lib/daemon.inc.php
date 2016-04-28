@@ -428,7 +428,7 @@ class daemon extends wdbcli
 
 					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ?, `NewAPPercent` = ? WHERE `id` = ?";
 					$prep3 = $this->sql->conn->prepare($sql);
-                    $NewAPPercent = (int)( ( ($tmp['aps'] / $tmp['newaps']) ) * 100 );
+                    $NewAPPercent = (int)( ( $tmp['newaps'] / ($tmp['aps']) ) * 100 );
                     foreach($import_ids as $id)
 					{
 						$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
