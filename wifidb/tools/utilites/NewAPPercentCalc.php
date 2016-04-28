@@ -19,11 +19,12 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 $sql = "SELECT `id`, `points`, `aps` FROM `user_imports`";
 
 $result = $dbcore->sql->conn->query($sql);
-
-foreach($result->fetchAll(2) as $import)
+$allImports = $result->fetchAll(2);
+$count = count($allImports);
+foreach($allImports as $import)
 {
     $new = 0;
-    echo $import['id']." - ".$import['aps']."\r\n";
+    echo $count." / ".$import['id']." - ".$import['aps']."\r\n";
     $points = explode("-", $import['points']);
     foreach($points as $point)
     {
