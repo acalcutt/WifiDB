@@ -24,32 +24,42 @@ class apiv2 extends dbcore
     {
         parent::__construct($config, $SQL);
         $this->startdate	= "2016-Jan-10";
-        $this->lastedit	    = "2016-Jan-10";
-        $this->vernum	    = "2.1";
+        $this->lastedit	    = "2016-Apr-16";
+        $this->vernum	    = "2.0";
         $this->Author	    = "Phil Ferland";
         $this->contact	    = "pferland@randomintervals.com";
         $this->output	    = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
         $this->username	    = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
         #var_dump($this->username);
-        $this->EnableAPIKey = 1; #$config['EnableAPIKey'];
+        $this->EnableAPIKey = $config['EnableAPIKey'];
         $this->mesg	        = array();
         $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
         $this->verbose      = 1;
+        $this->ImportFolder = $config['wifidb_install']."/import/up/";
         #$this->EnableAPIKey = 0;
-        if($this->EnableAPIKey && !(SWITCH_SCREEN === "CLI"))
+
+        if($this->EnableAPIKey && !( strtolower(SWITCH_SCREEN) == "cli" ) )
         {
-            $this->sec->ValidateAPIKey();
-            if(!$this->sec->login_check)
+            if($this->sec->ValidateAPIKey() > 0)
+            {
+                #var_dump($this->sec->login_check);
+                #var_dump($this->sec->mesg);
+            }else
             {
                 $this->mesg = $this->sec->mesg;
                 $this->Output();
             }
-            #var_dump($this->sec->login_check);
-            #var_dump($this->sec->mesg);
         }else
         {
-            #var_dump($this->sec->login_check);
-            #var_dump($this->sec->mesg);
+            $this->privs = 1;
+            $this->apikey = "APIKEysDisabled";
+            $this->LoginLabel = $this->username;
+            $this->username = "DumbDumb";
+            $this->last_login = time();
+            $this->login_check = 1;
+            $this->login_val = "apilogin";
+            $this->mesg['message'] = "Authentication Succeeded. (API Keys Disabled or using CLI.)";
+            $this->logd("Authentication Succeeded. (API Keys Disabled or using CLI.)", "message");
         }
     }
 
@@ -210,6 +220,132 @@ class apiv2 extends dbcore
             'feet'=>$dist[0]*5280
         );
         return 1;
+    }
+
+    public function GetUserNameFromID($userid = 0)
+    {
+        if($userid === 0)
+        {
+            throw new Exception("User ID is empty.");
+            return -1;
+        }
+
+        $sql = "SELECT `username` FROM `user_info` WHERE `id` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $userid, PDO::PARAM_INT );
+        $prep->execute();
+        $this->sql->checkError( $prep, __LINE__, __FILE__);
+        $user = $prep->fetch(2);
+        $this->mesg['user'] = $user;
+        return $user['username'];
+    }
+
+    public function GetLocalUsers()
+    {
+        $sql = "SELECT `id`, `username` FROM `user_info` ORDER BY `username` ASC";
+        $result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $users_all = $result->fetchAll(2);
+        $this->mesg['users_all'] = $users_all;
+        return $users_all;
+    }
+
+    public function GetLocalImports()
+    {
+        $sql = "SELECT `id`, `title`, `aps`, `gps`, `date` FROM `user_imports` ORDER BY `id` ASC";
+        $result = $this->sql->conn->prepare($sql);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $userslists = $result->fetchAll(2);
+        $this->mesg['userslists'] = $userslists;
+        return $userslists;
+    }
+
+    public function GetLocalUserLists($Username = "")
+    {
+        if($Username === "")
+        {
+            throw new Exception("Username is empty.");
+        }
+        $sql = "SELECT `id`, `title`, `aps`, `gps`, `date` FROM `user_imports` WHERE `username` = ? ORDER BY `username` ASC";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_STR);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $userslists = $result->fetchAll(2);
+        $this->mesg['userslists'] = $userslists;
+        return $userslists;
+    }
+
+    public function GetLocalUserStats($Username = '')
+    {
+        $sql = "SELECT sum(`aps`), sum(`gps`) FROM user_imports WHERE username = ?";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $Stats = $result->fetchAll(2);
+        $Return['TotlaAPs'] = $Stats['sum(`aps`)'];
+        $Return['TotlaGPS'] = $Stats['sum(`gps`)'];
+
+        $sql = "SELECT
+ (SELECT `date` FROM user_imports WHERE username = ? ORDER BY `date`) as `first`,
+ (SELECT `date` FROM user_imports WHERE username = ? ORDER BY `date` DESC ) as `last`";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $Username, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $FirstLastImport = $result->fetchAll(2);
+        $Return['FirstImport'] = $FirstLastImport['first'];
+        $Return['LastImport'] = $FirstLastImport['last'];
+
+        return $Return;
+    }
+
+    public function GetLocalUserData($Username = "")
+    {
+        $Results['UserStats'] = $this->GetLocalUserStats($Username);
+        $Result['UserLists'] = $this->GetLocalUserLists($Username);
+        return $Result;
+    }
+
+    public function GetLocalUserListData($ImportID = 0)
+    {
+        if($ImportID === 0)
+        {
+            throw new Exception("ImportID is empty.");
+        }
+        $sql = "SELECT `id`, `username`, `points`, `notes`, `title`, `date`, `aps`, `gps`, `hash`, `file_id`, `converted`, `prev_ext` FROM `user_imports` WHERE `id` = ?";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $ImportID, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $import = $result->fetchAll(2);
+        $this->mesg['import'] = $import;
+        return $import;
+    }
+
+    public function GetAPsList()
+    {
+        $sql = "SELECT id, ap_hash, ssid, mac, chan, auth, radio, encry, sectype, lat, `long`, username, signal_high, rssi_high, alt, manuf
+        FROM `wifi_pointers` ORDER BY id";
+        $result = $this->sql->conn->query($sql);
+        $aplist = $result->fetchAll(2);
+        $this->mesg['aplist'] = $aplist;
+        return $aplist;
+    }
+
+    public function GetAPData($APID = 0)
+    {
+        $sql = "SELECT id, ap_hash, ssid, mac, chan, auth, radio, encry, sectype, lat, `long`, username, signal_high, rssi_high, alt, manuf
+        FROM `wifi_pointers` WHERE `id` = ? ORDER BY id";
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $APID, PDO::PARAM_INT);
+        $result->execute();
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $ap = $result->fetchAll(2);
+        $this->mesg['ap'] = $ap;
+        return $ap;
     }
 
     public function GetWaitingScheduleTable()
@@ -378,11 +514,12 @@ class apiv2 extends dbcore
         $bad_ret = $bad_prep->fetch(2);
         if($files_ret['hash'] != "")
         {
-            $this->mesg['scheduling'] = array("finished"=>$files_ret);
-        }
-        elseif($imp_ret['hash'] != "")
-        {
-            $this->mesg['scheduling'] = array("importing"=>$imp_ret);
+            if($imp_ret['hash'] != "")
+            {
+                $this->mesg['scheduling'] = array("importing"=>$imp_ret);
+            }else{
+                $this->mesg['scheduling'] = array("finished"=>$files_ret);
+            }
         }
         elseif($tmp_ret['hash'] != "")
         {
@@ -399,18 +536,21 @@ class apiv2 extends dbcore
         return 1;
     }
 
-    public function ImportVS1($details = array())
+    public function ImportVS1($user = "", $otherusers = "", $date = "", $title = "", $notes = "", $size = "", $hash = "", $ext = "", $filename = "" )
     {
-        $user		   = $details['user'];
-        $otherusers	 = $details['otherusers'];
-        $date		   = $details['date'];
-        $title		  = $details['title'];
-        $notes		  = $details['notes'];
-        $size		   = $details['size'];
-        $hash		   = $details['hash'];
-        $ext			= $details['ext'];
-        $filename	   = $details['filename'];
-
+        if($otherusers === "")
+        {
+            $UserImportStr = $user;
+        }else
+        {
+            $UserImportStr = $user . ";" . $otherusers;
+        }
+        $LocalHash = $this->GetFileHash($this->ImportFolder.$filename, "md5" );
+        if($LocalHash !== $hash)
+        {
+            $this->mesg['error'] = "File upload hash did not match the locally calculated value.";
+            return -1;
+        }
         $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
         $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
         $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
@@ -423,68 +563,37 @@ class apiv2 extends dbcore
         $files_ret = $files_prep->fetch(2);
         if($tmp_ret['hash'] != "")
         {
-            $this->mesg = array("error"=>"File Hash already waiting for import: $hash");
+            $this->mesg['error'] = "File Hash already waiting for import: ".$hash;
             return -1;
         }
         if($files_ret['hash'] != "")
         {
-            $this->mesg = array("error"=>"File Hash already exists in WiFiDB:  $hash");
+            $this->mesg['error'] ="File Hash already exists in WiFiDB:  $hash";
             return -1;
         }
-
-        switch($ext)
+        $this->mesg['import']["title"] = $title;
+        $this->mesg['import']["user"] = $user;
+        if($otherusers)
         {
-            case "vs1":
-                $task = "import";
-                break;
-            case "vsz":
-                $task = "import";
-                break;
-            case "vscz":
-                $task = "experimental";
-                break;
-            case "csv":
-                $task = "import";
-                break;
-            case "db3":
-                $task = "import";
-                break;
-            default:
-                $task = "";
-                break;
+            $this->mesg['import']['otherusers'] = $otherusers;
         }
+        $sql = "INSERT INTO `files_tmp`
+                        ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
+                VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
+        $result = $this->sql->conn->prepare( $sql );
 
-        switch($task)
-        {
-            case "import":
-                $this->mesg['import']["title"] = $title;
-                $this->mesg['import']["user"] = $user;
-                if($otherusers)
-                {
-                    $this->mesg['import']['otherusers'] = $otherusers;
-                }
-                $sql = "INSERT INTO `files_tmp`
-								( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-						VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
-                $result = $this->sql->conn->prepare( $sql );
+        $result->bindValue(1, $filename, PDO::PARAM_STR);
+        $result->bindValue(2, $date, PDO::PARAM_STR);
+        $result->bindValue(3, $UserImportStr, PDO::PARAM_STR);
+        $result->bindValue(4, $notes, PDO::PARAM_STR);
+        $result->bindValue(5, $title, PDO::PARAM_STR);
+        $result->bindValue(6, $size, PDO::PARAM_STR);
+        $result->bindValue(7, $hash, PDO::PARAM_STR);
+        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
 
-                $result->bindValue(1, $filename, PDO::PARAM_STR);
-                $result->bindValue(2, $date, PDO::PARAM_STR);
-                $result->bindValue(3, $user."|".$otherusers, PDO::PARAM_STR);
-                $result->bindValue(4, $notes, PDO::PARAM_STR);
-                $result->bindValue(5, $title, PDO::PARAM_STR);
-                $result->bindValue(6, $size, PDO::PARAM_STR);
-                $result->bindValue(7, $hash, PDO::PARAM_STR);
-                $this->sql->checkError($result->execute(), __LINE__, __FILE__);
-
-                $this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
-                $this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
-                $this->mesg['import']["filehash"] = $hash;
-                break;
-            default:
-                $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files");
-                break;
-        }
+        $this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
+        $this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
+        $this->mesg['import']["filehash"] = $hash;
         return 1;
     }
 
@@ -948,45 +1057,67 @@ class apiv2 extends dbcore
             $this->mesg = "No AP's Found";
             return 0;
         }
-        $row_color = 0;
-        $results_all = array();
-        $i=0;
-        while ($newArray = $prep2->fetch(2))
+        $result = $prep2->fetchAll(2);
+        $this->mesg['AP_Result'] = $result;
+        return $result;
+    }
+
+    public function SearchUsers($username = "")
+    {
+        $sql = "SELECT `username` FROM `user_info` WHERE `username` = ?";
+        $prep = $this->sql->conn->prepare($sql);
+        $prep->bindParam(1, $username, PDO::PARAM_STR);
+        $prep->execute();
+        $fetch = $prep->fetchAll(2);
+        var_dump($fetch);
+    }
+
+    public function SearchUserList($title = "%", $user = "%", $min_ap = "%", $max_ap = "%", $min_gps = "%", $max_gps = "%", $min_date = "%", $max_date = "%")
+    {
+        $sql = "SELECT `title`, `username`, `points`, `notes`, `date`, `aps`, `gps`, `hash`, `file_id`, `converted`, `prev_ext` FROM `user_imports` WHERE
+        `title` LIKE ? AND
+        `username` LIKE ? ";
+
+        if($min_ap != '%' && $max_ap != '%')
         {
-            if($row_color == 1)
-            {
-                $row_color = 0;
-                $results_all[$i]['class'] = "light";
-            }
-            else
-            {
-                $row_color = 1;
-                $results_all[$i]['class'] = "dark";
-            }
-            $results_all[$i]['id'] = $newArray['id'];
-            $results_all[$i]['ssid'] = $newArray['ssid'];
-            $results_all[$i]['mac'] = $newArray['mac'];
-            $results_all[$i]['sectype'] = $newArray['sectype'];
-            $results_all[$i]['chan'] = $newArray['chan'];
-            $results_all[$i]['auth'] = $newArray['auth'];
-            $results_all[$i]['encry'] = $newArray['encry'];
-            $results_all[$i]['radio'] = $newArray['radio'];
-            $results_all[$i]['BTx']=$newArray['BTx'];
-            $results_all[$i]['OTx']=$newArray['OTx'];
-            $results_all[$i]['label']=$newArray['label'];
-            $results_all[$i]['FA']=$newArray['FA'];
-            $results_all[$i]['LA']=$newArray['LA'];
-            $results_all[$i]['NT'] = $newArray['NT'];
-            $results_all[$i]['manuf']=$newArray['manuf'];
-            $results_all[$i]['geonames_id']=$newArray['geonames_id'];
-            $results_all[$i]['admin1_id']=$newArray['admin1_id'];
-            $results_all[$i]['admin2_id']=$newArray['admin2_id'];
-            $results_all[$i]['username']=$newArray['username'];
-            $results_all[$i]['ap_hash'] = $newArray['ap_hash'];
-            $i++;
+            $sql .= " AND `aps` => ? AND `aps` <= ?";
         }
-        $this->mesg = $results_all;
-        return $results_all;
+
+        if($min_gps != '%' && $max_gps != '%')
+        {
+            $sql .= " AND `gps` => ? AND `gps` <= ?";
+        }
+
+        if($min_date != '%' && $max_date != '%')
+        {
+            $sql .= " AND `date` BETWEEN ? AND ?";
+        }
+
+        $prep = $this->sql->conn->prepare($sql);
+        $values = array();
+        $values[] = $title;
+        $values[] = $user;
+
+        if($min_ap != '%' && $max_ap != '%') {
+            $values[] = $min_ap;
+            $values[] = $max_ap;
+        }
+
+        if($min_gps != '%' && $max_gps != '%') {
+            $values[] = $min_gps;
+            $values[] = $max_gps;
+        }
+
+        if($min_date != '%' && $max_date != '%') {
+            $values[] = $min_date;
+            $values[] = $max_date;
+        }
+
+        $prep->execute($values);
+
+        $fetch = $prep->fetchAll(2);
+        var_dump($fetch);
+        $this->mesg['ImportListResult'] = $fetch;
     }
 
     private function recursive_raw($sep = "", $open = "", $close = "", $data = array())

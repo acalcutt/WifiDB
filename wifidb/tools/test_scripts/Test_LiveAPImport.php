@@ -10,31 +10,33 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 
-$n = 20;
+$n = 25;
 $authens = array("Open", "WPA-Personal", "WPA2-Personal", "WPA-Enterprise", "WPA2-Enterprise");
 $encrys = array("WEP", "TKIP", "CCMP-AES", "PSK");
 $radios = array("802.11a", "802.11b","802.11g","802.11n");
 $lats = array('42.35837', '42.35847', '42.35857','42.35867', '42.35877', '42.35887', '42.35897', '42.35937', '42.35947', '42.35957', '42.35967', '42.35977', '42.35987', '42.35997', '42.36037', '42.35937');
 $longs = array('-71.94303', '-71.94313', '-71.94323', '-71.94333', '-71.94343', '-71.94353', '-71.94363', '-71.94373', '-71.94383', '-71.94393', '-71.94403', '-71.94413', '-71.94423', '-71.94433', '-71.94443');
 
-while($n >= 1)
+while($n !== 0)
 {
+    $date = date("Y-m-d");
+    $time = date("H:i:s");
     echo "----------------------------------------\r\nID: $n\r\n";
-    $url_data = "SSID=".gen_str(rand(5, 32)).
-    "&Mac=".gen_mac().
+    $url_data = "SSID=".urlencode(gen_str(rand(5, 32))).
+    "&Mac=".urlencode(gen_mac()).
     "&Auth=".array_rand($authens).
     "&SecType=".rand(1,3).
     "&Encry=".array_rand($encrys).
     "&Rad=".array_rand($radios).
     "&Chn=".rand(1,11).
-    "&Lat=".convert_dd_dm($lats[array_rand($lats)]).
-    "&Long=".convert_dd_dm($longs[array_rand($longs)]).
+    "&Lat=".urlencode(convert_dd_dm($lats[array_rand($lats)])).
+    "&Long=".urlencode(convert_dd_dm($longs[array_rand($longs)])).
     "&BTx=5.5".
-    "&OTx=1 2 5.5 10 20 30 48 54".
-    "&Date=".date("Y-m-d").
-    "&Time=".time().
+    "&OTx=".urlencode("1 2 5.5 10 20 30 48 54").
+    "&Date=".$date.
+    "&Time=".$time.
     "&NT=Infrastructure".
-    "&Label=unkown".
+    "&Label=unknown".
     "&Sig=".rand(9, 100).
     "&Sats=".rand(1,9).
     "&HDP=".rand(1,100).
@@ -43,8 +45,10 @@ while($n >= 1)
     "&KMH=".rand(40,120).
     "&MPH=".rand(25,75).
     "&Track=".rand(0,100).
-    "&username=pferland&apikey=9e%m)KW6dn3fjb3G(6!7A7OFAqDy*DLt4!tGq=BP=cD";
-    $url = "http://wifidb.randomintervals.com/wifidb/opt/live.php?".$url_data;
+    "&username=pferland".
+    "&apikey=GSn8NQeYzY8gq5Y8NFpf5gZZqH33kdBctEOwWzsOTmxCnrs4BYk32rgeNLNhLkzj".
+    "&SessionID=OLDAPISESSIONID";
+    $url = "http://dev.randomintervals.com/wifidb/api/live.php?".$url_data;
     echo $url."\r\n";
     var_dump(file($url));
     die();
@@ -73,7 +77,6 @@ function gen_mac()
     {$key.=$base{mt_rand(0,$max)};}
     return $key;
 }
-
 
 function &convert_dd_dm($geocord_in="")
 {
@@ -141,4 +144,3 @@ function &convert_dd_dm($geocord_in="")
     #echo "----------------\r\n";
     return $geocord_out;
 }
-?>

@@ -30,7 +30,7 @@ switch($func)
 {
 		case "check_hash":
             $hash = (empty($_REQUEST['hash'])) ? NULL : $_REQUEST['hash'];
-            $dbcore->CheckHash($hash);
+            $dbcore->CheckHash(strtolower($hash));
 			$dbcore->Output();
 		default:
 			if($dbcore->rebuild)
@@ -43,11 +43,11 @@ switch($func)
 			$date = date($dbcore->datetime_format);
 			$otherusers = (empty($_REQUEST['otherusers'])) ? "" : $_REQUEST['otherusers'];
 
-			if(!@$_FILES['file']['tmp_name']){$dbcore->Output("No upload file found :(");}
+            if(!@$_FILES['file']['tmp_name']){ $dbcore->mesg = array("error"=> "No upload file found :("); $dbcore->Output();}
 
 			$tmp  = $_FILES['file']['tmp_name'];
 			$size = $_FILES['file']['size'];
-			if($size == "0"){$dbcore->Output("Size of file is only 0B, come one man....");}
+			if($size == "0"){$dbcore->mesg = array("error"=> "Size of file is only 0B, come one man...." ); $dbcore->Output();}
 
 			$hash           =   hash_file('md5', $tmp);
 			$prefilename    =   str_replace(" ", "_", $_FILES['file']['name']);
@@ -59,7 +59,7 @@ switch($func)
 			$uploadfile     =   $uploadfolder.$filename;
 
 			if(!copy($tmp, $uploadfile))
-			{$dbcore->Output('Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permisions if you are using Linux.');}
+			{ $dbcore->mesg = array("error"=> 'Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.'); $dbcore->Output();}
 
 			chmod($uploadfile, 0600);
 

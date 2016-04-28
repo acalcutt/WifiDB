@@ -1,40 +1,64 @@
 <?php
 class SQL
 {
+    public $conn;
 	function __construct($config)
 	{
 		$this->host			  = $config['host'];
-		$this->service		   = $config['srvc'];
-		$this->database       = $config['db'];
-		$dsn					 = $this->service.':host='.$this->host;
-		if($this->service === "mysql")
-		{
-			$options = array(
-				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
-				PDO::ATTR_PERSISTENT => TRUE,
-			);
-		}
-		else
-		{
-			$options = array(
-				PDO::ATTR_PERSISTENT => TRUE,
-			);
-		}
-		$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-		$this->conn->query("USE `$this->database`");
-		$this->conn->query("SET NAMES 'utf8'");
+		$this->service		  = $config['srvc'];
+        $this->driver         = $config['driver'];
+        $this->database       = $config['db'];
+        switch($this->driver)
+        {
+            case "PDO":
+                if($this->service === "mysql")
+                {
+                    $options = array(
+                        PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+                        PDO::ATTR_PERSISTENT => FALSE,
+                        PDO::ERRMODE_EXCEPTION => TRUE
+                    );
+                }
+                else
+                {
+                    $options = array(
+                        PDO::ATTR_PERSISTENT => FALSE,
+                        PDO::ERRMODE_EXCEPTION => TRUE
+                    );
+                }
+                $dsn    = $this->service.':host='.$this->host;
+                /** @var PDO */
+                $this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+                $this->conn->query("USE `$this->database`");
+                break;
+
+            case "mysqli":
+                /** @var mysqli */
+                $this->conn = new mysqli($this->host, $config['db_user'], $config['db_pwd'], $this->database);
+                $this->conn->query("SET NAMES 'utf8'");
+                $this->conn->query("USE `$this->database`");
+                break;
+
+            default:
+                    throw new ErrorException("SQL Driver not selected.");
+                break;
+        }
+        unset($config);
 	}
 
-	function checkError($line=0, $file="")
+	function checkError($ExecuteResults, $line, $file)
 	{
-		$err = $this->conn->errorCode();
-		if($err === "00000")
+        if($ExecuteResults === NULL)
+        {
+            throw new ErrorException("checkError called without setting ExecuteResults variable.");
+        }
+		if($ExecuteResults === FALSE)
 		{
-			return 0;
+            throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1)."\r\nLine: $line\r\nFile: $file");
+            return 1;
 		}else
 		{
-			throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1)."\r\nLine: $line\r\nFile: $file");
-			return 1;
+            return 0;
 		}
 	}
 }

@@ -69,11 +69,10 @@ switch($func)
         $notes = (empty($_POST['notes'])) ? "No Notes" : $_POST['notes'];
         $user = (empty($_POST['user'])) ? "Unknown" : $_POST['user'];
         $otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
-        $sql = "SELECT `username` FROM `wifi`.`user_info` WHERE `username` LIKE ?";
+        $sql = "SELECT `username` FROM `user_info` WHERE `username` LIKE ?";
         $stmt = $dbcore->sql->conn->prepare($sql);
         $stmt->bindParam(1, $user, PDO::PARAM_STR);
-        $stmt->execute();
-        if($dbcore->sql->checkError() !== 0)
+        if($dbcore->sql->checkError( $stmt->execute(), __LINE__, __FILE__) !== 0)
         {
             $mesg = "Failure to select users from table.";
             break;
@@ -156,7 +155,14 @@ switch($func)
                         //that runs and imports all of them at once into the DB
                         //in order that they where uploaded
                         $date = date("y-m-d H:i:s");
-                        $sql = "INSERT INTO `wifi`.`files_tmp`
+                        if($user[-1] == "|")
+                        {
+                            $user = str_replace("|", "", $user);
+                        }else
+                        {
+                            $user = explode("|", $user)[0];
+                        }
+                        $sql = "INSERT INTO `files_tmp`
                                         ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
                                  VALUES ( '',     ?,      ?,      ?,      ?,        ?,      ?,      ?)";
                         $result = $dbcore->sql->conn->prepare( $sql );
@@ -168,8 +174,7 @@ switch($func)
                         $result->bindValue(5, $title, PDO::PARAM_STR);
                         $result->bindValue(6, $size, PDO::PARAM_STR);
                         $result->bindValue(7, $hash, PDO::PARAM_STR);
-                        $result->execute();
-                        if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
+                        if($dbcore->sql->checkError( $result->execute(), __LINE__, __FILE__) === 0 && $dbcore->sql->conn->lastInsertId() != 0)
                         {
                             $mesg .= "<h2>File has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
                             $message = "File has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";

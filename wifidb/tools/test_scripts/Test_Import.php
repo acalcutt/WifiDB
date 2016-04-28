@@ -16,6 +16,7 @@ if(!(require('../config.inc.php'))){die("You need to create and configure your c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
+
 $lastedit  = "2015-02-10";
 
 echo "
@@ -24,7 +25,7 @@ echo "
 #####################################
 ";
 $dbcore->verbose = 1;
-$dbcore->import_vs1( '/var/www/wifidb/import/up/atlanta_hotel.VS1', 'pferland', 'no notes', 'Test 1', date("Y-m-d H:i:s"));
+$dbcore->import_vs1( '/wifidb/www/wifidb/import/up/1742621276_sunday_drive_atlanta_2.VS1', 'pferland', 'no notes', 'Test 1', date("Y-m-d H:i:s"));
 
 /*
 echo "

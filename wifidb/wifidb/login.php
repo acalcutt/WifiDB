@@ -22,11 +22,11 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
-
+$dbcore->smarty->assign('wifidb_page_label', 'WiFiDB Login Processing...');
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
 
-if($return == ''){$return = '/'.$dbcore->root;}
+if($return == ''){$return = $dbcore->root;}
 switch($func)
 {
     case "login_proc":
@@ -54,7 +54,7 @@ switch($func)
             break;
 
             case "u_fail":
-                $message = 'Username does not exsist.';
+                $message = 'Username does not exist.';
             break;
 
             case "u_u_r_fail":
@@ -80,8 +80,13 @@ switch($func)
 
     #---#
     case "logout":
-        #$admin_cookie = (int) $_REQUEST['a_c']+0;
-		if((int)@$_REQUEST['a_c'] === 1){$admin_cookie = 1;}else{$admin_cookie = 0;}
+        if(!empty($_REQUEST['a_c']))
+        {
+            $admin_cookie = (int)$_REQUEST['a_c'];
+        }else
+        {
+            $admin_cookie = 0;
+        }
         if($admin_cookie === 1)
         {
             $cookie_name = 'WiFiDB_admin_login_yes';
@@ -113,7 +118,6 @@ switch($func)
         {
             $message = "Could not log you out.. :-(";
         }
-		if(strpos($return,'/wifidb/cp/') !== false){$return = '/'.$dbcore->root;}#Redirect control panel logout to homepage
 		$dbcore->redirect_page($return, 2000);
         $dbcore->smarty->assign('message', $message);
         $dbcore->smarty->display('login_result.tpl');
@@ -164,12 +168,14 @@ switch($func)
                         $message = "User Created! Go ahead and login.";
                     }
                     $dbcore->smarty->assign('message', $message);
+                    $dbcore->smarty->assign('logon_return_url', '/wifidb//login.php');
                     $dbcore->smarty->display('login_index.tpl');
                 break;
 
                 case 0:
                     #Failed to create a user for some reason, tell them why.
                     $dbcore->smarty->assign('message', $message);
+                    $dbcore->smarty->assign('logon_return_url', '/wifidb//login.php');
                     $dbcore->smarty->display('create_user.tpl');
                 break;
                 default:

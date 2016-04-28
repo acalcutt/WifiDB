@@ -20,68 +20,50 @@ if not, write to the
 */
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
-
 include('../lib/init.inc.php');
 
 $ft_start = microtime(1);
 $startdate="02-Oct-2011";
 $lastedit="02-Oct-2011";
 
-$live_aps = "live_aps";
-$live_gps = "live_gps";
 $n=0;
 $maps_compile_a = array();
-$sql = "SELECT ssid, sectype, sig FROM `$db`.`$live_aps`";
-$result = mysql_query($sql, $conn);
-while($array = mysql_fetch_assoc($result))
+$sql = "SELECT ssid, sectype, lat, `long` FROM `live_aps`";
+$result = $dbcore->sql->conn->query($sql, $conn);
+while($array = $result->fetch(2))
 {
-    #var_dump($array);
     $ssid = $array['ssid'];
     $sig_exp = explode("|", $array['sig']);
-    foreach($sig_exp as $sig_e)
+    if($array['lat'] == "0000.0000")
     {
-        $sig_ep = explode("-", $sig_e);
-        $signals[] = $sig_ep[0];
-        $gps_id = $sig_ep[1];
-        $sql = "SELECT * FROM `$db`.`$live_gps` WHERE `id`='$gps_id'";
-        #echo $sql;
-        $result_gps = mysql_query($sql);
-        $array_gps = mysql_fetch_assoc($result_gps);
-        #var_dump($array_gps);
-        if($array_gps['lat'] == "N 0000.0000")
-        {
-            continue;
-        }
-        
-        $lat = database::convert_dm_dd($array_gps['lat']);
-        $long = database::convert_dm_dd($array_gps['long']);
-        if($lat == "0")
-        {
-            continue;
-        }
-        
-        switch($array['sectype'])
-        {
-            case 1:
-                $img = "open";
-                break;
-            case 2:
-                $img = "wep";
-                break;
-            case 3:
-                $img = "secure";
-                break;
-        }
-        $maps_compile_a[] = $img."
-                           var myLatLng$n = new google.maps.LatLng($lat, $long);
-                           var beachMarker$n = new google.maps.Marker({position: myLatLng$n, map: map, icon: $img, title: \"$ssid\"});\r\n";
-        $n++;
-        break;
+        $nn++;
+        continue;
     }
+
+    $lat = $dbcore->convert_dm_dd($array_gps['lat']);
+    $long = $dbcore->convert_dm_dd($array_gps['long']);
     if($lat == "0")
     {
         $nn++;
+        continue;
     }
+
+    switch($array['sectype'])
+    {
+        case 1:
+            $img = "open";
+            break;
+        case 2:
+            $img = "wep";
+            break;
+        case 3:
+            $img = "secure";
+            break;
+    }
+    $maps_compile_a[] = $img."
+                       var myLatLng$n = new google.maps.LatLng($lat, $long);
+                       var beachMarker$n = new google.maps.Marker({position: myLatLng$n, map: map, icon: $img, title: \"$ssid\"});\r\n";
+    $n++;
 }
 #var_dump($maps_compile_a);
 $maps_compile = implode("", $maps_compile_a);
@@ -122,6 +104,3 @@ echo $n."\r\n".$nn;
         <div style="width:100%;height:100%;" id="map_canvas"></div>
     </body>
 </html>
-<?php
-
-?>

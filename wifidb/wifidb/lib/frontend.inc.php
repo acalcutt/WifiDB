@@ -28,13 +28,14 @@ class frontend extends dbcore
 	#===========================#
 	#   __construct (default)   #
 	#===========================#
-	function __construct($config)
+	function __construct($config, &$SQL)
 	{
-		parent::__construct($config);
+		parent::__construct($config, $SQL);
 		if(strtolower(SWITCH_EXTRAS) != "api")
 		{
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
-			$this->sec->LoginCheck();
+            $this->all_users_data = NULL;
+            $this->sec->LoginCheck();
 			$this->meta = new stdClass();
 			$this->meta->ads = $config['ads'];
 			$this->meta->tracker = $config['tracker'];
@@ -61,7 +62,6 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
 			$this->smarty->assign('wifidb_login_html', $this->sec->LoginHtml);
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
-			#$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
 			$this->htmlheader();
 			$this->htmlfooter();
 			$this->users_import_aps = array();
@@ -80,12 +80,16 @@ class frontend extends dbcore
 												);
 	}
 
-	function APFetch($id = "")
+	function APFetch($id = 0)
 	{
-		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+        if($id===0)
+        {
+            throw new ErrorException("APFetch ID is not set.");
+        }
+		$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
-		$prep->execute();
+        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 		$newArray = $prep->fetch(2);
 
 		if($newArray['ssid'] == '')
@@ -127,32 +131,77 @@ class frontend extends dbcore
 			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
 		}
 
+		$sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
+				FROM `wifi_signals`
+				WHERE `ap_hash` =  ?
+				ORDER BY `time_stamp` ASC";
+		$prep1 = $this->sql->conn->prepare($sql);
+		$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
+        $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
+
+		$flip = 0;
+		$prev_date = 0;
+		$date_range = -1;
+		$signal_runs = array();
+		$signals = $prep1->fetchAll(2);
+
+		$sql_gps = "SELECT `lat`, `long`, `sats`, `hdp`, `track`, `date`, `time`, `mph`, `kmh`
+						FROM `wifi_gps`
+						WHERE `id` = ?";
+		$prep_gps = $this->sql->conn->prepare($sql_gps);
+		$from = 0;
+		foreach($signals as $field)
+		{
+			$prep_gps->bindParam(1, $field['gps_id'], PDO::PARAM_INT);
+            $this->sql->checkError( $prep_gps->execute(), __LINE__, __FILE__);
+			$field_g = $prep_gps->fetch(2);
+			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
+			if($prev_date < strtotime($field_g['date']))
+			{
+				$date_range++;
+				$signal_runs[$date_range]['id'] = $date_range;
+				$signal_runs[$date_range]['start'] = $field_g['date']." ".$field_g['time'];
+				$signal_runs[$date_range]['descstart'] = $field_g['time'];
+				$signal_runs[$date_range]['desc'] = $field_g['time'];
+				$signal_runs[$date_range]['user'] = $field['username'];
+				$signal_runs[$date_range]['start_id'] = $field['id'];
+				$signal_runs[$date_range]['from'] = $from;
+				$signal_runs[$date_range]['limit'] = $from;
+			}else
+			{
+				if($signal_runs[$date_range]['user'] != $field['username'])
+				{
+					$signal_runs[$date_range]['user'] .= " and ".$field['username'];
+				}
+				$signal_runs[$date_range]['desc'] = $field_g['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field_g['time'];
+				$signal_runs[$date_range]['stop'] = $field_g['date']." ".$field_g['time'];
+				$signal_runs[$date_range]['limit'] = $from+1;
+			}
+			$from++;
+			$prev_date = strtotime($field_g['date']);
+
+			$signal_runs[$date_range]['gps'][] = array(
+														'class'=>$class,
+														'lat'=>$field_g["lat"],
+														'long'=>$field_g["long"],
+														'sats'=>$field_g["sats"],
+														'date'=>$field_g["date"],
+														'time'=>$field_g["time"],
+														'signal'=>$field["signal"],
+														'rssi'=>$field["rssi"]
+													);
+		}
+
 		$list = array();
 		$id_find = "%-{$id}:%";
 		$id_find_firstitem = "{$id}:%";
-		$prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
+		$prep2 = $this->sql->conn->prepare("SELECT * FROM `user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
 		$prep2->bindParam(1, $id_find, PDO::PARAM_STR);
 		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
-		$prep2->execute();
-		if($this->sql->checkError() !== 0)
-		{
-			throw new Exception("Error getting associated lists");
-		}
+        $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
 
 		while ($field = $prep2->fetch(1))
 		{
-			$sql = "SELECT `wifi_signals`.`id`, `wifi_signals`.`signal`, `wifi_signals`.`rssi`, `wifi_signals`.`gps_id`, `wifi_signals`.`username`, `wifi_gps`.`lat`, `wifi_gps`.`long`, `wifi_gps`.`alt`, `wifi_gps`.`sats`, `wifi_gps`.`hdp`, `wifi_gps`.`track`, `wifi_gps`.`date`, `wifi_gps`.`time`, `wifi_gps`.`mph`, `wifi_gps`.`kmh`
-					FROM `wifi_signals`
-					INNER JOIN `wifi_gps`
-					ON `wifi_signals`.`gps_id`=`wifi_gps`.`id`
-					WHERE `wifi_signals`.`ap_hash` = ? AND `wifi_signals`.`file_id` = ?
-					ORDER BY `wifi_signals`.`time_stamp` ASC";
-			$prep1 = $this->sql->conn->prepare($sql);
-			$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
-			$prep1->bindParam(2, $field["file_id"], PDO::PARAM_STR);
-			$prep1->execute();
-			$signals = $prep1->fetchAll(2);
-		
 			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
 			preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
 			$list[]= array(
@@ -163,8 +212,7 @@ class frontend extends dbcore
 							'aps'=>$field['aps'],
 							'username'=>$field['username'],
 							'title'=>$field['title'],
-							'title_id'=>$field['file_id'],
-							'signals'=>$signals
+							'title_id'=>$field['file_id']
 							);
 
 		}
@@ -172,6 +220,7 @@ class frontend extends dbcore
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
 						$newArray['ssid'],
+						$signal_runs,
 						$list,
 						$globe_html,
 						$ap_data
@@ -181,14 +230,10 @@ class frontend extends dbcore
 	function GetAnnouncement()
 	{
 		$result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
+		$this->sql->checkError( $result, __LINE__, __FILE__);
 		$array = $result->fetch(2);
-		if($this->sql->checkError() || $array['body'] == "")
-		{
-			return 0;
-		}
 		return $array;
 	}
-
 
 	function htmlheader()
 	{
@@ -211,7 +256,6 @@ class frontend extends dbcore
 		$this->login_bar = $login_bar;
 		return 1;
 	}
-
 
 	function htmlfooter()
 	{
@@ -240,99 +284,123 @@ class frontend extends dbcore
 	#   Grab the stats for All Users	#
 	#===================================#
 	Public function AllUsers()
-	{
-		$sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username` ASC";
-		$result = $this->sql->conn->query($sql);
+    {
+        $sql = "SELECT `username` FROM `user_imports` ORDER BY `username` ASC";
+        $result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
+        $users_all = $result->fetchAll(2);
+#        var_dump(count($users_all));
+        if(count($users_all) !== 0)
+        {
+            foreach ($users_all as $user) {
+                $user_all[] = $user['username'];
+            }
 
-		$users_all = $result->fetchAll(2);
-		foreach($users_all as $user)
-		{
-			$user_all[] = $user['username'];
-		}
+            $users = array_unique($user_all);
+            $tablerowid = 0;
+            $row_color = 0;
+            $this->all_users_data = array();
+            $prev_id = 0;
+            foreach ($users as $user) {
+                $sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `id` ASC";
+                $prep = $this->sql->conn->prepare($sql);
+                $prep->bindParam(1, $user, PDO::PARAM_STR);
+                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+                $imports = (int)$prep->rowCount();
+                if ($imports === 0) {
+                    continue;
+                }
 
-		$users = array_unique($user_all);
-		$tablerowid = 0;
-		$row_color = 0;
-		$this->all_users_data = array();
-		$prev_id = 0;
-		foreach($users as $user)
-		{
-			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username`= ? ORDER BY `id` ASC";
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user, PDO::PARAM_STR);
-			$prep->execute();
+                $row_color2 = 1;
+                $pre_user = 1;
+                $tablerowid++;
+                while ($user_array = $prep->fetch(2)) {
+                    if ($user_array['points'] === "") {
+                        continue;
+                    }
+                    $username = $user_array['username'];
 
-			$imports = (int) $prep->rowCount();
-			if($imports === 0){continue;}
+                    if ($user_array['title'] === "" or $user_array['title'] === " ") {
+                        $user_array['title'] = "UNTITLED";
+                    }
+                    if ($user_array['date'] === "") {
+                        $user_array['date'] = "No date, hmm..";
+                    }
 
-			$row_color2 = 1;
-			$pre_user = 1;
-			$tablerowid++;
-			while ($user_array = $prep->fetch(2))
-			{
-				if($user_array['points'] === ""){continue;}
-				$username = $user_array['username'];
+                    $search = array('\n', '\r', '\n\r');
+                    $user_array['notes'] = str_replace($search, "", $user_array['notes']);
 
-				if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
-				if ($user_array['date'] === ""){ $user_array['date']="No date, hmm..";}
+                    if ($user_array['notes'] == "") {
+                        $user_array['notes'] = "No Notes, hmm..";
+                    }
+                    $notes = $user_array['notes'];
+                    $points = explode("-", $user_array['points']);
+                    $pc = count($points);
 
-				$search = array('\n','\r','\n\r');
-				$user_array['notes'] = str_replace($search, "", $user_array['notes']);
+                    if ($pre_user) {
+                        if ($prev_id == $user_array['id']) {
+                            $prev_id = $user_array['id'];
+                            continue 2;
+                        } else {
+                            $prev_id = $user_array['id'];
+                        }
 
-				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
-				$notes = $user_array['notes'];
-				$points = explode("-",$user_array['points']);
-				$pc = count($points);
+                        if ($row_color2 == 1) {
+                            $row_color2 = 0;
+                            $color2 = "light";
+                        } else {
+                            $row_color2 = 1;
+                            $color2 = "dark";
+                        }
 
-				if($pre_user)
-				{
-					if($prev_id == $user_array['id'] )
-					{$prev_id = $user_array['id'];continue 2;}
-					else{$prev_id = $user_array['id'];}
+                        if ($row_color == 1) {
+                            $row_color = 0;
+                            $color = "light";
+                        } else {
+                            $row_color = 1;
+                            $color = "dark";
+                        }
 
-					if($row_color2 == 1)
-					{$row_color2 = 0; $color2 = "light";}
-					else{$row_color2 = 1; $color2 = "dark";}
+                        $this->all_users_data[$user] = array(
+                            'rowid' => $tablerowid,
+                            'class' => $color,
+                            'id' => $user_array['id'],
+                            'imports' => $imports,
+                            'username' => $username,
+                            'data' => array(
+                                array(
+                                    'id' => $user_array['id'],
+                                    'class' => $color2,
+                                    'title' => $user_array['title'],
+                                    'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+                                    'aps' => $pc,
+                                    'NewAPPercent' => $user_array['NewAPPercent']."%",
+                                    'date' => $user_array['date']
+                                ),
+                            ),
+                        );
+                        $pre_user = 0;
+                    } else {
+                        if ($row_color2 == 1) {
+                            $row_color2 = 0;
+                            $color2 = "light";
+                        } else {
+                            $row_color2 = 1;
+                            $color2 = "dark";
+                        }
 
-					if($row_color == 1)
-					{$row_color = 0; $color = "light";}
-					else{$row_color = 1; $color = "dark";}
-
-					$this->all_users_data[$user] = array(
-								'rowid'	=> $tablerowid,
-								'class'	=> $color,
-								'id'	   => $user_array['id'],
-								'imports'  => $imports,
-								'username' => $username,
-								'data'	 => array(
-													array(
-														'id'	=> $user_array['id'],
-														'class' => $color2,
-														'title' => $user_array['title'],
-														'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-														'aps'   => $pc,
-														'date'  => $user_array['date']
-													),
-												),
-							);
-					$pre_user = 0;
-				}else
-				{
-					if($row_color2 == 1)
-					{$row_color2 = 0; $color2 = "light";}
-					else{$row_color2 = 1; $color2 = "dark";}
-
-					$this->all_users_data[$user]['data'][] = array(
-								'id'	=> $user_array['id'],
-								'class' => $color2,
-								'title' => $user_array['title'],
-								'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-								'aps'   => $pc,
-								'date'  => $user_array['date']
-							);
-				}
-			}
-		}
+                        $this->all_users_data[$user]['data'][] = array(
+                            'id' => $user_array['id'],
+                            'class' => $color2,
+                            'title' => $user_array['title'],
+                            'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+                            'aps' => $pc,
+                            'date' => $user_array['date']
+                        );
+                    }
+                }
+            }
+        }
 		return 1;
 	}
 
@@ -362,21 +430,21 @@ class frontend extends dbcore
 		$prep['allaps'] = array();
 		$prep['username'] = $user;
 
-		$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
+		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
-		$result->execute();
+        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 		$rows = $result->fetch(1);
 		$prep['total_aps'] = $rows[0];
 
 		$flip = 0;
 		$sql = "SELECT `id`,`ssid`,`mac`,`radio`,`auth`,`encry`,`chan`,`lat`, `FA`,`LA` FROM
-				`wifi`.`wifi_pointers`
+				`wifi_pointers`
 				WHERE `username` = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
-		$result1->execute();
+        $this->sql->checkError( $result1->execute(), __LINE__, __FILE__);
 
 		while($array = $result1->fetch(2))
 		{
@@ -430,32 +498,34 @@ class frontend extends dbcore
 		$total_aps = array();
 
 		#Total APs
-		$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
+		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
-		$result->execute();
+        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 		$rows = $result->fetch(1);
 		$total = $rows[0];
 
 		#Get First Active AP
-		$sql = "SELECT id, username, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC LIMIT 1";
+		$sql = "SELECT id, username, date FROM `user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC LIMIT 1";
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
-		$prep2->execute();
+        $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
 		$user_first = $prep2->fetch(2);
 
 		#Get Last Active AP
-		$sql = "SELECT id, aps, gps, title, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
-		$prep1->execute();
+        $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		$sql = "SELECT * FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
 		#echo $sql."\r\n";
 		$other_imports = $this->sql->conn->prepare($sql);
-		$other_imports->execute(array($username, $user_last['id']));
+		$other_imports->bindParam(1, $user_last['id'], PDO::PARAM_INT);
+        $this->sql->checkError( $other_imports->execute(), __LINE__, __FILE__);
+
 		$other_rows = $other_imports->rowCount();
 		$other_imports_array = array();
 		if($other_rows > 0)
@@ -511,9 +581,10 @@ class frontend extends dbcore
 	function UserAPList($row=0)
 	{
 		if(!$row){return 0;}
-		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id`= ?";
+		$sql = "SELECT `id`, `username`, `aps`, `gps`, `points`, `notes`, `title`, `date`, `hash`, `file_id`, `converted`, `prev_ext`, `NewAPPercent` FROM `user_imports` WHERE `id`= ?";
 		$result = $this->sql->conn->prepare($sql);
-		$result->execute(array($row));
+        $result->bindParam(1, $row, PDO::PARAM_INT);
+        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 		$user_array = $result->fetch(2);
 
 		$all_aps_array = array();
@@ -522,19 +593,19 @@ class frontend extends dbcore
 
 		$all_aps_array['notes'] = $user_array['notes'];
 		$all_aps_array['title'] = $user_array['title'];
+        $all_aps_array['aps'] = $user_array['aps'];
+        $all_aps_array['NewAPPercent'] = $user_array['NewAPPercent']."%";
 
 		$points = explode("-", $user_array['points']);
 		$flip = 0;
-		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi`.`wifi_pointers` WHERE `id`= ?";
+		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
 		$result = $this->sql->conn->prepare($sql);
-		$count = 0;
 		foreach($points as $ap)
 		{
 			$ap_exp = explode(":" , $ap);
 			$apid = $ap_exp[0];
 
 			#if($ap_exp[0] == 0){continue;}
-			$count++;
 
 			if($flip)
 				{$style = "dark";$flip=0;}
@@ -549,7 +620,7 @@ class frontend extends dbcore
 				$update_or_new = "New";
 			}
 			$result->bindParam(1, $apid, PDO::PARAM_STR);
-			$result->execute();
+            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 			$ap_array = $result->fetch(2);
 
 			if($ap_array['lat'] == "0.0000")
@@ -591,7 +662,6 @@ class frontend extends dbcore
 					'la' => $ap_array['LA']
 				);
 		}
-		$all_aps_array['total_aps'] = $count;
 		$this->users_import_aps = $all_aps_array;
 		return 1;
 	}
@@ -671,7 +741,6 @@ class frontend extends dbcore
 		$this->smarty->assign("redirect_func", "<script type=\"text/javascript\">
 			function reload()
 			{
-				//window.open('{$return}')
 				location.href = '{$return}';
 			}
 		</script>");
@@ -680,7 +749,7 @@ class frontend extends dbcore
 
 	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from = NULL, $inc = NULL)
 	{
-		$sql1 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
+		$sql1 = "SELECT * FROM `wifi_pointers` WHERE
 			`ssid` LIKE ? AND
 			`mac` LIKE ? AND
 			`radio` LIKE ? AND
@@ -690,7 +759,7 @@ class frontend extends dbcore
 		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
-		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
+		$sql2 = "SELECT * FROM `wifi_pointers` WHERE
 				`ssid` LIKE ? AND
 				`mac` LIKE ? AND
 				`radio` LIKE ? AND
@@ -755,8 +824,8 @@ class frontend extends dbcore
 		$encry = $encry."%";
 		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
 		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-		$prep1->execute();
-		$prep2->execute();
+        $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
+        $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
 		$total_rows = $prep2->rowCount();
 
 		$row_color = 0;
@@ -857,24 +926,26 @@ class frontend extends dbcore
 			$signal_exp = explode("-", $aps['sig']);
 			$first = explode(",", $signal_exp[0]);
 			$first_gps_id = $first[1];
-			$result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$first_gps_id}'");
+			$result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi_gps` WHERE `id` = '{$first_gps_id}'");
+            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 			$first_data = $result->fetch(1);
 			$fa = $first_data["date"]." ".$first_data["time"];
 
 			$sig_c = count($signal_exp);
 			$last = explode(",", $signal_exp[$sig_c-1]);
 			$last_gps_id = $last[0];
-			$result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$last_gps_id}'");
+			$result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi_gps` WHERE `id` = '{$last_gps_id}'");
+            $this->sql->checkError( $result, __LINE__, __FILE__);
 			$last_data = $result->fetch(1);
 			$la = $last_data["date"]." ".$last_data["time"];
 
-			$sql_1 = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
+			$sql_1 = "SELECT * FROM `wifi_gps` WHERE `id` = ?";
 			$result_1 = $this->sql->conn->prepare($sql_1);
 			foreach($signal_exp as $signal)
 			{
 				$sig_exp = explode(",", $signal);
 				$result_1->bindParam(1, $sig_exp[0], PDO::PARAM_STR);
-				$result_1->execute();
+                $this->sql->checkError( $result_1->execute(), __LINE__, __FILE__);
 				$gps = $result_1->fetch(1);
 
 				if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "0.0000")

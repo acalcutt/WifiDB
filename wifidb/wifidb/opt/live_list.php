@@ -22,17 +22,10 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
-define('WWW_DIR', $GLOBALS['wifidb_install']);
-define('SMARTY_DIR', WWW_DIR.'smarty/');
-require(SMARTY_DIR.'Smarty.class.php');
-$smarty = new Smarty();
-$smarty->setTemplateDir( WWW_DIR.'smarty/templates/' );
-$smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
-$smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
-$smarty->setConfigDir( WWW_DIR.'/smarty/configs/' );
-$smarty->assign('wifidb_host_url', $GLOBALS['hosturl'].$root."/");
-$smarty->assign('wifidb_version_label', 'wifidb_version_label');
-$smarty->assign('wifidb_page_label', "Live Access Point Page");
+
+$dbcore->smarty->assign('wifidb_host_url', $GLOBALS['hosturl'].$root."/");
+$dbcore->smarty->assign('wifidb_version_label', 'wifidb_version_label');
+$dbcore->smarty->assign('wifidb_page_label', "Live Access Point Page");
 $live_aps   =   'live_aps';
 $out        =   filter_input(INPUT_GET, 'out', FILTER_SANITIZE_STRING, array(16,32));
 $ord        =   (@$ord ? filter_input('INPUT_GET', 'ord', FILTER_SANITIZE_STRING, array(16,32)) : "ASC");
@@ -106,16 +99,16 @@ if($total_rows != 0)
 {
     $list = "";
 }
-$smarty->assign('live', $list);
+$dbcore->smarty->assign('live', $list);
 
 switch($out)
 {
     case "kml":
         header('Content-type: text/xml');
-        $smarty->smarty->display('live_kml.tpl');
+        $dbcore->smarty->display('live_kml.tpl');
         break;
     default:
-        $smarty->smarty->display('live_list.tpl');
+        $dbcore->smarty->display('live_list.tpl');
         break;
 }
 #echo "Total Memory Usage: ".format_size(memory_get_usage(1))."<br />";

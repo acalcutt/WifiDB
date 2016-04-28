@@ -20,12 +20,13 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
-		parent::__construct($config);
+	public function __construct($config, $createKMLObj, $convertObj, $ZipObj, $ZipArchiveObj, &$SQL){
+		parent::__construct($config, $SQL);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;
 		$this->Zip = $ZipObj;
+		$this->ZipArchive = $ZipArchiveObj;
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
 		$this->month_names  = array(
@@ -44,15 +45,15 @@ class export extends dbcore
 		);
 		$this->ver_array['export']  =   array(
 			"last_edit"			 =>  "2015-10-11",
-			"ExportDaemonKMZ"		  =>  "1.0",
+			"ExportKML"		  =>  "1.0",
 			"ExportSingleAP"		=>  "1.0",
 			"ExportCurrentAP"	=>  "1.0",
 			"ExportApSignal3d"	=>  "1.0",			
 			"UserAll"		=>  "3.0",
 			"UserList"		=>  "3.0",
 			"FindBox"	=>  "1.0",
-			"distance"	=>  "2.0",
-			"get_point"	=>  "2.0",
+			"distance"	=>  "1.0",
+			"get_point"	=>  "1.0",
 			"CreateBoundariesKML"	=>  "1.0",
 			"ExportGPXAll"	=>  "1.0",			
 			"GenerateDaemonKMLData" =>  "1.1",
@@ -61,35 +62,78 @@ class export extends dbcore
 		);
 	}
 
-
 	/*
 	 * Export to Google KML File
 	 */
-	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0)
+	public function ExportKML($date = NULL, $type = "full", $only_new = 0, $new_icons = 0)
 	{
+	
+		#Set Date if it was not set
+		if($date === NULL)
+		{
+			$date = date($this->date_format);
+		}
+		
+		#Set if APs are Labeled or not
+		if($this->named)
+		{
+			$this->verbosed("Starting Export of Labeled ".$type." KML.");
+			$labeled = "_label";
+		}
+		else
+		{
+			$this->verbosed("Starting Export of Non-Labeled ".$type."  KML.");
+			$labeled = "";
+		}
+
+		#Create directory to store kmz using current date
+		$daily_folder = $this->PATH.'out/daemon/'.$date;
+		if(!@file_exists($daily_folder))
+		{
+			$this->verbosed("Need to make a daily export folder...", 1);
+			if(!@mkdir($daily_folder))
+			{
+				$this->verbosed("Error making new daily export folder...", -1);
+			}
+		}else
+		{
+			if(file_exists($daily_folder."/".$type."_db".$labeled.".kml") && file_exists($daily_folder."/".$type."_db".$labeled.".kmz")){$this->verbosed($type." DB Export for (".$date.") already exists."); return -1;}
+		}
+		
+		#Create directory to store temp kmz files
+		$kmztmp_folder =  $daily_folder.'/tmp';
+		if(!@file_exists($kmztmp_folder))
+		{
+			$this->verbosed("Need to make kmz file folder...", 1);
+			if(!@mkdir($kmztmp_folder))
+			{
+				$this->verbosed("Error making kmz file folder...", -1);
+			}
+		}
+
 		$this->verbosed("Compiling Data for Export.");
 
 		if($type == "full")
 		{
 			#Create Queries
-			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` ORDER BY `username` ASC";
-			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `points` != ''";
+			$user_query = "SELECT DISTINCT(username) FROM `user_imports` ORDER BY `username` ASC";
+			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != ''";
 		}
 		elseif($type == "daily")
 		{
 			#Get the date of the latest import
-			$sql = "SELECT `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+			$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
 			$date_query = $this->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$datestamp = $date_fetch['date'];
 			$datestamp_split = explode(" ", $datestamp);
 			$latest_date = $datestamp_split[0];
-			$latest_date = (empty($latest_date)) ? date($this->date_format) : $latest_date;
+			$latest_date = (empty($latest_date)) ? $date : $latest_date;
 			
 			#Create Queries
 			$date_search = $latest_date."%";
-			$user_query = "SELECT DISTINCT(username) FROM `wifi`.`user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
-			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `points` != '' AND `date` LIKE '$date_search'";
+			$user_query = "SELECT DISTINCT(username) FROM `user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
+			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != '' AND `date` LIKE '$date_search'";
 		}	
 		
 		$ZipC = clone $this->Zip;
@@ -114,29 +158,25 @@ class export extends dbcore
 				$id = $import['id'];
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
 				$ListKML = $this->UserList($import['points'], $this->named, $only_new, $new_icons);
-				if($ListKML['data'] !== "")
+				$list_results = $ListKML['region'].$ListKML['data'];
+				if($list_results !== "")
 				{
-					$final_box = $this->FindBox($ListKML['box']);
-					$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
-					$list_results = $KML_region.$ListKML['data'];
-
 					#Create List KML Structure
 					$list_results = $this->createKML->createFolder($title, $list_results, 0);
 					$list_results = $this->createKML->createKMLstructure($title, $list_results);
 
 					#Add list kml into final kmz
-					if($this->named){$list_kml_name = $username."_".$title."_label.kml";}else{$list_kml_name = $username."_".$title.".kml";}
+					$list_kml_name = $username."_".$title.$labeled.".kml";
 					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
-					unset($list_results);
 					
 					#Create Network Link to this kml for the final doc.kml
-					$Netlink_region = $this->createKML->PlotRegionBox($final_box, uniqid());
-					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $Netlink_region);
+					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $ListKML['region']);
 
 					#Increment variables (duh)
 					++$user_files;
 					++$lists;
 				}
+				unset($list_results);
 			}
 			#If this user had results, create a folder with their data
 			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
@@ -150,34 +190,47 @@ class export extends dbcore
 		$results = $this->createKML->createFolder($type." Database Export", $results, 1);
 		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
 		
+		$kmz_tmp = $kmztmp_folder."/".$type."_db".$labeled.".kmz";
 		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_tmp);
 		$ZipC->addFile($results, 'doc.kml');
-		$ZipC->setZipFile($kmz_filepath);
+		$ZipC->setZipFile($kmz_tmp);
 		$ZipC->getZipFile();
-		if (file_exists($kmz_filepath)) 
+		if (file_exists($kmz_tmp)) 
 		{
-			$this->verbosed("KMZ created at ".$kmz_filepath);
-			chmod($kmz_filepath, 0664);
-			###
-			$link = $this->daemon_out.basename($kmz_filepath);
-			$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
-			unlink($link);
-			symlink($kmz_filepath, $link);
-			chmod($link, 0664);
-			Return true;
+			$kmz_filepath = $daily_folder."/".$type."_db".$labeled.".kmz";
+			rename($kmz_tmp , $kmz_filepath);
+			if (file_exists($kmz_filepath)) 
+			{
+				$this->verbosed("KMZ created at ".$kmz_filepath);
+				chmod($kmz_filepath, 0664);
+				###
+				$link = $this->daemon_out.$type.'_db'.$labeled.'.kmz';
+				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
+				unlink($link);
+				symlink($kmz_filepath, $link);
+				chmod($link, 0664);
+			}
+			else
+			{
+				$this->verbosed("Final KMZ file file does not exist :/ ");
+			}
 		}
 		else
 		{
-			$this->verbosed("KMZ file does not exist :/ ");
-			Return false;
+			$this->verbosed("KMZ temp file does not exist :/ ");
 		}
+		if (file_exists($kmzfiles_folder)){rmdir($kmzfiles_folder);}
+
+		if (file_exists($kmztmp_folder)){rmdir($kmztmp_folder);}
+		
+		return $daily_folder;
 	}
 	
 	public function ExportSingleAp($id, $named=0, $new_icons=0)
 	{
 		$KML_data = "";
 		$export_ssid="";
-		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 		$result = $this->sql->conn->query($sql);
 		while($ap_fetch = $result->fetch(2))
 		{
@@ -216,8 +269,9 @@ class export extends dbcore
 	public function ExportCurrentAP($named=0, $new_icons=0)
 	{
 		$KML_data="";
-		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
 		$result = $this->sql->conn->query($sql);
+        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ap_array = $result->fetch(2);
 		if($ap_array['id'])
 		{
@@ -227,45 +281,43 @@ class export extends dbcore
 		}
 		Return $KML_data;
 	}
-	
-	public function ExportSignal3dSingleListAp($file_id, $ap_id, $visible = 0)
+
+	public function ExportApSignal3d($id, $limit = NULL, $from = NULL)
 	{
-		$KML_data = "";
 		#Get the AP hash
-		$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
-		$prep_hash = $this->sql->conn->prepare($sql);
-		$prep_hash->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$prep_hash->execute();
-		$fetch_hash = $prep_hash->fetch(2);
-		$ap_hash = $fetch_hash['ap_hash'];
+		$sql = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id'";
+		$hash_query = $this->sql->conn->query($sql);
+		$this->sql->checkError(__LINE__, __FILE__);
+		$hash_fetch = $hash_query->fetch(2);
+		$ap_hash = $hash_fetch['ap_hash'];
 		
-		#Get Import Name
-		$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
-		$prep_title = $this->sql->conn->prepare($sql);
-		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prep_title->execute();
-		$fetch_title = $prep_title->fetch(2);
-		$ap_list_title = $fetch_title['title'];
-		$ap_list_date = $fetch_title['date'];
-		#Get AP Signal History for this file
+		#Get AP Signal
 		$sql = "SELECT
 				  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
 				  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
 				  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
-				FROM `wifi`.`wifi_signals`
-				  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
-				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'
-				ORDER BY `wifi_signals`.`time_stamp` ASC";
-		
+				FROM `wifi_signals`
+				  LEFT JOIN `wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_gps`.`lat` != '0.0000'";
+				
+		if(!empty($limit))
+		{
+			$sql .= " LIMIT $limit";
+			if(!empty($from))
+			{
+				$sql .= ", $from";
+			}
+		}
+		$KML_data = "";
 		$ap_query = $this->sql->conn->query($sql);
 		$this->sql->checkError();
 		$sig_gps_data = $ap_query->fetchAll(2);
 		if(count($sig_gps_data) > 0)
 		{
 			#Plot AP 3D Signal
-			$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
-			$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
+			$KML_data = $this->createKML->CreateApSignal3D($sig_gps_data, $UseRSSI = 1);
 		}
+
 		return $KML_data;
 	}
 
@@ -276,7 +328,7 @@ class export extends dbcore
 			throw new ErrorException('$user value for export::UserAll() is not a string');
 			return 0;
 		}
-		$sql = "SELECT `points` FROM `wifi`.`user_imports` WHERE `username` = ?";
+		$sql = "SELECT `points` FROM `user_imports` WHERE `username` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
 		$prep->execute();
@@ -296,7 +348,7 @@ class export extends dbcore
 				foreach($points as $point)
 				{
 					list($id, $new_old) = explode(":", $point);
-					$sql = "SELECT `id` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+					$sql = "SELECT `id` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 					$result = $this->sql->conn->query($sql);
 					while($array = $result->fetch(2))
 					{
@@ -320,7 +372,7 @@ class export extends dbcore
 		{
 			list($id, $new_old) = explode(":", $point);
 			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
 			{
@@ -356,9 +408,17 @@ class export extends dbcore
 			}
 		}
 		
+		if($Import_KML_Data != "")
+		{
+			$KML_data = $Import_KML_Data;
+			$final_box = $this->FindBox($box_latlon);
+			list($distance_calc, $minLodPix, $distance) = $this->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+			$KML_region = $this->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+		}
+		
 		$ret_data = array(
-		"data" => $Import_KML_Data,
-		"box" => $box_latlon,
+		"data" => $KML_data,
+		"region" => $KML_region,
 		);
 		
 		return $ret_data;
@@ -372,144 +432,122 @@ class export extends dbcore
 		$West = NULL;
 		foreach($points as $elements)
 		{
-			$lat = $this->convert->dm2dd($elements['lat']);
-			$long = $this->convert->dm2dd($elements['long']);
-			
+			#var_dump($elements);
+			if(@$elements['long'] == '' || @$elements['lat'] == '')
+			{
+				continue;
+			}
 			if($North == NULL)
 			{
-				$North = $lat;
+				$North = $elements['lat'];
 			}
 			if($South == NULL)
 			{
-				$South = $lat;
+				$South = $elements['lat'];
 			}
 
 			if($East == NULL)
 			{
-				$East = $long;
+				$East = $elements['long'];
 			}
 			if($West == NULL)
 			{
-				$West = $long;
+				$West = $elements['long'];
 			}
 
-			if((float)$North < (float)$lat)
+			if((float)$North < (float)$elements['lat'])
 			{
-				$North = $lat;
+				$North = $elements['lat'];
 			}
-			if((float)$South > (float)$lat)
+			if((float)$South > (float)$elements['lat'])
 			{
-				$South = $lat;
+				$South = $elements['lat'];
 			}
-			if((float)$East < (float)$long)
+			if((float)$East < (float)$elements['long'])
 			{
-				$East = $long;
+				$East = $elements['long'];
 			}
-			if((float)$West > (float)$long)
+			if((float)$West > (float)$elements['long'])
 			{
-				$West = $long;
+				$West = $elements['long'];
 			}
 		}
+		#var_dump(array( $North, $South, $East, $West));
+		return array( $North, $South, $East, $West);
+	}
 
-		if(($this->distance($North, $East, $South, $East) <= 2) && ($this->distance($North, $East, $North, $West) <= 2))
-		{
-			$minLodPixels = 8;
-			$RegionSize = 2;
-			list($center_lat, $unused) = $this->get_midpoint($North, $East, $South, $East);
-			list($unused, $center_lon) = $this->get_midpoint($North, $East, $North, $West);
-			list($North, $unused) = $this->get_point($center_lat, $center_lon, 0, $RegionSize/2);
-			list($South, $unused) = $this->get_point($center_lat, $center_lon, 180, $RegionSize/2);
-			list($unused, $West) = $this->get_point($center_lat, $center_lon, 270, $RegionSize/2);
-			list($unused, $East) = $this->get_point($center_lat, $center_lon, 90, $RegionSize/2);
+	function distance($lat1, $lon1, $lat2, $lon2, $unit)
+	{
+		$theta = $lon1 - $lon2;
+		$dist = sin(deg2rad($lat1)) * sin(deg2rad($lat2)) +  cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * cos(deg2rad($theta));
+		$dist = acos($dist);
+		$dist = rad2deg($dist);
+		$miles = $dist * 60 * 1.1515;
+		$unit = strtoupper($unit);
+		if ($unit == "K") {
+			$ret = ($miles * 1.609344);
 		}
-		elseif(($this->distance($North, $East, $South, $East) <= 4) && ($this->distance($North, $East, $North, $West) <= 4))
+		elseif ($unit == "N")
 		{
-			$minLodPixels = 16;
-			$RegionSize = 4;
-		}
-		elseif(($this->distance($North, $East, $South, $East) <= 8) && ($this->distance($North, $East, $North, $West) <= 8))
-		{
-			$minLodPixels = 32;
-			#$RegionSize = 8;
-		}
-		elseif(($this->distance($North, $East, $South, $East) <= 16) && ($this->distance($North, $East, $North, $West) <= 16))
-		{
-			$minLodPixels = 64;
-			#$RegionSize = 16;
-		}
-		elseif(($this->distance($North, $East, $South, $East) <= 32) && ($this->distance($North, $East, $North, $West) <= 32))
-		{
-			$minLodPixels = 128;
-			#$RegionSize = 32;
-		}
-		elseif(($this->distance($North, $East, $South, $East) <= 64) && ($this->distance($North, $East, $North, $West) <= 64))
-		{
-			$minLodPixels = 256;
-			#$RegionSize = 64;
-		}
-		elseif(($this->distance($North, $East, $South, $East) <= 128) && ($this->distance($North, $East, $North, $West) <= 128))
-		{
-			$minLodPixels = 512;
-			#$RegionSize = 128;
-		}
-		elseif(($this->distance($North, $East, $South, $East) <= 256) && ($this->distance($North, $East, $North, $West) <= 256))
-		{
-			$minLodPixels = 1024;
-			#$RegionSize = 256;
+			$ret = ($miles * 0.8684);
 		}
 		else
 		{
-			$minLodPixels = 2048;
-			#$RegionSize = 512;
+			$ret = $miles;
 		}
 		
-		$maxLodPixels = -1;
+		if($ret > 400)
+		{
+			$distance_calc = 3000;
+			$minLodPix = 64;
+		}
+		elseif($ret > 300)
+		{
+			$distance_calc = 1000;
+			$minLodPix = 128;
+		}
+		elseif($ret > 200)
+		{
+			$distance_calc = 1000;
+			$minLodPix = 256;
+		}
+		elseif($ret > 100)
+		{
+			$distance_calc = 1000;
+			$minLodPix = 512;
+		}
+		else
+		{
+			$distance_calc = 1000;
+			$minLodPix = 1024;
+		}
 		
-		return array( $North, $South, $East, $West, $minLodPixels, $maxLodPixels);
-	}
-
-	function distance($lat1, $lon1, $lat2, $lon2)
-	{
-		$radius = 6371;#radius in kilometers
-		$rad1 = deg2rad($lat1);
-		$rad2 = deg2rad($lat2);
-		$del1 =  deg2rad($lat2-$lat1);
-		$del2 =  deg2rad($lon2-$lon1);
-		$a = sin($del1/2) * sin($del1/2) + cos($rad1) * cos($rad2) * sin($del2/2) * sin($del2/2);
-		$c = 2 * atan2(sqrt($a), sqrt(1-$a));
-		$d = $radius * $c;
-		
-		Return $d;
-	}
-
-	function get_point($lat1, $lon1, $bearing, $distance)
-	{
-		$radius = 6371;#radius in kilometers
-		$rlat1 = deg2rad($lat1); 
-		$rlon1 = deg2rad($lon1);
-		$radial = deg2rad($bearing);
-		$lat_rad = asin(sin($rlat1) * cos($distance/$radius) + cos($rlat1) * sin($distance/$radius) * cos($radial));
-		$dlon_rad = atan(sin($radial) * sin($distance/$radius) * cos($rlat1)) / (cos($distance/$radius) - sin($rlat1) * sin($lat_rad));
-		$lon_rad = fmod(($rlon1 + $dlon_rad + M_PI), 2 * M_PI) - M_PI;
-		
-		$coord[0] = rad2deg($lat_rad);
-		$coord[1] = rad2deg($lon_rad);	
-		return $coord;
+		return array($distance_calc, $minLodPix, $ret);
 	}
 	
-	function get_midpoint($lat1, $lon1, $lat2, $lon2)
+	function get_point($latitude, $longitude, $bearing, $distance, $unit = 'm')
 	{
-		$rlat1 = deg2rad($lat1);
-		$rlat2 = deg2rad($lat2);
-		$rlon1 = deg2rad($lon1);
-		$rlon2 = deg2rad($lon2);
-		$Bx = cos($rlat2) * cos($rlon2-$rlon1);
-		$By = cos($rlat2) * sin($rlon2-$rlon1);
-		$rlat3 = atan2(sin($rlat1) + sin($rlat2),sqrt((cos($rlat1)+$Bx)*(cos($rlat1)+$Bx) + $By*$By));
-		$rlon3 = $rlon1 + atan2($By, cos($rlat1) + $Bx);
-		
-		$coord[0] = rad2deg($rlat3);
-		$coord[1] = rad2deg($rlon3);	
+		//	Radius of earth.  3959 miles or 6371 kilometers.
+		//  Pass in coordinates in Decimal form.  Example: -41.5786214
+		if ($unit == 'm')
+		{
+			$radius = 3959;
+		}
+		elseif ($unit == 'km')
+		{
+			$radius = 6371;
+		}
+
+		//	New latitude in degrees.
+		$new_latitude = rad2deg(asin(sin(deg2rad($latitude)) * cos($distance / $radius) + cos(deg2rad($latitude)) * sin($distance / $radius) * cos(deg2rad($bearing))));
+				
+		//	New longitude in degrees.
+		$new_longitude = rad2deg(deg2rad($longitude) + atan2(sin(deg2rad($bearing)) * sin($distance / $radius) * cos(deg2rad($latitude)), cos($distance / $radius) - sin(deg2rad($latitude)) * sin(deg2rad($new_latitude))));
+
+		//  Assign new latitude and longitude to an array to be returned to the caller.
+		$coord['latitude'] = $new_latitude;
+		$coord['longitude'] = $new_longitude;
+
 		return $coord;
 	}
 
@@ -518,7 +556,7 @@ class export extends dbcore
 		$boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
 		$this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
 
-		$results = $this->sql->conn->query("SELECT * FROM `wifi`.`boundaries`");
+		$results = $this->sql->conn->query("SELECT * FROM `boundaries`");
 		$fetched = $results->fetchAll(2);
 		$KML_data = "";
 		foreach($fetched as $boundary)
@@ -538,7 +576,7 @@ class export extends dbcore
 	public function ExportGPXAll()
 	{
 		$this->verbosed("Starting GPX Export of WiFiDB.");
-		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
+		$sql = "SELECT * FROM `wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
 		$prep = $this->sql->conn->execute($sql);
 		$aparray_all = $prep->fetchAll(2);
 		$this->verbosed("Pointers Table Queried.");
@@ -606,7 +644,7 @@ class export extends dbcore
 				$sig_exp	= explode(",",$signal);
 				$gpsid	  = $sig_exp[0];
 
-				$sql = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ? LIMIT 1";
+				$sql = "SELECT * FROM `wifi_gps` WHERE `id` = ? LIMIT 1";
 				$prepgps = $this->sql->conn->prepare($sql);
 				$prepgps->bindParam(1, $gpsid, PDO::PARAM_INT);
 				$prepgps->execute();
@@ -650,45 +688,16 @@ class export extends dbcore
 	public function GenerateDaemonKMLData()
 	{
 		$date = date($this->date_format);
-		$daily_folder = $this->PATH.'out/daemon/'.$date;
-		if(!@file_exists($daily_folder))
-		{
-			$this->verbosed("Need to make a daily export folder...", 1);
-			if(!@mkdir($daily_folder))
-			{
-				$this->verbosed("Error making new daily export folder...", -1);
-			}
-		}
-		
-		#Generate Full KML if it doesn't already exist
 		$this->named = 0;
-		$kmz_filepath = $daily_folder."/full_db.kmz";
-		if(!file_exists($kmz_filepath))
-		{
-			$this->verbosed("Generating Full DB KML");
-			$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
-		}
-		
-		#Generate Full Labeled KML if it doesn't already exist
+		$this->ExportKML($date, "full" ,1 ,0);
 		$this->named = 1;
-		$kmz_filepath = $daily_folder."/full_db_label.kmz";
-		if(!file_exists($kmz_filepath))
-		{
-			$this->verbosed("Generating Full DB Labeled KML");
-			$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
-		}
-		
-		#Generate Daily KML
-		$this->named = 0;
-		$kmz_filepath = $daily_folder."/daily_db.kmz";
-		$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
-		
-		#Generate Daily Labeled KML
-		$this->named = 1;
-		$kmz_filepath = $daily_folder."/daily_db_label.kmz";
-		$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
+		$this->ExportKML($date, "full" ,1 ,0);
 
-		#Generate History KML
+		$this->named = 0;
+		$this->ExportKML($date, "daily" ,0 ,1);
+		$this->named = 1;
+		$this->ExportKML($date, "daily" ,0 ,1);
+
 		if($this->HistoryKMLLink() === -1)
 		{
 			$this->verbosed("Failed to Create Daemon History KML Links", -1);
@@ -697,7 +706,6 @@ class export extends dbcore
 			$this->verbosed("Created Daemon History KML Links");
 		}
 
-		#Generate Update KML
 		if($this->GenerateUpdateKML() === -1)
 		{
 			$this->verbosed("Failed to Create Update.kml File", -1);
@@ -741,7 +749,6 @@ class export extends dbcore
 				$month_label = $this->month_names[$month];
 				$this->daemon_folder_stats['history'][$year][$month_label][$day] = $entry;
 			}
-
 		}
 		$generated = array();
 		foreach($this->daemon_folder_stats['history'] as $key=>$year)
@@ -853,7 +860,6 @@ class export extends dbcore
 			{
 				$this->verbosed("Failed to Create KMZ file :/ ");
 			}		
-
 			$generated[] = $key.'.kmz';
 		}
 

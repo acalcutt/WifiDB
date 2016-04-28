@@ -27,7 +27,7 @@ define("SWITCH_EXTRAS", "graph");
 
 include('../lib/init.inc.php');
 
-$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
 $result = $dbcore->sql->conn->prepare($sql);
 $result->bindParam(1, $_GET['id'], PDO::PARAM_INT);
 $result->execute();
@@ -41,7 +41,7 @@ $man = $pointer["manuf"];
 $limit = (int) $_GET['limit']+0;
 $from = (int) $_GET['from']+0;
 
-$sql = "SELECT * FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? LIMIT {$from}, {$limit}";
+$sql = "SELECT * FROM `wifi_signals` WHERE `ap_hash` = ? LIMIT {$from}, {$limit}";
 $result = $dbcore->sql->conn->prepare($sql);
 $result->bindParam(1, $pointer['ap_hash'], PDO::PARAM_STR);
 $result->execute();

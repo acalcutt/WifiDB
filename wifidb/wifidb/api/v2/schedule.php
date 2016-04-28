@@ -58,14 +58,9 @@ switch(strtolower($dbcore->Func))
         break;
 
     default:
+        $dbcore->mesg['error'] = "Unknown Func parameter called.";
         $result = -1;
         break;
 }
-if($result <= 0)
-{
-    $dbcore->Output();#array("error"=>"Error in API;"));
-}
-else
-{
-    $dbcore->Output();
-}
+
+$dbcore->Output();

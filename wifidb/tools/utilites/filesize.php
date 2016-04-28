@@ -1,4 +1,9 @@
 <?php
+/*
+ * Watches the size of the file specified as the argument.
+ *
+ * filesize.php export_file.fle
+ */
 error_reporting(E_ALL|E_STRICT);
 
 

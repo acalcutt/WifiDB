@@ -26,9 +26,10 @@ $id = $_GET['id'];
 
 $results = $dbcore->APFetch($id);
 $dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
-$dbcore->smarty->assign('wifidb_assoc_lists', $results[1]);
-$dbcore->smarty->assign('wifidb_ap_globe_html', $results[2]);
-$dbcore->smarty->assign('wifidb_ap', $results[3]);
+$dbcore->smarty->assign('wifidb_ap_signal_all', $results[1]);
+$dbcore->smarty->assign('wifidb_assoc_lists', $results[2]);
+$dbcore->smarty->assign('wifidb_ap_globe_html', $results[3]);
+$dbcore->smarty->assign('wifidb_ap', $results[4]);
 $dbcore->smarty->display('fetch.tpl');
 
 ?>

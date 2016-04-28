@@ -128,15 +128,14 @@ PID: [ $dbcore->This_is_me ]
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Export Jobs
-$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$currentrun = time(); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
+$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
-$prepgj->execute();
-$dbcore->sql->checkError(__LINE__, __FILE__);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
+$dbcore->sql->checkError( $prepgj->execute(), __LINE__, __FILE__);
 
 if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
@@ -170,25 +169,17 @@ else
 		}
 
 		#Find How Many APs had GPS on the last run
-		$sql = "SELECT `apswithgps` FROM `wifi`.`settings` LIMIT 1";
+		$sql = "SELECT `apswithgps` FROM `settings` LIMIT 1";
 		$result =  $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
+		$dbcore->sql->checkError( $result, __LINE__, __FILE__);
 		$settingarray = $result->fetch(2);
 		$apswithgps_last = $settingarray['apswithgps'];
 		$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 		#Find How Many APs have GPS now
-		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000'";
+		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000'";
 		$result = $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
+		$dbcore->sql->checkError( $result, __LINE__, __FILE__);
 		$apswithgps_now = $result->rowCount();
 		$dbcore->verbosed("APs with GPS on Current Run: ".$apswithgps_now);
 
@@ -206,7 +197,7 @@ else
 			$dbcore->export->GenerateDaemonKMLData();
 
 			#Set current number of APs with GPS into the settings table
-			$sqlup2 = "UPDATE `wifi`.`settings` SET `apswithgps` = ? WHERE `id` = 1";
+			$sqlup2 = "UPDATE `settings` SET `apswithgps` = ? WHERE `id` = 1";
 			$prep6 = $dbcore->sql->conn->prepare($sqlup2);
 			$prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
 			$prep6->execute();

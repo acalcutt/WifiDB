@@ -21,7 +21,7 @@ if not, write to the
 
 class misc
 {
-    function __construct($dbcore)
+    function __construct()
     {
         $this->ver_array['Misc'] = array(
                                     "getTZ"                 =>	"1.0",
@@ -118,7 +118,7 @@ class misc
         $ssids = array();
         $number = array();
         echo "Select from Pointers Table\r\n";
-        $sql = "SELECT * FROM `wifi`.`wifi_pointers`";
+        $sql = "SELECT * FROM `wifi_pointers`";
         $result = $this->sql->conn->query($sql);
         $total_rows = $result->rowCount();
         if($total_rows != 0)
@@ -134,7 +134,7 @@ class misc
             echo "Find out the number of each SSID\r\n";
             foreach($ssids as $key=>$ssid)
             {
-                $sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `ssid` LIKE '$ssid'";
+                $sql = "SELECT * FROM `wifi_pointers` WHERE `ssid` LIKE '$ssid'";
                 $result = $this->sql->conn->query($sql);
                 $total_rows = $result->rowCount();
                 $num_ssid[]	= array( 0=>$total_rows, 1=>$ssid);
