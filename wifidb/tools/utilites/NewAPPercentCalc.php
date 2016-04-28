@@ -20,7 +20,7 @@ $sql = "SELECT `id`, `points`, `aps` FROM `user_imports`";
 
 $result = $dbcore->sql->conn->query($sql);
 $allImports = $result->fetchAll(2);
-$count = count($allImports);
+$count = count($allImports)-1;
 foreach($allImports as $import)
 {
     $new = 0;
