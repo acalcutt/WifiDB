@@ -34,7 +34,7 @@ foreach($result->fetchAll(2) as $import)
             $new++;
         }
     }
-    $percent = ( $import['aps'] / $new ) * 100;
+    $percent = ( $new / $import['aps'] ) * 100;
     $sql2 = "UPDATE `user_imports` SET `NewAPPercent` = ? WHERE `id` = ?";
     $prep = $dbcore->sql->conn->prepare($sql2);
     $prep->bindParam(1, $percent, PDO::PARAM_INT);
