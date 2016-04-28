@@ -39,7 +39,4 @@ foreach($result->fetchAll(2) as $import)
     $prep->bindParam(1, $percent, PDO::PARAM_INT);
     $prep->bindParam(2, $import['id'], PDO::PARAM_INT);
     $prep->execute();
-    #var_dump( );
-
-    die();
 }
