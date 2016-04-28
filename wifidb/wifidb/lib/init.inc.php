@@ -213,19 +213,17 @@ try
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				    break;
-				case "graph":
+
+                case "graph":
                     $dbcore = new frontend($config, $SQL);
                     __autoload("graphs");
 					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
 				    break;
-                case "fed":
-                    $dbcore = new frontend($config, $SQL);
-                    __autoload("federation");
-                    $dbcore->federation = new federation($dbcore);
-                    break;
-				case "cp":
+
+                case "cp":
 				    break;
-				default:
+
+                default:
                     $dbcore = new frontend($config, $SQL);
 				    break;
 			}
