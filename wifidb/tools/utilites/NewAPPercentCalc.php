@@ -23,6 +23,7 @@ $result = $dbcore->sql->conn->query($sql);
 foreach($result->fetchAll(2) as $import)
 {
     $new = 0;
+    echo $import['id']." - ".$import['aps']."\r\n";
     $points = explode("-", $import['points']);
     foreach($points as $point)
     {
