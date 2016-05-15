@@ -576,6 +576,25 @@ CREATE TABLE `user_validate` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
+-- Table structure for table `wandering_aps`
+--
+
+CREATE TABLE wifi.wandering_aps
+(
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  aphash VARCHAR(255),
+  wander_rating int(255),
+  lat_nw VARCHAR(255),
+  long_nw VARCHAR(255),
+  lat_ne VARCHAR(255),
+  long_ne VARCHAR(255),
+  lat_se VARCHAR(255),
+  long_se VARCHAR(255),
+  lat_sw VARCHAR(255),
+  long_sw VARCHAR(255)
+);
+
+--
 -- Table structure for table `wifi_gps`
 --
 
@@ -626,6 +645,7 @@ CREATE TABLE `wifi_pointers` (
   `FA` datetime NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'UNKOWN',
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `wander_rating` int(255),
   `signal_high` int(11) NOT NULL,
   `rssi_high` int(11) NOT NULL,
   `alt` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
