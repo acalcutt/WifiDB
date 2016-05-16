@@ -257,7 +257,7 @@ class frontend extends dbcore
 		$prev_id = 0;
 		foreach($users as $user)
 		{
-			$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username`= ? ORDER BY `id` ASC";
+			$sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `id` ASC";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -311,6 +311,7 @@ class frontend extends dbcore
 														'title' => $user_array['title'],
 														'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
 														'aps'   => $pc,
+														'NewAPPercent' => $user_array['NewAPPercent']."%",
 														'date'  => $user_array['date']
 													),
 												),
@@ -519,11 +520,13 @@ class frontend extends dbcore
 		$all_aps_array = array();
 		$all_aps_array['allaps'] = array();
 		$all_aps_array['username'] = $user_array['username'];
-
 		$all_aps_array['notes'] = $user_array['notes'];
 		$all_aps_array['title'] = $user_array['title'];
-
+		$all_aps_array['aps'] = $user_array['aps'];
+		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent']."%";
+		
 		$points = explode("-", $user_array['points']);
+		
 		$flip = 0;
 		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi`.`wifi_pointers` WHERE `id`= ?";
 		$result = $this->sql->conn->prepare($sql);
@@ -591,7 +594,6 @@ class frontend extends dbcore
 					'la' => $ap_array['LA']
 				);
 		}
-		$all_aps_array['total_aps'] = $count;
 		$this->users_import_aps = $all_aps_array;
 		return 1;
 	}

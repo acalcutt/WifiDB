@@ -475,6 +475,7 @@ CREATE TABLE IF NOT EXISTS `user_imports` (
   `date` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `aps` int(11) NOT NULL,
   `gps` int(11) NOT NULL,
+  `NewAPPercent` int(255) NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `file_id` int(255) DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT '0',
