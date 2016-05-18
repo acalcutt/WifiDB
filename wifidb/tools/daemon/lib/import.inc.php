@@ -545,9 +545,9 @@ class import extends dbcore
 						$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
 						#$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
 					}
-				}
+                    $NewAPs++;
+                }
 			}
-			$NewAPs++;
 			$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 		}
 		#Finish off Import and give credit to the user.

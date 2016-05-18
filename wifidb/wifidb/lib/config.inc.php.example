@@ -109,6 +109,7 @@ $config = array
     'daemon_out'            =>   'out/daemon/',
     'gpx_out'               =>   'out/gpx/',
     'csv_out'               =>   'out/csv/',
+	'region_out'            =>   'out/region/',
 
     #---------------- Header and Footer Additional Info -----------------#
     'ads'                   => '', # <-- put the code for your ads in here www.google.com/adsense
