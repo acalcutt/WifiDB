@@ -329,6 +329,7 @@ class frontend extends dbcore
 								'title' => $user_array['title'],
 								'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
 								'aps'   => $pc,
+                                'NewAPPercent' => $user_array['NewAPPercent']."%",
 								'date'  => $user_array['date']
 							);
 				}
@@ -512,8 +513,8 @@ class frontend extends dbcore
 	function UserAPList($row=0)
 	{
 		if(!$row){return 0;}
-		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `id`= ?";
-		$result = $this->sql->conn->prepare($sql);
+        $sql = "SELECT `id`, `username`, `aps`, `gps`, `points`, `notes`, `title`, `date`, `hash`, `file_id`, `converted`, `prev_ext`, `NewAPPercent` FROM `user_imports` WHERE `id`= ?";
+        $result = $this->sql->conn->prepare($sql);
 		$result->execute(array($row));
 		$user_array = $result->fetch(2);
 
@@ -528,8 +529,8 @@ class frontend extends dbcore
 		$points = explode("-", $user_array['points']);
 		
 		$flip = 0;
-		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi`.`wifi_pointers` WHERE `id`= ?";
-		$result = $this->sql->conn->prepare($sql);
+        $sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
+        $result = $this->sql->conn->prepare($sql);
 		$count = 0;
 		foreach($points as $ap)
 		{

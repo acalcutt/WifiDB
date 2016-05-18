@@ -14,7 +14,7 @@ $daemon_config = array(
 	//path to the folder that wifidb is installed in default is /var/www/wifidb/ , because I use Debian. fuck windows
 	'wifidb_install'		=>	'/var/www/wifidb/',
 
-	//Another one that I think is not used anymore, but will wait to see if it is or not..
+	//Another one that I think is not used any more, but will wait to see if it is or not..
 	'console_line_limit'	=>	3000,
 
 	//Same as above...
@@ -37,7 +37,7 @@ $daemon_config = array(
 	// If you have a smaller system (1-2CPU 4GB of RAM) running WiFiDB, I would recommend no more than 2-4 processes.
 	'NumberOfThreads'	   =>  20,
 
-	// Each Import 'Node' is an independant WiFiDB install that has its SQL Database syncing with the other nodes. The wifidb_nodename helps keep track of which server did the importing.
+	// Each Import 'Node' is an independent WiFiDB install that has its SQL Database syncing with the other nodes. The wifidb_nodename helps keep track of which server did the importing.
 	'wifidb_nodename'	   =>  '1',
 
 	//Word used to set and search for import/export schedules
@@ -73,7 +73,7 @@ $daemon_config = array(
 	'GOOD_CLI_COLOR'	=>	'GREEN',
 	'OTHER_CLI_COLOR'	=>	'YELLOW',
 
-	//Debug functions turned on, may also include dropping tables and re-createing them
+	//Debug functions turned on, may also include dropping tables and re-creating them
 	//so only turn on if you really know what you are doing
 	'debug' => 0
 );
