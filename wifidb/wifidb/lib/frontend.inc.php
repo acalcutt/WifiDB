@@ -395,6 +395,7 @@ class frontend extends dbcore
                             'title' => $user_array['title'],
                             'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
                             'aps' => $pc,
+                            'NewAPPercent' => $user_array['NewAPPercent']."%",
                             'date' => $user_array['date']
                         );
                     }
@@ -755,7 +756,7 @@ class frontend extends dbcore
 			`radio` LIKE ? AND
 			`chan` LIKE ? AND
 			`auth` LIKE ? AND
-			`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+			`encry` LIKE ? ORDER BY `$sort` $ord ";
 		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
@@ -765,7 +766,7 @@ class frontend extends dbcore
 				`radio` LIKE ? AND
 				`chan` LIKE ? AND
 				`auth` LIKE ? AND
-				`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+				`encry` LIKE ? ORDER BY `$sort` $ord";
 		$prep2 = $this->sql->conn->prepare($sql2);
 
 		$save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
