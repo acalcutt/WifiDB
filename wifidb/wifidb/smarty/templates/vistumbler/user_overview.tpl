@@ -62,12 +62,13 @@ if not, write to the
                                         <table width="90%" border="1" align="center">
                                             <tbody>
                                                 <tr class="style4">
-                                                    <th colspan="4">All Previous Imports</th>
+                                                    <th colspan="5">All Previous Imports</th>
                                                 </tr>
                                                 <tr class="sub_head">
                                                     <th>ID</th>
                                                     <th>Title</th>
                                                     <th>Total APs</th>
+													<th>Efficiency</th>
                                                     <th>Date</th>
                                                 </tr>
                                                 {foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
@@ -75,6 +76,7 @@ if not, write to the
                                                     <td>{$wifidb_user_prev.id}</td>
                                                     <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.username}">{$wifidb_user_prev.title}</a></td>
                                                     <td>{$wifidb_user_prev.aps}</td>
+													<td style="align-content: center">{$wifidb_user_prev.efficiency}% </td>
                                                     <td>{$wifidb_user_prev.date}</td>
                                                 </tr>
                                                 {/foreach}

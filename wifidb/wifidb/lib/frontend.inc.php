@@ -496,7 +496,6 @@ class frontend extends dbcore
 	function UsersLists($username = "")
 	{
 		if($username == ""){return 0;}
-		$total_aps = array();
 
 		#Total APs
 		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
@@ -513,29 +512,33 @@ class frontend extends dbcore
         $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
 		$user_first = $prep2->fetch(2);
 
-		#Get Last Active AP
+        #Get Last Active AP
 		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
 		$user_last = $prep1->fetch(2);
+#        var_dump($user_last);
 
 		#Get All Imports for User
-		$sql = "SELECT * FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		$sql1 = "SELECT `id`, `points`, `title`, `date`, `aps`, `gps`, `NewAPPercent`, `hash`  FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
 		#echo $sql."\r\n";
-		$other_imports = $this->sql->conn->prepare($sql);
-		$other_imports->bindParam(1, $user_last['id'], PDO::PARAM_INT);
-        $this->sql->checkError( $other_imports->execute(), __LINE__, __FILE__);
+		$other_imports = $this->sql->conn->prepare($sql1);
+        $other_imports->bindParam(1, $username, PDO::PARAM_STR);
+		$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
+        $other_imports->execute();
+        #$this->sql->checkError( , __LINE__, __FILE__);
 
 		$other_rows = $other_imports->rowCount();
-		$other_imports_array = array();
-		if($other_rows > 0)
-		{
-			#var_dump($other_rows);
+#		var_dump($other_rows);
+#        die();
+        $other_imports_array = array();
+#		if($other_rows > 0)
+#		{
 			$flip = 0;
 			while($imports = $other_imports->fetch(2))
 			{
-				#var_dump($imports);
+#				var_dump($imports);
 				if($imports['points'] == ""){continue;}
 				if($flip)
 				{
@@ -546,20 +549,17 @@ class frontend extends dbcore
 					$style="light";
 					$flip=1;
 				}
-				$import_id = $imports['id'];
-				$import_title = $imports['title'];
-				$import_date = $imports['date'];
-				$import_ap = $imports['aps'];
-
+#                var_dump($imports);
 				$other_imports_array[] = array(
 												'class' => $style,
-												'id' => $import_id,
-												'title' => $import_title,
-												'aps' => $import_ap,
-												'date' => $import_date
+												'id' => $imports['id'],
+												'title' => $imports['title'],
+												'aps' => $imports['aps'],
+                                                'efficiency'=>$imports['NewAPPercent'],
+												'date' => $imports['date']
 											   );
 			}
-		}
+#		}
 		$this->user_all_imports_data = array();
 		$this->user_all_imports_data['user_id'] = $user_first['id'];
 		$this->user_all_imports_data['username'] = $user_first['username'];
