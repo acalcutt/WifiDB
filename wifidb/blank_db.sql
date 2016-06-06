@@ -471,7 +471,6 @@ CREATE TABLE `user_imports` (
   `date` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `aps` int(11) NOT NULL,
   `gps` int(11) NOT NULL,
-  `NewAPPercent` int(11) NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `file_id` int(11) DEFAULT NULL,
   `converted` tinyint(4) NOT NULL DEFAULT '0',
