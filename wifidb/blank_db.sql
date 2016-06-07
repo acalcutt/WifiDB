@@ -76,6 +76,23 @@ CREATE TABLE `daemon_pid_stats` (
   KEY `date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+
+--
+-- Table structure for table `files`
+--
+
+CREATE TABLE `federation_servers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `FriendlyName` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `ServerAddress`varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `APIVersion` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `SharedKey` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  `SharedKeyRemote` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+
 --
 -- Table structure for table `files`
 --
