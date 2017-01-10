@@ -82,7 +82,7 @@ class frontend extends dbcore
 
 	function APFetch($id = "")
 	{
-		$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+		$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -101,6 +101,35 @@ class frontend extends dbcore
 			$new_ssid = $newArray['ssid'];
 		}
 
+		if($newArray['geonames_id'] !== 0)
+		{
+			$sql = "SELECT * FROM `geonames` WHERE `geonameid` = ?";
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $newArray['geonames_id'], PDO::PARAM_INT);
+			$prep_geonames->execute();
+			$GeonamesArray = $prep_geonames->fetch(2);
+		}
+		
+		if($newArray['admin1_id'] !== 0)
+		{
+			$sql = "SELECT * FROM `geonames_admin1` WHERE `id` = ?";
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $newArray['admin1_id'], PDO::PARAM_INT);
+			$prep_geonames->execute();
+			$Admin1Array = $prep_geonames->fetch(2);
+		}
+		
+		if($newArray['admin2_id'] !== 0)
+		{
+			$sql = "SELECT * FROM `geonames_admin2` WHERE `id` = ?";
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $newArray['admin2_id'], PDO::PARAM_INT);
+			$prep_geonames->execute();
+			$Admin2Array = $prep_geonames->fetch(2);
+		}
+		
+
+		
 		$ap_data = array(
 			'id'=>$newArray['id'],
 			'radio'=>$newArray['radio'],
@@ -130,7 +159,7 @@ class frontend extends dbcore
 		$list = array();
 		$id_find = "%-{$id}:%";
 		$id_find_firstitem = "{$id}:%";
-		$prep2 = $this->sql->conn->prepare("SELECT * FROM `wifi`.`user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
+		$prep2 = $this->sql->conn->prepare("SELECT * FROM `user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
 		$prep2->bindParam(1, $id_find, PDO::PARAM_STR);
 		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
 		$prep2->execute();
@@ -174,13 +203,16 @@ class frontend extends dbcore
 						$newArray['ssid'],
 						$list,
 						$globe_html,
-						$ap_data
+						$ap_data,
+						$GeonamesArray,
+						$Admin1Array,
+						$Admin2Array
 					);
 	}
 
 	function GetAnnouncement()
 	{
-		$result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
+		$result = $this->sql->conn->query("SELECT `body` FROM `annunc` WHERE `set` = '1'");
 		$array = $result->fetch(2);
 		if($this->sql->checkError() || $array['body'] == "")
 		{
@@ -241,7 +273,7 @@ class frontend extends dbcore
 	#===================================#
 	Public function AllUsers()
 	{
-		$sql = "SELECT `username` FROM `wifi`.`user_imports` ORDER BY `username` ASC";
+		$sql = "SELECT `username` FROM `user_imports` ORDER BY `username` ASC";
 		$result = $this->sql->conn->query($sql);
 
 		$users_all = $result->fetchAll(2);
@@ -257,7 +289,7 @@ class frontend extends dbcore
 		$prev_id = 0;
 		foreach($users as $user)
 		{
-			$sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `id` ASC";
+			$sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `date` DESC";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -364,7 +396,7 @@ class frontend extends dbcore
 		$prep['allaps'] = array();
 		$prep['username'] = $user;
 
-		$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
+		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -373,7 +405,7 @@ class frontend extends dbcore
 
 		$flip = 0;
 		$sql = "SELECT `id`,`ssid`,`mac`,`radio`,`auth`,`encry`,`chan`,`lat`, `FA`,`LA` FROM
-				`wifi`.`wifi_pointers`
+				`wifi_pointers`
 				WHERE `username` = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
 
 		$result1 = $this->sql->conn->prepare($sql);
@@ -432,7 +464,7 @@ class frontend extends dbcore
 		$total_aps = array();
 
 		#Total APs
-		$sql = "SELECT count(`id`) FROM `wifi`.`wifi_pointers` WHERE `username` LIKE ?";
+		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -440,21 +472,21 @@ class frontend extends dbcore
 		$total = $rows[0];
 
 		#Get First Active AP
-		$sql = "SELECT id, username, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC LIMIT 1";
+		$sql = "SELECT id, username, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` ASC LIMIT 1";
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
 		$prep2->execute();
 		$user_first = $prep2->fetch(2);
 
 		#Get Last Active AP
-		$sql = "SELECT id, aps, gps, title, date FROM `wifi`.`user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
 		$prep1->execute();
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		$sql = "SELECT * FROM `wifi`.`user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		$sql = "SELECT * FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? And `date` != '' ORDER BY `date` DESC";
 		#echo $sql."\r\n";
 		$other_imports = $this->sql->conn->prepare($sql);
 		$other_imports->execute(array($username, $user_last['id']));
@@ -683,7 +715,7 @@ class frontend extends dbcore
 
 	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from = NULL, $inc = NULL)
 	{
-		$sql1 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
+		$sql1 = "SELECT * FROM `wifi_pointers` WHERE
 			`ssid` LIKE ? AND
 			`mac` LIKE ? AND
 			`radio` LIKE ? AND
@@ -693,7 +725,7 @@ class frontend extends dbcore
 		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
-		$sql2 = "SELECT * FROM `wifi`.`wifi_pointers` WHERE
+		$sql2 = "SELECT * FROM `wifi_pointers` WHERE
 				`ssid` LIKE ? AND
 				`mac` LIKE ? AND
 				`radio` LIKE ? AND
@@ -740,22 +772,22 @@ class frontend extends dbcore
 			$export_url .= '&encry='.$encry;
 		}
 
-		$ssid = $ssid."%";
+		$ssid = "%".$ssid."%";
 		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
 		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-		$mac = $mac."%";
+		$mac = "%".$mac."%";
 		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
 		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-		$radio = $radio."%";
+		$radio = "%".$radio."%";
 		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
 		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-		$chan = $chan."%";
+		$chan = "%".$chan."%";
 		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
 		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-		$auth = $auth."%";
+		$auth = "%".$auth."%";
 		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
 		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-		$encry = $encry."%";
+		$encry = "%".$encry."%";
 		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
 		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
 		$prep1->execute();
@@ -860,18 +892,18 @@ class frontend extends dbcore
 			$signal_exp = explode("-", $aps['sig']);
 			$first = explode(",", $signal_exp[0]);
 			$first_gps_id = $first[1];
-			$result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$first_gps_id}'");
+			$result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi_gps` WHERE `id` = '{$first_gps_id}'");
 			$first_data = $result->fetch(1);
 			$fa = $first_data["date"]." ".$first_data["time"];
 
 			$sig_c = count($signal_exp);
 			$last = explode(",", $signal_exp[$sig_c-1]);
 			$last_gps_id = $last[0];
-			$result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi`.`wifi_gps` WHERE `id` = '{$last_gps_id}'");
+			$result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi_gps` WHERE `id` = '{$last_gps_id}'");
 			$last_data = $result->fetch(1);
 			$la = $last_data["date"]." ".$last_data["time"];
 
-			$sql_1 = "SELECT * FROM `wifi`.`wifi_gps` WHERE `id` = ?";
+			$sql_1 = "SELECT * FROM `wifi_gps` WHERE `id` = ?";
 			$result_1 = $this->sql->conn->prepare($sql_1);
 			foreach($signal_exp as $signal)
 			{

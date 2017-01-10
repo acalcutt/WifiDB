@@ -55,6 +55,40 @@ if not, write to the
                                     </tbody>
                                 </table>
                                 <br/>
+								
+								<table width="85%" border="1" cellpadding="2" cellspacing="0">
+									<tr>
+										<td class="style1">Geographical data ( datasource: Geonames.org )</td>
+									</tr>
+									<tr>
+										<td class="style1">
+												<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
+													<tbody>
+														<tr>
+															<th class="style4">ID</th>
+															<th class="style4">Closest Landmark</th>
+															<th class="style4">Admin1 Name</th>
+															<th class="style4">Admin2 Name</th>
+															<th class="style4">Country Name</th>
+															<th class="style4">Timezone</th>
+														</tr>
+													</tbody>
+													<tbody>
+														<tr>
+															<td class="light" align="center">{$wifidb_geonames.id}</td>
+															<td class="light" align="center">{$wifidb_geonames.asciiname}</td>	
+															<td class="light" align="center">{$wifidb_admin1.name}</td>
+															<td class="light" align="center">{$wifidb_admin2.name}</td>
+															<td class="light" align="center">{$wifidb_geonames.country_code}</td>
+															<td class="light" align="center">{$wifidb_geonames.timezone}</td>
+														</tr>
+													</tbody>
+												</table>
+										</td>
+									</tr>
+								</table>
+                                <br/>													
+
 								<table width="85%" border="1" cellpadding="2" cellspacing="0">
 									<tr>
 										<td class="style1">Associated Lists</td>
