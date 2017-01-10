@@ -11,8 +11,8 @@ You should have received a copy of the GNU General Public License along with thi
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+if(!(require('/etc/wifidb/daemon.config.inc.php'))){die("You need to create and configure your /etc/wifidb/daemon.config.inc.php file in the [tools dir]/etc/wifidb/daemon.config.inc.php");}
+if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/etc/wifidb/daemon.config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit			=	"2015-06-08";
@@ -129,7 +129,7 @@ $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Geoname Jobs
 $currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `wifi`.`schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
@@ -170,7 +170,7 @@ else
 		}
 
 		#Start gathering Geonames
-		$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi`.`wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
+		$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
 		echo $sql."\r\n";
 		$result = $dbcore->sql->conn->query($sql);
 		$dbcore->verbosed("Gathered Wtable data");
@@ -178,39 +178,56 @@ else
 		sleep(4);
 		while($ap = $result->fetch(1))
 		{
+			
+			#$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
+			#$lat = $dbcore->convert->dm2dd($ap['lat']);
+			#$long = $dbcore->convert->dm2dd($ap['long']);
+			#$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
+			#$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code`, SQRT(POW((69.1 * (latitude - $lat)) , 2 ) + POW((53 * (longitude - $long)), 2)) AS distance 
+			#		FROM geonames
+			#		ORDER BY distance ASC 
+			#		LIMIT 1";
+			#echo $sql."\r\n";
 			$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
-			$lat = round($dbcore->convert->dm2dd($ap['lat']), 1);
-			$long = round($dbcore->convert->dm2dd($ap['long']), 1);
+			$lat = $dbcore->convert->dm2dd($ap['lat']);
+			$long = $dbcore->convert->dm2dd($ap['long']);
+			$lat_rounded = number_format(round($lat, 1), 1, '.', '');
+			$long_rounded = number_format(round($long, 1), 1, '.', '');
 			$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
-			$sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code` FROM `wifi`.`geonames` WHERE `latitude` LIKE '$lat%' AND `longitude` LIKE '$long%' LIMIT 1";
+			$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code`, SQRT(POW((69.1 * (latitude - $lat)) , 2 ) + POW((53 * (longitude - $long)), 2)) AS distance 
+					FROM `geonames` 
+					WHERE `latitude` LIKE '$lat_rounded%' AND `longitude` LIKE '$long_rounded%' 
+					ORDER BY distance ASC 
+					LIMIT 1";
+			#echo $sql."\r\n";
 			$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
 			$geo_res = $dbcore->sql->conn->query($sql);
-			$geo_array = $geo_res->fetch(PDO::FETCH_ASSOC);
+			$geo_array = $geo_res->fetch(1);
 			if(!$geo_array['geonameid'])
 			{continue;}
 
 			$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
 			$admin1_array = array('id'=>'');
 			$admin2_array = array('id'=>'');
-			if($geo_array['admin1 code'])
+			if($geo_array['admin1_code'])
 			{
 				$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
-				$admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
+				$admin1 = $geo_array['country_code'].".".$geo_array['admin1_code'];
 
-				$sql = "SELECT `id` FROM `wifi`.`geonames_admin1` WHERE `admin1`='$admin1'";
+				$sql = "SELECT `id` FROM `geonames_admin1` WHERE `admin1`='$admin1'";
 				$admin1_res = $dbcore->sql->conn->query($sql);
 				$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
 			}
-			if(is_numeric($geo_array['admin2 code']))
+			if(is_numeric($geo_array['admin2_code']))
 			{
 				$dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
-				$admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
-				$sql = "SELECT `id` FROM `wifi`.`geonames_admin2` WHERE `admin2`='$admin2'";
+				$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
+				$sql = "SELECT `id` FROM `geonames_admin2` WHERE `admin2`='$admin2'";
 				$admin2_res = $dbcore->sql->conn->query($sql);
 				$admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
 			}
 
-			$sql = "UPDATE `wifi`.`wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
+			$sql = "UPDATE `wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}', `country_code` = '{$geo_array['country_code']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
 			if($dbcore->sql->conn->query($sql))
 			{
 				$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);

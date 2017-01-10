@@ -33,7 +33,7 @@ $l = 0;
 $II = 1;
 $sql = "";
 echo "Loading WiFiDB config files.\r\n";
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if(!(require('/etc/wifidb/daemon.config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
@@ -62,7 +62,7 @@ foreach ($contents as $line)
             break;
         case "geoname":
             $sql = "INSERT INTO `wifi`.`geonames` (`id`, `geonameid`, `name`, `asciiname`, `alternatenames`, `latitude`, `longitude`,
-    `feature class`, `feature code`, `country code`, `cc2`, `admin1 code`, `admin2 code`, `admin3 code`, `admin4 code`,
+    `feature_class`, `feature_code`, `country_code`, `cc2`, `admin1_code`, `admin2_code`, `admin3_code`, `admin4_code`,
     `population`, `elevation`, `gtopo30`, `timezone`, `mod_date`)
     VALUES ('', '{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
             break;
