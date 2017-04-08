@@ -27,58 +27,64 @@ define("SWITCH_EXTRAS", "graph");
 
 include('../lib/init.inc.php');
 
-$sql = "SELECT * FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+$func=$_REQUEST['func'];
+$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
+$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+
+$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
 $result = $dbcore->sql->conn->prepare($sql);
-$result->bindParam(1, $_GET['id'], PDO::PARAM_INT);
+$result->bindParam(1, $id, PDO::PARAM_INT);
 $result->execute();
 if($dbcore->sql->checkError() !== 0)
 {
-    throw new Exception("Error selecting from pointers table.");
+	throw new Exception("Error selecting from pointers table.");
 }
 $pointer = $result->fetch(2);
 
-$man = $pointer["manuf"];
-$limit = (int) $_GET['limit']+0;
-$from = (int) $_GET['from']+0;
-
-$sql = "SELECT * FROM `wifi`.`wifi_signals` WHERE `ap_hash` = ? LIMIT {$from}, {$limit}";
-$result = $dbcore->sql->conn->prepare($sql);
-$result->bindParam(1, $pointer['ap_hash'], PDO::PARAM_STR);
-$result->execute();
-if($dbcore->sql->checkError() !== 0)
-{
-    throw new Exception("Error selecting from signals table for graph");
+switch ($func) {
+	case "graph_list_ap":
+		$sql = "SELECT * FROM `wifi_signals` WHERE `ap_hash` = ? AND `file_id` = ? ORDER BY `time_stamp` ASC";
+		$result = $dbcore->sql->conn->prepare($sql);
+		$result->bindParam(1, $pointer['ap_hash'], PDO::PARAM_STR);
+		$result->bindParam(2, $row, PDO::PARAM_INT);
+		$result->execute();
+		$signals = $result->fetchAll(2);
+		$sig_size = $result->rowCount();
+		break;
+	default:
+		$sql = "SELECT * FROM `wifi_signals` WHERE `ap_hash` = ? ORDER BY `time_stamp` ASC";
+		$result = $dbcore->sql->conn->prepare($sql);
+		$result->bindParam(1, $pointer['ap_hash'], PDO::PARAM_STR);
+		$result->execute();
+		$signals = $result->fetchAll(2);
+		$sig_size = $result->rowCount();
 }
-$signals = $result->fetchAll(2);
-$sig_size = $result->rowCount();
 
-$N=0;
-$signal = array();
-foreach($signals as $sig)
+$sig="";
+foreach($signals as $points)
 {
-    $signal[$N] = $sig['signal'];
-    $N++;
+	if($sig<>""){$sig.="-";}
+	$sig.=$points['signal'];
 }
-$sig = implode("-",$signal);
 
 $apdata = array(
-    "ssid"=>$pointer['ssid'],
-    "mac"=>$pointer["mac"],
-    "man"=>$man,
-    "auth"=>$pointer["auth"],
-    "encry"=>$pointer["encry"],
-    "radio"=>$pointer['radio'],
-    "chan"=>$pointer["chan"],
-    "lat"=>$pointer["lat"],
-    "long"=>$pointer["long"],
-    "btx"=>$pointer["BTx"],
-    "otx"=>$pointer["OTx"],
-    "fa"=>$pointer['FA'],
-    "lu"=>$pointer['LA'],
-    "nt"=>$pointer["NT"],
-    "label"=>$pointer["label"],
-    "sig"=>$sig,
-    "name"=>$pointer['ap_hash']
+	"ssid"=>$pointer['ssid'],
+	"mac"=>$pointer["mac"],
+	"man"=>$pointer["manuf"],
+	"auth"=>$pointer["auth"],
+	"encry"=>$pointer["encry"],
+	"radio"=>$pointer['radio'],
+	"chan"=>$pointer["chan"],
+	"lat"=>$pointer["lat"],
+	"long"=>$pointer["long"],
+	"btx"=>$pointer["BTx"],
+	"otx"=>$pointer["OTx"],
+	"fa"=>$pointer['FA'],
+	"lu"=>$pointer['LA'],
+	"nt"=>$pointer["NT"],
+	"label"=>$pointer["label"],
+	"sig"=>$sig,
+	"name"=>$pointer['ap_hash']
 );
 $dbcore->smarty->assign("wifidb_page_label", "WiFiDB AP Graphing");
 $dbcore->smarty->assign("AP_data", $apdata);
