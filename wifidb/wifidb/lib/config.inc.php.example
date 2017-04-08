@@ -44,6 +44,7 @@ $config = array
     'dBmMaxSignal'			=>   '-30',
     'dBmDissociationSignal'	=>   '-85',
 	'verbose'      			=>   1,
+	'EnableAPIKey'      	=>   0,
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
