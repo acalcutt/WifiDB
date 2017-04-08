@@ -18,6 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+
+
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
@@ -142,11 +144,11 @@ switch($func)
             $dbcore->smarty->display('create_user.tpl');
         }else
         {
+            #var_dump("Start Create User");
             $ret = $dbcore->sec->CreateUser($username, $password, $email);
-            $return = $ret[0];
-            $message = $ret[1];
-
-            switch($return)
+            $message = $dbcore->sec->mesg['message'];
+            #var_dump($message, $ret);
+            switch($ret)
             {
                 case 1:
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
