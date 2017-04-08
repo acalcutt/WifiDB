@@ -2,7 +2,7 @@
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/config.inc.php");}
+if(!(require('/etc/wifidb/daemon.config.inc.php'))){die("You need to create and configure your config.inc.php file in the /etc/wifidb/daemon.config.inc.php");}
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
@@ -102,7 +102,7 @@ function start($command = '')
 							);
 		break;
 	}
-	require('../config.inc.php');
+	require('/etc/wifidb/daemon.config.inc.php');
 	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'config.inc.php');
 	
 	$is_array = is_array($daemon_);
@@ -224,7 +224,7 @@ function stop($command = '')
 							);
 		break;
 	}
-	require('../config.inc.php');
+	require('/etc/wifidb/daemon.config.inc.php');
 	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'config.inc.php');
 	#var_dump($daemon_);
 	if(is_array($daemon_))
@@ -260,7 +260,7 @@ function stop($command = '')
 		return 1;
 	}
 	echo "Stopping WiFiDB Daemon ( $daemon_ )...\r\n";
-	require('../config.inc.php');
+	require('/etc/wifidb/daemon.config.inc.php');
 	$pid = $daemon_config['pid_file_loc'].$daemon_.'d.pid';
 	if(file_exists($pid))
 	{
@@ -321,7 +321,7 @@ function status($command = '')
 							);
 		break;
 	}
-	require('../config.inc.php');
+	require('/etc/wifidb/daemon.config.inc.php');
 	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'config.inc.php');
 	
 	$is_array = is_array($daemon_);

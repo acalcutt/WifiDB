@@ -36,7 +36,7 @@ list($cookie_pass, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_logi
 #echo $cookie_pass;
 
 #Check if user is logged in
-$sql0 = "SELECT * FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
+$sql0 = "SELECT * FROM `user_login_hashes` WHERE `username` = ?";
 $result = $dbcore->sql->conn->prepare($sql0);
 $result->bindParam(1, $username, PDO::PARAM_STR);
 $result->execute();
@@ -45,7 +45,7 @@ $login_check = 0;
 foreach($user_logons as $logon)
 {
 	$db_pass = $logon['hash'];
-	if(crypt($cookie_pass, $db_pass) == $db_pass)
+	if($db_pass == $cookie_pass)
 	{
 		$login_check = 1;
 	}
@@ -64,7 +64,7 @@ if($login_check)
 		
 		case 'profile':
 
-			$sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+			$sql0 = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
 			$result->execute();
@@ -76,6 +76,7 @@ if($login_check)
 			$cp_profile['Vis_ver'] = $user['Vis_ver'];
 			$cp_profile['username'] = $user['username'];
 			$cp_profile['id'] = $user['id'];
+			$cp_profile['apikey'] = $user['apikey'];
 			if($user['h_email']){$cp_profile['hide_email'] = 'checked';}else{$cp_profile['hide_email'] = 'unchecked';};
 			
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
@@ -92,14 +93,14 @@ if($login_check)
 			if($h_email == "on"){$h_email = 1;}else{$h_email = 0;}
 				$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
 			$Vis_ver = htmlentities(addslashes($_POST['Vis_ver']),ENT_QUOTES);
-				$sql0 = "SELECT `id` FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
+				$sql0 = "SELECT `id` FROM `user_info` WHERE `username` = '$username' LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$array = $result->fetch();
 			$cp_profile = array();
 			if($array['id']+0 === $user_id+0)
 			{
-				$sql1 = "UPDATE `wifi`.`user_info` SET `email` = '$email', `h_email` = '$h_email', `website` = '$website', `Vis_ver` = '$Vis_ver' WHERE `id` = '$user_id' LIMIT 1";
+				$sql1 = "UPDATE `user_info` SET `email` = '$email', `h_email` = '$h_email', `website` = '$website', `Vis_ver` = '$Vis_ver' WHERE `id` = '$user_id' LIMIT 1";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				if($result->execute())
 				{
@@ -120,7 +121,7 @@ if($login_check)
 
 		##-------------##
 		case 'pref':
-			$sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
+			$sql0 = "SELECT * FROM `user_info` WHERE `username` = '$username' LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$newArray = $result->fetch();				
@@ -158,14 +159,14 @@ if($login_check)
 			$geonamed = ((@$_POST['geonamed']) == 'on' ? 1 : 0);
 			$pub_geocache = ((@$_POST['pub_geocache']) == 'on' ? 1 : 0);
 			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
-			$sql0 = "SELECT `id` FROM `wifi`.`user_info` WHERE `username` = '$username' LIMIT 1";
+			$sql0 = "SELECT `id` FROM `user_info` WHERE `username` = '$username' LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$array = $result->fetch();
 			$cp_profile = array();
 			if($array['id']+0 === $user_id+0)
 			{
-				$sql1 = "UPDATE `wifi`.`user_info` SET
+				$sql1 = "UPDATE `user_info` SET
 															`mail_updates` = '$mail_updates',
 															`schedule`	=	'$schedule',
 															`imports` = '$imports',

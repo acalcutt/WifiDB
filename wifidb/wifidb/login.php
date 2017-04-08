@@ -18,6 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+
+
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
@@ -26,7 +28,7 @@ include('lib/init.inc.php');
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
 
-if($return == ''){$return = $dbcore->root;}
+if($return == ''){$return = '/'.$dbcore->root;}
 switch($func)
 {
     case "login_proc":
@@ -80,7 +82,8 @@ switch($func)
 
     #---#
     case "logout":
-        $admin_cookie = (int) $_REQUEST['a_c']+0;
+        #$admin_cookie = (int) $_REQUEST['a_c']+0;
+		if((int)@$_REQUEST['a_c'] === 1){$admin_cookie = 1;}else{$admin_cookie = 0;}
         if($admin_cookie === 1)
         {
             $cookie_name = 'WiFiDB_admin_login_yes';
@@ -97,7 +100,7 @@ switch($func)
             else{$path  = '/';}
         }
         list($cookie_pass_hash, $username) = explode(":", base64_decode($_COOKIE[$cookie_name]));
-        $sql = "DELETE FROM `wifi`.`user_login_hashes` WHERE `username` = ?";
+        $sql = "DELETE FROM `user_login_hashes` WHERE `username` = ?";
         $prep = $dbcore->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $prep->execute();
@@ -112,6 +115,7 @@ switch($func)
         {
             $message = "Could not log you out.. :-(";
         }
+		if(strpos($return,'/wifidb/cp/') !== false){$return = '/'.$dbcore->root;}#Redirect control panel logout to homepage
 		$dbcore->redirect_page($return, 2000);
         $dbcore->smarty->assign('message', $message);
         $dbcore->smarty->display('login_result.tpl');
@@ -140,11 +144,11 @@ switch($func)
             $dbcore->smarty->display('create_user.tpl');
         }else
         {
+            #var_dump("Start Create User");
             $ret = $dbcore->sec->CreateUser($username, $password, $email);
-            $return = $ret[0];
-            $message = $ret[1];
-
-            switch($return)
+            $message = $dbcore->sec->mesg['message'];
+            #var_dump($message, $ret);
+            switch($ret)
             {
                 case 1:
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
@@ -179,14 +183,14 @@ switch($func)
 
     case "validate_user":
         $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
-        $sql = "SELECT * FROM `wifi`.`user_validate` WHERE `code` = ?";
+        $sql = "SELECT * FROM `user_validate` WHERE `code` = ?";
         $result = $dbcore->sql->conn->prepare($sql);
         $result->execute(array($validate_code));
         $v_array = $result->fetch(2);
         $username = $v_array['username'];
         if($username)
         {
-            $update = "UPDATE `wifi`.`user_info` SET `validated` = '0' WHERE `username` = ?";
+            $update = "UPDATE `user_info` SET `validated` = '0' WHERE `username` = ?";
             $result = $dbcore->sql->conn->prepare($update);
             $result->bindParam(1, $username);
             $result->execute();
@@ -194,7 +198,7 @@ switch($func)
 #		echo $update."<br>";
             if($err[0] == "00000")
             {
-                $delete = "DELETE FROM `wifi`.`user_validate` WHERE `username` = ?";
+                $delete = "DELETE FROM `user_validate` WHERE `username` = ?";
                 $result = $dbcore->sql->conn->prepare($delete);
                 $result->bindParam(1, $username);
                 $result->execute();
@@ -224,7 +228,7 @@ switch($func)
             $seed = $dbcore->global_seed;
             $pass_seed = md5($_POST['time_pass'].$seed);
 
-            $sql = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+            $sql = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
             $result = $dbcore->sql->conn->prepare($sql);
             $result->execute(array($_POST['time_user']));
             $newArray = $result->fetch(2);
@@ -274,7 +278,7 @@ switch($func)
         $sender_pass    =   $dbcore->smtp_pass;
         $seed           =   $dbcore->login_seed;
         $success        =   0;
-        $sql0 = "SELECT * FROM `wifi`.`user_info` WHERE `username` = ? LIMIT 1";
+        $sql0 = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
         $prep = $dbcore->sql->conn->prepare($sql0);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $prep->execute();
@@ -300,7 +304,7 @@ switch($func)
                 if($password === $password_db)
                 {
                     $setpassword = sha1($newpassword.$seed);
-                    $update = "UPDATE `wifi`.`user_info` SET `password` = ? WHERE `username` = ?";
+                    $update = "UPDATE `user_info` SET `password` = ? WHERE `username` = ?";
                 #   echo $update."<BR>";
                     $prep1 = $dbcore->sql->conn->prepare($update);
                     $prep1->bindParam(1, $setpassword.":sha1", PDO::PARAM_STR);
@@ -311,7 +315,7 @@ switch($func)
                     if($err[0] === "00000")
                     {
                         #clear the token from the table.
-                        $remove = "DELETE FROM `wifi`.`reset_token` where `token` = ? and `username` = ?";
+                        $remove = "DELETE FROM `reset_token` where `token` = ? and `username` = ?";
                         $prep2 = $dbcore->sql->conn->prepare($remove);
                         $prep2->bindParam(1, $token, PDO::PARAM_STR);
                         $prep2->bindParam(2, $username, PDO::PARAM_STR);

@@ -1,7 +1,7 @@
 /wifidb/wifidb/lib/config.inc.php
 
 # PHPStorm
-*/.idea/
+*.idea/
 
 #################
 ## Eclipse
@@ -43,3 +43,5 @@ Thumbs.db
 
 # Folder config file
 Desktop.ini
+wifidb/.idea/encodings.xml
+wifidb/.idea/misc.xml

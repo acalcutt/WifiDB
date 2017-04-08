@@ -50,105 +50,112 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap.limit}&amp;from=0&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a></td>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
                                         </tr>
                                     </tbody>
                                 </table>
                                 <br/>
-                                <table align="center" width="85%" id="gps">
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="10" align="center">
-                                                {foreach name='history' item=wifidb_ap_signal from=$wifidb_ap_signal_all}
-                                                <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
-                                                    <tbody>
-                                                        <tr>
-                                                            <th class="style4" onclick="expandcontract('Row{$wifidb_ap_signal.id}','ClickIcon{$wifidb_ap_signal.id}')" id="ClickIcon{$wifidb_ap_signal.id}" style="cursor: pointer; cursor: hand;">+</th>
-                                                            <th colspan="5" class="style4">Signal History ({$wifidb_ap_signal.desc})</th>
-                                                            <td class="style4"><b>Export:</b> <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap_signal&amp;limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">KMZ</a> / <a class="links" href="{$wifidb_host_url}graph/?limit={$wifidb_ap_signal.limit}&amp;from={$wifidb_ap_signal.from}&amp;id={$wifidb_ap.id}">Graph</a></td>
-                                                        </tr>
-                                                    </tbody>
-                                                    <tbody id="Row{$wifidb_ap_signal.id}" style="display:none">
-                                                        <tr class="style4">
-                                                            <th>Signal</th>
-                                                            <th>RSSI</th>
-                                                            <th>Lat</th>
-                                                            <th>Long</th>
-                                                            <th>Sats</th>
-                                                            <th>Date</th>
-                                                            <th>Time</th>
-                                                        </tr>
-                                                        {foreach name='gps_points' item=wifidb_ap_gps from=$wifidb_ap_signal.gps}
-                                                        <tr class="{$wifidb_ap_gps.class}">
-                                                            <td align="center">{$wifidb_ap_gps.signal}</td>
-                                                            <td align="center">{$wifidb_ap_gps.rssi}</td>
-                                                            <td align="center">{$wifidb_ap_gps.lat}</td>
-                                                            <td align="center">{$wifidb_ap_gps.long}</td>
-                                                            <td align="center">{$wifidb_ap_gps.sats}</td>
-                                                            <td align="center">{$wifidb_ap_gps.date}</td>
-                                                            <td align="center">{$wifidb_ap_gps.time}</td>
-                                                        </tr>
-                                                        {foreachelse}
-                                                        <tr class="bad">
-                                                            <td align="center">This AP does not have any GPS Points for some reason :/</td>
-                                                        </tr>    
-                                                        {/foreach}
-                                                    </tbody>
-                                                </table>
-                                                {foreachelse}
-                                                <tr class="style4">
-                                                    <td> There are no GPS Points for this AP :/</td>
-                                                </tr>    
-                                                {/foreach}
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <br/>
+								
+								<table width="85%" border="1" cellpadding="2" cellspacing="0">
+									<tr>
+										<td class="style1">Geographical data ( datasource: Geonames.org )</td>
+									</tr>
+									<tr>
+										<td class="style1">
+												<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
+													<tbody>
+														<tr>
+															<th class="style4">ID</th>
+															<th class="style4">Closest Landmark</th>
+															<th class="style4">Admin1 Name</th>
+															<th class="style4">Admin2 Name</th>
+															<th class="style4">Country Name</th>
+															<th class="style4">Timezone</th>
+														</tr>
+													</tbody>
+													<tbody>
+														<tr>
+															<td class="light" align="center">{$wifidb_geonames.id}</td>
+															<td class="light" align="center">{$wifidb_geonames.asciiname}</td>	
+															<td class="light" align="center">{$wifidb_admin1.name}</td>
+															<td class="light" align="center">{$wifidb_admin2.name}</td>
+															<td class="light" align="center">{$wifidb_geonames.country_code}</td>
+															<td class="light" align="center">{$wifidb_geonames.timezone}</td>
+														</tr>
+													</tbody>
+												</table>
+										</td>
+									</tr>
+								</table>
+                                <br/>													
 
-                                <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
-                                    <tbody>
-                                        <tr class="style4">
-                                            <th colspan="6">Associated Lists</th>
-                                        </tr>
-                                        <tr class="style4">
-                                            <th>New/Update</th>
-                                            <th>ID</th>
-                                            <th>User</th>
-                                            <th>Title</th>
-                                            <th>Total APs</th>
-                                            <th>Date</th>
-                                        </tr>
-                                        {foreach name='assoc_lists' item=wifidb_assoc from=$wifidb_assoc_lists}
-                                        <tr class="{$wifidb_assoc.class}">
-                                            <td>{$wifidb_assoc.nu}</td>
-                                            <td align="center">
-                                                <a class="links" 
-                                                   href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">
-                                                    {$wifidb_assoc.id}</a>
-                                            </td>
-                                            <td>
-                                                <a class="links" 
-                                                   href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.username}">
-                                                    {$wifidb_assoc.username}
-                                                </a>
-                                            </td>
-                                            <td>
-                                                <a class="links" 
-                                                   href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">
-                                                    {$wifidb_assoc.title}
-                                                </a>
-                                            </td>
-                                            <td align="center">{$wifidb_assoc.aps}</td>
-                                            <td>{$wifidb_assoc.date}</td>
-                                        </tr>
-                                        {foreachelse}
-                                        <tr class="bad">
-                                            <td colspan="6"><p align="center">There is no associated lists for this AP.</p></td>
-                                        </tr>
-                                        {/foreach}
-                                    </tbody>
-                                </table>
+								<table width="85%" border="1" cellpadding="2" cellspacing="0">
+									<tr>
+										<td class="style1">Associated Lists</td>
+									</tr>
+									<tr>
+										<td class="style1">
+												{foreach name=outer item=wifidb_assoc from=$wifidb_assoc_lists}
+												<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
+													<tbody>
+														<tr>
+															<th class="style4">ID</th>
+															<th class="style4">Title</th>
+															<th class="style4">User</th>			
+															<th class="style4">Total APs</th>		
+															<th class="style4">Date</th>
+															<th class="style4">New/Update</th>
+															<th class="style4">Export</th>
+															<th class="style4">Signal History</th>
+														</tr>
+													</tbody>
+													<tbody>
+														<tr>
+															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>		
+															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.title_id}">{$wifidb_assoc.title}</a></td>
+															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.username}">{$wifidb_assoc.username}</a></td>
+															<td class="light" align="center">{$wifidb_assoc.aps}</td>
+															<td class="light">{$wifidb_assoc.date}</td>
+															<td class="light">{$wifidb_assoc.nu}</td>
+															<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>			
+															<td class="style4" onclick="expandcontract('Row{$wifidb_assoc.id}','ClickIcon{$wifidb_assoc.id}')" id="ClickIcon{$wifidb_assoc.id}" style="cursor: pointer; cursor: hand;">+</td>
+														</tr>
+													</tbody>
+													<tbody id="Row{$wifidb_assoc.id}" style="display:none">
+														<tr class="style4">
+															<th>Signal</th>
+															<th>RSSI</th>
+															<th>Lat</th>
+															<th>Long</th>
+															<th>Alt</th>
+															<th>Sats</th>
+															<th>Date</th>
+															<th>Time</th>
+												
+														</tr>
+														{foreach item=wifidb_ap_gps from=$wifidb_assoc.signals}
+														<tr class="{$wifidb_ap_gps.class}">
+															<td class="light" align="center">{$wifidb_ap_gps.signal}</td>
+															<td class="light">{$wifidb_ap_gps.rssi}</td>
+															<td class="light">{$wifidb_ap_gps.lat}</td>
+															<td class="light">{$wifidb_ap_gps.long}</td>
+															<td class="light">{$wifidb_ap_gps.alt}</td>
+															<td class="light">{$wifidb_ap_gps.sats}</td>
+															<td class="light">{$wifidb_ap_gps.date}</td>
+															<td class="light">{$wifidb_ap_gps.time}</td>
+												
+														</tr>
+														{/foreach}
+													</tbody>
+												</table>
+												<br/>
+												{foreachelse}
+												<tr class="style4">
+													<td colspan="5"> There are no GPS Points for this AP :/</td>
+												</tr>    
+												{/foreach}
+										</td>
+									</tr>
+								</table>
                                 <br/>
-
 {include file="footer.tpl"}

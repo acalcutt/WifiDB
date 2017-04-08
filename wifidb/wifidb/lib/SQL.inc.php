@@ -5,6 +5,7 @@ class SQL
 	{
 		$this->host			  = $config['host'];
 		$this->service		   = $config['srvc'];
+		$this->database       = $config['db'];
 		$dsn					 = $this->service.':host='.$this->host;
 		if($this->service === "mysql")
 		{
@@ -20,6 +21,7 @@ class SQL
 			);
 		}
 		$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+		$this->conn->query("USE `$this->database`");
 		$this->conn->query("SET NAMES 'utf8'");
 	}
 

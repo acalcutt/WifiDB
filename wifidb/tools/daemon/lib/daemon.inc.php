@@ -333,7 +333,7 @@ class daemon extends wdbcli
 
 			if($file_hash !== @$fileqq['hash'])
 			{
-				if(count(explode(";", $file_to_Import['notes'])) === 1)
+				if(@explode("|", $file_to_Import['user'])[1] === "")
 				{
 					$user = str_replace(";", "", $file_to_Import['user']);
 					$this->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
@@ -356,7 +356,7 @@ class daemon extends wdbcli
 				$prev_ext = $prep_ext->fetch(2);
 				$notes = $file_to_Import['notes'];
 				$title = $file_to_Import['title'];
-                if( $prev_ext['prev_ext'] === NULL)
+                if( $prev_ext['prev_ext'] == "")
                 {
                     $PrevExt = "";
                 }else
@@ -415,8 +415,9 @@ class daemon extends wdbcli
 					$prep_update_files_table->execute();
 					$this->sql->checkError(__LINE__, __FILE__);
 
-					$sql = "UPDATE `wifi`.`user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ? WHERE `id` = ?";
+					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ?, `NewAPPercent` = ? WHERE `id` = ?";
 					$prep3 = $this->sql->conn->prepare($sql);
+					$NewAPPercent = (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 );
 					foreach($import_ids as $id)
 					{
 						$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
@@ -426,7 +427,8 @@ class daemon extends wdbcli
 						$prep3->bindParam(5, $file_row, PDO::PARAM_INT);
 						$prep3->bindParam(6, $prev_ext['converted'], PDO::PARAM_INT);
 						$prep3->bindParam(7, $prev_ext['prev_ext'], PDO::PARAM_STR);
-						$prep3->bindParam(8, $id, PDO::PARAM_INT);
+						$prep3->bindParam(8, $NewAPPercent, PDO::PARAM_INT);
+						$prep3->bindParam(9, $id, PDO::PARAM_INT);
 						$prep3->execute();
 						$this->sql->checkError(__LINE__, __FILE__);
 						$this->verbosed("Updated User Import row. ($id : $file_hash)", 2);

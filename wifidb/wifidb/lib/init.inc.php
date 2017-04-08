@@ -1,7 +1,7 @@
 <?php
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
-Copyright (C) 2013 Phil Ferland
+Copyright (C) 2016 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -20,9 +20,9 @@ if not, write to the
 */
 // Show all error's with strict santex
 //***DEV USE ONLY*** TODO: remove dev stuff
-ini_set('display_errors', 1);//***DEV USE ONLY***
+#ini_set('display_errors', 1);//***DEV USE ONLY***
 #ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
-error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
+#error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
 //***DEV USE ONLY***
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 if(!function_exists('WiFiDBexception_handler')) {
@@ -57,12 +57,12 @@ set_exception_handler('WiFiDBexception_handler');
 
 if(strtolower(SWITCH_SCREEN) == "cli")
 {
-	if(!file_exists('../config.inc.php'))
+	if(!file_exists('/etc/wifidb/daemon.config.inc.php'))
 	{
 		$error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
 		throw new ErrorException($error_msg);
 	}
-	require '../config.inc.php';
+	require '/etc/wifidb/daemon.config.inc.php';
 	require $daemon_config['wifidb_install'].'/lib/config.inc.php';
 }else
 {
@@ -97,18 +97,13 @@ unset($gen_cwd);
 unset($cwd);
 unset($sql);
 
-if(strtolower(SWITCH_SCREEN) != "cli")
+if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
-	if(strtolower(SWITCH_EXTRAS) != "api")
-	{
-		if( (!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone']))
-		{
-			create_base_cookies($config['hosturl'].$config['root'].'/');
-			exit();
-		}
-	}
+    if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
+        create_base_cookies($config['hosturl'] . $config['root']);
+        exit();
+    }
 }
-
 
 /*
  * Class autoloader
@@ -157,7 +152,7 @@ try
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
 				break;
 				####
@@ -170,7 +165,7 @@ try
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
 					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
 				break;
@@ -208,8 +203,21 @@ try
 					$dbcore = new api($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+				break;
+
+                case "apiv2":
+                    __autoload("createKML");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("apiv2");
+                    __autoload("Zip");
+                    $dbcore = new apiv2($config, $SQL);
+                    $dbcore->convert = new convert($config, $SQL);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				break;
 
 				case "export":
@@ -220,7 +228,7 @@ try
 					$dbcore = new frontend($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
 				break;
 
@@ -277,7 +285,7 @@ function create_base_cookies($URL_PATH)
 	{
 		$ssl = "";
 	}
-	$domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
+	$domain = ";domain=".$_SERVER['HTTP_HOST'];
 	$folder = parse_url($URL_PATH, PHP_URL_PATH);
 	$c = strlen($folder);
 	if($folder[$c-1] == "/" && $c > 1)
@@ -288,20 +296,14 @@ function create_base_cookies($URL_PATH)
 		$root = $folder;
 	}
 	$PATH	   = ";path=".$root;
-	if($_SERVER['SCRIPT_NAME'] != "/wifidb/login.php")
-	{
-		$ultimate_path = parse_url($URL_PATH, PHP_URL_HOST).$_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
-	}else
-	{
-		$ultimate_path = $URL_PATH;
-	}
-
+	$ultimate_path = $_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
 	?>
 <script type="text/javascript">
 	function checkTimeZone()
 	{
 		var expiredays = 86400;
 		var rightNow = new Date();
+        var exdate=new Date();
 		var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
 		var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
 		var temp = date1.toGMTString();
@@ -312,33 +314,27 @@ function create_base_cookies($URL_PATH)
 		var hoursDiffDaylightTime = (date2 - date4) / (1000 * 60 * 60);
 		if (hoursDiffDaylightTime == hoursDiffStdTime)
 		{
-			var exdate=new Date();
 			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_dst=" +escape("0")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			document.cookie="wifidb_client_dst=0" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-			var exdate=new Date();
 			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_check=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			document.cookie="wifidb_client_check=1" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-			var exdate=new Date();
 			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			document.cookie="wifidb_client_timezone=" + hoursDiffStdTime +((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 		}
 		else
 		{
-			var exdate=new Date();
 			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_dst" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			document.cookie="wifidb_client_dst=1" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-			var exdate=new Date();
 			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_check" + "=" +escape("1")+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			document.cookie="wifidb_client_check=1" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 
-			var exdate=new Date();
 			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_timezone=" +escape(hoursDiffStdTime)+((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+			document.cookie="wifidb_client_timezone=" + hoursDiffStdTime + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
 		}
-		location.href = '<?php echo $ssl_flag.'://'.$ultimate_path; ?>';
+		location.href = '<?php echo $ultimate_path; ?>';
 	}
 	</script>
 	<body onload = "checkTimeZone();"> </body>

@@ -44,6 +44,7 @@ $config = array
     'dBmMaxSignal'			=>   '-30',
     'dBmDissociationSignal'	=>   '-85',
 	'verbose'      			=>   1,
+	'EnableAPIKey'      	=>   0,
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
@@ -93,6 +94,7 @@ $config = array
     #---------------- SQL Info ----------------#
     'srvc'                  =>   'mysql',
     'host'                  =>   'localhost',
+    'db'                  	=>   'wifi',
     'db_user'               =>   'wdbuser',
     'db_pwd'                =>   'supersecretpw',
     'collate'               =>   'utf8_bin',
@@ -108,6 +110,7 @@ $config = array
     'daemon_out'            =>   'out/daemon/',
     'gpx_out'               =>   'out/gpx/',
     'csv_out'               =>   'out/csv/',
+	'region_out'            =>   'out/region/',
 
     #---------------- Header and Footer Additional Info -----------------#
     'ads'                   => '', # <-- put the code for your ads in here www.google.com/adsense
