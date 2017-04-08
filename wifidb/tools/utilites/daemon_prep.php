@@ -72,11 +72,12 @@ var_dump("Files in filenames.txt: ".count($file_names));
 echo "Going through the import/up folder for the source files...\r\n";
 $file_a = array();
 $dh = opendir($vs1dir) or die("couldn't open directory");
-$ii = 0;
+#$ii = 0;
+$i = 0;
 $bad_ext = 0;
 while (!(($file = readdir($dh)) == false))
 {
-    $ii++;
+    #$ii++;
     if($file == '.'){continue;}
 	if($file == '..'){continue;}
 
@@ -90,9 +91,12 @@ while (!(($file = readdir($dh)) == false))
         	$ret = $dbcore->insert_file($file, @$file_names);
             if($ret)
             {
+                echo $i." +++ ".$file."\r\n";
                 $file_a[] = $file; //if Filename is valid, throw it into an array for later use
+                $i++;
             }else
             {
+                #echo $i." --- ".$file."\r\n";
                 #$dbcore->verbosed("No good... Blehk.\r\n");
             }
         }else
@@ -105,9 +109,10 @@ while (!(($file = readdir($dh)) == false))
         }
     }else
     {
+        #echo $file."\r\n";
         continue;
     }
-    $i++;
+    #$i++;
 }
 closedir($dh);
 

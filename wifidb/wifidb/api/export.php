@@ -113,7 +113,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results = $dbcore->createKML->createFolder($results, "No Exports with GPS", 0);}else{$results = $dbcore->createKML->createFolder($results, "All Exports", 0);}
+			if($results == ""){$results = $dbcore->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $dbcore->createKML->createFolder("All Exports", $results, 0);}
 			$results = $dbcore->createKML->createKMLstructure("All Exports", $results);
 			if($labeled){$file_name = "All_Exports_Labeled.kmz";}else{$file_name = "All_Exports.kmz";}
 			break;
@@ -179,7 +179,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results = $dbcore->createKML->createFolder($results, "No Daily Exports with GPS", 0);}else{$results = $dbcore->createKML->createFolder($results, "Daily Exports", 0);}
+			if($results == ""){$results = $dbcore->createKML->createFolder("No Daily Exports with GPS", $results, 0);}else{$results = $dbcore->createKML->createFolder("Daily Exports", $results, 0);}
 			$results = $dbcore->createKML->createKMLstructure("Daily Exports", $results);
 			if($labeled){$file_name = "Daily_Exports_Labeled.kmz";}else{$file_name = "Daily_Exports.kmz";}
 			break;
@@ -241,7 +241,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results .= $dbcore->createKML->createFolder($results, "No User Exports with GPS", 0);}
+			if($results == ""){$results .= $dbcore->createKML->createFolder("No User Exports with GPS", $results, 0);}
 			
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['username']);
 			$results = $dbcore->createKML->createKMLstructure("$user_fn AP's ( $list_count Files)", $results);

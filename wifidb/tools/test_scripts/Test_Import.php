@@ -25,7 +25,7 @@ echo "
 #####################################
 ";
 $dbcore->verbose = 1;
-$dbcore->import_vs1( '/var/www/wifidb/import/up/atlanta_hotel.VS1', 'pferland', 'no notes', 'Test 1', date("Y-m-d H:i:s"));
+$dbcore->import_vs1( '/wifidb/www/wifidb/import/up/1742621276_sunday_drive_atlanta_2.VS1', 'pferland', 'no notes', 'Test 1', date("Y-m-d H:i:s"));
 
 /*
 echo "

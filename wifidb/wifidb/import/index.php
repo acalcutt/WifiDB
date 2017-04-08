@@ -155,6 +155,13 @@ switch($func)
                         //that runs and imports all of them at once into the DB
                         //in order that they where uploaded
                         $date = date("y-m-d H:i:s");
+                        if($user[-1] == "|")
+                        {
+                            $user = str_replace("|", "", $user);
+                        }else
+                        {
+                            $user = explode("|", $user)[0];
+                        }
                         $sql = "INSERT INTO `files_tmp`
                                         ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
                                  VALUES ( '',     ?,      ?,      ?,      ?,        ?,      ?,      ?)";

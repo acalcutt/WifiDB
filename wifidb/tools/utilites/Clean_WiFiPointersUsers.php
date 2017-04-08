@@ -18,6 +18,7 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 echo "Start fixing the Usernames in the WiFi Pointers table.\n";
 $result = $dbcore->sql->conn->query("SELECT id, username FROM wifi_pointers");
+$dbcore->sql->checkError($result, __LINE__, __FILE__);
 $fetch = $result->fetchAll(2);
 foreach($fetch as $row)
 {
@@ -44,8 +45,8 @@ foreach($fetch as $row)
         $user = explode( ";", $row['username'] )[0];
     }
 
-    $dbcore->sql->conn->query("UPDATE wifi_pointers SET `username` = '$user' WHERE `id` = '".$row['id']."'");
-    if(!$dbcore->sql->checkError(__LINE__, __FILE__))
+    $res = $dbcore->sql->conn->query("UPDATE wifi_pointers SET `username` = '$user' WHERE `id` = '".$row['id']."'");
+    if(!$dbcore->sql->checkError($res, __LINE__, __FILE__))
     {
         echo "Updated to $user\n";
     }

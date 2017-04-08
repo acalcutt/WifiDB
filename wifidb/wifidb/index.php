@@ -57,7 +57,7 @@ while($user_array = $result->fetch(2))
 $usersa = array_unique($usersa);
 $usercount = count($usersa);
 
-$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi`.`wifi_pointers` order by `id` desc limit 1";
+$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi_pointers` order by `id` desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 

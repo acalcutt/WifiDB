@@ -170,8 +170,6 @@ switch($func)
                 $full_url = "#";
                 $full_size = "0.00 kB";
             }
-			
-			$link_url = $dbcore->URL_PATH.'api/export.php?func=exp_history_netlink&date='.$file;
 
             $kml_all[] = array(
                 "class"             => $class,
@@ -187,8 +185,7 @@ switch($func)
                 "full_size"         => $full_size,
                 "full_size_label"   => $full_label_size,
                 "daily_size"        => $daily_size,
-                "daily_size_label"  => $daily_label_size,
-				"link_url"  => $link_url
+                "daily_size_label"  => $daily_label_size
             );
         }
 
@@ -475,7 +472,7 @@ switch($func)
         break;
 
     default:
-        if(!$proxypass)
+        if(!@$proxypass)
         {
             $wspath = $dbcore->hostname.':'.$dbcore->WebSocketPort.'/'.$dbcore->root;
         }else

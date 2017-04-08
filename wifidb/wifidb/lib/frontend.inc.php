@@ -28,14 +28,13 @@ class frontend extends dbcore
 	#===========================#
 	#   __construct (default)   #
 	#===========================#
-	function __construct($config, &$SQL)
+	function __construct($config)
 	{
-		parent::__construct($config, $SQL);
+		parent::__construct($config);
 		if(strtolower(SWITCH_EXTRAS) != "api")
 		{
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
-            $this->all_users_data = NULL;
-            $this->sec->LoginCheck();
+			$this->sec->LoginCheck();
 			$this->meta = new stdClass();
 			$this->meta->ads = $config['ads'];
 			$this->meta->tracker = $config['tracker'];
@@ -81,12 +80,12 @@ class frontend extends dbcore
 												);
 	}
 
-	function APFetch($id = 0)
+	function APFetch($id = "")
 	{
 		$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
-        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+		$prep->execute();
 		$newArray = $prep->fetch(2);
 
 		if($newArray['ssid'] == '')
@@ -163,7 +162,11 @@ class frontend extends dbcore
 		$prep2 = $this->sql->conn->prepare("SELECT * FROM `user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
 		$prep2->bindParam(1, $id_find, PDO::PARAM_STR);
 		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
-        $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
+		$prep2->execute();
+		if($this->sql->checkError() !== 0)
+		{
+			throw new Exception("Error getting associated lists");
+		}
 
 		while ($field = $prep2->fetch(1))
 		{
@@ -211,6 +214,10 @@ class frontend extends dbcore
 	{
 		$result = $this->sql->conn->query("SELECT `body` FROM `annunc` WHERE `set` = '1'");
 		$array = $result->fetch(2);
+		if($this->sql->checkError() || $array['body'] == "")
+		{
+			return 0;
+		}
 		return $array;
 	}
 
@@ -392,7 +399,7 @@ class frontend extends dbcore
 		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
-        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+		$result->execute();
 		$rows = $result->fetch(1);
 		$prep['total_aps'] = $rows[0];
 
@@ -403,7 +410,7 @@ class frontend extends dbcore
 
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
-        $this->sql->checkError( $result1->execute(), __LINE__, __FILE__);
+		$result1->execute();
 
 		while($array = $result1->fetch(2))
 		{
@@ -459,7 +466,7 @@ class frontend extends dbcore
 		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
-        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+		$result->execute();
 		$rows = $result->fetch(1);
 		$total = $rows[0];
 
@@ -467,14 +474,14 @@ class frontend extends dbcore
 		$sql = "SELECT id, username, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` ASC LIMIT 1";
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
-        $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
+		$prep2->execute();
 		$user_first = $prep2->fetch(2);
 
 		#Get Last Active AP
 		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
-        $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
+		$prep1->execute();
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
@@ -545,8 +552,8 @@ class frontend extends dbcore
 		$points = explode("-", $user_array['points']);
 		
 		$flip = 0;
-		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
-		$result = $this->sql->conn->prepare($sql);
+        $sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
+        $result = $this->sql->conn->prepare($sql);
 		$count = 0;
 		foreach($points as $ap)
 		{
@@ -569,7 +576,7 @@ class frontend extends dbcore
 				$update_or_new = "New";
 			}
 			$result->bindParam(1, $apid, PDO::PARAM_STR);
-            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+			$result->execute();
 			$ap_array = $result->fetch(2);
 
 			if($ap_array['lat'] == "0.0000")
@@ -774,8 +781,8 @@ class frontend extends dbcore
 		$encry = "%".$encry."%";
 		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
 		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-        $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
-        $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
+		$prep1->execute();
+		$prep2->execute();
 		$total_rows = $prep2->rowCount();
 
 		$row_color = 0;
@@ -893,7 +900,7 @@ class frontend extends dbcore
 			{
 				$sig_exp = explode(",", $signal);
 				$result_1->bindParam(1, $sig_exp[0], PDO::PARAM_STR);
-                $this->sql->checkError( $result_1->execute(), __LINE__, __FILE__);
+				$result_1->execute();
 				$gps = $result_1->fetch(1);
 
 				if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "0.0000")

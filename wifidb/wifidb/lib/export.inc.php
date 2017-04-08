@@ -20,13 +20,12 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj, $ZipObj, $ZipArchiveObj, &$SQL){
-		parent::__construct($config, $SQL);
+	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
+		parent::__construct($config);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;
 		$this->Zip = $ZipObj;
-		$this->ZipArchive = $ZipArchiveObj;
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
 		$this->month_names  = array(
@@ -61,6 +60,7 @@ class export extends dbcore
 			"GenerateUpdateKML"	 =>  "1.0",
 		);
 	}
+
 
 	/*
 	 * Export to Google KML File
@@ -218,7 +218,6 @@ class export extends dbcore
 		$KML_data="";
 		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
 		$result = $this->sql->conn->query($sql);
-        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ap_array = $result->fetch(2);
 		if($ap_array['id'])
 		{
@@ -233,20 +232,12 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		#Get the AP hash
-<<<<<<< HEAD
-		$sql = "SELECT `ap_hash`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id'";
-		$hash_query = $this->sql->conn->query($sql);
-		$this->sql->checkError(__LINE__, __FILE__);
-		$hash_fetch = $hash_query->fetch(2);
-		$ap_hash = $hash_fetch['ap_hash'];
-=======
-		$sql = "SELECT `ap_hash` FROM `wifi`.`wifi_pointers` WHERE `id` = ?";
+		$sql = "SELECT `ap_hash` FROM `wifi_pointers` WHERE `id` = ?";
 		$prep_hash = $this->sql->conn->prepare($sql);
 		$prep_hash->bindParam(1, $ap_id, PDO::PARAM_INT);
 		$prep_hash->execute();
 		$fetch_hash = $prep_hash->fetch(2);
 		$ap_hash = $fetch_hash['ap_hash'];
->>>>>>> ac-wifidb-prod
 		
 		#Get Import Name
 		$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
@@ -261,27 +252,11 @@ class export extends dbcore
 				  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
 				  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
 				  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
-<<<<<<< HEAD
 				FROM `wifi_signals`
 				  LEFT JOIN `wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
-				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_gps`.`lat` != '0.0000'";
-				
-		if(!empty($limit))
-		{
-			$sql .= " LIMIT $limit";
-			if(!empty($from))
-			{
-				$sql .= ", $from";
-			}
-		}
-		$KML_data = "";
-=======
-				FROM `wifi`.`wifi_signals`
-				  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
 				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'
 				ORDER BY `wifi_signals`.`time_stamp` ASC";
 		
->>>>>>> ac-wifidb-prod
 		$ap_query = $this->sql->conn->query($sql);
 		$this->sql->checkError();
 		$sig_gps_data = $ap_query->fetchAll(2);
@@ -766,6 +741,7 @@ class export extends dbcore
 				$month_label = $this->month_names[$month];
 				$this->daemon_folder_stats['history'][$year][$month_label][$day] = $entry;
 			}
+
 		}
 		$generated = array();
 		foreach($this->daemon_folder_stats['history'] as $key=>$year)
@@ -877,6 +853,7 @@ class export extends dbcore
 			{
 				$this->verbosed("Failed to Create KMZ file :/ ");
 			}		
+
 			$generated[] = $key.'.kmz';
 		}
 
