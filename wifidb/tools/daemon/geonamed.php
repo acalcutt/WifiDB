@@ -194,11 +194,7 @@ else
 			$lat_rounded = number_format(round($lat, 1), 1, '.', '');
 			$long_rounded = number_format(round($long, 1), 1, '.', '');
 			$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
-			$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code`, SQRT(POW((69.1 * (latitude - $lat)) , 2 ) + POW((53 * (longitude - $long)), 2)) AS distance 
-					FROM `geonames` 
-					WHERE `latitude` LIKE '$lat_rounded%' AND `longitude` LIKE '$long_rounded%' 
-					ORDER BY distance ASC 
-					LIMIT 1";
+			$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code` FROM `geonames` WHERE `latitude` LIKE '$lat_rounded%' AND `longitude` LIKE '$long_rounded%' LIMIT 1";
 			#echo $sql."\r\n";
 			$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
 			$geo_res = $dbcore->sql->conn->query($sql);
