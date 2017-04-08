@@ -57,12 +57,12 @@ set_exception_handler('WiFiDBexception_handler');
 
 if(strtolower(SWITCH_SCREEN) == "cli")
 {
-	if(!file_exists('../config.inc.php'))
+	if(!file_exists('/etc/wifidb/daemon.config.inc.php'))
 	{
 		$error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
 		throw new ErrorException($error_msg);
 	}
-	require '../config.inc.php';
+	require '/etc/wifidb/daemon.config.inc.php';
 	require $daemon_config['wifidb_install'].'/lib/config.inc.php';
 }else
 {
