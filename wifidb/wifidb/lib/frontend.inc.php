@@ -712,7 +712,7 @@ class frontend extends dbcore
 			`radio` LIKE ? AND
 			`chan` LIKE ? AND
 			`auth` LIKE ? AND
-			`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+			`encry` LIKE ? ORDER BY `$sort` $ord ";
 		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
@@ -722,7 +722,7 @@ class frontend extends dbcore
 				`radio` LIKE ? AND
 				`chan` LIKE ? AND
 				`auth` LIKE ? AND
-				`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+				`encry` LIKE ? ORDER BY `$sort` $ord";
 		$prep2 = $this->sql->conn->prepare($sql2);
 
 		$save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
