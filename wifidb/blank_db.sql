@@ -515,7 +515,7 @@ CREATE TABLE `user_imports` (
   `date` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
   `aps` int(11) NOT NULL,
   `gps` int(11) NOT NULL,
-  `NewAPPercent` int(11) NOT NULL DEFAULT '0',
+  `NewAPPercent` int(255) NOT NULL,
   `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `file_id` int(11) DEFAULT NULL,
   `converted` tinyint(4) NOT NULL DEFAULT '0',
@@ -631,6 +631,25 @@ CREATE TABLE `user_waypoints` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `wandering_aps`
+--
+
+CREATE TABLE wifi.wandering_aps
+(
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  aphash VARCHAR(255),
+  wander_rating int(255),
+  lat_nw VARCHAR(255),
+  long_nw VARCHAR(255),
+  lat_ne VARCHAR(255),
+  long_ne VARCHAR(255),
+  lat_se VARCHAR(255),
+  long_se VARCHAR(255),
+  lat_sw VARCHAR(255),
+  long_sw VARCHAR(255)
+);
+
+--
 -- Table structure for table `wifi_gps`
 --
 
@@ -679,6 +698,7 @@ CREATE TABLE `wifi_pointers` (
   `FA` datetime NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'UNKOWN',
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `wander_rating` int(255),
   `signal_high` int(11) NOT NULL,
   `rssi_high` int(11) NOT NULL,
   `alt` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,

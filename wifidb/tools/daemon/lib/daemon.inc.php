@@ -402,8 +402,8 @@ class daemon extends wdbcli
 				}
 
 				$import_ids = $this->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
-
-				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $importing_id);
+				$this->import->file_id = $file_row;
+				$tmp = $this->import->import_vs1($source, $user);
 
 				if(@$tmp[0] === -1)
 				{
