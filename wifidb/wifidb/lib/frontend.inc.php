@@ -461,7 +461,6 @@ class frontend extends dbcore
 	function UsersLists($username = "")
 	{
 		if($username == ""){return 0;}
-		$total_aps = array();
 
 		#Total APs
 		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
@@ -486,42 +485,34 @@ class frontend extends dbcore
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		$sql = "SELECT * FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? And `date` != '' ORDER BY `date` DESC";
-		#echo $sql."\r\n";
-		$other_imports = $this->sql->conn->prepare($sql);
-		$other_imports->execute(array($username, $user_last['id']));
+		$sql1 = "SELECT `id`, `points`, `title`, `date`, `aps`, `gps`, `NewAPPercent`, `hash`  FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		$other_imports = $this->sql->conn->prepare($sql1);
+		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
+		$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
+		$other_imports->execute();
 		$other_rows = $other_imports->rowCount();
 		$other_imports_array = array();
-		if($other_rows > 0)
+		$flip = 0;
+		while($imports = $other_imports->fetch(2))
 		{
-			#var_dump($other_rows);
-			$flip = 0;
-			while($imports = $other_imports->fetch(2))
+			if($imports['points'] == ""){continue;}
+			if($flip)
 			{
-				#var_dump($imports);
-				if($imports['points'] == ""){continue;}
-				if($flip)
-				{
-					$style = "dark";
-					$flip=0;
-				}else
-				{
-					$style="light";
-					$flip=1;
-				}
-				$import_id = $imports['id'];
-				$import_title = $imports['title'];
-				$import_date = $imports['date'];
-				$import_ap = $imports['aps'];
-
-				$other_imports_array[] = array(
-												'class' => $style,
-												'id' => $import_id,
-												'title' => $import_title,
-												'aps' => $import_ap,
-												'date' => $import_date
-											   );
+				$style = "dark";
+				$flip=0;
+			}else
+			{
+				$style="light";
+				$flip=1;
 			}
+			$other_imports_array[] = array(
+											'class' => $style,
+											'id' => $imports['id'],
+											'title' => $imports['title'],
+											'aps' => $imports['aps'],
+											'efficiency'=>$imports['NewAPPercent'],
+											'date' => $imports['date']
+										   );
 		}
 		$this->user_all_imports_data = array();
 		$this->user_all_imports_data['user_id'] = $user_first['id'];
@@ -721,7 +712,7 @@ class frontend extends dbcore
 			`radio` LIKE ? AND
 			`chan` LIKE ? AND
 			`auth` LIKE ? AND
-			`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+			`encry` LIKE ? ORDER BY `$sort` $ord ";
 		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
@@ -731,7 +722,7 @@ class frontend extends dbcore
 				`radio` LIKE ? AND
 				`chan` LIKE ? AND
 				`auth` LIKE ? AND
-				`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+				`encry` LIKE ? ORDER BY `$sort` $ord";
 		$prep2 = $this->sql->conn->prepare($sql2);
 
 		$save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
