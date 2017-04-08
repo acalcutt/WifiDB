@@ -22,7 +22,7 @@ class security
         $this->privs              = 0;
         $this->username           = "AnonCoward";
         $this->apikey             = "";
-        $this->email_validation   = $dbcore->email_validation;
+        $this->email_validation   = 0; #$dbcore->email_validation;
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
@@ -147,7 +147,7 @@ class security
         $uid                = implode(str_split($this->GenerateKey(25), 5), "-");
         $join_date          = date($this->datetime_format);
         $api_key            = $this->GenerateKey(64);
-        
+
         #now lets start creating the users info
         $sql = "INSERT INTO `user_info` (`id`, `username`, `password`, `uid`, `validated`, 
                                         `locked`, `permissions`, `email`, `join_date`, `apikey`) 
@@ -164,7 +164,8 @@ class security
 
         $this->logd("User created! $username : $email : $join_date", "Info");
         #var_dump(get_defined_vars());
-        $this->mesg[] = "User created! | $username : $email : $join_date";
+        $this->mesg['message'] = "User created! | $username : $join_date";
+        #var_dump($this->mesg['message']);
         return 1;
     }
 
