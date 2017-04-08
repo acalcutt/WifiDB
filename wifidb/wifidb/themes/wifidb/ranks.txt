@@ -1,4 +1,0 @@
-User
-Moderator
-Developer
-Administrator
