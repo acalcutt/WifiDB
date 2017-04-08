@@ -11,7 +11,7 @@ You should have received a copy of the GNU General Public License along with thi
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "api");
 
-include('../lib/init.inc.php');
+include('../../lib/init.inc.php');
 
 if((int)@$_REQUEST['all'] === 1){$all = 1;}else{$all = 0;}#Show both old and new access points. by default only new APs are shown.
 if((int)@$_REQUEST['new_icons'] === 1){$new_icons = 1;}else{$new_icons = 0;}#use new AP icons instead of old AP icons in kml file. by default old icons are shown.
@@ -113,7 +113,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results = $dbcore->createKML->createFolder($results, "No Exports with GPS", 0);}else{$results = $dbcore->createKML->createFolder($results, "All Exports", 0);}
+			if($results == ""){$results = $dbcore->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $dbcore->createKML->createFolder("All Exports", $results, 0);}
 			$results = $dbcore->createKML->createKMLstructure("All Exports", $results);
 			if($labeled){$file_name = "All_Exports_Labeled.kmz";}else{$file_name = "All_Exports.kmz";}
 			break;
@@ -179,7 +179,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results = $dbcore->createKML->createFolder($results, "No Daily Exports with GPS", 0);}else{$results = $dbcore->createKML->createFolder($results, "Daily Exports", 0);}
+			if($results == ""){$results = $dbcore->createKML->createFolder("No Daily Exports with GPS", $results, 0);}else{$results = $dbcore->createKML->createFolder("Daily Exports", $results, 0);}
 			$results = $dbcore->createKML->createKMLstructure("Daily Exports", $results);
 			if($labeled){$file_name = "Daily_Exports_Labeled.kmz";}else{$file_name = "Daily_Exports.kmz";}
 			break;
@@ -241,7 +241,7 @@ switch($func)
 				}
 			}
 			
-			if($results == ""){$results .= $dbcore->createKML->createFolder($results, "No User Exports with GPS", 0);}
+			if($results == ""){$results .= $dbcore->createKML->createFolder("No User Exports with GPS", $results, 0);}
 			
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['username']);
 			$results = $dbcore->createKML->createKMLstructure("$user_fn AP's ( $list_count Files)", $results);
@@ -381,6 +381,154 @@ switch($func)
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $row."-".$ap_list_title."-".$id."-".$ap_name);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			break;
+			
+		case "exp_all_countries":
+			$sql = "SELECT DISTINCT(country_code) FROM `wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `country_code`";
+			$result = $dbcore->sql->conn->query($sql);
+			while($country_fetch = $result->fetch(2))
+			{
+				$country_code = $country_fetch['country_code'];
+				
+				$sql = "SELECT `Country` FROM `geonames_country_names` WHERE `ISO` = ? LIMIT 1";
+				$prep_country = $dbcore->sql->conn->prepare($sql);
+				$prep_country->bindParam(1, $country_code, PDO::PARAM_STR);
+				$prep_country->execute();
+				$country_fetch = $prep_country->fetch(2);
+				$country_asciiname = $country_fetch['Country'];
+				
+				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/v2/export.php?func=exp_country&#x26;country_code='.$country_code.'&#x26;debug='.$debug, $country_asciiname, 1, 0, "onChange", 86400, 0);
+			}
+			$results = $dbcore->createKML->createKMLstructure('All Countries', $results);
+			if($labeled){$file_name = "All_Countries_Labeled.kmz";}else{$file_name = "All_Countries	.kmz";}
+			break;
+			
+		case "exp_country":
+			$country_code = $_REQUEST['country_code'];
+			#Get admin1 ids in this country code
+			$sql = "SELECT DISTINCT(admin1_id) FROM `wifi_pointers` WHERE `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin1_id`";
+			$prep_ap = $dbcore->sql->conn->prepare($sql);
+			$prep_ap->bindParam(1, $country_code, PDO::PARAM_STR);
+			$prep_ap->execute();
+			$fetchaps = $prep_ap->fetchAll();
+			foreach($fetchaps as $ap)
+			{
+				$admin1_id = $ap['admin1_id'];
+				
+				$sql = "SELECT `asciiname` FROM `geonames_admin1` WHERE `id` = ? LIMIT 1";
+				$prep_admin1 = $dbcore->sql->conn->prepare($sql);
+				$prep_admin1->bindParam(1, $admin1_id, PDO::PARAM_INT);
+				$prep_admin1->execute();
+				$admin1_fetch = $prep_admin1->fetch(2);
+				$admin1_asciiname = $admin1_fetch['asciiname'];
+				
+				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/v2/export.php?func=exp_admin1&#x26;country_code='.$country_code.'&#x26;admin1_id='.$admin1_id.'&#x26;debug='.$debug, $admin1_asciiname, 1, 1, "onChange", 86400, 0);
+			}
+			
+			$sql = "SELECT `Country` FROM `geonames_country_names` WHERE `ISO` = ? LIMIT 1";
+			$prep_country = $dbcore->sql->conn->prepare($sql);
+			$prep_country->bindParam(1, $country_code, PDO::PARAM_STR);
+			$prep_country->execute();
+			$country_fetch = $prep_country->fetch(2);
+			$country_asciiname = $country_fetch['Country'];
+			
+			$results = $dbcore->createKML->createKMLstructure($country_asciiname, $results);
+			if($labeled){$file_name = "country_".$country_asciiname."Labeled.kmz";}else{$file_name = "country_".$country_asciiname.".kmz";}
+			break;
+			
+		case "exp_admin1":
+			$country_code = $_REQUEST['country_code'];		
+			$admin1_id = $_REQUEST['admin1_id'];
+			$box_latlon = array();
+			$results = '';
+			#Get APs in this admin2 region
+			$sql = "SELECT DISTINCT(admin2_id) FROM `wifi_pointers` WHERE `admin1_id` = ?  And `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin2_id`";
+			$prep_ap = $dbcore->sql->conn->prepare($sql);
+			$prep_ap->bindParam(1, $admin1_id, PDO::PARAM_INT);
+			$prep_ap->bindParam(2, $country_code, PDO::PARAM_STR);
+			$prep_ap->execute();
+			$fetchaps = $prep_ap->fetchAll();
+			foreach($fetchaps as $ap)
+			{
+				$admin2_id = $ap['admin2_id'];
+				
+				$sql = "SELECT `asciiname` FROM `geonames_admin2` WHERE `id` = ? LIMIT 1";
+				$prep_admin2 = $dbcore->sql->conn->prepare($sql);
+				$prep_admin2->bindParam(1, $admin2_id, PDO::PARAM_INT);
+				$prep_admin2->execute();
+				$admin2_fetch = $prep_admin2->fetch(2);
+				$admin2_asciiname = $admin2_fetch['asciiname'];
+				
+				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/v2/export.php?func=exp_admin2&#x26;country_code='.$country_code.'&#x26;admin1_id='.$admin1_id.'&#x26;admin2_id='.$admin2_id.'&#x26;debug='.$debug, $admin2_asciiname, 1, 0, "onChange", 86400, 0);
+				
+			}
+			
+			$sql = "SELECT `asciiname` FROM `geonames_admin1` WHERE `id` = ? LIMIT 1";
+			$prep_admin1 = $dbcore->sql->conn->prepare($sql);
+			$prep_admin1->bindParam(1, $admin1_id, PDO::PARAM_INT);
+			$prep_admin1->execute();
+			$admin1_fetch = $prep_admin1->fetch(2);
+			$admin1_asciiname = $admin1_fetch['asciiname'];
+			
+			$results = $dbcore->createKML->createKMLstructure($admin1_asciiname, $results);
+			if($labeled){$file_name = "admin1_".$admin1_asciiname."Labeled.kmz";}else{$file_name = "admin1_".$admin1_asciiname.".kmz";}
+			break;
+			
+		case "exp_admin2":
+			$country_code = $_REQUEST['country_code'];		
+			$admin1_id = $_REQUEST['admin1_id'];
+			$admin2_id = $_REQUEST['admin2_id'];
+			$box_latlon = array();
+			$results = '';
+			#Get APs in this admin2 region
+			$sql = "SELECT `id`, `lat`, `long` FROM `wifi_pointers` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$prep_ap = $dbcore->sql->conn->prepare($sql);
+			$prep_ap->bindParam(1, $admin2_id, PDO::PARAM_INT);
+			$prep_ap->bindParam(2, $admin1_id, PDO::PARAM_INT);
+			$prep_ap->bindParam(3, $country_code, PDO::PARAM_STR);
+			$prep_ap->execute();
+			$fetchaps = $prep_ap->fetchAll();
+			foreach($fetchaps as $ap)
+			{
+				$ap_id = $ap['id'];
+				$ap_lat = $ap['lat'];
+				$ap_long = $ap['long'];
+				
+				#Add gps to region array
+				$latlon_info = array(
+				"lat" => $latlon_fetch['lat'],
+				"long" => $latlon_fetch['long'],
+				);
+				$box_latlon[] = $latlon_info;
+
+				list($results_temp, $export_ssid) = $dbcore->export->ExportSingleAp($ap_id, $labeled, $new_icons);
+				$results .= $results_temp;
+				
+			
+			}
+			if($results)
+			{
+				$final_box = $dbcore->export->FindBox($box_latlon);
+				list($distance_calc, $minLodPix, $distance) = $dbcore->export->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
+				$KML_region = $dbcore->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
+				$results = $dbcore->createKML->createFolder("APs", $KML_Region.$results, 0);
+				If($debug)
+				{
+					$KML_Box = $dbcore->createKML->minLodPixels($final_box, 0);
+					$results .= $dbcore->createKML->createFolder("minLodPixels Box", $KML_Box, 0, 0, 0);
+				}
+			}
+			
+			$sql = "SELECT `asciiname` FROM `geonames_admin2` WHERE `id` = ? LIMIT 1";
+			$prep_admin2 = $dbcore->sql->conn->prepare($sql);
+			$prep_admin2->bindParam(1, $admin2_id, PDO::PARAM_INT);
+			$prep_admin2->execute();
+			$admin2_fetch = $prep_admin2->fetch(2);
+			$admin2_asciiname = $admin2_fetch['asciiname'];
+			
+			$results = $dbcore->createKML->createKMLstructure($admin2_asciiname, $results);
+			if($labeled){$file_name = "admin2_".$admin2_asciiname."Labeled.kmz";}else{$file_name = "admin2_".$admin2_asciiname.".kmz";}
+			
 			break;
 
 		default:

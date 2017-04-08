@@ -1,15 +1,36 @@
 <?php
-define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "api");
+/*
+/api/v2/import.php
+Copyright (C) 2016 Phil Ferland
 
-include('../lib/init.inc.php');
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with this program;
+if not, write to the
+
+   Free Software Foundation, Inc.,
+   59 Temple Place, Suite 330,
+   Boston, MA 02111-1307 USA
+*/
+
+
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "apiv2");
+
+include('../../lib/init.inc.php');
 
 if(isset($_REQUEST['func'])){$func = $_REQUEST['func'];}else{$func=NULL;}
 switch($func)
 {
 		case "check_hash":
-			$hash = (empty($_REQUEST['hash'])) ? NULL : $_REQUEST['hash'];
-			$dbcore->CheckHash($hash);
+            $hash = (empty($_REQUEST['hash'])) ? NULL : $_REQUEST['hash'];
+            $dbcore->CheckHash($hash);
 			$dbcore->Output();
 		default:
 			if($dbcore->rebuild)
@@ -26,7 +47,7 @@ switch($func)
 
 			$tmp  = $_FILES['file']['tmp_name'];
 			$size = $_FILES['file']['size'];
-            if($size == "0"){$dbcore->mesg = array("error"=> "Size of file is only 0B, come one man...." ); $dbcore->Output();}
+			if($size == "0"){$dbcore->mesg = array("error"=> "Size of file is only 0B, come one man...." ); $dbcore->Output();}
 
 			$hash           =   hash_file('md5', $tmp);
 			$prefilename    =   str_replace(" ", "_", $_FILES['file']['name']);
@@ -38,7 +59,7 @@ switch($func)
 			$uploadfile     =   $uploadfolder.$filename;
 
 			if(!copy($tmp, $uploadfile))
-            { $dbcore->mesg = array("error"=> 'Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.'); $dbcore->Output();}
+			{ $dbcore->mesg = array("error"=> 'Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.'); $dbcore->Output();}
 
 			chmod($uploadfile, 0600);
 

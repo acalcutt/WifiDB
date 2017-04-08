@@ -57,11 +57,7 @@ while($user_array = $result->fetch(2))
 $usersa = array_unique($usersa);
 $usercount = count($usersa);
 
-$sql = "SELECT * FROM `user_imports` order by id desc limit 1";
-$result = $dbcore->sql->conn->query($sql);
-$newest_array = $result->fetch(2);
-
-$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi_pointers` order by `id` desc limit 1";
+$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi`.`wifi_pointers` order by `id` desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
@@ -98,11 +94,11 @@ if ($usercount == NULL)
     $lastid = 0;
 }else
 {
-    $sql = "SELECT * FROM `user_imports` order by `id` desc limit 1";
+    $sql = "SELECT `user`, `id`, `title`, `date` FROM `wifi`.`files` WHERE completed=1 order by `id` desc limit 1";
     $result = $dbcore->sql->conn->query($sql);
     $lastuser = $result->fetch(2);
-    #var_dump($lastuser);
-    $lastusername = $lastuser['username'];
+    $users = explode("|", $lastuser['user']);
+    $lastusername =  $users[0];
     $lasttitle = $lastuser['title'];
     $lastdate = $lastuser['date'];
     if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}

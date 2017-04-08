@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if(!(require('/etc/wifidb/daemon.config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
@@ -65,7 +65,7 @@ if(!is_null(@$filenames[0]))
 {
     $file_names = array();
 }
-var_dump(count($file_names));
+var_dump("Files in filenames.txt: ".count($file_names));
 #die();
 // Go through the VS1 folder and grab all the VS1 and tmp files
 // I included tmp because if you dont tell PHP to rename a file on upload to a website, it will give it a random name with a .tmp extension
@@ -111,7 +111,7 @@ while (!(($file = readdir($dh)) == false))
 }
 closedir($dh);
 
-var_dump(count($file_a));
-var_dump($bad_ext);
+var_dump("Imported Files: ".count($file_a));
+var_dump("Bad Files: ".$bad_ext);
 $TOTAL_END = date("Y-m-d H:i:s");
 $dbcore->verbosed("TOTAL Running time::\n\nStart: ".$TOTAL_START."\nStop : ".$TOTAL_END."\n");

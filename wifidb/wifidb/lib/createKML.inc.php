@@ -21,7 +21,7 @@ if not, write to the
 class createKML
 {
 
-	public function __construct($URL_PATH, $kml_out, $daemon_out, $tilldead = 2, $convertObj)
+	public function __construct($URL_PATH, $kml_out, $daemon_out, $tilldead = 5, $convertObj)
 	{
 		$this->URL_BASE	 =   $URL_PATH;
 		$this->convert	  =   $convertObj;
@@ -131,7 +131,7 @@ class createKML
 		</LineStyle>
 		<PolyStyle>
 			<color>bf0000ff</color>
-			<outline>0</outline>
+			<outline>1</outline>
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>
@@ -145,7 +145,7 @@ class createKML
 		</LineStyle>
 		<PolyStyle>
 			<color>bf0055ff</color>
-			<outline>0</outline>
+			<outline>1</outline>
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>
@@ -159,7 +159,7 @@ class createKML
 		</LineStyle>
 		<PolyStyle>
 			<color>bf00ffff</color>
-			<outline>0</outline>
+			<outline>1</outline>
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>
@@ -173,7 +173,7 @@ class createKML
 		</LineStyle>
 		<PolyStyle>
 			<color>bf01ffc8</color>
-			<outline>0</outline>
+			<outline>1</outline>
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>
@@ -187,7 +187,7 @@ class createKML
 		</LineStyle>
 		<PolyStyle>
 			<color>bf70ff48</color>
-			<outline>0</outline>
+			<outline>1</outline>
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>
@@ -201,7 +201,7 @@ class createKML
 		</LineStyle>
 		<PolyStyle>
 			<color>bf3d8c27</color>
-			<outline>0</outline>
+			<outline>1</outline>
 			<opacity>75</opacity>
 		</PolyStyle>
 	</Style>';
@@ -360,21 +360,24 @@ class createKML
 		return $tmp;
 	}
 
-	public function CreateApSignal3D($signal_array = array(), $UseRSSI = 1)
+	public function CreateApSignal3D($signal_array = array(), $visible = 1, $UseRSSI = 1)
 	{
 		$tmp = "";
-		$LastTimeInt = 0;
-		$LastSigStrengthLevel = 0;
+		$NewTimeInt = -1;
+		$SigStrengthLevel = 0;
 		$SigData = 0;
 		$ExpString = "";
 
 		foreach($signal_array as $gps)
 		{
-			$LastSigData = $SigData;
-			$SigData = 1;
+			$signal = (int) $gps['signal'];		
+			$LastTimeInt = $NewTimeInt;
 			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
 			$NewTimeInt = strtotime($string);
-			$signal = (int) $gps['signal'];
+			If($LastTimeInt == -1){$LastTimeInt = $NewTimeInt;}
+			$LastSigStrengthLevel = $SigStrengthLevel;
+			$LastSigData = $SigData;
+			$SigData = 1;
 			if($signal >= 0 And $signal <= 16)
 			{
 				$SigStrengthLevel = 1;
@@ -401,12 +404,8 @@ class createKML
 				$SigCat = '#SigCat6';
 			}
 
-			$cal = ($NewTimeInt - $LastTimeInt);
-			if($cal < 0)
-			{
-				$cal = -1*$cal;
-			}
-			If($LastSigStrengthLevel <> $SigStrengthLevel OR ($cal > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			
+			if(($LastSigStrengthLevel <> $SigStrengthLevel) OR (($NewTimeInt - $LastTimeInt) > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
 			{
 				if($LastSigData == 1)
 				{
@@ -421,11 +420,9 @@ class createKML
 					<tessellate>0</tessellate>
 					<altitudeMode>relativeToGround</altitudeMode>
 					<coordinates>';
-				If($ExpString <> '' AND $cal <= $this->SigMapTimeBeforeMarkedDead)
-				{
-					$tmp .= $ExpString;
-				}
-			}
+				If($ExpString <> '' AND (($NewTimeInt - $LastTimeInt) <= $this->SigMapTimeBeforeMarkedDead)){$tmp .= $ExpString;}
+			}		
+			
 			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
 			if($UseRSSI == 1)
 			{
@@ -438,10 +435,8 @@ class createKML
 					".$gps_coords.",".$gps['signal'];
 			}
 			$tmp .= $ExpString;
-			$LastSigStrengthLevel = $SigStrengthLevel;
-			$LastTimeInt = $NewTimeInt;
 		}
-		if($tmp != "\r\n , ,")
+		if($tmp != "")
 		{
 			$tmp .= '
 					</coordinates>

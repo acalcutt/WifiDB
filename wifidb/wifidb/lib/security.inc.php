@@ -22,7 +22,7 @@ class security
         $this->privs              = 0;
         $this->username           = "AnonCoward";
         $this->apikey             = "";
-        $this->email_validation   = $dbcore->email_validation;
+        $this->email_validation   = 0; #$dbcore->email_validation;
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
@@ -147,7 +147,7 @@ class security
         $uid                = implode(str_split($this->GenerateKey(25), 5), "-");
         $join_date          = date($this->datetime_format);
         $api_key            = $this->GenerateKey(64);
-        
+
         #now lets start creating the users info
         $sql = "INSERT INTO `user_info` (`id`, `username`, `password`, `uid`, `validated`, 
                                         `locked`, `permissions`, `email`, `join_date`, `apikey`) 
@@ -163,8 +163,7 @@ class security
         $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
         $this->logd("User created! $username : $email : $join_date", "Info");
-        #var_dump(get_defined_vars());
-        $this->mesg[] = "User created! | $username : $email : $join_date";
+        $this->mesg['message'] = "User created! | $username : $join_date";
         return 1;
     }
 
@@ -181,6 +180,7 @@ class security
 
     function GenerateSessionCookie($Bender_remember_me = 0, $authoritah = 0)
     {
+		$this->SessionID = $this->GenerateKey(128);
         if(!$Bender_remember_me)
         {
             $cookie_timeout = time()+$this->timeout;
@@ -213,7 +213,7 @@ class security
                 {$path  = '/'.$this->root.'/';}
                 else{$path  = '/';}
             }
-            if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), $cookie_timeout, $this->path, $this->domain, $this->ssl))
+            if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), $cookie_timeout, $path, $this->domain, $this->ssl))
             {
                 $this->login_val = "cookie_fail";
                 $this->login_check = 0;
@@ -222,6 +222,7 @@ class security
             }else
             {
                #var_dump("COOKIES!!!!!!!");
+               return 1;
             }
         }
     }
@@ -237,12 +238,11 @@ class security
             $this->mesg[] = "Username not defined, or is AnonCoward.";
             return 0;
         }
-        
+
         $sql0 = "SELECT `id`, `validated`, `locked`, `login_fails`, `username`, `password` FROM `user_info` WHERE `username` = ? LIMIT 1";
         $result = $this->sql->conn->prepare($sql0);
-        $result->bindParam(1 , $username);
+        $result->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
-        
         $newArray = $result->fetch(2);
         $validate = $newArray['validated']+0;
         if($validate === 1)
@@ -262,6 +262,7 @@ class security
             $this->mesg[] = "User has been locked.";
             return 0;
         }
+
         $id = $newArray['id'];
         $db_pass = $newArray['password'];
         $fails = $newArray['login_fails'];
@@ -269,24 +270,27 @@ class security
         $pass_hash = crypt($password, $newArray['password']);
         if($db_pass === $pass_hash)
         {
-            if(!$this->GenerateSessionCookie($Bender_remember_me, $authoritah))
+            if($this->GenerateSessionCookie($Bender_remember_me, $authoritah))
+            {
+                $date = date($this->datetime_format);
+                $sql1 = "UPDATE `user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
+                $prep = $this->sql->conn->prepare($sql1);
+                $prep->bindParam(1, $date, PDO::PARAM_STR);
+                $prep->bindParam(2, $id, PDO::PARAM_INT);
+                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+                
+                $this->login_val = "good";
+                $this->login_check = 1;
+                $this->logd("User has successfully logged in: ". var_export($username, 1), "error");
+                $this->mesg[] = "User is logged in.";
+                return 1;
+            }
+            else
             {
                 $this->logd("Failed to generate session cookie.", "error");
+                $this->login_val = "cookie_fail";
                 return 0;
             }
-            
-            $date = date($this->datetime_format);
-            $sql1 = "UPDATE `user_info` SET `login_fails` = '0', `last_login` = ? WHERE `id` = ? ";
-            $prep = $this->sql->conn->prepare($sql1);
-            $prep->bindParam(1, $date, PDO::PARAM_STR);
-            $prep->bindParam(2, $id, PDO::PARAM_INT);
-            $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-            
-            $this->login_val = "good";
-            $this->login_check = 1;
-            $this->logd("User has successfully logged in: ". var_export($username, 1), "error");
-            $this->mesg[] = "User is logged in.";
-            return 1;
         }else
         {
             #Failed Password check.
@@ -383,8 +387,8 @@ class security
         if(!@isset($_COOKIE[$cookie_name]))
         {
             $this->LoginLabel = "";
-			$this->LoginHtml = "";
-			$this->LoginUri = '?return='.urlencode($return_url);
+            $this->LoginHtml = "";
+            $this->LoginUri = '?return='.urlencode($return_url);
             $this->login_val = "No Cookie";
             $this->login_check = 0;
             return -1;
@@ -394,8 +398,8 @@ class security
         {
             # Username Fail.
             $this->LoginLabel = "";
-			$this->LoginHtml = "";
-			$this->LoginUri = '?return='.urlencode($return_url);
+            $this->LoginHtml = "";
+            $this->LoginUri = '?return='.urlencode($return_url);
             $this->login_val = "u_fail";
             $this->login_check = 0;
             return 0;
@@ -443,7 +447,6 @@ class security
     {
         $username = @$_REQUEST['username'];
         $apikey = @$_REQUEST['apikey'];
-
         if($this->EnableAPIKey)
         {
             if($username === "AnonCoward" && $apikey === "scaredycat")
@@ -452,8 +455,7 @@ class security
                 $this->login_val = "apilogin";
                 return 1;
             }
-
-            if($username === "" || $username === "Unknown")
+            if($username === "" || $username === "Unknown" || $username === NULL)
             {
                 $this->mesg['error'] = "Invalid Username set.";
                 $this->login_val = "failed";

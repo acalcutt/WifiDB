@@ -83,10 +83,6 @@ class frontend extends dbcore
 
 	function APFetch($id = 0)
 	{
-        if($id===0)
-        {
-            throw new ErrorException("APFetch ID is not set.");
-        }
 		$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -106,6 +102,35 @@ class frontend extends dbcore
 			$new_ssid = $newArray['ssid'];
 		}
 
+		if($newArray['geonames_id'] !== 0)
+		{
+			$sql = "SELECT * FROM `geonames` WHERE `geonameid` = ?";
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $newArray['geonames_id'], PDO::PARAM_INT);
+			$prep_geonames->execute();
+			$GeonamesArray = $prep_geonames->fetch(2);
+		}
+		
+		if($newArray['admin1_id'] !== 0)
+		{
+			$sql = "SELECT * FROM `geonames_admin1` WHERE `id` = ?";
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $newArray['admin1_id'], PDO::PARAM_INT);
+			$prep_geonames->execute();
+			$Admin1Array = $prep_geonames->fetch(2);
+		}
+		
+		if($newArray['admin2_id'] !== 0)
+		{
+			$sql = "SELECT * FROM `geonames_admin2` WHERE `id` = ?";
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $newArray['admin2_id'], PDO::PARAM_INT);
+			$prep_geonames->execute();
+			$Admin2Array = $prep_geonames->fetch(2);
+		}
+		
+
+		
 		$ap_data = array(
 			'id'=>$newArray['id'],
 			'radio'=>$newArray['radio'],
@@ -132,67 +157,6 @@ class frontend extends dbcore
 			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
 		}
 
-		$sql = "SELECT  `id`, `signal`, `rssi`, `gps_id`, `username`
-				FROM `wifi_signals`
-				WHERE `ap_hash` =  ?
-				ORDER BY `time_stamp` ASC";
-		$prep1 = $this->sql->conn->prepare($sql);
-		$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
-        $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
-
-		$flip = 0;
-		$prev_date = 0;
-		$date_range = -1;
-		$signal_runs = array();
-		$signals = $prep1->fetchAll(2);
-
-		$sql_gps = "SELECT `lat`, `long`, `sats`, `hdp`, `track`, `date`, `time`, `mph`, `kmh`
-						FROM `wifi_gps`
-						WHERE `id` = ?";
-		$prep_gps = $this->sql->conn->prepare($sql_gps);
-		$from = 0;
-		foreach($signals as $field)
-		{
-			$prep_gps->bindParam(1, $field['gps_id'], PDO::PARAM_INT);
-            $this->sql->checkError( $prep_gps->execute(), __LINE__, __FILE__);
-			$field_g = $prep_gps->fetch(2);
-			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
-			if($prev_date < strtotime($field_g['date']))
-			{
-				$date_range++;
-				$signal_runs[$date_range]['id'] = $date_range;
-				$signal_runs[$date_range]['start'] = $field_g['date']." ".$field_g['time'];
-				$signal_runs[$date_range]['descstart'] = $field_g['time'];
-				$signal_runs[$date_range]['desc'] = $field_g['time'];
-				$signal_runs[$date_range]['user'] = $field['username'];
-				$signal_runs[$date_range]['start_id'] = $field['id'];
-				$signal_runs[$date_range]['from'] = $from;
-				$signal_runs[$date_range]['limit'] = $from;
-			}else
-			{
-				if($signal_runs[$date_range]['user'] != $field['username'])
-				{
-					$signal_runs[$date_range]['user'] .= " and ".$field['username'];
-				}
-				$signal_runs[$date_range]['desc'] = $field_g['date'].": ".$signal_runs[$date_range]['descstart']." - ".$field_g['time'];
-				$signal_runs[$date_range]['stop'] = $field_g['date']." ".$field_g['time'];
-				$signal_runs[$date_range]['limit'] = $from+1;
-			}
-			$from++;
-			$prev_date = strtotime($field_g['date']);
-
-			$signal_runs[$date_range]['gps'][] = array(
-														'class'=>$class,
-														'lat'=>$field_g["lat"],
-														'long'=>$field_g["long"],
-														'sats'=>$field_g["sats"],
-														'date'=>$field_g["date"],
-														'time'=>$field_g["time"],
-														'signal'=>$field["signal"],
-														'rssi'=>$field["rssi"]
-													);
-		}
-
 		$list = array();
 		$id_find = "%-{$id}:%";
 		$id_find_firstitem = "{$id}:%";
@@ -203,6 +167,18 @@ class frontend extends dbcore
 
 		while ($field = $prep2->fetch(1))
 		{
+			$sql = "SELECT `wifi_signals`.`id`, `wifi_signals`.`signal`, `wifi_signals`.`rssi`, `wifi_signals`.`gps_id`, `wifi_signals`.`username`, `wifi_gps`.`lat`, `wifi_gps`.`long`, `wifi_gps`.`alt`, `wifi_gps`.`sats`, `wifi_gps`.`hdp`, `wifi_gps`.`track`, `wifi_gps`.`date`, `wifi_gps`.`time`, `wifi_gps`.`mph`, `wifi_gps`.`kmh`
+					FROM `wifi_signals`
+					INNER JOIN `wifi_gps`
+					ON `wifi_signals`.`gps_id`=`wifi_gps`.`id`
+					WHERE `wifi_signals`.`ap_hash` = ? AND `wifi_signals`.`file_id` = ?
+					ORDER BY `wifi_signals`.`time_stamp` ASC";
+			$prep1 = $this->sql->conn->prepare($sql);
+			$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
+			$prep1->bindParam(2, $field["file_id"], PDO::PARAM_STR);
+			$prep1->execute();
+			$signals = $prep1->fetchAll(2);
+		
 			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
 			preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
 			$list[]= array(
@@ -213,7 +189,8 @@ class frontend extends dbcore
 							'aps'=>$field['aps'],
 							'username'=>$field['username'],
 							'title'=>$field['title'],
-							'title_id'=>$field['file_id']
+							'title_id'=>$field['file_id'],
+							'signals'=>$signals
 							);
 
 		}
@@ -221,17 +198,18 @@ class frontend extends dbcore
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
 						$newArray['ssid'],
-						$signal_runs,
 						$list,
 						$globe_html,
-						$ap_data
+						$ap_data,
+						$GeonamesArray,
+						$Admin1Array,
+						$Admin2Array
 					);
 	}
 
 	function GetAnnouncement()
 	{
-		$result = $this->sql->conn->query("SELECT `body` FROM `wifi`.`annunc` WHERE `set` = '1'");
-		$this->sql->checkError( $result, __LINE__, __FILE__);
+		$result = $this->sql->conn->query("SELECT `body` FROM `annunc` WHERE `set` = '1'");
 		$array = $result->fetch(2);
 		return $array;
 	}
@@ -279,7 +257,7 @@ class frontend extends dbcore
 			}
 
 		}
-		$this->footer .= $this->meta->tracker.$this->meta->ads;
+		$this->footer = $this->meta->tracker.$this->meta->ads;
 		return 1;
 	}
 
@@ -287,122 +265,101 @@ class frontend extends dbcore
 	#   Grab the stats for All Users	#
 	#===================================#
 	Public function AllUsers()
-    {
-        $sql = "SELECT `username` FROM `user_imports` ORDER BY `username` ASC";
-        $result = $this->sql->conn->query($sql);
-        $this->sql->checkError( $result, __LINE__, __FILE__);
-        $users_all = $result->fetchAll(2);
-        var_dump(count($users_all));
-        if(count($users_all) !== 0)
-        {
-            foreach ($users_all as $user) {
-                $user_all[] = $user['username'];
-            }
+	{
+		$sql = "SELECT `username` FROM `user_imports` ORDER BY `username` ASC";
+		$result = $this->sql->conn->query($sql);
 
-            $users = array_unique($user_all);
-            $tablerowid = 0;
-            $row_color = 0;
-            $this->all_users_data = array();
-            $prev_id = 0;
-            foreach ($users as $user) {
-                $sql = "SELECT * FROM `user_imports` WHERE `username`= ? ORDER BY `id` ASC";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $user, PDO::PARAM_STR);
-                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-                $imports = (int)$prep->rowCount();
-                if ($imports === 0) {
-                    continue;
-                }
+		$users_all = $result->fetchAll(2);
+		foreach($users_all as $user)
+		{
+			$user_all[] = $user['username'];
+		}
 
-                $row_color2 = 1;
-                $pre_user = 1;
-                $tablerowid++;
-                while ($user_array = $prep->fetch(2)) {
-                    if ($user_array['points'] === "") {
-                        continue;
-                    }
-                    $username = $user_array['username'];
+		$users = array_unique($user_all);
+		$tablerowid = 0;
+		$row_color = 0;
+		$this->all_users_data = array();
+		$prev_id = 0;
+		foreach($users as $user)
+		{
+			$sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `date` DESC";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $user, PDO::PARAM_STR);
+			$prep->execute();
 
-                    if ($user_array['title'] === "" or $user_array['title'] === " ") {
-                        $user_array['title'] = "UNTITLED";
-                    }
-                    if ($user_array['date'] === "") {
-                        $user_array['date'] = "No date, hmm..";
-                    }
+			$imports = (int) $prep->rowCount();
+			if($imports === 0){continue;}
 
-                    $search = array('\n', '\r', '\n\r');
-                    $user_array['notes'] = str_replace($search, "", $user_array['notes']);
+			$row_color2 = 1;
+			$pre_user = 1;
+			$tablerowid++;
+			while ($user_array = $prep->fetch(2))
+			{
+				if($user_array['points'] === ""){continue;}
+				$username = $user_array['username'];
 
-                    if ($user_array['notes'] == "") {
-                        $user_array['notes'] = "No Notes, hmm..";
-                    }
-                    $notes = $user_array['notes'];
-                    $points = explode("-", $user_array['points']);
-                    $pc = count($points);
+				if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
+				if ($user_array['date'] === ""){ $user_array['date']="No date, hmm..";}
 
-                    if ($pre_user) {
-                        if ($prev_id == $user_array['id']) {
-                            $prev_id = $user_array['id'];
-                            continue 2;
-                        } else {
-                            $prev_id = $user_array['id'];
-                        }
+				$search = array('\n','\r','\n\r');
+				$user_array['notes'] = str_replace($search, "", $user_array['notes']);
 
-                        if ($row_color2 == 1) {
-                            $row_color2 = 0;
-                            $color2 = "light";
-                        } else {
-                            $row_color2 = 1;
-                            $color2 = "dark";
-                        }
+				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
+				$notes = $user_array['notes'];
+				$points = explode("-",$user_array['points']);
+				$pc = count($points);
 
-                        if ($row_color == 1) {
-                            $row_color = 0;
-                            $color = "light";
-                        } else {
-                            $row_color = 1;
-                            $color = "dark";
-                        }
+				if($pre_user)
+				{
+					if($prev_id == $user_array['id'] )
+					{$prev_id = $user_array['id'];continue 2;}
+					else{$prev_id = $user_array['id'];}
 
-                        $this->all_users_data[$user] = array(
-                            'rowid' => $tablerowid,
-                            'class' => $color,
-                            'id' => $user_array['id'],
-                            'imports' => $imports,
-                            'username' => $username,
-                            'data' => array(
-                                array(
-                                    'id' => $user_array['id'],
-                                    'class' => $color2,
-                                    'title' => $user_array['title'],
-                                    'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-                                    'aps' => $pc,
-                                    'date' => $user_array['date']
-                                ),
-                            ),
-                        );
-                        $pre_user = 0;
-                    } else {
-                        if ($row_color2 == 1) {
-                            $row_color2 = 0;
-                            $color2 = "light";
-                        } else {
-                            $row_color2 = 1;
-                            $color2 = "dark";
-                        }
+					if($row_color2 == 1)
+					{$row_color2 = 0; $color2 = "light";}
+					else{$row_color2 = 1; $color2 = "dark";}
 
-                        $this->all_users_data[$user]['data'][] = array(
-                            'id' => $user_array['id'],
-                            'class' => $color2,
-                            'title' => $user_array['title'],
-                            'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-                            'aps' => $pc,
-                            'date' => $user_array['date']
-                        );
-                    }
-                }
-            }
-        }
+					if($row_color == 1)
+					{$row_color = 0; $color = "light";}
+					else{$row_color = 1; $color = "dark";}
+
+					$this->all_users_data[$user] = array(
+								'rowid'	=> $tablerowid,
+								'class'	=> $color,
+								'id'	   => $user_array['id'],
+								'imports'  => $imports,
+								'username' => $username,
+								'data'	 => array(
+													array(
+														'id'	=> $user_array['id'],
+														'class' => $color2,
+														'title' => $user_array['title'],
+														'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+														'aps'   => $pc,
+														'NewAPPercent' => $user_array['NewAPPercent']."%",
+														'date'  => $user_array['date']
+													),
+												),
+							);
+					$pre_user = 0;
+				}else
+				{
+					if($row_color2 == 1)
+					{$row_color2 = 0; $color2 = "light";}
+					else{$row_color2 = 1; $color2 = "dark";}
+
+					$this->all_users_data[$user]['data'][] = array(
+								'id'	=> $user_array['id'],
+								'class' => $color2,
+								'title' => $user_array['title'],
+								'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
+								'aps'   => $pc,
+                                'NewAPPercent' => $user_array['NewAPPercent']."%",
+								'date'  => $user_array['date']
+							);
+				}
+			}
+		}
 		return 1;
 	}
 
@@ -497,7 +454,6 @@ class frontend extends dbcore
 	function UsersLists($username = "")
 	{
 		if($username == ""){return 0;}
-		$total_aps = array();
 
 		#Total APs
 		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
@@ -508,58 +464,48 @@ class frontend extends dbcore
 		$total = $rows[0];
 
 		#Get First Active AP
-		$sql = "SELECT id, username, date FROM `user_imports` WHERE `username` LIKE ? ORDER BY `id` ASC LIMIT 1";
+		$sql = "SELECT id, username, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` ASC LIMIT 1";
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError( $prep2->execute(), __LINE__, __FILE__);
 		$user_first = $prep2->fetch(2);
 
 		#Get Last Active AP
-		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? ORDER BY `id` DESC LIMIT 1";
+		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
         $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		$sql = "SELECT * FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
-		#echo $sql."\r\n";
-		$other_imports = $this->sql->conn->prepare($sql);
-		$other_imports->bindParam(1, $user_last['id'], PDO::PARAM_INT);
-        $this->sql->checkError( $other_imports->execute(), __LINE__, __FILE__);
-
+		$sql1 = "SELECT `id`, `points`, `title`, `date`, `aps`, `gps`, `NewAPPercent`, `hash`  FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		$other_imports = $this->sql->conn->prepare($sql1);
+		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
+		$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
+		$other_imports->execute();
 		$other_rows = $other_imports->rowCount();
 		$other_imports_array = array();
-		if($other_rows > 0)
+		$flip = 0;
+		while($imports = $other_imports->fetch(2))
 		{
-			#var_dump($other_rows);
-			$flip = 0;
-			while($imports = $other_imports->fetch(2))
+			if($imports['points'] == ""){continue;}
+			if($flip)
 			{
-				#var_dump($imports);
-				if($imports['points'] == ""){continue;}
-				if($flip)
-				{
-					$style = "dark";
-					$flip=0;
-				}else
-				{
-					$style="light";
-					$flip=1;
-				}
-				$import_id = $imports['id'];
-				$import_title = $imports['title'];
-				$import_date = $imports['date'];
-				$import_ap = $imports['aps'];
-
-				$other_imports_array[] = array(
-												'class' => $style,
-												'id' => $import_id,
-												'title' => $import_title,
-												'aps' => $import_ap,
-												'date' => $import_date
-											   );
+				$style = "dark";
+				$flip=0;
+			}else
+			{
+				$style="light";
+				$flip=1;
 			}
+			$other_imports_array[] = array(
+											'class' => $style,
+											'id' => $imports['id'],
+											'title' => $imports['title'],
+											'aps' => $imports['aps'],
+											'efficiency'=>$imports['NewAPPercent'],
+											'date' => $imports['date']
+										   );
 		}
 		$this->user_all_imports_data = array();
 		$this->user_all_imports_data['user_id'] = $user_first['id'];
@@ -583,20 +529,21 @@ class frontend extends dbcore
 	function UserAPList($row=0)
 	{
 		if(!$row){return 0;}
-		$sql = "SELECT * FROM `user_imports` WHERE `id`= ?";
-		$result = $this->sql->conn->prepare($sql);
-        $result->bindParam(1, $row, PDO::PARAM_INT);
-        $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
+        $sql = "SELECT `id`, `username`, `aps`, `gps`, `points`, `notes`, `title`, `date`, `hash`, `file_id`, `converted`, `prev_ext`, `NewAPPercent` FROM `user_imports` WHERE `id`= ?";
+        $result = $this->sql->conn->prepare($sql);
+		$result->execute(array($row));
 		$user_array = $result->fetch(2);
 
 		$all_aps_array = array();
 		$all_aps_array['allaps'] = array();
 		$all_aps_array['username'] = $user_array['username'];
-
 		$all_aps_array['notes'] = $user_array['notes'];
 		$all_aps_array['title'] = $user_array['title'];
-
+		$all_aps_array['aps'] = $user_array['aps'];
+		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent']."%";
+		
 		$points = explode("-", $user_array['points']);
+		
 		$flip = 0;
 		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
 		$result = $this->sql->conn->prepare($sql);
@@ -664,7 +611,6 @@ class frontend extends dbcore
 					'la' => $ap_array['LA']
 				);
 		}
-		$all_aps_array['total_aps'] = $count;
 		$this->users_import_aps = $all_aps_array;
 		return 1;
 	}
@@ -759,7 +705,7 @@ class frontend extends dbcore
 			`radio` LIKE ? AND
 			`chan` LIKE ? AND
 			`auth` LIKE ? AND
-			`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+			`encry` LIKE ? ORDER BY `$sort` $ord ";
 		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
 		$prep1 = $this->sql->conn->prepare($sql1);
 
@@ -769,7 +715,7 @@ class frontend extends dbcore
 				`radio` LIKE ? AND
 				`chan` LIKE ? AND
 				`auth` LIKE ? AND
-				`encry` LIKE ? ORDER BY `".$sort."` ".$ord;
+				`encry` LIKE ? ORDER BY `$sort` $ord";
 		$prep2 = $this->sql->conn->prepare($sql2);
 
 		$save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
@@ -810,22 +756,22 @@ class frontend extends dbcore
 			$export_url .= '&encry='.$encry;
 		}
 
-		$ssid = $ssid."%";
+		$ssid = "%".$ssid."%";
 		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
 		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-		$mac = $mac."%";
+		$mac = "%".$mac."%";
 		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
 		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-		$radio = $radio."%";
+		$radio = "%".$radio."%";
 		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
 		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-		$chan = $chan."%";
+		$chan = "%".$chan."%";
 		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
 		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-		$auth = $auth."%";
+		$auth = "%".$auth."%";
 		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
 		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-		$encry = $encry."%";
+		$encry = "%".$encry."%";
 		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
 		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
         $this->sql->checkError( $prep1->execute(), __LINE__, __FILE__);
@@ -931,7 +877,6 @@ class frontend extends dbcore
 			$first = explode(",", $signal_exp[0]);
 			$first_gps_id = $first[1];
 			$result = $this->sql->conn->prep("SELECT `date`,`time` FROM `wifi_gps` WHERE `id` = '{$first_gps_id}'");
-            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 			$first_data = $result->fetch(1);
 			$fa = $first_data["date"]." ".$first_data["time"];
 
@@ -939,7 +884,6 @@ class frontend extends dbcore
 			$last = explode(",", $signal_exp[$sig_c-1]);
 			$last_gps_id = $last[0];
 			$result = $this->sql->conn->query("SELECT `date`,`time` FROM `wifi_gps` WHERE `id` = '{$last_gps_id}'");
-            $this->sql->checkError( $result, __LINE__, __FILE__);
 			$last_data = $result->fetch(1);
 			$la = $last_data["date"]." ".$last_data["time"];
 

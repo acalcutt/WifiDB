@@ -36,6 +36,10 @@ if not, write to the
 						<th width="30%" class="style4">Vistumbler Version</th>
 						<td class="light"><input type="text" name="Vis_ver" size="75%" value="{$user_cp_profile.Vis_ver}"></td>
 					</tr>
+					<tr>
+						<th width="30%" class="style4">Api Key</th>
+						<td class="light"><input type="text" name="apikey" size="75%" value="{$user_cp_profile.apikey}"></td>
+					</tr>
 					<tr class="style4">
 						<td colspan="2">
 							<p align="center">

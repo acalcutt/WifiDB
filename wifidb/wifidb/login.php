@@ -18,6 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+
+
 define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
@@ -26,7 +28,7 @@ $dbcore->smarty->assign('wifidb_page_label', 'WiFiDB Login Processing...');
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
 
-if($return == ''){$return = $dbcore->root;}
+if($return == ''){$return = '/'.$dbcore->root;}
 switch($func)
 {
     case "login_proc":
@@ -80,13 +82,8 @@ switch($func)
 
     #---#
     case "logout":
-        if(!empty($_REQUEST['a_c']))
-        {
-            $admin_cookie = (int)$_REQUEST['a_c'];
-        }else
-        {
-            $admin_cookie = 0;
-        }
+        #$admin_cookie = (int) $_REQUEST['a_c']+0;
+        if((int)@$_REQUEST['a_c'] === 1){$admin_cookie = 1;}else{$admin_cookie = 0;}
         if($admin_cookie === 1)
         {
             $cookie_name = 'WiFiDB_admin_login_yes';
@@ -118,6 +115,7 @@ switch($func)
         {
             $message = "Could not log you out.. :-(";
         }
+		if(strpos($return,'/wifidb/cp/') !== false){$return = '/'.$dbcore->root;}#Redirect control panel logout to homepage
 		$dbcore->redirect_page($return, 2000);
         $dbcore->smarty->assign('message', $message);
         $dbcore->smarty->display('login_result.tpl');
@@ -146,11 +144,11 @@ switch($func)
             $dbcore->smarty->display('create_user.tpl');
         }else
         {
+            #var_dump("Start Create User");
             $ret = $dbcore->sec->CreateUser($username, $password, $email);
-            $return = $ret[0];
-            $message = $ret[1];
-
-            switch($return)
+            $message = $dbcore->sec->mesg['message'];
+            #var_dump($message, $ret);
+            switch($ret)
             {
                 case 1:
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.

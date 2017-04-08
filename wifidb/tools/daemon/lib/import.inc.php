@@ -294,9 +294,10 @@ class import extends dbcore
 
 		$this->verbosed("Importing AP Data [$ap_count]:", 2);
 		$imported_aps = array();
-
+		$NewAPs = 0;
 		foreach($vs1data['apdata'] as $key=>$aps)
 		{
+			
 			$calc = "AP: ".($key+1)." / ".$ap_count;
 			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($sql);
@@ -490,7 +491,7 @@ class import extends dbcore
 						`manuf`,`lat`,`long`,`alt`,`BTx`,`OTx`,`NT`,`label`,`LA`,`FA`,
 						`username`,`ap_hash`, `rssi_high`, `signal_high`)
 						VALUES ( NULL,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? )";
-					if(@explode("|", $user)[1] == "")
+					if(@$user[-1] == "|")
 					{
 						$user = str_replace("|", "", $user);
 					}else
@@ -533,7 +534,8 @@ class import extends dbcore
 						$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
 						#$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
 					}
-				}
+                    $NewAPs++;
+                }
 			}
 			$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 		}
@@ -546,7 +548,8 @@ class import extends dbcore
 				'imported'=> $imported,
 				'date'=>$date,
 				'aps'=>$ap_count,
-				'gps'=>$gps_count
+				'gps'=>$gps_count,
+				'newaps'=>$NewAPs
 			);
 		return $ret;
 	}
