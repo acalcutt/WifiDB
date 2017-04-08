@@ -76,7 +76,7 @@ if not, write to the
                                                     <td>{$wifidb_user_prev.id}</td>
                                                     <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.username}">{$wifidb_user_prev.title}</a></td>
                                                     <td>{$wifidb_user_prev.aps}</td>
-                                                    <td>{$wifidb_user_prev.efficiency}</td>
+                                                    <td>{$wifidb_user_prev.efficiency}%</td>
                                                     <td>{$wifidb_user_prev.date}</td>
                                                 </tr>
                                                 {/foreach}
