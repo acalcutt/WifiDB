@@ -80,14 +80,22 @@ if not, write to the
 
             var popup = new mapboxgl.Popup()
                 .setLngLat(map.unproject(e.point))
-                .setHTML('<h3>' + feature.properties.SSID + '</h3>' +
+                .setHTML('<a href="https://live.wifidb.net/wifidb/opt/fetch.php?id=' + feature.properties.id + '"><h3>' + feature.properties.ssid + '</h3></a>' +
                     '<ul>' +
-                    '<li>SSID: <b>' + feature.properties.SSID + '</b></li>' +
-                    '<li>MAC: <b>' + feature.properties.MAC + '</b></li>' +
-                    '<li>SECTYPE: <b>' + feature.properties.SecType + '</b></li>' +
+                    '<li>SSID: <b>' + feature.properties.ssid + '</b></li>' +
+                    '<li>MAC: <b>' + feature.properties.mac + '</b></li>' +
+                    '<li>CHAN: <b>' + feature.properties.chan + '</b></li>' +
+                    '<li>NETWORK TYPE: <b>' + feature.properties.NT + '</b></li>' +
+                    '<li>ENCRYPTION: <b>' + feature.properties.encry + '</b></li>' +
+                    '<li>RADIO TYPE: <b>' + feature.properties.radio + '</b></li>' +
+                    '<li>BASIC TX: <b>' + feature.properties.BTx + '</b></li>' +
+                    '<li>OTHER TX: <b>' + feature.properties.OTx + '</b></li>' +
                     '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>' +
                     '<li>LONGITUDE: <b>' + feature.properties.long + '</b></li>' +
-                    '<li>Link: <b><a href = "http://www.google.com">http://www.google.com</a></b></li>' +
+                    '<li>ALTITUDE: <b>' + feature.properties.alt + '</b></li>' +
+                    '<li>First Active: <b>' + feature.properties.FA + '</b></li>' +
+                    '<li>Last Active: <b>' + feature.properties.LA + '</b></li>' +
+                    '<li>Username: <a href="https://live.wifidb.net/wifidb/opt/userstats.php?func=alluserlists&user=' + feature.properties.username + '"><b>' + feature.properties.username + '</b></a></li>' +
                     '</ul>')
                 .addTo(map);
         });

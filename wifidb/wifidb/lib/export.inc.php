@@ -374,7 +374,7 @@ class export extends dbcore
 		{
 			list($id, $new_old) = explode(":", $point);
 			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf`, `username` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
 			{
@@ -399,6 +399,7 @@ class export extends dbcore
 				"long" => $this->convert->dm2dd($ap_fetch['long']),
 				"alt" => $ap_fetch['alt'],
 				"manuf" => $ap_fetch['manuf'],
+				"username" => $ap_fetch['username'],
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);

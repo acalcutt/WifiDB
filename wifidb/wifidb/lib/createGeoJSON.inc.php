@@ -43,7 +43,7 @@ class createGeoJSON
 	public function CreateApFeature($ap_info_array)
 	{
 
-		$tmp = '{"type":"Feature","properties":{"SSID:":"'.dbcore::normalize_ssid($ap_info_array['ssid']).'","Mac Address":"'.$ap_info_array['mac'].'","SecType":'.$ap_info_array['sectype'].',"Network Type":"'.$ap_info_array['NT'].'","Radio Type":"'.$ap_info_array['radio'].'","Channel":"'.$ap_info_array['chan'].'","Authentication":"'.$ap_info_array['auth'].'","Encryption":"'.$ap_info_array['encry'].'","Basic Transfer Rates":"'.$ap_info_array['BTx'].'","Other Transfer Rates":"'.$ap_info_array['OTx'].'","First Active":"'.$ap_info_array['FA'].'","Last Updated":"'.$ap_info_array['LA'].'","Latitude":"'.$ap_info_array['lat'].'","Longitude":"'.$ap_info_array['long'].'","Manufacturer":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['long'].','.$ap_info_array['lat'].']}}';
+		$tmp = '{"type":"Feature","properties":{"id":"'.$ap_info_array['id'].'","username":"'.$ap_info_array['username'].'","ssid":"'.dbcore::normalize_ssid($ap_info_array['ssid']).'","mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","long":"'.$ap_info_array['long'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['long'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
@@ -63,7 +63,7 @@ class createGeoJSON
             'source': 'ap-".$id."',
             'paint': {
                 'circle-color': {
-                    property: 'SecType',
+                    property: 'sectype',
                     type: 'interval',
                     stops: [
                         [1, 'green'],
@@ -71,8 +71,8 @@ class createGeoJSON
                         [3, 'red']
                     ]
                 },
-                'circle-radius': 4,
-                'circle-opacity': 0.8,
+                'circle-radius': 3,
+                'circle-opacity': 1,
                 'circle-blur': 0.5
             }
         });

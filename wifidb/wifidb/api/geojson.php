@@ -77,7 +77,7 @@ switch($func)
 			$row_count = 10000;	
 			$offset = $i*$row_count ;
 
-			$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ? LIMIT $offset,$row_count";
+			$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ? LIMIT $offset,$row_count";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -105,13 +105,12 @@ switch($func)
 				"long" => $dbcore->convert->dm2dd($ap['long']),
 				"alt" => $ap['alt'],
 				"manuf" => $ap['manuf'],
+				"username" => $ap['username']
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
 			}
 			$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
-			if($labeled){$file_name = "Labeled.kmz";}else{$file_name ="unlabeled.kmz";}
-			
 			header('Content-type: application/json');
 			echo $results;
 		}	

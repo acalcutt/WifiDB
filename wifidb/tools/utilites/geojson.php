@@ -8,16 +8,17 @@ if($wdb_install == ""){die("You need to edit your daemon config file first in: [
 require($wdb_install)."/lib/init.inc.php";
 
 
-$user = "ArizonaJon";
+$user = "WifiDB";
 $Import_Map_Data="";
 for ($i = 0; TRUE; $i++) {
 	error_log("Processing pass $i");
 	$row_count = 100000;	
 	$offset = $i*$row_count ;
-	$sql = "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ? LIMIT $offset,$row_count";
-	#$sql = "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ?";
+	$sql = "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' LIMIT $offset,$row_count";
+
+	#$sql = "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ? LIMIT $offset,$row_count";
 	$prep = $dbcore->sql->conn->prepare($sql);
-	$prep->bindParam(1, $user, PDO::PARAM_STR);
+	#$prep->bindParam(1, $user, PDO::PARAM_STR);
 	$prep->execute();
 	$appointer = $prep->fetchAll();
 	$number_of_rows = $prep->rowCount();
@@ -46,6 +47,7 @@ for ($i = 0; TRUE; $i++) {
 		"long" => $dbcore->convert->dm2dd($ap['long']),
 		"alt" => $ap['alt'],
 		"manuf" => $ap['manuf'],
+		"username" => $ap['username']
 		);
 		if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 		$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
