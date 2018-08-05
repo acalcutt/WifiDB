@@ -21,6 +21,46 @@ if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra de
 $func=$_REQUEST['func'];
 switch($func)
 {
+	case "exp_ap":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$Import_Map_Data = "";
+		# -Get the AP hash-
+		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `id` = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			#Get AP KML
+			$ap_info = array(
+			"id" => $id,
+			"new_ap" => $new_icons,
+			"named" => $named,
+			"mac" => $ap['mac'],
+			"ssid" => $ap['ssid'],
+			"chan" => $ap['chan'],
+			"radio" => $ap['radio'],
+			"NT" => $ap['NT'],
+			"sectype" => $ap['sectype'],
+			"auth" => $ap['auth'],
+			"encry" => $ap['encry'],
+			"BTx" => $ap['BTx'],
+			"OTx" => $ap['OTx'],
+			"FA" => $ap['FA'],
+			"LA" => $ap['LA'],
+			"lat" => $dbcore->convert->dm2dd($ap['lat']),
+			"long" => $dbcore->convert->dm2dd($ap['long']),
+			"alt" => $ap['alt'],
+			"manuf" => $ap['manuf'],
+			"username" => $ap['username']
+			);
+			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+		}
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
+	break;
+	
 	case "exp_list":
 		$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
 		$sql = "SELECT * FROM `user_imports` WHERE `id` = ?";

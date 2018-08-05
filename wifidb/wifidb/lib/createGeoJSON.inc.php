@@ -49,11 +49,49 @@ class createGeoJSON
 	}
 	
 	
-	public function CreateMapLayer($id)
+	public function CreateListMapLayer($id)
+	{
+		$layer_source = "        map.addSource('list-".$id."', {
+            type: 'geojson',
+            data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_list&row=".$id."&all=1',
+            buffer: 0,
+        });
+
+        map.addLayer({
+            'id': 'listl-".$id."',
+            'type': 'circle',
+            'source': 'list-".$id."',
+            'paint': {
+                'circle-color': {
+                    property: 'sectype',
+                    type: 'interval',
+                    stops: [
+                        [1, 'green'],
+                        [2, 'orange'],
+                        [3, 'red']
+                    ]
+                },
+                'circle-radius': 3,
+                'circle-opacity': 1,
+                'circle-blur': 0.5
+            }
+        });
+";	
+		$layer_name = "'listl-".$id."'";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_name,
+		);
+		
+		return $ret_data;
+	}
+	
+	public function CreateApMapLayer($id)
 	{
 		$layer_source = "        map.addSource('ap-".$id."', {
             type: 'geojson',
-            data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_list&row=".$id."&all=1',
+            data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_ap&id=".$id."',
             buffer: 0,
         });
 

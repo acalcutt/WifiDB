@@ -33,7 +33,7 @@ switch($func)
 		$style = "https://omt.wifidb.net/styles/WifiDB/style.json";
 		$centerpoint =  "[-96.018674, 40.314893]";
 		$zoom =  4;
-		$layer_name =  "'WifiDB'";
+		$layer_name =  "'WifiDB','WifiDB_Legacy'";
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
@@ -54,7 +54,7 @@ switch($func)
 		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], 0);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
 
-		$ml = $dbcore->createGeoJSON->CreateMapLayer($row);
+		$ml = $dbcore->createGeoJSON->CreateListMapLayer($row);
 		$layer_source_all .= $ml['layer_source'];
 		$layer_name .= $ml['layer_name'];			
 
@@ -63,6 +63,31 @@ switch($func)
 		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
 		$zoom = 9;
 
+		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
+		$dbcore->smarty->assign('layer_name', $layer_name);
+		$dbcore->smarty->assign('style', $style);
+		$dbcore->smarty->assign('centerpoint', $centerpoint);
+		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
+		$dbcore->smarty->display('map.tpl');
+		break;
+	case "exp_ap":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$sql = "SELECT `lat`,`long` FROM `wifi_pointers` WHERE `id` = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$dbcore->sql->checkError(__LINE__, __FILE__);
+		$latlng = $prep->fetch();
+
+		$ml = $dbcore->createGeoJSON->CreateApMapLayer($id);
+		$layer_source_all .= $ml['layer_source'];
+		$layer_name .= $ml['layer_name'];			
+
+		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
+		$style = "https://omt.wifidb.net/styles/osm-bright/style.json";
+		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['long']).",".$dbcore->convert->dm2dd($latlng['lat'])."]";
+		$zoom = 12;
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('style', $style);
