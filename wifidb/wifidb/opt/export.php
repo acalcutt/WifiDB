@@ -82,8 +82,8 @@ switch($func)
 			$ListKML = $dbcore->export->UserList($fetch['points']);
 			if($ListKML['data'] !== "")
 			{
-				$final_box = $this->FindBox($ListKML['box']);
-				$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+				$final_box = $dbcore->export->FindBox($ListKML['box']);
+				$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());
 				$KML_data = $KML_region.$ListKML['data'];
 				
 				$KML_data = $dbcore->createKML->createFolder($fetch['username']." - ".$fetch['title']." - ".$fetch['date'], $KML_data, 0);
@@ -208,9 +208,14 @@ switch($func)
 			
 			list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
 			
+
+				
+			
 			$KML_data = "";
 			foreach($results_all as $ResultAP) {
+				
 				list($KML_AP_data, $export_ssid) = $dbcore->export->ExportSingleAp($ResultAP['id'], 0);
+				
 				if($KML_AP_data){$KML_data .= $KML_AP_data;}
 			}
 
