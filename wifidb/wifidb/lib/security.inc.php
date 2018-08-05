@@ -190,7 +190,7 @@ class security
         {
             $cookie_timeout = time()+(60*60*24*364.25);
         }
-        $sql = "INSERT INTO `user_login_hashes` (`id`, `username`, `hash`, `utime`) VALUES ('', ?, ?, ?)";
+        $sql = "INSERT INTO `user_login_hashes` (`username`, `hash`, `utime`) VALUES (?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $this->username, PDO::PARAM_STR);
         $prep->bindParam(2, $this->SessionID, PDO::PARAM_STR);
