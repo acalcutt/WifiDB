@@ -179,7 +179,7 @@ class graphs
 			$count--;
 		}
         $date = date("m-d-y");
-        $file = '/out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'_v.png';
+        $file = 'out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'_v.png';
         $filepath = $this->PATH.$file;
         $file_url = $this->URL_PATH.$file;
         ImagePNG($img, $filepath);
