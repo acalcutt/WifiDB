@@ -46,7 +46,9 @@
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}">Main Page</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}all.php?sort=SSID&ord=ASC&from=0&to=500">View All APs</a></strong></div>
+                                    <a href="{$wifidb_host_url}all.php?sort=SSID&ord=ASC&from=0&to=500">AP List</a></strong></div>
+                                <div class="inside_text_bold"><strong>
+                                    <a href="{$wifidb_host_url}opt/map.php?func=wifidbmap">AP Map</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}import/">Import</a></strong></div>
                                 <div class="inside_text_bold"><strong>
