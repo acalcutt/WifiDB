@@ -279,7 +279,7 @@ switch($func)
 				$results .= $dbcore->createKML->createFolder($title, $results, 0);
 			}
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
-			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			if($labeled){$file_name = $row."-".$title."_Labeled.kmz";}else{$file_name = $row."-".$title.".kmz";}
 			break;
 
 		case "exp_ap":
