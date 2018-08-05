@@ -366,14 +366,14 @@ class export extends dbcore
 		return $ret_data;
 	}
 	
-	public function UserListGeoJSON($points, $named=0, $only_new=0, $new_icons=0)
+	public function UserListGeoJSON($points, $new_icons=0)
 	{
 		$Import_Map_Data="";
 		$points = explode("-", $points);
+		$latlon_array = array();
 		foreach($points as $point)
 		{
 			list($id, $new_old) = explode(":", $point);
-			if($only_new == 1 and $new_old == 1){continue;}
 			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf`, `username` FROM `wifi`.`wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
@@ -382,7 +382,6 @@ class export extends dbcore
 				$ap_info = array(
 				"id" => $id,
 				"new_ap" => $new_icons,
-				"named" => $named,
 				"mac" => $ap_fetch['mac'],
 				"ssid" => $ap_fetch['ssid'],
 				"chan" => $ap_fetch['chan'],
@@ -403,10 +402,19 @@ class export extends dbcore
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
+				
+				$latlon_info = array(
+				"lat" => $this->convert->dm2dd($ap_fetch['lat']),
+				"long" => $this->convert->dm2dd($ap_fetch['long']),
+				);
+				$latlon_array[] = $latlon_info;
 			}
 		}
 		
-		$ret_data = $Import_Map_Data;
+		$ret_data = array(
+		"data" => $Import_Map_Data,
+		"latlongarray" => $latlon_array,
+		);
 		
 		return $ret_data;
 	}
