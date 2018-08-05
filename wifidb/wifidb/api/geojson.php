@@ -1,6 +1,6 @@
 <?php
-error_reporting(1);
-@ini_set('display_errors', 1);
+#error_reporting(1);
+#@ini_set('display_errors', 1);
 /*
 Copyright (C) 2015 Andrew Calcutt
 
@@ -9,14 +9,14 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "export");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
 if((int)@$_REQUEST['all'] === 1){$all = 1;}else{$all = 0;}#Show both old and new access points. by default only new APs are shown.
 if((int)@$_REQUEST['new_icons'] === 1){$new_icons = 1;}else{$new_icons = 0;}#use new AP icons instead of old AP icons in kml file. by default old icons are shown.
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
-if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}#output xml/kml insteand of creating a kmz. by default a kmz is created.
+if((int)@$_REQUEST['json'] === 1){$json = 1;}else{$json = 0;}#output json instead of creating a download
 if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra debug stuff
 $func=$_REQUEST['func'];
 switch($func)
@@ -29,44 +29,13 @@ switch($func)
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 		
-		if($all){$only_new = 0;}else{$only_new = 1;}
-		#echo $fetch['points'];
-		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], $labeled, $only_new, $new_icons);
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON);
-		if($labeled){$file_name = "Labeled.kmz";}else{$file_name ="unlabeled.kmz";}
+		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], $new_icons);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data']);
+		$file_name = $row."-".$title.".geojson";
 		
-		header('Content-type: application/json');
-		echo $results;
-		
-		break;
-		
-		case "exp_user_all":
-			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$sql = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != ''";
-			$prep = $dbcore->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user, PDO::PARAM_STR);
-			$prep->execute();
-			$fetch_imports = $prep->fetchAll();
-			$layer_source_all="";
-			$layer_name_all="";
-			foreach($fetch_imports as $import)
-			{
-
-					#echo $import['id']."-";
-					$ml = $dbcore->createGeoJSON->CreateMapLayer($import['id']);
-					$layer_source_all .= $ml['layer_source'];
-					if($layer_name_all !== ''){$layer_name_all .=',';};
-					$layer_name_all .= $ml['layer_name'];
-					
-					
-
-			}
-			
-			#echo $layer_source_all.$layer_name_all;
-			$dbcore->smarty->assign('layer_source_all', $layer_source_all);
-			$dbcore->smarty->assign('layer_name_all', $layer_name_all);
-			$dbcore->smarty->display('export_map.tpl');
 		break;
 		
 		case "exp_user_list":
@@ -110,12 +79,22 @@ switch($func)
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
 			}
-			$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
-			header('Content-type: application/json');
-			echo $results;
-		}	
+			
+			$number_of_rows = $prep->rowCount();
+			if ($number_of_rows !== $row_count) {break;}
+		}
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
 		break;
-		
-}			
-
+}	
+if($json)
+{
+	header('Content-type: application/json');
+}
+else
+{
+	$download = (empty($_REQUEST['download'])) ? $file_name : $_REQUEST['download'];#Override export filename if set
+	header('Content-Type: application/octet-stream');
+	header('Content-Disposition: attachment; filename="'.$download.'"');
+}
+echo $results;
 
