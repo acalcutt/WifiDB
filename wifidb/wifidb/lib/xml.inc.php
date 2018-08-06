@@ -205,7 +205,7 @@ class xml
                                                     $notes = "No Notes";
                                                     $link = addslashes($wpt['_c']['url']['_v']);
 
-                                                    $sql0 = "INSERT INTO `$db`.`$User_cache` (`id`, `name`, `author`, `gcid`, `notes`, `cat`, `type`, `diff`, `terain`, `lat`, `long`, `link`, `share`, `share_id`, `c_date`, `u_date`) VALUES ('', '$name', '$author', '$gcid', '$notes', '$cat', '$type','$diff', '$terain', '$lat', '$long', '$link', '$share', '$share_id', '$c_date', '$u_date')";
+                                                    $sql0 = "INSERT INTO `$db`.`$User_cache` (`name`, `author`, `gcid`, `notes`, `cat`, `type`, `diff`, `terain`, `lat`, `long`, `link`, `share`, `share_id`, `c_date`, `u_date`) VALUES ('$name', '$author', '$gcid', '$notes', '$cat', '$type','$diff', '$terain', '$lat', '$long', '$link', '$share', '$share_id', '$c_date', '$u_date')";
                                             #	echo $sql0."<BR>";
                                                     if(mysql_query($sql0, $conn))
                                                     {
@@ -281,7 +281,7 @@ class xml
                                                     $notes = "No Notes";
                                                     $link = addslashes($wpt['_c']['link']['_v']);
 
-                                                    $sql0 = "INSERT INTO `$db`.`$User_cache` (`id`, `name`, `author`, `gcid`, `notes`, `cat`, `type`, `diff`, `terain`, `lat`, `long`, `link`, `share`, `share_id`, `c_date`, `u_date`) VALUES (NULL, '$name', '$author', '$gcid', '$notes', '$cat', '$type', '$diff', '$terain', '$lat', '$long', '$link', '$share', '$share_id', '$c_date', '$u_date')";
+                                                    $sql0 = "INSERT INTO `$db`.`$User_cache` (`name`, `author`, `gcid`, `notes`, `cat`, `type`, `diff`, `terain`, `lat`, `long`, `link`, `share`, `share_id`, `c_date`, `u_date`) VALUES ('$name', '$author', '$gcid', '$notes', '$cat', '$type', '$diff', '$terain', '$lat', '$long', '$link', '$share', '$share_id', '$c_date', '$u_date')";
                                     #	echo $sql0."<BR>";
                                                     if(mysql_query($sql0, $conn))
                                                     {

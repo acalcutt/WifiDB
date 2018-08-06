@@ -149,9 +149,9 @@ class security
         $api_key            = $this->GenerateKey(64);
 
         #now lets start creating the users info
-        $sql = "INSERT INTO `user_info` (`id`, `username`, `password`, `uid`, `validated`, 
+        $sql = "INSERT INTO `user_info` (`username`, `password`, `uid`, `validated`, 
                                         `locked`, `permissions`, `email`, `join_date`, `apikey`) 
-                                        VALUES (NULL, ?, ?, ?, ?, '0', '0001', ?, ?, ?)";
+                                        VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
@@ -190,7 +190,7 @@ class security
         {
             $cookie_timeout = time()+(60*60*24*364.25);
         }
-        $sql = "INSERT INTO `user_login_hashes` (`id`, `username`, `hash`, `utime`) VALUES ('', ?, ?, ?)";
+        $sql = "INSERT INTO `user_login_hashes` (`username`, `hash`, `utime`) VALUES (?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $this->username, PDO::PARAM_STR);
         $prep->bindParam(2, $this->SessionID, PDO::PARAM_STR);

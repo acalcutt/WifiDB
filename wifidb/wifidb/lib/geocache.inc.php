@@ -73,7 +73,7 @@ class geocache
 			$array = mysql_fetch_array($result);
 			if($array['id'] != $id)
 			{
-				$sql1 = "INSERT INTO `$db`.`$share_cache` (`id`, `author`, `shared_by`, `name`, `gcid`, `notes`, `cat`, `type`, `terain`, `diff`, `lat`, `long`, `link`, `c_date`, `u_date`, `pvt_id`) VALUES (NULL, '$author', '$shared_by', '$name', '$gcid', '$notes', '$cat', '$type', '$terain', '$diff', '$lat', '$long', '$link', '$c_date', '$u_date', '$id')";
+				$sql1 = "INSERT INTO `$db`.`$share_cache` (`author`, `shared_by`, `name`, `gcid`, `notes`, `cat`, `type`, `terain`, `diff`, `lat`, `long`, `link`, `c_date`, `u_date`, `pvt_id`) VALUES ('$author', '$shared_by', '$name', '$gcid', '$notes', '$cat', '$type', '$terain', '$diff', '$lat', '$long', '$link', '$c_date', '$u_date', '$id')";
 			#	echo $sql1."<BR>";
 				if(mysql_query($sql1, $conn))
 				{

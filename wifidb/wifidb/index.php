@@ -94,11 +94,10 @@ if ($usercount == NULL)
     $lastid = 0;
 }else
 {
-    $sql = "SELECT `user`, `id`, `title`, `date` FROM `wifi`.`files` WHERE completed=1 order by `id` desc limit 1";
+    $sql = "SELECT `username`, `id`, `title`, `date` FROM `user_imports` WHERE `hash`=(SELECT `hash` FROM `files` WHERE completed=1 order by `id` desc limit 1)";
     $result = $dbcore->sql->conn->query($sql);
     $lastuser = $result->fetch(2);
-	$users = explode("|", $lastuser['user']);
-	$lastusername =  $users[0];
+	$lastusername =  $lastuser['username'];
     $lasttitle = $lastuser['title'];
     $lastdate = $lastuser['date'];
     if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}

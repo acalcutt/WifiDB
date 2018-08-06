@@ -19,20 +19,20 @@ if not, write to the
 -->
 {include file="header.tpl"}
                                 <script language="JavaScript">
-                // Row Hide function.
-                // by tcadieux
-                function expandcontract(tbodyid,ClickIcon)
-                {
-                    if (document.getElementById(ClickIcon).innerHTML == "+")
-                    {
-                        document.getElementById(tbodyid).style.display = "";
-                        document.getElementById(ClickIcon).innerHTML = "-";
-                    }else{
-                        document.getElementById(tbodyid).style.display = "none";
-                        document.getElementById(ClickIcon).innerHTML = "+";
-                    }
-                }
-                </script>
+								// Row Hide function.
+								// by tcadieux
+								function expandcontract(tbodyid,ClickIcon)
+								{
+									if (document.getElementById(ClickIcon).innerHTML == "+")
+									{
+										document.getElementById(tbodyid).style.display = "";
+										document.getElementById(ClickIcon).innerHTML = "-";
+									}else{
+										document.getElementById(tbodyid).style.display = "none";
+										document.getElementById(ClickIcon).innerHTML = "+";
+									}
+								}
+								</script>
                                 <h1>{$wifidb_ap.ssid}{$wifidb_ap_globe_html}</h1>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
@@ -50,7 +50,7 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
                                         </tr>
                                     </tbody>
                                 </table>

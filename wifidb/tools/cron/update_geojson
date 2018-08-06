@@ -1,0 +1,17 @@
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
+
+cd ${0%/*}
+if ps -ef | grep -v grep | grep geojson.php ; then
+	echo geojson.php Already Running! Exiting!
+else
+	echo Starting geojson.php...
+		timestamp=$(date +%s)
+        php ../utilites/geojson.php -o -v > ../log/geojson/geojson${timestamp}.log &
+fi
+
+echo "Cleaning up old logs..."
+find ../log/geojson/ -mtime +1 -type f -delete
+
+echo "Done. Exiting."
+exit 0
