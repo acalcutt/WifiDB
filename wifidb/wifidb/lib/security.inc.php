@@ -149,9 +149,9 @@ class security
         $api_key            = $this->GenerateKey(64);
 
         #now lets start creating the users info
-        $sql = "INSERT INTO `user_info` (`id`, `username`, `password`, `uid`, `validated`, 
+        $sql = "INSERT INTO `user_info` (`username`, `password`, `uid`, `validated`, 
                                         `locked`, `permissions`, `email`, `join_date`, `apikey`) 
-                                        VALUES (NULL, ?, ?, ?, ?, '0', '0001', ?, ?, ?)";
+                                        VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
