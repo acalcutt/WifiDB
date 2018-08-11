@@ -23,12 +23,12 @@ if not, write to the
 			<td align="left">
 				<div id='map' style='float:left; width: 100%; height:80vh;'></div>
 				<div id='menu'>
-					<input id='NE2' type='radio' name='rtoggle' value='NE2' checked='checked'>
-					<label for='NE2'>Natural Earth II + OSM</label>
-					<input id='osm-bright' type='radio' name='rtoggle' value='osm-bright'>
-					<label for='osm-bright'>OSM Bright</label>
-					<input id='klokantech-basic' type='radio' name='rtoggle' value='klokantech-basic'>
-					<label for='klokantech-basic'>Klokantech Basic</label>
+					<input id='WifiDB_NE2' type='radio' name='rtoggle' value='WifiDB_NE2' checked='checked'>
+					<label for='WifiDB_NE2'>Natural Earth II + OSM</label>
+					<input id='WifiDB' type='radio' name='rtoggle' value='WifiDB'>
+					<label for='WifiDB'>OSM Bright</label>
+					<input id='WifiDB_KB' type='radio' name='rtoggle' value='WifiDB_KB'>
+					<label for='WifiDB_KB'>Klokantech Basic</label>
 				</div>
 				<script>
 				var map = new mapboxgl.Map({
@@ -49,7 +49,6 @@ if not, write to the
 				for (var i = 0; i < inputs.length; i++) {
 					inputs[i].onclick = switchLayer;
 				}
-
 				function init() {
 {$layer_source_all}
 				};
@@ -92,17 +91,6 @@ if not, write to the
 								'</ul>')
 							.addTo(map);
 					});
-					
-				map.on('style.load', () => {
-				  const waiting = () => {
-					if (!map.isStyleLoaded()) {
-					  setTimeout(waiting, 200);
-					} else {
-					  init();
-					}
-				  };
-				  waiting();
-				});
 
 					//Hide loading bar once tiles from geojson are loaded
 					map.on('data', function(e) {})
