@@ -33,7 +33,7 @@ switch($func)
 		$style = "https://omt.wifidb.net/styles/WifiDB_NE2/style.json";
 		$centerpoint =  "[-96.018674, 40.314893]";
 		$zoom =  4;
-		$layer_name =  "'WifiDB','WifiDB_Legacy'";
+		$layer_name =  "'WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
