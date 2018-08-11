@@ -30,7 +30,7 @@ switch($func)
 {
 	case "wifidbmap":
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$style = "https://omt.wifidb.net/styles/WifiDB/style.json";
+		$style = "https://omt.wifidb.net/styles/WifiDB_NE2/style.json";
 		$centerpoint =  "[-96.018674, 40.314893]";
 		$zoom =  4;
 		$layer_name =  "'WifiDB','WifiDB_Legacy'";
@@ -39,7 +39,7 @@ switch($func)
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
-		$dbcore->smarty->display('map.tpl');
+		$dbcore->smarty->display('map_wifidb.tpl');
 		break;
 		
 	case "user_list":
@@ -59,7 +59,7 @@ switch($func)
 		$layer_name .= $ml['layer_name'];			
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$style = "https://omt.wifidb.net/styles/osm-bright/style.json";
+		$style = "https://omt.wifidb.net/styles/NE2/style.json";
 		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
 		$zoom = 9;
 
