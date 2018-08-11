@@ -52,9 +52,9 @@
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}import/">Import</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php">Files Waiting for Import</a></strong></div>
+                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imported Files</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Already Imported</a></strong></div>
+                                    <a href="{$wifidb_host_url}opt/scheduling.php">Files Waiting for Import</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Daemon Generated KMZ</a></strong></div>
                                 <div class="inside_text_bold"><strong>
