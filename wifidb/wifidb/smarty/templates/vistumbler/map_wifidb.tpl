@@ -48,6 +48,7 @@ if not, write to the
 					zoom: {$zoom},
 				});
 				
+				// --- Start Map Style Selection ---
 				var layerList = document.getElementById('basemap');
 				var inputs = layerList.getElementsByTagName('input');
 
@@ -59,7 +60,9 @@ if not, write to the
 				for (var i = 0; i < inputs.length; i++) {
 					inputs[i].onclick = switchLayer;
 				}
+				// --- End Map Style Selection ---
 				
+				// --- Start Year Visibility Functions ---
 				function toggle_layer_button(clicked_id)
 				{
 					var el = document.getElementById(clicked_id);
@@ -80,19 +83,38 @@ if not, write to the
 
 				}
 				
+				map.on('style.load', () => {
+					var toggleButtonIds = [ 'WifiDB_0to1year', 'WifiDB_1to2year', 'WifiDB_2to3year', 'WifiDB_Legacy' ];
+					for(var index in toggleButtonIds) {
+						var clicked_id = toggleButtonIds[index];
+						var el = document.getElementById(clicked_id);
+						var btext = el.firstChild.data;
+						var btext = btext.replace("Show", "");
+						var btext = btext.replace("Hide", "");
+						el.firstChild.data = "Hide" + btext;
+					}
+				});
+				// --- End Year Visibility Functions ---
+				
+				// --- Start Address Search Box Functions ---
 				function searchadr()
 				{
 					var address = document.getElementById('searchadrbox').value;
 					var address = address.replace(/ /g, "+");
 					var url = 'https://maps.google.com/maps/api/geocode/json?sensor=false&address=' + address
-					$.getJSON(url, function (data) {
-						for(var i=0;i<data.results.length;i++) {
-							var lat = data.results[i].geometry.location.lat;
-							var lng = data.results[i].geometry.location.lng;
-							var lnglat = [lng.toFixed(6),lat.toFixed(6)];
-							map.setCenter(lnglat);
-						}
-					});
+					fetch(url)
+						.then(res => res.json())
+						.then((data) => {
+							console.log('Output: ', data);
+							for(var i=0;i<data.results.length;i++) {
+								var lat = data.results[i].geometry.location.lat;
+								var lng = data.results[i].geometry.location.lng;
+								var lnglat = [lng.toFixed(6),lat.toFixed(6)];
+								map.setCenter(lnglat);
+								console.log('lnglat: ', lnglat);
+							}
+							
+					}).catch(err => console.error(err));
 				}
 				var input = document.getElementById("searchadrbox");
 				input.addEventListener("keyup", function(event) {
@@ -104,6 +126,7 @@ if not, write to the
 					document.getElementById("searchadr").click();
 				  }
 				});
+				// --- End Address Search Box Functions ---
 				
 				function init() {
 {$layer_source_all}
@@ -146,18 +169,6 @@ if not, write to the
 								'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.username + '"><b>' + feature.properties.username + '</b></a></li>' +
 								'</ul>')
 							.addTo(map);
-					});
-					
-					map.on('style.load', () => {
-						var toggleButtonIds = [ 'WifiDB_0to1year', 'WifiDB_1to2year', 'WifiDB_2to3year', 'WifiDB_Legacy' ];
-						for(var index in toggleButtonIds) {
-							var clicked_id = toggleButtonIds[index];
-							var el = document.getElementById(clicked_id);
-							var btext = el.firstChild.data;
-							var btext = btext.replace("Show", "");
-							var btext = btext.replace("Hide", "");
-							el.firstChild.data = "Hide" + btext;
-						}
 					});
 
 					// Use the same approach as above to indicate that the symbols are clickable
