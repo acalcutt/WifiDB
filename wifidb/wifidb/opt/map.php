@@ -31,8 +31,8 @@ switch($func)
 	case "wifidbmap":
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/WifiDB_NE2/style.json";
-		$centerpoint =  "[-96.018674, 40.314893]";
-		$zoom =  4;
+		$centerpoint =  "[-95.712891, 37.090240]";
+		$zoom =  3.5;
 		$layer_name =  "'WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('style', $style);
