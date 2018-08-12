@@ -22,13 +22,17 @@ if not, write to the
 		<tr>
 			<td align="left">
 				<div id='map' style='float:left; width: 100%; height:80vh;'></div>
-				<div id='menu'>
+				<div id='basemap'>
 					<input id='NE2' type='radio' name='rtoggle' value='NE2' checked='checked'>
 					<label for='NE2'>Natural Earth II + OSM</label>
 					<input id='osm-bright' type='radio' name='rtoggle' value='osm-bright'>
 					<label for='osm-bright'>OSM Bright</label>
 					<input id='klokantech-basic' type='radio' name='rtoggle' value='klokantech-basic'>
 					<label for='klokantech-basic'>Klokantech Basic</label>
+				</div>
+				<div>
+					<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
+					<button id="searchadr" onClick="searchadr()">Search</button>
 				</div>
 				<script>
 				var map = new mapboxgl.Map({
@@ -38,7 +42,7 @@ if not, write to the
 					zoom: {$zoom},
 				});
 				
-				var layerList = document.getElementById('menu');
+				var layerList = document.getElementById('basemap');
 				var inputs = layerList.getElementsByTagName('input');
 
 				function switchLayer(layer) {
@@ -49,6 +53,31 @@ if not, write to the
 				for (var i = 0; i < inputs.length; i++) {
 					inputs[i].onclick = switchLayer;
 				}
+				
+				function searchadr()
+				{
+					var address = document.getElementById('searchadrbox').value;
+					var address = address.replace(/ /g, "+");
+					var url = 'https://maps.google.com/maps/api/geocode/json?sensor=false&address=' + address
+					$.getJSON(url, function (data) {
+						for(var i=0;i<data.results.length;i++) {
+							var lat = data.results[i].geometry.location.lat;
+							var lng = data.results[i].geometry.location.lng;
+							var lnglat = [lng.toFixed(6),lat.toFixed(6)];
+							map.setCenter(lnglat);
+						}
+					});
+				}
+				var input = document.getElementById("searchadrbox");
+				input.addEventListener("keyup", function(event) {
+				  // Cancel the default action, if needed
+				  event.preventDefault();
+				  // Number 13 is the "Enter" key on the keyboard
+				  if (event.keyCode === 13) {
+					// Trigger the button element with a click
+					document.getElementById("searchadr").click();
+				  }
+				});
 
 				function init() {
 {$layer_source_all}

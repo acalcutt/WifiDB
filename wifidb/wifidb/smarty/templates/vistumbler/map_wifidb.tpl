@@ -22,13 +22,23 @@ if not, write to the
 		<tr>
 			<td align="left">
 				<div id='map' style='float:left; width: 100%; height:80vh;'></div>
-				<div id='menu'>
+				<div id='basemap'>
 					<input id='WifiDB_NE2' type='radio' name='rtoggle' value='WifiDB_NE2' checked='checked'>
 					<label for='WifiDB_NE2'>Natural Earth II + OSM</label>
 					<input id='WifiDB' type='radio' name='rtoggle' value='WifiDB'>
 					<label for='WifiDB'>OSM Bright</label>
 					<input id='WifiDB_KB' type='radio' name='rtoggle' value='WifiDB_KB'>
 					<label for='WifiDB_KB'>Klokantech Basic</label>
+				</div>
+				<div>
+					<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">Hide 0-1 year</button>
+					<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">Hide 1-2 year</button>
+					<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">Hide 2-3 year</button>
+					<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">Hide 3+ year</button>
+				</div>
+				<div>
+					<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
+					<button id="searchadr" onClick="searchadr()">Search</button>
 				</div>
 				<script>
 				var map = new mapboxgl.Map({
@@ -38,7 +48,7 @@ if not, write to the
 					zoom: {$zoom},
 				});
 				
-				var layerList = document.getElementById('menu');
+				var layerList = document.getElementById('basemap');
 				var inputs = layerList.getElementsByTagName('input');
 
 				function switchLayer(layer) {
@@ -49,6 +59,52 @@ if not, write to the
 				for (var i = 0; i < inputs.length; i++) {
 					inputs[i].onclick = switchLayer;
 				}
+				
+				function toggle_layer_button(clicked_id)
+				{
+					var el = document.getElementById(clicked_id);
+					var btext = el.firstChild.data;
+					var btext = btext.replace("Show", "");
+					var btext = btext.replace("Hide", "");
+				
+					var visibility = map.getLayoutProperty(clicked_id, 'visibility');
+					if (visibility === 'visible') {	
+						map.setLayoutProperty(clicked_id, 'visibility', 'none');
+						this.className = '';
+						el.firstChild.data = "Show" + btext;
+					} else {
+						this.className = 'active';
+						map.setLayoutProperty(clicked_id, 'visibility', 'visible');
+						el.firstChild.data = "Hide" + btext;
+					}
+
+				}
+				
+				function searchadr()
+				{
+					var address = document.getElementById('searchadrbox').value;
+					var address = address.replace(/ /g, "+");
+					var url = 'https://maps.google.com/maps/api/geocode/json?sensor=false&address=' + address
+					$.getJSON(url, function (data) {
+						for(var i=0;i<data.results.length;i++) {
+							var lat = data.results[i].geometry.location.lat;
+							var lng = data.results[i].geometry.location.lng;
+							var lnglat = [lng.toFixed(6),lat.toFixed(6)];
+							map.setCenter(lnglat);
+						}
+					});
+				}
+				var input = document.getElementById("searchadrbox");
+				input.addEventListener("keyup", function(event) {
+				  // Cancel the default action, if needed
+				  event.preventDefault();
+				  // Number 13 is the "Enter" key on the keyboard
+				  if (event.keyCode === 13) {
+					// Trigger the button element with a click
+					document.getElementById("searchadr").click();
+				  }
+				});
+				
 				function init() {
 {$layer_source_all}
 				};
@@ -91,9 +147,18 @@ if not, write to the
 								'</ul>')
 							.addTo(map);
 					});
-
-					//Hide loading bar once tiles from geojson are loaded
-					map.on('data', function(e) {})
+					
+					map.on('style.load', () => {
+						var toggleButtonIds = [ 'WifiDB_0to1year', 'WifiDB_1to2year', 'WifiDB_2to3year', 'WifiDB_Legacy' ];
+						for(var index in toggleButtonIds) {
+							var clicked_id = toggleButtonIds[index];
+							var el = document.getElementById(clicked_id);
+							var btext = el.firstChild.data;
+							var btext = btext.replace("Show", "");
+							var btext = btext.replace("Hide", "");
+							el.firstChild.data = "Hide" + btext;
+						}
+					});
 
 					// Use the same approach as above to indicate that the symbols are clickable
 					// by changing the cursor style to 'pointer'.

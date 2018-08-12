@@ -29,7 +29,7 @@ $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
 switch($func)
 {
 	case "wifidbmap":
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
+		$wifidb_meta_header = '<script type="text/javascript" src="https://omt.wifidb.net/jquery-3.3.1.min.js"></script><script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/WifiDB_NE2/style.json";
 		$centerpoint =  "[-96.018674, 40.314893]";
 		$zoom =  4;
@@ -58,7 +58,7 @@ switch($func)
 		$layer_source_all .= $ml['layer_source'];
 		$layer_name .= $ml['layer_name'];			
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
+		$wifidb_meta_header = '<script type="text/javascript" src="https://omt.wifidb.net/jquery-3.3.1.min.js"></script><script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/NE2/style.json";
 		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
 		$zoom = 9;
