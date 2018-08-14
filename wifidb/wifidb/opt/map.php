@@ -98,7 +98,7 @@ switch($func)
 
 		$ml = $dbcore->createGeoJSON->CreateApMapLayer($id, $labeled);
 		$layer_source_all .= $ml['layer_source'];
-		$layer_name .= $ml['layer_name'];			
+		$layer_name .= "'".$ml['layer_name']."'";			
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/osm-bright/style.json";

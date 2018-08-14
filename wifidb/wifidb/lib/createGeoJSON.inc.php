@@ -133,7 +133,7 @@ class createGeoJSON
 													}
 												});
 ";
-		if ($named) {$layer_source .= $this->CreateLabelLayer($layer_lname);}
+		if ($named) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
