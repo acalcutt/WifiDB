@@ -34,16 +34,18 @@ switch($func)
 		$style = "https://omt.wifidb.net/styles/WDB_NE2/style.json";
 		$centerpoint =  "[-95.712891, 37.090240]";
 		$zoom =  3.5;
-
-		$layer_source_all = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#1aff66","#ffad33","#ff1a1a",3,1,0.5);
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00e64d","#ff9900","#e60000",2.75,1,0.5);
+		$layer_source_all = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",2.25,1,0.5);
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00b33c","#e68a00","#cc0000",2.5,1,0.5);
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",2.25,1,0.5);
+		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00e64d","#ff9900","#e60000",2.75,1,0.5);
+		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#1aff66","#ffad33","#ff1a1a",3,1,0.5);
+		
+		
+		
 		if ($labeled) {
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year");
 			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_Legacy");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year");
 		}		
 
 		$layer_name =  "'WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";
