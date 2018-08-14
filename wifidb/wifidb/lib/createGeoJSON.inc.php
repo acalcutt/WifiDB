@@ -42,86 +42,128 @@ class createGeoJSON
 
 	public function CreateApFeature($ap_info_array)
 	{
+		
+		if($ap_info_array['ssid'] == '')
+		{
+			$ap_info_array['ssid'] = '[Blank SSID]';
+		}
+		elseif(!ctype_print($ap_info_array['ssid']))
+		{
+			$ap_info_array['ssid'] = '['.dbcore::normalize_ssid($ap_info_array['ssid']).']';
+		}
+		else
+		{
+			$ap_info_array['ssid'] = dbcore::normalize_ssid($ap_info_array['ssid']);
+		}
 
-		$tmp = '{"type":"Feature","tippecanoe":{"maxzoom":19,"minzoom":4},"properties":{"id":"'.$ap_info_array['id'].'","username":"'.$ap_info_array['username'].'","ssid":"'.dbcore::normalize_ssid($ap_info_array['ssid']).'","mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","long":"'.$ap_info_array['long'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['long'].','.$ap_info_array['lat'].']}}';
+		$tmp = '{"type":"Feature","tippecanoe":{"maxzoom":19,"minzoom":3},"properties":{"id":"'.$ap_info_array['id'].'","username":"'.$ap_info_array['username'].'","ssid":"'.$ap_info_array['ssid'].'","mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","long":"'.$ap_info_array['long'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['long'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
 	
 	
-	public function CreateListMapLayer($id)
+	public function CreateListMapLayer($id, $named=0)
 	{
-		$layer_source = "        map.addSource('list-".$id."', {
-            type: 'geojson',
-            data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_list&row=".$id."&all=1',
-            buffer: 0,
-        });
+		$layer_sname = "list-".$id;
+		$layer_lname = "listl-".$id;
+		$layer_source = "	        									map.addSource('".$layer_sname."', {
+													type: 'geojson',
+													data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_list&row=".$id."&all=1',
+													buffer: 0,
+												});
 
-        map.addLayer({
-            'id': 'listl-".$id."',
-            'type': 'circle',
-            'source': 'list-".$id."',
-            'paint': {
-                'circle-color': {
-                    property: 'sectype',
-                    type: 'interval',
-                    stops: [
-                        [1, 'green'],
-                        [2, 'orange'],
-                        [3, 'red']
-                    ]
-                },
-                'circle-radius': 3,
-                'circle-opacity': 1,
-                'circle-blur': 0.5
-            }
-        });
-";	
-		$layer_name = "'listl-".$id."'";
+												map.addLayer({
+													'id': '".$layer_lname."',
+													'type': 'circle',
+													'source': '".$layer_sname."',
+													'paint': {
+														'circle-color': {
+															property: 'sectype',
+															type: 'interval',
+															stops: [
+																[1, 'green'],
+																[2, 'orange'],
+																[3, 'red']
+															]
+														},
+														'circle-radius': 3,
+														'circle-opacity': 1,
+														'circle-blur': 0.5
+													}
+												});
+";
+
+		if ($named) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
-		"layer_name" => $layer_name,
+		"layer_name" => $layer_lname,
 		);
 		
 		return $ret_data;
 	}
 	
-	public function CreateApMapLayer($id)
+	public function CreateApMapLayer($id, $named=0)
 	{
-		$layer_source = "        map.addSource('ap-".$id."', {
-            type: 'geojson',
-            data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_ap&id=".$id."',
-            buffer: 0,
-        });
+		$layer_sname = "ap-".$id;
+		$layer_lname = "apl-".$id;
+		$layer_source = "        										map.addSource('".$layer_sname."', {
+													type: 'geojson',
+													data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_ap&id=".$id."',
+													buffer: 0,
+												});
 
-        map.addLayer({
-            'id': 'apl-".$id."',
-            'type': 'circle',
-            'source': 'ap-".$id."',
-            'paint': {
-                'circle-color': {
-                    property: 'sectype',
-                    type: 'interval',
-                    stops: [
-                        [1, 'green'],
-                        [2, 'orange'],
-                        [3, 'red']
-                    ]
-                },
-                'circle-radius': 3,
-                'circle-opacity': 1,
-                'circle-blur': 0.5
-            }
-        });
-";	
-		$layer_name = "'apl-".$id."'";
+												map.addLayer({
+													'id': '".$layer_lname."',
+													'type': 'circle',
+													'source': '".$layer_sname."',
+													'paint': {
+														'circle-color': {
+															property: 'sectype',
+															type: 'interval',
+															stops: [
+																[1, 'green'],
+																[2, 'orange'],
+																[3, 'red']
+															]
+														},
+														'circle-radius': 3,
+														'circle-opacity': 1,
+														'circle-blur': 0.5
+													}
+												});
+";
+		if ($named) {$layer_source .= $this->CreateLabelLayer($layer_lname);}
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
-		"layer_name" => $layer_name,
+		"layer_name" => $layer_lname,
 		);
 		
 		return $ret_data;
+	}
+	
+	public function CreateLabelLayer($source, $source_layer = "")
+	{
+		$layer_source = "        										map.addLayer({
+													'id': '".$source."-".$source_layer."-label',
+													'type': 'symbol',
+													'source': '".$source."',
+";
+		if ($source_layer) {
+		$layer_source .= "													'source-layer': '".$source_layer."',
+";
+		}
+		
+		$layer_source .= "													'layout': {
+														'text-field': '{ssid}',
+														'text-font': ['Open Sans Regular'],
+														'text-size': 10,
+														'text-justify':'left'
+													}
+												});
+";
+		
+		return $layer_source;
 	}
 }

@@ -25,7 +25,8 @@ define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
 
-$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
+if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
+$func=$_REQUEST['func'];
 switch($func)
 {
 	case "wifidbmap":
@@ -33,20 +34,32 @@ switch($func)
 		$style = "https://omt.wifidb.net/styles/WifiDB_NE2/style.json";
 		$centerpoint =  "[-95.712891, 37.090240]";
 		$zoom =  3.5;
+
+		$layer_source_all =  "";
+		if ($labeled) {
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_Legacy");
+		}		
+
 		$layer_name =  "'WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";
+		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map_wifidb.tpl');
 		break;
 		
 	case "user_list":
-		$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$labeled = (int)($_REQUEST['labeled'] ? $_REQUEST['labeled']: 0);
 		$sql = "SELECT * FROM `user_imports` WHERE `id` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $row, PDO::PARAM_INT);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
@@ -54,9 +67,9 @@ switch($func)
 		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], 0);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
 
-		$ml = $dbcore->createGeoJSON->CreateListMapLayer($row);
-		$layer_source_all .= $ml['layer_source'];
-		$layer_name .= $ml['layer_name'];			
+		$ml = $dbcore->createGeoJSON->CreateListMapLayer($id, $labeled);
+		$layer_source_all = $ml['layer_source'];
+		$layer_name = "'".$ml['layer_name']."'";			
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/NE2/style.json";
@@ -68,6 +81,9 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('labeled', $labeled);
+		$dbcore->smarty->assign('list', 1);
+		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
@@ -80,7 +96,7 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$latlng = $prep->fetch();
 
-		$ml = $dbcore->createGeoJSON->CreateApMapLayer($id);
+		$ml = $dbcore->createGeoJSON->CreateApMapLayer($id, $labeled);
 		$layer_source_all .= $ml['layer_source'];
 		$layer_name .= $ml['layer_name'];			
 
@@ -93,6 +109,9 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('labeled', $labeled);
+		$dbcore->smarty->assign('list', 0);
+		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
