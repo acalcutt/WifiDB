@@ -49,9 +49,9 @@ if not, write to the
 													{/if}
 												{else}
 													{if $labeled eq 1}
-														<a href="{$wifidb_host_url}opt/map.php?func=user_ap&id={$id}&labeled=0">[View Un-Labeled]</a>
+														<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=0">[View Un-Labeled]</a>
 													{else}
-														<a href="{$wifidb_host_url}opt/map.php?func=user_apt&id={$id}&labeled=1">[View Labeled]</a>
+														<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=1">[View Labeled]</a>
 													{/if}
 												{/if}
 											</div>
