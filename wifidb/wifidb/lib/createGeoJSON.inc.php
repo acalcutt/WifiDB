@@ -61,7 +61,7 @@ class createGeoJSON
 		return $tmp;
 	}
 
-	public function CreateApLayer($source, $source_layer = "", $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5)
+	public function CreateApLayer($source, $source_layer = "", $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 
 		$layer_source = "
@@ -70,6 +70,9 @@ class createGeoJSON
 														'type': 'circle',
 														'source': '".$source."',
 														'source-layer': '".$source_layer."',
+														'layout': {
+															 'visibility': '".$visibility."'
+														},
 														'paint': {
 															'circle-color': {
 																'property': 'sectype',
@@ -88,7 +91,7 @@ class createGeoJSON
 		return $layer_source;
 	}
 	
-	public function CreateLabelLayer($source, $source_layer = "", $field = "{ssid}", $font = "Open Sans Regular", $size = 10)
+	public function CreateLabelLayer($source, $source_layer = "", $field = "{ssid}", $font = "Open Sans Regular", $size = 10, $visibility = "visible")
 	{
 		if ($source_layer) {
 			$layer_source = "
@@ -108,6 +111,7 @@ class createGeoJSON
 															'text-field': '".$field."',
 															'text-font': ['".$font."'],
 															'text-size': ".$size.",
+															'visibility': '".$visibility."'
 														}
 													});";
 		

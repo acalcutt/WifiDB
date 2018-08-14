@@ -31,6 +31,12 @@ if not, write to the
 												<label for='WDB_KB'>Klokantech Basic</label>
 											</div>
 											<div>
+												<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">Show 0-1 year</button>
+												<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">Show 1-2 year</button>
+												<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">Show 2-3 year</button>
+												<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">Show 3+ year</button>
+											</div>
+											<div>
 												<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
 												<button id="searchadr" onClick="searchadr()">Search</button>
 											</div>
@@ -70,6 +76,34 @@ if not, write to the
 												inputs[i].onclick = switchLayer;
 											}
 											// --- End Map Style Selection ---
+											
+											// --- Start Year Visibility Functions ---
+											function toggle_layer_button(clicked_id)
+											{
+												var el = document.getElementById(clicked_id);
+												var btext = el.firstChild.data;
+												var btext = btext.replace("Show", "");
+												var btext = btext.replace("Hide", "");
+											
+												var visibility = map.getLayoutProperty(clicked_id, 'visibility');
+												if (visibility === 'visible') {	
+													map.setLayoutProperty(clicked_id, 'visibility', 'none');
+{if $labeled eq 1}
+													map.setLayoutProperty(clicked_id + '-label', 'visibility', 'none');
+{/if}
+													this.className = '';
+													el.firstChild.data = "Show" + btext;
+												} else {
+													this.className = 'active';
+													map.setLayoutProperty(clicked_id, 'visibility', 'visible');
+{if $labeled eq 1}
+													map.setLayoutProperty(clicked_id + '-label', 'visibility', 'visible');
+{/if}
+													el.firstChild.data = "Hide" + btext;
+												}
+
+											}
+											// --- End Year Visibility Functions ---
 											
 											// --- Start Address Search Box Functions ---
 											function searchadr()
