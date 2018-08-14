@@ -80,11 +80,17 @@ if not, write to the
 												var visibility = map.getLayoutProperty(clicked_id, 'visibility');
 												if (visibility === 'visible') {	
 													map.setLayoutProperty(clicked_id, 'visibility', 'none');
+{if $labeled eq 1}
+													map.setLayoutProperty(clicked_id + '-label', 'visibility', 'none');
+{/if}
 													this.className = '';
 													el.firstChild.data = "Show" + btext;
 												} else {
 													this.className = 'active';
 													map.setLayoutProperty(clicked_id, 'visibility', 'visible');
+{if $labeled eq 1}
+													map.setLayoutProperty(clicked_id + '-label', 'visibility', 'visible');
+{/if}
 													el.firstChild.data = "Hide" + btext;
 												}
 

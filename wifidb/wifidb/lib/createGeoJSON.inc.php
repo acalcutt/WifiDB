@@ -145,16 +145,23 @@ class createGeoJSON
 	
 	public function CreateLabelLayer($source, $source_layer = "")
 	{
-		$layer_source = "        										map.addLayer({
-													'id': '".$source."-".$source_layer."-label',
+		if ($source_layer) {
+			$layer_source = "        										map.addLayer({
+													'id': '".$source_layer."-label',
+													'type': 'symbol',
+													'source': '".$source."',
+													'source-layer': '".$source_layer."',
+";
+		}
+		else
+		{
+			$layer_source = "        										map.addLayer({
+													'id': '".$source."-label',
 													'type': 'symbol',
 													'source': '".$source."',
 ";
-		if ($source_layer) {
-		$layer_source .= "													'source-layer': '".$source_layer."',
-";
 		}
-		
+
 		$layer_source .= "													'layout': {
 														'text-field': '{ssid}',
 														'text-font': ['Open Sans Regular'],
