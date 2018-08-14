@@ -23,18 +23,12 @@ if not, write to the
 										<td align="left">
 											<div id='map' style='float:left; width: 100%; height:75vh;'></div>
 											<div id='basemap'>
-												<input id='NE2' type='radio' name='rtoggle' value='NE2' checked='checked'>
-												<label for='NE2'>Natural Earth II + OSM</label>
-												<input id='osm-bright' type='radio' name='rtoggle' value='osm-bright'>
-												<label for='osm-bright'>OSM Bright</label>
-												<input id='klokantech-basic' type='radio' name='rtoggle' value='klokantech-basic'>
-												<label for='klokantech-basic'>Klokantech Basic</label>
-												<input id='WifiDB_NE2' type='radio' name='rtoggle' value='WifiDB_NE2'>
-												<label for='WifiDB_NE2'>WifiDB NE2</label>
-												<input id='WifiDB' type='radio' name='rtoggle' value='WifiDB'>
-												<label for='WifiDB'>WifiDB OSM</label>
-												<input id='WifiDB_KB' type='radio' name='rtoggle' value='WifiDB_KB'>
-												<label for='WifiDB_KB'>WifiDB KB</label>
+												<input id='WDB_NE2' type='radio' name='rtoggle' value='WDB_NE2' checked='checked'>
+												<label for='WDB_NE2'>Natural Earth II + OSM</label>
+												<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM'>
+												<label for='WDB_OSM'>OSM Bright</label>
+												<input id='WDB_KB' type='radio' name='rtoggle' value='WDB_KB'>
+												<label for='WDB_KB'>Klokantech Basic</label>
 											</div>
 											<div>
 												<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
@@ -114,7 +108,6 @@ if not, write to the
 											};
 
 											map.once('style.load', function(e) {
-												init();
 												//Add Fullscreen Button
 												const fs = new mapboxgl.FullscreenControl();
 												map.addControl(fs)
@@ -151,29 +144,25 @@ if not, write to the
 															'</ul>')
 														.addTo(map);
 												});
-												
-											map.on('style.load', () => {
-											  const waiting = () => {
-												if (!map.isStyleLoaded()) {
-												  setTimeout(waiting, 200);
-												} else {
-												  init();
-												}
-											  };
-											  waiting();
-											});
 
-												//Hide loading bar once tiles from geojson are loaded
-												map.on('data', function(e) {})
-
-												// Use the same approach as above to indicate that the symbols are clickable
-												// by changing the cursor style to 'pointer'.
+												// indicate that the symbols are clickableby changing the cursor style to 'pointer'.
 												map.on('mousemove', function(e) {
 													var features = map.queryRenderedFeatures(e.point, {
 														layers: [{$layer_name}]
 													});
 													map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 												});
+											});
+											map.on('style.load', () => {
+												// Reload dynamic layers since they are lost on style change
+												const waiting = () => {
+													if (!map.isStyleLoaded()) {
+													  setTimeout(waiting, 200);
+													} else {
+													  init();
+													}
+												};
+												waiting();
 											});
 											</script>
 										</td>

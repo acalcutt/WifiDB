@@ -23,12 +23,12 @@ if not, write to the
 										<td align="left">
 											<div id='map' style='float:left; width: 100%; height:75vh;'></div>
 											<div id='basemap'>
-												<input id='WifiDB_NE2' type='radio' name='rtoggle' value='WifiDB_NE2' checked='checked'>
-												<label for='WifiDB_NE2'>Natural Earth II + OSM</label>
-												<input id='WifiDB' type='radio' name='rtoggle' value='WifiDB'>
-												<label for='WifiDB'>OSM Bright</label>
-												<input id='WifiDB_KB' type='radio' name='rtoggle' value='WifiDB_KB'>
-												<label for='WifiDB_KB'>Klokantech Basic</label>
+												<input id='WDB_NE2' type='radio' name='rtoggle' value='WDB_NE2' checked='checked'>
+												<label for='WDB_NE2'>Natural Earth II + OSM</label>
+												<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM'>
+												<label for='WDB_OSM'>OSM Bright</label>
+												<input id='WDB_KB' type='radio' name='rtoggle' value='WDB_KB'>
+												<label for='WDB_KB'>Klokantech Basic</label>
 											</div>
 											<div>
 												<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">Hide 0-1 year</button>
@@ -95,28 +95,6 @@ if not, write to the
 												}
 
 											}
-											
-											map.on('style.load', () => {
-												// Reset toggle buttons since the layers reset on style change
-												var toggleButtonIds = ['WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'];
-												for(var index in toggleButtonIds) {
-													var clicked_id = toggleButtonIds[index];
-													var el = document.getElementById(clicked_id);
-													var btext = el.firstChild.data;
-													var btext = btext.replace("Show", "");
-													var btext = btext.replace("Hide", "");
-													el.firstChild.data = "Hide" + btext;
-												}
-												// Reload dynamic layers since they are lost on style change
-												const waiting = () => {
-													if (!map.isStyleLoaded()) {
-													  setTimeout(waiting, 200);
-													} else {
-													  init();
-													}
-												};
-												waiting();
-											});
 											// --- End Year Visibility Functions ---
 											
 											// --- Start Address Search Box Functions ---
@@ -156,7 +134,6 @@ if not, write to the
 											};
 
 											map.once('style.load', function(e) {
-												init();
 												//Add Fullscreen Button
 												const fs = new mapboxgl.FullscreenControl();
 												map.addControl(fs)
@@ -194,14 +171,34 @@ if not, write to the
 														.addTo(map);
 												});
 
-												// Use the same approach as above to indicate that the symbols are clickable
-												// by changing the cursor style to 'pointer'.
+												// indicate that the symbols are clickableby changing the cursor style to 'pointer'.
 												map.on('mousemove', function(e) {
 													var features = map.queryRenderedFeatures(e.point, {
 														layers: [{$layer_name}]
 													});
 													map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 												});
+											});
+											map.on('style.load', () => {
+												// Reset toggle buttons since the layers reset on style change
+												var toggleButtonIds = ['WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'];
+												for(var index in toggleButtonIds) {
+													var clicked_id = toggleButtonIds[index];
+													var el = document.getElementById(clicked_id);
+													var btext = el.firstChild.data;
+													var btext = btext.replace("Show", "");
+													var btext = btext.replace("Hide", "");
+													el.firstChild.data = "Hide" + btext;
+												}
+												// Reload dynamic layers since they are lost on style change
+												const waiting = () => {
+													if (!map.isStyleLoaded()) {
+													  setTimeout(waiting, 200);
+													} else {
+													  init();
+													}
+												};
+												waiting();
 											});
 											</script>
 										</td>

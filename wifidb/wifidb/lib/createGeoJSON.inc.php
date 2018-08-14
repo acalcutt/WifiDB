@@ -60,117 +60,140 @@ class createGeoJSON
 
 		return $tmp;
 	}
-	
-	
-	public function CreateListMapLayer($id, $named=0)
+
+	public function CreateApLayer($source, $source_layer = "", $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5)
 	{
-		$layer_sname = "list-".$id;
-		$layer_lname = "listl-".$id;
-		$layer_source = "	        									map.addSource('".$layer_sname."', {
-													type: 'geojson',
-													data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_list&row=".$id."&all=1',
-													buffer: 0,
-												});
 
-												map.addLayer({
-													'id': '".$layer_lname."',
-													'type': 'circle',
-													'source': '".$layer_sname."',
-													'paint': {
-														'circle-color': {
-															property: 'sectype',
-															type: 'interval',
-															stops: [
-																[1, 'green'],
-																[2, 'orange'],
-																[3, 'red']
-															]
-														},
-														'circle-radius': 3,
-														'circle-opacity': 1,
-														'circle-blur': 0.5
-													}
-												});
-";
-
-		if ($named) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
-
-		$ret_data = array(
-		"layer_source" => $layer_source,
-		"layer_name" => $layer_lname,
-		);
-		
-		return $ret_data;
+		$layer_source = "
+													map.addLayer({
+														'id': '".$source_layer."',
+														'type': 'circle',
+														'source': '".$source."',
+														'source-layer': '".$source_layer."',
+														'paint': {
+															'circle-color': {
+																'property': 'sectype',
+																'type': 'interval',
+																'stops': [
+																	[1, '".$open_color."'],
+																	[2, '".$wep_color."'],
+																	[3, '".$sec_color."']
+																]
+															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});";
+		return $layer_source;
 	}
 	
-	public function CreateApMapLayer($id, $named=0)
-	{
-		$layer_sname = "ap-".$id;
-		$layer_lname = "apl-".$id;
-		$layer_source = "        										map.addSource('".$layer_sname."', {
-													type: 'geojson',
-													data: 'https://live.wifidb.net/wifidb/api/geojson.php?func=exp_ap&id=".$id."',
-													buffer: 0,
-												});
-
-												map.addLayer({
-													'id': '".$layer_lname."',
-													'type': 'circle',
-													'source': '".$layer_sname."',
-													'paint': {
-														'circle-color': {
-															property: 'sectype',
-															type: 'interval',
-															stops: [
-																[1, 'green'],
-																[2, 'orange'],
-																[3, 'red']
-															]
-														},
-														'circle-radius': 3,
-														'circle-opacity': 1,
-														'circle-blur': 0.5
-													}
-												});
-";
-		if ($named) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
-
-		$ret_data = array(
-		"layer_source" => $layer_source,
-		"layer_name" => $layer_lname,
-		);
-		
-		return $ret_data;
-	}
-	
-	public function CreateLabelLayer($source, $source_layer = "")
+	public function CreateLabelLayer($source, $source_layer = "", $field = "{ssid}", $font = "Open Sans Regular", $size = 10)
 	{
 		if ($source_layer) {
-			$layer_source = "        										map.addLayer({
-													'id': '".$source_layer."-label',
-													'type': 'symbol',
-													'source': '".$source."',
-													'source-layer': '".$source_layer."',
-";
-		}
-		else
-		{
-			$layer_source = "        										map.addLayer({
-													'id': '".$source."-label',
-													'type': 'symbol',
-													'source': '".$source."',
-";
+			$layer_source = "
+													map.addLayer({
+														'id': '".$source_layer."-label',
+														'source-layer': '".$source_layer."',";
+		}else{
+			$layer_source = "
+													map.addLayer({
+														'id': '".$source."-label',";
 		}
 
-		$layer_source .= "													'layout': {
-														'text-field': '{ssid}',
-														'text-font': ['Open Sans Regular'],
-														'text-size': 10,
-														'text-justify':'left'
-													}
-												});
-";
+		$layer_source .= "
+														'source': '".$source."',
+														'type': 'symbol',
+														'layout': {
+															'text-field': '".$field."',
+															'text-font': ['".$font."'],
+															'text-size': ".$size.",
+														}
+													});";
 		
 		return $layer_source;
 	}
+	
+	public function CreateListGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5)
+	{
+		$layer_sname = "list-".$id;
+		$layer_lname = "listl-".$id;
+		$layer_source = "
+													map.addSource('".$layer_sname."', {
+														type: 'geojson',
+														data: '".$this->URL_BASE."api/geojson.php?func=exp_list&row=".$id."&all=1',
+														buffer: 0,
+													});
+
+													map.addLayer({
+														'id': '".$layer_lname."',
+														'type': 'circle',
+														'source': '".$layer_sname."',
+														'paint': {
+															'circle-color': {
+																'property': 'sectype',
+																'type': 'interval',
+																'stops': [
+																	[1, '".$open_color."'],
+																	[2, '".$wep_color."'],
+																	[3, '".$sec_color."']
+																]
+															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});
+";
+
+		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
+	}
+	
+	public function CreateApGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5)
+	{
+		$layer_sname = "ap-".$id;
+		$layer_lname = "apl-".$id;
+		$layer_source = "
+													map.addSource('".$layer_sname."', {
+														type: 'geojson',
+														data: '".$this->URL_BASE."api/geojson.php?func=exp_ap&id=".$id."',
+														buffer: 0,
+													});
+
+													map.addLayer({
+														'id': '".$layer_lname."',
+														'type': 'circle',
+														'source': '".$layer_sname."',
+														'paint': {
+															'circle-color': {
+																'property': 'sectype',
+																'type': 'interval',
+																'stops': [
+																	[1, '".$open_color."'],
+																	[2, '".$wep_color."'],
+																	[3, '".$sec_color."']
+																]
+															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});";
+		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
+	}
+
 }
