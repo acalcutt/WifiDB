@@ -77,7 +77,7 @@ switch($func)
 		
 		break;
 		
-		case "exp_user_list":
+	case "exp_user_list":
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$Import_Map_Data="";
 		for ($i = 0; TRUE; $i++) {
@@ -125,42 +125,58 @@ switch($func)
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 		break;
 		
-	case "exp_daily":
-		$Import_Map_Data = "";
-		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE LA >= DATE_SUB(NOW(),INTERVAL 1 DAY)";
+	case "exp_date":
+		if(!empty($_REQUEST['date']))
+		{
+			$date = $_REQUEST['date'];
+		}
+		else
+		{	
+			#Get the date of the newest import
+			$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+			$date_query = $dbcore->sql->conn->query($sql);
+			$date_fetch = $date_query->fetch(2);
+			$datestamp = $date_fetch['date'];
+			$datestamp_split = explode(" ", $datestamp);
+			$date = $datestamp_split[0];
+		}
+		$date = (empty($date)) ? date($dbcore->export->date_format) : $date;
+		
+		#Get lists from the date specified
+		$date_search = $date."%";
+		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` LIKE '$date_search' AND `points` != ''";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->execute();
-		$appointer = $prep->fetchAll();
-		foreach($appointer as $ap)
+		$fetch_imports = $prep->fetchAll();
+		$AllListGeoJSON = "";
+		foreach($fetch_imports as $import)
 		{
-			#Get AP GeoJSON
-			$ap_info = array(
-			"id" => $id,
-			"new_ap" => $new_icons,
-			"named" => $named,
-			"mac" => $ap['mac'],
-			"ssid" => $ap['ssid'],
-			"chan" => $ap['chan'],
-			"radio" => $ap['radio'],
-			"NT" => $ap['NT'],
-			"sectype" => $ap['sectype'],
-			"auth" => $ap['auth'],
-			"encry" => $ap['encry'],
-			"BTx" => $ap['BTx'],
-			"OTx" => $ap['OTx'],
-			"FA" => $ap['FA'],
-			"LA" => $ap['LA'],
-			"lat" => $dbcore->convert->dm2dd($ap['lat']),
-			"long" => $dbcore->convert->dm2dd($ap['long']),
-			"alt" => $ap['alt'],
-			"manuf" => $ap['manuf'],
-			"username" => $ap['username']
-			);
-			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
+			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['points'], $new_icons);
+			$AllListGeoJSON .= $ListGeoJSON['data'];
 		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
-	break;
+		
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
+		$file_name = "Daily_Exports.geojson";
+		break;
+		
+	case "exp_daily":
+		#Get lists from the last day and a half
+		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) AND `points` != ''";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->execute();
+		$fetch_imports = $prep->fetchAll();
+		$AllListGeoJSON = "";
+		foreach($fetch_imports as $import)
+		{
+			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
+			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['points'], $new_icons);
+			$AllListGeoJSON .= $ListGeoJSON['data'];
+		}
+		
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
+		$file_name = "Daily_Exports.geojson";
+		break;
 }	
 if($json)
 {
