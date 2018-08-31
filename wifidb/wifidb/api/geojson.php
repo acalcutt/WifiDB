@@ -24,7 +24,6 @@ switch($func)
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
-		# -Get the AP hash-
 		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -32,7 +31,7 @@ switch($func)
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
-			#Get AP KML
+			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $id,
 			"new_ap" => $new_icons,
@@ -58,7 +57,7 @@ switch($func)
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
 		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 	break;
 	
 	case "exp_list":
@@ -73,7 +72,7 @@ switch($func)
 		
 		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], $new_icons);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data']);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data'], $labeled);
 		$file_name = $row."-".$title.".geojson";
 		
 		break;
@@ -93,7 +92,7 @@ switch($func)
 			$appointer = $prep->fetchAll();
 			foreach($appointer as $ap)
 			{
-				#Get AP KML
+				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $id,
 				"new_ap" => $new_icons,
@@ -123,8 +122,45 @@ switch($func)
 			$number_of_rows = $prep->rowCount();
 			if ($number_of_rows !== $row_count) {break;}
 		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 		break;
+		
+	case "exp_daily":
+		$Import_Map_Data = "";
+		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE LA >= DATE_SUB(NOW(),INTERVAL 1 DAY)";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $id,
+			"new_ap" => $new_icons,
+			"named" => $named,
+			"mac" => $ap['mac'],
+			"ssid" => $ap['ssid'],
+			"chan" => $ap['chan'],
+			"radio" => $ap['radio'],
+			"NT" => $ap['NT'],
+			"sectype" => $ap['sectype'],
+			"auth" => $ap['auth'],
+			"encry" => $ap['encry'],
+			"BTx" => $ap['BTx'],
+			"OTx" => $ap['OTx'],
+			"FA" => $ap['FA'],
+			"LA" => $ap['LA'],
+			"lat" => $dbcore->convert->dm2dd($ap['lat']),
+			"long" => $dbcore->convert->dm2dd($ap['long']),
+			"alt" => $ap['alt'],
+			"manuf" => $ap['manuf'],
+			"username" => $ap['username']
+			);
+			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+		}
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+	break;
 }	
 if($json)
 {
