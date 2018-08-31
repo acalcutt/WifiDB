@@ -112,7 +112,13 @@ class createGeoJSON
 															'text-font': ['".$font."'],
 															'text-size': ".$size.",
 															'visibility': '".$visibility."'
-														}
+														},
+														'paint': {
+															'text-halo-blur': 1,
+															'text-color': '#000000',
+															'text-halo-width': 2,
+															'text-halo-color': '#FFFFFF'
+														  }
 													});";
 		
 		return $layer_source;
