@@ -91,17 +91,17 @@ class createGeoJSON
 		return $layer_source;
 	}
 	
-	public function CreateLabelLayer($source, $source_layer = "", $field = "{ssid}", $font = "Open Sans Regular", $size = 10, $visibility = "visible")
+	public function CreateLabelLayer($source, $source_layer = "", $type = "label", $field = "{ssid}", $font = "Open Sans Regular", $size = 10, $visibility = "visible")
 	{
 		if ($source_layer) {
 			$layer_source = "
 													map.addLayer({
-														'id': '".$source_layer."-label',
+														'id': '".$source_layer."-".$type."',
 														'source-layer': '".$source_layer."',";
 		}else{
 			$layer_source = "
 													map.addLayer({
-														'id': '".$source."-label',";
+														'id': '".$source."-".$type."',";
 		}
 
 		$layer_source .= "
@@ -118,7 +118,7 @@ class createGeoJSON
 		return $layer_source;
 	}
 	
-	public function CreateListGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5)
+	public function CreateListGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		$layer_sname = "list-".$id;
 		$layer_lname = "listl-".$id;
@@ -133,6 +133,9 @@ class createGeoJSON
 														'id': '".$layer_lname."',
 														'type': 'circle',
 														'source': '".$layer_sname."',
+														'layout': {
+															'visibility': '".$visibility."'
+														},
 														'paint': {
 															'circle-color': {
 																'property': 'sectype',
@@ -160,7 +163,50 @@ class createGeoJSON
 		return $ret_data;
 	}
 	
-	public function CreateApGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5)
+	public function CreateDailyGeoJsonLayer($labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	{
+		$layer_sname = "daily";
+		$layer_lname = "daily";
+		$layer_source = "
+													map.addSource('".$layer_sname."', {
+														type: 'geojson',
+														data: '".$this->URL_BASE."api/geojson.php?func=exp_daily',
+														buffer: 0,
+													});
+
+													map.addLayer({
+														'id': '".$layer_lname."',
+														'type': 'circle',
+														'source': '".$layer_sname."',
+														'layout': {
+															'visibility': '".$visibility."'
+														},
+														'paint': {
+															'circle-color': {
+																'property': 'sectype',
+																'type': 'interval',
+																'stops': [
+																	[1, '".$open_color."'],
+																	[2, '".$wep_color."'],
+																	[3, '".$sec_color."']
+																]
+															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});
+";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
+	}
+	
+	public function CreateApGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		$layer_sname = "ap-".$id;
 		$layer_lname = "apl-".$id;
@@ -175,6 +221,9 @@ class createGeoJSON
 														'id': '".$layer_lname."',
 														'type': 'circle',
 														'source': '".$layer_sname."',
+														'layout': {
+															'visibility': '".$visibility."'
+														},
 														'paint': {
 															'circle-color': {
 																'property': 'sectype',
