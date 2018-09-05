@@ -24,7 +24,6 @@ switch($func)
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
-		# -Get the AP hash-
 		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -32,7 +31,7 @@ switch($func)
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
-			#Get AP KML
+			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $id,
 			"new_ap" => $new_icons,
@@ -58,7 +57,7 @@ switch($func)
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
 		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 	break;
 	
 	case "exp_list":
@@ -73,12 +72,12 @@ switch($func)
 		
 		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], $new_icons);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data']);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data'], $labeled);
 		$file_name = $row."-".$title.".geojson";
 		
 		break;
 		
-		case "exp_user_list":
+	case "exp_user_list":
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$Import_Map_Data="";
 		for ($i = 0; TRUE; $i++) {
@@ -93,7 +92,7 @@ switch($func)
 			$appointer = $prep->fetchAll();
 			foreach($appointer as $ap)
 			{
-				#Get AP KML
+				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $id,
 				"new_ap" => $new_icons,
@@ -123,7 +122,60 @@ switch($func)
 			$number_of_rows = $prep->rowCount();
 			if ($number_of_rows !== $row_count) {break;}
 		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+		break;
+		
+	case "exp_date":
+		if(!empty($_REQUEST['date']))
+		{
+			$date = $_REQUEST['date'];
+		}
+		else
+		{	
+			#Get the date of the newest import
+			$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+			$date_query = $dbcore->sql->conn->query($sql);
+			$date_fetch = $date_query->fetch(2);
+			$datestamp = $date_fetch['date'];
+			$datestamp_split = explode(" ", $datestamp);
+			$date = $datestamp_split[0];
+		}
+		$date = (empty($date)) ? date($dbcore->export->date_format) : $date;
+		
+		#Get lists from the date specified
+		$date_search = $date."%";
+		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` LIKE '$date_search' AND `points` != ''";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->execute();
+		$fetch_imports = $prep->fetchAll();
+		$AllListGeoJSON = "";
+		foreach($fetch_imports as $import)
+		{
+			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
+			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['points'], $new_icons);
+			$AllListGeoJSON .= $ListGeoJSON['data'];
+		}
+		
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
+		$file_name = "Daily_Exports.geojson";
+		break;
+		
+	case "exp_daily":
+		#Get lists from the last day and a half
+		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) AND `points` != ''";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->execute();
+		$fetch_imports = $prep->fetchAll();
+		$AllListGeoJSON = "";
+		foreach($fetch_imports as $import)
+		{
+			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
+			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['points'], $new_icons);
+			$AllListGeoJSON .= $ListGeoJSON['data'];
+		}
+		
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
+		$file_name = "Daily_Exports.geojson";
 		break;
 }	
 if($json)

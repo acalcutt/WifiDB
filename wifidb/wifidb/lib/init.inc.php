@@ -81,14 +81,14 @@ $fetch = $res->fetch(2);
 
 unset($res);
 unset($conn);
-if($fetch['version'] != '0.30 b1 Alpha')
+if($fetch['version'] != '0.40')
 {
 	$cwd = getcwd().'/';
 	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
 	if($cwd != $gen_cwd)
 	{
-		throw new ErrorException('The database is still in an old format, you will need to do an upgrade first.<br>
-				If this database is older than Version 0.20 I would do a Full Fresh Install, After making a backup of all your data.
+		throw new ErrorException('The database is not in the 0.40 format, you will need to do an upgrade first.<br>
+				If this database is older than Version 0.30 I would do a Full Fresh Install, After making a backup of all your data.
 				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
 	}
 }

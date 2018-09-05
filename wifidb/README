@@ -1,9 +1,9 @@
-Random Intervals -> WiFiDB -> Read-me
+Vistumbler WiFiDB -> Read-me
 =====================================
 
   A set of PHP-scripts to manage a MySQL based Wireless Database over the web.
 
-  Project Phase: Alpha
+  Project Phase: Beta
   --------------
   http://www.wifidb.net/
 

@@ -326,6 +326,7 @@ class api extends dbcore
 	public function InsertLiveAP($data = array())
 	{
 		if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
+		$data['mac'] = preg_replace('/..(?!$)/', '$0:', $data['mac']);
 		$ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
 		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `sectype`, `auth`, `encry`, `radio`, `session_id`, `sig`, `lat`, `long` FROM
 				`live_aps`
@@ -380,7 +381,7 @@ class api extends dbcore
 				$sql_sig = "INSERT INTO `live_signals`
 						(`signal`, `rssi`, `gps_id`, `ap_hash`, `time_stamp`)
 						VALUES (?, ?, ?, ?, ?)";
-				$time_stamp = strtotime($data['date']." ".$data['time']);
+				$time_stamp = $data['date']." ".$data['time'];
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
@@ -399,7 +400,7 @@ class api extends dbcore
 				}
 
 				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$id;
-				$date_time = strtotime($data['date']." ".$data['time']);
+				$date_time = $data['date']." ".$data['time'];
 				$this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
 				$sql = "UPDATE `live_aps` SET `LA` = ?, `sig` = ? WHERE `id` = ?";
 				$prep = $this->sql->conn->prepare($sql);
@@ -419,8 +420,8 @@ class api extends dbcore
 			}else
 			{
 				$this->mesg[] = "Lat/Long are different, what aboot the Sats and Date/Time, Eh?";
-				$url_time   = strtotime($data['date']." ".$data['time']);
-				$wifi_time	= strtotime($array['date']." ".$array['time']);
+				$url_time   = $data['date']." ".$data['time'];
+				$wifi_time	= $array['date']." ".$array['time'];
 				$timecalc   = ($url_time - $wifi_time);
 				$this->mesg[] = "Oooo its time is newer o_0, lets go insert it ;)";
 				$sql = "INSERT INTO `live_gps` (`lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `date`, `time`, `session_id`)
@@ -454,7 +455,7 @@ class api extends dbcore
 				$sql_sig = "INSERT INTO `live_signals`
 					(`signal`, `rssi`, `gps_id`, `ap_hash`, `time_stamp`)
 					VALUES (?, ?, ?, ?, ?)";
-				$time_stamp = strtotime($data['date']." ".$data['time']);
+				$time_stamp = $data['date']." ".$data['time'];
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
@@ -477,7 +478,7 @@ class api extends dbcore
 
 				$sql = "UPDATE `live_aps` SET `sig` = ?, `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
 				#echo $sql."<br /><br />";
-				$date_time = strtotime($data['date']." ".$data['time']);
+				$date_time = $data['date']." ".$data['time'];
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $sig, PDO::PARAM_STR);
 				$prep->bindParam(2, $date_time, PDO::PARAM_STR);
@@ -530,7 +531,7 @@ class api extends dbcore
 			$sql_sig = "INSERT INTO `live_signals`
 						(`signal`, `rssi`, `gps_id`, `ap_hash`, `time_stamp`)
 						VALUES (?, ?, ?, ?, ?)";
-			$time_stamp = strtotime($data['date']." ".$data['time']);
+			$time_stamp = $data['date']." ".$data['time'];
 			$prep_sig = $this->sql->conn->prepare($sql_sig);
 			$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
 			$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
@@ -549,7 +550,7 @@ class api extends dbcore
 				$this->mesg[] = "Added Signal data.";
 			}
 			$sig = $this->sql->conn->lastInsertId()."|".$gps_id;
-			$date_time = strtotime($data['date']." ".$data['time']);
+			$date_time = $data['date']." ".$data['time'];
 			$sql = "INSERT INTO  `live_aps` ( `ssid`, `mac`,  `chan`, `radio`, `auth`, `encry`, `sectype`,
 				`BTx`, `OTx`, `NT`, `label`, `sig`, `username`, `FA`, `LA`, `lat`, `long`, `session_id`, `ap_hash`)
 											VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";

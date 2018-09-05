@@ -24,24 +24,24 @@ define("SWITCH_EXTRAS", "api");
 include('../lib/init.inc.php');
 
 // AP Detail Variables
-$ssid   =   (@$_REQUEST['SSID'] ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "UNAMED");
-$mac    =   (@$_REQUEST['Mac'] ? $_REQUEST['Mac'] : "00:00:00:00:00:00");
+$ssid   =   (@$_REQUEST['SSID'] ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "");
+$mac    =   (@$_REQUEST['Mac'] ? $_REQUEST['Mac'] : "000000000000");
 $radio  =   (@$_REQUEST['Rad'] ? $_REQUEST['Rad'] : "802.11u");
 $sectype=   (@$_REQUEST['SecType'] ? $_REQUEST['SecType'] : 0);
 $chan   =   (@$_REQUEST['Chn'] ? $_REQUEST['Chn'] : 0);
 //Other AP Info
 $auth   =   (@$_REQUEST['Auth'] ? html_entity_decode($_REQUEST['Auth'], ENT_QUOTES) : "Open");
 $encry  =   (@$_REQUEST['Encry'] ? html_entity_decode($_REQUEST['Encry'], ENT_QUOTES) : "None");
-$BTx    =   (@$_REQUEST['BTx'] ? html_entity_decode($_REQUEST['BTx'], ENT_QUOTES) : "0.0");
-$OTx    =   (@$_REQUEST['OTx'] ? html_entity_decode($_REQUEST['OTx'], ENT_QUOTES) : "0.0");
+$BTx    =   (@$_REQUEST['BTx'] ? html_entity_decode($_REQUEST['BTx'], ENT_QUOTES) : "");
+$OTx    =   (@$_REQUEST['OTx'] ? html_entity_decode($_REQUEST['OTx'], ENT_QUOTES) : "");
 $NT     =   (@$_REQUEST['NT'] ? $_REQUEST['NT'] : "Unknown");
 $label  =   (@$_REQUEST['Label'] ? html_entity_decode($_REQUEST['Label'], ENT_QUOTES) : "No Label");
 $sig    =   (@$_REQUEST['Sig'] ? $_REQUEST['Sig'] : "0");
 $rssi    =   (@$_REQUEST['RSSI'] ? $_REQUEST['RSSI'] : "-0");
 
 // GPS Variables
-$lat    =   (@$_REQUEST['Lat'] ? html_entity_decode($_REQUEST['Lat'], ENT_QUOTES) : "0000.0000");
-$long   =   (@$_REQUEST['Long'] ? html_entity_decode($_REQUEST['Long'], ENT_QUOTES) : "0000.0000");
+$lat    =   str_replace("0000.0000","0.0000",(@$_REQUEST['Lat'] ? html_entity_decode($_REQUEST['Lat'], ENT_QUOTES) : "0.0000"));
+$long   =   str_replace("0000.0000","0.0000",(@$_REQUEST['Long'] ? html_entity_decode($_REQUEST['Long'], ENT_QUOTES) : "0.0000"));
 $sats   =   (@$_REQUEST['Sats'] ? $_REQUEST['Sats'] : 0 );
 $hdp    =   (@$_REQUEST['HDP'] ? $_REQUEST['HDP'] : 0 );
 $alt    =   (@$_REQUEST['ALT'] ? $_REQUEST['ALT'] : 0 );
@@ -51,14 +51,14 @@ $mph    =   (@$_REQUEST['MPH'] ? $_REQUEST['MPH'] : 0 );
 $track  =   (@$_REQUEST['Track'] ? $_REQUEST['Track'] : 0 );
 $date   =   (@$_REQUEST['Date'] ? $_REQUEST['Date'] : date("Y-m-d") );
 $time   =   (@$_REQUEST['Time'] ? $_REQUEST['Time'] : date("H:i:s") );
+$username   =   (@$_REQUEST['username'] ? $_REQUEST['username'] : "Unknown" );
 $session_id   =   (@$_REQUEST['SessionID'] ? $_REQUEST['SessionID'] : "" );
 if($session_id === "")
 {
     $dbcore->mesg['message'] = "Session ID is blank :/";
 } 
 echo $session_id;
-if($ssid == "UNAMED" && $mac == "00:00:00:00:00:00" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "0.0"
-   && $OTX == "0.0" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
+if($ssid == "" && $mac == "000000000000" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "" && $OTX == "" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
 	echo "no data";
     $dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
@@ -95,7 +95,7 @@ $data = array(
     
     #user data
     #'username'=>$dbcore->username,
-	'username'=>'Unknown',
+	'username'=>$username,
     'session_id'=>$session_id
 );
 $dbcore->InsertLiveAP($data);
