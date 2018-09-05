@@ -326,6 +326,7 @@ class api extends dbcore
 	public function InsertLiveAP($data = array())
 	{
 		if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
+		$data['mac'] = preg_replace('/..(?!$)/', '$0:', $data['mac']);
 		$ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
 		$sql = "SELECT `id`, `ssid`, `mac`, `chan`, `sectype`, `auth`, `encry`, `radio`, `session_id`, `sig`, `lat`, `long` FROM
 				`live_aps`

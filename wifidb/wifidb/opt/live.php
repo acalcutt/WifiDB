@@ -40,24 +40,31 @@ switch($func)
 		{
 			case 1800:
 				$interval = "30 MINUTE";
+				$intervalt = "30 Minutes";
 				break;
 			case 3600:
-				$interval = "1 HOUR";
+				$interval = "60 MINUTE";
+				$intervalt = "60 Minutes";
 				break;
 			case 7200:
 				$interval = "2 HOUR";
+				$intervalt = "2 Hours";
 				break;
 			case 21600:
 				$interval = "6 HOUR";
+				$intervalt = "6 Hours";
 				break;
 			case 86400:
 				$interval = "1 DAY";
+				$intervalt = "1 Day";				
 				break;
 			case 604800:
 				$interval = "1 WEEK";
+				$intervalt = "1 Week";	
 				break;
 			default:
 				$interval = "1 DAY";
+				$intervalt = "1 Day";	
 		}
 		
 		$sql = "SELECT COUNT(*) FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval})";
@@ -85,10 +92,19 @@ switch($func)
 				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\">";
 			}
 			
-			if($ap['ssid'] == "")
-				{$ssid = "Unknown";}
+			
+			if($ap['ssid'] == '')
+			{
+				$ssid = '[Blank SSID]';
+			}
+			elseif(!ctype_print($ap['ssid']))
+			{
+				$ssid = '['.$ap['ssid'].']';
+			}
 			else
-				{$ssid = $ap['ssid'];}
+			{
+				$ssid = $ap['ssid'];
+			}
 
 			$liveaps[] = array(
 						"id" => $ap['id'],
@@ -111,12 +127,13 @@ switch($func)
 						"long"   => $ap['long']
 						);
 		}
-		$dbcore->GeneratePages($total_rows, $from, $to, $sort, $ord);
+		$dbcore->GeneratePages($total_rows, $from, $to, $sort, $ord, "", "", "", "", "", "", "", "", $view);
 		$dbcore->smarty->assign('from', $from);
 		$dbcore->smarty->assign('to', $to);
 		$dbcore->smarty->assign('ord', $ord);
 		$dbcore->smarty->assign('sort', $sort);
 		$dbcore->smarty->assign('view', $view);
+		$dbcore->smarty->assign('intervalt', $intervalt);
 		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 		$dbcore->smarty->assign('wifidb_all_live_aps' , $liveaps);
 		$dbcore->smarty->display('live_aps.tpl');

@@ -23,7 +23,7 @@ if not, write to the
                         <tr>
                             <td>
 								<div align="center">
-									<h2>Showing the Last {$view} Seconds worth of APs.</h2>
+									<h2>Showing the last {$intervalt} of Live APs.</h2>
 									<table border="1" width="100%" cellspacing="0">
 										<tr class="style4">
 											<td>

@@ -623,7 +623,7 @@ class frontend extends dbcore
 	}
 
 
-	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="")
+	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="", $view="")
 	{
 		if($ssid=="" && $mac=="" && $chan=="" && $radio=="" && $auth=="" && $encry=="")
 		{
@@ -632,6 +632,9 @@ class frontend extends dbcore
 		{
 			$no_search = 1;
 		}
+		
+		if($view==""){$viewparam="";}else{$viewparam="&view={$view}";}
+		
 
 		$function_and_username = "";
 		if($func != "")
@@ -648,10 +651,10 @@ class frontend extends dbcore
 		$mid_page = (($from + $inc)/$inc);
 		if($no_search)
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">First</a>&#93 &#45; \r\n";
 		}else
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">First</a>&#93 &#45; \r\n";
 		}
 		for($I=($mid_page - 5); $I<=($mid_page + 5); $I++)
 		{
@@ -665,20 +668,20 @@ class frontend extends dbcore
 			{
 				if($no_search)
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">{$I}</a> &#45; \r\n";
 				}else
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">{$I}</a> &#45; \r\n";
 				}
 			}
 		}
 		if($pages==1){$cal_from = 0;}else{$cal_from = (($pages-1)*$inc);}
 		if($no_search)
 		{
-			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}else
 		{
-			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}
 		
 		$this->pages_together = $pages_together;

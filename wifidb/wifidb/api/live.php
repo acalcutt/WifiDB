@@ -24,7 +24,7 @@ define("SWITCH_EXTRAS", "api");
 include('../lib/init.inc.php');
 
 // AP Detail Variables
-$ssid   =   (@$_REQUEST['SSID'] ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "UNAMED");
+$ssid   =   (@$_REQUEST['SSID'] ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "");
 $mac    =   (@$_REQUEST['Mac'] ? $_REQUEST['Mac'] : "000000000000");
 $radio  =   (@$_REQUEST['Rad'] ? $_REQUEST['Rad'] : "802.11u");
 $sectype=   (@$_REQUEST['SecType'] ? $_REQUEST['SecType'] : 0);
@@ -58,7 +58,7 @@ if($session_id === "")
     $dbcore->mesg['message'] = "Session ID is blank :/";
 } 
 echo $session_id;
-if($ssid == "UNAMED" && $mac == "000000000000" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "" && $OTX == "" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
+if($ssid == "" && $mac == "000000000000" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "" && $OTX == "" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
 	echo "no data";
     $dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
