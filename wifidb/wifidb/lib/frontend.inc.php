@@ -644,8 +644,8 @@ class frontend extends dbcore
 			$function_and_username .= "&amp;user={$user}&amp;";
 		}
 
-		$pages = ($total_rows/$inc);
-		$mid_page = round($from/$inc, 0);
+		$pages = ceil($total_rows/$inc);
+		$mid_page = (($from + $inc)/$inc);
 		if($no_search)
 		{
 			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">First</a>&#93 &#45; \r\n";
@@ -657,18 +657,8 @@ class frontend extends dbcore
 		{
 			if($I <= 0){continue;}
 			if($I > $pages){break;}
-			$cal_from = ($I*$inc);
-			if($I==1)
-			{
-				$cal_from = $cal_from-$inc;
-				if($no_search)
-				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">{$I}</a> &#45; \r\n";
-				}else
-				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}\">{$I}</a> &#45; \r\n";
-				}
-			}elseif($mid_page == $I)
+			if($I==1){$cal_from = 0;}else{$cal_from = (($I-1)*$inc);}
+			if($mid_page == $I)
 			{
 				$pages_together .= " <b><i>{$I}</i></b> - \r\n";
 			}else
@@ -682,7 +672,15 @@ class frontend extends dbcore
 				}
 			}
 		}
-		$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".(($pages*$inc)-$inc)."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+		if($pages==1){$cal_from = 0;}else{$cal_from = (($pages-1)*$inc);}
+		if($no_search)
+		{
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+		}else
+		{
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+		}
+		
 		$this->pages_together = $pages_together;
 		return 1;
 	}
