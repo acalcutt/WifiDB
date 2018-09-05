@@ -105,7 +105,7 @@ class dbcore
 		}
 
 		$this->ver_array				=   array(
-			"wifidb"					=>  "v0.40",
+			"wifidb"					=>  "v0.40 Beta",
 			"codename"				  =>  "Phoenix",
 			"Last_Core_Edit"			=>  "09-04-2018"
 			);
