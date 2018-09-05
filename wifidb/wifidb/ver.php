@@ -31,19 +31,42 @@ $dbcore->smarty->smarty->display('header.tpl');
 		<p align="center"><font size="7"><b>WiFiDB Version History</b></font></p>
 		<table border="0" cellpadding="4" width="100%" border="2" id="details">
 			<tr class="dark">
-				<td>Project Name...</td><td><b>WiFiDB 0.30v</b></td>
+				<td>Project Name...</td><td><b>Vistumbler WiFiDB 0.40</b></td>
 			<tr class="light">
-				<td>Project State...</td><td><b>Alpha (planning and early dev)</b></td>
+				<td>Project State...</td><td><b>Beta</b></td>
 			</tr>
 			<tr class="dark">
-				<td>Project Dev(s)...</td><td><b><a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=6">PFerland</a>, <a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=43">ACalcutt</b></td>
+				<td>Project Dev(s)...</td><td><b><a class="links" href="https://forum.techidiots.net/forum/memberlist.php?mode=viewprofile&u=43">ACalcutt</a></b></td>
 			</tr>
 			<tr class="light">
-				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="https://github.com/acalcutt/WiFiDB">WiFiDB GitHub</a></b></td>
+				<td align="center" colspan="2"><b><a class="links" title="You know you want to. ;)" href="https://github.com/acalcutt/WiFiDB">Vistumbler WiFiDB GitHub</a></b></td>
 			</tr>
 		</table>
 		</ br>
                 <h2>Change Log</h2>
+                <table class="dark" width="100%" border="2" id="21b1">
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Author: Andrew Calcutt</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.40</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Date: 09-04-2018</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Phoenix</td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/acalcutt/WiFiDB/tree/ac-wifidb-prod">WiFiDB GitHub : Branch 'ac-wifidb-prod'</a></td>
+                    </tr>
+                    <tr>
+                        <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
+                            <ol>
+								<li>Forked project. Vistumbler WifiDB is now independent from the Random Intervals Wireless Database iteration.</li>
+                                <li>New mapping features using Mapbox GL and a TileServer GL backend.</li>
+								<li>New GeoJSON api.</li>
+								<li>Fixes to live ap pages and api.</li>
+								<li>Various bug fixes.</li>
+                            </ol>
+						</td>
+                    </tr>
+				</table>
+				<br>
                 <table class="light" width="100%" border="2" id="21b1">
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26">Author: Phillip Ferland, Andrew Calcutt</td><td style="border-style: solid; border-width: 1px" height="26">Version: 0.30v Build 1</td>
@@ -52,7 +75,7 @@ $dbcore->smarty->smarty->display('header.tpl');
                         <td style="border-style: solid; border-width: 1px" height="26">Date: 08-27-2014</td><td style="border-style: solid; border-width: 1px" height="26">Codename: Peabody</td>
                     </tr>
                     <tr>
-                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/acalcutt/WiFiDB/tree/ac-wifidb-prod">WiFiDB GitHub : Branch 'ac-wifidb-prod'</a></td>
+                        <td style="border-style: solid; border-width: 1px" height="26">Changes :</td><td style="border-style: solid; border-width: 1px" height="26"><a class="links" title="View updates for this branch ;)" href="https://github.com/pferland/WiFiDB/tree/ac-wifidb-prod">WiFiDB GitHub : Branch 'ac-wifidb-prod'</a></td>
                     </tr>
                     <tr>
                         <td style="border-style: solid; border-width: 1px" height="26" colspan="3">
