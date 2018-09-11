@@ -373,13 +373,14 @@ CREATE TABLE `log` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `manufactures`
+-- Table structure for table `manufacturers`
 --
 
-CREATE TABLE `manufactures` (
+CREATE TABLE `manufacturers` (
   `id` int(11) NOT NULL,
-  `manuf` varchar(255) DEFAULT NULL,
-  `address` varchar(9) DEFAULT NULL
+  `BSSID` varchar(6) COLLATE utf8_unicode_ci NOT NULL,
+  `Manufacturer` text COLLATE utf8_unicode_ci NOT NULL,
+  `modified` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -800,10 +801,11 @@ ALTER TABLE `log`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indexes for table `manufactures`
+-- Indexes for table `manufacturers`
 --
-ALTER TABLE `manufactures`
-  ADD PRIMARY KEY (`id`);
+ALTER TABLE `manufacturers`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `BSSID` (`BSSID`);
 
 --
 -- Indexes for table `schedule`
@@ -1001,9 +1003,9 @@ ALTER TABLE `live_users`
 ALTER TABLE `log`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
--- AUTO_INCREMENT for table `manufactures`
+-- AUTO_INCREMENT for table `manufacturers`
 --
-ALTER TABLE `manufactures`
+ALTER TABLE `manufacturers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 --
 -- AUTO_INCREMENT for table `schedule`

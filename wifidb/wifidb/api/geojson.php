@@ -24,7 +24,7 @@ switch($func)
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
-		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `id` = ?";
+		$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `id` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -51,7 +51,7 @@ switch($func)
 			"lat" => $dbcore->convert->dm2dd($ap['lat']),
 			"long" => $dbcore->convert->dm2dd($ap['long']),
 			"alt" => $ap['alt'],
-			"manuf" => $ap['manuf'],
+			"manuf"=>$dbcore->findManuf($ap['mac']),
 			"username" => $ap['username']
 			);
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
@@ -85,7 +85,7 @@ switch($func)
 			$row_count = 10000;	
 			$offset = $i*$row_count ;
 
-			$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`manuf`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ? LIMIT $offset,$row_count";
+			$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND `username` LIKE ? LIMIT $offset,$row_count";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -112,7 +112,7 @@ switch($func)
 				"lat" => $dbcore->convert->dm2dd($ap['lat']),
 				"long" => $dbcore->convert->dm2dd($ap['long']),
 				"alt" => $ap['alt'],
-				"manuf" => $ap['manuf'],
+				"manuf"=>$dbcore->findManuf($ap['mac']),
 				"username" => $ap['username']
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};

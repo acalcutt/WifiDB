@@ -537,22 +537,20 @@ class dbcore
 		{
 			$mac = str_replace(":", "", $mac);
 		}
-
-		#var_dump("FindManuf Mac: ".$mac);
-		#var_dump($this->manuf_array[$man_mac[0]]);
-		$result = $this->sql->conn->prepare("SELECT manuf FROM `manufactures` WHERE `mac` = ?");
+		$mac = strtoupper(substr($mac, 0, 6));
+		
+		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM `manufacturers` WHERE `BSSID` = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
-		#var_dump("----------", $result->fetch(2), "----------");
 		if($result->rowCount() > 0)
 		{
 			$fetch = $result->fetch(2);
-			$manuf = $fetch['manuf'];
+			$manuf = $fetch['Manufacturer'];
 		}
 		else
 		{
-			$manuf = "Unknown Manufacture";
+			$manuf = "Unknown Manufacturer";
 		}
 		return $manuf;
 	}

@@ -179,7 +179,7 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		$export_ssid="";
-		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 		$result = $this->sql->conn->query($sql);
 		while($ap_fetch = $result->fetch(2))
 		{
@@ -205,7 +205,7 @@ class export extends dbcore
 			"lat" => $ap_fetch['lat'],
 			"long" => $ap_fetch['long'],
 			"alt" => $ap_fetch['alt'],
-			"manuf" => $ap_fetch['manuf'],
+			"manuf"=>$this->findManuf($ap_fetch['mac'])
 			);
 			$KML_data = $this->createKML->CreateApPlacemark($ap_info);
 		}
@@ -322,7 +322,7 @@ class export extends dbcore
 		{
 			list($id, $new_old) = explode(":", $point);
 			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
 			{
@@ -346,7 +346,7 @@ class export extends dbcore
 				"lat" => $ap_fetch['lat'],
 				"long" => $ap_fetch['long'],
 				"alt" => $ap_fetch['alt'],
-				"manuf" => $ap_fetch['manuf'],
+				"manuf"=>$this->findManuf($ap_fetch['mac'])
 				);
 				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
 				
@@ -374,7 +374,7 @@ class export extends dbcore
 		foreach($points as $point)
 		{
 			list($id, $new_old) = explode(":", $point);
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf`, `username` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `username` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
 			{
@@ -397,7 +397,7 @@ class export extends dbcore
 				"lat" => $this->convert->dm2dd($ap_fetch['lat']),
 				"long" => $this->convert->dm2dd($ap_fetch['long']),
 				"alt" => $ap_fetch['alt'],
-				"manuf" => $ap_fetch['manuf'],
+				"manuf"=>$this->findManuf($ap_fetch['mac']),
 				"username" => $ap_fetch['username'],
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};

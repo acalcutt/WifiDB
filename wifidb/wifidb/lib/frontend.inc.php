@@ -133,7 +133,7 @@ class frontend extends dbcore
 		$ap_data = array(
 			'id'=>$newArray['id'],
 			'radio'=>$newArray['radio'],
-			'manuf'=>$newArray['manuf'],
+			'manuf'=>$this->findManuf($newArray['mac']),
 			'mac'=>$newArray['mac'],
 			'ssid'=>$new_ssid,
 			'chan'=>$newArray['chan'],
@@ -867,8 +867,6 @@ class frontend extends dbcore
 		{
 			$ssids_ptb = $this->make_ssid($aps['ssid']);
 			$ssid = $ssids_ptb[0];
-			$half_mac = substr(str_replace(":", "", $aps['mac']), 0, 6);
-			$manuf = $this->manufactures[$half_mac];
 			switch($aps['sectype'])
 			{
 				case 1:
@@ -941,7 +939,7 @@ class frontend extends dbcore
 				"lat"=>$lat,
 				"long"=>$long,
 				"alt"=>$gps["alt"],
-				"manuf"=>$manuf,
+				"manuf"=>$this->findManuf($aps["mac"]),
 				"label"=>$aps["label"]
 			);
 		}
