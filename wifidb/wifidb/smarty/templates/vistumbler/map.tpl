@@ -164,6 +164,7 @@ if not, write to the
 														.setHTML('<ul>' +
 															'<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>' +
 															'<li>MAC: <b>' + feature.properties.mac + '</b></li>' +
+															'<li>MANUFACTURER: <b>' + feature.properties.manuf + '</b></li>' +
 															'<li>CHAN: <b>' + feature.properties.chan + '</b></li>' +
 															'<li>NETWORK TYPE: <b>' + feature.properties.NT + '</b></li>' +
 															'<li>ENCRYPTION: <b>' + feature.properties.encry + '</b></li>' +
