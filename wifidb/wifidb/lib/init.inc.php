@@ -68,14 +68,14 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 {
 	require 'config.inc.php';
 }
-$dsn = $config['srvc'].':host='.$config['host'];
+$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'];
 $options = array(
 	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
 );
 
 $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
 
-$sql = "SELECT `version` FROM `wifi`.`settings` LIMIT 1";
+$sql = "SELECT `version` FROM `settings` LIMIT 1";
 $res = $conn->query($sql);
 $fetch = $res->fetch(2);
 

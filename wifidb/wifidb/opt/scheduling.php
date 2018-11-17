@@ -194,7 +194,7 @@ switch($func)
         $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">Download!</a>';
         $kmldate=date ("Y-m-d");
 		#-----------
-        $sql = "SELECT `LA` FROM `wifi`.`wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+        $sql = "SELECT `LA` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -222,7 +222,7 @@ switch($func)
         }
 		#-----------
 		$date_search = $kmldate."%";
-        $sql = "SELECT `id`, `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+        $sql = "SELECT `id`, `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -250,7 +250,7 @@ switch($func)
             $kml_head['daily_labeled_size'] = "0.00 kB";
         }
 		#-----------
-        $sql = "SELECT `id`, `date` FROM `wifi`.`user_imports` ORDER BY `date` DESC LIMIT 1";
+        $sql = "SELECT `id`, `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -287,7 +287,7 @@ switch($func)
 
     default:
         #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
-        $sql = "SELECT * FROM `wifi`.`settings` WHERE `id` = '1'";
+        $sql = "SELECT * FROM `settings` WHERE `id` = '1'";
         $result = $dbcore->sql->conn->query($sql);
         $file_array = $result->fetch(2);
         $timezone_opt = '';
@@ -342,7 +342,7 @@ switch($func)
         }
         $importing_row = array();
         $n=0;
-        $sql = "SELECT * FROM `wifi`.`files_importing` ORDER BY `date` ASC";
+        $sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -389,7 +389,7 @@ switch($func)
 		
         $waiting_row = array();
         $n=0;
-        $sql = "SELECT * FROM `wifi`.`files_tmp` ORDER BY `date` ASC";
+        $sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -411,7 +411,7 @@ switch($func)
 
         $schedule_row = array();
         $n=0;
-        $sql = "SELECT * FROM `wifi`.`schedule` ORDER BY `nodename` ASC";
+        $sql = "SELECT * FROM `schedule` ORDER BY `nodename` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -460,7 +460,7 @@ switch($func)
 
         $pid_row = array();
         $n=0;
-        $sql = "SELECT * FROM `wifi`.`daemon_pid_stats` ORDER BY `nodename` ASC";
+        $sql = "SELECT * FROM `daemon_pid_stats` ORDER BY `nodename` ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
