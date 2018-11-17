@@ -149,7 +149,7 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp  WRITE");
+		$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
 
 		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
 		$result = $this->sql->conn->prepare($daemon_sql);
@@ -158,14 +158,14 @@ class daemon extends wdbcli
 		$LastInsert = $this->sql->conn->lastInsertID();
 		var_dump($LastInsert);
 
-		$select = "SELECT tmp_id FROM wifi.files_importing WHERE id = ?";
+		$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
 		$prep = $this->sql->conn->prepare($select);
 		$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
 		$prep->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 
 		$tmp_id = $prep->fetch(2)['tmp_id'];
-		$delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
+		$delete = "DELETE FROM files_tmp WHERE id = ?";
 		$prep = $this->sql->conn->prepare($delete);
 		$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
 		$prep->execute();

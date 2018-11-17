@@ -63,7 +63,7 @@ Go here to reset it to one you choose:
             if($this->mail->send($smtp_conn))
             {
                 $password = md5($validatecode.$seed);
-                $update = "UPDATE `wifi`.`user_info` SET `password` = '$password' WHERE `username` = '$username'";
+                $update = "UPDATE `user_info` SET `password` = '$password' WHERE `username` = '$username'";
         #	echo $update."<BR>";
                 if($this->sql->conn->query($update))
                 {
@@ -159,7 +159,7 @@ Go here to reset it to one you choose:
                 $sender			=	$from;
                 $sender_pass		=	$GLOBALS['wifidb_from_pass'];
                 $to			=	array();
-                $sql			=	"SELECT `email`, `username` FROM `wifi`.`$user_logins_table` WHERE `disabled` = '0' AND `validated` = '0'";
+                $sql			=	"SELECT `email`, `username` FROM `$user_logins_table` WHERE `disabled` = '0' AND `validated` = '0'";
     #		echo $sql."<BR>";
                 $sql .= sql_type_mail_filter($type);
                 if($error_f)
