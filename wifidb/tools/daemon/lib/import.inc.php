@@ -459,7 +459,7 @@ class import extends dbcore
 				$LA_time = $fetchlaprep['time_stamp'];
 
 				#Find Highest GPS Position
-				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi_signals` INNER JOIN `wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as SIGNED) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`sats` DESC LIMIT 1";
+				$sql = "SELECT `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`, `wifi_gps`.`alt` AS `alt`, `wifi_gps`.`sats` AS `sats`, `wifi_signals`.`signal` AS `signal`, `wifi_signals`.`rssi` AS `rssi` FROM `wifi_signals` INNER JOIN `wifi_gps` on wifi_signals.gps_id = `wifi_gps`.`id` WHERE `wifi_signals`.`ap_hash` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_signals`.`rssi` as SIGNED) DESC, `wifi_signals`.`signal` DESC, `wifi_gps`.`date` DESC, `wifi_gps`.`sats` DESC LIMIT 1";
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$resgps->execute();
@@ -472,12 +472,14 @@ class import extends dbcore
 					$high_lat = $fetchgps['lat'];
 					$high_long = $fetchgps['long'];
 					$high_sats = $fetchgps['sats'];
+					$high_alt = $fetchgps['alt'];
 				}
 				else
 				{
 					$high_lat = "0.0000";
 					$high_long = "0.0000";
 					$high_sats = "0";
+					$high_alt = "0";
 				}
 				#Update or Insert AP
 				if(!$no_pointer)#Update AP
