@@ -472,8 +472,8 @@ class apiv2 extends dbcore
                     $this->mesg['import']['otherusers'] = $otherusers;
                 }
                 $sql = "INSERT INTO `files_tmp`
-								( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-						VALUES ( '', ?, ?, ?, ?, ?, ?, ?)";
+								( `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
+						VALUES ( ?, ?, ?, ?, ?, ?, ?)";
                 $result = $this->sql->conn->prepare( $sql );
 
                 $result->bindValue(1, $filename, PDO::PARAM_STR);
@@ -540,8 +540,8 @@ class apiv2 extends dbcore
                 $fetch = $gps_prep->fetch(2);
 
                 $sql_sig = "INSERT INTO `live_signals`
-						(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
-						VALUES ('', ?, ?, ?, ?, ?)";
+						(`signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
+						VALUES (?, ?, ?, ?, ?)";
                 $prep_sig = $this->sql->conn->prepare($sql_sig);
                 $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
                 $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
@@ -563,8 +563,8 @@ class apiv2 extends dbcore
             else
             {
                 $this->mesg[] = "New_location";
-                $sql = "INSERT INTO `live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `timestamp`, `ap_id`)
-											   VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $sql = "INSERT INTO `live_gps` (`lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `timestamp`, `ap_id`)
+											   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
@@ -584,8 +584,8 @@ class apiv2 extends dbcore
                 $this->mesg[] = "Added GPS data.";
 
                 $sql_sig = "INSERT INTO `live_signals`
-					(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
-					VALUES ('', ?, ?, ?, ?, ?)";
+					(`signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
+					VALUES (?, ?, ?, ?, ?)";
                 $prep_sig = $this->sql->conn->prepare($sql_sig);
                 $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
                 $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
@@ -637,7 +637,7 @@ class apiv2 extends dbcore
 
             $this->mesg[] = "Added AP data.";
 
-            $sql = "INSERT INTO `live_gps` (`id`, `lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`,`timestamp`, `ap_id`) VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO `live_gps` (`lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`,`timestamp`, `ap_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
             $prep->bindParam(2, $data['long'], PDO::PARAM_STR);
@@ -658,8 +658,8 @@ class apiv2 extends dbcore
             $this->mesg[] = "Added GPS data.";
 
             $sql_sig = "INSERT INTO `live_signals`
-						(`id`, `signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
-						VALUES ('', ?, ?, ?, ?, ?)";
+						(`signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
+						VALUES (?, ?, ?, ?, ?)";
 
             $prep_sig = $this->sql->conn->prepare($sql_sig);
             $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
@@ -848,7 +848,7 @@ class apiv2 extends dbcore
             return 0;
         } else {
             $timestamp = date("Y-m-d H:i:s");
-            $insertTitle = "INSERT INTO `live_titles` (`id`, `title`, `notes`, `timestamp`, `completed` ) VALUES ('', ?, ?, ?, 0)";
+            $insertTitle = "INSERT INTO `live_titles` (`title`, `notes`, `timestamp`, `completed` ) VALUES (?, ?, ?, 0)";
             $prep_Title = $this->sql->conn->prepare($insertTitle);
             $prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
             $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);

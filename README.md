@@ -1,13 +1,13 @@
-Random Intervals -> WiFiDB -> Read-me
-=====================================
+Vistumbler WiFiDB -> Read-me
+===================
 
   A set of PHP-scripts to manage a MySQL based Wireless Database over the web.
 
-  Project Phase: Alpha
+  Project Phase: Beta
   --------------
   http://www.wifidb.net/
 
-    This program is free software; you can redistribute it and/or modify it under
+	This program is free software; you can redistribute it and/or modify it under
 	the terms of the GNU General Public License version 2, as published by the 
 	Free Software Foundation.   This program is distributed in the hope that it 
 	will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty 
@@ -15,9 +15,9 @@ Random Intervals -> WiFiDB -> Read-me
 	Public License for more details. You should have received a copy of the GNU 
 	General Public License along with this program; if not, you can get it at: 
 		
-		Free Software Foundation, Inc.,
-		51 Franklin St, Fifth Floor
-		Boston, MA  02110-1301 USA
+	Free Software Foundation, Inc.,
+	51 Franklin St, Fifth Floor
+	Boston, MA  02110-1301 USA
 		
 	Or go here:  http://www.gnu.org/licenses/gpl-2.0.txt
 		
@@ -26,15 +26,17 @@ Random Intervals -> WiFiDB -> Read-me
 			GD2 (included with PHP now)
 			ZipArchive class
 			SQLiteDatabase class
-			PDO & PDO-Mysql
-			Smarty (If not using the one that WiFiDB comes with)
-		MariaDB 5.2 or later
-		Apache 2.2 or later
+		MySQL 5.0 or later
+		Apache 2 or later
 		A Web-browser (doh!)
 		
   Summary:
-		WiFiDB is a PHP and MySQL based set of scripts that is intended to manage 
+		WiFiDB is a Python, PHP, and MySQL based set of scripts that is intended to manage 
 		Wireless Access points found with the Vistumber Wireless scanning software  
+		
+		Note: Python code is not yet in the Github repo since I have just started to learn Python, 
+		but it is going to be uploaded to the repo very very soon. Python is going to be replacing 
+		everything in the wifidb/tools folder.
 		
   Installation:
 		NOTE: If you are using Linux, you must chown & chgrp the wifidb folder, to the user 

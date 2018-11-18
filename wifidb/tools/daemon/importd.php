@@ -147,8 +147,17 @@ PID: [ $dbcore->This_is_me ]
 $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Import Jobs
-$job_id = $dbcore->GetJob();
-if($job_id === 0 && !$dbcore->ForceDaemonRun)
+$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
+$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+$prepgj = $dbcore->sql->conn->prepare($sql);
+$prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
+$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
+$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
+$prepgj->execute();
+$dbcore->sql->checkError(__LINE__, __FILE__);
+
+if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
 	unlink($dbcore->pid_file);
@@ -176,18 +185,22 @@ else
 		}
 		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
 
-        $NextImport = $dbcore->GetNextImportID();
-        echo "Next Import: ";
-        //var_dump($NextImport);
-        if(empty($NextImport) && $dbcore->daemonize)
-        {
-            echo "No new Imports. Waiting.\r\n";
-            sleep(30);
-            continue;
-        }
-
-		//var_dump("RunOnceValue: ".$dbcore->RunOnceThrough);
-		if( !@$NextImport['id']  AND $dbcore->RunOnceThrough)
+		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
+			$NextID = $dbcore->GetNextImportID();
+		}
+		var_dump($NextID);
+		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `id` = ?";
+		$result = $dbcore->sql->conn->prepare($daemon_sql);
+		$result->bindParam(1, $NextID, PDO::PARAM_INT);
+		$result->execute();
+		if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+			$dbcore->verbosed("There was an error getting an import file");
+			$dbcore->return_message = -8;
+			break;
+		}
+		var_dump($result->rowCount());
+		var_dump($dbcore->RunOnceThrough);
+		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
 			$dbcore->return_message = -9;

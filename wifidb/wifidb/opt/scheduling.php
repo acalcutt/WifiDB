@@ -283,7 +283,11 @@ switch($func)
         $dbcore->smarty->display('scheduling_kml.tpl');
     break;
 
-    case "old_schedule":
+    default:
+        #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
+        $sql = "SELECT * FROM `settings` WHERE `id` = '1'";
+        $result = $dbcore->sql->conn->query($sql);
+        $file_array = $result->fetch(2);
         $timezone_opt = '';
         $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
         foreach($offsets as $key=>$value)

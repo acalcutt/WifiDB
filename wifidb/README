@@ -1,9 +1,9 @@
-Random Intervals -> WiFiDB -> Read-me
+Vistumbler WiFiDB -> Read-me
 =====================================
 
   A set of PHP-scripts to manage a MySQL based Wireless Database over the web.
 
-  Project Phase: Alpha
+  Project Phase: Beta
   --------------
   http://www.wifidb.net/
 
@@ -22,17 +22,21 @@ Random Intervals -> WiFiDB -> Read-me
 	Or go here:  http://www.gnu.org/licenses/gpl-2.0.txt
 		
   Requirements:
-		PHP 5.0 or later
+		PHP 5.3 or later
 			GD2 (included with PHP now)
 			ZipArchive class
 			SQLiteDatabase class
 		MySQL 5.0 or later
-		Apache 1.3 or later
+		Apache 2 or later
 		A Web-browser (doh!)
 		
   Summary:
-		WiFiDB is a PHP and MySQL based set of scripts that is intended to manage 
+		WiFiDB is a Python, PHP, and MySQL based set of scripts that is intended to manage 
 		Wireless Access points found with the Vistumber Wireless scanning software  
+		
+		Note: Python code is not yet in the Github repo since I have just started to learn Python, 
+		but it is going to be uploaded to the repo very very soon. Python is going to be replacing 
+		everything in the wifidb/tools folder.
 		
   Installation:
 		NOTE: If you are using Linux, you must chown & chgrp the wifidb folder, to the user 

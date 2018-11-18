@@ -272,7 +272,7 @@ Go here to reset it to one you choose:
             $smtp_send = $mail->send($smtp_conn);
             if($smtp_send)
             {
-                $insert = "INSERT INTO `$db`.`$validate_table` (`id`, `username`, `code`, `date`) VALUES ('', '$username', '$validate_code', '$date')";
+                $insert = "INSERT INTO `$db`.`$validate_table` (`username`, `code`, `date`) VALUES ('$username', '$validate_code', '$date')";
         #	echo $insert."<BR>";
                 if($this->sql->conn->query($insert))
                 {

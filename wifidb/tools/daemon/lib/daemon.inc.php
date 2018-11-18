@@ -59,7 +59,6 @@ class daemon extends wdbcli
 	 */
 	public function CheckDaemonKill()
 	{
-       // var_dump($this->node_name);
 		$D_SQL = "SELECT `daemon_state` FROM `settings` WHERE `node_name` = ? LIMIT 1";
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
@@ -151,36 +150,22 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		$this->sql->conn->query("LOCK TABLES wifi.files_importing WRITE, wifi.files_tmp WRITE");
-        if($this->ImportID)
-        {
-            $daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` WHERE files_tmp.id = ?;";
-            $result = $this->sql->conn->prepare($daemon_sql);
-            $result->bindParam(1, $this->ImportID, PDO::PARAM_INT);
-            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
-            $LastInsert = $this->ImportID;
-            $select = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `tmp_id` = ?";
-        }else
-        {
-            $daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
-            $result = $this->sql->conn->query($daemon_sql);
-            $this->sql->checkError( $result, __LINE__, __FILE__);
-            $LastInsert = $this->sql->conn->lastInsertId();
-            $select = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `id` = ?";
-        }
-        //var_dump($daemon_sql);
-        //var_dump($this->sql->conn->lastInsertId() );
+		$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
 
+		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
+		$result = $this->sql->conn->prepare($daemon_sql);
+		$result->execute();
+		$this->sql->checkError(__LINE__, __FILE__);
+		$LastInsert = $this->sql->conn->lastInsertID();
+		var_dump($LastInsert);
 
-        //var_dump($select);
-        $prep = $this->sql->conn->prepare($select);
+		$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
+		$prep = $this->sql->conn->prepare($select);
 		$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
 		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 
-		$WaitingImport = $prep->fetch(2);
-
-        $delete = "DELETE FROM wifi.files_tmp WHERE id = ?";
-        //var_dump($delete);
+		$tmp_id = $prep->fetch(2)['tmp_id'];
+		$delete = "DELETE FROM files_tmp WHERE id = ?";
 		$prep = $this->sql->conn->prepare($delete);
 		$prep->bindParam(1, $WaitingImport['tmp_id'], PDO::PARAM_INT);
 		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
@@ -215,7 +200,7 @@ class daemon extends wdbcli
         $rows = array();
         $n = 0;
         # Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
-        $sql = "INSERT INTO `user_imports` ( `id` , `username` , `notes` , `title`, `hash`, `file_id`) VALUES ( NULL, ?, ?, ?, ?, ?)";
+        $sql = "INSERT INTO `user_imports` ( `username` , `notes` , `title`, `hash`, `file_id`) VALUES ( ?, ?, ?, ?, ?)";
         $prep = $this->sql->conn->prepare($sql);
         foreach($multi_user as $muser)
         {
@@ -355,7 +340,6 @@ class daemon extends wdbcli
 				{
 					$user = $file_to_Import['user'];
 				}
-				//var_dump($user);
 				$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `files_importing` WHERE `hash` = ?";
 				$prep_ext = $this->sql->conn->prepare($sql_select_tmp_file_ext);
 				$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
@@ -368,16 +352,16 @@ class daemon extends wdbcli
 				$prev_ext = $prep_ext->fetch(2);
 				$notes = $file_to_Import['notes'];
 				$title = $file_to_Import['title'];
-				if( $prev_ext['prev_ext'] == "")
-				{
-					$PrevExt = "";
-				}else
-				{
-					$PrevExt =  $prev_ext['prev_ext'];
-				}
+                if( $prev_ext['prev_ext'] == "")
+                {
+                    $PrevExt = "";
+                }else
+                {
+                    $PrevExt =  $prev_ext['prev_ext'];
+                }
 				$sql_insert_file = "INSERT INTO `files`
-				(`id`, `file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
-				VALUES (NULL, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
+				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 				$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
@@ -520,8 +504,8 @@ class daemon extends wdbcli
 		}
 		$this->logd("=== Start Daemon Prep of ".$file." ===");
 
-		$sql = "INSERT INTO `files_tmp` ( `id`, `file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-																VALUES ( '', '$file', '$date', '$user', '$notes', '$title', '$size1', '$hash_')";
+		$sql = "INSERT INTO `files_tmp` (`file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
+																VALUES ('$file', '$date', '$user', '$notes', '$title', '$size1', '$hash_')";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $file, PDO::PARAM_STR);
 		$prep->bindParam(2, $date, PDO::PARAM_STR);

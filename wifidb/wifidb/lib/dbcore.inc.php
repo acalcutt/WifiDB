@@ -113,10 +113,10 @@ class dbcore
 			);
 		}
 
-		$this->ver_array			    =   array(
-			"wifidb"					=>  " *Alpha* 0.30v Build 1 *Pre-Release* ",
-			"codename"				    =>  "Peabody",
-			"Last_Core_Edit"			=>  "08-27-2014"
+		$this->ver_array				=   array(
+			"wifidb"					=>  "v0.40 Beta",
+			"codename"				  =>  "Phoenix",
+			"Last_Core_Edit"			=>  "09-04-2018"
 			);
 		$this->ver_str				    = $this->ver_array['wifidb'];
 		$this->This_is_me			    = getmypid();
@@ -487,7 +487,7 @@ class dbcore
 
 	private function log_sql($message, $type, $prefix, $datetime)
 	{
-		$sql = "INSERT INTO `log` (`id`, `message`, `level`, `timestamp`, `prefix`) VALUES ('', ?, ?, ?, ?)";
+		$sql = "INSERT INTO `log` (`message`, `level`, `timestamp`, `prefix`) VALUES (?, ?, ?, ?)";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $message, PDO::PARAM_STR);
 		$prep->bindParam(2, $type, PDO::PARAM_STR);
@@ -555,20 +555,20 @@ class dbcore
 		{
 			$mac = str_replace(":", "", $mac);
 		}
-
-		#var_dump("FindManuf Mac: ".$mac);
-		#var_dump($this->manuf_array[$man_mac[0]]);
-		$result = $this->sql->conn->prepare("SELECT manuf FROM `manufactures` WHERE `mac` = ?");
+		$mac = strtoupper(substr($mac, 0, 6));
+		
+		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM `manufacturers` WHERE `BSSID` = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
 		$result->execute();
-        if($result->rowCount() > 0)
+		$this->sql->checkError(__LINE__, __FILE__);
+		if($result->rowCount() > 0)
 		{
 			$fetch = $result->fetch(2);
-			$manuf = $fetch['manuf'];
+			$manuf = $fetch['Manufacturer'];
 		}
 		else
 		{
-			$manuf = "Unknown Manufacture";
+			$manuf = "Unknown Manufacturer";
 		}
 		return $manuf;
 	}

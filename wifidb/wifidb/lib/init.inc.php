@@ -34,7 +34,7 @@ if(!function_exists('WiFiDBexception_handler')) {
 				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/");
 				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/smarty/");
 				$smarty = new Smarty();
-				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/wifidb/');
+				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/vistumbler/');
 				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/');
 				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/');
 				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/');
@@ -98,32 +98,27 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 {
 	require 'config.inc.php';
 }
-#if(WDB_DEBUG)
-if(1)
-{
-	/*-----------------------*/
-	// Show all error's with strict santex
-	//***DEV USE ONLY enable with debug flag in config***
-	ini_set('display_errors', 1);//***DEV USE ONLY***
-	ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
-	error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
-	/*-----------------------*/
-}
+$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'];
+$options = array(
+	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+);
 
-$SQL = new SQL($config);
-$query = "SELECT `version` FROM `settings` LIMIT 1";
-$res = $SQL->conn->query($query);
-$SQL->checkError($res, __LINE__, __FILE__);
+$conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+
+$sql = "SELECT `version` FROM `settings` LIMIT 1";
+$res = $conn->query($sql);
 $fetch = $res->fetch(2);
 
-if($fetch['version'] !== '0.30 build 2')
+unset($res);
+unset($conn);
+if($fetch['version'] != '0.40')
 {
 	$cwd = getcwd().'/';
 	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
 	if($cwd != $gen_cwd)
 	{
-		throw new ErrorException('The database is still in an old format, you will need to do an upgrade first.<br>
-				If this database is older than Version 0.20 I would do a Full Fresh Install, After making a backup of all your data.
+		throw new ErrorException('The database is not in the 0.40 format, you will need to do an upgrade first.<br>
+				If this database is older than Version 0.30 I would do a Full Fresh Install, After making a backup of all your data.
 				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
 	}
 }
@@ -185,7 +180,8 @@ try
 					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
 				####
 				case "import":
@@ -198,7 +194,8 @@ try
 					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
 				break;
 				####
@@ -231,6 +228,7 @@ try
 			{
 				case "api":
 					__autoload("createKML");
+					__autoload("createGeoJSON");
 					__autoload("convert");
 					__autoload("export");
 					__autoload("api");
@@ -240,26 +238,28 @@ try
 					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
 
-				case "apiv2":
-					__autoload("federation");
-					__autoload("createKML");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("apiv2");
-					__autoload("Zip");
-					$dbcore = new apiv2($config, $SQL);
-					$dbcore->convert = new convert($config, $SQL);
-					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
-					$dbcore->federation = new federation($dbcore, $config);
-					break;
+                case "apiv2":
+                    __autoload("createKML");
+					__autoload("createGeoJSON");
+                    __autoload("convert");
+                    __autoload("export");
+                    __autoload("apiv2");
+                    __autoload("Zip");
+                    $dbcore = new apiv2($config, $SQL);
+                    $dbcore->convert = new convert($config, $SQL);
+                    $dbcore->Zip = new Zip;
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
+                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
+				break;
 
 				case "export":
 					__autoload("createKML");
+					__autoload("createGeoJSON");
 					__autoload("convert");
 					__autoload("export");
 					__autoload("Zip");
@@ -268,7 +268,8 @@ try
 					$dbcore->convert = new convert($config, $SQL);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip);
+					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
 
 				case "graph":

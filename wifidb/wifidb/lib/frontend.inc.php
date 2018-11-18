@@ -133,7 +133,7 @@ class frontend extends dbcore
 		$ap_data = array(
 			'id'=>$newArray['id'],
 			'radio'=>$newArray['radio'],
-			'manuf'=>$newArray['manuf'],
+			'manuf'=>$this->findManuf($newArray['mac']),
 			'mac'=>$newArray['mac'],
 			'ssid'=>$new_ssid,
 			'chan'=>$newArray['chan'],
@@ -623,7 +623,7 @@ class frontend extends dbcore
 	}
 
 
-	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="")
+	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="", $view="")
 	{
 		if($ssid=="" && $mac=="" && $chan=="" && $radio=="" && $auth=="" && $encry=="")
 		{
@@ -632,6 +632,9 @@ class frontend extends dbcore
 		{
 			$no_search = 1;
 		}
+		
+		if($view==""){$viewparam="";}else{$viewparam="&view={$view}";}
+		
 
 		$function_and_username = "";
 		if($func != "")
@@ -644,45 +647,43 @@ class frontend extends dbcore
 			$function_and_username .= "&amp;user={$user}&amp;";
 		}
 
-		$pages = ($total_rows/$inc);
-		$mid_page = round($from/$inc, 0);
+		$pages = ceil($total_rows/$inc);
+		$mid_page = (($from + $inc)/$inc);
 		if($no_search)
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">First</a>&#93 &#45; \r\n";
 		}else
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">First</a>&#93 &#45; \r\n";
 		}
 		for($I=($mid_page - 5); $I<=($mid_page + 5); $I++)
 		{
 			if($I <= 0){continue;}
 			if($I > $pages){break;}
-			$cal_from = ($I*$inc);
-			if($I==1)
-			{
-				$cal_from = $cal_from-$inc;
-				if($no_search)
-				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">{$I}</a> &#45; \r\n";
-				}else
-				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}\">{$I}</a> &#45; \r\n";
-				}
-			}elseif($mid_page == $I)
+			if($I==1){$cal_from = 0;}else{$cal_from = (($I-1)*$inc);}
+			if($mid_page == $I)
 			{
 				$pages_together .= " <b><i>{$I}</i></b> - \r\n";
 			}else
 			{
 				if($no_search)
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">{$I}</a> &#45; \r\n";
 				}else
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">{$I}</a> &#45; \r\n";
 				}
 			}
 		}
-		$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".(($pages*$inc)-$inc)."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+		if($pages==1){$cal_from = 0;}else{$cal_from = (($pages-1)*$inc);}
+		if($no_search)
+		{
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+		}else
+		{
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+		}
+		
 		$this->pages_together = $pages_together;
 		return 1;
 	}
@@ -866,8 +867,6 @@ class frontend extends dbcore
 		{
 			$ssids_ptb = $this->make_ssid($aps['ssid']);
 			$ssid = $ssids_ptb[0];
-			$half_mac = substr(str_replace(":", "", $aps['mac']), 0, 6);
-			$manuf = $this->manufactures[$half_mac];
 			switch($aps['sectype'])
 			{
 				case 1:
@@ -940,7 +939,7 @@ class frontend extends dbcore
 				"lat"=>$lat,
 				"long"=>$long,
 				"alt"=>$gps["alt"],
-				"manuf"=>$manuf,
+				"manuf"=>$this->findManuf($aps["mac"]),
 				"label"=>$aps["label"]
 			);
 		}

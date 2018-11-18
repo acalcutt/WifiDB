@@ -46,13 +46,15 @@
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}">Main Page</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}all.php?sort=SSID&ord=ASC&from=0&to=500">View All APs</a></strong></div>
+                                    <a href="{$wifidb_host_url}all.php?sort=SSID&ord=ASC&from=0&to=500">AP List</a></strong></div>
+                                <div class="inside_text_bold"><strong>
+                                    <a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">AP Map</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}import/">Import</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php">Files Waiting for Import</a></strong></div>
+                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imported Files</a></strong></div>
                                 <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Already Imported</a></strong></div>
+                                    <a href="{$wifidb_host_url}opt/scheduling.php">Files Waiting for Import</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Daemon Generated KMZ</a></strong></div>
                                 <div class="inside_text_bold"><strong>
@@ -84,7 +86,7 @@
                         </tr>
                         
                         <!-- CUSTOM NAV -->
-                        {include file="navigation.tpl"}
+                        <!--{include file="navigation.tpl"}-->
                         <!-- END CUSTOM NAV-->
                     </table>
                 </td>

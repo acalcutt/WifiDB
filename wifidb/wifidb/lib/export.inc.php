@@ -20,11 +20,12 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $convertObj, $ZipObj){
+	public function __construct($config, $createKMLObj, $createGeoJSONObj, $convertObj, $ZipObj){
 		parent::__construct($config);
 
 		$this->convert = $convertObj;
 		$this->createKML = $createKMLObj;
+		$this->createGeoJSON = $createGeoJSONObj;
 		$this->Zip = $ZipObj;
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
@@ -50,6 +51,7 @@ class export extends dbcore
 			"ExportApSignal3d"	=>  "1.0",			
 			"UserAll"		=>  "3.0",
 			"UserList"		=>  "3.0",
+			"UserListGeoJSON"		=>  "1.0",
 			"FindBox"	=>  "1.0",
 			"distance"	=>  "2.0",
 			"get_point"	=>  "2.0",
@@ -177,7 +179,7 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		$export_ssid="";
-		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 		$result = $this->sql->conn->query($sql);
 		while($ap_fetch = $result->fetch(2))
 		{
@@ -203,7 +205,7 @@ class export extends dbcore
 			"lat" => $ap_fetch['lat'],
 			"long" => $ap_fetch['long'],
 			"alt" => $ap_fetch['alt'],
-			"manuf" => $ap_fetch['manuf'],
+			"manuf"=>$this->findManuf($ap_fetch['mac'])
 			);
 			$KML_data = $this->createKML->CreateApPlacemark($ap_info);
 		}
@@ -320,7 +322,7 @@ class export extends dbcore
 		{
 			list($id, $new_old) = explode(":", $point);
 			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `manuf` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->query($sql);
 			while($ap_fetch = $result->fetch(2))
 			{
@@ -344,7 +346,7 @@ class export extends dbcore
 				"lat" => $ap_fetch['lat'],
 				"long" => $ap_fetch['long'],
 				"alt" => $ap_fetch['alt'],
-				"manuf" => $ap_fetch['manuf'],
+				"manuf"=>$this->findManuf($ap_fetch['mac'])
 				);
 				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
 				
@@ -359,6 +361,59 @@ class export extends dbcore
 		$ret_data = array(
 		"data" => $Import_KML_Data,
 		"box" => $box_latlon,
+		);
+		
+		return $ret_data;
+	}
+	
+	public function UserListGeoJSON($points, $new_icons=0)
+	{
+		$Import_Map_Data="";
+		$points = explode("-", $points);
+		$latlon_array = array();
+		foreach($points as $point)
+		{
+			list($id, $new_old) = explode(":", $point);
+			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `username` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$result = $this->sql->conn->query($sql);
+			while($ap_fetch = $result->fetch(2))
+			{
+				#Get AP KML
+				$ap_info = array(
+				"id" => $id,
+				"new_ap" => $new_icons,
+				"mac" => $ap_fetch['mac'],
+				"ssid" => $ap_fetch['ssid'],
+				"chan" => $ap_fetch['chan'],
+				"radio" => $ap_fetch['radio'],
+				"NT" => $ap_fetch['NT'],
+				"sectype" => $ap_fetch['sectype'],
+				"auth" => $ap_fetch['auth'],
+				"encry" => $ap_fetch['encry'],
+				"BTx" => $ap_fetch['BTx'],
+				"OTx" => $ap_fetch['OTx'],
+				"FA" => $ap_fetch['FA'],
+				"LA" => $ap_fetch['LA'],
+				"lat" => $this->convert->dm2dd($ap_fetch['lat']),
+				"long" => $this->convert->dm2dd($ap_fetch['long']),
+				"alt" => $ap_fetch['alt'],
+				"manuf"=>$this->findManuf($ap_fetch['mac']),
+				"username" => $ap_fetch['username'],
+				);
+				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
+				
+				$latlon_info = array(
+				"lat" => $this->convert->dm2dd($ap_fetch['lat']),
+				"long" => $this->convert->dm2dd($ap_fetch['long']),
+				);
+				$latlon_array[] = $latlon_info;
+			}
+		}
+		
+		$ret_data = array(
+		"data" => $Import_Map_Data,
+		"latlongarray" => $latlon_array,
 		);
 		
 		return $ret_data;
