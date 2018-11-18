@@ -34,7 +34,7 @@ if(!function_exists('WiFiDBexception_handler')) {
 				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/");
 				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/smarty/");
 				$smarty = new Smarty();
-				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/wifidb/');
+				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/vistumbler/');
 				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/');
 				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/');
 				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/');
