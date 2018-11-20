@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 17, 2018 at 04:32 PM
+-- Generation Time: Nov 20, 2018 at 01:12 AM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -17,15 +17,59 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
---
--- Host: localhost    Database: wifi
--- ------------------------------------------------------
--- Server version	10.0.0-MariaDB-mariadb1~squeeze-log
 
-DROP DATABASE IF EXISTS `wifi`;
-Create DATABASE `wifi`;
-Use `wifi`;
---  --
+--
+-- Database: `dev_wifi`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `annunc`
+--
+
+CREATE TABLE `annunc` (
+  `id` int(11) NOT NULL,
+  `set` tinyint(1) NOT NULL DEFAULT 0,
+  `auth` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Annon Coward',
+  `title` varchar(120) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Blank',
+  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `body` text COLLATE utf8_unicode_ci NOT NULL,
+  `comments` text COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `boundaries`
+--
+
+CREATE TABLE `boundaries` (
+  `id` int(255) NOT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `polygon` text COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `daemon_pid_stats`
+--
+
+CREATE TABLE `daemon_pid_stats` (
+  `id` int(11) NOT NULL,
+  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidfile` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidtime` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidmem` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `pidcmd` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `date` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `DB_stats`
 --
 
@@ -71,61 +115,6 @@ CREATE TABLE `DB_stats` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
--- Table structure for table `annunc`
---
-
-CREATE TABLE `annunc` (
-  `id` int(11) NOT NULL,
-  `set` tinyint(1) NOT NULL DEFAULT 0,
-  `auth` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Annon Coward',
-  `title` varchar(120) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Blank',
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `body` text COLLATE utf8_unicode_ci NOT NULL,
-  `comments` text COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `boundaries`
---
-
-CREATE TABLE `boundaries` (
-  `id` int(255) NOT NULL,
-  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `polygon` text COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `daemon_pid_stats`
---
-
-CREATE TABLE `daemon_pid_stats` (
-  `id` int(11) NOT NULL,
-  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidfile` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidtime` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidmem` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidcmd` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Table structure for table `federation_servers`
---
-
-CREATE TABLE `federation_servers` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `FriendlyName` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `ServerAddress`varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `APIVersion` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  `SharedKey` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  `SharedKeyRemote` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Table structure for table `files`
@@ -310,10 +299,12 @@ CREATE TABLE `live_aps` (
   `mac` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `auth` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
   `encry` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `sectype` int(11) NOT NULL,
+  `sectype` int(1) NOT NULL,
   `radio` varchar(7) COLLATE utf8_unicode_ci NOT NULL,
-  `chan` int(11) NOT NULL,
-  `session_id` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `chan` int(255) NOT NULL,
+  `sig` text COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `BTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `OTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
@@ -357,7 +348,7 @@ CREATE TABLE `live_signals` (
   `id` int(11) NOT NULL,
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `signal` int(11) NOT NULL,
-  `rssi` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  `rssi` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
   `gps_id` int(11) NOT NULL,
   `time_stamp` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
@@ -395,50 +386,6 @@ CREATE TABLE `live_users` (
 -- Table structure for table `log`
 --
 
-CREATE TABLE `log` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `message` text COLLATE utf8_unicode_ci NOT NULL,
-  `level` int(11) NOT NULL,
-  `timestamp` int(11) NOT NULL,
-  `prefix` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Table structure for table `manufactures`
---
-
-CREATE TABLE `manufactures` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `manuf` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `address` varchar(9) COLLATE utf8_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `manuf` (`manuf`),
-  KEY `address` (`address`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
---
--- Table structure for table `schedule`
---
-
-CREATE TABLE `schedule` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `daemon` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `enabled` tinyint(4) NOT NULL,
-  `interval` int(11) NOT NULL,
-  `status` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `nextrun` int(64) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `id` (`id`),
-  KEY `nodename` (`nodename`),
-  KEY `daemon` (`daemon`),
-  KEY `enabled` (`enabled`),
-  KEY `interval` (`interval`),
-  KEY `status` (`status`),
-  KEY `nextrun` (`nextrun`)
-) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-=======
 CREATE TABLE `log` (
   `id` int(11) NOT NULL,
   `message` text COLLATE utf8_unicode_ci NOT NULL,
@@ -481,7 +428,7 @@ CREATE TABLE `schedule` (
 --
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
-(1, '1', 'Import', 1, 5, 'Waiting', '0000-00-00 00:00:00');
+(1, 'dev', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -502,9 +449,13 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES
-(1, 1, '0.40', 0, '1');
+(1, 1, '0.40', 0, 'dev');
 
 -- --------------------------------------------------------
+
+--
+-- Table structure for table `share_waypoints`
+--
 
 CREATE TABLE `share_waypoints` (
   `id` int(255) NOT NULL,
@@ -656,98 +607,68 @@ CREATE TABLE `user_waypoints` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `wandering_aps`
+-- Table structure for table `wifi_ap`
 --
 
-CREATE TABLE wifi.wandering_aps
-(
-  id INT PRIMARY KEY AUTO_INCREMENT,
-  aphash VARCHAR(255),
-  wander_rating int(255),
-  lat_nw VARCHAR(255),
-  long_nw VARCHAR(255),
-  lat_ne VARCHAR(255),
-  long_ne VARCHAR(255),
-  lat_se VARCHAR(255),
-  long_se VARCHAR(255),
-  lat_sw VARCHAR(255),
-  long_sw VARCHAR(255)
-);
+CREATE TABLE `wifi_ap` (
+  `AP_ID` bigint(20) NOT NULL,
+  `BSSID` varchar(20) DEFAULT NULL,
+  `SSID` varchar(255) DEFAULT NULL,
+  `CHAN` int(11) DEFAULT NULL,
+  `AUTH` varchar(50) DEFAULT NULL,
+  `ENCR` varchar(50) DEFAULT NULL,
+  `SECTYPE` int(11) DEFAULT NULL,
+  `RADTYPE` varchar(50) DEFAULT NULL,
+  `NETTYPE` varchar(100) DEFAULT NULL,
+  `BTX` varchar(100) DEFAULT NULL,
+  `OTX` varchar(100) DEFAULT NULL,
+  `HighGps_ID` bigint(20) DEFAULT NULL,
+  `FirstHist_ID` bigint(20) DEFAULT NULL,
+  `LastHist_ID` bigint(20) DEFAULT NULL,
+  `HighSig_ID` bigint(20) DEFAULT NULL,
+  `HighRSSI_ID` bigint(20) DEFAULT NULL,
+  `ap_hash` varchar(255) DEFAULT NULL,
+  `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `wifi_gps`
 --
 
 CREATE TABLE `wifi_gps` (
-  `id` int(255) NOT NULL,
-  `lat` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `long` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `sats` int(2) NOT NULL DEFAULT 0,
-  `hdp` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `alt` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `geo` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `kmh` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `mph` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `track` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` varchar(10) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `time` varchar(12) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `GPS_ID` bigint(20) NOT NULL,
+  `File_ID` bigint(20) DEFAULT NULL,
+  `File_GPS_ID` bigint(20) DEFAULT NULL,
+  `Lat` decimal(9,4) DEFAULT NULL,
+  `Lon` decimal(9,4) DEFAULT NULL,
+  `NumOfSats` int(11) DEFAULT NULL,
+  `HorDilPitch` decimal(10,2) DEFAULT NULL,
+  `Alt` decimal(7,2) DEFAULT NULL,
+  `Geo` decimal(10,2) DEFAULT NULL,
+  `MPH` decimal(6,2) DEFAULT NULL,
+  `KPH` decimal(6,2) DEFAULT NULL,
+  `TrackAngle` decimal(5,2) DEFAULT NULL,
+  `GPS_Date` datetime(3) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------
 
 --
--- Table structure for table `wifi_pointers`
+-- Table structure for table `wifi_hist`
 --
 
-CREATE TABLE `wifi_pointers` (
-  `id` int(255) NOT NULL,
-  `ssid` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `mac` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `chan` int(255) DEFAULT NULL,
-  `sectype` varchar(1) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `radio` varchar(13) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `auth` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `encry` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `geonames_id` int(255) DEFAULT NULL,
-  `admin1_id` int(255) DEFAULT NULL,
-  `admin2_id` int(255) DEFAULT NULL,
-  `country_code` varchar(3) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `lat` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N 0.0000',
-  `long` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'E 0.0000',
-  `active` tinyint(1) NOT NULL DEFAULT 0,
-  `BTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
-  `OTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
-  `NT` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Ad-Hoc',
-  `label` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Unknown',
-  `LA` datetime DEFAULT NULL,
-  `FA` datetime DEFAULT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'UNKOWN',
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `signal_high` int(255) DEFAULT NULL,
-  `rssi_high` int(255) DEFAULT NULL,
-  `alt` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `manuf` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `AddDate` datetime DEFAULT current_timestamp(),
-  `ModDate` datetime DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- --------------------------------------------------------
-
---
--- Table structure for table `wifi_signals`
---
-
-CREATE TABLE `wifi_signals` (
-  `id` int(11) NOT NULL,
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `signal` int(11) NOT NULL,
-  `rssi` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
-  `gps_id` int(11) NOT NULL,
-  `file_id` int(11) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT 'WiFiDB',
-  `time_stamp` datetime(6) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+CREATE TABLE `wifi_hist` (
+  `Hist_ID` bigint(20) NOT NULL,
+  `AP_ID` bigint(20) DEFAULT NULL,
+  `GPS_ID` bigint(20) DEFAULT NULL,
+  `File_ID` bigint(20) DEFAULT NULL,
+  `Sig` int(11) DEFAULT NULL,
+  `RSSI` int(11) DEFAULT NULL,
+  `New` tinyint(1) DEFAULT 0,
+  `Hist_Date` datetime(3) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 --
 -- Indexes for dumped tables
@@ -858,9 +779,7 @@ ALTER TABLE `geonames_country_names`
 ALTER TABLE `live_aps`
   ADD PRIMARY KEY (`ap_hash`),
   ADD KEY `id` (`id`);
->>>>>>> ac-wifidb-prod
 
--- Dump completed on 2015-08-30 17:12:56
 --
 -- Indexes for table `live_gps`
 --
@@ -963,45 +882,35 @@ ALTER TABLE `user_waypoints`
   ADD UNIQUE KEY `gcid` (`gcid`);
 
 --
+-- Indexes for table `wifi_ap`
+--
+ALTER TABLE `wifi_ap`
+  ADD PRIMARY KEY (`AP_ID`),
+  ADD KEY `AP_ID` (`AP_ID`),
+  ADD KEY `HighGps_ID` (`HighGps_ID`),
+  ADD KEY `FirstHist_ID` (`FirstHist_ID`),
+  ADD KEY `LastHist_ID` (`LastHist_ID`),
+  ADD KEY `ap_hash` (`ap_hash`);
+
+--
 -- Indexes for table `wifi_gps`
 --
 ALTER TABLE `wifi_gps`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `GPS_INDEX` (`lat`,`sats`,`alt`,`date`,`time`),
-  ADD KEY `ap_hash` (`ap_hash`),
-  ADD KEY `id` (`id`);
+  ADD PRIMARY KEY (`GPS_ID`),
+  ADD KEY `File_GPS_ID` (`File_GPS_ID`),
+  ADD KEY `File_ID` (`File_ID`),
+  ADD KEY `GPS_ID` (`GPS_ID`);
 
 --
--- Indexes for table `wifi_pointers`
+-- Indexes for table `wifi_hist`
 --
-ALTER TABLE `wifi_pointers`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `ssid` (`ssid`),
-  ADD KEY `mac` (`mac`),
-  ADD KEY `chan` (`chan`),
-  ADD KEY `sectype` (`sectype`),
-  ADD KEY `radio` (`radio`),
-  ADD KEY `auth` (`auth`),
-  ADD KEY `encry` (`encry`),
-  ADD KEY `geonames_id` (`geonames_id`),
-  ADD KEY `admin1_id` (`admin1_id`),
-  ADD KEY `admin2_id` (`admin2_id`),
-  ADD KEY `lat` (`lat`),
-  ADD KEY `long` (`long`),
-  ADD KEY `active` (`active`),
-  ADD KEY `username` (`username`),
-  ADD KEY `ap_hash` (`ap_hash`),
-  ADD KEY `alt` (`alt`),
-  ADD KEY `manuf` (`manuf`);
-
---
--- Indexes for table `wifi_signals`
---
-ALTER TABLE `wifi_signals`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `ap_hash` (`ap_hash`,`signal`,`gps_id`,`username`,`time_stamp`),
-  ADD KEY `FK_GPS` (`gps_id`),
-  ADD KEY `id` (`id`);
+ALTER TABLE `wifi_hist`
+  ADD PRIMARY KEY (`Hist_ID`),
+  ADD KEY `Hist_ID` (`Hist_ID`),
+  ADD KEY `AP_ID` (`AP_ID`),
+  ADD KEY `GPS_ID` (`GPS_ID`),
+  ADD KEY `File_ID` (`File_ID`),
+  ADD KEY `Hist_Date` (`Hist_Date`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -1176,22 +1085,22 @@ ALTER TABLE `user_waypoints`
   MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `wifi_ap`
+--
+ALTER TABLE `wifi_ap`
+  MODIFY `AP_ID` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `wifi_gps`
 --
 ALTER TABLE `wifi_gps`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+  MODIFY `GPS_ID` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `wifi_pointers`
+-- AUTO_INCREMENT for table `wifi_hist`
 --
-ALTER TABLE `wifi_pointers`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT for table `wifi_signals`
---
-ALTER TABLE `wifi_signals`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+ALTER TABLE `wifi_hist`
+  MODIFY `Hist_ID` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
