@@ -692,94 +692,94 @@ class api extends dbcore
 				`chan` LIKE ? AND
 				`auth` LIKE ? AND
 				`encry` LIKE ?";
+		$prep2 = $this->sql->conn->prepare($sql2);
 
-        $prep2 = $this->sql->conn->prepare($sql2);
+		$ssid = $ssid."%";
+		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+		$mac = $mac."%";
+		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+		$radio = $radio."%";
+		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+		$chan = $chan."%";
+		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+		$auth = $auth."%";
+		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+		$encry = $encry."%";
+		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+		$prep2->execute();
+		$total_rows = $prep2->rowCount();
+		if(!$total_rows)
+		{
+			$this->mesg = "No AP's Found";
+			return 0;
+		}
+		$row_color = 0;
+		$results_all = array();
+		$i=0;
+		while ($newArray = $prep2->fetch(2))
+		{
+			if($row_color == 1)
+			{
+				$row_color = 0;
+				$results_all[$i]['class'] = "light";
+			}
+			else
+			{
+				$row_color = 1;
+				$results_all[$i]['class'] = "dark";
+			}
+			$results_all[$i]['id'] = $newArray['id'];
+			$results_all[$i]['ssid'] = $newArray['ssid'];
+			$results_all[$i]['mac'] = $newArray['mac'];
+			$results_all[$i]['sectype'] = $newArray['sectype'];
+			$results_all[$i]['chan'] = $newArray['chan'];
+			$results_all[$i]['auth'] = $newArray['auth'];
+			$results_all[$i]['encry'] = $newArray['encry'];
+			$results_all[$i]['radio'] = $newArray['radio'];
+			$results_all[$i]['BTx']=$newArray['BTx'];
+			$results_all[$i]['OTx']=$newArray['OTx'];
+			$results_all[$i]['label']=$newArray['label'];
+			$results_all[$i]['FA']=$newArray['FA'];
+			$results_all[$i]['LA']=$newArray['LA'];
+			$results_all[$i]['NT'] = $newArray['NT'];
+			$results_all[$i]['manuf']=$newArray['manuf'];
+			$results_all[$i]['geonames_id']=$newArray['geonames_id'];
+			$results_all[$i]['admin1_id']=$newArray['admin1_id'];
+			$results_all[$i]['admin2_id']=$newArray['admin2_id'];
+			$results_all[$i]['username']=$newArray['username'];
+			$results_all[$i]['ap_hash'] = $newArray['ap_hash'];
+			$i++;
+		}
+		$this->mesg = $results_all;
+		return $results_all;
+	}
 
-        $ssid = $ssid."%";
-        $prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-        $mac = $mac."%";
-        $prep2->bindParam(2, $mac, PDO::PARAM_STR);
-        $radio = $radio."%";
-        $prep2->bindParam(3, $radio, PDO::PARAM_STR);
-        $chan = $chan."%";
-        $prep2->bindParam(4, $chan, PDO::PARAM_STR);
-        $auth = $auth."%";
-        $prep2->bindParam(5, $auth, PDO::PARAM_STR);
-        $encry = $encry."%";
-        $prep2->bindParam(6, $encry, PDO::PARAM_STR);
-        $this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
-        $total_rows = $prep2->rowCount();
-        if(!$total_rows)
-        {
-            $this->mesg = "No AP's Found";
-            return 0;
-        }
-        $row_color = 0;
-        $results_all = array();
-        $i=0;
-        while ($newArray = $prep2->fetch(2))
-        {
-            if($row_color == 1)
-            {
-                $row_color = 0;
-                $results_all[$i]['class'] = "light";
-            }
-            else
-            {
-                $row_color = 1;
-                $results_all[$i]['class'] = "dark";
-            }
-            $results_all[$i]['id'] = $newArray['id'];
-            $results_all[$i]['ssid'] = $newArray['ssid'];
-            $results_all[$i]['mac'] = $newArray['mac'];
-            $results_all[$i]['sectype'] = $newArray['sectype'];
-            $results_all[$i]['chan'] = $newArray['chan'];
-            $results_all[$i]['auth'] = $newArray['auth'];
-            $results_all[$i]['encry'] = $newArray['encry'];
-            $results_all[$i]['radio'] = $newArray['radio'];
-            $results_all[$i]['BTx']=$newArray['BTx'];
-            $results_all[$i]['OTx']=$newArray['OTx'];
-            $results_all[$i]['label']=$newArray['label'];
-            $results_all[$i]['FA']=$newArray['FA'];
-            $results_all[$i]['LA']=$newArray['LA'];
-            $results_all[$i]['NT'] = $newArray['NT'];
-            $results_all[$i]['manuf']=$newArray['manuf'];
-            $results_all[$i]['geonames_id']=$newArray['geonames_id'];
-            $results_all[$i]['admin1_id']=$newArray['admin1_id'];
-            $results_all[$i]['admin2_id']=$newArray['admin2_id'];
-            $results_all[$i]['username']=$newArray['username'];
-            $results_all[$i]['ap_hash'] = $newArray['ap_hash'];
-            $i++;
-        }
-        $this->mesg = $results_all;
-        return $results_all;
-    }
+	private function recursive_raw($sep = "", $open = "", $close = "", $data = array())
+	{
+		if($sep === ""){$sep = "|";}
+		if($open === ""){$open = "[";}
+		if($close === ""){$close = "]";}
+		if($data === NULL){return -1;}
 
-    private function recursive_raw($sep = "", $open = "", $close = "", $data = array())
-    {
-        if($sep === ""){$sep = "|";}
-        if($open === ""){$open = "[";}
-        if($close === ""){$close = "]";}
-        if($data === NULL){return -1;}
+		foreach($data as $val)
+		{
+			if(is_array($val))
+			{
+				foreach($val as $key=>$v)
+				{
+					if(is_array($v))
+					{
+						$val[$key] = $this->recursive_raw($sep, $open, $close, $v);
+					}
+				}
+				$res[] = $open.implode($sep, $val).$close;
+			}else
+			{
+				$res[] = $val;
+			}
 
-        foreach($data as $val)
-        {
-            if(is_array($val))
-            {
-                foreach($val as $key=>$v)
-                {
-                    if(is_array($v))
-                    {
-                        $val[$key] = $this->recursive_raw($sep, $open, $close, $v);
-                    }
-                }
-                $res[] = $open.implode($sep, $val).$close;
-            }else
-            {
-                $res[] = $val;
-            }
-
-        }
-        return $open.implode($sep, $res).$close;
-    }
+		}
+		return $open.implode($sep, $res).$close;
+	}
 }
+?>

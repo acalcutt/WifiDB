@@ -36,7 +36,7 @@ if not, write to the
                                         </tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Total Access Points...</b></td>
-                                            <td>{$wifidb_all_user_aps.aps}</td>
+                                            <td>{$wifidb_all_user_aps.total_aps}</td>
                                         </tr>
 										<tr class="sub_head">
 											<td width="190px"><b>Access Point Efficiency...</b></td>

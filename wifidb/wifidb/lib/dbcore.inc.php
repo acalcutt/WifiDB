@@ -22,77 +22,68 @@ if not, write to the
 class dbcore
 {
 	public $cli;
-	public function __construct($config = NULL, &$SQL = NULL)
+	public function __construct($config = NULL)
 	{
-        if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
-        if($SQL === NULL)
-        {
-            $this->sql					= "NONSQLMODE";
-        }else
-        {
-            /** @var SQL */
-            $this->sql					= $SQL;
-        }
+		if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
+		$this->sql					  = new SQL($config);
 		$this->verbose					= 0;
-		$this->mesg					    = "";
-		$this->switches				    = array(SWITCH_SCREEN, SWITCH_EXTRAS);
-		$this->reserved_users		    = $config['reserved_users'];
-		$this->supported_extentions	    = array('csv','db3','vsz','vs1','gpx','ns1');
-		$this->login_check			    = 0;
-		$this->alerts_message_flag	    = 0;
-		$this->bypass_check			    = 0;
+		$this->mesg					 = "";
+		$this->switches				 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
+		$this->reserved_users		   = $config['reserved_users'];
+		$this->supported_extentions	 = array('csv','db3','vsz','vs1','gpx','ns1');
+		$this->login_check			  = 0;
+		$this->alerts_message_flag	  = 0;
+		$this->bypass_check			 = 0;
 		$this->debug					= 1;
-		$this->rebuild				    = $config['rebuild'];
+		$this->rebuild				  = $config['rebuild'];
 		$this->log_level				= $config['log_level'];
-		$this->log_interval			    = $config['log_interval'];
-        $this->LiveTimeOut              = $config['LiveTimeOut'];
-		$this->default_refresh		    = $config['default_refresh'];
-		$this->default_timezone		    = $config['default_timezone'];
-		$this->default_dst			    = $config['default_dst'];
-		$this->date_format			    = "Y-m-d";
-		$this->time_format			    = "H:i:s";
-		$this->datetime_format		    = $this->date_format." ".$this->time_format;
-		$this->timeout				    = $config['timeout'];
+		$this->log_interval			 = $config['log_interval'];
 
-		$this->TOOLS_PATH			    = $config['wifidb_tools'];
-        $this->pid_file_loc			    = $config['pid_file_loc'];
-		$this->apache_user			    = $config['apache_user'];
-		$this->apache_group			    = $config['apache_group'];
+		$this->default_refresh		  = $config['default_refresh'];
+		$this->default_timezone		 = $config['default_timezone'];
+		$this->default_dst			  = $config['default_dst'];
+		$this->date_format			  = "Y-m-d";
+		$this->time_format			  = "H:i:s";
+		$this->datetime_format		  = $this->date_format." ".$this->time_format;
+		$this->timeout				  = $config['timeout'];
 
-		$this->dim					    = DIRECTORY_SEPARATOR;
-        $this->WebSocketPort            = $config['WebSocketPort'];
-        $this->hostname				    = $config['hostname'];
-        $this->HOSTURL				    = $config['hosturl'];
-		$this->root					    = $config['root'];
-		$this->URL_PATH				    = $this->HOSTURL.$this->root.'/';
-		$this->PATH					    = $config['wifidb_install'];
-		$this->gpx_out				    = $this->PATH.$config['gpx_out'];
-		$this->gpx_htmlpath			    = $this->URL_PATH.$config['gpx_out'];
-		$this->daemon_out			    = $this->PATH.$config['daemon_out'];
-		$this->daemon_htmlpath		    = $this->URL_PATH.$config['daemon_out'];
-		$this->region_out			    = $this->PATH.$config['region_out'];
+		$this->TOOLS_PATH			   = $config['wifidb_tools'];
+		$this->pid_file_loc			 = $config['pid_file_loc'];
+		$this->apache_user			  = $config['apache_user'];
+		$this->apache_group			 = $config['apache_group'];
+
+		$this->dim					  = DIRECTORY_SEPARATOR;
+		$this->HOSTURL				  = $config['hosturl'];
+		$this->root					 = $config['root'];
+		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';
+		$this->PATH					 = $config['wifidb_install'];
+		$this->gpx_out				  = $this->PATH.$config['gpx_out'];
+		$this->gpx_htmlpath			 = $this->URL_PATH.$config['gpx_out'];
+		$this->daemon_out			   = $this->PATH.$config['daemon_out'];
+		$this->daemon_htmlpath		  = $this->URL_PATH.$config['daemon_out'];
+		$this->region_out			   = $this->PATH.$config['region_out'];
 		$this->region_htmlpath			= $this->URL_PATH.$config['region_out'];
-		$this->vs1_out				    = $this->PATH.$config['vs1_out'];
-		$this->vs1_htmlpath			    = $this->URL_PATH.$config['vs1_out'];
-		$this->kml_out				    = $this->PATH.$config['kml_out'];
-		$this->kml_htmlpath			    = $this->URL_PATH.$config['kml_out'];
-		$this->csv_out				    = $this->PATH.$config['csv_out'];
-		$this->csv_htmlpath			    = $this->URL_PATH.$config['csv_out'];
+		$this->vs1_out				  = $this->PATH.$config['vs1_out'];
+		$this->vs1_htmlpath			 = $this->URL_PATH.$config['vs1_out'];
+		$this->kml_out				  = $this->PATH.$config['kml_out'];
+		$this->kml_htmlpath			 = $this->URL_PATH.$config['kml_out'];
+		$this->csv_out				  = $this->PATH.$config['csv_out'];
+		$this->csv_htmlpath			 = $this->URL_PATH.$config['csv_out'];
 
 		$this->theme					= (@$_REQUEST['wifidb_theme']!='' ? @$_REQUEST['wifidb_theme'] : $config['default_theme']);
-		$this->PATH_THEMES			    = $this->PATH.'themes/'.$this->theme;
+		$this->PATH_THEMES			  = $this->PATH.'themes/'.$this->theme;
 
-		$this->open_loc				    = $config['open_loc'];
-		$this->WEP_loc				    = $config['WEP_loc'];
-		$this->WPA_loc				    = $config['WPA_loc'];
-		$this->KML_SOURCE_URL		    = $config['KML_SOURCE_URL'];
+		$this->open_loc				 = $config['open_loc'];
+		$this->WEP_loc				  = $config['WEP_loc'];
+		$this->WPA_loc				  = $config['WPA_loc'];
+		$this->KML_SOURCE_URL		   = $config['KML_SOURCE_URL'];
 
-		$this->smarty_path			    = $config['smarty_path'];
+		$this->smarty_path			  = $config['smarty_path'];
 
-		$this->wifidb_email_updates	    = 0;
-		$this->email_validation		    = 1;
-		$this->WDBadmin				    = $config['admin_email'];
-		$this->smtp					    = $config['wifidb_smtp'];
+		$this->wifidb_email_updates	 = 0;
+		$this->email_validation		 = 1;
+		$this->WDBadmin				 = $config['admin_email'];
+		$this->smtp					 = $config['wifidb_smtp'];
 		if(empty($config['colors_setting']) or PHP_OS != "Linux")
 		{
 			$this->colors = array(
@@ -118,13 +109,14 @@ class dbcore
 			"codename"				  =>  "Phoenix",
 			"Last_Core_Edit"			=>  "09-04-2018"
 			);
-		$this->ver_str				    = $this->ver_array['wifidb'];
-		$this->This_is_me			    = getmypid();
-		$this->sec					    = new security($this, $config);
-		$this->xml					    = new xml();
-		$this->languages                = new languages($config['wifidb_install']);
-		$this->dBmMaxSignal             = $config['dBmMaxSignal'];
-		$this->dBmDissociationSignal    = $config['dBmDissociationSignal'];
+		$this->ver_str				  = $this->ver_array['wifidb'];
+		$this->This_is_me			   = getmypid();
+		$this->sec					  = new security($this, $config);
+		$this->lang					 = new languages($config['wifidb_install']);
+		$this->xml					  = new xml();
+		$this->languages = $this->lang;
+		$this->dBmMaxSignal = $config['dBmMaxSignal'];
+		$this->dBmDissociationSignal = $config['dBmDissociationSignal'];
 	}
 
 	##############################
@@ -148,40 +140,10 @@ class dbcore
 	{
 		$sql = "SELECT `ap_hash` FROM `wifi_pointers` WHERE `id` = '$id'";
 		$result = $this->sql->conn->query($sql);
-        $this->sql->checkError( $result, __LINE__, __FILE__);
 		$ret = $result->fetch(2);
 		$hash = $ret['ap_hash'];
 		return $hash;
 	}
-
-	public function GetLatestAnnouncement()
-	{
-        $fetched = $this->GetAllActiveAnnouncments();
-        $i = count($fetched)-1;
-        if($i === -1)
-        {
-            $ret = array('body' => '');
-        }else {
-            $ret = $fetched[$i];
-        }
-        return $ret;
-	}
-
-    public function GetAllAnnouncments()
-    {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `annunc` ORDER BY `id` ASC");
-        $this->sql->checkError($result, __LINE__,__FILE__);
-        $fetched = $result->fetchAll(2);
-        return $fetched;
-    }
-
-    public function GetAllActiveAnnouncments()
-    {
-        $result = $this->sql->conn->query("SELECT `id`, `auth`, `title`, `body`, `date` FROM `annunc` WHERE `set` = '1' ORDER BY `id` ASC");
-        $this->sql->checkError( $result, __LINE__, __FILE__);
-        $fetched = $result->fetchAll(2);
-        return $fetched;
-    }
 
 	###################################
 	/**
@@ -216,7 +178,7 @@ class dbcore
 			foreach($props as $key=>$val)
 			{
 				echo "\n".str_repeat("\t",$level+1).$key.' => ';
-				dbcore::dump($value->$key,$level+1);
+				dump($value->$key,$level+1);
 			}
 			$value= '';
 		}
@@ -247,8 +209,7 @@ class dbcore
 			return $ret;
 		}
 		$WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
-		#var_dump($WFDBD_PID);
-        $os = PHP_OS; #find out what OS we are running under.
+		$os = PHP_OS; #find out what OS we are running under.
 		if ( $os[0] == 'L') #Linux :)
 		{
 			$output = array();
@@ -257,23 +218,27 @@ class dbcore
 				$pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
 		#	echo $pid_open[0]."<br>";
 				exec('ps vp '.$pid_open[0] , $output, $sta); #execute PS for the PID given.
-                if(isset($output[1])) #if there was data returned from PS lets parse it.
+				if(isset($output[1])) #if there was data returned from PS lets parse it.
 				{
 					$start = trim($output[1], " ");
+					preg_match_all("/(\d+?)(\.)(\d+?)/", $start, $mat); #we try and parse for the memory useage.
+					$mem = $mat[0][0];
 
-                    preg_match_all("/(php.*)/", $start, $mat); #parse for the CMD path of the daemon
-                    if(isset($mat[0][0])) {
-                        $CMD = $mat[0][0];
-                    }else
-                    {
-                        $CMD = "No process found.";
-                    }
+					preg_match_all("/(php.*)/", $start, $mat); #parse for the CMD path of the daemon
+					$CMD = $mat[0][0];
 
-					preg_match_all("/(\d+?)(\.)(\d+?)/", $start, $MemMat); #we try and parse for the memory useage.
-					$mem = $MemMat[0][0];
+					preg_match_all("/(\d+)(\:)(\d+)/", $start, $mat); # get the uptime of the daemon.
+					$time = $mat[0][0];
 
-					preg_match_all("/(\d+)(\:)(\d+)/", $start, $TimeMat); # get the up-time of the daemon.
-					$time = $TimeMat[0][0];
+					//$patterns[1] = '/  /';
+					//$patterns[2] = '/ /';
+					//$ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
+					//$ps_Sta_exp = explode("|", $ps_stats);
+
+					//$returns = array(  # lets now throw all this
+					//	$mem,$CMD,$time,$ps_Sta_exp # into one array
+					//);
+					//var_dump($returns);
 
 					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
 					return $ret; # and return it
@@ -287,7 +252,7 @@ class dbcore
 				$ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
 				return $ret; # PID File could not be found.
 			}
-		}elseif( $os[0] == 'W') // Windows code has not been tested in a very very very very long time. Not recommended.
+		}elseif( $os[0] == 'W')
 		{
 			$output = array();
 			if(file_exists($WFDBD_PID)) #Check to see if the file exists.
@@ -493,8 +458,16 @@ class dbcore
 		$prep->bindParam(2, $type, PDO::PARAM_STR);
 		$prep->bindParam(3, $datetime, PDO::PARAM_STR);
 		$prep->bindParam(4, $prefix, PDO::PARAM_INT);
-        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-        return 1;
+		$prep->execute();
+		if($this->sql->checkError())
+		{
+			$this->verbosed("Error writing to the Log table 0_o", -1);
+			throw new ErrorException("Error writing to the Log table. ".var_export($this->sql->conn->errorInfo() ,1));
+			return 0;
+		}else
+		{
+			return 1;
+		}
 	}
 
 	private function log_file($message = "", $type = "", $prefix = 0, $datetime = "")
@@ -545,6 +518,15 @@ class dbcore
 		return trim($string, ' -');
 	}
 
+	public function FindHighSig($sig)
+	{
+		foreach($sig as $point)
+		{
+			var_dump($point);
+		}
+		die();
+	}
+
 	/**
 	 * @param string $mac
 	 * @return string
@@ -572,27 +554,6 @@ class dbcore
 		}
 		return $manuf;
 	}
-
-    public static function GetFileHash($file = "", $hashType = "md5")
-    {
-        switch($hashType)
-        {
-            case "md5":
-                return hash_file("md5", $file);
-                break;
-            case "sha2":
-                return hash_file("sha256", $file);
-                break;
-            case "sha512":
-                return hash_file("sha512", $file);
-                break;
-            case "crc32":
-                $hash = hash_file('crc32b', $file);
-                $array = unpack('N', pack('H*', $hash));
-                return $array[1];
-        }
-
-    }
 
 	/**
 	 * @param $lat1

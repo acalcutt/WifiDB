@@ -1,7 +1,6 @@
 <?php
 class SQL
 {
-    public $conn;
 	function __construct($config)
 	{
 		$this->host			  = $config['host'];
@@ -26,19 +25,16 @@ class SQL
 		$this->conn->query("SET NAMES 'utf8'");
 	}
 
-	function checkError($ExecuteResults, $line, $file)
+	function checkError($line=0, $file="")
 	{
-        if($ExecuteResults === NULL)
-        {
-            throw new ErrorException("checkError called without setting ExecuteResults variable.");
-        }
-		if($ExecuteResults === FALSE)
+		$err = $this->conn->errorCode();
+		if($err === "00000")
 		{
-            throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1)."\r\nLine: $line\r\nFile: $file");
-            return 1;
+			return 0;
 		}else
 		{
-            return 0;
+			throw new ErrorException("There was an error running the SQL statement: ".var_export($this->conn->errorInfo() ,1)."\r\nLine: $line\r\nFile: $file");
+			return 1;
 		}
 	}
 }

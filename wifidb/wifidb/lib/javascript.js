@@ -27,6 +27,7 @@ var authField;
 var encryField;
 var radioField;
 var chanField;
+var completeField;
 var completeTable;
 var autoRow;
 
@@ -59,7 +60,6 @@ function doCompletion() {
         req.onreadystatechange = callback;
         req.send(null);
 }
-
 
 function initRequest() {
     if (window.XMLHttpRequest) {

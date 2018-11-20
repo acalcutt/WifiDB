@@ -1,6 +1,6 @@
 <?php
-#error_reporting(1);
-#@ini_set('display_errors', 1);
+error_reporting(1);
+@ini_set('display_errors', 1);
 /*
 Copyright (C) 2015 Andrew Calcutt
 
@@ -160,7 +160,7 @@ switch($func)
 		$file_name = "Daily_Exports.geojson";
 		break;
 		
-	case "exp_daily":
+	case "exp_daily_old":
 		#Get lists from the last day and a half
 		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) AND `points` != ''";
 		$prep = $dbcore->sql->conn->prepare($sql);
@@ -175,6 +175,53 @@ switch($func)
 		}
 		
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
+		$file_name = "Daily_Exports.geojson";
+		break;
+
+	case "exp_daily":
+		#Get lists from the last day and a half
+		$row_count = 1000;	
+		$sql = "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND ModDate >= DATE_SUB(NOW(),INTERVAL 1 DAY) ORDER BY id LIMIT ?,?";
+		$Import_Map_Data = "";
+		for ($i = 0; TRUE; $i++) {
+			$offset = $i*$row_count ;
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $offset, PDO::PARAM_INT);
+			$prep->bindParam(2, $row_count, PDO::PARAM_INT);
+			$prep->execute();
+			$appointer = $prep->fetchAll();
+			foreach($appointer as $ap)
+			{
+				#Get AP KML
+				$ap_info = array(
+				"id" => $ap['id'],
+				"new_ap" => 1,
+				"named" => 0,
+				"mac" => $ap['mac'],
+				"ssid" => $ap['ssid'],
+				"chan" => $ap['chan'],
+				"radio" => $ap['radio'],
+				"NT" => $ap['NT'],
+				"sectype" => $ap['sectype'],
+				"auth" => $ap['auth'],
+				"encry" => $ap['encry'],
+				"BTx" => $ap['BTx'],
+				"OTx" => $ap['OTx'],
+				"FA" => $ap['FA'],
+				"LA" => $ap['LA'],
+				"lat" => $dbcore->convert->dm2dd($ap['lat']),
+				"long" => $dbcore->convert->dm2dd($ap['long']),
+				"alt" => $ap['alt'],
+				"manuf"=>$dbcore->findManuf($ap['mac']),
+				"username" => $ap['username']
+				);
+				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+			}
+			$number_of_rows = $prep->rowCount();
+			if ($number_of_rows !== $row_count) {break;}
+		}	
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 		$file_name = "Daily_Exports.geojson";
 		break;
 }	

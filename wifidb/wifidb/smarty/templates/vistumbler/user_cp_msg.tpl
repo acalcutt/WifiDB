@@ -22,7 +22,7 @@ if not, write to the
 <table  BORDER=0 CELLPADDING=0 CELLSPACING=0 style="width: 100%">
 	<tr>
 		<td colspan="6" class="light">
-			{$user_cp_profile.message|default:''}
+			{$user_cp_profile.message}
 		</td>
 	</tr>
 </table>

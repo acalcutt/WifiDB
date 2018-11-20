@@ -20,9 +20,9 @@ if not, write to the
 */
 class convert extends dbcore
 {
-	public function __construct($config, $SQL)
+	public function __construct($config)
 	{
-		parent::__construct($config, $SQL);
+		parent::__construct($config);
 	}
 
 	/**

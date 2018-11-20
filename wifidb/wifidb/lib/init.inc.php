@@ -42,48 +42,18 @@ if(!function_exists('WiFiDBexception_handler')) {
 				$smarty->display("error.tpl");
 				break;
 
-/*
- * Class autoloader
- *
-*/
-if(!function_exists('__autoload'))
-{
-	function __autoload($class)
-	{
-		if($class === "mysqli")
-		{
-			return -1;
-		}
-		if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'] . 'smarty/sysplugins/' . strtolower($class) . '.php';
-			return 1;
-		}else
-		{
-			require_once $class . '.php';
-			#throw new errorexception("Could not load class `{$class}`");
+			case "cli":
+				var_dump($err);
+				break;
+
+			default:
+				echo "Unknown screen switch, here is a raw dump of the error...\r\n" . var_export($trace, 1);
+				break;
 		}
 	}
 }
+set_exception_handler('WiFiDBexception_handler');
 
-date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
-#set_exception_handler('WiFiDBexception_handler');
 
 if(strtolower(SWITCH_SCREEN) == "cli")
 {
@@ -122,13 +92,17 @@ if($fetch['version'] != '0.40')
 				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
 	}
 }
+unset($fetch);
+unset($gen_cwd);
+unset($cwd);
+unset($sql);
 
 if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
-	if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
-		create_base_cookies($config['hosturl'] . $config['root']);
-		exit();
-	}
+    if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
+        create_base_cookies($config['hosturl'] . $config['root']);
+        exit();
+    }
 }
 
 /*
@@ -170,14 +144,13 @@ try
 {
 	switch(strtolower(SWITCH_SCREEN))
 	{
-		################
 		case "cli":
 			switch(strtolower(SWITCH_EXTRAS))
 			{
 				####
 				case "export":
-					$dbcore = new daemon($config, $daemon_config, $SQL);
-					$dbcore->convert = new convert($config, $SQL);
+					$dbcore = new daemon($config, $daemon_config);
+					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
@@ -185,13 +158,13 @@ try
 				break;
 				####
 				case "import":
-					$dbcore = new daemon($config, $daemon_config, $SQL);
-					$dbcore->convert = new convert($config, $SQL);
-					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose, $SQL);
+					$dbcore = new daemon($config, $daemon_config);
+					$dbcore->convert = new convert($config);
+					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
 				####
 				case "daemon":
-					$dbcore = new daemon($config, $daemon_config, $SQL);
-					$dbcore->convert = new convert($config, $SQL);
+					$dbcore = new daemon($config, $daemon_config);
+					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
@@ -200,19 +173,15 @@ try
 				break;
 				####
 				case "cli":
-					$dbcore = new wdbcli($config, $daemon_config, $SQL);
+					$dbcore = new wdbcli($config, $daemon_config);
 				break;
 				####
 				case "api":
-					$dbcore = new api($config, $SQL);
-					break;
-				####
-				case "apiv2":
-					$dbcore = new apiv2($config, $SQL);
+					$dbcore = new api($config);
 					break;
 				####
 				case "frontend_prep":
-					$dbcore = new frontend($config, $SQL);
+					$dbcore = new frontend($config);
 					break;
 				####
 				default:
@@ -234,8 +203,8 @@ try
 					__autoload("api");
 					__autoload("Zip");
 
-					$dbcore = new api($config, $SQL);
-					$dbcore->convert = new convert($config, $SQL);
+					$dbcore = new api($config);
+					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
@@ -263,9 +232,8 @@ try
 					__autoload("convert");
 					__autoload("export");
 					__autoload("Zip");
-					$dbcore = new frontend($config, $SQL);
-
-					$dbcore->convert = new convert($config, $SQL);
+					$dbcore = new frontend($config);
+					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
@@ -273,132 +241,30 @@ try
 				break;
 
 				case "graph":
-					$dbcore = new frontend($config, $SQL);
 					__autoload("graphs");
+					$dbcore = new frontend($config);
 					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
-					break;
-				case "fed":
-					$dbcore = new frontend($config, $SQL);
-					__autoload("federation");
-					$dbcore->federation = new federation($dbcore);
-					break;
+				break;
+
 				case "cp":
-					break;
+					$dbcore = new frontend($config);
+				break;
+
 				default:
-					$dbcore = new frontend($config, $SQL);
-					break;
+					$dbcore = new frontend($config);
+				break;
 			}
 			$dbcore->cli = 0;
-			if($dbcore->sec->privs > 1000)
-			{
-				$dbcore->smarty->assign('admin_login_link', ' <-> <a href="/wifidb/cp/admin/">Admin Control Panel</a>');
-			}
 			break;
-
-		################
-		case "api":
-			$dbcore = new api($config, $SQL);
-			switch(SWITCH_EXTRAS)
-			{
-				case "announce":
-					break;
-				case "atomrss":
-					break;
-				case "export";
-					__autoload("createKML");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("api");
-					__autoload("Zip");
-					$dbcore = new api($config, $SQL);
-					$dbcore->convert = new convert($config, $SQL);
-					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
-					break;
-				case "geonames":
-					break;
-				case "import":
-					break;
-				case "latest":
-					__autoload("createKML");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("api");
-					__autoload("Zip");
-					$dbcore->convert = new convert($config, $SQL);
-					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
-					break;
-				case "live":
-					break;
-				case "locate":
-					break;
-				case "search":
-					break;
-				default:
-					throw new ErrorException("SWITCH_EXTRAS does not have an additive. eg api:export");
-					break;
-			}
-			break;
-
-		################
-		case "apiv2":
-			$dbcore = new apiv2($config, $SQL);
-			switch(SWITCH_EXTRAS)
-			{
-				case "announce":
-					break;
-				case "atomrss":
-					break;
-				case "export";
-					__autoload("createKML");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("api");
-					__autoload("Zip");
-					$dbcore->convert = new convert($config, $SQL);
-					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
-					break;
-				case "geonames":
-					break;
-				case "import":
-					break;
-				case "latest":
-					__autoload("createKML");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("api");
-					__autoload("Zip");
-					$dbcore->convert = new convert($config, $SQL);
-					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 2, $dbcore->convert);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
-					break;
-				case "live":
-					break;
-				case "locate":
-					break;
-				case "search":
-					break;
-				default:
-					throw new ErrorException("SWITCH_EXTRAS does not have an additive. eg api:export");
-					break;
-			}
-			break;
-
 		################
 		Default:
-			throw new ErrorException("Unknown SWITCH_SCREEN Set. gurgle...cough...dead... *checks pulse*");
+			die("Unknown Switch Set. gurgle...cough...dead...");
 			break;
 	}
 	#done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
 }
 catch (Exception $e) {
-	#var_dump($e);
+	throw new ErrorException($e);
 }
 
 
@@ -427,7 +293,7 @@ function create_base_cookies($URL_PATH)
 	{
 		$ssl = "";
 	}
-	$domain = ";domain=".parse_url($URL_PATH, PHP_URL_HOST);
+	$domain = ";domain=".$_SERVER['HTTP_HOST'];
 	$folder = parse_url($URL_PATH, PHP_URL_PATH);
 	$c = strlen($folder);
 	if($folder[$c-1] == "/" && $c > 1)
@@ -445,7 +311,7 @@ function create_base_cookies($URL_PATH)
 	{
 		var expiredays = 86400;
 		var rightNow = new Date();
-		var exdate=new Date();
+        var exdate=new Date();
 		var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
 		var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
 		var temp = date1.toGMTString();
@@ -482,36 +348,4 @@ function create_base_cookies($URL_PATH)
 	<body onload = "checkTimeZone();"> </body>
 	<?php
 	exit();
-}
-
-
-
-
-
-if(!function_exists('WiFiDBexception_handler')) {
-	function WiFiDBexception_handler($err)
-	{
-		$trace = array('Error' => strval($err->getCode()), 'Message' => str_replace("\n", "</br>\r\n", $err->getMessage()), 'Code' => strval($err->getCode()), 'File' => $err->getFile(), 'Line' => strval($err->getLine()));
-		switch (strtolower(SWITCH_SCREEN)) {
-			case "html":
-				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/");
-				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/smarty/");
-				$smarty = new Smarty();
-				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/wifidb/');
-				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/');
-				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/');
-				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/');
-				$smarty->smarty->assign('wifidb_error_mesg', $trace);
-				$smarty->display("error.tpl");
-				break;
-
-			case "cli":
-				var_dump($err);
-				break;
-
-			default:
-				echo "Unknown screen switch, here is a raw dump of the error...\r\n" . var_export($trace, 1);
-				break;
-		}
-	}
 }

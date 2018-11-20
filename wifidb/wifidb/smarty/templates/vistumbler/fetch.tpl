@@ -113,7 +113,7 @@ if not, write to the
 														<tr>
 															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>		
 															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.title_id}">{$wifidb_assoc.title}</a></td>
-															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.username}">{$wifidb_assoc.username}</a></td>
+															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
 															<td class="light" align="center">{$wifidb_assoc.aps}</td>
 															<td class="light">{$wifidb_assoc.date}</td>
 															<td class="light">{$wifidb_assoc.nu}</td>
@@ -130,19 +130,17 @@ if not, write to the
 															<th>Alt</th>
 															<th>Sats</th>
 															<th>Date</th>
-															<th>Time</th>
 												
 														</tr>
 														{foreach item=wifidb_ap_gps from=$wifidb_assoc.signals}
 														<tr class="{$wifidb_ap_gps.class}">
-															<td class="light" align="center">{$wifidb_ap_gps.signal}</td>
-															<td class="light">{$wifidb_ap_gps.rssi}</td>
-															<td class="light">{$wifidb_ap_gps.lat}</td>
-															<td class="light">{$wifidb_ap_gps.long}</td>
-															<td class="light">{$wifidb_ap_gps.alt}</td>
-															<td class="light">{$wifidb_ap_gps.sats}</td>
-															<td class="light">{$wifidb_ap_gps.date}</td>
-															<td class="light">{$wifidb_ap_gps.time}</td>
+															<td class="light" align="center">{$wifidb_ap_gps.Sig}</td>
+															<td class="light">{$wifidb_ap_gps.RSSI}</td>
+															<td class="light">{$wifidb_ap_gps.Lat}</td>
+															<td class="light">{$wifidb_ap_gps.Lon}</td>
+															<td class="light">{$wifidb_ap_gps.Alt}</td>
+															<td class="light">{$wifidb_ap_gps.NumOfSats}</td>
+															<td class="light">{$wifidb_ap_gps.GPS_Date}</td>
 												
 														</tr>
 														{/foreach}

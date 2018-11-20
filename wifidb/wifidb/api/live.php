@@ -18,23 +18,10 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-define("SWITCH_SCREEN", "API");
-define("SWITCH_EXTRAS", "live");
-define("WDB_DEBUG", 1);
+define("SWITCH_SCREEN", "HTML");
+define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
-if(isset($_REQUEST['LiveVersion']))
-{
-    $dbcore->mesg['version'] = "2.0";
-    $dbcore->output();
-}
-
-$session_id   =   (isset($_REQUEST['SessionID']) ? $_REQUEST['SessionID'] : "" );
-if($session_id === "")
-{
-    $dbcore->ManageLiveSession();
-    $dbcore->output();
-}
 
 // AP Detail Variables
 $ssid   =   (@$_REQUEST['SSID'] ? html_entity_decode($_REQUEST['SSID'], ENT_QUOTES) : "");
@@ -73,10 +60,10 @@ if($session_id === "")
 echo $session_id;
 if($ssid == "" && $mac == "000000000000" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "" && $OTX == "" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
+	echo "no data";
     $dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
     $dbcore->Output();
 }
-
 $data = array(
     #ap data
     'ssid'=>$ssid,
@@ -111,6 +98,6 @@ $data = array(
 	'username'=>$username,
     'session_id'=>$session_id
 );
-
 $dbcore->InsertLiveAP($data);
 $dbcore->Output();
+?>

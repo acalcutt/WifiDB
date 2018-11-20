@@ -21,7 +21,7 @@ if not, write to the
 
 class misc
 {
-    function __construct()
+    function __construct($dbcore)
     {
         $this->ver_array['Misc'] = array(
                                     "getTZ"                 =>	"1.0",

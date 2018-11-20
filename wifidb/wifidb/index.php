@@ -24,27 +24,27 @@ define("SWITCH_EXTRAS", "");
 include('lib/init.inc.php');
 
 $usersa =  array();
-$sql = "SELECT count(`id`) FROM `wifi_pointers`";
+$sql = "SELECT count(`AP_ID`) FROM `wifi_ap`";
 #echo $sql;
 $result = $dbcore->sql->conn->query($sql);
 $rows = $result->fetch(2);
 
 
-$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `sectype`='1'";
+$sql = "SELECT count(`AP_ID`) FROM `wifi_ap` WHERE `sectype`='1'";
 $result = $dbcore->sql->conn->query($sql);
 $open = $result->fetch(2);
 
 
-$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `sectype`='2'";
+$sql = "SELECT count(`AP_ID`) FROM `wifi_ap` WHERE `sectype`='2'";
 $result = $dbcore->sql->conn->query($sql);
 $wep = $result->fetch(2);
 
 
-$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `sectype`='3'";
+$sql = "SELECT count(`AP_ID`) FROM `wifi_ap` WHERE `sectype`='3'";
 $result = $dbcore->sql->conn->query($sql);
 $sec = $result->fetch(2);
 
-$sql = "SELECT * FROM `wifi_pointers` ORDER BY ID DESC LIMIT 1";
+$sql = "SELECT * FROM `wifi_ap` ORDER BY `AP_ID` DESC LIMIT 1";
 $result = $dbcore->sql->conn->query($sql);
 $last = $result->fetch(2);
 
@@ -57,11 +57,11 @@ while($user_array = $result->fetch(2))
 $usersa = array_unique($usersa);
 $usercount = count($usersa);
 
-$sql = "SELECT `id`,`ap_hash`,`ssid`,`lat` FROM `wifi_pointers` order by `id` desc limit 1";
+$sql = "SELECT `AP_ID`,`ap_hash`,`ssid`,`HighGps_ID` FROM `wifi_ap` order by `AP_ID` desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
-$lastap_id = $lastap_array['id'];
+$lastap_id = $lastap_array['AP_ID'];
 if($lastap_array['ssid'] == '')
 {
     $lastap_ssid = '[Blank SSID]';
@@ -77,7 +77,7 @@ else
 
 $ap_hash = $lastap_array['ap_hash'];
 
-if($lastap_array['lat'] == "0.0000")
+if($lastap_array['HighGps_ID'] == "")
 {
     $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
 }else
@@ -105,10 +105,10 @@ if ($usercount == NULL)
 }
 
 $dbcore->smarty->assign('wifidb_page_label', 'Index Page');
-$dbcore->smarty->assign('total_aps', $rows['count(`id`)']);
-$dbcore->smarty->assign('open_aps', $open['count(`id`)']);
-$dbcore->smarty->assign('wep_aps', $wep['count(`id`)']);
-$dbcore->smarty->assign('sec_aps', $sec['count(`id`)']);
+$dbcore->smarty->assign('total_aps', $rows['count(`AP_ID`)']);
+$dbcore->smarty->assign('open_aps', $open['count(`AP_ID`)']);
+$dbcore->smarty->assign('wep_aps', $wep['count(`AP_ID`)']);
+$dbcore->smarty->assign('sec_aps', $sec['count(`AP_ID`)']);
 $dbcore->smarty->assign('total_users', $usercount);
 $dbcore->smarty->assign('new_ap_id', $lastap_id);
 $dbcore->smarty->assign('globe_html', $globe_html);

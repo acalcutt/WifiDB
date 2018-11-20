@@ -38,12 +38,35 @@ $dbcore->smarty->assign('inc', $inputs['to']);
 $dbcore->smarty->assign('ord', $inputs['ord']);
 $dbcore->smarty->assign('sort', $inputs['sort']);
 
-$sql = "SELECT COUNT(*) FROM `wifi_pointers`";
+$sql = "SELECT COUNT(*) FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL";
 $sqlprep = $dbcore->sql->conn->prepare($sql);       
 $sqlprep->execute();
 $total_rows = $sqlprep->fetchColumn();
 
-$sql = "SELECT * FROM `wifi_pointers` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+#$sql = "SELECT * FROM `wifi_ap` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+#$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX,\n"
+#    . "(SELECT Hist_Date FROM wifi_hist WHERE Hist_ID = WAP.FirstHist_ID) As FA,\n"
+#    . "(SELECT Hist_Date FROM wifi_hist WHERE Hist_ID = WAP.LastHist_ID) As LA,\n"
+#    . "(SELECT (SELECT Lat FROM wifi_gps WHERE GPS_ID = WGPS.GPS_ID) As Lon FROM `wifi_hist` AS WGPS WHERE Hist_ID = WAP.HighGpsHist_ID) As Lat,\n"
+#    . "(SELECT (SELECT Lon FROM wifi_gps WHERE GPS_ID = WGPS.GPS_ID) As Lon FROM `wifi_hist` AS WGPS WHERE Hist_ID = WAP.HighGpsHist_ID) As Lon\n"
+#    . "FROM `wifi_ap` AS WAP  \n"
+#    . "ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+
+
+$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+    . "whFA.Hist_Date As FA,\n"
+    . "whLA.Hist_Date As LA,\n"
+    . "wGPS.Lat As Lat,\n"
+    . "wGPS.Lon As Lon\n"
+    . "FROM `wifi_ap` AS wap\n"
+    . "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+    . "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+    . "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+    . "WHERE wap.FirstHist_ID IS NOT NULL\n"	
+    . "ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+
+
+
 $pre_page_list = $dbcore->sql->conn->query($sql);
 
 
@@ -57,48 +80,48 @@ while ( $array = $pre_page_list->fetch(2) )
     else{$row_color = 1; $color = "dark";}
     $wifidb_aps_all[$n]['class'] = $color;
 
-    $wifidb_aps_all[$n]['id'] = $array['id'];
+    $wifidb_aps_all[$n]['id'] = $array['AP_ID'];
     
     $wifidb_aps_all[$n]['fa'] = $array['FA'];
     $wifidb_aps_all[$n]['la'] = $array['LA'];
     
-    if($array['lat'] == "0.0000")
+    if($array['Lat'] == "")
     {
         $wifidb_aps_all[$n]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
     }else
     {
-        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
     }
     
    // $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
-    if($array['ssid'] == '')
+    if($array['SSID'] == '')
     {
         $wifidb_aps_all[$n]['ssid'] = '[Blank SSID]';
     }
-    elseif(!ctype_print($array['ssid']))
+    elseif(!ctype_print($array['SSID']))
     {
-        $wifidb_aps_all[$n]['ssid'] = '['.$array['ssid'].']';
+        $wifidb_aps_all[$n]['ssid'] = '['.$array['SSID'].']';
     }
     else
     {
-        $wifidb_aps_all[$n]['ssid'] = $array['ssid'];
+        $wifidb_aps_all[$n]['ssid'] = $array['SSID'];
     }
     
-    if(@$array['mac'][2] != ":")
+    if(@$array['BSSID'][2] != ":")
     {
-        $mac_exp = str_split($array['mac'], 2);
+        $mac_exp = str_split($array['BSSID'], 2);
         $implode_mac = implode(":",$mac_exp);
         $wifidb_aps_all[$n]['mac'] = ($implode_mac == '' ? '< 00:00:00:00:00:00 >' : $implode_mac );
     }else
     {
-        $wifidb_aps_all[$n]['mac'] = $array['mac'];
+        $wifidb_aps_all[$n]['mac'] = $array['BSSID'];
     }
-    $wifidb_aps_all[$n]['chan'] = ($array['chan'] == '' ? '< ? >' : $array['chan']);
+    $wifidb_aps_all[$n]['chan'] = ($array['CHAN'] == '' ? '< ? >' : $array['CHAN']);
 
-    $wifidb_aps_all[$n]['auth'] = ($array['auth'] == '' ? 'Unknown :(' : $array['auth']);
-    $wifidb_aps_all[$n]['encry'] = ($array['encry'] == '' ? 'Unknown :(' : $array['encry']);
+    $wifidb_aps_all[$n]['auth'] = ($array['AUTH'] == '' ? 'Unknown :(' : $array['AUTH']);
+    $wifidb_aps_all[$n]['encry'] = ($array['ENCR'] == '' ? 'Unknown :(' : $array['ENCR']);
 
-    $wifidb_aps_all[$n]['radio'] = $array['radio'];
+    $wifidb_aps_all[$n]['radio'] = $array['RADTYPE'];
     $n++;
 }
 

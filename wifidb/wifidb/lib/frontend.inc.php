@@ -82,23 +82,37 @@ class frontend extends dbcore
 
 	function APFetch($id = "")
 	{
-		$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
+		#$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
+		
+		
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM `wifi_ap` AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "WHERE wap.AP_ID = ?";
+		
+		
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$newArray = $prep->fetch(2);
 
-		if($newArray['ssid'] == '')
+		if($newArray['SSID'] == '')
 		{
 			$new_ssid = '[Blank SSID]';
 		}
-		elseif(!ctype_print($newArray['ssid']))
+		elseif(!ctype_print($newArray['SSID']))
 		{
-			$new_ssid = '['.$newArray['ssid'].']';
+			$new_ssid = '['.$newArray['SSID'].']';
 		}
 		else
 		{
-			$new_ssid = $newArray['ssid'];
+			$new_ssid = $newArray['SSID'];
 		}
 
 		if($newArray['geonames_id'] !== 0)
@@ -131,19 +145,19 @@ class frontend extends dbcore
 
 		
 		$ap_data = array(
-			'id'=>$newArray['id'],
-			'radio'=>$newArray['radio'],
-			'manuf'=>$this->findManuf($newArray['mac']),
-			'mac'=>$newArray['mac'],
+			'id'=>$newArray['AP_ID'],
+			'radio'=>$newArray['RADTYPE'],
+			'manuf'=>$this->findManuf($newArray['BSSID']),
+			'mac'=>$newArray['BSSID'],
 			'ssid'=>$new_ssid,
-			'chan'=>$newArray['chan'],
-			'encry'=>$newArray['encry'],
-			'auth'=>$newArray['auth'],
-			'btx'=>$newArray["BTx"],
-			'otx'=>$newArray["OTx"],
+			'chan'=>$newArray['CHAN'],
+			'encry'=>$newArray['ENCR'],
+			'auth'=>$newArray['AUTH'],
+			'btx'=>$newArray["BTX"],
+			'otx'=>$newArray["OTX"],
 			'fa'=>$newArray["FA"],
 			'la'=>$newArray["LA"],
-			'nt'=>$newArray["NT"],
+			'nt'=>$newArray["NETTYPE"],
 			'label'=>$newArray["label"],
 			'user'=>$newArray["username"]
 		);
@@ -170,24 +184,32 @@ class frontend extends dbcore
 
 		while ($field = $prep2->fetch(1))
 		{
-			$sql = "SELECT `wifi_signals`.`id`, `wifi_signals`.`signal`, `wifi_signals`.`rssi`, `wifi_signals`.`gps_id`, `wifi_signals`.`username`, `wifi_gps`.`lat`, `wifi_gps`.`long`, `wifi_gps`.`alt`, `wifi_gps`.`sats`, `wifi_gps`.`hdp`, `wifi_gps`.`track`, `wifi_gps`.`date`, `wifi_gps`.`time`, `wifi_gps`.`mph`, `wifi_gps`.`kmh`
-					FROM `wifi_signals`
-					INNER JOIN `wifi_gps`
-					ON `wifi_signals`.`gps_id`=`wifi_gps`.`id`
-					WHERE `wifi_signals`.`ap_hash` = ? AND `wifi_signals`.`file_id` = ?
-					ORDER BY `wifi_signals`.`time_stamp` ASC";
+			//$sql = "SELECT `wifi_signals`.`id`, `wifi_signals`.`signal`, `wifi_signals`.`rssi`, `wifi_signals`.`gps_id`, `wifi_signals`.`username`, `wifi_gps`.`lat`, `wifi_gps`.`long`, `wifi_gps`.`alt`, `wifi_gps`.`sats`, `wifi_gps`.`hdp`, `wifi_gps`.`track`, `wifi_gps`.`date`, `wifi_gps`.`time`, `wifi_gps`.`mph`, `wifi_gps`.`kmh`
+			//		FROM `wifi_signals`
+			//		INNER JOIN `wifi_gps`
+			//		ON `wifi_signals`.`gps_id`=`wifi_gps`.`id`
+			//		WHERE `wifi_signals`.`ap_hash` = ? AND `wifi_signals`.`file_id` = ?
+			//		ORDER BY `wifi_signals`.`time_stamp` ASC";
+					
+					
+			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`, `files`.`user`\n"
+				. "FROM `wifi_hist`\n"
+				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID`=`wifi_gps`.`GPS_ID`\n"
+				. "INNER JOIN `files` ON `wifi_hist`.`File_ID`=`files`.`id`\n"
+				. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ?\n"
+				. "ORDER BY `wifi_hist`.`Hist_Date` ASC";
 			$prep1 = $this->sql->conn->prepare($sql);
-			$prep1->bindParam(1, $newArray["ap_hash"], PDO::PARAM_STR);
+			$prep1->bindParam(1, $id, PDO::PARAM_STR);
 			$prep1->bindParam(2, $field["file_id"], PDO::PARAM_STR);
 			$prep1->execute();
 			$signals = $prep1->fetchAll(2);
 		
 			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
-			preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
+			//preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
 			$list[]= array(
 							'class'=>$class,
 							'id'=>$field['id'],
-							'nu'=>$matches['stat'],
+							'nu'=>$signals[0]['New'],
 							'date'=>$field['date'],
 							'aps'=>$field['aps'],
 							'username'=>$field['username'],
@@ -197,7 +219,7 @@ class frontend extends dbcore
 							);
 
 		}
-		$ap_data['from'] = $signals[0]['id'];
+		$ap_data['from'] = $signals[0]['AP_ID'];
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
 						$newArray['ssid'],
@@ -549,74 +571,85 @@ class frontend extends dbcore
 		$all_aps_array['aps'] = $user_array['aps'];
 		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent']."%";
 		
-		$points = explode("-", $user_array['points']);
-		
-		$flip = 0;
-        $sql = "SELECT `id`, `ssid`, `mac`, `chan`, `radio`, `auth`, `encry`, `LA`, `FA`, `lat` FROM `wifi_pointers` WHERE `id`= ?";
-        $result = $this->sql->conn->prepare($sql);
+		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
+		$prep_AP_IDS = $this->sql->conn->prepare($sql);
+		$prep_AP_IDS->bindParam(1,$user_array['file_id'], PDO::PARAM_INT);
+		$prep_AP_IDS->execute();
 		$count = 0;
-		foreach($points as $ap)
+		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
-			$ap_exp = explode(":" , $ap);
-			$apid = $ap_exp[0];
-
-			#if($ap_exp[0] == 0){continue;}
+			$apid = $array['AP_ID'];
 			$count++;
-
+			
 			if($flip)
 				{$style = "dark";$flip=0;}
 			else
 				{$style="light";$flip=1;}
-
-			if($ap_exp[1] == 1)
+			
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+				. "whFA.Hist_Date As FA,\n"
+				. "whLA.Hist_Date As LA,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "(SELECT New From wifi_hist WHERE File_ID = ? And AP_ID = ? LIMIT 1) AS New\n"
+				. "FROM `wifi_ap` AS wap\n"
+				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "WHERE wap.AP_ID = ?";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $user_array['file_id'], PDO::PARAM_INT);
+			$result->bindParam(2, $apid, PDO::PARAM_INT);
+			$result->bindParam(3, $apid, PDO::PARAM_INT);
+			$result->execute();
+			$ap_array = $result->fetch(2);
+			
+			if($ap_array['New'] == 1)
 			{
 				$update_or_new = "Update";
 			}else
 			{
 				$update_or_new = "New";
 			}
-			$result->bindParam(1, $apid, PDO::PARAM_STR);
-			$result->execute();
-			$ap_array = $result->fetch(2);
 
-			if($ap_array['lat'] == "0.0000")
+			if($ap_array['Lat'] == "")
 			{
 				$globe = "off";
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$ap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 
-			if($ap_array['ssid'] == '')
+			if($ap_array['SSID'] == '')
 			{
 				$ssid = '[Blank SSID]';
 			}
-			elseif(!ctype_print($ap_array['ssid']))
+			elseif(!ctype_print($ap_array['SSID']))
 			{
-				$ssid = '['.$ap_array['ssid'].']';
+				$ssid = '['.$ap_array['SSID'].']';
 			}
 			else
 			{
-				$ssid = $ap_array['ssid'];
+				$ssid = $ap_array['SSID'];
 			}
 
 			$all_aps_array['allaps'][] = array(
-					'id' => $ap_array['id'],
+					'id' => $ap_array['AP_ID'],
 					'class' => $style,
 					'un' => $update_or_new,
 					'globe' => $globe,
 					'globe_html' => $globe_html,
 					'ssid' => $ssid,
-					'mac' => $ap_array['mac'],
-					'chan' => $ap_array['chan'],
-					'radio' => $ap_array['radio'],
-					'auth' => $ap_array['auth'],
-					'encry' => $ap_array['encry'],
+					'mac' => $ap_array['BSSID'],
+					'chan' => $ap_array['CHAN'],
+					'radio' => $ap_array['RADTYPE'],
+					'auth' => $ap_array['AUTH'],
+					'encry' => $ap_array['ENCR'],
 					'fa' => $ap_array['FA'],
 					'la' => $ap_array['LA']
-				);
+			);
 		}
 		$this->users_import_aps = $all_aps_array;
 		return 1;
@@ -707,24 +740,26 @@ class frontend extends dbcore
 
 	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from = NULL, $inc = NULL)
 	{
-		$sql1 = "SELECT * FROM `wifi_pointers` WHERE
-			`ssid` LIKE ? AND
-			`mac` LIKE ? AND
-			`radio` LIKE ? AND
-			`chan` LIKE ? AND
-			`auth` LIKE ? AND
-			`encry` LIKE ? ORDER BY `$sort` $ord ";
-		if($from !== NULL And $inc !== NULL){$sql1 .=  " LIMIT ".$from.", ".$inc;}
-		$prep1 = $this->sql->conn->prepare($sql1);
-
-		$sql2 = "SELECT * FROM `wifi_pointers` WHERE
-				`ssid` LIKE ? AND
-				`mac` LIKE ? AND
-				`radio` LIKE ? AND
-				`chan` LIKE ? AND
-				`auth` LIKE ? AND
-				`encry` LIKE ? ORDER BY `$sort` $ord";
-		$prep2 = $this->sql->conn->prepare($sql2);
+		
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM `wifi_ap` AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "WHERE\n"
+			. "`wap`.`SSID` LIKE ? AND\n"
+			. "`wap`.`BSSID` LIKE ? AND\n"
+			. "`wap`.`RADTYPE` LIKE ? AND\n"
+			. "`wap`.`CHAN` LIKE ? AND\n"
+			. "`wap`.`AUTH` LIKE ? AND\n"
+			. "`wap`.`ENCR` LIKE ? ORDER BY `$sort` $ord ";
+		
+		if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+		$prep1 = $this->sql->conn->prepare($sql);
 
 		$save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
 		$export_url = '';
@@ -766,25 +801,18 @@ class frontend extends dbcore
 
 		$ssid = "%".$ssid."%";
 		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
-		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
 		$mac = "%".$mac."%";
 		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
-		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
 		$radio = "%".$radio."%";
 		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
-		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
 		$chan = "%".$chan."%";
 		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
-		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
 		$auth = "%".$auth."%";
 		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
-		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
 		$encry = "%".$encry."%";
 		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
-		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
 		$prep1->execute();
-		$prep2->execute();
-		$total_rows = $prep2->rowCount();
+		$total_rows = $prep1->rowCount();
 
 		$row_color = 0;
 		$results_all = array();
@@ -801,33 +829,35 @@ class frontend extends dbcore
 				$row_color = 1;
 				$results_all[$i]['class'] = "dark";
 			}
-			if($newArray['lat'] == "0.0000")
+			if($newArray['Lat'] == "")
 			{
 				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
 			}else
 			{
 				$results_all[$i]['globe_html'] = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
-			if($newArray['ssid'] == '')
+			if($newArray['SSID'] == '')
 			{
 				$results_all[$i]['ssid'] = '[Blank SSID]';
 			}
-			elseif(!ctype_print($newArray['ssid']))
+			elseif(!ctype_print($newArray['SSID']))
 			{
-				$results_all[$i]['ssid'] = '['.$newArray['ssid'].']';
+				$results_all[$i]['ssid'] = '['.$newArray['SSID'].']';
 			}
 			else
 			{
-				$results_all[$i]['ssid'] = $newArray['ssid'];
+				$results_all[$i]['ssid'] = $newArray['SSID'];
 			}
-			$results_all[$i]['id'] = $newArray['id'];
-			$results_all[$i]['mac'] = $newArray['mac'];
-			$results_all[$i]['chan'] = $newArray['chan'];
-			$results_all[$i]['auth'] = $newArray['auth'];
-			$results_all[$i]['encry'] = $newArray['encry'];
-			$results_all[$i]['radio']=$newArray['radio'];
+			$results_all[$i]['id'] = $newArray['AP_ID'];
+			$results_all[$i]['mac'] = $newArray['BSSID'];
+			$results_all[$i]['chan'] = $newArray['CHAN'];
+			$results_all[$i]['auth'] = $newArray['AUTH'];
+			$results_all[$i]['encry'] = $newArray['ENCR'];
+			$results_all[$i]['radio']=$newArray['RADTYPE'];
 			$results_all[$i]['FA']=$newArray['FA'];
 			$results_all[$i]['LA']=$newArray['LA'];
+			$results_all[$i]['Lat']=$newArray['Lat'];
+			$results_all[$i]['Long']=$newArray['Long'];
 			$results_all[$i]['ap_hash']=$newArray['ap_hash'];
 			$i++;
 		}

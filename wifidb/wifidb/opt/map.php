@@ -179,5 +179,134 @@ switch($func)
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
+	case "exp_search":
+		define("SWITCH_EXTRAS", "export");
+		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+		
+		if(@$_REQUEST['ssid'])
+		{
+			$ssid   =   $_REQUEST['ssid'];
+		}else
+		{
+			$ssid   =   "";
+		}
+		
+		if(@$_REQUEST['mac'])
+		{
+			$mac	=   $_REQUEST['mac'];
+		}else
+		{
+			$mac	=   "";
+		}
+		
+		if(@$_REQUEST['radio'])
+		{
+			$radio  =   $_REQUEST['radio'];
+		}else
+		{
+			$radio  =   "";
+		}
+		
+		if(@$_REQUEST['chan'])
+		{
+			$chan   =   $_REQUEST['chan'];
+		}else
+		{
+			$chan   =   "";
+		}
+		
+		if(@$_REQUEST['auth'])
+		{
+			$auth   =   $_REQUEST['auth'];
+		}else
+		{
+			$auth   =   "";
+		}
+		
+		if(@$_REQUEST['encry'])
+		{
+			$encry  =   $_REQUEST['encry'];
+		}else
+		{
+			$encry  =   "";
+		}
+		if ($from == ""){$from = NULL;}
+		if ($inc == ""){$inc = NULL;}
+		if ($ord == ""){$ord = "ASC";}
+		if ($sort == ""){$sort = "ssid";}
+		
+		list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
+		
+
+			
+		$Import_Map_Data = "";
+		foreach($results_all as $ResultAP) {
+			$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `id` = ?";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $ResultAP['id'], PDO::PARAM_INT);
+			$prep->execute();
+			$appointer = $prep->fetchAll();
+			foreach($appointer as $ap)
+			{
+				#Get AP GeoJSON
+				$ap_info = array(
+				"id" => $id,
+				"new_ap" => $new_icons,
+				"named" => $named,
+				"mac" => $ap['mac'],
+				"ssid" => $ap['ssid'],
+				"chan" => $ap['chan'],
+				"radio" => $ap['radio'],
+				"NT" => $ap['NT'],
+				"sectype" => $ap['sectype'],
+				"auth" => $ap['auth'],
+				"encry" => $ap['encry'],
+				"BTx" => $ap['BTx'],
+				"OTx" => $ap['OTx'],
+				"FA" => $ap['FA'],
+				"LA" => $ap['LA'],
+				"lat" => $dbcore->convert->dm2dd($ap['lat']),
+				"long" => $dbcore->convert->dm2dd($ap['long']),
+				"alt" => $ap['alt'],
+				"manuf"=>$dbcore->findManuf($ap['mac']),
+				"username" => $ap['username']
+				);
+				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+			}
+		}
+
+		if($KML_data == "")
+		{
+			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+		}
+		else
+		{
+			$KML_data = $dbcore->createKML->createFolder("Search Export", $KML_data, 0);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), "Search_Export");
+			$kmz_filename = $dbcore->kml_out.$title.".kmz";
+			#$this->verbosed("Writing KMZ for ".$title." : ".$kmz_filename);
+			$KML_data = $dbcore->createKML->createKMLstructure($title, $KML_data);
+			$dbcore->Zip->addFile($KML_data, 'doc.kml');
+			$dbcore->Zip->setZipFile($kmz_filename);
+			$dbcore->Zip->getZipFile();
+			
+			if (file_exists($kmz_filename)) 
+			{
+				$results = array("mesg" => 'File is ready: <a href="'.$dbcore->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
+			}
+			else
+			{
+				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
+			}
+		}
+
+		$dbcore->smarty->assign('results', $results);
+		$dbcore->smarty->display('export_results.tpl');
+		
+		break;
 }
 ?>
