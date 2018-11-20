@@ -123,7 +123,7 @@ foreach ($files as $filename)
 function InsertPolygon($core, $name, $polygon, $box, $distance, $minLodPix)
 {
     $coordinates = $polygon->outerBoundaryIs->LinearRing->coordinates;
-    $sql = "INSERT INTO `wifi`.`boundaries` (id, `name`, `polygon`, `box`, `distance`, `minLodPix`) VALUES ('', '$name', '$coordinates', '$box', '$distance', '$minLodPix')";
+    $sql = "INSERT INTO `boundaries` (id, `name`, `polygon`, `box`, `distance`, `minLodPix`) VALUES ('', '$name', '$coordinates', '$box', '$distance', '$minLodPix')";
     $core->sql->conn->query($sql);
     if($core->sql->conn->errorCode() != "00000")
     {

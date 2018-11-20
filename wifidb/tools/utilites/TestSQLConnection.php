@@ -23,7 +23,7 @@ $options = array(
 
 $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
 
-$sql = "SELECT `size` FROM `wifi`.`settings` WHERE `table` = 'version'";
+$sql = "SELECT `size` FROM `settings` WHERE `table` = 'version'";
 echo $sql."\n";
 
 $res = $conn->query($sql);

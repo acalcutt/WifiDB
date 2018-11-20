@@ -7,7 +7,7 @@ if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon con
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $filewrite = fopen("filenames.txt", 'w');
-$sql = "select * from `wifi`.`files` ORDER BY `id` ASC";
+$sql = "select * from `files` ORDER BY `id` ASC";
 $result = $dbcore->sql->conn->query($sql);
 $dbcore->verbosed("Gathered file data");
 $write = "# FILE HASH | FILENAME | USERNAME | TITLE | DATE | NOTES\r\n";

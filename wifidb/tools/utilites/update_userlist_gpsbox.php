@@ -9,7 +9,7 @@ require($wdb_install)."/lib/init.inc.php";
 
 $dbcore->verbose = 1;
 
-$sql = "SELECT `id`, `file_id` FROM `wifi`.`user_imports` WHERE GPSBOX_NORTH = ''";
+$sql = "SELECT `id`, `file_id` FROM `user_imports` WHERE GPSBOX_NORTH = ''";
 $result = $dbcore->sql->conn->query($sql);
 $fetch_imports = $result->fetchAll();
 
@@ -23,8 +23,8 @@ foreach($fetch_imports as $import)
 	
 	$sql = "SELECT
 			  `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`
-			FROM `wifi`.`wifi_signals`
-			  LEFT JOIN `wifi`.`wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
+			FROM `wifi_signals`
+			  LEFT JOIN `wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
 			WHERE `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'";
 			
 	$result = $dbcore->sql->conn->query($sql);
@@ -64,7 +64,7 @@ foreach($fetch_imports as $import)
 	echo $EAST."\r\n";
 	echo $WEST."\r\n";
 	
-	$sql = "UPDATE `wifi`.`user_imports` SET `GPSBOX_NORTH` = '$NORTH', `GPSBOX_SOUTH` = '$SOUTH', `GPSBOX_EAST` = '$EAST', `GPSBOX_WEST` = '$WEST' WHERE `id` = '$userlist_id'";
+	$sql = "UPDATE `user_imports` SET `GPSBOX_NORTH` = '$NORTH', `GPSBOX_SOUTH` = '$SOUTH', `GPSBOX_EAST` = '$EAST', `GPSBOX_WEST` = '$WEST' WHERE `id` = '$userlist_id'";
 	echo $sql."\r\n";
 	$uresult = $dbcore->sql->conn->query($sql);
 	$uresult->execute();

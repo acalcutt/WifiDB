@@ -12,7 +12,7 @@ require_once $GLOBALS['wifidb_install']."/lib/config.inc.php";
 $file = "SSID,BSSID,MANUFACTURER,SIGNAL,AUTHENTICATION,ENCRYPTION,RADIO TYPE,CHANNEL,BTX,OTX,NETWORK TYPE,"
 ."LABEL,LATITUDE,LONGITUDE,SATELLITES,HDOP,ALTITUDE,HEIGHT OF GEOID,SPEED(km/h),SPEED(MPH),TRACK ANGLE,DATE(UTC),TIME(UTC)\r\n";
 
-$sql0 = "SELECT * FROM wifi.wifi0";
+$sql0 = "SELECT * FROM wifi0";
 $result = mysql_query($sql0, $conn);
 while($newArray = mysql_fetch_array($result))
 {

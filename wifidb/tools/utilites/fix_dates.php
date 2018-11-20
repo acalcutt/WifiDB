@@ -8,7 +8,7 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 #Fix date and time in the wifi_gps tables
 
-$sql = "SELECT * FROM `wifi`.`wifi_gps` ORDER BY `date` ASC";
+$sql = "SELECT * FROM `wifi_gps` ORDER BY `date` ASC";
 $result = $dbcore->sql->conn->query($sql);
 $dbcore->verbosed("Fixing wifi_gps date/time stamps");
 while($array = $result->fetch(1))
@@ -42,7 +42,7 @@ while($array = $result->fetch(1))
 	if($new_datestamp != $datestamp)
 	{
 		echo "wifi_gps:".$id." - ".$datestamp."-->".$new_datestamp."\r\n";
-		$sql = "UPDATE `wifi`.`wifi_gps` SET `date`=? WHERE `id`=?";
+		$sql = "UPDATE `wifi_gps` SET `date`=? WHERE `id`=?";
 		$prepnr = $dbcore->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $new_datestamp, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $id, PDO::PARAM_INT);
@@ -67,7 +67,7 @@ while($array = $result->fetch(1))
 	if($new_timestamp != $timestamp)
 	{
 		echo "wifi_gps:".$id." - ".$timestamp."-->".$new_timestamp."\r\n";
-		$sql = "UPDATE `wifi`.`wifi_gps` SET `time`=? WHERE `id`=?";
+		$sql = "UPDATE `wifi_gps` SET `time`=? WHERE `id`=?";
 		$prepnr = $dbcore->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $new_timestamp, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $id, PDO::PARAM_INT);
@@ -77,7 +77,7 @@ while($array = $result->fetch(1))
 
 #Fix date and time in the wifi_pointers table
 
-$sql = "SELECT * FROM `wifi`.`wifi_pointers`";
+$sql = "SELECT * FROM `wifi_pointers`";
 $result = $dbcore->sql->conn->query($sql);
 $dbcore->verbosed("Fixing wifi_pointers date/time stamps");
 while($array = $result->fetch(1))
@@ -136,7 +136,7 @@ while($array = $result->fetch(1))
 	if($new_fastamp != $fastamp)
 	{
 		echo "wifi_pointer:".$id." - ".$fastamp."-->".$new_fastamp."\r\n";
-		$sql = "UPDATE `wifi`.`wifi_pointers` SET `FA`=? WHERE `id`=?";
+		$sql = "UPDATE `wifi_pointers` SET `FA`=? WHERE `id`=?";
 		$prepnr = $dbcore->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $new_fastamp, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $id, PDO::PARAM_INT);
@@ -195,7 +195,7 @@ while($array = $result->fetch(1))
 	if($new_lastamp != $lastamp)
 	{
 		echo "wifi_pointer:".$id." - ".$lastamp."-->".$new_lastamp."\r\n";
-		$sql = "UPDATE `wifi`.`wifi_pointers` SET `LA`=? WHERE `id`=?";
+		$sql = "UPDATE `wifi_pointers` SET `LA`=? WHERE `id`=?";
 		$prepnr = $dbcore->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $new_lastamp, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $id, PDO::PARAM_INT);
@@ -205,11 +205,11 @@ while($array = $result->fetch(1))
 
 #When Fisrt Active is blank and Last Active has a value, set First Active to Last Active
 $dbcore->verbosed("Fixing wifi_pointers blank FA");
-$sql = "UPDATE `wifi`.`wifi_pointers` SET FA=LA WHERE FA='0000-00-00 00:00:00' and LA <> '0000-00-00 00:00:00'";
+$sql = "UPDATE `wifi_pointers` SET FA=LA WHERE FA='0000-00-00 00:00:00' and LA <> '0000-00-00 00:00:00'";
 $fix1 = $dbcore->sql->conn->query($sql);
 
 $dbcore->verbosed("Fixing wifi_pointers blank LA");
 #When Last Active is blank and First Active has a value, set Last Active to First Active
-$sql = "UPDATE `wifi`.`wifi_pointers` SET LA=FA WHERE LA='0000-00-00 00:00:00' and FA <> '0000-00-00 00:00:00'";
+$sql = "UPDATE `wifi_pointers` SET LA=FA WHERE LA='0000-00-00 00:00:00' and FA <> '0000-00-00 00:00:00'";
 $fix2 = $dbcore->sql->conn->query($sql);
 ?>

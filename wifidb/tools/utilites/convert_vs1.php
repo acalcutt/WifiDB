@@ -1,14 +1,12 @@
 <?php
-/*
- * Convert folder of non-VS1 files to VS1 files.
- */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
+require 'daemon/config.inc.php';
+require $GLOBALS['wifidb_install']."/lib/database.inc.php";
 
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require $daemon_config['wifidb_install']."/lib/init.inc.php";
-
+$TOTAL_START=date("H:i:s");
+error_reporting(E_ALL);
+ini_set("memory_limit","3072M");
 $debug = 0;
 $bench = 0;
 $lastedit="2009.Apr.10";
@@ -64,3 +62,6 @@ foreach($file_a as $file)
 
 $TOTAL_END = date("H:i:s");
 echo "\nTOTAL Running time::\n\nStart: ".$TOTAL_START."\nStop : ".$TOTAL_END."\n";
+
+
+?>

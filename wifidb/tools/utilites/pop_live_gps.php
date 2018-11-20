@@ -10,7 +10,7 @@ require 'daemon/config.inc.php';
 require $GLOBALS['wifidb_install']."/lib/database.inc.php";
 require $GLOBALS['wifidb_install']."/lib/config.inc.php";
 
-$sql = "SELECT id, ssid, sig FROM `wifi`.`live_aps`";
+$sql = "SELECT id, ssid, sig FROM `live_aps`";
 $return = mysql_query($sql, $conn);
 while($array = mysql_fetch_array($return))
 {
@@ -21,7 +21,7 @@ while($array = mysql_fetch_array($return))
     {
         $sig_gps_exp = explode("-", $sig_gpsid);
         $gps_id = $sig_gps_exp[1];
-        $sql_gps = "select * from wifi.live_gps where `id` = '$gps_id'";
+        $sql_gps = "select * from live_gps where `id` = '$gps_id'";
         $return1 = mysql_query($sql_gps, $conn);
         $gps_array = mysql_fetch_array($return1);
         if($gps_array['lat'] == "N 0000.0000")
@@ -30,7 +30,7 @@ while($array = mysql_fetch_array($return))
         var_dump($gps_array['lat']);
         var_dump($gps_array['long']);
         
-        $sql1 = "UPDATE `wifi`.`live_aps` SET `lat` = '{$gps_array['lat']}', `long` = '{$gps_array['long']}' WHERE `id` = '{$array['id']}'";
+        $sql1 = "UPDATE `live_aps` SET `lat` = '{$gps_array['lat']}', `long` = '{$gps_array['long']}' WHERE `id` = '{$array['id']}'";
         if(mysql_query($sql1))
         {
             echo "Updated AP...\r\n";

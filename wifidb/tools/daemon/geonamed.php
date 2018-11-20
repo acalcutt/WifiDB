@@ -134,7 +134,7 @@ $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
 $prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_INT);
+$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
 $prepgj->execute();
 $dbcore->sql->checkError(__LINE__, __FILE__);
 
@@ -195,6 +195,7 @@ else
 			$long_rounded = number_format(round($long, 1), 1, '.', '');
 			$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
 			$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code` FROM `geonames` WHERE `latitude` LIKE '$lat_rounded%' AND `longitude` LIKE '$long_rounded%' LIMIT 1";
+			#echo $sql."\r\n";
 			$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
 			$geo_res = $dbcore->sql->conn->query($sql);
 			$geo_array = $geo_res->fetch(1);

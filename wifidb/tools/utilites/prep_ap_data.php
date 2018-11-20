@@ -13,7 +13,7 @@ require('../daemon/config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 require( $daemon_config['wifidb_install']."/lib/config.inc.php" );
 
-$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi`.`wifi_pointers`";
+$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers`";
 $query = $dbcore->sql->conn->query($sql);
 $all = $query->fetchAll(2);
 foreach($all as $ap)

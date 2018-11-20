@@ -1,13 +1,16 @@
 <?php
 $t1 = microtime(1);
 
-define("SWITCH_SCREEN", "CLI");
-define("SWITCH_EXTRAS", "cli");
+error_reporting(E_ALL|E_STRICT);
+ini_set("memory_limit","3072M"); //lots of GPS cords need lots of memory
 
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require $daemon_config['wifidb_install']."/lib/init.inc.php";
+global $screen_output, $dim, $COLORS, $daemon_ver;
+$screen_output = "CLI";
 
+if(!(@require_once 'daemon/config.inc.php')){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
+if($GLOBALS['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
+require_once $GLOBALS['wifidb_install']."/lib/database.inc.php";
+require_once $GLOBALS['wifidb_install']."/lib/config.inc.php";
 
 $conn = $GLOBALS['conn'];
 $db = $GLOBALS['db'];
@@ -85,7 +88,7 @@ To use:
 else
 {
 	echo "Running Full DB check...\r\n";
-	$sqls = "SELECT * FROM `files`";
+	$sqls = "SELECT * FROM `$db`.`files`";
 }
 
 

@@ -18,7 +18,7 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit  = "2015-03-02";
 
-$results = $dbcore->sql->conn->query(" SELECT * FROM wifi.boundaries");
+$results = $dbcore->sql->conn->query(" SELECT * FROM boundaries");
 $dbcore->sql->checkError();
 $Items = $results->fetchAll(2);
 

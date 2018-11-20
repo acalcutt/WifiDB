@@ -10,12 +10,12 @@ require($wdb_install)."/lib/init.inc.php";
 
 $dbcore->verbose = 1;
 
-$sql = "SELECT `id`, `mac` FROM `wifi`.`wifi_pointers`";
+$sql = "SELECT `id`, `mac` FROM `wifi_pointers`";
 $result = $dbcore->sql->conn->query($sql);
 
 while($array = $result->fetch())
 {
-    $sql = "UPDATE `wifi`.`wifi_pointers` SET `manuf` = '{$dbcore->findManuf($array['mac'])}' WHERE `id` = '{$array['id']}'";
+    $sql = "UPDATE `wifi_pointers` SET `manuf` = '{$dbcore->findManuf($array['mac'])}' WHERE `id` = '{$array['id']}'";
     echo $sql."\r\n";
     if($dbcore->sql->conn->query($sql))
     {

@@ -2,17 +2,15 @@
 # Clean-up duplicate files in the /import/up folder, 
 # this is so that you dont have any extra files sitting
 # in the files_tmp table when you do a rebuild.
+global $debug, $screen_output;
+$screen_output = "CLI";
+require 'daemon/config.inc.php';
+require $GLOBALS['wifidb_install']."/lib/database.inc.php";
+require $GLOBALS['wifidb_install']."/lib/config.inc.php";
+
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 ini_set("memory_limit","3072M"); //lots of GPS cords need lots of memory
 error_reporting(E_STRICT|E_ALL); //show all erorrs with strict santex
-
-define("SWITCH_SCREEN", "CLI");
-define("SWITCH_EXTRAS", "cli");
-
-if(!(require('../config.inc.php'))){die("You need to create and configure your config.inc.php file in the [tools dir]/daemon/config.inc.php");}
-if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
-require $daemon_config['wifidb_install']."/lib/init.inc.php";
-
 
 $lastedit="2009.July.22";
 $start="2009.July.22";
@@ -111,3 +109,4 @@ function &check_hash($hash, $array)
 	}
 	return $return;
 }
+?>

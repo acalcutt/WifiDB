@@ -10,7 +10,7 @@ if($clear)
 $sep = $GLOBALS['sep'];
 $gps_ext = $GLOBALS['gps_ext'];
 
-$sql = "SELECT * FROM `wifi`.`wifi0`";
+$sql = "SELECT * FROM `wifi0`";
 $result = $conn->query($sql);
 while($all = $result->fetch_array(1))
 {
@@ -22,7 +22,7 @@ while($all = $result->fetch_array(1))
         echo ((memory_get_usage(1)/1024)/1024)."M\r\n";
         echo ((memory_get_usage(0)/1024)/1024)."M\r\n";
         
-        $sql = "UPDATE `wifi`.`wifi0` set `lat` = 'N 0.0000', `long` = 'W 0.0000' where `id` = '$id'";
+        $sql = "UPDATE `wifi0` set `lat` = 'N 0.0000', `long` = 'W 0.0000' where `id` = '$id'";
         echo $sql."\r\n";
         $conn->query($sql);
         if(!$conn->errno)
@@ -92,7 +92,7 @@ while($all = $result->fetch_array(1))
         $lat = $gps['lat'];
         $long = $gps['long'];
         if($lat == "N 0000.0000" || $long == "E 0000.0000"){echo "INVALID\r\n"; continue;}
-        $sql = "UPDATE `wifi`.`wifi0` set `lat` = '$lat', `long` = '$long' where `id` = '$id'";
+        $sql = "UPDATE `wifi0` set `lat` = '$lat', `long` = '$long' where `id` = '$id'";
         echo $sql."\r\n";
         $conn->query($sql);
         if(!$conn->errno)
