@@ -1,5 +1,6 @@
 #!/usr/bin/php
 <?php
+error_reporting(E_ALL);
 /*
 importd.php, WiFiDB Import Daemon
 Copyright (C) 2015 Andrew Calcutt, Phil Ferland.
@@ -23,15 +24,15 @@ $arguments = $dbcore->parseArgs($argv);
 if(@$arguments['h'])
 {
 	echo "Usage: importd.php [args...]
-  -f		(null)		Force daemon to run without being scheduled. ( Will override the -d, -i, -o arguments. )
-  -o		(null)		Run a loop through the files waiting table, and end once done. ( Will override the -d & -i arguments. )
-  -d		(null)		Run the Import script as a Daemon. ( Will override the -i argument. )
-  -i        	(integer)      	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
-  -t		(integer)	Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
-  -v		(null)		Run Verbosely (SHOW EVERYTHING!)
-  -l		(null)		Show License Information.
-  -h		(null)		Show this screen.
-  --version	(null)		Version Info.
+  -f		(null)			Force daemon to run without being scheduled.
+  -o		(null)			Run a loop through the files waiting table, and end once done. ( Will override the -d argument. )
+  -d		(null)			Run the Import script as a Daemon. ( Will override the -i argument. )
+  -i        	(integer)       	The ID Number for the Import to be well... Imported... ( Not to be used with the -d argument. )
+  -t		(integer)		Identify the Import Daemon with a Thread ID. Used to track what thread was importing what file in the bad files table.
+  -v		(null)			Run Verbosely (SHOW EVERYTHING!)
+  -l		(null)			Show License Information.
+  -h		(null)			Show this screen.
+  --version	(null)			Version Info.
 
 * = Not working yet.
 ";
@@ -168,6 +169,11 @@ else
 	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
 	if(!$dbcore->ForceDaemonRun)
 	{
+		#Job Settings
+		$job = $prepgj->fetch(2);
+		$dbcore->job_interval = $job['interval'];
+		$job_id = $job['id'];
+
 		#Set Job to Running
 		$dbcore->SetStartJob($job_id);
 	}
@@ -184,6 +190,9 @@ else
 			exit(-7);
 		}
 		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
+		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
+		{
+			$NextID = $dbcore->ImportID;
 
 		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
 			$NextID = $dbcore->GetNextImportID();
@@ -216,21 +225,34 @@ else
 				exec($cmd);
 				#####
 			}
-            $ImportProcessReturn = $dbcore->ImportProcess($NextImport);
-            #$ImportProcessReturn = 1;
-            $dbcore->return_message = (int)$NextImport['id'];
 
-            switch($ImportProcessReturn)
-            {
-                #Error converting file for single run through, break loop.
-                case -1:
-                    break;
-                #Error Converting file for daemon, continue run.
-                case 0:
-                    continue;
-                case 1:
-                    trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
-            }
+			$file_to_Import = $result->fetch(2);
+			if(!@$file_to_Import['id'])
+			{
+				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
+				if( !$dbcore->daemonize )
+				{
+					$dbcore->return_message = -10;
+					break;
+				}
+			}else
+			{
+				$ImportProcessReturn = $dbcore->ImportProcess($file_to_Import);
+				#$ImportProcessReturn = 1;
+				$dbcore->return_message = (int)$file_to_Import['id'];
+
+				switch($ImportProcessReturn)
+				{
+					#Error converting file for single run through, break loop.
+					case -1:
+						break;
+					#Error Converting file for daemon, continue run.
+					case 0:
+						continue;
+					case 1:
+						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
+				}
+			}
 		}
 		if($dbcore->ImportID !== 0)
 		{
