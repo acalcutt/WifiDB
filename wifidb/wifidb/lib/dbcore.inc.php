@@ -409,17 +409,17 @@ class dbcore
 	 */
 	public function logd($message = '', $type = "message", $prefix = "")
 	{
-		if($this->log_level) # Check to see if logging is turned on.
+		if($dbcore->log_level) # Check to see if logging is turned on.
 		{
 			if(@strtoupper(SWITCH_SCREEN) === "CLI" && $prefix === "")
 			{
-				$prefix = $this->This_is_me;
+				$prefix = $dbcore->This_is_me;
 			}else{
 				$prefix = "httpd";
 			}
 			if($message === "")
 			{
-				$this->verbosed("Logd was told to write a blank string.\r\n Message has NOT been logged and this will NOT be allowed!", -1);
+				$dbcore->verbosed("Logd was told to write a blank string.\r\n Message has NOT been logged and this will NOT be allowed!", -1);
 				return 0;
 			}
 
@@ -428,17 +428,17 @@ class dbcore
 			$time = date("H:i:s.").$utime[1];
 			$datetime = $date." ".$time;
 			$message = $datetime."   ->	".$message."\r\n"; #append the date and time to the log message.
-			switch($this->Log_Type)
+			switch($dbcore->Log_Type)
 			{
 				case "SQL":
-					$this->log_sql($message, $type, $prefix, $datetime);
+					$dbcore->log_sql($message, $type, $prefix, $datetime);
 					break;
 				case "File":
-					$this->log_file($message, $type, $prefix, $datetime);
+					$dbcore->log_file($message, $type, $prefix, $datetime);
 					break;
 				case "Both":
-					$this->log_sql($message, $type, $prefix, $datetime);
-					$this->log_file($message, $type, $prefix, $datetime);
+					$dbcore->log_sql($message, $type, $prefix, $datetime);
+					$dbcore->log_file($message, $type, $prefix, $datetime);
 			}
 
 

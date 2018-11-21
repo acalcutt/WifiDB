@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 20, 2018 at 01:12 AM
+-- Generation Time: Nov 20, 2018 at 11:31 PM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -512,14 +512,14 @@ CREATE TABLE `user_info` (
   `id` int(255) NOT NULL,
   `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `password` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `help` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `help` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `uid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `disabled` tinyint(1) NOT NULL DEFAULT 0,
   `validated` tinyint(1) NOT NULL DEFAULT 0,
   `locked` tinyint(1) NOT NULL DEFAULT 0,
   `login_fails` int(255) NOT NULL DEFAULT 0,
   `permissions` varchar(4) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0001',
-  `last_login` datetime NOT NULL,
+  `last_login` datetime DEFAULT NULL,
   `email` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `mail_updates` tinyint(1) NOT NULL DEFAULT 1,
   `schedule` tinyint(1) NOT NULL DEFAULT 1,
@@ -532,12 +532,12 @@ CREATE TABLE `user_info` (
   `geonamed` tinyint(1) NOT NULL DEFAULT 1,
   `pub_geocache` tinyint(1) NOT NULL DEFAULT 1,
   `h_email` tinyint(1) NOT NULL DEFAULT 1,
-  `join_date` datetime NOT NULL,
-  `friends` text COLLATE utf8_unicode_ci NOT NULL,
-  `foes` text COLLATE utf8_unicode_ci NOT NULL,
-  `website` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Vis_ver` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `apikey` varchar(255) COLLATE utf8_unicode_ci NOT NULL
+  `join_date` datetime DEFAULT NULL,
+  `friends` text COLLATE utf8_unicode_ci DEFAULT NULL,
+  `foes` text COLLATE utf8_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Vis_ver` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `apikey` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -886,7 +886,6 @@ ALTER TABLE `user_waypoints`
 --
 ALTER TABLE `wifi_ap`
   ADD PRIMARY KEY (`AP_ID`),
-  ADD KEY `AP_ID` (`AP_ID`),
   ADD KEY `HighGps_ID` (`HighGps_ID`),
   ADD KEY `FirstHist_ID` (`FirstHist_ID`),
   ADD KEY `LastHist_ID` (`LastHist_ID`),
@@ -898,15 +897,13 @@ ALTER TABLE `wifi_ap`
 ALTER TABLE `wifi_gps`
   ADD PRIMARY KEY (`GPS_ID`),
   ADD KEY `File_GPS_ID` (`File_GPS_ID`),
-  ADD KEY `File_ID` (`File_ID`),
-  ADD KEY `GPS_ID` (`GPS_ID`);
+  ADD KEY `File_ID` (`File_ID`);
 
 --
 -- Indexes for table `wifi_hist`
 --
 ALTER TABLE `wifi_hist`
   ADD PRIMARY KEY (`Hist_ID`),
-  ADD KEY `Hist_ID` (`Hist_ID`),
   ADD KEY `AP_ID` (`AP_ID`),
   ADD KEY `GPS_ID` (`GPS_ID`),
   ADD KEY `File_ID` (`File_ID`),
