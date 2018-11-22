@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 20, 2018 at 11:31 PM
+-- Generation Time: Nov 22, 2018 at 01:42 AM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -266,26 +266,26 @@ CREATE TABLE `geonames_admin2` (
 
 CREATE TABLE `geonames_country_names` (
   `id` int(255) NOT NULL,
-  `ISO` varchar(255) COLLATE utf8_bin NOT NULL,
-  `ISO3` varchar(255) COLLATE utf8_bin NOT NULL,
-  `ISO-Numeric` varchar(255) COLLATE utf8_bin NOT NULL,
-  `fips` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Country` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Capital` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Area` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Population` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Continent` varchar(255) COLLATE utf8_bin NOT NULL,
-  `tld` varchar(255) COLLATE utf8_bin NOT NULL,
-  `CurrencyCode` varchar(255) COLLATE utf8_bin NOT NULL,
-  `CurrencyName` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Phone` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Postal Code Format` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Postal Code Regex` varchar(255) COLLATE utf8_bin NOT NULL,
-  `Languages` varchar(255) COLLATE utf8_bin NOT NULL,
-  `geonamesid` varchar(255) COLLATE utf8_bin NOT NULL,
-  `neighbors` varchar(255) COLLATE utf8_bin NOT NULL,
-  `EquivalentFipsCode` varchar(255) COLLATE utf8_bin NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+  `ISO` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `ISO3` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `ISO-Numeric` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `fips` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Country` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Capital` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Area` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Population` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Continent` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `tld` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `CurrencyCode` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `CurrencyName` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Phone` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Postal Code Format` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Postal Code Regex` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `Languages` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `geonamesid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `neighbors` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `EquivalentFipsCode` varchar(255) COLLATE utf8_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -627,9 +627,10 @@ CREATE TABLE `wifi_ap` (
   `LastHist_ID` bigint(20) DEFAULT NULL,
   `HighSig_ID` bigint(20) DEFAULT NULL,
   `HighRSSI_ID` bigint(20) DEFAULT NULL,
+  `File_ID` bigint(20) DEFAULT NULL,
   `ap_hash` varchar(255) DEFAULT NULL,
   `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -651,7 +652,7 @@ CREATE TABLE `wifi_gps` (
   `KPH` decimal(6,2) DEFAULT NULL,
   `TrackAngle` decimal(5,2) DEFAULT NULL,
   `GPS_Date` datetime(3) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -668,7 +669,7 @@ CREATE TABLE `wifi_hist` (
   `RSSI` int(11) DEFAULT NULL,
   `New` tinyint(1) DEFAULT 0,
   `Hist_Date` datetime(3) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 --
 -- Indexes for dumped tables

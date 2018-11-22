@@ -484,7 +484,10 @@ class frontend extends dbcore
 		if($username == ""){return 0;}
 
 		#Total APs
-		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
+		$sql = "SELECT COUNT(*) \n"
+			. "FROM `wifi_ap`\n"
+			. "INNER JOIN `files` ON `wifi_ap`.`File_ID` = `files`.`id`\n"
+			. "WHERE `files`.`user` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
