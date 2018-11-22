@@ -158,6 +158,8 @@ class frontend extends dbcore
 			'fa'=>$newArray["FA"],
 			'la'=>$newArray["LA"],
 			'nt'=>$newArray["NETTYPE"],
+			'lat'=>$newArray["Lat"],
+			'lon'=>$newArray["Lon"],
 			'label'=>$newArray["label"],
 			'user'=>$newArray["username"]
 		);
@@ -171,11 +173,17 @@ class frontend extends dbcore
 		}
 
 		$list = array();
-		$id_find = "%-{$id}:%";
-		$id_find_firstitem = "{$id}:%";
-		$prep2 = $this->sql->conn->prepare("SELECT * FROM `user_imports` WHERE (`points` LIKE ? OR `points` LIKE ?)");
-		$prep2->bindParam(1, $id_find, PDO::PARAM_STR);
-		$prep2->bindParam(2, $id_find_firstitem, PDO::PARAM_STR);
+		$sql = "SELECT wf.File_ID, files.title, files.user, files.date, wf.New,\n"
+			. "(SELECT COUNT(DISTINCT wifi_hist.AP_ID) FROM wifi_hist WHERE wifi_hist.File_ID = wf.File_ID) AS `AP_COUNT`\n"
+			. "FROM wifi_hist AS `wf`\n"
+			. "INNER JOIN wifi_ap ON wf.AP_ID = wifi_ap.AP_ID\n"
+			. "INNER JOIN files ON wf.File_ID = files.id\n"
+			. "WHERE wf.AP_ID = ?\n"
+			. "GROUP BY wf.File_ID\n"
+			. "ORDER BY files.date DESC";
+
+		$prep2 = $this->sql->conn->prepare($sql);
+		$prep2->bindParam(1, $id, PDO::PARAM_INT);
 		$prep2->execute();
 		if($this->sql->checkError() !== 0)
 		{
@@ -184,23 +192,15 @@ class frontend extends dbcore
 
 		while ($field = $prep2->fetch(1))
 		{
-			//$sql = "SELECT `wifi_signals`.`id`, `wifi_signals`.`signal`, `wifi_signals`.`rssi`, `wifi_signals`.`gps_id`, `wifi_signals`.`username`, `wifi_gps`.`lat`, `wifi_gps`.`long`, `wifi_gps`.`alt`, `wifi_gps`.`sats`, `wifi_gps`.`hdp`, `wifi_gps`.`track`, `wifi_gps`.`date`, `wifi_gps`.`time`, `wifi_gps`.`mph`, `wifi_gps`.`kmh`
-			//		FROM `wifi_signals`
-			//		INNER JOIN `wifi_gps`
-			//		ON `wifi_signals`.`gps_id`=`wifi_gps`.`id`
-			//		WHERE `wifi_signals`.`ap_hash` = ? AND `wifi_signals`.`file_id` = ?
-			//		ORDER BY `wifi_signals`.`time_stamp` ASC";
 					
-					
-			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`, `files`.`user`\n"
+			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
 				. "FROM `wifi_hist`\n"
 				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID`=`wifi_gps`.`GPS_ID`\n"
-				. "INNER JOIN `files` ON `wifi_hist`.`File_ID`=`files`.`id`\n"
 				. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ?\n"
 				. "ORDER BY `wifi_hist`.`Hist_Date` ASC";
 			$prep1 = $this->sql->conn->prepare($sql);
 			$prep1->bindParam(1, $id, PDO::PARAM_STR);
-			$prep1->bindParam(2, $field["file_id"], PDO::PARAM_STR);
+			$prep1->bindParam(2, $field["File_ID"], PDO::PARAM_STR);
 			$prep1->execute();
 			$signals = $prep1->fetchAll(2);
 		
@@ -208,13 +208,12 @@ class frontend extends dbcore
 			//preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
 			$list[]= array(
 							'class'=>$class,
-							'id'=>$field['id'],
-							'nu'=>$signals[0]['New'],
+							'id'=>$field['File_ID'],
+							'nu'=>$field['New'],
 							'date'=>$field['date'],
-							'aps'=>$field['aps'],
-							'username'=>$field['username'],
+							'aps'=>$field['AP_COUNT'],
+							'user'=>$field['user'],
 							'title'=>$field['title'],
-							'title_id'=>$field['file_id'],
 							'signals'=>$signals
 							);
 

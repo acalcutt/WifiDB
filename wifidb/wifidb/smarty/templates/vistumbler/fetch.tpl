@@ -49,6 +49,8 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>First Active</p></td><td class="light" width="439"><p>{$wifidb_ap.fa}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
+										<tr valign="TOP"><td class="style4" width="112"><p>Latitude</p></td><td class="light" width="439"><p>{$wifidb_ap.lat}</p></td></tr>
+										<tr valign="TOP"><td class="style4" width="112"><p>Longitude</p></td><td class="light" width="439"><p>{$wifidb_ap.lon}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}&labeled=1">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
                                         </tr>
@@ -112,7 +114,7 @@ if not, write to the
 													<tbody>
 														<tr>
 															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>		
-															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.title_id}">{$wifidb_assoc.title}</a></td>
+															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
 															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
 															<td class="light" align="center">{$wifidb_assoc.aps}</td>
 															<td class="light">{$wifidb_assoc.date}</td>
