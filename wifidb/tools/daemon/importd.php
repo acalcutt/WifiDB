@@ -220,9 +220,9 @@ else
 			if($dbcore->NodeSyncing)
 			{
 				##### make sure import/export files are in sync with remote nodes
-				$dbcore->verbosed("Synchronizing files between nodes...", 1);
-				$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
-				exec($cmd);
+				#$dbcore->verbosed("Synchronizing files between nodes...", 1);
+				#$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
+				#exec($cmd);
 				#####
 			}
 
