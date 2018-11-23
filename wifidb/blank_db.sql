@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 22, 2018 at 01:42 AM
+-- Generation Time: Nov 23, 2018 at 11:49 AM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -129,12 +129,13 @@ CREATE TABLE `files` (
   `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `date` datetime NOT NULL DEFAULT current_timestamp(),
   `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
   `aps` int(11) NOT NULL DEFAULT 0,
   `gps` int(11) NOT NULL DEFAULT 0,
   `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `completed` tinyint(1) NOT NULL DEFAULT 0
+  `completed` tinyint(1) NOT NULL DEFAULT 0,
+  `NewAPPercent` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -149,8 +150,8 @@ CREATE TABLE `files_bad` (
   `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `size` varchar(12) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `date` datetime NOT NULL DEFAULT current_timestamp(),
   `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL,
   `thread_id` int(255) NOT NULL DEFAULT 0,
@@ -172,8 +173,8 @@ CREATE TABLE `files_importing` (
   `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `size` varchar(12) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `date` datetime NOT NULL DEFAULT current_timestamp(),
   `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -194,8 +195,8 @@ CREATE TABLE `files_tmp` (
   `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
   `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `size` varchar(12) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` timestamp NOT NULL DEFAULT current_timestamp(),
+  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `date` datetime NOT NULL DEFAULT current_timestamp(),
   `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
   `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL
@@ -612,23 +613,23 @@ CREATE TABLE `user_waypoints` (
 
 CREATE TABLE `wifi_ap` (
   `AP_ID` bigint(20) NOT NULL,
-  `BSSID` varchar(20) DEFAULT NULL,
-  `SSID` varchar(255) DEFAULT NULL,
+  `BSSID` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `SSID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `CHAN` int(11) DEFAULT NULL,
-  `AUTH` varchar(50) DEFAULT NULL,
-  `ENCR` varchar(50) DEFAULT NULL,
+  `AUTH` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `ENCR` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
   `SECTYPE` int(11) DEFAULT NULL,
-  `RADTYPE` varchar(50) DEFAULT NULL,
-  `NETTYPE` varchar(100) DEFAULT NULL,
-  `BTX` varchar(100) DEFAULT NULL,
-  `OTX` varchar(100) DEFAULT NULL,
+  `RADTYPE` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `NETTYPE` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `BTX` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `OTX` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
   `HighGps_ID` bigint(20) DEFAULT NULL,
   `FirstHist_ID` bigint(20) DEFAULT NULL,
   `LastHist_ID` bigint(20) DEFAULT NULL,
   `HighSig_ID` bigint(20) DEFAULT NULL,
   `HighRSSI_ID` bigint(20) DEFAULT NULL,
   `File_ID` bigint(20) DEFAULT NULL,
-  `ap_hash` varchar(255) DEFAULT NULL,
+  `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
