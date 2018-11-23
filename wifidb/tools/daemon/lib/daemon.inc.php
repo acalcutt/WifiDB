@@ -237,7 +237,7 @@ class daemon extends wdbcli
 		$file_type = strtolower($file_src[1]);
 		$file_name = $file_to_Import['file'];
 		$file_hash = $file_to_Import['hash'];
-		$file_size = (filesize($source)/1024);
+		$file_size = $file_to_Import['size'];
 		$file_date = $file_to_Import['date'];
 		#Lets check and see if it is has a valid VS1 file header.
 		if(in_array($file_type, $this->convert_extentions))
@@ -363,6 +363,7 @@ class daemon extends wdbcli
                 {
                     $PrevExt =  $prev_ext['prev_ext'];
                 }
+				
 				$sql_insert_file = "INSERT INTO `files`
 				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
 				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
@@ -406,18 +407,19 @@ class daemon extends wdbcli
 				}else
 				{
 					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
-					$update_files_table_sql = "UPDATE `files` SET `aps` = ?, `gps` = ?, `completed` = 1 WHERE `id` = ?";
+					$NewAPPercent = (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 );
+					$update_files_table_sql = "UPDATE `files` SET `aps` = ?, `gps` = ?, `NewAPPercent` = ?, `completed` = 1 WHERE `id` = ?";
 					$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
 					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
-					$prep_update_files_table->bindParam(3, $file_row, PDO::PARAM_INT);
+					$prep_update_files_table->bindParam(3, $NewAPPercent, PDO::PARAM_INT);
+					$prep_update_files_table->bindParam(4, $file_row, PDO::PARAM_INT);
 
 					$prep_update_files_table->execute();
 					$this->sql->checkError(__LINE__, __FILE__);
 
 					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ?, `NewAPPercent` = ? WHERE `id` = ?";
 					$prep3 = $this->sql->conn->prepare($sql);
-					$NewAPPercent = (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 );
 					foreach($import_ids as $id)
 					{
 						$prep3->bindParam(1, $tmp['imported'], PDO::PARAM_STR);
