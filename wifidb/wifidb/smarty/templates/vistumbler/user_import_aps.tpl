@@ -33,7 +33,7 @@ if not, write to the
 									<tr class="dark">
 										<td align="center">{$wifidb_all_user_aps.id}</td>
 										<td align="center">{$wifidb_all_user_aps.title}</td>
-										<td align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_all_user_aps.id}">{$wifidb_all_user_aps.file}</a></td>							
+										<td align="center">{$wifidb_all_user_aps.file}</td>							
 										<td align="center">{$wifidb_all_user_aps.hash}</td>
 									</tr>
 								</table>
