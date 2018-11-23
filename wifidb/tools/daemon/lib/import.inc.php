@@ -362,8 +362,8 @@ class import extends dbcore
 				
 			}else
 			{
-				$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `BTX`, `OTX`, `ap_hash`)
-						VALUES ( ?,?,?,?,?,?,?,?,?,?,? )";
+				$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `BTX`, `OTX`, `ap_hash`, `File_ID`)
+						VALUES ( ?,?,?,?,?,?,?,?,?,?,?,? )";
 						
 				$prep = $this->sql->conn->prepare($sql);
 				#var_dump($aps);
@@ -378,6 +378,7 @@ class import extends dbcore
 				$prep->bindParam(9, $aps['btx'], PDO::PARAM_STR);
 				$prep->bindParam(10, $aps['otx'], PDO::PARAM_STR);
 				$prep->bindParam(11, $ap_hash, PDO::PARAM_STR);
+				$prep->bindParam(12, $file_id, PDO::PARAM_INT);
 				$prep->execute();
 				if($this->sql->checkError())
 				{
@@ -402,8 +403,6 @@ class import extends dbcore
 			foreach($ap_sig_exp as $sig_gps_id)
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
-				if(empty($sig_gps_exp[1])){$this->verbosed("Bad Signal Data."); continue;}
-
 				$file_gps_id = $sig_gps_exp[0];
 				$signal = $sig_gps_exp[1];
 				if($this->rssi_signals_flag){$rssi = $sig_gps_exp[2];}else{$rssi = $this->convert->Sig2dBm($signal);}
@@ -475,7 +474,6 @@ class import extends dbcore
 			$resgps = $this->sql->conn->prepare($sql);
 			$resgps->bindParam(1, $ap_id, PDO::PARAM_INT);
 			$resgps->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
 			$fetchgps = $resgps->fetch(2);
 			$HighGps_id = $fetchgps['Gps_ID'];
 
