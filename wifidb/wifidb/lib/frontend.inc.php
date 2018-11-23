@@ -164,7 +164,7 @@ class frontend extends dbcore
 			'user'=>$newArray["username"]
 		);
 
-		if($newArray['lat'] == "0.0000")
+		if($newArray['Lat'] == "")
 		{
 			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
 		}else
@@ -409,15 +409,18 @@ class frontend extends dbcore
 
 		if($inputs['from'] == ''){$inputs['from'] = 0;}
 		if($inputs['to'] == ''){$inputs['to'] = 100;}
-		if($inputs['sort'] == ''){$inputs['sort'] = 'id';}
-		if($inputs['ord'] == ''){$inputs['ord'] = 'ASC';}
+		if($inputs['sort'] == ''){$inputs['sort'] = 'LA';}
+		if($inputs['ord'] == ''){$inputs['ord'] = 'DESC';}
 
 		$prep = array();
 		$apprep = array();
 		$prep['allaps'] = array();
-		$prep['username'] = $user;
+		$prep['user'] = $user;
 
-		$sql = "SELECT count(`id`) FROM `wifi_pointers` WHERE `username` LIKE ?";
+		$sql = "SELECT COUNT(*) \n"
+			. "FROM `wifi_ap`\n"
+			. "INNER JOIN `files` ON `wifi_ap`.`File_ID` = `files`.`id`\n"
+			. "WHERE `files`.`user` LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -425,10 +428,17 @@ class frontend extends dbcore
 		$prep['total_aps'] = $rows[0];
 
 		$flip = 0;
-		$sql = "SELECT `id`,`ssid`,`mac`,`radio`,`auth`,`encry`,`chan`,`lat`, `FA`,`LA` FROM
-				`wifi_pointers`
-				WHERE `username` = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
-
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
+			. "WHERE f.user = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";		
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
 		$result1->execute();
@@ -440,7 +450,7 @@ class frontend extends dbcore
 			else
 				{$style="light";$flip=1;}
 				
-			if($array['lat'] == "0.0000")
+			if($array['Lat'] == "")
 			{
 				$globe = "off";
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
@@ -450,24 +460,34 @@ class frontend extends dbcore
 				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 
-			if($array['ssid'] == "")
-				{$ssid = "Unknown";}
+			if($array['SSID'] == '')
+			{
+				$ssid = '[Blank SSID]';
+			}
+			elseif(!ctype_print($array['SSID']))
+			{
+				$ssid = '['.$array['SSID'].']';
+			}
 			else
-				{$ssid = $array['ssid'];}
+			{
+				$ssid = $array['SSID'];
+			}
 
 			$apprep[] = array(
-						"id" => $array['id'],
+						"id" => $array['AP_ID'],
 						"class" => $style,
 						"globe" => $globe,
 						"globe_html" => $globe_html,
 						"ssid" => $ssid,
-						"mac" => $array['mac'],
-						"radio" => $array['radio'],
-						"auth" => $array['auth'],
-						"encry" => $array['encry'],
-						"chan" => $array['chan'],
+						"mac" => $array['BSSID'],
+						"radio" => $array['RADTYPE'],
+						"auth" => $array['AUTH'],
+						"encry" => $array['ENCR'],
+						"chan" => $array['CHAN'],
 						"fa"   => $array['FA'],
-						"la"   => $array['LA']
+						"la"   => $array['LA'],
+						"lat"   => $array['Lat'],
+						"lon"   => $array['Long']
 						);
 		}
 		$prep['allaps'] = $apprep;
@@ -495,21 +515,22 @@ class frontend extends dbcore
 		$total = $rows[0];
 
 		#Get First Active AP
-		$sql = "SELECT id, username, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` ASC LIMIT 1";
+		$sql = "SELECT id, user, date FROM `files` WHERE `user` LIKE ? And `date` != '' ORDER BY `date` ASC LIMIT 1";
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
 		$prep2->execute();
 		$user_first = $prep2->fetch(2);
 
 		#Get Last Active AP
-		$sql = "SELECT id, aps, gps, title, date FROM `user_imports` WHERE `username` LIKE ? And `date` != '' ORDER BY `date` DESC LIMIT 1";
+		$sql = "SELECT `id`, `title`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
 		$prep1->execute();
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		$sql1 = "SELECT `id`, `points`, `title`, `date`, `aps`, `gps`, `NewAPPercent`, `hash`  FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		#$sql1 = "SELECT `id`, `points`, `title`, `date`, `aps`, `gps`, `NewAPPercent`, `hash`  FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
+		$sql1 = "SELECT `id`, `title`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 AND `id` != ? ORDER BY `date` DESC";
 		$other_imports = $this->sql->conn->prepare($sql1);
 		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
 		$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
@@ -519,7 +540,6 @@ class frontend extends dbcore
 		$flip = 0;
 		while($imports = $other_imports->fetch(2))
 		{
-			if($imports['points'] == ""){continue;}
 			if($flip)
 			{
 				$style = "dark";
@@ -540,7 +560,7 @@ class frontend extends dbcore
 		}
 		$this->user_all_imports_data = array();
 		$this->user_all_imports_data['user_id'] = $user_first['id'];
-		$this->user_all_imports_data['username'] = $user_first['username'];
+		$this->user_all_imports_data['user'] = $user_first['user'];
 		$this->user_all_imports_data['first_import_date'] = $user_first['date'];
 		$this->user_all_imports_data['total_aps'] = $total;
 
@@ -560,22 +580,28 @@ class frontend extends dbcore
 	function UserAPList($row=0)
 	{
 		if(!$row){return 0;}
-        $sql = "SELECT `id`, `username`, `aps`, `gps`, `points`, `notes`, `title`, `date`, `hash`, `file_id`, `converted`, `prev_ext`, `NewAPPercent` FROM `user_imports` WHERE `id`= ?";
+        $sql = "SELECT `id`, `file`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size` FROM `files` WHERE `id`= ?";
         $result = $this->sql->conn->prepare($sql);
 		$result->execute(array($row));
 		$user_array = $result->fetch(2);
 
 		$all_aps_array = array();
 		$all_aps_array['allaps'] = array();
-		$all_aps_array['username'] = $user_array['username'];
+		$all_aps_array['id'] = $user_array['id'];
+		$all_aps_array['file'] = $user_array['file'];
+		$all_aps_array['user'] = $user_array['user'];
 		$all_aps_array['notes'] = $user_array['notes'];
 		$all_aps_array['title'] = $user_array['title'];
 		$all_aps_array['aps'] = $user_array['aps'];
-		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent']."%";
+		$all_aps_array['gps'] = $user_array['gps'];
+		$all_aps_array['size'] = $user_array['size'];
+		$all_aps_array['hash'] = $user_array['hash'];
+		$all_aps_array['date'] = $user_array['date'];
+		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
 		
 		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
-		$prep_AP_IDS->bindParam(1,$user_array['file_id'], PDO::PARAM_INT);
+		$prep_AP_IDS->bindParam(1,$user_array['id'], PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
 		$count = 0;
 		while ( $array = $prep_AP_IDS->fetch(2) )
@@ -588,33 +614,41 @@ class frontend extends dbcore
 			else
 				{$style="light";$flip=1;}
 			
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-				. "whFA.Hist_Date As FA,\n"
-				. "whLA.Hist_Date As LA,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "(SELECT New From wifi_hist WHERE File_ID = ? And AP_ID = ? LIMIT 1) AS New\n"
-				. "FROM `wifi_ap` AS wap\n"
-				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "WHERE wap.AP_ID = ?";
-			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $user_array['file_id'], PDO::PARAM_INT);
-			$result->bindParam(2, $apid, PDO::PARAM_INT);
-			$result->bindParam(3, $apid, PDO::PARAM_INT);
-			$result->execute();
-			$ap_array = $result->fetch(2);
+			#Find AP First Date in this list
+			$sql = "SELECT Hist_Date, New From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date ASC LIMIT 1";
+			$list_AP_FA_prep = $this->sql->conn->prepare($sql);
+			$list_AP_FA_prep->bindParam(1, $user_array['id'], PDO::PARAM_INT);
+			$list_AP_FA_prep->bindParam(2, $apid, PDO::PARAM_INT);
+			$list_AP_FA_prep->execute();
+			$list_AP_FA_array = $list_AP_FA_prep->fetch(2);
+			$List_AP_FA = $list_AP_FA_array['Hist_Date'];
+			if($list_AP_FA_array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
 			
-			if($ap_array['New'] == 1)
-			{
-				$update_or_new = "Update";
-			}else
-			{
-				$update_or_new = "New";
-			}
-
-			if($ap_array['Lat'] == "")
+			#Find AP Last Date in this list
+			$sql = "SELECT Hist_Date From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date DESC LIMIT 1";
+			$list_AP_LA_prep = $this->sql->conn->prepare($sql);
+			$list_AP_LA_prep->bindParam(1, $user_array['id'], PDO::PARAM_INT);
+			$list_AP_LA_prep->bindParam(2, $apid, PDO::PARAM_INT);
+			$list_AP_LA_prep->execute();
+			$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
+			$List_AP_LA = $list_AP_LA_array['Hist_Date'];
+			
+			#Find AP Highest GPS Position in this list
+			$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
+				. "FROM `wifi_hist` \n"
+				. "INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID` \n"
+				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_hist`.`AP_ID` = ?\n"
+				. "ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
+				. "LIMIT 1";
+			$resgps = $this->sql->conn->prepare($sql);
+			$resgps->bindParam(1, $user_array['id'], PDO::PARAM_INT);
+			$resgps->bindParam(2, $apid, PDO::PARAM_INT);
+			$resgps->execute();
+			$fetchgps = $resgps->fetch(2);
+			$HighGps_Lat = $fetchgps['Lat'];
+			$HighGps_Lon = $fetchgps['Lon'];
+			
+			if($HighGps_Lat  == "0.0000" || $HighGps_Lat  == "")
 			{
 				$globe = "off";
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
@@ -623,6 +657,14 @@ class frontend extends dbcore
 				$globe = "on";
 				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
+			
+			$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX\n"
+				. "FROM `wifi_ap`\n"
+				. "WHERE AP_ID = ?";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $apid, PDO::PARAM_INT);
+			$result->execute();
+			$ap_array = $result->fetch(2);
 
 			if($ap_array['SSID'] == '')
 			{
@@ -649,10 +691,13 @@ class frontend extends dbcore
 					'radio' => $ap_array['RADTYPE'],
 					'auth' => $ap_array['AUTH'],
 					'encry' => $ap_array['ENCR'],
-					'fa' => $ap_array['FA'],
-					'la' => $ap_array['LA']
+					'fa' => $List_AP_FA,
+					'la' => $List_AP_LA,
+					'lat' => $HighGps_Lat,
+					'lon' => $HighGps_Lon
 			);
 		}
+		$all_aps_array['total_aps'] = $count;
 		$this->users_import_aps = $all_aps_array;
 		return 1;
 	}

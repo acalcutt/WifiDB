@@ -46,21 +46,23 @@ switch($func)
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
     case 'done':
-        $sql = "SELECT `files`.`id`, `user_imports`.`id` as `UserImportID`, `user_imports`.`username`, `files`.`file`, `user_imports`.`NewAPPercent`, `files`.`title`, `files`.`date`, `files`.`size`, `files`.`aps`, `files`.`gps`, `files`.`hash` FROM `files` INNER JOIN user_imports WHERE `files`.`completed` = 1 AND `files`.`id` = `user_imports`.`file_id` ORDER BY `files`.`id` DESC";
+        #$sql = "SELECT `files`.`id`, `user_imports`.`id` as `UserImportID`, `user_imports`.`username`, `files`.`file`, `user_imports`.`NewAPPercent`, `files`.`title`, `files`.`date`, `files`.`size`, `files`.`aps`, `files`.`gps`, `files`.`hash` FROM `files` INNER JOIN user_imports WHERE `files`.`completed` = 1 AND `files`.`id` = `user_imports`.`file_id` ORDER BY `files`.`id` DESC";
         #echo $sql;
+		$sql = "SELECT `id`, `file`, `user`, `title`, `date`, `aps`, `gps`, `size`, `NewAPPercent`, `hash` \n"
+			. "FROM `files` \n"
+			. "WHERE `completed` = 1 ORDER BY `date` DESC";
         $result = $dbcore->sql->conn->query($sql);
         $class_f = 0;
         $files_all = array();
         while ($newArray = $result->fetch(2))
         {
-            $users_array = explode("|", $newArray["username"]);
+            $users_array = explode("|", $newArray["user"]);
             $users_array = array_filter($users_array);
 
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
             $files_all[] = array(
                                     'class'=>$class,
                                     'id'=>$newArray['id'],
-                                    'user_row'=>$newArray['UserImportID'],
                                     'file'=>html_entity_decode($newArray['file']),
                                     'date'=>$newArray['date'],
                                     'user'=>$users_array,

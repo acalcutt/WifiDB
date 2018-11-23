@@ -55,7 +55,7 @@ if not, write to the
 					<th>Hash</th>
 				</tr>
 				<tr class="{$wifidb_done.class}">
-					<td align="center" colspan="2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.user_row}">{$wifidb_done.file}</a></td>
+					<td align="center" colspan="2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file}</a></td>
 					<td align="center">{$wifidb_done.size}</td>
 					<td align="center">{$wifidb_done.hash}</td>
 				</tr>

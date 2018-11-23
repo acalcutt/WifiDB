@@ -22,26 +22,44 @@ if not, write to the
                     <tbody>
                         <tr>
                             <td>
+							
+								<table border="1" style="width:100%;">
+									<tr class="sub_head">
+										<th>ID</th>
+										<th>Title</th>
+										<th>Filename</th>
+										<th>Hash</th>
+									</tr>
+									<tr class="dark">
+										<td align="center">{$wifidb_all_user_aps.id}</td>
+										<td align="center">{$wifidb_all_user_aps.title}</td>
+										<td align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_all_user_aps.id}">{$wifidb_all_user_aps.file}</a></td>							
+										<td align="center">{$wifidb_all_user_aps.hash}</td>
+									</tr>
+								</table>
+								<table border="1" style="width:100%;">
+									<tr class="sub_head">
+										<th>Date</th>
+										<th>Size</th>
+										<th>APs/GPS Count</th>
+										<th>Efficiency</th>
+										<th>User(s)</th>
+
+									</tr>
+									<tr class="dark">
+										<td align="center">{$wifidb_all_user_aps.date}</td>	
+										<td align="center">{$wifidb_all_user_aps.size}</td>
+										<td align="center">{$wifidb_all_user_aps.aps} - {$wifidb_all_user_aps.gps}</td>
+										<td align="center">{$wifidb_all_user_aps.NewAPPercent}%</td>
+										<td align="center">
+											{foreach name=users_all item=user from=$wifidb_all_user_aps.user}
+											<a class="links" href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a><br>
+											{/foreach}
+										</td>
+									</tr>
+								</table>
                                 <table border="1" align="center" width="100%">
                                     <tbody>
-                                        <tr class="style4">
-                                            <th colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.username}">{$wifidb_all_user_aps.username}</a></th>
-                                        </tr>
-                                        <tr class="style4">
-                                            <th colspan="2">Import Title: {$wifidb_all_user_aps.title}</th>
-                                        </tr>
-                                        <tr class="sub_head">
-                                            <td width="190px"><b>Import Notes:</b></td>
-                                            <td>{$wifidb_all_user_aps.notes}</th>
-                                        </tr>
-                                        <tr class="sub_head">
-                                            <td width="190px"><b>Total Access Points...</b></td>
-                                            <td>{$wifidb_all_user_aps.total_aps}</td>
-                                        </tr>
-										<tr class="sub_head">
-											<td width="190px"><b>Access Point Efficiency...</b></td>
-											<td>{$wifidb_all_user_aps.NewAPPercent}</td>
-										</tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Export This list To...</b></td>
                                             <td><a class="links" href="{$wifidb_host_url}opt/map.php?func=user_list&id={$wifidb_all_user_row}&labeled=1">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_list&amp;row={$wifidb_all_user_row}&amp;all=1">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list&amp;row={$wifidb_all_user_row}&amp;all=1">KMZ</a></td>
