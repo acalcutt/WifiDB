@@ -294,25 +294,20 @@ class frontend extends dbcore
 	#===================================#
 	Public function AllUsers()
 	{
-		$sql = "SELECT `username` FROM `user_imports` ORDER BY `username` ASC";
-		$result = $this->sql->conn->query($sql);
-
-		$users_all = $result->fetchAll(2);
-		foreach($users_all as $user)
-		{
-			$user_all[] = $user['username'];
-		}
-
-		$users = array_unique($user_all);
+		$this->all_users_data = array();
 		$tablerowid = 0;
 		$row_color = 0;
-		$this->all_users_data = array();
-		$prev_id = 0;
-		foreach($users as $user)
+		$prev_id = 0;		
+		
+		$sql = "SELECT DISTINCT `user` FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
+		$result = $this->sql->conn->query($sql);
+		$result->execute();
+		while($user = $result->fetch(2))
 		{
-			$sql = "SELECT `id`, `username`, `points`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `user_imports` WHERE `username`= ? ORDER BY `date` DESC";
+
+			$sql = "SELECT `id`, `user`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `files` WHERE completed = 1 AND `user`= ? ORDER BY `date` DESC";
 			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user, PDO::PARAM_STR);
+			$prep->bindParam(1, $user['user'] , PDO::PARAM_STR);
 			$prep->execute();
 
 			$imports = (int) $prep->rowCount();
@@ -323,9 +318,6 @@ class frontend extends dbcore
 			$tablerowid++;
 			while ($user_array = $prep->fetch(2))
 			{
-				if($user_array['points'] === ""){continue;}
-				$username = $user_array['username'];
-
 				if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
 				if ($user_array['date'] === ""){ $user_array['date']="No date, hmm..";}
 
@@ -334,8 +326,6 @@ class frontend extends dbcore
 
 				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
 				$notes = $user_array['notes'];
-				$points = explode("-",$user_array['points']);
-				$pc = count($points);
 
 				if($pre_user)
 				{
@@ -351,19 +341,19 @@ class frontend extends dbcore
 					{$row_color = 0; $color = "light";}
 					else{$row_color = 1; $color = "dark";}
 
-					$this->all_users_data[$user] = array(
+					$this->all_users_data[$user['user']] = array(
 								'rowid'	=> $tablerowid,
 								'class'	=> $color,
 								'id'	   => $user_array['id'],
 								'imports'  => $imports,
-								'username' => $username,
+								'username' => $user_array['user'],
 								'data'	 => array(
 													array(
 														'id'	=> $user_array['id'],
 														'class' => $color2,
 														'title' => $user_array['title'],
 														'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-														'aps'   => $pc,
+														'aps'   => $user_array['aps'],
 														'NewAPPercent' => $user_array['NewAPPercent']."%",
 														'date'  => $user_array['date']
 													),
@@ -376,12 +366,12 @@ class frontend extends dbcore
 					{$row_color2 = 0; $color2 = "light";}
 					else{$row_color2 = 1; $color2 = "dark";}
 
-					$this->all_users_data[$user]['data'][] = array(
+					$this->all_users_data[$user['user']]['data'][] = array(
 								'id'	=> $user_array['id'],
 								'class' => $color2,
 								'title' => $user_array['title'],
 								'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-								'aps'   => $pc,
+								'aps'   => $user_array['aps'],
                                 'NewAPPercent' => $user_array['NewAPPercent']."%",
 								'date'  => $user_array['date']
 							);
