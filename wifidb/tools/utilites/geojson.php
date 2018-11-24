@@ -10,10 +10,10 @@ require($wdb_install)."/lib/init.inc.php";
 
 
 $exports = [
-    ["WifiDB_0to1year.json", "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND LA >= DATE_SUB(NOW(),INTERVAL 1 YEAR) ORDER BY id LIMIT ?,?"],
-    ["WifiDB_1to2year.json", "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND LA >= DATE_SUB(NOW(),INTERVAL 2 YEAR) AND LA < DATE_SUB(NOW(),INTERVAL 1 YEAR) ORDER BY id LIMIT ?,?"],
-	["WifiDB_2to3year.json", "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND LA >= DATE_SUB(NOW(),INTERVAL 3 YEAR) AND LA < DATE_SUB(NOW(),INTERVAL 2 YEAR) ORDER BY id LIMIT ?,?"],
-	["WifiDB_Legacy.json", "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND LA < DATE_SUB(NOW(),INTERVAL 3 YEAR) ORDER BY id LIMIT ?,?"],
+    ["WifiDB_0to1year.json", "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, whFA.Hist_Date As FA, whLA.Hist_Date As LA, wGPS.Lat As Lat, wGPS.Lon As Lon, wGPS.Alt As Alt, wf.user As user FROM `wifi_ap` AS wap LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID LEFT JOIN files AS wf ON whFA.File_ID = wf.id WHERE wGPS.Lat IS NOT NULL AND wGPS.Lat != '0.0000' AND whLA.Hist_Date >= DATE_SUB(NOW(),INTERVAL 1 YEAR) ORDER BY wap.AP_ID LIMIT ?,?"],
+    ["WifiDB_1to2year.json", "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, whFA.Hist_Date As FA, whLA.Hist_Date As LA, wGPS.Lat As Lat, wGPS.Lon As Lon, wGPS.Alt As Alt, wf.user As user FROM `wifi_ap` AS wap LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID LEFT JOIN files AS wf ON whFA.File_ID = wf.id WHERE wGPS.Lat IS NOT NULL AND wGPS.Lat != '0.0000' AND whLA.Hist_Date >= DATE_SUB(NOW(),INTERVAL 2 YEAR) AND whLA.Hist_Date < DATE_SUB(NOW(),INTERVAL 1 YEAR) ORDER BY wap.AP_ID LIMIT ?,?"],
+	["WifiDB_2to3year.json", "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, whFA.Hist_Date As FA, whLA.Hist_Date As LA, wGPS.Lat As Lat, wGPS.Lon As Lon, wGPS.Alt As Alt, wf.user As user FROM `wifi_ap` AS wap LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID LEFT JOIN files AS wf ON whFA.File_ID = wf.id WHERE wGPS.Lat IS NOT NULL AND wGPS.Lat != '0.0000' AND whLA.Hist_Date >= DATE_SUB(NOW(),INTERVAL 3 YEAR) AND whLA.Hist_Date < DATE_SUB(NOW(),INTERVAL 2 YEAR) ORDER BY wap.AP_ID LIMIT ?,?"],
+	["WifiDB_Legacy.json", "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, whFA.Hist_Date As FA, whLA.Hist_Date As LA, wGPS.Lat As Lat, wGPS.Lon As Lon, wGPS.Alt As Alt, wf.user As user FROM `wifi_ap` AS wap LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID LEFT JOIN files AS wf ON whFA.File_ID = wf.id WHERE wGPS.Lat IS NOT NULL AND wGPS.Lat != '0.0000' AND whLA.Hist_Date < DATE_SUB(NOW(),INTERVAL 3 YEAR) ORDER BY wap.AP_ID LIMIT ?,?"],
 ];
 
 foreach ($exports as list($filename, $sql)) {
@@ -32,29 +32,29 @@ foreach ($exports as list($filename, $sql)) {
 		{
 			#Get AP KML
 			$ap_info = array(
-			"id" => $ap['id'],
+			"id" => $ap['AP_ID'],
 			"new_ap" => 1,
 			"named" => 0,
-			"mac" => $ap['mac'],
-			"ssid" => $ap['ssid'],
-			"chan" => $ap['chan'],
-			"radio" => $ap['radio'],
-			"NT" => $ap['NT'],
-			"sectype" => $ap['sectype'],
-			"auth" => $ap['auth'],
-			"encry" => $ap['encry'],
-			"BTx" => $ap['BTx'],
-			"OTx" => $ap['OTx'],
+			"mac" => $ap['BSSID'],
+			"ssid" => $ap['SSID'],
+			"chan" => $ap['CHAN'],
+			"radio" => $ap['RADTYPE'],
+			"NT" => $ap['NETTYPE'],
+			"sectype" => $ap['SECTYPE'],
+			"auth" => $ap['AUTH'],
+			"encry" => $ap['ENCR'],
+			"BTx" => $ap['BTX'],
+			"OTx" => $ap['OTX'],
 			"FA" => $ap['FA'],
 			"LA" => $ap['LA'],
-			"lat" => $dbcore->convert->dm2dd($ap['lat']),
-			"long" => $dbcore->convert->dm2dd($ap['long']),
-			"alt" => $ap['alt'],
-			"manuf"=>$dbcore->findManuf($ap['mac']),
-			"username" => $ap['username']
+			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
+			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
+			"alt" => $ap['Alt'],
+			"manuf"=>$dbcore->findManuf($ap['BSSID']),
+			"user" => $ap['user']
 			);
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info, 1);
 		}
 		$number_of_rows = $prep->rowCount();
 		echo $number_of_rows.'-';
