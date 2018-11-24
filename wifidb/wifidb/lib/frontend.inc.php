@@ -638,7 +638,18 @@ class frontend extends dbcore
 			$HighGps_Lat = $fetchgps['Lat'];
 			$HighGps_Lon = $fetchgps['Lon'];
 			
-			if($HighGps_Lat  == "0.0000" || $HighGps_Lat  == "")
+			$sql = "SELECT `wifi_ap`.`AP_ID`, `wifi_ap`.`BSSID`, `wifi_ap`.`SSID`, `wifi_ap`.`CHAN`, `wifi_ap`.`AUTH`, `wifi_ap`.`ENCR`, `wifi_ap`.`SECTYPE`, `wifi_ap`.`RADTYPE`, `wifi_ap`.`NETTYPE`, `wifi_ap`.`BTX`, `wifi_ap`.`OTX`,\n"
+				. "`wifi_gps`.`Lat` AS Lat,\n"
+				. "`wifi_gps`.`Lon` AS Lon\n"
+				. "FROM `wifi_ap`\n"
+				. "LEFT JOIN  `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
+				. "WHERE AP_ID = ?";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $apid, PDO::PARAM_INT);
+			$result->execute();
+			$ap_array = $result->fetch(2);
+			
+			if($ap_array['Lat']  == "0.0000" || $ap_array['Lat']  == "")
 			{
 				$globe = "off";
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
@@ -647,14 +658,6 @@ class frontend extends dbcore
 				$globe = "on";
 				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
-			
-			$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX\n"
-				. "FROM `wifi_ap`\n"
-				. "WHERE AP_ID = ?";
-			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $apid, PDO::PARAM_INT);
-			$result->execute();
-			$ap_array = $result->fetch(2);
 
 			if($ap_array['SSID'] == '')
 			{
