@@ -1,4 +1,5 @@
 <?php
+require(dirname(__FILE__) . '/config.inc.php');
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
 Copyright (C) 2016 Phil Ferland
@@ -31,10 +32,10 @@ if(!function_exists('WiFiDBexception_handler')) {
 		$trace = array('Error' => strval($err->getCode()), 'Message' => str_replace("\n", "</br>\r\n", $err->getMessage()), 'Code' => strval($err->getCode()), 'File' => $err->getFile(), 'Line' => strval($err->getLine()));
 		switch (strtolower(SWITCH_SCREEN)) {
 			case "html":
-				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/");
-				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/wifidb/smarty/");
+				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/");
+				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/smarty/");
 				$smarty = new Smarty();
-				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/vistumbler/');
+				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/'.$config['default_theme'].'/');
 				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/');
 				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/');
 				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/');
@@ -57,16 +58,12 @@ set_exception_handler('WiFiDBexception_handler');
 
 if(strtolower(SWITCH_SCREEN) == "cli")
 {
-	if(!file_exists('/etc/wifidb/daemon.config.inc.php'))
+	if(!file_exists($config['wifidb_tools'].'daemon.config.inc.php'))
 	{
 		$error_msg = 'There was no config file found. You will need to install WiFiDB first. Please go to /[WiFiDB ROOT]/install/ (The install page) to do that.';
 		throw new ErrorException($error_msg);
 	}
-	require '/etc/wifidb/daemon.config.inc.php';
-	require $daemon_config['wifidb_install'].'/lib/config.inc.php';
-}else
-{
-	require 'config.inc.php';
+	require $config['wifidb_tools'].'daemon.config.inc.php';
 }
 $dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'];
 $options = array(
