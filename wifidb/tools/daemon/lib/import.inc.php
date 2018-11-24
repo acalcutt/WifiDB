@@ -189,6 +189,7 @@ class import extends dbcore
 					}
 
 					$highestSignal = $this->FindHighestSig($ap_line[12]);
+					if($highestSignal == ""){$highestSignal = 0;}
 					$highestRSSI = $this->convert->Sig2dBm($highestSignal);
 					$apdata[] = array(
 								'ap_hash'   => "",
@@ -404,11 +405,11 @@ class import extends dbcore
 			{
 				$sig_gps_exp = explode(",", $sig_gps_id);
 				$file_gps_id = $sig_gps_exp[0];
+				if($file_gps_id == ""){continue;}
 				$signal = $sig_gps_exp[1];
+				if($signal == ""){$signal = 0;}
 				if($this->rssi_signals_flag){$rssi = $sig_gps_exp[2];}else{$rssi = $this->convert->Sig2dBm($signal);}
 				
-				$gps_id = "";
-				$datetime = "";
 				$GID_SQL = "SELECT GPS_ID, GPS_Date FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";
 				$gidprep = $this->sql->conn->prepare($GID_SQL);
 				$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
@@ -417,6 +418,7 @@ class import extends dbcore
 				$fetchgidprep = $gidprep->fetch(2);
 				$gps_id = $fetchgidprep['GPS_ID'];
 				$datetime = $fetchgidprep['GPS_Date'];
+				if($gps_id == ""){continue;}
 
 				$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
