@@ -174,8 +174,8 @@ switch($func)
 				{
 					# -Add gps to region array-
 					$latlon_info = array(
-					"lat" => $latlon_fetch['Lat'],
-					"long" => $latlon_fetch['Lon'],
+					"lat" => $dbcore->convert->dm2dd($latlon_fetch['Lat']),
+					"long" => $dbcore->convert->dm2dd($latlon_fetch['Lon'])
 					);
 					$box_latlon[] = $latlon_info;
 
@@ -231,8 +231,8 @@ switch($func)
 				{
 					# -Add gps to region array-
 					$latlon_info = array(
-					"lat" => $latlon_fetch['Lat'],
-					"long" => $latlon_fetch['Lon'],
+					"lat" => $dbcore->convert->dm2dd($latlon_fetch['Lat']),
+					"long" => $dbcore->convert->dm2dd($latlon_fetch['Lon'])
 					);
 					$box_latlon[] = $latlon_info;
 
@@ -316,7 +316,7 @@ switch($func)
 				$Export_List = 0;
 				$box_latlon = array();
 				# -Get Import Name-
-				$sql = "SELECT `title`, `date` FROM `files` WHERE `file_id` = ?";
+				$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";
 				$prep_title = $dbcore->sql->conn->prepare($sql);
 				$prep_title->bindParam(1, $file_id['File_ID'], PDO::PARAM_INT);
 				$prep_title->execute();
@@ -337,8 +337,8 @@ switch($func)
 				{
 					# -Add gps to region array-
 					$latlon_info = array(
-					"lat" => $latlon_fetch['Lat'],
-					"long" => $latlon_fetch['Lon'],
+					"lat" => $dbcore->convert->dm2dd($latlon_fetch['Lat']),
+					"long" => $dbcore->convert->dm2dd($latlon_fetch['Lon'])
 					);
 					$box_latlon[] = $latlon_info;
 
@@ -353,7 +353,7 @@ switch($func)
 					$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());
 					
 					# -Create Network Link to Signal History-
-					$KML_Signal_data .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list_ap_signal&#x26;file_id='.$file_id['File_ID'].'&#x26;id='.$id, $file_id.' - '.$ap_list_title.' - '.$ap_list_date, 1, 0, "onChange", 86400, 0, $KML_region);
+					$KML_Signal_data .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list_ap_signal&#x26;file_id='.$file_id['File_ID'].'&#x26;id='.$id, $file_id['File_ID'].' - '.$ap_list_title.' - '.$ap_list_date, 1, 0, "onChange", 86400, 0, $KML_region);
 				}
 			}			
 			if($KML_Signal_data == ""){$KML_Signal_data .= $dbcore->createKML->createFolder("No Signal History", $KML_Signal_data, 0);}
@@ -376,7 +376,7 @@ switch($func)
 			$ap_name = $ap_array['SSID'];
 			
 			#Get List Title 
-			$sql = "SELECT `title`, `date` FROM `files` WHERE `file_id` = ?";
+			$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";
 			$prep_title = $dbcore->sql->conn->prepare($sql);
 			$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep_title->execute();

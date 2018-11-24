@@ -169,7 +169,7 @@ class frontend extends dbcore
 			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
 		}else
 		{
-			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
+			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
 		}
 
 		$list = array();
@@ -299,7 +299,7 @@ class frontend extends dbcore
 		$row_color = 0;
 		$prev_id = 0;		
 		
-		$sql = "SELECT DISTINCT `user` FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
+		$sql = "SELECT DISTINCT(`user`) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
 		$result = $this->sql->conn->query($sql);
 		$result->execute();
 		while($user = $result->fetch(2))

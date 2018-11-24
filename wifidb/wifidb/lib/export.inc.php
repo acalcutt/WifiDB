@@ -49,7 +49,6 @@ class export extends dbcore
 			"ExportSingleAP"		=>  "1.0",
 			"ExportCurrentAP"	=>  "1.0",
 			"ExportApSignal3d"	=>  "1.0",			
-			"UserAll"		=>  "3.0",
 			"UserList"		=>  "3.0",
 			"UserListGeoJSON"		=>  "1.0",
 			"FindBox"	=>  "1.0",
@@ -74,13 +73,13 @@ class export extends dbcore
 		if($type == "full")
 		{
 			#Create Queries
-			$user_query = "SELECT DISTINCT(username) FROM `user_imports` ORDER BY `username` ASC";
-			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != ''";
+			$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
+			$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And completed = 1";
 		}
 		elseif($type == "daily")
 		{
 			#Get the date of the latest import
-			$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+			$sql = "SELECT `date` FROM `files` WHERE completed = 1 ORDER BY `date` DESC LIMIT 1";
 			$date_query = $this->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$datestamp = $date_fetch['date'];
@@ -90,8 +89,8 @@ class export extends dbcore
 			
 			#Create Queries
 			$date_search = $latest_date."%";
-			$user_query = "SELECT DISTINCT(username) FROM `user_imports` WHERE `date` LIKE '$date_search' ORDER BY `username` ASC";
-			$user_list_query = "SELECT `id`, `points`, `username`, `title`, `date` FROM `user_imports` WHERE `username` LIKE ? AND `points` != '' AND `date` LIKE '$date_search'";
+			$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 And `date` LIKE '$date_search' ORDER BY `user` ASC";
+			$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE completed = 1 And `user` LIKE ? AND `date` LIKE '$date_search'";
 		}	
 		
 		$ZipC = clone $this->Zip;
@@ -107,7 +106,7 @@ class export extends dbcore
 			#Get users lists and go through them
 			$user_results = "";
 			$user_files = 0;
-			$username = $user['username'];
+			$username = $user['user'];
 			$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
 			$prep_user_list->execute();
 			$fetch_imports = $prep_user_list->fetchAll();
@@ -115,7 +114,7 @@ class export extends dbcore
 			{
 				$id = $import['id'];
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
-				$ListKML = $this->UserList($import['points'], $this->named, $only_new, $new_icons);
+				$ListKML = $this->UserList($id, $this->named, $only_new, $new_icons);
 				if($ListKML['data'] !== "")
 				{
 					$final_box = $this->FindBox($ListKML['box']);
@@ -152,7 +151,7 @@ class export extends dbcore
 		$results = $this->createKML->createFolder($type." Database Export", $results, 1);
 		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
 		
-		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_tmp);
+		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
 		$ZipC->addFile($results, 'doc.kml');
 		$ZipC->setZipFile($kmz_filepath);
 		$ZipC->getZipFile();
@@ -199,7 +198,7 @@ class export extends dbcore
 		$appointer = $result->fetchAll();
 		foreach($appointer as $ap)
 		{
-			$export_ssid=$ap['ssid'];
+			$export_ssid=$ap['SSID'];
 			$ap_info = array(
 			"id" => $ap['AP_ID'],
 			"new_ap" => $new_icons,
@@ -216,8 +215,8 @@ class export extends dbcore
 			"OTx" => $ap['OTX'],
 			"FA" => $ap['FA'],
 			"LA" => $ap['LA'],
-			"lat" => $ap['Lat'],
-			"long" => $ap['Lon'],
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"lon" => $this->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
 			"manuf"=>$this->findManuf($ap['BSSID']),
 			"username" => $ap['user']
@@ -281,46 +280,6 @@ class export extends dbcore
 		return $KML_data;
 	}
 
-	public function UserAll($user)
-	{
-		if(!is_string($user))
-		{
-			throw new ErrorException('$user value for export::UserAll() is not a string');
-			return 0;
-		}
-		$sql = "SELECT `points` FROM `user_imports` WHERE `username` = ?";
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $user, PDO::PARAM_STR);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		$user_imports = $prep->fetchAll();
-		$uicount = count($user_imports);
-
-		$KML_data="";
-		if($uicount < 1)
-		{
-			throw new ErrorException("User selected is empty, try again.");
-		}else
-		{
-			foreach($user_imports as $import)
-			{
-				$points = explode("-", $import['points']);
-				foreach($points as $point)
-				{
-					list($id, $new_old) = explode(":", $point);
-					$sql = "SELECT `id` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-					$result = $this->sql->conn->query($sql);
-					while($array = $result->fetch(2))
-					{
-						list($KML_AP_data, $export_ssid) = $this->ExportSingleAp($array['id'], $this->named);
-						if($KML_AP_data){$KML_data .= $KML_AP_data;}
-					}
-				}
-			}
-		}
-		return $KML_data;
-	}
-	
 	public function UserList($file_id, $named=0, $only_new=0, $new_icons=0)
 	{
 		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
@@ -332,90 +291,59 @@ class export extends dbcore
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
-			$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`\n"
-				. "FROM `wifi_hist`\n"
-				. "INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_hist`.`AP_ID` = ?\n"
-				. "ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
-				. "LIMIT 1";
-			$resgps = $this->sql->conn->prepare($sql);
-			$resgps->bindParam(1, $file_id, PDO::PARAM_INT);
-			$resgps->bindParam(2, $apid, PDO::PARAM_INT);
-			$resgps->execute();
-			$fetchgps = $resgps->fetch(2);
-			$HighGps_Lat = $fetchgps['Lat'];
-			$HighGps_Lon = $fetchgps['Lon'];
-			$HighGps_Alt = $fetchgps['Alt'];
-			if($HighGps_Lat != "0.0000")
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+				. "whFA.Hist_Date As FA,\n"
+				. "whLA.Hist_Date As LA,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.user As user\n"
+				. "FROM `wifi_ap` AS wap\n"
+				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+				. "WHERE `wap`.`AP_ID` = ? And HighGps_ID IS NOT NULL";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $apid, PDO::PARAM_INT);
+			$result->execute();
+			$appointer = $result->fetchAll();
+			foreach($appointer as $ap)
 			{
-				#Find File User
-				$sql = "SELECT user From files WHERE id = ? LIMIT 1";
-				$list_user_prep = $this->sql->conn->prepare($sql);
-				$list_user_prep->bindParam(1, $file_id, PDO::PARAM_INT);
-				$list_user_prep->execute();
-				$list_user_array = $list_user_prep->fetch(2);
-				$List_user = $list_user_array['user'];
-
-				#Find AP First Date in this list
-				$sql = "SELECT Hist_Date, New From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date ASC LIMIT 1";
-				$list_AP_FA_prep = $this->sql->conn->prepare($sql);
-				$list_AP_FA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
-				$list_AP_FA_prep->bindParam(2, $apid, PDO::PARAM_INT);
-				$list_AP_FA_prep->execute();
-				$list_AP_FA_array = $list_AP_FA_prep->fetch(2);
-				$List_AP_FA = $list_AP_FA_array['Hist_Date'];
-				if($list_AP_FA_array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
-			
-				#Find AP Last Date in this list
-				$sql = "SELECT Hist_Date From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date DESC LIMIT 1";
-				$list_AP_LA_prep = $this->sql->conn->prepare($sql);
-				$list_AP_LA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
-				$list_AP_LA_prep->bindParam(2, $apid, PDO::PARAM_INT);
-				$list_AP_LA_prep->execute();
-				$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
-				$List_AP_LA = $list_AP_LA_array['Hist_Date'];
-
-				#Get AP Info
-				$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX\n"
-					. "FROM wifi_ap\n"
-					. "WHERE AP_ID = ?";
-				$result = $this->sql->conn->prepare($sql);
-				$result->bindParam(1, $apid, PDO::PARAM_INT);
-				$result->execute();
-				$ap_array = $result->fetch(2);
-				
-				#Get AP KML
+				$export_ssid=$ap['SSID'];
 				$ap_info = array(
-				"id" => $apid,
+				"id" => $ap['AP_ID'],
 				"new_ap" => $new_icons,
 				"named" => $named,
-				"mac" => $ap_array['BSSID'],
-				"ssid" => $ap_array['SSID'],
-				"chan" => $ap_array['CHAN'],
-				"radio" => $ap_array['RADTYPE'],
-				"NT" => $ap_array['NETTYPE'],
-				"sectype" => $ap_array['SECTYPE'],
-				"auth" => $ap_array['AUTH'],
-				"encry" => $ap_array['ENCR'],
-				"BTx" => $ap_array['BTX'],
-				"OTx" => $ap_array['OTX'],
-				"FA" => $List_AP_FA,
-				"LA" => $List_AP_LA,
-				"lat" => $this->convert->dm2dd($HighGps_Lat),
-				"long" => $this->convert->dm2dd($HighGps_Lon),
-				"alt" => $HighGps_Alt,
-				"manuf"=>$this->findManuf($ap_array['BSSID'])
+				"mac" => $ap['BSSID'],
+				"ssid" => $ap['SSID'],
+				"chan" => $ap['CHAN'],
+				"radio" => $ap['RADTYPE'],
+				"NT" => $ap['NETTYPE'],
+				"sectype" => $ap['SECTYPE'],
+				"auth" => $ap['AUTH'],
+				"encry" => $ap['ENCR'],
+				"BTx" => $ap['BTX'],
+				"OTx" => $ap['OTX'],
+				"FA" => $ap['FA'],
+				"LA" => $ap['LA'],
+				"lat" => $this->convert->dm2dd($ap['Lat']),
+				"lon" => $this->convert->dm2dd($ap['Lon']),
+				"alt" => $ap['Alt'],
+				"manuf"=>$this->findManuf($ap['BSSID']),
+				"username" => $ap['user']
 				);
+
 				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
 				
 				$latlon_info = array(
-				"lat" => $this->convert->dm2dd($HighGps_Lat),
-				"long" => $this->convert->dm2dd($HighGps_Lon),
+				"lat" => $this->convert->dm2dd($ap['Lat']),
+				"long" => $this->convert->dm2dd($ap['Lon'])
 				);
 				$box_latlon[] = $latlon_info;
 			}
 		}
-		
+
 		$ret_data = array(
 		"data" => $Import_KML_Data,
 		"box" => $box_latlon,
@@ -504,7 +432,7 @@ class export extends dbcore
 				"FA" => $List_AP_FA,
 				"LA" => $List_AP_LA,
 				"lat" => $this->convert->dm2dd($HighGps_Lat),
-				"long" => $this->convert->dm2dd($HighGps_Lon),
+				"lon" => $this->convert->dm2dd($HighGps_Lon),
 				"alt" => $HighGps_Alt,
 				"manuf"=>$this->findManuf($ap_array['BSSID']),
 				"user" => $List_user,
@@ -536,8 +464,8 @@ class export extends dbcore
 		$West = NULL;
 		foreach($points as $elements)
 		{
-			$lat = $this->convert->dm2dd($elements['lat']);
-			$long = $this->convert->dm2dd($elements['long']);
+			$lat = $elements['lat'];
+			$long = $elements['long'];
 			
 			if($North == NULL)
 			{

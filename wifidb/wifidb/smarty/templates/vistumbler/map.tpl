@@ -172,11 +172,11 @@ if not, write to the
 															'<li>BASIC TX: <b>' + feature.properties.BTx + '</b></li>' +
 															'<li>OTHER TX: <b>' + feature.properties.OTx + '</b></li>' +
 															'<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>' +
-															'<li>LONGITUDE: <b>' + feature.properties.long + '</b></li>' +
+															'<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>' +
 															'<li>ALTITUDE: <b>' + feature.properties.alt + '</b></li>' +
 															'<li>First Active: <b>' + feature.properties.FA + '</b></li>' +
 															'<li>Last Active: <b>' + feature.properties.LA + '</b></li>' +
-															'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.username + '"><b>' + feature.properties.username + '</b></a></li>' +
+															'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>' +
 															'</ul>')
 														.addTo(map);
 												});

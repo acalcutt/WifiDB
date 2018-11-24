@@ -348,13 +348,13 @@ class createKML
 					<b>First Active: </b>".$ap_info_array['FA']."<br />
 					<b>Last Updated: </b>".$ap_info_array['LA']."<br />
 					<b>Latitude: </b>".$ap_info_array['lat']."<br />
-					<b>Longitude: </b>".$ap_info_array['long']."<br />
+					<b>Longitude: </b>".$ap_info_array['lon']."<br />
 					<b>Manufacturer: </b>".$ap_info_array['manuf']."<br />
 					<a href=\"".$this->URL_BASE."opt/fetch.php?id=".$ap_info_array['id']."\">WiFiDB Link</a>
 				]]>
 			</description>
 			<Point id=\"".$ap_info_array['mac']."_signal_gps\">
-				<coordinates>".$this->convert->dm2dd($ap_info_array['long']).",".$this->convert->dm2dd($ap_info_array['lat']).",".$ap_info_array['alt']."</coordinates>
+				<coordinates>".$ap_info_array['lon'].",".$ap_info_array['lat'].",".$ap_info_array['alt']."</coordinates>
 			</Point>
 		</Placemark>";
 		return $tmp;

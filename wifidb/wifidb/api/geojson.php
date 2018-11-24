@@ -63,7 +63,7 @@ switch($func)
 			"FA" => $ap['FA'],
 			"LA" => $ap['LA'],
 			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-			"long" => $dbcore->convert->dm2dd($ap['Lon']),
+			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
 			"manuf"=>$dbcore->findManuf($ap['BSSID']),
 			"username" => $ap['user']
@@ -136,7 +136,7 @@ switch($func)
 				"FA" => $ap['FA'],
 				"LA" => $ap['LA'],
 				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-				"long" => $dbcore->convert->dm2dd($ap['Lon']),
+				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
 				"manuf"=>$dbcore->findManuf($ap['BSSID']),
 				"username" => $ap['user']
@@ -248,10 +248,10 @@ switch($func)
 				"FA" => $ap['FA'],
 				"LA" => $ap['LA'],
 				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-				"long" => $dbcore->convert->dm2dd($ap['Lon']),
+				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
 				"manuf"=>$dbcore->findManuf($ap['BSSID']),
-				"username" => $ap['user']
+				"user" => $ap['user']
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);

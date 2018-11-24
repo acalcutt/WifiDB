@@ -57,7 +57,7 @@ while($user_array = $result->fetch(2))
 $usersa = array_unique($usersa);
 $usercount = count($usersa);
 
-$sql = "SELECT `AP_ID`,`ap_hash`,`ssid`,`HighGps_ID` FROM `wifi_ap` order by `AP_ID` desc limit 1";
+$sql = "SELECT `AP_ID`,`ssid`,`HighGps_ID` FROM `wifi_ap` order by `AP_ID` desc limit 1";
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
@@ -75,14 +75,12 @@ else
     $lastap_ssid = $lastap_array['ssid'];
 }
 
-$ap_hash = $lastap_array['ap_hash'];
-
 if($lastap_array['HighGps_ID'] == "")
 {
     $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
 }else
 {
-    $globe_html = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+    $globe_html = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
 }
 
 if ($usercount == NULL)
