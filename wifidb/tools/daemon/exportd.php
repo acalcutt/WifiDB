@@ -182,7 +182,7 @@ else
 		$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 		#Find How Many APs have GPS now
-		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000'";
+		$sql = "SELECT `AP_ID`, `SSID`, `ap_hash` FROM `wifi_ap` WHERE `HighGPS_ID` IS NOT NULL";
 		$result = $dbcore->sql->conn->query($sql);
 		if($dbcore->sql->checkError(__LINE__, __FILE__))
 		{
