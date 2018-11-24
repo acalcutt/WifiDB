@@ -70,7 +70,7 @@ switch($func)
                                     'efficiency'=>$newArray['NewAPPercent'],
                                     'aps'=>$newArray['aps'],
                                     'gps'=>$newArray['gps'],
-                                    'size'=>$dbcore->format_size($newArray['size']*1024, 2),
+                                    'size'=>$newArray['size'],
                                     'hash'=>$newArray['hash']
                                 );
         }
