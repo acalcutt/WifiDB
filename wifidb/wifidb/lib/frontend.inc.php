@@ -505,31 +505,50 @@ class frontend extends dbcore
 		$total = $rows[0];
 
 		#Get First Active AP
-		$sql = "SELECT id, user, date FROM `files` WHERE `user` LIKE ? And `date` != '' ORDER BY `date` ASC LIMIT 1";
+		$sql = "SELECT id, user, date FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` ASC LIMIT 1";
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $username, PDO::PARAM_STR);
 		$prep2->execute();
 		$user_first = $prep2->fetch(2);
 
 		#Get Last Active AP
-		$sql = "SELECT `id`, `title`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC LIMIT 1";
+		$sql = "SELECT `id`, `date` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC LIMIT 1";
 		$prep1 = $this->sql->conn->prepare($sql);
 		$prep1->bindParam(1, $username, PDO::PARAM_STR);
 		$prep1->execute();
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		#$sql1 = "SELECT `id`, `points`, `title`, `date`, `aps`, `gps`, `NewAPPercent`, `hash`  FROM `user_imports` WHERE `username` LIKE ? AND `id` != ? ORDER BY `id` DESC";
-		$sql1 = "SELECT `id`, `title`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 AND `id` != ? ORDER BY `date` DESC";
+		//$sql1 = "SELECT `id`, `title`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 AND `id` != ? ORDER BY `date` DESC";
+		$sql1 = "SELECT `id`, `title`, `notes`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC";
 		$other_imports = $this->sql->conn->prepare($sql1);
 		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
-		$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
+		//$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
 		$other_imports->execute();
 		$other_rows = $other_imports->rowCount();
 		$other_imports_array = array();
 		$flip = 0;
 		while($imports = $other_imports->fetch(2))
 		{
+			#Find Valid GPS
+			$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
+				. "FROM `wifi_hist`\n"
+				. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+				. "LIMIT 1";
+			$prep3 = $this->sql->conn->prepare($sql);
+			$prep3->bindParam(1, $imports['id'], PDO::PARAM_INT);
+			$prep3->execute();
+			$gps_histid = $prep3->fetch(2);
+			
+			if($gps_histid == "")
+			{
+				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
+			}else
+			{
+				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+			}
+			
 			if($flip)
 			{
 				$style = "dark";
@@ -541,8 +560,10 @@ class frontend extends dbcore
 			}
 			$other_imports_array[] = array(
 											'class' => $style,
+											'globe_html' => $globe_html,
 											'id' => $imports['id'],
 											'title' => $imports['title'],
+											'notes' => $imports['notes'],
 											'aps' => $imports['aps'],
 											'efficiency'=>$imports['NewAPPercent'],
 											'date' => $imports['date']
@@ -552,13 +573,8 @@ class frontend extends dbcore
 		$this->user_all_imports_data['user_id'] = $user_first['id'];
 		$this->user_all_imports_data['user'] = $user_first['user'];
 		$this->user_all_imports_data['first_import_date'] = $user_first['date'];
-		$this->user_all_imports_data['total_aps'] = $total;
-
-		$this->user_all_imports_data['newest_id'] = $user_last['id'];
-		$this->user_all_imports_data['newest_aps'] = $user_last['aps'];
-		$this->user_all_imports_data['newest_gps'] = $user_last['gps'];
-		$this->user_all_imports_data['newest_title'] = $user_last['title'];
 		$this->user_all_imports_data['newest_date'] = $user_last['date'];
+		$this->user_all_imports_data['total_aps'] = $total;
 
 		$this->user_all_imports_data['other_imports'] = $other_imports_array;
 		return 1;
@@ -623,21 +639,6 @@ class frontend extends dbcore
 			$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
 			$List_AP_LA = $list_AP_LA_array['Hist_Date'];
 			
-			#Find AP Highest GPS Position in this list
-			$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
-				. "FROM `wifi_hist` \n"
-				. "INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID` \n"
-				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_hist`.`AP_ID` = ?\n"
-				. "ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
-				. "LIMIT 1";
-			$resgps = $this->sql->conn->prepare($sql);
-			$resgps->bindParam(1, $user_array['id'], PDO::PARAM_INT);
-			$resgps->bindParam(2, $apid, PDO::PARAM_INT);
-			$resgps->execute();
-			$fetchgps = $resgps->fetch(2);
-			$HighGps_Lat = $fetchgps['Lat'];
-			$HighGps_Lon = $fetchgps['Lon'];
-			
 			$sql = "SELECT `wifi_ap`.`AP_ID`, `wifi_ap`.`BSSID`, `wifi_ap`.`SSID`, `wifi_ap`.`CHAN`, `wifi_ap`.`AUTH`, `wifi_ap`.`ENCR`, `wifi_ap`.`SECTYPE`, `wifi_ap`.`RADTYPE`, `wifi_ap`.`NETTYPE`, `wifi_ap`.`BTX`, `wifi_ap`.`OTX`,\n"
 				. "`wifi_gps`.`Lat` AS Lat,\n"
 				. "`wifi_gps`.`Lon` AS Lon\n"
@@ -686,8 +687,8 @@ class frontend extends dbcore
 					'encry' => $ap_array['ENCR'],
 					'fa' => $List_AP_FA,
 					'la' => $List_AP_LA,
-					'lat' => $HighGps_Lat,
-					'lon' => $HighGps_Lon
+					'lat' => $ap_array['Lat'],
+					'lon' => $ap_array['Lon']
 			);
 		}
 		$all_aps_array['total_aps'] = $count;

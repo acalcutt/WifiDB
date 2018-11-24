@@ -48,7 +48,7 @@ switch($func)
     case 'done':
         #$sql = "SELECT `files`.`id`, `user_imports`.`id` as `UserImportID`, `user_imports`.`username`, `files`.`file`, `user_imports`.`NewAPPercent`, `files`.`title`, `files`.`date`, `files`.`size`, `files`.`aps`, `files`.`gps`, `files`.`hash` FROM `files` INNER JOIN user_imports WHERE `files`.`completed` = 1 AND `files`.`id` = `user_imports`.`file_id` ORDER BY `files`.`id` DESC";
         #echo $sql;
-		$sql = "SELECT `id`, `file`, `user`, `title`, `date`, `aps`, `gps`, `size`, `NewAPPercent`, `hash` \n"
+		$sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `aps`, `gps`, `size`, `NewAPPercent`, `hash` \n"
 			. "FROM `files` \n"
 			. "WHERE `completed` = 1 ORDER BY `date` DESC";
         $result = $dbcore->sql->conn->query($sql);
@@ -58,14 +58,35 @@ switch($func)
         {
             $users_array = explode("|", $newArray["user"]);
             $users_array = array_filter($users_array);
+			
+			#Find Valid GPS
+			$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
+				. "FROM `wifi_hist`\n"
+				. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+				. "LIMIT 1";
+			$prep3 = $dbcore->sql->conn->prepare($sql);
+			$prep3->bindParam(1, $newArray['id'], PDO::PARAM_INT);
+			$prep3->execute();
+			$gps_histid = $prep3->fetch(2);
+			
+			if($gps_histid == "")
+			{
+				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_off.png\">";
+			}else
+			{
+				$globe_html = "<a href=\"".$dbcore->URL_PATH."/api/export.php?func=exp_list&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\"></a>";
+			}
 
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
             $files_all[] = array(
                                     'class'=>$class,
+                                    'globe_html'=>$globe_html,
                                     'id'=>$newArray['id'],
                                     'file'=>html_entity_decode($newArray['file']),
                                     'date'=>$newArray['date'],
                                     'user'=>$users_array,
+                                    'notes'=>$newArray['notes'],
                                     'title'=>$newArray['title'],
                                     'efficiency'=>$newArray['NewAPPercent'],
                                     'aps'=>$newArray['aps'],

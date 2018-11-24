@@ -29,35 +29,39 @@ if not, write to the
 			<table border="1" style="width:100%;">
 				<tr class="sub_head">
 					<th>ID</th>
-					<th>Date</th>
-					<th>APs/GPS Count</th>
-					<th>Efficiency</th>
 					<th>Title</th>
-					<th>User(s)</th>
+					<th>Filename</th>					
+					<th>Notes</th>
+					<th>Hash</th>
 				</tr>
 				<tr class="{$wifidb_done.class}">
 					<td align="center">{$wifidb_done.id}</td>
+					<td align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.title}</a></td>
+					<td align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file}</a></td>
+					<td align="center">{$wifidb_done.notes}</td>
+					<td align="center">{$wifidb_done.hash}</td>					
+				</tr>
+			</table>
+			<table border="1" style="width:100%;">
+				<tr class="sub_head">
+					<th>GPS</th>
+					<th>Date</th>
+					<th>Size</th>
+					<th>APs/GPS Count</th>
+					<th>Efficiency</th>
+					<th>User(s)</th>
+				</tr>
+				<tr class="{$wifidb_done.class}">
+					<td align="center">{$wifidb_done.globe_html}</td>
 					<td align="center">{$wifidb_done.date}</td>
+					<td align="center">{$wifidb_done.size}</td>
 					<td align="center">{$wifidb_done.aps} - {$wifidb_done.gps}</td>
 					<td align="center">{$wifidb_done.efficiency}%</td>
-					<td align="center">{$wifidb_done.title}</td>
 					<td align="center">
 						{foreach name=users_all item=user from=$wifidb_done.user}
 						<a class="links" href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}">{$user}</a><br>
 						{/foreach}
 					</td>
-				</tr>
-			</table>
-			<table border="1" style="width:100%;">
-				<tr class="sub_head">
-					<th colspan="2">Filename</th>
-					<th>Size</th>
-					<th>Hash</th>
-				</tr>
-				<tr class="{$wifidb_done.class}">
-					<td align="center" colspan="2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file}</a></td>
-					<td align="center">{$wifidb_done.size}</td>
-					<td align="center">{$wifidb_done.hash}</td>
 				</tr>
 			</table>
 			<br/>

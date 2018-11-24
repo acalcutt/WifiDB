@@ -28,12 +28,14 @@ if not, write to the
 										<th>ID</th>
 										<th>Title</th>
 										<th>Filename</th>
+										<th>Notes</th>
 										<th>Hash</th>
 									</tr>
 									<tr class="dark">
 										<td align="center">{$wifidb_all_user_aps.id}</td>
 										<td align="center">{$wifidb_all_user_aps.title}</td>
-										<td align="center">{$wifidb_all_user_aps.file}</td>							
+										<td align="center">{$wifidb_all_user_aps.file}</td>
+										<td align="center">{$wifidb_all_user_aps.notes}</td>
 										<td align="center">{$wifidb_all_user_aps.hash}</td>
 									</tr>
 								</table>
