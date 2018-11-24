@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 23, 2018 at 11:49 AM
+-- Generation Time: Nov 24, 2018 at 02:05 PM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -121,7 +121,7 @@ CREATE TABLE `DB_stats` (
 --
 
 CREATE TABLE `files` (
-  `id` int(11) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `node_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `user` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -145,7 +145,7 @@ CREATE TABLE `files` (
 --
 
 CREATE TABLE `files_bad` (
-  `id` int(11) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -167,7 +167,7 @@ CREATE TABLE `files_bad` (
 --
 
 CREATE TABLE `files_importing` (
-  `id` int(255) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `tmp_id` int(255) DEFAULT 0,
   `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -190,7 +190,7 @@ CREATE TABLE `files_importing` (
 --
 
 CREATE TABLE `files_tmp` (
-  `id` int(11) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `file` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
   `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -891,7 +891,10 @@ ALTER TABLE `wifi_ap`
   ADD KEY `HighGps_ID` (`HighGps_ID`),
   ADD KEY `FirstHist_ID` (`FirstHist_ID`),
   ADD KEY `LastHist_ID` (`LastHist_ID`),
-  ADD KEY `ap_hash` (`ap_hash`);
+  ADD KEY `ap_hash` (`ap_hash`),
+  ADD KEY `File_ID` (`File_ID`),
+  ADD KEY `HighSig_ID` (`HighSig_ID`),
+  ADD KEY `HighRSSI_ID` (`HighRSSI_ID`);
 
 --
 -- Indexes for table `wifi_gps`
@@ -943,25 +946,25 @@ ALTER TABLE `DB_stats`
 -- AUTO_INCREMENT for table `files`
 --
 ALTER TABLE `files`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `files_bad`
 --
 ALTER TABLE `files_bad`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `files_importing`
 --
 ALTER TABLE `files_importing`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `files_tmp`
 --
 ALTER TABLE `files_tmp`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `geonames`
@@ -1117,6 +1120,31 @@ ALTER TABLE `live_aps`
 --
 ALTER TABLE `live_signals`
   ADD CONSTRAINT `FK_ap_hash_gps` FOREIGN KEY (`gps_id`) REFERENCES `live_gps` (`id`);
+
+--
+-- Constraints for table `wifi_ap`
+--
+ALTER TABLE `wifi_ap`
+  ADD CONSTRAINT `wifi_ap_ibfk_1` FOREIGN KEY (`File_ID`) REFERENCES `files` (`id`),
+  ADD CONSTRAINT `wifi_ap_ibfk_2` FOREIGN KEY (`HighGps_ID`) REFERENCES `wifi_gps` (`GPS_ID`),
+  ADD CONSTRAINT `wifi_ap_ibfk_3` FOREIGN KEY (`FirstHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
+  ADD CONSTRAINT `wifi_ap_ibfk_4` FOREIGN KEY (`LastHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
+  ADD CONSTRAINT `wifi_ap_ibfk_5` FOREIGN KEY (`HighSig_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
+  ADD CONSTRAINT `wifi_ap_ibfk_6` FOREIGN KEY (`HighRSSI_ID`) REFERENCES `wifi_hist` (`Hist_ID`);
+
+--
+-- Constraints for table `wifi_gps`
+--
+ALTER TABLE `wifi_gps`
+  ADD CONSTRAINT `wifi_gps_ibfk_1` FOREIGN KEY (`File_ID`) REFERENCES `files` (`id`);
+
+--
+-- Constraints for table `wifi_hist`
+--
+ALTER TABLE `wifi_hist`
+  ADD CONSTRAINT `wifi_hist_ibfk_1` FOREIGN KEY (`AP_ID`) REFERENCES `wifi_ap` (`AP_ID`),
+  ADD CONSTRAINT `wifi_hist_ibfk_2` FOREIGN KEY (`GPS_ID`) REFERENCES `wifi_gps` (`GPS_ID`),
+  ADD CONSTRAINT `wifi_hist_ibfk_3` FOREIGN KEY (`File_ID`) REFERENCES `files` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
