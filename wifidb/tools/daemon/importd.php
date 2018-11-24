@@ -197,7 +197,7 @@ else
 		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
 			$NextID = $dbcore->GetNextImportID();
 		}
-		var_dump($NextID);
+		//var_dump($NextID);
 		$daemon_sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `size`, `hash`, `tmp_id` FROM `files_importing` WHERE `id` = ?";
 		$result = $dbcore->sql->conn->prepare($daemon_sql);
 		$result->bindParam(1, $NextID, PDO::PARAM_INT);
@@ -207,8 +207,8 @@ else
 			$dbcore->return_message = -8;
 			break;
 		}
-		var_dump($result->rowCount());
-		var_dump($dbcore->RunOnceThrough);
+		//var_dump($result->rowCount());
+		//var_dump($dbcore->RunOnceThrough);
 		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
 		{
 			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");

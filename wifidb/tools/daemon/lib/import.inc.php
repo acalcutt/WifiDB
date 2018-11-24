@@ -94,7 +94,7 @@ class import extends dbcore
 		# We need to check and see if the file location was passed, if not fail gracefully.
 		if($source == NULL)
 		{
-			$this->logd("The file that needs to be imported was not included in the import function.", "Error");
+			//$this->logd("The file that needs to be imported was not included in the import function.", "Error");
 			$this->verbosed("The file that needs to be imported was not included in the import function", -1);
 			throw new ErrorException;
 		}
@@ -243,7 +243,7 @@ class import extends dbcore
 
 				default:
 					echo "--------------------------------\r\n";
-					$this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1), "Error");
+					//$this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1), "Error");
 					$this->verbosed($file_line_exp_count."\r\nummm.... wrong number of columns... I'm going to ignore this line:/\r\n", -1);
 					break;
 			}
@@ -252,13 +252,13 @@ class import extends dbcore
 		if(count($apdata) === 0)
 		{
 			$this->verbosed("File did not have an valid AP data, dropping file. $source from user: $user.", -1);
-			$this->logd("File did not have an valid AP data, dropping file. $source from user: $user.", "Warning");
+			//$this->logd("File did not have an valid AP data, dropping file. $source from user: $user.", "Warning");
 			return array(-1, "File does not have any valid AP data.");
 		}
 		if(count($gdata) === 0)
 		{
 			$this->verbosed("File did not have an valid GPS data, dropping file. $source from user: $user.", -1);
-			$this->logd("File did not have an valid GPS data, dropping file. $source from user: $user.", "Warning");
+			//$this->logd("File did not have an valid GPS data, dropping file. $source from user: $user.", "Warning");
 			return array(-1, "File does not have any valid GPS data.");
 		}
 
@@ -277,7 +277,7 @@ class import extends dbcore
 			if($this->sql->checkError() !== 0)
 			{
 				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
-				$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
 				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
 			}
 
@@ -288,8 +288,8 @@ class import extends dbcore
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1,$file_id, PDO::PARAM_INT);
 			$prep->bindParam(2,$gps['id'], PDO::PARAM_INT);
-			$prep->bindParam(3,$gps['lat'], PDO::PARAM_INT);
-			$prep->bindParam(4,$gps['long'], PDO::PARAM_INT);
+			$prep->bindParam(3,$gps['lat'], PDO::PARAM_STR);
+			$prep->bindParam(4,$gps['long'], PDO::PARAM_STR);
 			$prep->bindParam(5,$gps['sats'],PDO::PARAM_INT);
 			$prep->bindParam(6,$gps['hdp'],PDO::PARAM_STR);
 			$prep->bindParam(7,$gps['alt'],PDO::PARAM_STR);
@@ -302,7 +302,7 @@ class import extends dbcore
 			if($this->sql->checkError())
 			{
 				$this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
-				$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
+				//$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
 				throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
 			}
 			//$r = $this->RotateSpinner($r);
@@ -324,7 +324,7 @@ class import extends dbcore
 			if($this->sql->checkError() !== 0)
 			{
 				$this->verbosed("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
-				$this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				//$this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
 				throw new ErrorException("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
 			}
 
@@ -345,7 +345,7 @@ class import extends dbcore
 			CHAN:  {$chan} | SECTYPE: {$aps['sectype']}
 			RADIO: {$radio}| AUTH: {$aps['auth']}
 			ENCRY: {$encry}| APHASH:".$ap_hash, 1);
-			#$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
+			#//$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
 
 			$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
 			$res = $this->sql->conn->prepare($sql);
@@ -383,7 +383,7 @@ class import extends dbcore
 				if($this->sql->checkError())
 				{
 					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-					$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
+					//$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
 					throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
 				}
 				else
@@ -392,7 +392,7 @@ class import extends dbcore
 					$new = 1;	
 					$imported_aps[] = $ap_id.":0";
 					$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
-					#$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
+					#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
 				}
 				$NewAPs++;
 			}
@@ -407,6 +407,8 @@ class import extends dbcore
 				$signal = $sig_gps_exp[1];
 				if($this->rssi_signals_flag){$rssi = $sig_gps_exp[2];}else{$rssi = $this->convert->Sig2dBm($signal);}
 				
+				$gps_id = "";
+				$datetime = "";
 				$GID_SQL = "SELECT GPS_ID, GPS_Date FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";
 				$gidprep = $this->sql->conn->prepare($GID_SQL);
 				$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
@@ -430,7 +432,7 @@ class import extends dbcore
 				if($this->sql->checkError() !== 0)
 				{
 					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-					$this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					//$this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
 					throw new ErrorException("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
 				}
 
@@ -438,6 +440,7 @@ class import extends dbcore
 			}
 
 			#Find New First Seen Timestamp
+			$FA_id = "";
 			$FA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date ASC LIMIT 1";
 			$faprep = $this->sql->conn->prepare($FA_SQL);
 			$faprep->bindParam(1, $ap_id, PDO::PARAM_INT);
@@ -446,6 +449,7 @@ class import extends dbcore
 			$FA_id = $fetchfaprep['Hist_ID'];
 
 			#Find New Last Seen Timestamp
+			$LA_id = "";
 			$LA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date DESC LIMIT 1";
 			$laprep = $this->sql->conn->prepare($LA_SQL);
 			$laprep->bindParam(1, $ap_id, PDO::PARAM_INT);
@@ -454,7 +458,8 @@ class import extends dbcore
 			$LA_id = $fetchlaprep['Hist_ID'];
 			
 			#Find High Sig
-			$Sig_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1";
+			$HighSig_id = "";
+			$Sig_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1";
 			$Sigprep = $this->sql->conn->prepare($Sig_SQL);
 			$Sigprep->bindParam(1, $ap_id, PDO::PARAM_INT);
 			$Sigprep->execute();
@@ -462,7 +467,8 @@ class import extends dbcore
 			$HighSig_id = $fetchSigprep['Hist_ID'];
 			
 			#Find High RSSI
-			$RSSI_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1";
+			$HighRSSI_id = "";
+			$RSSI_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1";
 			$RSSIprep = $this->sql->conn->prepare($RSSI_SQL);
 			$RSSIprep->bindParam(1, $ap_id, PDO::PARAM_INT);
 			$RSSIprep->execute();
@@ -470,12 +476,18 @@ class import extends dbcore
 			$HighRSSI_id = $fetchRSSIprep['Hist_ID'];
 
 			#Find Highest GPS Position
-			$sql = "SELECT `wifi_hist`.`Gps_ID` FROM `wifi_hist` INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID` WHERE `wifi_hist`.`AP_ID` = ? And `wifi_gps`.`lat`<>'0.0000' ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC LIMIT 1";
+			$HighGps_id = "";
+			$sql = "SELECT `wifi_hist`.`GPS_ID`\n"
+				. "FROM `wifi_hist`\n"
+				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+				. "WHERE `wifi_hist`.`AP_ID` = ? And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+				. "ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
+				. "LIMIT 1";
 			$resgps = $this->sql->conn->prepare($sql);
 			$resgps->bindParam(1, $ap_id, PDO::PARAM_INT);
 			$resgps->execute();
 			$fetchgps = $resgps->fetch(2);
-			$HighGps_id = $fetchgps['Gps_ID'];
+			$HighGps_id = $fetchgps['GPS_ID'];
 
 			#Update AP IDs
 			$sql = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";
@@ -491,7 +503,7 @@ class import extends dbcore
 			if($this->sql->checkError() !== 0)
 			{
 				$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-				$this->logd("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
+				//$this->logd("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
 				throw new ErrorException("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
 			}
 			$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);

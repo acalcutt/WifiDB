@@ -96,7 +96,7 @@ class daemon extends wdbcli
 		$prep->execute();
 		if ($this->sql->checkError()) {
 			$this->verbosed("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1), -1);
-			$this->logd("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1));
+			//$this->logd("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1));
 			throw new ErrorException("Failed to add bad file to bad import table.");
 		} else {
 			$this->verbosed("Added file to the Bad Import table.");
@@ -111,7 +111,7 @@ class daemon extends wdbcli
 
 		if ($this->sql->checkError()) {
 			$this->verbosed("Failed to update bad file with the Thread ID." . var_export($this->sql->conn->errorInfo(), 1), -1);
-			$this->logd("Failed to update bad file with the Thread ID." . var_export($this->sql->conn->errorInfo(), 1));
+			//$this->logd("Failed to update bad file with the Thread ID." . var_export($this->sql->conn->errorInfo(), 1));
 			throw new ErrorException("Failed to update bad file with the Thread ID.");
 		} else {
 			$this->verbosed("Updated file Thread ID in the Bad Import table.");
@@ -138,7 +138,7 @@ class daemon extends wdbcli
 			$prep->execute();
 			if ($this->sql->checkError()) {
 				$this->verbosed("Failed to remove bad file from the files table." . var_export($this->sql->conn->errorInfo(), 1), -1);
-				$this->logd("Failed to remove bad file from the files table." . var_export($this->sql->conn->errorInfo(), 1));
+				//$this->logd("Failed to remove bad file from the files table." . var_export($this->sql->conn->errorInfo(), 1));
 				throw new ErrorException("Failed to remove bad file from the files table.");
 			} else {
 				$this->verbosed("Cleaned file from the files table.");
@@ -156,7 +156,7 @@ class daemon extends wdbcli
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
 		$LastInsert = $this->sql->conn->lastInsertID();
-		var_dump($LastInsert);
+		//var_dump($LastInsert);
 
 		$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
 		$prep = $this->sql->conn->prepare($select);
@@ -213,13 +213,13 @@ class daemon extends wdbcli
 
             if($this->sql->checkError())
             {
-                $this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
+                //$this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
                 $this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
                 Throw new ErrorException;
             }
             $n++;
             $rows[$n] = $this->sql->conn->lastInsertId();
-            $this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
+            //$this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
             $this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
         }
         return $rows;
@@ -252,7 +252,7 @@ class daemon extends wdbcli
 			if($err[0] != "00000")
 			{
 				$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-				$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+				//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
 				throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
 			}
 			$ret_file_name = $this->convert->main($source);
@@ -286,7 +286,7 @@ class daemon extends wdbcli
 			if($err[0] == "00000")
 			{
 				$this->verbosed("Conversion completed.", 1);
-				$this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $this->This_is_me);
+				//$this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $this->This_is_me);
 				$source = $ret_file_name;
 				$file_name = $dest_name;
 				$file_hash = $file_hash1;
@@ -294,7 +294,7 @@ class daemon extends wdbcli
 			}else
 			{
 				$this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-				$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+				//$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
 				throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1));
 			}
 		}
@@ -311,8 +311,7 @@ class daemon extends wdbcli
 			{
 				$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.",
 					-1);
-				$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1),
-					"Error", $this->This_is_me);
+				//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
 				Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
 			}
 
@@ -323,8 +322,7 @@ class daemon extends wdbcli
 			$prep->execute();
 			if($this->sql->checkError(__LINE__, __FILE__))
 			{
-				$this->logd("Failed to select file hash from files table. :(",
-					"Error", $this->This_is_me);
+				//$this->logd("Failed to select file hash from files table. :(","Error", $this->This_is_me);
 				$this->verbosed("Failed to select file hash from files table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
 				Throw new ErrorException("Failed to select file hash from files table. :(");
 			}
@@ -348,8 +346,7 @@ class daemon extends wdbcli
 				$prep_ext->execute();
 				if($this->sql->checkError())
 				{
-					$this->logd("Failed to select previous convert extension. :(",
-						"Error", $this->This_is_me);
+					//$this->logd("Failed to select previous convert extension. :(","Error", $this->This_is_me);
 					$this->verbosed("Failed to select previous convert extension. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
 					Throw new ErrorException("Failed to select previous convert extension. :(");
 				}
@@ -382,13 +379,12 @@ class daemon extends wdbcli
 
 				if($this->sql->checkError(__LINE__, __FILE__))
 				{
-					$this->logd("Failed to Insert the results of the new Import into the files table. :(",
-						"Error", $this->This_is_me);
+					//$this->logd("Failed to Insert the results of the new Import into the files table. :(","Error", $this->This_is_me);
 					$this->verbosed("Failed to Insert the results of the new Import into the files table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
 					Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
 				}else{
 					$file_row = $this->sql->conn->lastInsertID();
-					var_dump($file_row);
+					//var_dump($file_row);
 					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
 				}
 
@@ -399,8 +395,7 @@ class daemon extends wdbcli
 				if(@$tmp[0] === -1)
 				{
 					trigger_error("Import Error! Reason: $tmp[1] |=| $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
-					$this->logd("Skipping Import \nReason: $tmp[1]\n".$file_name,
-						"Error", $this->This_is_me);
+					//$this->logd("Skipping Import \nReason: $tmp[1]\n".$file_name,"Error", $this->This_is_me);
 					$this->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
 					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
@@ -445,8 +440,7 @@ class daemon extends wdbcli
 					{
 						//**TODO
 						#mail_users("Error removing file: $source ($importing_id)", "Error removing file: $source ($importing_id)", "import", 1);
-						$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),
-							"Error", $this->This_is_me);
+						//$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
 						$this->verbosed("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
 						Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
 					}else
@@ -461,8 +455,7 @@ class daemon extends wdbcli
 			}else
 			{
 				trigger_error("File already imported. $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
-				$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($importing_id)",
-					"Warning", $this->This_is_me);
+				//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($importing_id)","Warning", $this->This_is_me);
 				//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($importing_id)");
 				//unlink($source);
 				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($importing_id)");
@@ -471,8 +464,7 @@ class daemon extends wdbcli
 		}else
 		{
 			trigger_error("File is Empty or bad $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
-			$this->logd("File is empty or not valid. $source ($importing_id)",
-				"Warning", $this->This_is_me);
+			//$this->logd("File is empty or not valid. $source ($importing_id)","Warning", $this->This_is_me);
 			$this->verbosed("File is empty. Skipping and deleting from files_importing. $source ($importing_id |-| $file_hash)\n");
 			//unlink($source);
 			$this->cleanBadImport(0, 0, $importing_id, 'Empty or not valid', $this->thread_id);
@@ -510,7 +502,7 @@ class daemon extends wdbcli
 			#echo "Recovery import, no previous data :(\n";
 
 		}
-		$this->logd("=== Start Daemon Prep of ".$file." ===");
+		//$this->logd("=== Start Daemon Prep of ".$file." ===");
 
 		$sql = "INSERT INTO `files_tmp` (`file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
 																VALUES ('$file', '$date', '$user', '$notes', '$title', '$size1', '$hash_')";
@@ -527,13 +519,13 @@ class daemon extends wdbcli
 		$err = $this->sql->conn->errorInfo();
 		if($err[0] == "00000")
 		{
-			#$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
-			$this->logd("File Inserted into Files_tmp.".$sql);
+			$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
+			//$this->logd("File Inserted into Files_tmp.".$sql);
 			return 1;
 		}else
 		{
-			#$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
-			$this->logd("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo(),1));
+			$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			//$this->logd("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo(),1));
 			throw new ErrorException("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo()) );
 		}
 	}
@@ -572,7 +564,7 @@ class daemon extends wdbcli
     {
         $result = $this->sql->conn->query("SELECT count(id) FROM `files_tmp`");
         $fetch = $result->fetch();
-        var_dump($fetch[0]);
+        //var_dump($fetch[0]);
     }
 
     public function  RemoveUserImport($import_ID = 0)
@@ -584,7 +576,7 @@ class daemon extends wdbcli
         if($this->sql->checkError())
         {
             $this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
-            $this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
+            //$this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
             throw new ErrorException("Failed to remove bad file from the user import table.");
         }else
         {
