@@ -370,9 +370,9 @@ class createKML
 
 		foreach($signal_array as $gps)
 		{
-			$signal = (int) $gps['signal'];		
+			$signal = (int) $gps['Sig'];		
 			$LastTimeInt = $NewTimeInt;
-			$string = str_replace("-", "/", $gps['date'])." ".$gps['time'];
+			$string = str_replace("-", "/", $gps['GPS_Date']);
 			$NewTimeInt = strtotime($string);
 			If($LastTimeInt == -1){$LastTimeInt = $NewTimeInt;}
 			$LastSigStrengthLevel = $SigStrengthLevel;
@@ -423,16 +423,16 @@ class createKML
 				If($ExpString <> '' AND (($NewTimeInt - $LastTimeInt) <= $this->SigMapTimeBeforeMarkedDead)){$tmp .= $ExpString;}
 			}		
 			
-			$gps_coords = $this->convert->dm2dd($gps['long']).",".$this->convert->dm2dd($gps['lat']);
+			$gps_coords = $this->convert->dm2dd($gps['Lon']).",".$this->convert->dm2dd($gps['Lat']);
 			if($UseRSSI == 1)
 			{
-				$ExpRSSIAlt = (100 + $gps['rssi'])."";
+				$ExpRSSIAlt = (100 + $gps['RSSI'])."";
 				$ExpString = "
 					".$gps_coords.",".$ExpRSSIAlt;
 			}else
 			{
 				$ExpString = "
-					".$gps_coords.",".$gps['signal'];
+					".$gps_coords.",".$gps['Sig'];
 			}
 			$tmp .= $ExpString;
 		}

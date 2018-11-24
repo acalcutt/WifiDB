@@ -56,7 +56,7 @@ class createGeoJSON
 			$ap_info_array['ssid'] = dbcore::normalize_ssid($ap_info_array['ssid']);
 		}
 
-		$tmp = '{"type":"Feature","tippecanoe":{"maxzoom":19,"minzoom":3},"properties":{"id":"'.$ap_info_array['id'].'","username":"'.$ap_info_array['username'].'","ssid":"'.$ap_info_array['ssid'].'","mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","long":"'.$ap_info_array['long'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['long'].','.$ap_info_array['lat'].']}}';
+		$tmp = '{"type":"Feature","tippecanoe":{"maxzoom":19,"minzoom":3},"properties":{"id":"'.$ap_info_array['id'].'","user":"'.$ap_info_array['user'].'","ssid":"'.$ap_info_array['ssid'].'","mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","long":"'.$ap_info_array['long'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['long'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}

@@ -179,34 +179,50 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		$export_ssid="";
-		$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-		$result = $this->sql->conn->query($sql);
-		while($ap_fetch = $result->fetch(2))
+		
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.user As user\n"
+			. "FROM `wifi_ap` AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+			. "WHERE `wap`.`AP_ID` = ?";
+		$result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $id, PDO::PARAM_INT);
+		$result->execute();
+		$appointer = $result->fetchAll();
+		foreach($appointer as $ap)
 		{
-			$export_ssid=$ap_fetch['ssid'];
-			
-			#Get AP KML
+			$export_ssid=$ap['ssid'];
 			$ap_info = array(
-			"id" => $id,
+			"id" => $ap['AP_ID'],
 			"new_ap" => $new_icons,
 			"named" => $named,
-			"mac" => $ap_fetch['mac'],
-			"ssid" => $ap_fetch['ssid'],
-			"chan" => $ap_fetch['chan'],
-			"radio" => $ap_fetch['radio'],
-			"NT" => $ap_fetch['NT'],
-			"sectype" => $ap_fetch['sectype'],
-			"auth" => $ap_fetch['auth'],
-			"encry" => $ap_fetch['encry'],
-			"BTx" => $ap_fetch['BTx'],
-			"OTx" => $ap_fetch['OTx'],
-			"FA" => $ap_fetch['FA'],
-			"LA" => $ap_fetch['LA'],
-			"lat" => $ap_fetch['lat'],
-			"long" => $ap_fetch['long'],
-			"alt" => $ap_fetch['alt'],
-			"manuf"=>$this->findManuf($ap_fetch['mac'])
+			"mac" => $ap['BSSID'],
+			"ssid" => $ap['SSID'],
+			"chan" => $ap['CHAN'],
+			"radio" => $ap['RADTYPE'],
+			"NT" => $ap['NETTYPE'],
+			"sectype" => $ap['SECTYPE'],
+			"auth" => $ap['AUTH'],
+			"encry" => $ap['ENCR'],
+			"BTx" => $ap['BTX'],
+			"OTx" => $ap['OTX'],
+			"FA" => $ap['FA'],
+			"LA" => $ap['LA'],
+			"lat" => $ap['Lat'],
+			"long" => $ap['Lon'],
+			"alt" => $ap['Alt'],
+			"manuf"=>$this->findManuf($ap['BSSID']),
+			"username" => $ap['user']
 			);
+
 			$KML_data = $this->createKML->CreateApPlacemark($ap_info);
 		}
 
@@ -233,34 +249,28 @@ class export extends dbcore
 	public function ExportSignal3dSingleListAp($file_id, $ap_id, $visible = 0)
 	{
 		$KML_data = "";
-		#Get the AP hash
-		$sql = "SELECT `ap_hash` FROM `wifi_pointers` WHERE `id` = ?";
-		$prep_hash = $this->sql->conn->prepare($sql);
-		$prep_hash->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$prep_hash->execute();
-		$fetch_hash = $prep_hash->fetch(2);
-		$ap_hash = $fetch_hash['ap_hash'];
-		
 		#Get Import Name
-		$sql = "SELECT `title`, `date` FROM `user_imports` WHERE `file_id` = ?";
+		$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";
 		$prep_title = $this->sql->conn->prepare($sql);
 		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
 		$prep_title->execute();
 		$fetch_title = $prep_title->fetch(2);
 		$ap_list_title = $fetch_title['title'];
 		$ap_list_date = $fetch_title['date'];
-		#Get AP Signal History for this file
-		$sql = "SELECT
-				  `wifi_signals`.signal, `wifi_signals`.ap_hash, `wifi_signals`.rssi, `wifi_signals`.time_stamp,
-				  `wifi_gps`.lat, `wifi_gps`.`long`, `wifi_gps`.sats, `wifi_gps`.hdp, `wifi_gps`.alt, `wifi_gps`.geo,
-				  `wifi_gps`.kmh, `wifi_gps`.mph, `wifi_gps`.track, `wifi_gps`.date, `wifi_gps`.time
-				FROM `wifi_signals`
-				  LEFT JOIN `wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
-				WHERE `wifi_signals`.`ap_hash` = '$ap_hash' AND `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'
-				ORDER BY `wifi_signals`.`time_stamp` ASC";
 		
-		$ap_query = $this->sql->conn->query($sql);
-		$this->sql->checkError();
+		#Get AP Signal History for this file	
+		$sql = "SELECT\n"
+			. "`wifi_hist`.Sig, `wifi_hist`.RSSI, `wifi_hist`.Hist_Date,\n"
+			. "`wifi_gps`.Lat, `wifi_gps`.`Lon`, `wifi_gps`.NumOfSats, `wifi_gps`.HorDilPitch, `wifi_gps`.Alt, \n"
+			. "`wifi_gps`.Geo, `wifi_gps`.KPH, `wifi_gps`.MPH, `wifi_gps`.TrackAngle, `wifi_gps`.GPS_Date\n"
+			. "FROM `wifi_hist`\n"
+			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ? AND `wifi_gps`.`Lat` != '0.0000'\n"
+			. "ORDER BY `wifi_gps`.`GPS_Date` ASC";
+		$ap_query = $this->sql->conn->prepare($sql);
+		$ap_query->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$ap_query->bindParam(2, $file_id, PDO::PARAM_INT);
+		$ap_query->execute();
 		$sig_gps_data = $ap_query->fetchAll(2);
 		if(count($sig_gps_data) > 0)
 		{
@@ -311,48 +321,96 @@ class export extends dbcore
 		return $KML_data;
 	}
 	
-	public function UserList($points, $named=0, $only_new=0, $new_icons=0)
+	public function UserList($file_id, $named=0, $only_new=0, $new_icons=0)
 	{
-		$KML_data="";
-		$KML_region="";
+		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
+		$prep_AP_IDS = $this->sql->conn->prepare($sql);
+		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
+		$prep_AP_IDS->execute();
 		$Import_KML_Data="";
 		$box_latlon = array();
-		$points = explode("-", $points);
-		foreach($points as $point)
+		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
-			list($id, $new_old) = explode(":", $point);
-			if($only_new == 1 and $new_old == 1){continue;}
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-			$result = $this->sql->conn->query($sql);
-			while($ap_fetch = $result->fetch(2))
+			$apid = $array['AP_ID'];
+			$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`\n"
+				. "FROM `wifi_hist`\n"
+				. "INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_hist`.`AP_ID` = ?\n"
+				. "ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
+				. "LIMIT 1";
+			$resgps = $this->sql->conn->prepare($sql);
+			$resgps->bindParam(1, $file_id, PDO::PARAM_INT);
+			$resgps->bindParam(2, $apid, PDO::PARAM_INT);
+			$resgps->execute();
+			$fetchgps = $resgps->fetch(2);
+			$HighGps_Lat = $fetchgps['Lat'];
+			$HighGps_Lon = $fetchgps['Lon'];
+			$HighGps_Alt = $fetchgps['Alt'];
+			if($HighGps_Lat != "0.0000")
 			{
+				#Find File User
+				$sql = "SELECT user From files WHERE id = ? LIMIT 1";
+				$list_user_prep = $this->sql->conn->prepare($sql);
+				$list_user_prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$list_user_prep->execute();
+				$list_user_array = $list_user_prep->fetch(2);
+				$List_user = $list_user_array['user'];
+
+				#Find AP First Date in this list
+				$sql = "SELECT Hist_Date, New From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date ASC LIMIT 1";
+				$list_AP_FA_prep = $this->sql->conn->prepare($sql);
+				$list_AP_FA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$list_AP_FA_prep->bindParam(2, $apid, PDO::PARAM_INT);
+				$list_AP_FA_prep->execute();
+				$list_AP_FA_array = $list_AP_FA_prep->fetch(2);
+				$List_AP_FA = $list_AP_FA_array['Hist_Date'];
+				if($list_AP_FA_array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
+			
+				#Find AP Last Date in this list
+				$sql = "SELECT Hist_Date From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date DESC LIMIT 1";
+				$list_AP_LA_prep = $this->sql->conn->prepare($sql);
+				$list_AP_LA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$list_AP_LA_prep->bindParam(2, $apid, PDO::PARAM_INT);
+				$list_AP_LA_prep->execute();
+				$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
+				$List_AP_LA = $list_AP_LA_array['Hist_Date'];
+
+				#Get AP Info
+				$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX\n"
+					. "FROM wifi_ap\n"
+					. "WHERE AP_ID = ?";
+				$result = $this->sql->conn->prepare($sql);
+				$result->bindParam(1, $apid, PDO::PARAM_INT);
+				$result->execute();
+				$ap_array = $result->fetch(2);
+				
 				#Get AP KML
 				$ap_info = array(
-				"id" => $id,
+				"id" => $apid,
 				"new_ap" => $new_icons,
 				"named" => $named,
-				"mac" => $ap_fetch['mac'],
-				"ssid" => $ap_fetch['ssid'],
-				"chan" => $ap_fetch['chan'],
-				"radio" => $ap_fetch['radio'],
-				"NT" => $ap_fetch['NT'],
-				"sectype" => $ap_fetch['sectype'],
-				"auth" => $ap_fetch['auth'],
-				"encry" => $ap_fetch['encry'],
-				"BTx" => $ap_fetch['BTx'],
-				"OTx" => $ap_fetch['OTx'],
-				"FA" => $ap_fetch['FA'],
-				"LA" => $ap_fetch['LA'],
-				"lat" => $ap_fetch['lat'],
-				"long" => $ap_fetch['long'],
-				"alt" => $ap_fetch['alt'],
-				"manuf"=>$this->findManuf($ap_fetch['mac'])
+				"mac" => $ap_array['BSSID'],
+				"ssid" => $ap_array['SSID'],
+				"chan" => $ap_array['CHAN'],
+				"radio" => $ap_array['RADTYPE'],
+				"NT" => $ap_array['NETTYPE'],
+				"sectype" => $ap_array['SECTYPE'],
+				"auth" => $ap_array['AUTH'],
+				"encry" => $ap_array['ENCR'],
+				"BTx" => $ap_array['BTX'],
+				"OTx" => $ap_array['OTX'],
+				"FA" => $List_AP_FA,
+				"LA" => $List_AP_LA,
+				"lat" => $this->convert->dm2dd($HighGps_Lat),
+				"long" => $this->convert->dm2dd($HighGps_Lon),
+				"alt" => $HighGps_Alt,
+				"manuf"=>$this->findManuf($ap_array['BSSID'])
 				);
 				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
 				
 				$latlon_info = array(
-				"lat" => $ap_fetch['lat'],
-				"long" => $ap_fetch['long'],
+				"lat" => $this->convert->dm2dd($HighGps_Lat),
+				"long" => $this->convert->dm2dd($HighGps_Lon),
 				);
 				$box_latlon[] = $latlon_info;
 			}
@@ -366,46 +424,97 @@ class export extends dbcore
 		return $ret_data;
 	}
 	
-	public function UserListGeoJSON($points, $new_icons=0)
+	public function UserListGeoJSON($file_id, $new_icons=0)
 	{
+		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
+		$prep_AP_IDS = $this->sql->conn->prepare($sql);
+		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
+		$prep_AP_IDS->execute();
 		$Import_Map_Data="";
-		$points = explode("-", $points);
 		$latlon_array = array();
-		foreach($points as $point)
+		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
-			list($id, $new_old) = explode(":", $point);
-			$sql = "SELECT `mac`, `ssid`, `chan`, `radio`, `NT`, `sectype`, `auth`, `encry`, `BTx`, `OTx`, `FA`, `LA`, `lat`, `long`, `alt`, `username` FROM `wifi_pointers` WHERE `id` = '$id' And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-			$result = $this->sql->conn->query($sql);
-			while($ap_fetch = $result->fetch(2))
+			$apid = $array['AP_ID'];
+			$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`\n"
+				. "FROM `wifi_hist`\n"
+				. "INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_hist`.`AP_ID` = ?\n"
+				. "ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
+				. "LIMIT 1";
+			$resgps = $this->sql->conn->prepare($sql);
+			$resgps->bindParam(1, $file_id, PDO::PARAM_INT);
+			$resgps->bindParam(2, $apid, PDO::PARAM_INT);
+			$resgps->execute();
+			$fetchgps = $resgps->fetch(2);
+			$HighGps_Lat = $fetchgps['Lat'];
+			$HighGps_Lon = $fetchgps['Lon'];
+			$HighGps_Alt = $fetchgps['Alt'];
+			if($HighGps_Lat != "0.0000")
 			{
-				#Get AP KML
+				#Find File User
+				$sql = "SELECT user From files WHERE id = ? LIMIT 1";
+				$list_user_prep = $this->sql->conn->prepare($sql);
+				$list_user_prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$list_user_prep->execute();
+				$list_user_array = $list_user_prep->fetch(2);
+				$List_user = $list_user_array['user'];
+
+				#Find AP First Date in this list
+				$sql = "SELECT Hist_Date, New From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date ASC LIMIT 1";
+				$list_AP_FA_prep = $this->sql->conn->prepare($sql);
+				$list_AP_FA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$list_AP_FA_prep->bindParam(2, $apid, PDO::PARAM_INT);
+				$list_AP_FA_prep->execute();
+				$list_AP_FA_array = $list_AP_FA_prep->fetch(2);
+				$List_AP_FA = $list_AP_FA_array['Hist_Date'];
+				if($list_AP_FA_array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
+			
+				#Find AP Last Date in this list
+				$sql = "SELECT Hist_Date From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date DESC LIMIT 1";
+				$list_AP_LA_prep = $this->sql->conn->prepare($sql);
+				$list_AP_LA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$list_AP_LA_prep->bindParam(2, $apid, PDO::PARAM_INT);
+				$list_AP_LA_prep->execute();
+				$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
+				$List_AP_LA = $list_AP_LA_array['Hist_Date'];
+
+				#Get AP Info
+				$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX\n"
+					. "FROM wifi_ap\n"
+					. "WHERE AP_ID = ?";
+				$result = $this->sql->conn->prepare($sql);
+				$result->bindParam(1, $apid, PDO::PARAM_INT);
+				$result->execute();
+				$ap_array = $result->fetch(2);
+				
+				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $id,
 				"new_ap" => $new_icons,
-				"mac" => $ap_fetch['mac'],
-				"ssid" => $ap_fetch['ssid'],
-				"chan" => $ap_fetch['chan'],
-				"radio" => $ap_fetch['radio'],
-				"NT" => $ap_fetch['NT'],
-				"sectype" => $ap_fetch['sectype'],
-				"auth" => $ap_fetch['auth'],
-				"encry" => $ap_fetch['encry'],
-				"BTx" => $ap_fetch['BTx'],
-				"OTx" => $ap_fetch['OTx'],
-				"FA" => $ap_fetch['FA'],
-				"LA" => $ap_fetch['LA'],
-				"lat" => $this->convert->dm2dd($ap_fetch['lat']),
-				"long" => $this->convert->dm2dd($ap_fetch['long']),
-				"alt" => $ap_fetch['alt'],
-				"manuf"=>$this->findManuf($ap_fetch['mac']),
-				"username" => $ap_fetch['username'],
+				"mac" => $ap_array['BSSID'],
+				"ssid" => $ap_array['SSID'],
+				"chan" => $ap_array['CHAN'],
+				"radio" => $ap_array['RADTYPE'],
+				"NT" => $ap_array['NETTYPE'],
+				"sectype" => $ap_array['SECTYPE'],
+				"auth" => $ap_array['AUTH'],
+				"encry" => $ap_array['ENCR'],
+				"BTx" => $ap_array['BTX'],
+				"OTx" => $ap_array['OTX'],
+				"FA" => $List_AP_FA,
+				"LA" => $List_AP_LA,
+				"lat" => $this->convert->dm2dd($HighGps_Lat),
+				"long" => $this->convert->dm2dd($HighGps_Lon),
+				"alt" => $HighGps_Alt,
+				"manuf"=>$this->findManuf($ap_array['BSSID']),
+				"user" => $List_user,
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
 				
 				$latlon_info = array(
-				"lat" => $this->convert->dm2dd($ap_fetch['lat']),
-				"long" => $this->convert->dm2dd($ap_fetch['long']),
+				"lat" => $this->convert->dm2dd($HighGps_Lat),
+				"long" => $this->convert->dm2dd($HighGps_Lon),
 				);
 				$latlon_array[] = $latlon_info;
 			}

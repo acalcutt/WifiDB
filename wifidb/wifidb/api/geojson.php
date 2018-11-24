@@ -75,19 +75,19 @@ switch($func)
 	break;
 	
 	case "exp_list":
-		$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
-		$sql = "SELECT * FROM `user_imports` WHERE `id` = ?";
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$sql = "SELECT 'title' FROM `files` WHERE `id` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $row, PDO::PARAM_INT);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 		
-		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], $new_icons);
+		$ListGeoJSON = $dbcore->export->UserListGeoJSON($id, $new_icons);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data'], $labeled);
-		$file_name = $row."-".$title.".geojson";
+		$file_name = $id."-".$title.".geojson";
 		
 		break;
 		
@@ -159,7 +159,7 @@ switch($func)
 		else
 		{	
 			#Get the date of the newest import
-			$sql = "SELECT `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+			$sql = "SELECT `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
 			$date_query = $dbcore->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$datestamp = $date_fetch['date'];
@@ -170,7 +170,7 @@ switch($func)
 		
 		#Get lists from the date specified
 		$date_search = $date."%";
-		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` LIKE '$date_search' AND `points` != ''";
+		$sql = "SELECT `id` FROM `files` WHERE `date` LIKE '$date_search' ORDER BY `date` DESC";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->execute();
 		$fetch_imports = $prep->fetchAll();
@@ -178,7 +178,7 @@ switch($func)
 		foreach($fetch_imports as $import)
 		{
 			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
-			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['points'], $new_icons);
+			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['id'], $new_icons);
 			$AllListGeoJSON .= $ListGeoJSON['data'];
 		}
 		
@@ -188,7 +188,7 @@ switch($func)
 		
 	case "exp_daily_old":
 		#Get lists from the last day and a half
-		$sql = "SELECT `id` , `points`, `username`, `title`, `date` FROM `user_imports` WHERE `date` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) AND `points` != ''";
+		$sql = "SELECT `id` , `user`, `title`, `date` FROM `files` WHERE `date` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) AND `completed` = 1";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->execute();
 		$fetch_imports = $prep->fetchAll();
@@ -196,7 +196,7 @@ switch($func)
 		foreach($fetch_imports as $import)
 		{
 			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
-			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['points'], $new_icons);
+			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['id'], $new_icons);
 			$AllListGeoJSON .= $ListGeoJSON['data'];
 		}
 		
@@ -207,7 +207,19 @@ switch($func)
 	case "exp_daily":
 		#Get lists from the last day and a half
 		$row_count = 1000;	
-		$sql = "SELECT `id`,`mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `long` != '0.0000' AND ModDate >= DATE_SUB(NOW(),INTERVAL 1 DAY) ORDER BY id LIMIT ?,?";
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.user As user\n"
+			. "FROM `wifi_ap` AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+			. "WHERE wGPS.Lat IS NOT NULL AND ModDate >= DATE_SUB(NOW(),INTERVAL 1 DAY) ORDER BY wap.AP_ID LIMIT ?,?";
 		$Import_Map_Data = "";
 		for ($i = 0; TRUE; $i++) {
 			$offset = $i*$row_count ;
@@ -220,26 +232,26 @@ switch($func)
 			{
 				#Get AP KML
 				$ap_info = array(
-				"id" => $ap['id'],
+				"id" => $ap['AP_ID'],
 				"new_ap" => 1,
 				"named" => 0,
-				"mac" => $ap['mac'],
-				"ssid" => $ap['ssid'],
-				"chan" => $ap['chan'],
-				"radio" => $ap['radio'],
-				"NT" => $ap['NT'],
-				"sectype" => $ap['sectype'],
-				"auth" => $ap['auth'],
-				"encry" => $ap['encry'],
-				"BTx" => $ap['BTx'],
-				"OTx" => $ap['OTx'],
+				"mac" => $ap['BSSID'],
+				"ssid" => $ap['SSID'],
+				"chan" => $ap['CHAN'],
+				"radio" => $ap['RADTYPE'],
+				"NT" => $ap['NETTYPE'],
+				"sectype" => $ap['SECTYPE'],
+				"auth" => $ap['AUTH'],
+				"encry" => $ap['ENCR'],
+				"BTx" => $ap['BTX'],
+				"OTx" => $ap['OTX'],
 				"FA" => $ap['FA'],
 				"LA" => $ap['LA'],
-				"lat" => $dbcore->convert->dm2dd($ap['lat']),
-				"long" => $dbcore->convert->dm2dd($ap['long']),
-				"alt" => $ap['alt'],
-				"manuf"=>$dbcore->findManuf($ap['mac']),
-				"username" => $ap['username']
+				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
+				"long" => $dbcore->convert->dm2dd($ap['Lon']),
+				"alt" => $ap['Alt'],
+				"manuf"=>$dbcore->findManuf($ap['BSSID']),
+				"username" => $ap['user']
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
