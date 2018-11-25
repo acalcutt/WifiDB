@@ -105,37 +105,62 @@ if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "a
 /*
  * Class autoloader
  */
- if(!function_exists('__autoload'))
- {
-	function __autoload($class)
+function autoload_function($class) {    
+	if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
 	{
-		if(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
-			return 1;
-		}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
-		{
-			include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
-			return 1;
-		}else
-		{
-			throw new errorexception("Could not load class `{$class}`");
-		}
+		include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.inc.php';
+		return 1;
+	}elseif(file_exists($GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php'))
+	{
+		include_once $GLOBALS['config']['wifidb_tools'].'daemon/lib/'.$class.'.inc.php';
+		return 1;
+	}elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
+	{
+		include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
+		return 1;
+	}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
+	{
+		include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
+		return 1;
+	}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
+	{
+		include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
+		return 1;
+	}else
+	{
+		throw new errorexception("Could not load class `{$class}`");
 	}
+}
 
- }
+ //check to see if there is an existing __autoload function from another library 
+if(!function_exists('__autoload')) {
+    if(function_exists('spl_autoload_register')) {
+        //we have SPL, so register the autoload function
+        spl_autoload_register('autoload_function');      
+    } else {
+        //if there isn't, we don't need to worry about using the stack,
+        //we can just register our own autoloader
+        function __autoload($class_name) {
+            autoload_function($class_name);
+        }
+    }
+
+} else {
+    //ok, so there is an existing __autoload function, we need to use a stack
+    //if SPL is installed, we can use spl_autoload_register,
+    //if there isn't, then we can't do anything about it, and
+    //will have to die
+    if(function_exists('spl_autoload_register')) {
+        //we have SPL, so register both the
+        //original __autoload from the external app,
+        //because the original will get overwritten by the stack,
+        //plus our own
+        spl_autoload_register('__autoload');
+        spl_autoload_register('autoload_function');      
+    } else {
+        exit;
+    }
+}
 
 try
 {
@@ -193,13 +218,6 @@ try
 			switch(strtolower(SWITCH_EXTRAS))
 			{
 				case "api":
-					__autoload("createKML");
-					__autoload("createGeoJSON");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("api");
-					__autoload("Zip");
-
 					$dbcore = new api($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
@@ -209,12 +227,6 @@ try
 				break;
 
                 case "apiv2":
-                    __autoload("createKML");
-					__autoload("createGeoJSON");
-                    __autoload("convert");
-                    __autoload("export");
-                    __autoload("apiv2");
-                    __autoload("Zip");
                     $dbcore = new apiv2($config, $SQL);
                     $dbcore->convert = new convert($config, $SQL);
                     $dbcore->Zip = new Zip;
@@ -224,11 +236,6 @@ try
 				break;
 
 				case "export":
-					__autoload("createKML");
-					__autoload("createGeoJSON");
-					__autoload("convert");
-					__autoload("export");
-					__autoload("Zip");
 					$dbcore = new frontend($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
@@ -238,7 +245,6 @@ try
 				break;
 
 				case "graph":
-					__autoload("graphs");
 					$dbcore = new frontend($config);
 					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
 				break;

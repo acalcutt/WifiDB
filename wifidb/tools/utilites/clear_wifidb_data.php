@@ -2,7 +2,7 @@
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
 
-require('/etc/wifidb/daemon.config.inc.php');
+require(dirname(__FILE__).'/../daemon.config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 echo "#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#\r\n";
 echo "#~#~#~#~#~#~#~#~#  Clear WiFiDB of all Data?! #~#~#~#~#~#~#~#~#~#~#~#~#~#~#~#\r\n";

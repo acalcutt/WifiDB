@@ -2,8 +2,8 @@
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
-if(!(require('/etc/wifidb/daemon.config.inc.php'))){die("You need to create and configure your config.inc.php file in the /etc/wifidb/daemon.config.inc.php");}
-if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/config.inc.php");}
+if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to create and configure your [tools]/daemon.config.inc.php");}
+if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon.config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 if(isset($argv[1]))
@@ -102,8 +102,8 @@ function start($command = '')
 							);
 		break;
 	}
-	require('/etc/wifidb/daemon.config.inc.php');
-	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'config.inc.php');
+	require(dirname(__FILE__).'/../daemon.config.inc.php');
+	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'daemon.config.inc.php');
 	
 	$is_array = is_array($daemon_);
 	if($is_array)
@@ -224,8 +224,8 @@ function stop($command = '')
 							);
 		break;
 	}
-	require('/etc/wifidb/daemon.config.inc.php');
-	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'config.inc.php');
+	require(dirname(__FILE__).'/../daemon.config.inc.php');
+	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'daemon.config.inc.php');
 	#var_dump($daemon_);
 	if(is_array($daemon_))
 	{
@@ -260,7 +260,7 @@ function stop($command = '')
 		return 1;
 	}
 	echo "Stopping WiFiDB Daemon ( $daemon_ )...\r\n";
-	require('/etc/wifidb/daemon.config.inc.php');
+	require(dirname(__FILE__).'/../daemon.config.inc.php');
 	$pid = $daemon_config['pid_file_loc'].$daemon_.'d.pid';
 	if(file_exists($pid))
 	{
@@ -321,8 +321,8 @@ function status($command = '')
 							);
 		break;
 	}
-	require('/etc/wifidb/daemon.config.inc.php');
-	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'config.inc.php');
+	require(dirname(__FILE__).'/../daemon.config.inc.php');
+	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'daemon.config.inc.php');
 	
 	$is_array = is_array($daemon_);
 	if($is_array)
@@ -527,10 +527,10 @@ function help()
   type 'php rund.php [start,stop,restart]'. This script will only run on linux 
   based systems. Windows is NOT supported. This is also an optional item it is not
   needed at all to run WiFiDB. To turn it on or off in the DB itself go to the 
-  config.inc.php in the lib folder of where you have your WiFiDB installed, and 
+  daemon.config.inc.php in the lib folder of where you have your WiFiDB installed, and 
   change the variable named sched to 0 (off) or 1 (on).
    To change settings for the daemon itself go to the daemon folder inside the tools 
-  folder and open the config.inc.php file and change sleep to the number of seconds
+  folder and open the daemon.config.inc.php file and change sleep to the number of seconds
   that you want to sleep before checking the files_tmp again, there is a safety so
   you cannot set it less then 5 min.
 
