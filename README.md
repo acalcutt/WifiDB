@@ -34,8 +34,8 @@ Vistumbler WiFiDB -> Read-me
 		1.) Create tools directory (ex. /opt/wdbtools/)
 		2.) Copy the /wifidb/tools folder into the tools directory created in step 1
 		3.) Copy the /wifidb/wifidb folder into your website root directory
-		4.) Create a blank mysql (ex. wifi) database and import the 'blank_db.sql' file.
-		5.) Create a mysql user that has access to the table created in step 4
+		4.) Create a blank mysql database(ex. wifi) and import the 'blank_db.sql' file.
+		5.) Create a mysql user that has access to the database created in step 4
 		4.) Update your daemon config file, [tools]/daemon.config.inc.php
 		5.) Update your website config file, [webroot]wifidb/lib/config.inc.php
 		
