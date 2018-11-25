@@ -217,13 +217,18 @@ switch($func)
         $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">Download!</a>';
         $kmldate=date ("Y-m-d");
 		#-----------
-        $sql = "SELECT `LA` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+		$sql = "SELECT `wifi_gps`.`GPS_Date`\n"
+			. "FROM `wifi_ap`\n"
+			. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_ap`.`HighGps_ID` IS NOT NULL and `wifi_gps`.`Lat` != '0.0000'\n"
+			. "ORDER BY `wifi_gps`.`GPS_Date` DESC\n"
+			. "LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
-        if($ap_array['LA'])
+        if($ap_array['GPS_Date'])
         {
-            if(strpos($ap_array['LA'], ".")){$lastapdate = substr($ap_array['LA'], 0, strpos($ap_array['LA'], "."));}else{$lastapdate = $ap_array['LA'];}
+            if(strpos($ap_array['GPS_Date'], ".")){$lastapdate = substr($ap_array['GPS_Date'], 0, strpos($ap_array['GPS_Date'], "."));}else{$lastapdate = $ap_array['GPS_Date'];}
 
             $kml_head['newest_date'] = $lastapdate;
             $kml_head['newest_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=0";
@@ -245,7 +250,7 @@ switch($func)
         }
 		#-----------
 		$date_search = $kmldate."%";
-        $sql = "SELECT `id`, `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+        $sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -273,7 +278,7 @@ switch($func)
             $kml_head['daily_labeled_size'] = "0.00 kB";
         }
 		#-----------
-        $sql = "SELECT `id`, `date` FROM `user_imports` ORDER BY `date` DESC LIMIT 1";
+        $sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 

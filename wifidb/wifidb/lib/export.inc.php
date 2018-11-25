@@ -417,7 +417,7 @@ class export extends dbcore
 				
 				#Get AP GeoJSON
 				$ap_info = array(
-				"id" => $id,
+				"id" => $ap_array['AP_ID'],
 				"new_ap" => $new_icons,
 				"mac" => $ap_array['BSSID'],
 				"ssid" => $ap_array['SSID'],

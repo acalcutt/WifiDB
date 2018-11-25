@@ -212,7 +212,7 @@ class convert extends dbcore
 		$sections = count($latlon_exp);
 		if ($sections == 2)
 		{
-			$latlonleft = substr($latlon_exp[0], 0, -2);
+			$latlonleft = (float) substr($latlon_exp[0], 0, -2);
 			$latlonright = ((float)(substr($latlon_exp[0], (strlen($latlon_exp[0])-2)) . '.' . $latlon_exp[1])) / 60;
 			$return = $sign.number_format($latlonleft + $latlonright , 7);
 

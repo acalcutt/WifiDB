@@ -137,7 +137,7 @@ class createGeoJSON
 		$layer_source = "
 													map.addSource('".$layer_sname."', {
 														type: 'geojson',
-														data: '".$this->URL_BASE."api/geojson.php?func=exp_list&row=".$id."&all=1',
+														data: '".$this->URL_BASE."api/geojson.php?func=exp_list&id=".$id."&all=1',
 														buffer: 0,
 													});
 

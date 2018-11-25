@@ -72,14 +72,14 @@ switch($func)
 		
 	case "user_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$sql = "SELECT * FROM `user_imports` WHERE `id` = ?";
+		$sql = "SELECT `title` FROM `files` WHERE `id` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-		$ListGeoJSON = $dbcore->export->UserListGeoJSON($fetch['points'], 0);
+		$ListGeoJSON = $dbcore->export->UserListGeoJSON($id, 0);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);		
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
@@ -127,7 +127,10 @@ switch($func)
 		break;
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$sql = "SELECT `lat`,`long` FROM `wifi_pointers` WHERE `id` = ?";
+		$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
+			. "FROM `wifi_ap`\n"
+			. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_ap`.`AP_ID` = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -138,7 +141,7 @@ switch($func)
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['long']).",".$dbcore->convert->dm2dd($latlng['lat'])."]";
+		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['Lon']).",".$dbcore->convert->dm2dd($latlng['Lat'])."]";
 		$zoom = 12;
 		
 		$layer_source_all = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
@@ -244,7 +247,19 @@ switch($func)
 			
 		$Import_Map_Data = "";
 		foreach($results_all as $ResultAP) {
-			$sql = "SELECT `mac`,`ssid`,`chan`,`radio`,`NT`,`sectype`,`auth`,`encry`,`BTx`,`OTx`,`FA`,`LA`,`lat`,`long`,`alt`,`username` FROM `wifi_pointers` WHERE `id` = ?";
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+				. "whFA.Hist_Date As FA,\n"
+				. "whLA.Hist_Date As LA,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.user As user\n"
+				. "FROM `wifi_ap` AS wap\n"
+				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+				. "WHERE `wap`.`AP_ID` = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $ResultAP['id'], PDO::PARAM_INT);
 			$prep->execute();
@@ -256,23 +271,23 @@ switch($func)
 				"id" => $id,
 				"new_ap" => $new_icons,
 				"named" => $named,
-				"mac" => $ap['mac'],
-				"ssid" => $ap['ssid'],
-				"chan" => $ap['chan'],
-				"radio" => $ap['radio'],
-				"NT" => $ap['NT'],
-				"sectype" => $ap['sectype'],
-				"auth" => $ap['auth'],
-				"encry" => $ap['encry'],
-				"BTx" => $ap['BTx'],
-				"OTx" => $ap['OTx'],
+				"mac" => $ap['BSSID'],
+				"ssid" => $ap['SSID'],
+				"chan" => $ap['CHAN'],
+				"radio" => $ap['RADTYPE'],
+				"NT" => $ap['NETTYPE'],
+				"sectype" => $ap['SECTYPE'],
+				"auth" => $ap['AUTH'],
+				"encry" => $ap['ENCR'],
+				"BTx" => $ap['BTX'],
+				"OTx" => $ap['OTX'],
 				"FA" => $ap['FA'],
 				"LA" => $ap['LA'],
-				"lat" => $dbcore->convert->dm2dd($ap['lat']),
-				"long" => $dbcore->convert->dm2dd($ap['long']),
-				"alt" => $ap['alt'],
-				"manuf"=>$dbcore->findManuf($ap['mac']),
-				"username" => $ap['username']
+				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
+				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
+				"alt" => $ap['Alt'],
+				"manuf"=>$dbcore->findManuf($ap['BSSID']),
+				"user" => $ap['user']
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);

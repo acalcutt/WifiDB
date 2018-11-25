@@ -66,7 +66,7 @@ switch($func)
 			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
 			"manuf"=>$dbcore->findManuf($ap['BSSID']),
-			"username" => $ap['user']
+			"user" => $ap['user']
 			);
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
