@@ -1,5 +1,5 @@
 <?php
-require(dirname(__FILE__) . '/config.inc.php');
+require(dirname(__FILE__).'/config.inc.php');
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
 Copyright (C) 2016 Phil Ferland
@@ -131,36 +131,7 @@ function autoload_function($class) {
 		throw new errorexception("Could not load class `{$class}`");
 	}
 }
-
- //check to see if there is an existing __autoload function from another library 
-if(!function_exists('__autoload')) {
-    if(function_exists('spl_autoload_register')) {
-        //we have SPL, so register the autoload function
-        spl_autoload_register('autoload_function');      
-    } else {
-        //if there isn't, we don't need to worry about using the stack,
-        //we can just register our own autoloader
-        function __autoload($class_name) {
-            autoload_function($class_name);
-        }
-    }
-
-} else {
-    //ok, so there is an existing __autoload function, we need to use a stack
-    //if SPL is installed, we can use spl_autoload_register,
-    //if there isn't, then we can't do anything about it, and
-    //will have to die
-    if(function_exists('spl_autoload_register')) {
-        //we have SPL, so register both the
-        //original __autoload from the external app,
-        //because the original will get overwritten by the stack,
-        //plus our own
-        spl_autoload_register('__autoload');
-        spl_autoload_register('autoload_function');      
-    } else {
-        exit;
-    }
-}
+spl_autoload_register('autoload_function'); 
 
 try
 {
