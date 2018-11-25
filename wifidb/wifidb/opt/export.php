@@ -64,22 +64,22 @@ switch($func)
 			define("SWITCH_EXTRAS", "export");
 			include('../lib/init.inc.php');
 			$dbcore->smarty->assign('wifidb_page_label', 'Export User List');
-			$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			
-			if(!is_int($row))
+			if(!is_int($id))
 			{
-				throw new ErrorException('$row value for export::UserList() is NaN');
+				throw new ErrorException('$id value for export::UserList() is NaN');
 				return 0;
 			}
 			
-			$sql = "SELECT * FROM `user_imports` WHERE `id` = ?";
+			$sql = "SELECT `user`, `title`, `date` FROM `files` WHERE `id` = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
-			$prep->bindParam(1, $row, PDO::PARAM_INT);
+			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$fetch = $prep->fetch();
 
-			$ListKML = $dbcore->export->UserList($fetch['points']);
+			$ListKML = $dbcore->export->UserList($id);
 			if($ListKML['data'] !== "")
 			{
 				$final_box = $dbcore->export->FindBox($ListKML['box']);
@@ -256,24 +256,24 @@ switch($func)
 
 			$imports = array();
 			$usernames = array();
-			$sql = "SELECT `id`,`title`, `username`, `aps`, `date` FROM `user_imports` ORDER BY `username`, `title`";
+			$sql = "SELECT `id`,`title`, `user`, `aps`, `date` FROM `files` ORDER BY `user`, `title`";
 			$result = $dbcore->sql->conn->query($sql);
 			while($user_array = $result->fetch(2))
 			{
 				$imports[] = array(
 								"id"=>$user_array["id"],
-								"username"=>$user_array["username"],
+								"username"=>$user_array["user"],
 								"title"=>$user_array["title"],
 								"aps"=>$user_array["aps"],
 								"date"=>$user_array["date"]
 							 );
 			}
 
-			$sql = "SELECT `username` FROM `user_imports` ORDER BY `username`";
+			$sql = "SELECT `user` FROM `files` ORDER BY `user`";
 			$result = $dbcore->sql->conn->query($sql);
 			while($user_array = $result->fetch(2))
 			{
-				$usernames[] = $user_array["username"];
+				$usernames[] = $user_array["user"];
 			}
 			$usernames = array_unique($usernames);
 

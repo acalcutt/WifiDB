@@ -48,7 +48,8 @@ class export extends dbcore
 			"ExportDaemonKMZ"		  =>  "1.0",
 			"ExportSingleAP"		=>  "1.0",
 			"ExportCurrentAP"	=>  "1.0",
-			"ExportApSignal3d"	=>  "1.0",			
+			"ExportApSignal3d"	=>  "1.0",	
+			"UserAll"		=>  "3.0",			
 			"UserList"		=>  "3.0",
 			"UserListGeoJSON"		=>  "1.0",
 			"FindBox"	=>  "1.0",
@@ -276,6 +277,24 @@ class export extends dbcore
 			#Plot AP 3D Signal
 			$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
 			$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
+		}
+		return $KML_data;
+	}
+	
+	public function UserAll($user)
+	{
+		$sql = "SELECT wifi_ap.AP_ID\n"
+			. "FROM `wifi_ap`\n"
+			. "LEFT JOIN `files` ON `files`.`id` = `wifi_ap`.`File_ID`\n"
+			. "WHERE `files`.`user` LIKE ? And  `wifi_ap`.`BSSID` != '00:00:00:00:00:00' And `wifi_ap`.`HighGps_ID` IS NOT NULL";
+		$result1 = $this->sql->conn->prepare($sql);
+		$result1->bindParam(1, $user, PDO::PARAM_STR);
+		$result1->execute();
+		$KML_data="";
+		while($array = $result1->fetch(2))
+		{
+			list($KML_AP_data, $export_ssid) = $this->ExportSingleAp($array['AP_ID'], $this->named);
+			if($KML_AP_data){$KML_data .= $KML_AP_data;}
 		}
 		return $KML_data;
 	}
