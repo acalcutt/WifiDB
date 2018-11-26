@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 24, 2018 at 02:05 PM
+-- Generation Time: Nov 25, 2018 at 11:13 PM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `dev_wifi`
+-- Database: `prod_wifi`
 --
 
 -- --------------------------------------------------------
@@ -209,26 +209,26 @@ CREATE TABLE `files_tmp` (
 --
 
 CREATE TABLE `geonames` (
-  `id` int(255) NOT NULL,
-  `geonameid` int(255) NOT NULL,
-  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `asciiname` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `alternatenames` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `latitude` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `longitude` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `feature_class` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `feature_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `country_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `cc2` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `admin1_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `admin2_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `admin3_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `admin4_code` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `population` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `elevation` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `gtopo30` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `timezone` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `mod_date` varchar(255) COLLATE utf8_unicode_ci NOT NULL
+  `id` bigint(20) NOT NULL,
+  `geonameid` bigint(20) NOT NULL,
+  `name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `asciiname` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `alternatenames` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `latitude` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `longitude` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `feature_class` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `feature_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `country_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `cc2` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `admin1_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `admin2_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `admin3_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `admin4_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `population` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `elevation` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `gtopo30` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `timezone` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `mod_date` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -238,11 +238,11 @@ CREATE TABLE `geonames` (
 --
 
 CREATE TABLE `geonames_admin1` (
-  `id` int(11) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `admin1` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
-  `asciiname` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
-  `geonameid` int(255) NOT NULL
+  `name` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `asciiname` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `geonameid` bigint(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -252,11 +252,11 @@ CREATE TABLE `geonames_admin1` (
 --
 
 CREATE TABLE `geonames_admin2` (
-  `id` int(255) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `admin2` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `name` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
-  `asciiname` varchar(200) COLLATE utf8_unicode_ci NOT NULL,
-  `geonameid` int(255) NOT NULL
+  `name` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `asciiname` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `geonameid` bigint(20) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -266,26 +266,26 @@ CREATE TABLE `geonames_admin2` (
 --
 
 CREATE TABLE `geonames_country_names` (
-  `id` int(255) NOT NULL,
-  `ISO` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `ISO3` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `ISO-Numeric` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `fips` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Country` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Capital` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Area` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Population` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Continent` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `tld` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `CurrencyCode` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `CurrencyName` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Phone` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Postal Code Format` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Postal Code Regex` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Languages` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `geonamesid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `neighbors` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `EquivalentFipsCode` varchar(255) COLLATE utf8_unicode_ci NOT NULL
+  `id` bigint(20) NOT NULL,
+  `ISO` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `ISO3` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `ISO-Numeric` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `fips` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Country` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Capital` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Area` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Population` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Continent` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `tld` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `CurrencyCode` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `CurrencyName` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Phone` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Postal Code Format` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Postal Code Regex` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `Languages` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `geonamesid` bigint(20) DEFAULT NULL,
+  `neighbors` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `EquivalentFipsCode` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- --------------------------------------------------------
@@ -429,7 +429,7 @@ CREATE TABLE `schedule` (
 --
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
-(1, 'dev', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
+(1, 'prod', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -450,7 +450,7 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES
-(1, 1, '0.40', 0, 'dev');
+(1, 1, '0.40', 0, 'prod');
 
 -- --------------------------------------------------------
 
@@ -629,6 +629,10 @@ CREATE TABLE `wifi_ap` (
   `HighSig_ID` bigint(20) DEFAULT NULL,
   `HighRSSI_ID` bigint(20) DEFAULT NULL,
   `File_ID` bigint(20) DEFAULT NULL,
+  `geonames_id` bigint(20) DEFAULT NULL,
+  `admin1_id` bigint(20) DEFAULT NULL,
+  `admin2_id` bigint(20) DEFAULT NULL,
+  `country_code` varchar(3) COLLATE utf8_unicode_ci DEFAULT NULL,
   `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
@@ -970,25 +974,25 @@ ALTER TABLE `files_tmp`
 -- AUTO_INCREMENT for table `geonames`
 --
 ALTER TABLE `geonames`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `geonames_admin1`
 --
 ALTER TABLE `geonames_admin1`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `geonames_admin2`
 --
 ALTER TABLE `geonames_admin2`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `geonames_country_names`
 --
 ALTER TABLE `geonames_country_names`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `live_aps`
