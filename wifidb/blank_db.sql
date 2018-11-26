@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 25, 2018 at 11:13 PM
+-- Generation Time: Nov 26, 2018 at 11:34 AM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `prod_wifi`
+-- Database: `dev_wifi`
 --
 
 -- --------------------------------------------------------
@@ -31,12 +31,12 @@ SET time_zone = "+00:00";
 CREATE TABLE `annunc` (
   `id` int(11) NOT NULL,
   `set` tinyint(1) NOT NULL DEFAULT 0,
-  `auth` varchar(32) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Annon Coward',
-  `title` varchar(120) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'Blank',
+  `auth` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Annon Coward',
+  `title` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Blank',
   `date` timestamp NOT NULL DEFAULT current_timestamp(),
-  `body` text COLLATE utf8_unicode_ci NOT NULL,
-  `comments` text COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `comments` text COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -46,9 +46,9 @@ CREATE TABLE `annunc` (
 
 CREATE TABLE `boundaries` (
   `id` int(255) NOT NULL,
-  `name` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `polygon` text COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `polygon` text COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -58,14 +58,14 @@ CREATE TABLE `boundaries` (
 
 CREATE TABLE `daemon_pid_stats` (
   `id` int(11) NOT NULL,
-  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidfile` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidtime` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidmem` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `pidcmd` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `nodename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pidfile` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pidtime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pidmem` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pidcmd` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -112,7 +112,7 @@ CREATE TABLE `DB_stats` (
   `ap_gps_totals` blob NOT NULL,
   `top_ssids` blob NOT NULL,
   `geos` blob NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -122,21 +122,21 @@ CREATE TABLE `DB_stats` (
 
 CREATE TABLE `files` (
   `id` bigint(20) NOT NULL,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `node_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `user` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `node_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `prev_ext` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT current_timestamp(),
-  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `size` varchar(14) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `aps` int(11) NOT NULL DEFAULT 0,
   `gps` int(11) NOT NULL DEFAULT 0,
-  `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `completed` tinyint(1) NOT NULL DEFAULT 0,
   `NewAPPercent` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -146,19 +146,19 @@ CREATE TABLE `files` (
 
 CREATE TABLE `files_bad` (
   `id` bigint(20) NOT NULL,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `size` varchar(14) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT current_timestamp(),
-  `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL,
   `thread_id` int(255) NOT NULL DEFAULT 0,
-  `node_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `error_msg` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `node_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',
+  `prev_ext` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `error_msg` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -169,19 +169,19 @@ CREATE TABLE `files_bad` (
 CREATE TABLE `files_importing` (
   `id` bigint(20) NOT NULL,
   `tmp_id` int(255) DEFAULT 0,
-  `file` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `size` varchar(14) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT current_timestamp(),
-  `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `prev_ext` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `importing` tinyint(1) NOT NULL DEFAULT 0,
-  `ap` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `tot` varchar(128) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `ap` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tot` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -191,16 +191,16 @@ CREATE TABLE `files_importing` (
 
 CREATE TABLE `files_tmp` (
   `id` bigint(20) NOT NULL,
-  `file` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `user` varchar(32) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `size` varchar(14) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `file` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `size` varchar(14) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `date` datetime NOT NULL DEFAULT current_timestamp(),
-  `hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `prev_ext` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -211,25 +211,25 @@ CREATE TABLE `files_tmp` (
 CREATE TABLE `geonames` (
   `id` bigint(20) NOT NULL,
   `geonameid` bigint(20) NOT NULL,
-  `name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `asciiname` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `alternatenames` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `latitude` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `longitude` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `feature_class` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `feature_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `country_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `cc2` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `admin1_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `admin2_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `admin3_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `admin4_code` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `population` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `elevation` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `gtopo30` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `timezone` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `mod_date` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `asciiname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `alternatenames` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `latitude` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `longitude` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `feature_class` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `feature_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `country_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cc2` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `admin1_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `admin2_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `admin3_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `admin4_code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `population` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `elevation` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `gtopo30` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `timezone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mod_date` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -239,11 +239,11 @@ CREATE TABLE `geonames` (
 
 CREATE TABLE `geonames_admin1` (
   `id` bigint(20) NOT NULL,
-  `admin1` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `name` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `asciiname` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `admin1` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `asciiname` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `geonameid` bigint(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -253,11 +253,11 @@ CREATE TABLE `geonames_admin1` (
 
 CREATE TABLE `geonames_admin2` (
   `id` bigint(20) NOT NULL,
-  `admin2` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `name` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `asciiname` varchar(200) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `admin2` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `asciiname` varchar(200) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `geonameid` bigint(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -267,26 +267,26 @@ CREATE TABLE `geonames_admin2` (
 
 CREATE TABLE `geonames_country_names` (
   `id` bigint(20) NOT NULL,
-  `ISO` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `ISO3` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `ISO-Numeric` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `fips` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Country` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Capital` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Area` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Population` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Continent` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `tld` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `CurrencyCode` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `CurrencyName` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Phone` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Postal Code Format` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Postal Code Regex` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Languages` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `ISO` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ISO3` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ISO-Numeric` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fips` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Country` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Capital` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Area` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Population` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Continent` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `tld` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `CurrencyCode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `CurrencyName` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Postal Code Format` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Postal Code Regex` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Languages` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `geonamesid` bigint(20) DEFAULT NULL,
-  `neighbors` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `EquivalentFipsCode` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `neighbors` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `EquivalentFipsCode` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -296,26 +296,26 @@ CREATE TABLE `geonames_country_names` (
 
 CREATE TABLE `live_aps` (
   `id` int(255) NOT NULL,
-  `ssid` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  `mac` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `auth` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
-  `encry` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `ssid` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mac` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `auth` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `encry` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `sectype` int(1) NOT NULL,
-  `radio` varchar(7) COLLATE utf8_unicode_ci NOT NULL,
+  `radio` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL,
   `chan` int(255) NOT NULL,
-  `sig` text COLLATE utf8_unicode_ci NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `BTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `OTx` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `NT` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `Label` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `sig` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `session_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ap_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `BTx` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `OTx` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `NT` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Label` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `FA` datetime DEFAULT NULL,
   `LA` datetime DEFAULT NULL,
-  `lat` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'N 0.0000',
-  `long` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT 'E 0.0000'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `lat` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'N 0.0000',
+  `long` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'E 0.0000'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -325,19 +325,19 @@ CREATE TABLE `live_aps` (
 
 CREATE TABLE `live_gps` (
   `id` int(255) NOT NULL,
-  `lat` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `long` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `lat` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `long` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `sats` int(25) NOT NULL,
-  `hdp` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `alt` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `geo` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `kmh` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `mph` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `track` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `date` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `time` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `hdp` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alt` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `geo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `kmh` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mph` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `track` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `date` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `time` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `session_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -347,12 +347,12 @@ CREATE TABLE `live_gps` (
 
 CREATE TABLE `live_signals` (
   `id` int(11) NOT NULL,
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `ap_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `signal` int(11) NOT NULL,
-  `rssi` varchar(255) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0',
+  `rssi` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0',
   `gps_id` int(11) NOT NULL,
   `time_stamp` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -362,11 +362,11 @@ CREATE TABLE `live_signals` (
 
 CREATE TABLE `live_titles` (
   `id` int(255) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `title` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `notes` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notes` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `session_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -376,10 +376,10 @@ CREATE TABLE `live_titles` (
 
 CREATE TABLE `live_users` (
   `id` int(11) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `session_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `session_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `title_id` int(11) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -389,11 +389,11 @@ CREATE TABLE `live_users` (
 
 CREATE TABLE `log` (
   `id` int(11) NOT NULL,
-  `message` text COLLATE utf8_unicode_ci NOT NULL,
-  `level` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `timestamp` varchar(32) COLLATE utf8_unicode_ci NOT NULL,
-  `prefix` varchar(255) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `level` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `timestamp` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `prefix` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -403,10 +403,10 @@ CREATE TABLE `log` (
 
 CREATE TABLE `manufacturers` (
   `id` int(11) NOT NULL,
-  `BSSID` varchar(6) COLLATE utf8_unicode_ci NOT NULL,
-  `Manufacturer` text COLLATE utf8_unicode_ci NOT NULL,
+  `BSSID` varchar(6) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `Manufacturer` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `modified` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -416,20 +416,20 @@ CREATE TABLE `manufacturers` (
 
 CREATE TABLE `schedule` (
   `id` int(11) NOT NULL,
-  `nodename` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `daemon` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `nodename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `daemon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `enabled` tinyint(1) NOT NULL,
   `interval` int(11) NOT NULL,
-  `status` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `schedule`
 --
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
-(1, 'prod', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
+(1, 'dev', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -440,17 +440,17 @@ INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `stat
 CREATE TABLE `settings` (
   `id` int(255) NOT NULL,
   `daemon_state` int(2) NOT NULL,
-  `version` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `version` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `apswithgps` int(255) NOT NULL,
-  `node_name` varchar(255) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `node_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `settings`
 --
 
 INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES
-(1, 1, '0.40', 0, 'prod');
+(1, 1, '0.40', 0, 'dev');
 
 -- --------------------------------------------------------
 
@@ -475,7 +475,7 @@ CREATE TABLE `share_waypoints` (
   `u_date` datetime NOT NULL,
   `pvt_id` int(255) NOT NULL,
   `shared_by` varchar(255) CHARACTER SET utf8 NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -485,23 +485,23 @@ CREATE TABLE `share_waypoints` (
 
 CREATE TABLE `user_imports` (
   `id` int(255) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `points` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `notes` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `title` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `date` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `points` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `date` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `aps` int(11) DEFAULT NULL,
   `gps` int(11) DEFAULT NULL,
   `NewAPPercent` int(11) NOT NULL DEFAULT 0,
-  `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `file_id` int(255) DEFAULT NULL,
   `converted` tinyint(1) NOT NULL DEFAULT 0,
-  `prev_ext` varchar(4) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `GPSBOX_NORTH` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `GPSBOX_SOUTH` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `GPSBOX_EAST` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `GPSBOX_WEST` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `prev_ext` varchar(4) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `GPSBOX_NORTH` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `GPSBOX_SOUTH` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `GPSBOX_EAST` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `GPSBOX_WEST` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -511,17 +511,17 @@ CREATE TABLE `user_imports` (
 
 CREATE TABLE `user_info` (
   `id` int(255) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `password` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `help` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `uid` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `help` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `uid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `disabled` tinyint(1) NOT NULL DEFAULT 0,
   `validated` tinyint(1) NOT NULL DEFAULT 0,
   `locked` tinyint(1) NOT NULL DEFAULT 0,
   `login_fails` int(255) NOT NULL DEFAULT 0,
-  `permissions` varchar(4) COLLATE utf8_unicode_ci NOT NULL DEFAULT '0001',
+  `permissions` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0001',
   `last_login` datetime DEFAULT NULL,
-  `email` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `mail_updates` tinyint(1) NOT NULL DEFAULT 1,
   `schedule` tinyint(1) NOT NULL DEFAULT 1,
   `imports` tinyint(1) NOT NULL DEFAULT 1,
@@ -534,12 +534,12 @@ CREATE TABLE `user_info` (
   `pub_geocache` tinyint(1) NOT NULL DEFAULT 1,
   `h_email` tinyint(1) NOT NULL DEFAULT 1,
   `join_date` datetime DEFAULT NULL,
-  `friends` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `foes` text COLLATE utf8_unicode_ci DEFAULT NULL,
-  `website` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `Vis_ver` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `apikey` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `friends` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `foes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `Vis_ver` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `apikey` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -549,10 +549,10 @@ CREATE TABLE `user_info` (
 
 CREATE TABLE `user_login_hashes` (
   `id` int(255) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `hash` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `utime` int(64) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -562,9 +562,9 @@ CREATE TABLE `user_login_hashes` (
 
 CREATE TABLE `user_stats` (
   `id` int(255) NOT NULL,
-  `newest` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `largest` varchar(255) COLLATE utf8_unicode_ci NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+  `newest` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `largest` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -574,10 +574,10 @@ CREATE TABLE `user_stats` (
 
 CREATE TABLE `user_validate` (
   `id` int(255) NOT NULL,
-  `username` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
-  `code` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
+  `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -603,7 +603,7 @@ CREATE TABLE `user_waypoints` (
   `share_id` int(255) NOT NULL,
   `c_date` datetime NOT NULL,
   `u_date` datetime NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -613,16 +613,16 @@ CREATE TABLE `user_waypoints` (
 
 CREATE TABLE `wifi_ap` (
   `AP_ID` bigint(20) NOT NULL,
-  `BSSID` varchar(20) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `SSID` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `BSSID` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `SSID` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `CHAN` int(11) DEFAULT NULL,
-  `AUTH` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `ENCR` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `AUTH` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ENCR` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `SECTYPE` int(11) DEFAULT NULL,
-  `RADTYPE` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `NETTYPE` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `BTX` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `OTX` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `RADTYPE` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `NETTYPE` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `BTX` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `OTX` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `HighGps_ID` bigint(20) DEFAULT NULL,
   `FirstHist_ID` bigint(20) DEFAULT NULL,
   `LastHist_ID` bigint(20) DEFAULT NULL,
@@ -632,10 +632,10 @@ CREATE TABLE `wifi_ap` (
   `geonames_id` bigint(20) DEFAULT NULL,
   `admin1_id` bigint(20) DEFAULT NULL,
   `admin2_id` bigint(20) DEFAULT NULL,
-  `country_code` varchar(3) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `ap_hash` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `country_code` varchar(3) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `ap_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -657,7 +657,7 @@ CREATE TABLE `wifi_gps` (
   `KPH` decimal(6,2) DEFAULT NULL,
   `TrackAngle` decimal(5,2) DEFAULT NULL,
   `GPS_Date` datetime(3) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -674,7 +674,7 @@ CREATE TABLE `wifi_hist` (
   `RSSI` int(11) DEFAULT NULL,
   `New` tinyint(1) DEFAULT 0,
   `Hist_Date` datetime(3) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indexes for dumped tables
