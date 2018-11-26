@@ -100,12 +100,14 @@ class import extends dbcore
 		}
 		# Open the file and dump its contents into an array. probably should re think this part...
 		$file_contents = @file_get_contents($source);
+		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
+		
 		if($file_contents === "")
 		{
 			return array(-1, "File was empty, or error opening file.");
 		}
 
-		$File_return	 = explode("\r\n", utf8_decode($file_contents));
+		$File_return	 = explode("\r\n", $file_contents);
 
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);
