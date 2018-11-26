@@ -151,7 +151,7 @@ class daemon extends wdbcli
 	{
 		$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
 
-		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
+		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
 		$result = $this->sql->conn->prepare($daemon_sql);
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
@@ -331,15 +331,6 @@ class daemon extends wdbcli
 
 			if($file_hash !== @$fileqq['hash'])
 			{
-				if(@explode("|", $file_to_Import['user'])[1] === "")
-				{
-					$user = str_replace(";", "", $file_to_Import['user']);
-					$this->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
-				}else
-				{
-					$user = $file_to_Import['user'];
-					$this->verbosed("Start Import of : (".$file_to_Import['id'].") ".$file_name, 1);
-				}
 				$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `files_importing` WHERE `hash` = ?";
 				$prep_ext = $this->sql->conn->prepare($sql_select_tmp_file_ext);
 				$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
@@ -351,6 +342,8 @@ class daemon extends wdbcli
 					Throw new ErrorException("Failed to select previous convert extension. :(");
 				}
 				$prev_ext = $prep_ext->fetch(2);
+				$user = $file_to_Import['user'];
+				$otherusers = $file_to_Import['otherusers'];
 				$notes = $file_to_Import['notes'];
 				$title = $file_to_Import['title'];
                 if( $prev_ext['prev_ext'] == "")
@@ -362,19 +355,20 @@ class daemon extends wdbcli
                 }
 				
 				$sql_insert_file = "INSERT INTO `files`
-				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
-				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
+				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?)";
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 				$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
 				$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
 				$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
 				$prep1->bindParam(5, $user, PDO::PARAM_STR);
-				$prep1->bindParam(6, $notes, PDO::PARAM_STR);
-				$prep1->bindParam(7, $title, PDO::PARAM_STR);
-				$prep1->bindParam(8, $prev_ext['converted'], PDO::PARAM_INT);
-				$prep1->bindParam(9, $PrevExt, PDO::PARAM_STR);
-				$prep1->bindParam(10, $this->node_name, PDO::PARAM_STR);
+				$prep1->bindParam(6, $otherusers, PDO::PARAM_STR);
+				$prep1->bindParam(7, $notes, PDO::PARAM_STR);
+				$prep1->bindParam(8, $title, PDO::PARAM_STR);
+				$prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
+				$prep1->bindParam(10, $PrevExt, PDO::PARAM_STR);
+				$prep1->bindParam(11, $this->node_name, PDO::PARAM_STR);
 				$prep1->execute();
 
 				if($this->sql->checkError(__LINE__, __FILE__))
