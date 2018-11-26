@@ -9,7 +9,7 @@ switch($func)
 {
 		case "check_hash":
 			$hash = (empty($_REQUEST['hash'])) ? NULL : $_REQUEST['hash'];
-			$dbcore->CheckHash($hash);
+			$dbcore->CheckHash(strtolower($hash));
 			$dbcore->Output();
 		default:
 			if($dbcore->rebuild)

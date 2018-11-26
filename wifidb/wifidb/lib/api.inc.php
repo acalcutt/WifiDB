@@ -180,7 +180,7 @@ class api extends dbcore
 	{
 		if($hash == "")
 		{
-			$this->mesg[] = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
+			$this->mesg = array(array("error"=>"No hash has been given to check. there is nothing to do here, my job is done."));
 			return -1;
 		}
 		else
@@ -206,23 +206,23 @@ class api extends dbcore
 			
 			if($files_ret['hash'] != "")
 			{
-				$this->mesg[] = array("imported"=>"File Already Imported");
+				$this->mesg = array(array("imported"=>"File Already Imported"));
 			}
 			elseif($imp_ret['hash'] != "")
 			{
-				$this->mesg[] = array("importing"=>"File Being Imported");
+				$this->mesg = array(array("importing"=>"File Being Imported"));
 			}
 			elseif($tmp_ret['hash'] != "")
 			{
-				$this->mesg[] = array("waiting"=>"Waiting For Import");
+				$this->mesg = array(array("waiting"=>"Waiting For Import"));
 			}
 			elseif($bad_ret['hash'] != "")
 			{
-				$this->mesg[] = array("bad"=>"Bad File");
+				$this->mesg = array(array("bad"=>"Bad File"));
 			}
 			else
 			{
-				$this->mesg[] = array("unknown"=>"Hash not found in WifiDB");
+				$this->mesg = array(array("unknown"=>"Hash not found in WifiDB"));
 			}
 			return 1;
 		}
@@ -285,35 +285,27 @@ class api extends dbcore
 		switch($task)
 		{
 			case "import":
-				$this->mesg["title"] = $title;
-				$this->mesg["user"] = $user;
-				if($otherusers)
-				{
-					$this->mesg['otherusers'] = $otherusers;
-				}
 				$sql = "INSERT INTO `files_tmp`
-								(`file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-						VALUES ( ?, ?, ?, ?, ?, ?, ?)";
+								(`file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`  )
+						VALUES ( ?, ?, ?, ?, ?, ?, ?, ?)";
 				$result = $this->sql->conn->prepare( $sql );
 
 				$result->bindValue(1, $filename, PDO::PARAM_STR);
 				$result->bindValue(2, $date, PDO::PARAM_STR);
-				$result->bindValue(3, $user."|".$otherusers, PDO::PARAM_STR);
-				$result->bindValue(4, $notes, PDO::PARAM_STR);
-				$result->bindValue(5, $title, PDO::PARAM_STR);
-				$result->bindValue(6, $size, PDO::PARAM_STR);
-				$result->bindValue(7, $hash, PDO::PARAM_STR);
+				$result->bindValue(3, $user, PDO::PARAM_STR);
+				$result->bindValue(4, $otherusers, PDO::PARAM_STR);
+				$result->bindValue(5, $notes, PDO::PARAM_STR);
+				$result->bindValue(6, $title, PDO::PARAM_STR);
+				$result->bindValue(7, $size, PDO::PARAM_STR);
+				$result->bindValue(8, $hash, PDO::PARAM_STR);
 				$result->execute();
 				$error = $this->sql->conn->errorCode();
 				if($error[0] == "00000")
 				{
-					$this->mesg["message"] = "File has been inserted for importing at a scheduled time.";
-					$this->mesg["importnum"] = $this->sql->conn->lastInsertId();
-					$this->mesg["filehash"] = $hash;
+					$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
 				}else
 				{
 					$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
-					;
 				}
 			break;
 			default:
