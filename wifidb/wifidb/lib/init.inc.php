@@ -65,9 +65,9 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 	}
 	require $config['wifidb_tools'].'daemon.config.inc.php';
 }
-$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'];
+$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'].';charset='.$config['charset'];
 $options = array(
-	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8',
+	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$config['charset'].' COLLATE '.$config['collate'],
 );
 
 $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
