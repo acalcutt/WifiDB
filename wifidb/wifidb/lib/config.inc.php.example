@@ -44,6 +44,7 @@ $config = array
     'dBmMaxSignal'			=>   '-30',
     'dBmDissociationSignal'	=>   '-85',
 	'verbose'      			=>   1,
+	'EnableAPIKey'      	=>   0,
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
@@ -96,7 +97,8 @@ $config = array
     'db'                  	=>   'wifi',
     'db_user'               =>   'wdbuser',
     'db_pwd'                =>   'supersecretpw',
-    'collate'               =>   'utf8_bin',
+    'charset'               =>   'utf8mb4',
+    'collate'               =>   'utf8mb4_unicode_ci',
     'engine'                =>   'innodb',
 
     #---------------- Export Info ----------------#
