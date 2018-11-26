@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `dev_wifi`
+-- Database: `prod_wifi`
 --
 
 -- --------------------------------------------------------
@@ -429,7 +429,7 @@ CREATE TABLE `schedule` (
 --
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
-(1, 'dev', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
+(1, 'prod', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -450,7 +450,7 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES
-(1, 1, '0.40', 0, 'dev');
+(1, 1, '0.40', 0, 'prod');
 
 -- --------------------------------------------------------
 
