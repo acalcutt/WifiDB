@@ -114,34 +114,42 @@ class frontend extends dbcore
 		{
 			$new_ssid = $newArray['SSID'];
 		}
-
-		if($newArray['geonames_id'] !== 0)
+		
+		if($newArray['Lat'] !== '0.0000' || $newArray['Lat'] !== '')
 		{
-			$sql = "SELECT * FROM `geonames` WHERE `geonameid` = ?";
-			$prep_geonames = $this->sql->conn->prepare($sql);
-			$prep_geonames->bindParam(1, $newArray['geonames_id'], PDO::PARAM_INT);
+			$Latdd = $this->convert->dm2dd($newArray["Lat"]);
+			$Londd = $this->convert->dm2dd($newArray["Lon"]);
+			echo $newArray['Lat'];
+			
+		
+			$sql1 = "SELECT id, asciiname, country_code, admin1_code, admin2_code, timezone, 111.045 * DEGREES(ACOS(COS(RADIANS(:lat)) * COS(RADIANS(latitude)) * COS(RADIANS(longitude) - RADIANS(:lon)) + SIN(RADIANS(:lat)) * SIN(RADIANS(latitude)))) AS distance_in_km\n"
+				. "FROM `geonames`\n"
+				. "ORDER BY distance_in_km ASC\n"
+				. "LIMIT 1";
+			$prep_geonames = $this->sql->conn->prepare($sql1);
+			$prep_geonames->bindParam('lat', $Latdd, PDO::PARAM_STR);
+			$prep_geonames->bindParam('lon', $Londd, PDO::PARAM_STR);
 			$prep_geonames->execute();
 			$GeonamesArray = $prep_geonames->fetch(2);
+			$GeonamesID = $GeonamesArray['id'];
+
+			if($GeonamesID !== '')
+			{
+				$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
+				$sql = "SELECT * FROM `geonames_admin1` WHERE `admin1` = ?";
+				$prep_geonames = $this->sql->conn->prepare($sql);
+				$prep_geonames->bindParam(1, $admin1, PDO::PARAM_INT);
+				$prep_geonames->execute();
+				$Admin1Array = $prep_geonames->fetch(2);
+
+				$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
+				$sql = "SELECT * FROM `geonames_admin2` WHERE `admin2` = ?";
+				$prep_geonames = $this->sql->conn->prepare($sql);
+				$prep_geonames->bindParam(1, $admin2, PDO::PARAM_INT);
+				$prep_geonames->execute();
+				$Admin2Array = $prep_geonames->fetch(2);
+			}
 		}
-		
-		if($newArray['admin1_id'] !== 0)
-		{
-			$sql = "SELECT * FROM `geonames_admin1` WHERE `id` = ?";
-			$prep_geonames = $this->sql->conn->prepare($sql);
-			$prep_geonames->bindParam(1, $newArray['admin1_id'], PDO::PARAM_INT);
-			$prep_geonames->execute();
-			$Admin1Array = $prep_geonames->fetch(2);
-		}
-		
-		if($newArray['admin2_id'] !== 0)
-		{
-			$sql = "SELECT * FROM `geonames_admin2` WHERE `id` = ?";
-			$prep_geonames = $this->sql->conn->prepare($sql);
-			$prep_geonames->bindParam(1, $newArray['admin2_id'], PDO::PARAM_INT);
-			$prep_geonames->execute();
-			$Admin2Array = $prep_geonames->fetch(2);
-		}
-		
 
 		
 		$ap_data = array(
