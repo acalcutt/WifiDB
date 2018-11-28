@@ -170,7 +170,12 @@ else
 		}
 
 		#Start gathering Geonames
-		$sql = "SELECT `id`,`lat`,`long`,`ap_hash` FROM `wifi_pointers` WHERE `geonames_id` = '' AND `lat` != '0.0000' ORDER BY `id` ASC";
+		$sql = "SELECT wap.AP_ID, wap.ap_hash,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000'";
 		echo $sql."\r\n";
 		$result = $dbcore->sql->conn->query($sql);
 		$dbcore->verbosed("Gathered Wtable data");
@@ -178,59 +183,74 @@ else
 		sleep(4);
 		while($ap = $result->fetch(1))
 		{
-			
-			#$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
-			#$lat = $dbcore->convert->dm2dd($ap['lat']);
-			#$long = $dbcore->convert->dm2dd($ap['long']);
-			#$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
-			#$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code`, SQRT(POW((69.1 * (latitude - $lat)) , 2 ) + POW((53 * (longitude - $long)), 2)) AS distance 
-			#		FROM geonames
-			#		ORDER BY distance ASC 
-			#		LIMIT 1";
-			#echo $sql."\r\n";
-			$dbcore->verbosed($ap['id']." - ".$ap['ap_hash']);
-			$lat = $dbcore->convert->dm2dd($ap['lat']);
-			$long = $dbcore->convert->dm2dd($ap['long']);
-			$lat_rounded = number_format(round($lat, 1), 1, '.', '');
-			$long_rounded = number_format(round($long, 1), 1, '.', '');
-			$dbcore->verbosed("Lat - Long: ".$lat." [----] ".$long);
-			$sql = "SELECT `geonameid`, `country_code`, `admin1_code`, `admin2_code` FROM `geonames` WHERE `latitude` LIKE '$lat_rounded%' AND `longitude` LIKE '$long_rounded%' LIMIT 1";
-			#echo $sql."\r\n";
-			$dbcore->verbosed("Query Geonames Table to see if there is a location in an area that is equal to the geocord rounded to the first decimal.", 3);
-			$geo_res = $dbcore->sql->conn->query($sql);
-			$geo_array = $geo_res->fetch(1);
-			if(!$geo_array['geonameid'])
-			{continue;}
+			$dbcore->verbosed($ap['AP_ID']." - ".$ap['ap_hash']);
+			$ap_hash = $ap['ap_hash'];
+			$lat = $dbcore->convert->dm2dd($ap['Lat']);
+			$lon = $dbcore->convert->dm2dd($ap['Lon']);
+			$lat_search = number_format(round($lat, 1), 1, '.', '');
+			$long_search = number_format(round($lon, 1), 1, '.', '');
+			$dbcore->verbosed("Lat - Lon: ".$lat." [----] ".$lon);
+			$dbcore->verbosed("LatR - LonR: ".$lat_search." [----] ".$long_search);
 
+			$sql = "SELECT  `geonameid`, `country_code`, `admin1_code`, `admin2_code`, \n"
+				. "( 3959 * acos( cos( radians(?) ) * cos( radians(`latitude`) ) * cos( radians(`longitude`) - radians(?) ) + sin( radians(?) ) * sin( radians(`latitude`) ) ) ) AS `distance` \n"
+				. "FROM `geonames` \n"
+				. "WHERE `latitude` LIKE CONCAT(?,'%') AND `longitude` LIKE CONCAT(?,'%') ORDER BY `distance` ASC LIMIT 1";
+			$geoname_res = $dbcore->sql->conn->prepare($sql);
+			$geoname_res->bindParam(1,$lat, PDO::PARAM_INT);
+			$geoname_res->bindParam(2,$lon, PDO::PARAM_INT);
+			$geoname_res->bindParam(3,$lat, PDO::PARAM_INT);
+			$geoname_res->bindParam(4,$lat_search, PDO::PARAM_STR);
+			$geoname_res->bindParam(5,$long_search, PDO::PARAM_STR);
+			$geoname_res->execute();
+			$geo_array = $geoname_res->fetch(2);
+			$geonameid = $geo_array['geonameid'];
+			$country_code = $geo_array['country_code'];
+			$admin1_code = $geo_array['admin1_code'];
+			$admin2_code = $geo_array['admin2_code'];
+			
+			if(!$geonameid){continue;}
 			$dbcore->verbosed("Geoname ID: ".$geo_array['geonameid']);
-			$admin1_array = array('id'=>'');
-			$admin2_array = array('id'=>'');
+			$admin1_id = '';
+			$admin2_id = '';
 			if($geo_array['admin1_code'])
 			{
-				$dbcore->verbosed("Admin1 Code is Numeric, need to query the admin1 table for more information.");
 				$admin1 = $geo_array['country_code'].".".$geo_array['admin1_code'];
-
-				$sql = "SELECT `id` FROM `geonames_admin1` WHERE `admin1`='$admin1'";
-				$admin1_res = $dbcore->sql->conn->query($sql);
-				$admin1_array = $admin1_res->fetch(PDO::FETCH_ASSOC);
+				$dbcore->verbosed("Admin1 Code ".$admin1);
+				$sql = "SELECT `id` FROM `geonames_admin1` WHERE `admin1` = ? LIMIT 1";
+				$admin1_res = $dbcore->sql->conn->prepare($sql);
+				$admin1_res->bindParam(1, $admin1, PDO::PARAM_STR);
+				$admin1_res->execute();
+				$admin1_res_fetch = $admin1_res->fetch(2);
+				$admin1_id = $admin1_res_fetch['id'];
 			}
-			if(is_numeric($geo_array['admin2_code']))
+			if($geo_array['admin2_code'])
 			{
-				$dbcore->verbosed("Admin2 Code is Numeric, need to query the admin2 table for more information.");
 				$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
-				$sql = "SELECT `id` FROM `geonames_admin2` WHERE `admin2`='$admin2'";
-				$admin2_res = $dbcore->sql->conn->query($sql);
-				$admin2_array = $admin2_res->fetch(PDO::FETCH_ASSOC);
+				$dbcore->verbosed("Admin2 Code ".$admin2);
+				$sql = "SELECT `id` FROM `geonames_admin2` WHERE `admin2` = ? LIMIT 1'";
+				$admin2_res = $dbcore->sql->conn->prepare($sql);
+				$admin2_res->bindParam(1, $admin2, PDO::PARAM_STR);
+				$admin2_res->execute();
+				$admin2_res_fetch = $admin2_res->fetch(2);
+				$admin2_id = $admin2_res_fetch['id'];
 			}
 
-			$sql = "UPDATE `wifi_pointers` SET `geonames_id` = '{$geo_array['geonameid']}', `admin1_id` = '{$admin1_array['id']}', `admin2_id` = '{$admin2_array['id']}', `country_code` = '{$geo_array['country_code']}' WHERE `ap_hash` = '{$ap['ap_hash']}'";
-			if($dbcore->sql->conn->query($sql))
-			{
-				$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
-			}else
+			$sql = "UPDATE `wifi_ap` SET `geonames_id` = ?, `admin1_id` = ?, `admin2_id` = ?, `country_code` = ? WHERE `ap_hash` = ?";
+			$ud = $dbcore->sql->conn->prepare($sql);
+			$ud->bindParam(1, $geonameid, PDO::PARAM_INT);
+			$ud->bindParam(2, $admin1_id, PDO::PARAM_INT);
+			$ud->bindParam(3, $admin2_id, PDO::PARAM_INT);
+			$ud->bindParam(4, $country_code, PDO::PARAM_INT);
+			$ud->bindParam(5, $ap_hash, PDO::PARAM_STR);
+			$rc = $ud->execute();
+			if($rc===false)
 			{
 				$dbcore->verbosed("Failed to update AP's Geolocation [{$ap['id']}] ({$ap['ap_hash']})", -1);
-				var_dump($dbcore->sql->conn->errorInfo());
+				var_dump($dbcore->sql->conn->errorInfo());				
+			}else
+			{
+				$dbcore->verbosed("Updated AP's Geolocation  [{$ap['id']}] ({$ap['ap_hash']})" , 2);
 			}
 		}
 		
