@@ -530,8 +530,7 @@ class frontend extends dbcore
 		$user_last = $prep1->fetch(2);
 
 		#Get All Imports for User
-		//$sql1 = "SELECT `id`, `title`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 AND `id` != ? ORDER BY `date` DESC";
-		$sql1 = "SELECT `id`, `title`, `notes`, `date`, `aps`, `gps`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC";
+		$sql1 = "SELECT `id`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC";
 		$other_imports = $this->sql->conn->prepare($sql1);
 		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
 		//$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
@@ -541,23 +540,13 @@ class frontend extends dbcore
 		$flip = 0;
 		while($imports = $other_imports->fetch(2))
 		{
-			#Find Valid GPS
-			$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
-				. "FROM `wifi_hist`\n"
-				. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-				. "LIMIT 1";
-			$prep3 = $this->sql->conn->prepare($sql);
-			$prep3->bindParam(1, $imports['id'], PDO::PARAM_INT);
-			$prep3->execute();
-			$gps_histid = $prep3->fetch(2);
-			
-			if($gps_histid == "")
+			if($imports['ValidGPS'] == 1)
+			{
+				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";				
+			}
+			else
 			{
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
-			}else
-			{
-				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 			
 			if($flip)
