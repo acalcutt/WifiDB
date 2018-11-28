@@ -87,8 +87,20 @@ switch($func)
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
 			$dbcore->sql->checkError(__LINE__, __FILE__);
-			$fetch = $prep->fetch();
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['SSID'].'-'.$id);
+			$ap_array = $prep->fetch();
+			if($ap_array['SSID'] == '')
+			{
+				$ssid = '[Blank SSID]';
+			}
+			elseif(!ctype_print($ap_array['SSID']))
+			{
+				$ssid = '['.$ap_array['SSID'].']';
+			}
+			else
+			{
+				$ssid = $ap_array['SSID'];
+			}
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $ssid.'-'.$id);
 			#Create Network Link
 			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_ap&#x26;id='.$id.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $title, 1, 0, "onInterval", 86400);
 			$results = $dbcore->createKML->createKMLstructure($title , $results);
@@ -338,7 +350,18 @@ switch($func)
 			$prep_name->bindParam(1, $id, PDO::PARAM_INT);
 			$prep_name->execute();
 			$ap_array = $prep_name->fetch(2);
-			$ap_name = $ap_array['SSID'];
+			if($ap_array['SSID'] == '')
+			{
+				$ssid = '[Blank SSID]';
+			}
+			elseif(!ctype_print($ap_array['SSID']))
+			{
+				$ssid = '['.$ap_array['SSID'].']';
+			}
+			else
+			{
+				$ssid = $ap_array['SSID'];
+			}
 			
 			#Get List Title 
 			$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";
@@ -351,7 +374,7 @@ switch($func)
 			#Get List AP Signal History
 			$KML_Signal_data = $dbcore->export->ExportSignal3dSingleListAp($file_id, $id, 0);
 			$results = $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $file_id."-".$ap_list_title."-".$id."-".$ap_name);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $file_id."-".$ap_list_title."-".$id."-".$ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
