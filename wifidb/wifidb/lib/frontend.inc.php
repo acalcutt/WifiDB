@@ -135,7 +135,6 @@ class frontend extends dbcore
 			$geoname_res->execute();
 			$GeonamesArray = $geoname_res->fetch(2);
 			$GeonamesID = $GeonamesArray['id'];
-			echo $Latdd."-".$Londd."-".$lat_search."-".$long_search;
 			if($GeonamesID !== '')
 			{
 				$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
