@@ -92,9 +92,9 @@ $lastdate = $lastuser['date'];
 if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
 $lastid = $lastuser['id'];
 
-if($imports['ValidGPS'] == 1)
+if($lastuser['ValidGPS'] == 1)
 {
-	$list_globe_html = "<a href=\"".$dbcore->URL_PATH."/api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\"></a>";				
+	$list_globe_html = "<a href=\"".$dbcore->URL_PATH."/api/export.php?func=exp_list&id=".$lastuser['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\"></a>";				
 }
 else
 {
