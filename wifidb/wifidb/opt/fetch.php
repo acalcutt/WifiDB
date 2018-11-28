@@ -19,7 +19,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "");
+define("SWITCH_EXTRAS", "EXPORT");
 
 include('../lib/init.inc.php');
 $id = $_GET['id'];
