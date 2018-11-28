@@ -56,7 +56,7 @@ if not, write to the
                                 <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}" title="View AP Details">{$new_ap_ssid}</a>
                             </td>
                             <td align="left">
-                                {$globe_html}
+                                {$ap_globe_html}
                             </td>
                         </tr>
                     </tbody>
@@ -64,8 +64,21 @@ if not, write to the
                 </p>
             </td>
             <td align="center" class="style2">
-                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>
-                <br/>  [{$new_import_date}] </td>
+                <p align="center">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td align="right" width="100%">
+                                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>
+                            </td>
+                            <td align="left">
+                                {$list_globe_html}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </p>
+            </td>
     </tr>
     </tbody>
 </table>

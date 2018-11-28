@@ -77,10 +77,28 @@ else
 
 if($lastap_array['HighGps_ID'] == "")
 {
-    $globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
+    $ap_globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
 }else
 {
-    $globe_html = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+    $ap_globe_html = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+}
+
+$sql = "SELECT `user`, `id`, `title`, `date`, `ValidGPS` FROM `files` WHERE `completed`=1 order by `date` desc limit 1";
+$result = $dbcore->sql->conn->query($sql);
+$lastuser = $result->fetch(2);
+$lastusername =  $lastuser['user'];
+$lasttitle = $lastuser['title'];
+$lastdate = $lastuser['date'];
+if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
+$lastid = $lastuser['id'];
+
+if($imports['ValidGPS'] == 1)
+{
+	$list_globe_html = "<a href=\"".$dbcore->URL_PATH."/api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\"></a>";				
+}
+else
+{
+	$list_globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_off.png\">";
 }
 
 if ($usercount == NULL)
@@ -90,16 +108,6 @@ if ($usercount == NULL)
     $lastdate = date("Y-m-d H:i:s");
     $usercount = 0;
     $lastid = 0;
-}else
-{
-    $sql = "SELECT `user`, `id`, `title`, `date` FROM `files` WHERE `completed`=1 order by `date` desc limit 1";
-    $result = $dbcore->sql->conn->query($sql);
-    $lastuser = $result->fetch(2);
-	$lastusername =  $lastuser['user'];
-    $lasttitle = $lastuser['title'];
-    $lastdate = $lastuser['date'];
-    if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
-    $lastid = $lastuser['id'];
 }
 
 $dbcore->smarty->assign('wifidb_page_label', 'Index Page');
@@ -109,7 +117,8 @@ $dbcore->smarty->assign('wep_aps', $wep['count(`AP_ID`)']);
 $dbcore->smarty->assign('sec_aps', $sec['count(`AP_ID`)']);
 $dbcore->smarty->assign('total_users', $usercount);
 $dbcore->smarty->assign('new_ap_id', $lastap_id);
-$dbcore->smarty->assign('globe_html', $globe_html);
+$dbcore->smarty->assign('ap_globe_html', $ap_globe_html);
+$dbcore->smarty->assign('list_globe_html', $list_globe_html);
 $dbcore->smarty->assign('new_import_user', $lastusername);
 $dbcore->smarty->assign('new_ap_ssid', $lastap_ssid);
 $dbcore->smarty->assign('new_import_date', $lastdate);
