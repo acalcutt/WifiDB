@@ -121,11 +121,12 @@ class frontend extends dbcore
 			$Londd = $this->convert->dm2dd($newArray["Lon"]);
 			$lat_search = number_format(round($Latdd, 1), 1, '.', '');
 			$long_search = number_format(round($Londd, 1), 1, '.', '');
+			//echo $Latdd."*".$Londd."*".$lat_search."*".$long_search;
 			
 			$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, \n"
-				. "( 3959 * acos( cos( radians(?) ) * cos( radians(`latitude`) ) * cos( radians(`longitude`) - radians(?) ) + sin( radians(?) ) * sin( radians(`latitude`) ) ) ) AS `distance` \n"
+				. "(3959 * acos(cos(radians( ? )) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians( ? )) + sin(radians( ? )) * sin(radians(`latitude`)))) AS `miles`\n"
 				. "FROM `geonames` \n"
-				. "WHERE `latitude` LIKE CONCAT(?,'%') AND `longitude` LIKE CONCAT(?,'%') ORDER BY `distance` ASC LIMIT 1";
+				. "WHERE `latitude` LIKE CONCAT( ? ,'%') AND `longitude` LIKE CONCAT( ? ,'%') ORDER BY `miles` ASC LIMIT 1";
 			$geoname_res = $this->sql->conn->prepare($sql);
 			$geoname_res->bindParam(1,$lat, PDO::PARAM_INT);
 			$geoname_res->bindParam(2,$lon, PDO::PARAM_INT);
@@ -134,21 +135,21 @@ class frontend extends dbcore
 			$geoname_res->bindParam(5,$long_search, PDO::PARAM_STR);
 			$geoname_res->execute();
 			$GeonamesArray = $geoname_res->fetch(2);
+			//var_dump($GeonamesArray);
 			$GeonamesID = $GeonamesArray['id'];
 			if($GeonamesID !== '')
 			{
 				$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
-				echo $admin1;
 				$sql = "SELECT * FROM `geonames_admin1` WHERE `admin1` = ?";
 				$prep_geonames = $this->sql->conn->prepare($sql);
-				$prep_geonames->bindParam(1, $admin1, PDO::PARAM_INT);
+				$prep_geonames->bindParam(1, $admin1, PDO::PARAM_STR);
 				$prep_geonames->execute();
 				$Admin1Array = $prep_geonames->fetch(2);
 
 				$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
 				$sql = "SELECT * FROM `geonames_admin2` WHERE `admin2` = ?";
 				$prep_geonames = $this->sql->conn->prepare($sql);
-				$prep_geonames->bindParam(1, $admin2, PDO::PARAM_INT);
+				$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
 				$prep_geonames->execute();
 				$Admin2Array = $prep_geonames->fetch(2);
 			}
