@@ -37,7 +37,7 @@ switch($func)
 			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-			. "WHERE `wap`.`AP_ID` = ?";
+			. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`AP_ID` = ?";
 		
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -111,7 +111,7 @@ switch($func)
 				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`HighGps_ID` IS NOT NULL AND `wf`.`user` LIKE ? LIMIT $offset,$row_count";
+				. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' And `wf`.`user` LIKE ? LIMIT $offset,$row_count";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -185,41 +185,23 @@ switch($func)
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
 		$file_name = "Daily_Exports.geojson";
 		break;
-		
-	case "exp_daily_old":
-		#Get lists from the last day and a half
-		$sql = "SELECT `id` , `user`, `title`, `date` FROM `files` WHERE `date` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) AND `completed` = 1";
-		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->execute();
-		$fetch_imports = $prep->fetchAll();
-		$AllListGeoJSON = "";
-		foreach($fetch_imports as $import)
-		{
-			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
-			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['id'], $new_icons);
-			$AllListGeoJSON .= $ListGeoJSON['data'];
-		}
-		
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);
-		$file_name = "Daily_Exports.geojson";
-		break;
 
 	case "exp_daily":
 		#Get lists from the last day and a half
 		$row_count = 1000;	
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-			. "whFA.Hist_Date As FA,\n"
-			. "whLA.Hist_Date As LA,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
-			. "wf.user As user\n"
-			. "FROM `wifi_ap` AS wap\n"
-			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-			. "WHERE wGPS.Lat IS NOT NULL AND ModDate >= DATE_SUB(NOW(),INTERVAL 1 DAY) ORDER BY wap.AP_ID LIMIT ?,?";
+		$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
+			. "`whFA`.`Hist_Date` As `FA`,\n"
+			. "`whLA`.`Hist_Date` As `LA`,\n"
+			. "`wGPS`.`Lat` As `Lat`,\n"
+			. "`wGPS`.`Lon` As `Lon`,\n"
+			. "`wGPS`.`Alt` As `Alt`,\n"
+			. "`wf`.`user` As `user`\n"
+			. "FROM `wifi_ap` AS `wap`\n"
+			. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
+			. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.LastHist_ID\n"
+			. "LEFT JOIN `wifi_gps` AS `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
+			. "LEFT JOIN `files` AS `wf` ON `whFA`.`File_ID` = `wf`.`id`\n"
+			. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`ModDate` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) ORDER BY `wap`.`AP_ID` LIMIT ?,?";
 		$Import_Map_Data = "";
 		for ($i = 0; TRUE; $i++) {
 			$offset = $i*$row_count ;
