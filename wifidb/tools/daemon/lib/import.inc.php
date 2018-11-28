@@ -513,6 +513,25 @@ class import extends dbcore
 			$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
 			$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 		}
+		#Find if file had Valid GPS
+		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
+			. "FROM `wifi_hist`\n"
+			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+			. "LIMIT 1";
+		$prepvgps = $this->sql->conn->prepare($sql);
+		$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
+		$prepvgps->execute();
+		$prepvgps_fetch = $prepvgps->fetch(2);
+		if($prepvgps_fetch)
+		{
+			$ValidGPS = 1;
+			$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
+			$prepvgpsu = $this->sql->conn->prepare($sql);
+			$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
+			$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
+			$prepvgpsu->execute();
+		}
 		#Finish off Import and give credit to the user.
 
 		$imported = implode("-", $imported_aps);

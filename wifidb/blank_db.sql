@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Nov 26, 2018 at 03:29 PM
+-- Generation Time: Nov 28, 2018 at 12:10 PM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
 
@@ -134,6 +134,7 @@ CREATE TABLE `files` (
   `size` varchar(14) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `aps` int(11) NOT NULL DEFAULT 0,
   `gps` int(11) NOT NULL DEFAULT 0,
+  `ValidGPS` int(1) DEFAULT 0,
   `hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `completed` tinyint(1) NOT NULL DEFAULT 0,
   `NewAPPercent` int(11) DEFAULT NULL
