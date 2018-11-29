@@ -222,29 +222,59 @@ class import extends dbcore
 						$this->verbosed("MAC Address for the AP SSID of `{$ap_line[0]}` was not valid, dropping AP.");
 						break;
 					}
-					$apdata[] = array(
-								'ap_hash'   => "",
-								'ssid'	  =>  $ap_line[0],
-								'mac'	   =>  $ap_line[1],
-								'manuf'	 =>  $ap_line[2],
-								'auth'	  =>  $ap_line[3],
-								'encry'	 =>  $ap_line[4],
-								'sectype'   =>  (int) $ap_line[5],
-								'radio'	 =>  $ap_line[6],
-								'manuf'	 =>  $this->findManuf($ap_line[1]),
-								'chan'	  =>  (int) $ap_line[7],
-								'btx'	   =>  $ap_line[8],
-								'otx'	   =>  $ap_line[9],
-								'nt'		=>  $ap_line[10],
-								'HighSig'   =>  $ap_line[11],
-								'HighRSSI'  =>  $ap_line[12],
-								'label'	 =>  $ap_line[13],
-								'signals'   =>  $ap_line[14]
+					
+					#Check if line 10 id HighSig or Manufacturer
+					if(is_numeric($ap_line[10]))
+					{
+						#Detailed Export Version 4.0, Current vistumbler format (correctly formatted)
+						$apdata[] = array(
+							'ap_hash'   => "",
+							'ssid'	  =>  $ap_line[0],
+							'mac'	   =>  $ap_line[1],
+							'manuf'	 =>  $this->findManuf($ap_line[1]),
+							'auth'	  =>  $ap_line[3],
+							'encry'	 =>  $ap_line[4],
+							'sectype'   =>  (int) $ap_line[5],
+							'radio'	 =>  $ap_line[6],
+							'chan'	  =>  (int) $ap_line[7],
+							'btx'	   =>  $ap_line[8],
+							'otx'	   =>  $ap_line[9],
+							'HighSig'   =>  $ap_line[10],
+							'HighRSSI'  =>  $ap_line[11],									
+							'nt'		=>  $ap_line[12],
+							'label'	 =>  $ap_line[13],
+							'signals'   =>  $ap_line[14]
 							);
+					}
+					else
+					{
+						#Detailed Export Version 4.0, Vistumbler v10.6 Beta 16.2 (incorrectly formatted)
+						$highestRSSI = $this->convert->Sig2dBm($ap_line[2]);
+						$apdata[] = array(
+							'ap_hash'   => "",
+							'ssid'	  =>  $ap_line[0],
+							'mac'	   =>  $ap_line[1],
+							'HighSig'   =>  $ap_line[2],							
+							'auth'	  =>  $ap_line[3],
+							'encry'	 =>  $ap_line[4],
+							'sectype'   =>  (int) $ap_line[5],
+							'radio'	 =>  $ap_line[6],
+							'chan'	  =>  (int) $ap_line[7],
+							'btx'	   =>  $ap_line[8],
+							'otx'	   =>  $ap_line[9],
+							'manuf'	 =>  $this->findManuf($ap_line[1]),
+							'label'	 =>  $ap_line[11],
+							'nt'		=>  $ap_line[12],							
+							'HighRSSI'  =>  $highestRSSI,
+							'signals'   =>  $ap_line[14]
+							);
+					}
 					$this->rssi_signals_flag = 1;
 					break;
 
 				default:
+					echo "Import Line Error---------------\r\n";
+					echo $file_line_alt."\r\n";
 					echo "--------------------------------\r\n";
 					//$this->logd("Error parsing File.\r\n".var_export($file_line_alt, 1), "Error");
 					$this->verbosed($file_line_exp_count."\r\nummm.... wrong number of columns... I'm going to ignore this line:/\r\n", -1);
