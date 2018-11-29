@@ -427,8 +427,8 @@ class export extends dbcore
 				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
 				
 				$latlon_info = array(
-				"lat" => $this->convert->dm2dd($HighGps_Lat),
-				"long" => $this->convert->dm2dd($HighGps_Lon),
+				"lat" => $this->convert->dm2dd($ap['Lat']),
+				"long" => $this->convert->dm2dd($ap['Lon']),
 				);
 				$latlon_array[] = $latlon_info;
 			}
