@@ -59,10 +59,12 @@ switch($func)
 			if($newArray['ValidGPS'] == 1)
 			{
 				$globe_html = "<a href=\"".$dbcore->URL_PATH."/api/export.php?func=exp_list&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\"></a>";				
+				$globe_html .= "<a href=\"".$dbcore->URL_PATH."/api/geojson.php?json=1&func=exp_list&id=".$newArray['id']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/json_on.png\"></a>";				
 			}
 			else
 			{
 				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/json_off.png\">";
 			}
 
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}

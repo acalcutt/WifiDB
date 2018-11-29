@@ -78,9 +78,11 @@ else
 if($lastap_array['HighGps_ID'] == "")
 {
     $ap_globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
+	$ap_globe_html .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_off.png\">";
 }else
 {
     $ap_globe_html = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+	$ap_globe_html .= "<a href=\"".$dbcore->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$lastap_array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_on.png\"></a>";
 }
 
 $sql = "SELECT `user`, `id`, `title`, `date`, `ValidGPS` FROM `files` WHERE `completed`=1 order by `date` desc limit 1";
@@ -95,10 +97,12 @@ $lastid = $lastuser['id'];
 if($lastuser['ValidGPS'] == 1)
 {
 	$list_globe_html = "<a href=\"".$dbcore->URL_PATH."/api/export.php?func=exp_list&id=".$lastuser['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\"></a>";				
+	$list_globe_html .= "<a href=\"".$dbcore->URL_PATH."/api/geojson.php?json=1&func=exp_list&id=".$lastuser['id']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/json_on.png\"></a>";				
 }
 else
 {
 	$list_globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_off.png\">";
+	$list_globe_html .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/json_off.png\">";
 }
 
 if ($usercount == NULL)

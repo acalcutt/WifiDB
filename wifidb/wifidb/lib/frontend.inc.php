@@ -178,13 +178,15 @@ class frontend extends dbcore
 		if($newArray['Lat'] == "")
 		{
 			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
+			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'/img/json_off.png">';
 		}else
 		{
-			$globe_html = '<a href="'.$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
+			$globe_html = '<a href="'.$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
+			$globe_html .= '<a href="'.$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$newArray['AP_ID'].'" title="Export to JSON"><img width="20px" src="'.$this->URL_PATH.'/img/json_on.png"></a>';
 		}
 
 		$list = array();
-		$sql = "SELECT wf.File_ID, files.title, files.user, files.date, wf.New,\n"
+		$sql = "SELECT wf.File_ID, files.title, files.user, files.date, files.ValidGPS, wf.New,\n"
 			. "(SELECT COUNT(DISTINCT wifi_hist.AP_ID) FROM wifi_hist WHERE wifi_hist.File_ID = wf.File_ID) AS `AP_COUNT`\n"
 			. "FROM wifi_hist AS `wf`\n"
 			. "INNER JOIN wifi_ap ON wf.AP_ID = wifi_ap.AP_ID\n"
@@ -203,7 +205,16 @@ class frontend extends dbcore
 
 		while ($field = $prep2->fetch(1))
 		{
-					
+			if($field['ValidGPS'] == 1)
+			{
+				$list_globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$field['File_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";				
+				$list_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$field['File_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";					
+			}else
+			{
+				$list_globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
+				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'/img/json_off.png">';
+			}
+	
 			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
 				. "FROM `wifi_hist`\n"
 				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID`=`wifi_gps`.`GPS_ID`\n"
@@ -220,6 +231,7 @@ class frontend extends dbcore
 			$list[]= array(
 							'class'=>$class,
 							'id'=>$field['File_ID'],
+							'globe'=>$list_globe_html,
 							'nu'=>$field['New'],
 							'date'=>$field['date'],
 							'aps'=>$field['AP_COUNT'],
@@ -410,7 +422,7 @@ class frontend extends dbcore
 
 		if($inputs['from'] == ''){$inputs['from'] = 0;}
 		if($inputs['to'] == ''){$inputs['to'] = 100;}
-		if($inputs['sort'] == ''){$inputs['sort'] = 'LA';}
+		if($inputs['sort'] == ''){$inputs['sort'] = 'ModDate';}
 		if($inputs['ord'] == ''){$inputs['ord'] = 'DESC';}
 
 		$prep = array();
@@ -439,7 +451,7 @@ class frontend extends dbcore
 			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-			. "WHERE f.user = ? ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";		
+			. "WHERE f.user LIKE ? And f.completed = 1 ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";		
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
 		$result1->execute();
@@ -455,10 +467,12 @@ class frontend extends dbcore
 			{
 				$globe = "off";
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."/img/json_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$array['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";
 			}
 
 			if($array['SSID'] == '')
@@ -542,11 +556,13 @@ class frontend extends dbcore
 		{
 			if($imports['ValidGPS'] == 1)
 			{
-				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";				
+				$globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$imports['id']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";				
 			}
 			else
 			{
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."/img/json_off.png\">";
 			}
 			
 			if($flip)
@@ -654,10 +670,12 @@ class frontend extends dbcore
 			{
 				$globe = "off";
 				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."/img/json_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$ap_array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";
 			}
 
 			if($ap_array['SSID'] == '')
@@ -875,7 +893,7 @@ class frontend extends dbcore
 				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
 			}else
 			{
-				$results_all[$i]['globe_html'] = "<a href=\"".$this->URL_PATH."/api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$results_all[$i]['globe_html'] = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
 			}
 			if($newArray['SSID'] == '')
 			{

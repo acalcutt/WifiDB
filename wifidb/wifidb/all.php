@@ -88,9 +88,11 @@ while ( $array = $pre_page_list->fetch(2) )
     if($array['Lat'] == "")
     {
         $wifidb_aps_all[$n]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
+		$wifidb_aps_all[$n]['globe_html'] .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_off.png\">";
     }else
     {
         $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+		$wifidb_aps_all[$n]['globe_html'] .= "<a href=\"".$dbcore->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_on.png\"></a>";
     }
     
    // $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);

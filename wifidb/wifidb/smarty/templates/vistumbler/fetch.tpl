@@ -102,6 +102,7 @@ if not, write to the
 													<tbody>
 														<tr>
 															<th class="style4">ID</th>
+															<th class="style4">GPS</th>
 															<th class="style4">Title</th>
 															<th class="style4">User</th>			
 															<th class="style4">Total APs</th>		
@@ -113,7 +114,8 @@ if not, write to the
 													</tbody>
 													<tbody>
 														<tr>
-															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>		
+															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>	
+															<td class="light" align="center">{$wifidb_assoc.globe}</td>																
 															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
 															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
 															<td class="light" align="center">{$wifidb_assoc.aps}</td>
