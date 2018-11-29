@@ -163,11 +163,11 @@ switch($func)
                         $result->bindValue(1, $filename, PDO::PARAM_STR);
                         $result->bindValue(2, $date, PDO::PARAM_STR);
                         $result->bindValue(3, $user, PDO::PARAM_STR);
-                        $result->bindValue(3, $otherusers, PDO::PARAM_STR);
-                        $result->bindValue(4, $notes, PDO::PARAM_STR);
-                        $result->bindValue(5, $title, PDO::PARAM_STR);
-                        $result->bindValue(6, $size, PDO::PARAM_STR);
-                        $result->bindValue(7, $hash, PDO::PARAM_STR);
+                        $result->bindValue(4, $otherusers, PDO::PARAM_STR);
+                        $result->bindValue(5, $notes, PDO::PARAM_STR);
+                        $result->bindValue(6, $title, PDO::PARAM_STR);
+                        $result->bindValue(7, $size, PDO::PARAM_STR);
+                        $result->bindValue(8, $hash, PDO::PARAM_STR);
                         $result->execute();
                         if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
                         {
