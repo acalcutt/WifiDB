@@ -103,7 +103,7 @@ function start($command = '')
 		break;
 	}
 	require(dirname(__FILE__).'/../daemon.config.inc.php');
-	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'daemon.config.inc.php');
+	require($daemon_config['wifidb_install'].'/lib/config.inc.php');
 	
 	$is_array = is_array($daemon_);
 	if($is_array)
