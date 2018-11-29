@@ -350,7 +350,7 @@ class export extends dbcore
 				"lon" => $this->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
 				"manuf"=>$this->findManuf($ap['BSSID']),
-				"username" => $ap['user']
+				"user" => $ap['user']
 				);
 
 				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
@@ -382,79 +382,46 @@ class export extends dbcore
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
-			$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`\n"
-				. "FROM `wifi_hist`\n"
-				. "INNER JOIN `wifi_gps` on `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-				. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_hist`.`AP_ID` = ?\n"
-				. "ORDER BY cast(`wifi_hist`.`RSSI` as SIGNED) DESC, `wifi_hist`.`Sig` DESC, `wifi_gps`.`Gps_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
-				. "LIMIT 1";
-			$resgps = $this->sql->conn->prepare($sql);
-			$resgps->bindParam(1, $file_id, PDO::PARAM_INT);
-			$resgps->bindParam(2, $apid, PDO::PARAM_INT);
-			$resgps->execute();
-			$fetchgps = $resgps->fetch(2);
-			$HighGps_Lat = $fetchgps['Lat'];
-			$HighGps_Lon = $fetchgps['Lon'];
-			$HighGps_Alt = $fetchgps['Alt'];
-			if($HighGps_Lat != "0.0000")
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+				. "whFA.Hist_Date As FA,\n"
+				. "whLA.Hist_Date As LA,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.user As user\n"
+				. "FROM `wifi_ap` AS wap\n"
+				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+				. "WHERE `wap`.`AP_ID` = ? And HighGps_ID IS NOT NULL";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $apid, PDO::PARAM_INT);
+			$result->execute();
+			$appointer = $result->fetchAll();
+			foreach($appointer as $ap)
 			{
-				#Find File User
-				$sql = "SELECT user From files WHERE id = ? LIMIT 1";
-				$list_user_prep = $this->sql->conn->prepare($sql);
-				$list_user_prep->bindParam(1, $file_id, PDO::PARAM_INT);
-				$list_user_prep->execute();
-				$list_user_array = $list_user_prep->fetch(2);
-				$List_user = $list_user_array['user'];
-
-				#Find AP First Date in this list
-				$sql = "SELECT Hist_Date, New From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date ASC LIMIT 1";
-				$list_AP_FA_prep = $this->sql->conn->prepare($sql);
-				$list_AP_FA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
-				$list_AP_FA_prep->bindParam(2, $apid, PDO::PARAM_INT);
-				$list_AP_FA_prep->execute();
-				$list_AP_FA_array = $list_AP_FA_prep->fetch(2);
-				$List_AP_FA = $list_AP_FA_array['Hist_Date'];
-				if($list_AP_FA_array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
-			
-				#Find AP Last Date in this list
-				$sql = "SELECT Hist_Date From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date DESC LIMIT 1";
-				$list_AP_LA_prep = $this->sql->conn->prepare($sql);
-				$list_AP_LA_prep->bindParam(1, $file_id, PDO::PARAM_INT);
-				$list_AP_LA_prep->bindParam(2, $apid, PDO::PARAM_INT);
-				$list_AP_LA_prep->execute();
-				$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
-				$List_AP_LA = $list_AP_LA_array['Hist_Date'];
-
-				#Get AP Info
-				$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX\n"
-					. "FROM wifi_ap\n"
-					. "WHERE AP_ID = ?";
-				$result = $this->sql->conn->prepare($sql);
-				$result->bindParam(1, $apid, PDO::PARAM_INT);
-				$result->execute();
-				$ap_array = $result->fetch(2);
-				
 				#Get AP GeoJSON
 				$ap_info = array(
-				"id" => $ap_array['AP_ID'],
+				"id" => $ap['AP_ID'],
 				"new_ap" => $new_icons,
-				"mac" => $ap_array['BSSID'],
-				"ssid" => $ap_array['SSID'],
-				"chan" => $ap_array['CHAN'],
-				"radio" => $ap_array['RADTYPE'],
-				"NT" => $ap_array['NETTYPE'],
-				"sectype" => $ap_array['SECTYPE'],
-				"auth" => $ap_array['AUTH'],
-				"encry" => $ap_array['ENCR'],
-				"BTx" => $ap_array['BTX'],
-				"OTx" => $ap_array['OTX'],
-				"FA" => $List_AP_FA,
-				"LA" => $List_AP_LA,
-				"lat" => $this->convert->dm2dd($HighGps_Lat),
-				"lon" => $this->convert->dm2dd($HighGps_Lon),
-				"alt" => $HighGps_Alt,
-				"manuf"=>$this->findManuf($ap_array['BSSID']),
-				"user" => $List_user,
+				"mac" => $ap['BSSID'],
+				"ssid" => $ap['SSID'],
+				"chan" => $ap['CHAN'],
+				"radio" => $ap['RADTYPE'],
+				"NT" => $ap['NETTYPE'],
+				"sectype" => $ap['SECTYPE'],
+				"auth" => $ap['AUTH'],
+				"encry" => $ap['ENCR'],
+				"BTx" => $ap['BTX'],
+				"OTx" => $ap['OTX'],
+				"FA" => $ap['FA'],
+				"LA" => $ap['LA'],
+				"lat" => $this->convert->dm2dd($ap['Lat']),
+				"lon" => $this->convert->dm2dd($ap['Lon']),
+				"alt" => $ap['Alt'],
+				"manuf"=>$this->findManuf($ap['BSSID']),
+				"user" => $ap['user'],
 				);
 				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
@@ -466,7 +433,7 @@ class export extends dbcore
 				$latlon_array[] = $latlon_info;
 			}
 		}
-		
+
 		$ret_data = array(
 		"data" => $Import_Map_Data,
 		"latlongarray" => $latlon_array,
