@@ -69,7 +69,7 @@ switch($func)
         $notes = (empty($_POST['notes'])) ? "No Notes" : $_POST['notes'];
         $user = (empty($_POST['user'])) ? "Unknown" : $_POST['user'];
         $otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
-        $sql = "SELECT `user` FROM `wifi`.`files` WHERE `user` LIKE ?";
+        $sql = "SELECT `username` FROM `wifi`.`user_info` WHERE `username` LIKE ?";
         $stmt = $dbcore->sql->conn->prepare($sql);
         $stmt->bindParam(1, $user, PDO::PARAM_STR);
         $stmt->execute();
@@ -79,7 +79,7 @@ switch($func)
             break;
         }
         $array = $stmt->fetch(2);
-        if($array['user'] == $dbcore->sec->username and $dbcore->login_check)
+        if($array['username'] == $dbcore->sec->username and $dbcore->login_check)
         {
             $mesg .= "<h2>You need to be logged in to import to a user that has a login.<br> Go <a class='links' href='".$GLOBALS['hosturl']."login.php?return=/import/'>login</a> and then import again.</h2>";
         }else
@@ -163,7 +163,7 @@ switch($func)
                         $result->bindValue(1, $filename, PDO::PARAM_STR);
                         $result->bindValue(2, $date, PDO::PARAM_STR);
                         $result->bindValue(3, $user, PDO::PARAM_STR);
-						$result->bindValue(3, $otherusers, PDO::PARAM_STR);
+                        $result->bindValue(3, $otherusers, PDO::PARAM_STR);
                         $result->bindValue(4, $notes, PDO::PARAM_STR);
                         $result->bindValue(5, $title, PDO::PARAM_STR);
                         $result->bindValue(6, $size, PDO::PARAM_STR);
