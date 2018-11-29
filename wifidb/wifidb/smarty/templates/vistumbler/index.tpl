@@ -27,15 +27,15 @@ if not, write to the
     <tr class="style3"><td class="style2" colspan="4"></td></tr>
     <tr>
             <th class="style3" style="width: 100px">Total AP's</th>
-            <th class="style3">Open AP's</th>
-            <th class="style3">WEP AP's</th>
-            <th class="style3">Secure AP's</th>
+            <th class="style3">Open APs</th>
+            <th class="style3">WEP APs</th>
+            <th class="style3">Secure APs</th>
     </tr>
     <tr class="light">
             <td align="center" class="style2" style="width: 100px">{$total_aps}</td>
-            <td align="center" class="style2">{$open_aps}</td>
-            <td align="center" class="style2">{$wep_aps}</td>
-            <td align="center" class="style2">{$sec_aps}</td>
+            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&from=0&to=25" title="Open APs">{$open_aps}</a></td>
+            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&from=0&to=25" title="WEP APs">{$wep_aps}</a></td>
+            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&from=0&to=25" title="Secure APs">{$sec_aps}</a></td>
     </tr>
     <tr class="style3"><td class="style2" colspan="4"></td></tr>
     <tr>

@@ -797,29 +797,8 @@ class frontend extends dbcore
 		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
 	}
 
-	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from = NULL, $inc = NULL)
+	function Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from = NULL, $inc = NULL)
 	{
-		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-			. "whFA.Hist_Date As FA,\n"
-			. "whLA.Hist_Date As LA,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon\n"
-			. "FROM `wifi_ap` AS wap\n"
-			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "WHERE\n"
-			. "`wap`.`SSID` LIKE ? AND\n"
-			. "`wap`.`BSSID` LIKE ? AND\n"
-			. "`wap`.`RADTYPE` LIKE ? AND\n"
-			. "`wap`.`CHAN` LIKE ? AND\n"
-			. "`wap`.`AUTH` LIKE ? AND\n"
-			. "`wap`.`ENCR` LIKE ? ORDER BY `$sort` $ord ";
-		
-		if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
-		$prep1 = $this->sql->conn->prepare($sql);
-
 		$save_url = 'ord='.$ord.'&sort='.$sort.'&from='.$from.'&to='.$inc;
 		$export_url = '';
 		if($ssid!='')
@@ -857,26 +836,78 @@ class frontend extends dbcore
 			$save_url   .= '&encry='.$encry;
 			$export_url .= '&encry='.$encry;
 		}
-
+		
+		if($sectype!='')
+		{
+			$save_url   .= '&sectype='.$sectype;
+			$export_url .= '&sectype='.$sectype;
+		}
+		
 		$ssid = "%".$ssid."%";
-		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
 		$mac = "%".$mac."%";
-		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
 		$radio = "%".$radio."%";
-		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
 		$chan = "%".$chan."%";
-		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
 		$auth = "%".$auth."%";
-		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
 		$encry = "%".$encry."%";
+		
+		$sql_count = "SELECT COUNT(AP_ID)\n"
+			. "FROM `wifi_ap`\n"
+			. "WHERE\n"
+			. "`FirstHist_ID` IS NOT NULL AND\n"
+			. "`SSID` LIKE ? AND\n"
+			. "`BSSID` LIKE ? AND\n"
+			. "`RADTYPE` LIKE ? AND\n"
+			. "`CHAN` LIKE ? AND\n"
+			. "`AUTH` LIKE ? AND\n"
+			. "`ENCR` LIKE ? \n";
+		if($sectype){$sql_count .= "AND `SECTYPE` =  ?";}
+		$prep1 = $this->sql->conn->prepare($sql_count);
+		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
+		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
+		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
+		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
+		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
 		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
+		if($sectype){$prep1->bindParam(7, $sectype, PDO::PARAM_INT);}
 		$prep1->execute();
-		$total_rows = $prep1->rowCount();
+		$AP_ID_Count = $prep1->fetch(2);
+		$total_rows = $AP_ID_Count['COUNT(AP_ID)'];
+		
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM `wifi_ap` AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "WHERE\n"
+			. "`FirstHist_ID` IS NOT NULL AND\n"
+			. "`wap`.`SSID` LIKE ? AND\n"
+			. "`wap`.`BSSID` LIKE ? AND\n"
+			. "`wap`.`RADTYPE` LIKE ? AND\n"
+			. "`wap`.`CHAN` LIKE ? AND\n"
+			. "`wap`.`AUTH` LIKE ? AND\n"
+			. "`wap`.`ENCR` LIKE ?\n";
+		if($sectype){$sql .="AND `wap`.`SECTYPE` =  ? ";}
+		$sql .= "ORDER BY `$sort` $ord ";		
+		if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+		$prep2 = $this->sql->conn->prepare($sql);
+		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+		if($sectype){$prep2->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$prep2->execute();
 
 		$row_color = 0;
 		$results_all = array();
 		$i=0;
-		while ($newArray = $prep1->fetch(2))
+		while ($newArray = $prep2->fetch(2))
 		{
 			if($row_color == 1)
 			{

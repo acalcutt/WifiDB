@@ -83,6 +83,13 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     }else
     {
         $encry  =   "";
+    }    
+    if(@$_REQUEST['sectype'])
+    {
+        $sectype  =   $_REQUEST['sectype'];
+    }else
+    {
+        $sectype  =   "";
     }
     if ($from == ""){$from = 0;}
     if ($inc == ""){$inc = 100;}
@@ -90,7 +97,7 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     if ($sort == ""){$sort = "ssid";}
     $to = ($from+$inc);
     
-    list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
+    list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from, $inc);
     if($total_rows === 0)
     {
         $dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');
