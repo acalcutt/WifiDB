@@ -44,10 +44,10 @@ class frontend extends dbcore
 			define('SMARTY_DIR', $this->PATH.'/smarty/');
 			require_once(SMARTY_DIR.'Smarty.class.php');
 			$this->smarty = new Smarty();
-			$this->smarty->setTemplateDir( WWW_DIR.'smarty/templates/'.$this->theme.'/' );
-			$this->smarty->setCompileDir( WWW_DIR.'smarty/templates_c/' );
-			$this->smarty->setCacheDir( WWW_DIR.'smarty/cache/' );
-			$this->smarty->setConfigDir( WWW_DIR.'/smarty/configs/');
+			$this->smarty->setTemplateDir( WWW_DIR.'themes/'.$this->theme.'/templates/' );
+			$this->smarty->setCompileDir( WWW_DIR.'smarty/templates_c/'.$this->theme.'/' );
+			$this->smarty->setCacheDir( WWW_DIR.'smarty/cache/'.$this->theme.'/' );
+			$this->smarty->setConfigDir( WWW_DIR.'/smarty/configs/'.$this->theme.'/');
 
 			$this->smarty->assign('wifidb_host_url', $this->URL_PATH);
 			$this->smarty->assign('wifidb_meta_header', $this->meta->header);

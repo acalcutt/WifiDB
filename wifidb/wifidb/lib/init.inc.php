@@ -36,10 +36,10 @@ if(!function_exists('WiFiDBexception_handler')) {
 				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/");
 				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/smarty/");
 				$smarty = new Smarty();
-				$smarty->setTemplateDir(WWW_DIR . 'smarty/templates/'.$config['default_theme'].'/');
-				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/');
-				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/');
-				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/');
+				$smarty->setTemplateDir(WWW_DIR . 'themes/'.$config['default_theme'].'/templates/');
+				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/'.$config['default_theme'].'/');
+				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/'.$config['default_theme'].'/');
+				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/'.$config['default_theme'].'/');
 				$smarty->smarty->assign('wifidb_error_mesg', $trace);
 				$smarty->display("error.tpl");
 				break;
