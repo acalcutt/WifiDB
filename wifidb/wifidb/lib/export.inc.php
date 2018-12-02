@@ -51,6 +51,7 @@ class export extends dbcore
 			"ExportApSignal3d"	=>  "1.0",	
 			"UserAll"		=>  "3.0",			
 			"UserList"		=>  "3.0",
+			"UserAllGeoJSON"		=>  "1.0",
 			"UserListGeoJSON"		=>  "1.0",
 			"FindBox"	=>  "1.0",
 			"distance"	=>  "2.0",
@@ -370,7 +371,69 @@ class export extends dbcore
 		
 		return $ret_data;
 	}
-	
+
+	public function UserAllGeoJSON($user)
+	{
+		$Import_Map_Data = "";
+		$latlon_array = array();
+		$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
+			. "`whFA`.`Hist_Date` As `FA`,\n"
+			. "`whLA`.`Hist_Date` As `LA`,\n"
+			. "`wGPS`.`Lat` As `Lat`,\n"
+			. "`wGPS`.`Lon` As `Lon`,\n"
+			. "`wf`.`user` AS `user`\n"
+			. "FROM `wifi_ap` AS `wap`\n"
+			. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
+			. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.`LastHist_ID`\n"
+			. "LEFT JOIN `wifi_gps`As `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
+			. "LEFT JOIN `files` AS `wf` ON `wf`.`id` = `wap`.`File_ID`\n"
+			. "WHERE `wf`.`user` LIKE ? And `wf`.`completed` = 1 And `wap`.`BSSID` != '00:00:00:00:00:00' And `wap`.`HighGps_ID` IS NOT NULL ORDER BY `wap`.`AP_ID` DESC";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $user, PDO::PARAM_STR);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $ap['AP_ID'],
+			"new_ap" => $new_icons,
+			"named" => $named,
+			"mac" => $ap['BSSID'],
+			"ssid" => $ap['SSID'],
+			"chan" => $ap['CHAN'],
+			"radio" => $ap['RADTYPE'],
+			"NT" => $ap['NETTYPE'],
+			"sectype" => $ap['SECTYPE'],
+			"auth" => $ap['AUTH'],
+			"encry" => $ap['ENCR'],
+			"BTx" => $ap['BTX'],
+			"OTx" => $ap['OTX'],
+			"FA" => $ap['FA'],
+			"LA" => $ap['LA'],
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"lon" => $this->convert->dm2dd($ap['Lon']),
+			"alt" => $ap['Alt'],
+			"manuf"=>$this->findManuf($ap['BSSID']),
+			"username" => $ap['user']
+			);
+			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+			$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"long" => $this->convert->dm2dd($ap['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+		}
+		$ret_data = array(
+		"data" => $Import_Map_Data,
+		"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
 	public function UserListGeoJSON($file_id, $new_icons=0)
 	{
 		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
