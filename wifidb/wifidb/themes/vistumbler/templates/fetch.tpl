@@ -48,7 +48,6 @@ if not, write to the
                                         <tr valign="TOP"><td class="style4" width="112"><p>Network Type</p></td><td class="light" width="439"><p>{$wifidb_ap.nt}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>First Active</p></td><td class="light" width="439"><p>{$wifidb_ap.fa}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
 										<tr valign="TOP"><td class="style4" width="112"><p>Latitude</p></td><td class="light" width="439"><p>{$wifidb_ap.lat}</p></td></tr>
 										<tr valign="TOP"><td class="style4" width="112"><p>Longitude</p></td><td class="light" width="439"><p>{$wifidb_ap.lon}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
@@ -82,17 +81,17 @@ if not, write to the
 													</tbody>
 													<tbody>
 														{foreach name=outer item=wifidb_gi from=$wifidb_geonames}
-														<tr>
-															<td class="light" align="center">{$wifidb_gi.id}</td>
-															<td class="light" align="center">{$wifidb_gi.asciiname}</td>	
-															<td class="light" align="center">{$wifidb_gi.admin1name}</td>
-															<td class="light" align="center">{$wifidb_gi.admin2name}</td>
-															<td class="light" align="center">{$wifidb_gi.country_code}</td>
-															<td class="light" align="center">{$wifidb_gi.timezone}</td>
-															<td class="light" align="center">{$wifidb_gi.latitude}</td>
-															<td class="light" align="center">{$wifidb_gi.longitude}</td>
-															<td class="light" align="center">{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
-															<td class="light" align="center">{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
+														<tr class="{$wifidb_gi.class}">
+															<td>{$wifidb_gi.id}</td>
+															<td>{$wifidb_gi.asciiname}</td>	
+															<td>{$wifidb_gi.admin1name}</td>
+															<td>{$wifidb_gi.admin2name}</td>
+															<td>{$wifidb_gi.country_code}</td>
+															<td>{$wifidb_gi.timezone}</td>
+															<td>{$wifidb_gi.latitude}</td>
+															<td>{$wifidb_gi.longitude}</td>
+															<td>{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
+															<td>{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
 														</tr>
 														{/foreach}
 													</tbody>
@@ -100,7 +99,7 @@ if not, write to the
 										</td>
 									</tr>
 								</table>
-                                <br/>													
+								<br/>
 
 								<table width="85%" border="1" cellpadding="2" cellspacing="0">
 									<tr>
@@ -115,8 +114,8 @@ if not, write to the
 															<th class="style4">ID</th>
 															<th class="style4">GPS</th>
 															<th class="style4">Title</th>
-															<th class="style4">User</th>			
-															<th class="style4">Total APs</th>		
+															<th class="style4">User</th>
+															<th class="style4">Total APs</th>
 															<th class="style4">Date</th>
 															<th class="style4">New/Update</th>
 															<th class="style4">Export</th>
@@ -126,13 +125,13 @@ if not, write to the
 													<tbody>
 														<tr>
 															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>	
-															<td class="light" align="center">{$wifidb_assoc.globe}</td>																
+															<td class="light" align="center">{$wifidb_assoc.globe}</td>
 															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
 															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
 															<td class="light" align="center">{$wifidb_assoc.aps}</td>
 															<td class="light">{$wifidb_assoc.date}</td>
 															<td class="light">{$wifidb_assoc.nu}</td>
-															<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;file_id={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>			
+															<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;file_id={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>
 															<td class="style4" onclick="expandcontract('Row{$wifidb_assoc.id}','ClickIcon{$wifidb_assoc.id}')" id="ClickIcon{$wifidb_assoc.id}" style="cursor: pointer; cursor: hand;">+</td>
 														</tr>
 													</tbody>
@@ -149,13 +148,13 @@ if not, write to the
 														</tr>
 														{foreach item=wifidb_ap_gps from=$wifidb_assoc.signals}
 														<tr class="{$wifidb_ap_gps.class}">
-															<td class="light" align="center">{$wifidb_ap_gps.Sig}</td>
-															<td class="light">{$wifidb_ap_gps.RSSI}</td>
-															<td class="light">{$wifidb_ap_gps.Lat}</td>
-															<td class="light">{$wifidb_ap_gps.Lon}</td>
-															<td class="light">{$wifidb_ap_gps.Alt}</td>
-															<td class="light">{$wifidb_ap_gps.NumOfSats}</td>
-															<td class="light">{$wifidb_ap_gps.GPS_Date}</td>
+															<td>{$wifidb_ap_gps.Sig}</td>
+															<td>{$wifidb_ap_gps.RSSI}</td>
+															<td>{$wifidb_ap_gps.Lat}</td>
+															<td>{$wifidb_ap_gps.Lon}</td>
+															<td>{$wifidb_ap_gps.Alt}</td>
+															<td>{$wifidb_ap_gps.NumOfSats}</td>
+															<td>{$wifidb_ap_gps.GPS_Date}</td>
 												
 														</tr>
 														{/foreach}

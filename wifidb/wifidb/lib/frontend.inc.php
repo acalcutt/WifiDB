@@ -85,11 +85,13 @@ class frontend extends dbcore
 			. "whFA.Hist_Date As FA,\n"
 			. "whLA.Hist_Date As LA,\n"
 			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wf.user As user\n"
 			. "FROM `wifi_ap` AS wap\n"
 			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
 			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 			. "WHERE wap.AP_ID = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -112,11 +114,11 @@ class frontend extends dbcore
 			'nt'=>$newArray["NETTYPE"],
 			'lat'=>$newArray["Lat"],
 			'lon'=>$newArray["Lon"],
-			'label'=>$newArray["label"],
-			'user'=>$newArray["username"]
+			'user'=>$newArray["user"]
 		);
 
 		$list_geonames = array();
+		$flip = 0;
 		if($newArray['Lat'] !== '0.0000' || $newArray['Lat'] !== '')
 		{
 			$Latdd = $this->convert->dm2dd($newArray["Lat"]);
@@ -134,6 +136,11 @@ class frontend extends dbcore
 			{
 				if($GeonamesArray['id'] !== '')
 				{
+					if($flip)
+						{$class="dark";$flip=0;}
+					else
+						{$class="light";$flip=1;}
+					
 					$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
 					$sql = "SELECT `name` FROM `geonames_admin1` WHERE `admin1` = ?";
 					$prep_geonames = $this->sql->conn->prepare($sql);
@@ -141,7 +148,7 @@ class frontend extends dbcore
 					$prep_geonames->execute();
 					$Admin1Array = $prep_geonames->fetch(2);
 
-					$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
+					$admin2 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'].".".$GeonamesArray['admin2_code'];
 					$sql = "SELECT `name` FROM `geonames_admin2` WHERE `admin2` = ?";
 					$prep_geonames = $this->sql->conn->prepare($sql);
 					$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
@@ -149,6 +156,7 @@ class frontend extends dbcore
 					$Admin2Array = $prep_geonames->fetch(2);
 					
 					$list_geonames[]= array(
+						'class'=>$class,
 						'id'=>$GeonamesArray['id'],
 						'asciiname'=>$GeonamesArray['asciiname'],
 						'country_code'=>$GeonamesArray['country_code'],
@@ -174,6 +182,7 @@ class frontend extends dbcore
 		}
 
 		$list = array();
+		$flip = 0;
 		$sql = "SELECT wf.File_ID, files.title, files.user, files.date, files.ValidGPS, wf.New,\n"
 			. "(SELECT COUNT(DISTINCT wifi_hist.AP_ID) FROM wifi_hist WHERE wifi_hist.File_ID = wf.File_ID) AS `AP_COUNT`\n"
 			. "FROM wifi_hist AS `wf`\n"
@@ -193,6 +202,11 @@ class frontend extends dbcore
 
 		while ($field = $prep2->fetch(1))
 		{
+			if($flip)
+				{$class="dark";$flip=0;}
+			else
+				{$class="light";$flip=1;}
+			
 			if($field['ValidGPS'] == 1)
 			{
 				$list_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$field['File_ID']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
@@ -204,7 +218,10 @@ class frontend extends dbcore
 				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
 				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
 			}
-	
+			$file_id = $field["File_ID"];
+			
+			$flip2=0;
+			$sigarr = array();			
 			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
 				. "FROM `wifi_hist`\n"
 				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID`=`wifi_gps`.`GPS_ID`\n"
@@ -212,12 +229,27 @@ class frontend extends dbcore
 				. "ORDER BY `wifi_hist`.`Hist_Date` ASC";
 			$prep1 = $this->sql->conn->prepare($sql);
 			$prep1->bindParam(1, $id, PDO::PARAM_STR);
-			$prep1->bindParam(2, $field["File_ID"], PDO::PARAM_STR);
+			$prep1->bindParam(2, $file_id, PDO::PARAM_STR);
 			$prep1->execute();
-			$signals = $prep1->fetchAll(2);
-		
-			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
-			//preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
+			while ($signals = $prep1->fetch(1))
+			{
+				if($flip2)
+					{$class2="dark";$flip2=0;}
+				else
+					{$class2="light";$flip2=1;}
+				
+				$sigarr[]= array(
+					'class'=>$class2,
+					'Sig'=>$signals['Sig'],
+					'RSSI'=>$signals['RSSI'],
+					'Lat'=>$signals['Lat'],
+					'Lon'=>$signals['Lon'],
+					'Alt'=>$signals['Alt'],
+					'NumOfSats'=>$signals['NumOfSats'],
+					'GPS_Date'=>$signals['GPS_Date']
+				);				
+			}
+
 			$list[]= array(
 				'class'=>$class,
 				'id'=>$field['File_ID'],
@@ -227,14 +259,14 @@ class frontend extends dbcore
 				'aps'=>$field['AP_COUNT'],
 				'user'=>$field['user'],
 				'title'=>$field['title'],
-				'signals'=>$signals
+				'signals'=>$sigarr
 			);
 
 		}
 		$ap_data['from'] = $signals[0]['AP_ID'];
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
-			$newArray['ssid'],
+			$newArray['SSID'],
 			$list,
 			$globe_html,
 			$ap_data,
@@ -605,6 +637,7 @@ class frontend extends dbcore
 		$prep_AP_IDS->bindParam(1,$user_array['id'], PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
 		$count = 0;
+		$flip=0;
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
