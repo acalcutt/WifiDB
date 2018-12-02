@@ -16,6 +16,7 @@ Vistumbler WiFiDB -> Read-me
 			GD2 (included with PHP now)
 			ZipArchive class
 			SQLiteDatabase class
+			bcmath class
 		MariaDB 10.3 or later
 		Apache 2.4 or later
 		A Web-browser (doh!)
