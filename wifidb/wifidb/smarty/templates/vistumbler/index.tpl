@@ -32,7 +32,7 @@ if not, write to the
             <th class="style3">Secure APs</th>
     </tr>
     <tr class="light">
-            <td align="center" class="style2" style="width: 100px">{$total_aps}</td>
+            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="All Users">{$total_aps}</a></td>
             <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&from=0&to=25" title="Open APs">{$open_aps}</a></td>
             <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&from=0&to=25" title="WEP APs">{$wep_aps}</a></td>
             <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&from=0&to=25" title="Secure APs">{$sec_aps}</a></td>
@@ -45,8 +45,23 @@ if not, write to the
             <th class="style3">Last Import List</th>
     </tr>
     <tr class="dark">
-            <td align="center" class="style2" style="width: 100px">{$total_users}</td>
-            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a></td>
+            <td align="center" class="style2" style="width: 100px"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users}</a></td>
+            <td align="center" class="style2">
+                <p align="center">
+                <table>
+                    <tbody>
+                        <tr>
+                            <td align="right" width="100%">
+                                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a>
+                            </td>
+                            <td align="left">
+                                {$user_globe_html}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </p>
+            </td>
             <td align="center" class="style2">
                 <p align="center">
                 <table>

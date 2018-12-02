@@ -30,8 +30,6 @@ $dbcore->smarty->assign('wifidb_assoc_lists', $results[1]);
 $dbcore->smarty->assign('wifidb_ap_globe_html', $results[2]);
 $dbcore->smarty->assign('wifidb_ap', $results[3]);
 $dbcore->smarty->assign('wifidb_geonames', $results[4]);
-$dbcore->smarty->assign('wifidb_admin1', $results[5]);
-$dbcore->smarty->assign('wifidb_admin2', $results[6]);
 $dbcore->smarty->display('fetch.tpl');
 
 ?>

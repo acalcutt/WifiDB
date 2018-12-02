@@ -49,20 +49,9 @@ class createGeoJSON
 			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":3},';
 		}		
 		
-		if($ap_info_array['ssid'] == '')
-		{
-			$ap_info_array['ssid'] = '[Blank SSID]';
-		}
-		elseif(!ctype_print($ap_info_array['ssid']))
-		{
-			$ap_info_array['ssid'] = '['.dbcore::normalize_ssid($ap_info_array['ssid']).']';
-		}
-		else
-		{
-			$ap_info_array['ssid'] = dbcore::normalize_ssid($ap_info_array['ssid']);
-		}
-
-		$tmp = '{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","user":"'.$ap_info_array['user'].'","ssid":"'.$ap_info_array['ssid'].'","mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
+		$ap_info_array['user'] = json_encode($ap_info_array['user']);
+		$tmp = '{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","user":'.$ap_info_array['user'].',"ssid":'.$ap_info_array['ssid'].',"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
@@ -138,6 +127,51 @@ class createGeoJSON
 													map.addSource('".$layer_sname."', {
 														type: 'geojson',
 														data: '".$this->URL_BASE."api/geojson.php?func=exp_list&id=".$id."&all=1',
+														buffer: 0,
+													});
+
+													map.addLayer({
+														'id': '".$layer_lname."',
+														'type': 'circle',
+														'source': '".$layer_sname."',
+														'layout': {
+															'visibility': '".$visibility."'
+														},
+														'paint': {
+															'circle-color': {
+																'property': 'sectype',
+																'type': 'interval',
+																'stops': [
+																	[1, '".$open_color."'],
+																	[2, '".$wep_color."'],
+																	[3, '".$sec_color."']
+																]
+															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});
+";
+
+		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
+	}
+	
+	public function CreateUserAllGeoJsonLayer($user, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	{
+		$layer_sname = "list-".$user;
+		$layer_lname = "listl-".$user;
+		$layer_source = "
+													map.addSource('".$layer_sname."', {
+														type: 'geojson',
+														data: '".$this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user."',
 														buffer: 0,
 													});
 

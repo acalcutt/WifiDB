@@ -88,18 +88,7 @@ switch($func)
 			$prep->execute();
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$ap_array = $prep->fetch();
-			if($ap_array['SSID'] == '')
-			{
-				$ssid = '[Blank SSID]';
-			}
-			elseif(!ctype_print($ap_array['SSID']))
-			{
-				$ssid = '['.$ap_array['SSID'].']';
-			}
-			else
-			{
-				$ssid = $ap_array['SSID'];
-			}
+			$ssid = $dbcore->formatSSID($ap_array['SSID']);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $ssid.'-'.$id);
 			#Create Network Link
 			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_ap&#x26;id='.$id.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $title, 1, 0, "onInterval", 86400);
@@ -350,18 +339,7 @@ switch($func)
 			$prep_name->bindParam(1, $id, PDO::PARAM_INT);
 			$prep_name->execute();
 			$ap_array = $prep_name->fetch(2);
-			if($ap_array['SSID'] == '')
-			{
-				$ssid = '[Blank SSID]';
-			}
-			elseif(!ctype_print($ap_array['SSID']))
-			{
-				$ssid = '['.$ap_array['SSID'].']';
-			}
-			else
-			{
-				$ssid = $ap_array['SSID'];
-			}
+			$ssid = $dbcore->formatSSID($ap_array['SSID']);
 			
 			#Get List Title 
 			$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";

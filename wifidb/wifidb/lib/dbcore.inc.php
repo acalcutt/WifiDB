@@ -554,6 +554,23 @@ class dbcore
 		}
 		return $manuf;
 	}
+	
+	public function formatSSID($ssid)
+	{
+		if($ssid == '')
+		{
+			$new_ssid = '[Blank SSID]';
+		}
+		elseif(!ctype_print($ssid))
+		{
+			$new_ssid = '['.$ssid.']';
+		}
+		else
+		{
+			$new_ssid = $ssid;
+		}
+		return $new_ssid;
+	}
 
 	/**
 	 * @param $lat1

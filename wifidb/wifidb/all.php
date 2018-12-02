@@ -89,25 +89,15 @@ while ( $array = $pre_page_list->fetch(2) )
     {
         $wifidb_aps_all[$n]['globe_html'] = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
 		$wifidb_aps_all[$n]['globe_html'] .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_off.png\">";
+        $wifidb_aps_all[$n]['globe_html'] .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/kmz_off.png\">";
     }else
     {
-        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
+        $wifidb_aps_all[$n]['globe_html'] = "<a href=\"".$dbcore->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$array['AP_ID']."\" title=\"Show on Map\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";
 		$wifidb_aps_all[$n]['globe_html'] .= "<a href=\"".$dbcore->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_on.png\"></a>";
-    }
+        $wifidb_aps_all[$n]['globe_html'] .= "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/kmz_on.png\"></a>";
+	}
     
-   // $wifidb_aps_all[$n]['ssid'] = ($array['ssid'] == '' ? '[Blank SSID]' : $array['ssid']);
-    if($array['SSID'] == '')
-    {
-        $wifidb_aps_all[$n]['ssid'] = '[Blank SSID]';
-    }
-    elseif(!ctype_print($array['SSID']))
-    {
-        $wifidb_aps_all[$n]['ssid'] = '['.$array['SSID'].']';
-    }
-    else
-    {
-        $wifidb_aps_all[$n]['ssid'] = $array['SSID'];
-    }
+    $wifidb_aps_all[$n]['ssid'] = $dbcore->formatSSID($array['SSID']);
     
     if(@$array['BSSID'][2] != ":")
     {

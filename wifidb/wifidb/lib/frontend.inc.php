@@ -82,9 +82,7 @@ class frontend extends dbcore
 
 	function APFetch($id = "")
 	{
-		#$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
-		
-		
+
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
 			. "whFA.Hist_Date As FA,\n"
 			. "whLA.Hist_Date As LA,\n"
@@ -95,72 +93,17 @@ class frontend extends dbcore
 			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "WHERE wap.AP_ID = ?";
-		
-		
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$newArray = $prep->fetch(2);
-
-		if($newArray['SSID'] == '')
-		{
-			$new_ssid = '[Blank SSID]';
-		}
-		elseif(!ctype_print($newArray['SSID']))
-		{
-			$new_ssid = '['.$newArray['SSID'].']';
-		}
-		else
-		{
-			$new_ssid = $newArray['SSID'];
-		}
-
-		if($newArray['Lat'] !== '0.0000' || $newArray['Lat'] !== '')
-		{
-			$Latdd = $this->convert->dm2dd($newArray["Lat"]);
-			$Londd = $this->convert->dm2dd($newArray["Lon"]);
-			$lat_search = number_format(round($Latdd, 1), 1, '.', '');
-			$long_search = number_format(round($Londd, 1), 1, '.', '');
-			//echo $Latdd."*".$Londd."*".$lat_search."*".$long_search;
-			
-			$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, \n"
-				. "(3959 * acos(cos(radians( ? )) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians( ? )) + sin(radians( ? )) * sin(radians(`latitude`)))) AS `miles`\n"
-				. "FROM `geonames` \n"
-				. "WHERE `latitude` LIKE CONCAT( ? ,'%') AND `longitude` LIKE CONCAT( ? ,'%') ORDER BY `miles` ASC LIMIT 1";
-			$geoname_res = $this->sql->conn->prepare($sql);
-			$geoname_res->bindParam(1,$lat, PDO::PARAM_INT);
-			$geoname_res->bindParam(2,$lon, PDO::PARAM_INT);
-			$geoname_res->bindParam(3,$lat, PDO::PARAM_INT);
-			$geoname_res->bindParam(4,$lat_search, PDO::PARAM_STR);
-			$geoname_res->bindParam(5,$long_search, PDO::PARAM_STR);
-			$geoname_res->execute();
-			$GeonamesArray = $geoname_res->fetch(2);
-			//var_dump($GeonamesArray);
-			$GeonamesID = $GeonamesArray['id'];
-			if($GeonamesID !== '')
-			{
-				$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
-				$sql = "SELECT * FROM `geonames_admin1` WHERE `admin1` = ?";
-				$prep_geonames = $this->sql->conn->prepare($sql);
-				$prep_geonames->bindParam(1, $admin1, PDO::PARAM_STR);
-				$prep_geonames->execute();
-				$Admin1Array = $prep_geonames->fetch(2);
-
-				$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
-				$sql = "SELECT * FROM `geonames_admin2` WHERE `admin2` = ?";
-				$prep_geonames = $this->sql->conn->prepare($sql);
-				$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
-				$prep_geonames->execute();
-				$Admin2Array = $prep_geonames->fetch(2);
-			}
-		}
 		
 		$ap_data = array(
 			'id'=>$newArray['AP_ID'],
 			'radio'=>$newArray['RADTYPE'],
 			'manuf'=>$this->findManuf($newArray['BSSID']),
 			'mac'=>$newArray['BSSID'],
-			'ssid'=>$new_ssid,
+			'ssid'=>$this->formatSSID($newArray['SSID']),
 			'chan'=>$newArray['CHAN'],
 			'encry'=>$newArray['ENCR'],
 			'auth'=>$newArray['AUTH'],
@@ -175,14 +118,61 @@ class frontend extends dbcore
 			'user'=>$newArray["username"]
 		);
 
-		if($newArray['Lat'] == "")
+		$list_geonames = array();
+		if($newArray['Lat'] !== '0.0000' || $newArray['Lat'] !== '')
 		{
-			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
-			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'/img/json_off.png">';
-		}else
+			$Latdd = $this->convert->dm2dd($newArray["Lat"]);
+			$Londd = $this->convert->dm2dd($newArray["Lon"]);
+			$lat_search = bcdiv($Latdd, 1, 1);
+			$long_search = bcdiv($Londd, 1, 1);
+			
+			$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
+				. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(`latitude`)))) AS `miles`,\n"
+				. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(`latitude`)))) AS `kilometers`\n"
+				. "FROM `geonames` \n"
+				. "WHERE `latitude` LIKE '".$lat_search."%' AND `longitude` LIKE '".$long_search."%' ORDER BY `kilometers` ASC LIMIT 5";
+			$geoname_res = $this->sql->conn->query($sql);
+			while ($GeonamesArray = $geoname_res->fetch(1))
+			{
+				if($GeonamesArray['id'] !== '')
+				{
+					$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
+					$sql = "SELECT `name` FROM `geonames_admin1` WHERE `admin1` = ?";
+					$prep_geonames = $this->sql->conn->prepare($sql);
+					$prep_geonames->bindParam(1, $admin1, PDO::PARAM_STR);
+					$prep_geonames->execute();
+					$Admin1Array = $prep_geonames->fetch(2);
+
+					$admin2 = $geo_array['country_code'].".".$geo_array['admin1_code'].".".$geo_array['admin2_code'];
+					$sql = "SELECT `name` FROM `geonames_admin2` WHERE `admin2` = ?";
+					$prep_geonames = $this->sql->conn->prepare($sql);
+					$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
+					$prep_geonames->execute();
+					$Admin2Array = $prep_geonames->fetch(2);
+					
+					$list_geonames[]= array(
+						'id'=>$GeonamesArray['id'],
+						'asciiname'=>$GeonamesArray['asciiname'],
+						'country_code'=>$GeonamesArray['country_code'],
+						'timezone'=>$GeonamesArray['timezone'],
+						'miles'=>$GeonamesArray['miles'],
+						'kilometers'=>$GeonamesArray['kilometers'],
+						'latitude'=>$this->convert->all2dm(number_format($GeonamesArray['latitude'],7)),
+						'longitude'=>$this->convert->all2dm(number_format($GeonamesArray['longitude'],7)),
+						'admin1name'=>$Admin1Array['name'],
+						'admin2name'=>$Admin2Array['name']
+					);
+				}
+			}
+			$globe_html = '<a href="'.$this->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$newArray['AP_ID'].'" title="Show AP on Map"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
+			$globe_html .= '<a href="'.$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$newArray['AP_ID'].'" title="Export AP to JSON"><img width="20px" src="'.$this->URL_PATH.'/img/json_on.png"></a>';
+			$globe_html .= '<a href="'.$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export AP to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/kmz_on.png"></a>';
+		}
+		else
 		{
-			$globe_html = '<a href="'.$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/globe_on.png"></a>';
-			$globe_html .= '<a href="'.$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$newArray['AP_ID'].'" title="Export to JSON"><img width="20px" src="'.$this->URL_PATH.'/img/json_on.png"></a>';
+			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'img/globe_off.png">';
+			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
+			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
 		}
 
 		$list = array();
@@ -207,12 +197,14 @@ class frontend extends dbcore
 		{
 			if($field['ValidGPS'] == 1)
 			{
-				$list_globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$field['File_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";				
-				$list_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$field['File_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";					
+				$list_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$field['File_ID']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$list_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$field['File_ID']."\" title=\"Export List to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";					
+				$list_globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$field['File_ID']."\" title=\"Export List to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/kmz_on.png\"></a>";
 			}else
 			{
-				$list_globe_html = '<img width="20px" src="'.$this->URL_PATH.'/img/globe_off.png">';
-				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'/img/json_off.png">';
+				$list_globe_html = '<img width="20px" src="'.$this->URL_PATH.'img/globe_off.png">';
+				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
+				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
 			}
 	
 			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
@@ -229,29 +221,27 @@ class frontend extends dbcore
 			if($flip){$class="light";$flip=0;}else{$class="dark";$flip=1;}
 			//preg_match("/(?P<ap_id>{$id}):(?P<stat>\d+)/", $field['points'], $matches);
 			$list[]= array(
-							'class'=>$class,
-							'id'=>$field['File_ID'],
-							'globe'=>$list_globe_html,
-							'nu'=>$field['New'],
-							'date'=>$field['date'],
-							'aps'=>$field['AP_COUNT'],
-							'user'=>$field['user'],
-							'title'=>$field['title'],
-							'signals'=>$signals
-							);
+				'class'=>$class,
+				'id'=>$field['File_ID'],
+				'globe'=>$list_globe_html,
+				'nu'=>$field['New'],
+				'date'=>$field['date'],
+				'aps'=>$field['AP_COUNT'],
+				'user'=>$field['user'],
+				'title'=>$field['title'],
+				'signals'=>$signals
+			);
 
 		}
 		$ap_data['from'] = $signals[0]['AP_ID'];
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
-						$newArray['ssid'],
-						$list,
-						$globe_html,
-						$ap_data,
-						$GeonamesArray,
-						$Admin1Array,
-						$Admin2Array
-					);
+			$newArray['ssid'],
+			$list,
+			$globe_html,
+			$ap_data,
+			$list_geonames
+		);
 	}
 
 	function GetAnnouncement()
@@ -466,26 +456,15 @@ class frontend extends dbcore
 			if($array['Lat'] == "")
 			{
 				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."/img/json_off.png\">";
+				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";
-			}
-
-			if($array['SSID'] == '')
-			{
-				$ssid = '[Blank SSID]';
-			}
-			elseif(!ctype_print($array['SSID']))
-			{
-				$ssid = '['.$array['SSID'].']';
-			}
-			else
-			{
-				$ssid = $array['SSID'];
+				$globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$array['AP_ID']."\" title=\"Show AP on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$array['AP_ID']."\" title=\"Export AP to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export AP to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
 			}
 
 			$apprep[] = array(
@@ -493,7 +472,7 @@ class frontend extends dbcore
 						"class" => $style,
 						"globe" => $globe,
 						"globe_html" => $globe_html,
-						"ssid" => $ssid,
+						"ssid" => $this->formatSSID($array['SSID']),
 						"mac" => $array['BSSID'],
 						"radio" => $array['RADTYPE'],
 						"auth" => $array['AUTH'],
@@ -556,13 +535,15 @@ class frontend extends dbcore
 		{
 			if($imports['ValidGPS'] == 1)
 			{
-				$globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$imports['id']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";				
+				$globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$imports['id']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$imports['id']."\" title=\"Export List to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export List to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
 			}
 			else
 			{
-				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."/img/json_off.png\">";
+				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
 			}
 			
 			if($flip)
@@ -669,26 +650,15 @@ class frontend extends dbcore
 			if($ap_array['Lat']  == "0.0000" || $ap_array['Lat']  == "")
 			{
 				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."/img/json_off.png\">";
+				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
+				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
 			}else
 			{
 				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$ap_array['AP_ID']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";
-			}
-
-			if($ap_array['SSID'] == '')
-			{
-				$ssid = '[Blank SSID]';
-			}
-			elseif(!ctype_print($ap_array['SSID']))
-			{
-				$ssid = '['.$ap_array['SSID'].']';
-			}
-			else
-			{
-				$ssid = $ap_array['SSID'];
+				$globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$ap_array['AP_ID']."\" title=\"Show AP on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$ap_array['AP_ID']."\" title=\"Export AP to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";
+				$globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export AP to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/kmz_on.png\"></a>";
 			}
 
 			$all_aps_array['allaps'][] = array(
@@ -697,7 +667,7 @@ class frontend extends dbcore
 					'un' => $update_or_new,
 					'globe' => $globe,
 					'globe_html' => $globe_html,
-					'ssid' => $ssid,
+					'ssid' => $this->formatSSID($ap_array['SSID']),
 					'mac' => $ap_array['BSSID'],
 					'chan' => $ap_array['CHAN'],
 					'radio' => $ap_array['RADTYPE'],
@@ -874,7 +844,6 @@ class frontend extends dbcore
 		$total_rows = $AP_ID_Count['COUNT(AP_ID)'];
 		
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-
 			. "whFA.Hist_Date As FA,\n"
 			. "whLA.Hist_Date As LA,\n"
 			. "wGPS.Lat As Lat,\n"
@@ -921,23 +890,16 @@ class frontend extends dbcore
 			}
 			if($newArray['Lat'] == "")
 			{
-				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_off.png\">";
+				$results_all[$i]['globe_html'] = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
+				$results_all[$i]['globe_html'] .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
+				$results_all[$i]['globe_html'] .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
 			}else
 			{
-				$results_all[$i]['globe_html'] = "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
+				$results_all[$i]['globe_html'] = "<a href=\"".$this->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$newArray['AP_ID']."\" title=\"Show AP on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";
+				$results_all[$i]['globe_html'] .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$newArray['AP_ID']."\" title=\"Export AP to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";
+				$results_all[$i]['globe_html'] .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID']."\" title=\"Export AP to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
 			}
-			if($newArray['SSID'] == '')
-			{
-				$results_all[$i]['ssid'] = '[Blank SSID]';
-			}
-			elseif(!ctype_print($newArray['SSID']))
-			{
-				$results_all[$i]['ssid'] = '['.$newArray['SSID'].']';
-			}
-			else
-			{
-				$results_all[$i]['ssid'] = $newArray['SSID'];
-			}
+			$results_all[$i]['ssid'] = $this->formatSSID($newArray['SSID']);
 			$results_all[$i]['id'] = $newArray['AP_ID'];
 			$results_all[$i]['mac'] = $newArray['BSSID'];
 			$results_all[$i]['chan'] = $newArray['CHAN'];

@@ -64,6 +64,7 @@ if not, write to the
 									</tr>
 									<tr>
 										<td class="style1">
+												
 												<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
 													<tbody>
 														<tr>
@@ -73,17 +74,27 @@ if not, write to the
 															<th class="style4">Admin2 Name</th>
 															<th class="style4">Country Name</th>
 															<th class="style4">Timezone</th>
+															<th class="style4">Latitude</th>
+															<th class="style4">Longitude</th>
+															<th class="style4">Distance(mi)</th>
+															<th class="style4">Distance(km)</th>
 														</tr>
 													</tbody>
 													<tbody>
+														{foreach name=outer item=wifidb_gi from=$wifidb_geonames}
 														<tr>
-															<td class="light" align="center">{$wifidb_geonames.id}</td>
-															<td class="light" align="center">{$wifidb_geonames.asciiname}</td>	
-															<td class="light" align="center">{$wifidb_admin1.name}</td>
-															<td class="light" align="center">{$wifidb_admin2.name}</td>
-															<td class="light" align="center">{$wifidb_geonames.country_code}</td>
-															<td class="light" align="center">{$wifidb_geonames.timezone}</td>
+															<td class="light" align="center">{$wifidb_gi.id}</td>
+															<td class="light" align="center">{$wifidb_gi.asciiname}</td>	
+															<td class="light" align="center">{$wifidb_gi.admin1name}</td>
+															<td class="light" align="center">{$wifidb_gi.admin2name}</td>
+															<td class="light" align="center">{$wifidb_gi.country_code}</td>
+															<td class="light" align="center">{$wifidb_gi.timezone}</td>
+															<td class="light" align="center">{$wifidb_gi.latitude}</td>
+															<td class="light" align="center">{$wifidb_gi.longitude}</td>
+															<td class="light" align="center">{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
+															<td class="light" align="center">{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
 														</tr>
+														{/foreach}
 													</tbody>
 												</table>
 										</td>
