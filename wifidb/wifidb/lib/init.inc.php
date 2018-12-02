@@ -29,6 +29,7 @@ date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for inter
 if(!function_exists('WiFiDBexception_handler')) {
 	function WiFiDBexception_handler($err)
 	{
+		require(dirname(__FILE__).'/config.inc.php');
 		$trace = array('Error' => strval($err->getCode()), 'Message' => str_replace("\n", "</br>\r\n", $err->getMessage()), 'Code' => strval($err->getCode()), 'File' => $err->getFile(), 'Line' => strval($err->getLine()));
 		switch (strtolower(SWITCH_SCREEN)) {
 			case "html":
@@ -55,7 +56,6 @@ if(!function_exists('WiFiDBexception_handler')) {
 }
 set_exception_handler('WiFiDBexception_handler');
 
-
 if(strtolower(SWITCH_SCREEN) == "cli")
 {
 	if(!file_exists($config['wifidb_tools'].'daemon.config.inc.php'))
@@ -71,7 +71,6 @@ $options = array(
 );
 
 $conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-
 $sql = "SELECT `version` FROM `settings` LIMIT 1";
 $res = $conn->query($sql);
 $fetch = $res->fetch(2);
