@@ -23,11 +23,11 @@ if not, write to the
 										<td align="left">
 											<div id='map' style='float:left; width: 100%; height:75vh;'></div>
 											<div id='basemap'>
-												<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
+												<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM'>
 												<label for='WDB_OSM'>Open Street Map</label>
 												<input id='WDB_ESRI' type='radio' name='rtoggle' value='WDB_ESRI'>
 												<label for='WDB_ESRI'>ESRI World Imagery</label>
-												<input id='WDB_ESRIOSM' type='radio' name='rtoggle' value='WDB_ESRIOSM'>
+												<input id='WDB_ESRIOSM' type='radio' name='rtoggle' value='WDB_ESRIOSM' checked='checked'>
 												<label for='WDB_ESRIOSM'>World Imagery + Open Street Map</label>
 											</div>
 											<div>
