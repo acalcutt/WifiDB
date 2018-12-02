@@ -24,7 +24,7 @@ define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'Version Page');
-$dbcore->smarty->smarty->display('header.tpl');
+$dbcore->smarty->display('header.tpl');
 ?>
 <font face="Courier New">
 		<div align="left">
@@ -667,7 +667,7 @@ $dbcore->smarty->smarty->display('header.tpl');
 <br>
 <?php
 
-$dbcore->smarty->smarty->display('footer.tpl');
+$dbcore->smarty->display('footer.tpl');
 #############
 #   _____   #
 #  |_____|  #

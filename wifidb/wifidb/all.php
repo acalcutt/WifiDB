@@ -120,5 +120,5 @@ while ( $array = $pre_page_list->fetch(2) )
 $dbcore->GeneratePages($total_rows, $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord']);
 $dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 $dbcore->smarty->assign('wifidb_aps_all', $wifidb_aps_all);
-$dbcore->smarty->smarty->display('all_aps.tpl');
+$dbcore->smarty->display('all_aps.tpl');
 ?>

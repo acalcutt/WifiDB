@@ -133,6 +133,6 @@ $dbcore->smarty->assign('new_import_date', $lastdate);
 $dbcore->smarty->assign('new_import_title', $lasttitle);
 $dbcore->smarty->assign('new_import_id', $lastid);
 
-$dbcore->smarty->smarty->display('index.tpl');
+$dbcore->smarty->display('index.tpl');
 
 ?>

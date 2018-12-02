@@ -1,5 +1,7 @@
 <?php
 require(dirname(__FILE__).'/config.inc.php');
+require(dirname(__FILE__).'/../smarty/libs/Autoloader.php');
+Smarty_Autoloader::register();
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
 Copyright (C) 2016 Phil Ferland
@@ -33,15 +35,15 @@ if(!function_exists('WiFiDBexception_handler')) {
 		$trace = array('Error' => strval($err->getCode()), 'Message' => str_replace("\n", "</br>\r\n", $err->getMessage()), 'Code' => strval($err->getCode()), 'File' => $err->getFile(), 'Line' => strval($err->getLine()));
 		switch (strtolower(SWITCH_SCREEN)) {
 			case "html":
-				define('WWW_DIR', $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/");
-				define('SMARTY_DIR', $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/smarty/");
+				//var_dump($err);
+				$WWW_DIR = $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/";
 				$smarty = new Smarty();
-				$smarty->setTemplateDir(WWW_DIR . 'themes/'.$config['default_theme'].'/templates/');
-				$smarty->setCompileDir(WWW_DIR . 'smarty/templates_c/'.$config['default_theme'].'/');
-				$smarty->setCacheDir(WWW_DIR . 'smarty/cache/'.$config['default_theme'].'/');
-				$smarty->setConfigDir(WWW_DIR . '/smarty/configs/'.$config['default_theme'].'/');
-				$smarty->smarty->assign('wifidb_error_mesg', $trace);
-				$smarty->display("error.tpl");
+				$smarty->template_dir = $WWW_DIR.'themes/'.$config['default_theme'].'/templates/';
+				$smarty->compile_dir  = $WWW_DIR.'smarty/templates_c/'.$config['default_theme'].'/';
+				$smarty->config_dir   = $WWW_DIR.'smarty/configs/'.$config['default_theme'].'/';
+				$smarty->cache_dir    = $WWW_DIR.'smarty/cache/'.$config['default_theme'].'/';
+				$smarty->assign('wifidb_error_mesg', $trace);
+				$smarty->display("error.tpl");			
 				break;
 
 			case "cli":
@@ -116,14 +118,6 @@ function autoload_function($class) {
 	}elseif(file_exists($GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php'))
 	{
 		include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
-		return 1;
-	}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php'))
-	{
-		include_once $GLOBALS['config']['wifidb_install'].'smarty/'.$class.'.class.php';
-		return 1;
-	}elseif(file_exists($GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php'))
-	{
-		include_once $GLOBALS['config']['wifidb_install'].'smarty/sysplugins/'.strtolower($class).'.php';
 		return 1;
 	}else
 	{
