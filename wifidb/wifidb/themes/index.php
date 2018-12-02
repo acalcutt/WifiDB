@@ -32,8 +32,8 @@ if($func == 'change')
     $theme_post = @filter_input(INPUT_POST, 'theme', FILTER_SANITIZE_STRING);
     $cookie_path = (@$dbcore->root != '' ? '/'.$dbcore->root : '/');
     setcookie('wifidb_theme', $theme_post, (time()+(86400 * 7)), $cookie_path, $dbcore->sec->domain, $dbcore->sec->ssl);// 86400 = 1 day * 7 (for one week)
-    echo "'wifidb_theme' , $theme_post , (time()+(86400 * 7)), $cookie_path\r\n";
-    #header('Location: ?');
+    //echo "'wifidb_theme' , $theme_post , (time()+(86400 * 7)), $cookie_path\r\n";
+    header('Location: ?');
 }
 $themes_array = array();
 $dh = opendir(".") or die("couldn't open directory");
