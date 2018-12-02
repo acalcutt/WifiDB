@@ -91,64 +91,14 @@ switch($func)
 		
 		break;
 		
-	case "exp_user_list":
+	case "exp_user_all":
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-		$Import_Map_Data="";
-		for ($i = 0; TRUE; $i++) {
-			error_log("Processing pass $i");
-			$row_count = 10000;	
-			$offset = $i*$row_count ;
-
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-				. "whFA.Hist_Date As FA,\n"
-				. "whLA.Hist_Date As LA,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
-				. "wf.user As user\n"
-				. "FROM `wifi_ap` AS wap\n"
-				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' And `wf`.`user` LIKE ? LIMIT $offset,$row_count";
-			$prep = $dbcore->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user, PDO::PARAM_STR);
-			$prep->execute();
-			$appointer = $prep->fetchAll();
-			foreach($appointer as $ap)
-			{
-				#Get AP GeoJSON
-				$ap_info = array(
-				"id" => $ap['AP_ID'],
-				"new_ap" => $new_icons,
-				"named" => $named,
-				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
-				"chan" => $ap['CHAN'],
-				"radio" => $ap['RADTYPE'],
-				"NT" => $ap['NETTYPE'],
-				"sectype" => $ap['SECTYPE'],
-				"auth" => $ap['AUTH'],
-				"encry" => $ap['ENCR'],
-				"BTx" => $ap['BTX'],
-				"OTx" => $ap['OTX'],
-				"FA" => $ap['FA'],
-				"LA" => $ap['LA'],
-				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
-				"alt" => $ap['Alt'],
-				"manuf"=>$dbcore->findManuf($ap['BSSID']),
-				"username" => $ap['user']
-				);
-				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
-			}
-			
-			$number_of_rows = $prep->rowCount();
-			if ($number_of_rows !== $row_count) {break;}
-		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+		
+		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserGeoJSON['latlongarray']);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($UserGeoJSON['data'], $labeled);
+		$file_name = $title.".geojson";
 		break;
 		
 	case "exp_date":
