@@ -23,13 +23,13 @@ if not, write to the
 <table border="1" width="100%" cellspacing="0">
     <tbody>
         <tr>
-            <td align="center" colspan="7">
+            <td align="center" colspan="9">
                 <a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?{$save_url}">Save for later</a><br>
-                <a class="links" href="{$wifidb_host_url}opt/results.php?func=export{$export_url}">Export to KML</a>
+                <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_search{$export_url}">Export to KMZ</a>
             </td>
         </tr>
         <tr class="style4">
-            <td>ID
+            <td>GPS
             </td>
             <td>SSID
                 <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=SSID&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/down.png"></a>
@@ -52,22 +52,34 @@ if not, write to the
                 <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=auth&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/up.png"></a>
             </td>
             <td>Encryption
-                <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=encry&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/down.png"></a>-
+                <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=encry&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/down.png"></a>
                 <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=encry&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/up.png"></a>
+            </td>
+            <td>First Active
+                <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=FA&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/down.png"></a>
+                <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=FA&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/up.png"></a>
+            </td>
+            <td>Last Active
+                <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=LA&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/down.png"></a>
+                <a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=LA&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$wifidb_host_url}themes/vistumbler/img/up.png"></a>
             </td>
         </tr>
         {foreach item=result from=$results_all}
         <tr class="{$result.class}">
-            <td>{$result.id}</td>
-            <td><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$result.id}">{$result.ssid}</a></td>
+			<td>{$result.globe_html}</td>
+            <td><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$result.id}" title="View AP Details">{$result.ssid}</a></td>
             <td>{$result.mac}</td>
             <td>{$result.chan}</td>
             <td>{$result.radio}</td>
             <td>{$result.auth}</td>
             <td>{$result.encry}</td>
+			<td>{$result.FA}</td>
+			<td>{$result.LA}</td>
         </tr>
         {foreachelse}
-        <tr><td><h2>{$mesg}</h2></td></tr>
+        <tr align="center">
+			<td border="1" colspan="9">{$mesg}</td>
+		</tr>
         {/foreach}
     </tbody>
 </table>

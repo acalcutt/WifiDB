@@ -21,14 +21,14 @@ if not, write to the
                                         <table width="90%" border="1" align="center">
                                             <tbody>
                                                 <tr class="style4">
-                                                    <th colspan="4">Stats for : {$wifidb_user_details.username}</th>
+                                                    <th colspan="4">Stats for : {$wifidb_user_details.user}</th>
                                                 </tr>
                                                 <tr class="sub_head">
                                                     <th>ID</th><th>Total APs</th><th>First Import</th><th>Last Import</th>
                                                 </tr>
                                                 <tr class="dark">
                                                     <td>{$wifidb_user_details.user_id}</td>
-                                                    <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.username}">{$wifidb_user_details.total_aps}</a></td>
+                                                    <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.user}">{$wifidb_user_details.total_aps}</a></td>
                                                     <td>{$wifidb_user_details.first_import_date}</td>
                                                     <td>{$wifidb_user_details.newest_date}</td>
                                                 </tr>
@@ -38,43 +38,23 @@ if not, write to the
                                         <table width="90%" border="1" align="center">
                                             <tbody>
                                                 <tr class="style4">
-                                                    <th colspan="4">Last Import Details</th>
-                                                </tr>
-                                                <tr class="sub_head">
-                                                    <th>ID</th><th colspan="3">Title</th>
-                                                </tr>
-                                                <tr class="dark">
-                                                    <td align="center">{$wifidb_user_details.newest_id}</td>
-                                                    <td colspan="4" align="center">
-                                                        <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_details.newest_id}">{$wifidb_user_details.newest_title}</a></td>
-                                                </tr>
-                                                <tr class="sub_head">
-                                                    <th colspan="2">Date</th><th>Total APs</th><th>Total GPS</th>
-                                                </tr>
-                                                <tr class="dark">
-                                                    <td colspan="2" align="center">{$wifidb_user_details.newest_date}</td>
-                                                    <td align="center">{$wifidb_user_details.newest_aps}</td>
-                                                    <td align="center">{$wifidb_user_details.newest_gps}</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
-                                        <br>
-                                        <table width="90%" border="1" align="center">
-                                            <tbody>
-                                                <tr class="style4">
-                                                    <th colspan="4">All Previous Imports</th>
+                                                    <th colspan="6">Imported Files</th>
                                                 </tr>
                                                 <tr class="sub_head">
                                                     <th>ID</th>
+													<th>GPS</th>
                                                     <th>Title</th>
                                                     <th>Total APs</th>
+                                                    <th>Efficiency</th>
                                                     <th>Date</th>
                                                 </tr>
                                                 {foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
-                                                <tr class="light">
+                                                <tr class="{$wifidb_user_prev.class}">
                                                     <td>{$wifidb_user_prev.id}</td>
-                                                    <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.username}">{$wifidb_user_prev.title}</a></td>
+													<td>{$wifidb_user_prev.globe_html}</td>
+                                                    <td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.title}</a></td>
                                                     <td>{$wifidb_user_prev.aps}</td>
+                                                    <td>{$wifidb_user_prev.efficiency}%</td>
                                                     <td>{$wifidb_user_prev.date}</td>
                                                 </tr>
                                                 {/foreach}

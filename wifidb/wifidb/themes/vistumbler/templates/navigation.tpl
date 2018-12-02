@@ -12,35 +12,21 @@
                         <tr>
                             <td class="cell_side_left">&nbsp;</td>
                             <td class="cell_color">
-                                <div class="inside_dark_header">Navigation</div>
-                                <div class="inside_text_bold"><strong>
-                                    <a class="inside_text_bold" href="http://www.vistumbler.net/index.html">Home</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://forum.vistumbler.net">Forum</a></strong></div>
-                                <div class="inside_text_bold">
-                                    <a href="http://www.vistumbler.net/wifidb/">
-                                    WiFiDB</a><br />
-                                </div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://sourceforge.net/apps/mediawiki/vistumbler/">Wiki</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://vistumbler.svn.sourceforge.net/viewvc/vistumbler/">SVN</a> (<a href="https://sourceforge.net/scm/?type=svn&amp;group_id=235720">Info</a>)</strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="https://sourceforge.net/projects/vistumbler/">Sourceforge Page</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://www.vistumbler.net/downloads.html">Downloads</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://www.vistumbler.net/verhist.html">Version History</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://www.techidiots.net/project-pages">Other Projects</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="http://www.techidiots.net">
-                                    TechIdiots.net</a></strong><br />
-                                </div>
-                                <div class="inside_text_bold">
-                                    <a href="http://www.randomintervals.com/">
-                                    Random Intervals</a><br />
-                                </div>
+					<div class="inside_dark_header">Vistumbler Links</div>
+					<div class="inside_text_bold"><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></div>
+					<div class="inside_text_bold"><a href="https://forum.techidiots.net/forum/">Forum</a></div>
+					<div class="inside_text_bold"><a href="https://live.wifidb.net/wifidb/">WiFiDB</a></div>
+					<div class="inside_text_bold"><a href="https://github.com/acalcutt/Vistumbler/wiki">Wiki</a></div>
+					<div class="inside_text_bold"><a href="https://github.com/acalcutt/Vistumbler">Git Repository</a></div>								
+					<div class="inside_text_bold"><a href="http://www.vistumbler.net/downloads.html">Downloads</a></div>
+					<div class="inside_text_bold"><a href="http://www.vistumbler.net/verhist.html">Version History</a></div>
+					<div class="inside_text_bold"><a href="http://www.vistumbler.net/donate.htm">Donate</a></div>
+					<div class="inside_dark_header">Other Projects</div>
+					<div class="inside_text_bold"><a href="http://www.wifidb.net">WifiDB Home</a></div>
+					<div class="inside_text_bold"><a href="http://uns.techidiots.net/">UNS Home</a></div>
+					<div class="inside_text_bold"><a href="http://mysticache.techidiots.net">Mysticache Home</a></div>
+					<div class="inside_text_bold"><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></div>
+					<div class="inside_text_bold"><a href="http://www.techidiots.net/">TechIdiots.net</a></div>
                             </td>
                             <td class="cell_side_right">&nbsp;</td>
                         </tr>

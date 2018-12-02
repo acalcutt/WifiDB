@@ -25,7 +25,7 @@ if not, write to the
                                 <table border="1" align="center" width="100%">
                                     <tbody>
                                         <tr class="style4">
-                                            <th colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.username}">{$wifidb_all_user_aps.username}</a></th>
+                                            <th colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a></th>
                                         </tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Total Access Points...</b></td>
@@ -33,8 +33,12 @@ if not, write to the
                                         </tr>
                                         <tr class="sub_head">
                                             <td width="190px"><b>Export This list To...</b></td>
-                                            <td><a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_user_all_kml&amp;user={$wifidb_all_user_aps.username}">KML</a></td>
+                                            <td><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_user_netlink&amp;user={$wifidb_all_user_aps.user}">KMZ</a></td>
                                         </tr>
+										<tr class="sub_head">
+											<td width="190px"><b>Access Point Efficiency...</b></td>
+											<td>{$wifidb_all_user_aps.NewAPPercent}</td>
+										</tr>
                                     </tbody>
                                 </table>
                                 <br/>
@@ -55,7 +59,7 @@ if not, write to the
 {foreach name=outer item=wifidb_users_aps from=$wifidb_all_user_aps.allaps}
                                         <tr class="{$wifidb_users_aps.class}">
                                             <td align="center">{$wifidb_users_aps.id}</td>
-                                            <td align="center"><img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_users_aps.globe}.png"></td>
+                                            <td align="center">{$wifidb_users_aps.globe_html}</td>
                                             <td align="center"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid}</a></td>
                                             <td>{$wifidb_users_aps.mac}</td>
                                             <td align="center">{$wifidb_users_aps.auth}</td>

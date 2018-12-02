@@ -23,12 +23,12 @@ if not, write to the
                                             <table border="1" cellspacing="0" cellpadding="3" align="center">
                                                 <tbody>
                                                     <tr class="style4">
-                                                        <th colspan="2">Export a Users Import List to KML</th>
+                                                        <th colspan="2">Export a Users Import List to KMZ</th>
                                                     </tr>
                                                     <tr class="light">
                                                         <td>User Import List: </td>
                                                         <td>
-                                                            <select name="row">
+                                                            <select name="id">
 
                                                                 {foreach name=outer item=export_titles from=$wifidb_export_imports_all}
                                                                 <option value="{$export_titles.id}">User: {$export_titles.username} - Title: {$export_titles.title} - # APs: {$export_titles.aps} - # Date: {$export_titles.date}</option>

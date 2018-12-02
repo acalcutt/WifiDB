@@ -22,7 +22,10 @@ if not, write to the
                                         <table align="center">
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><img src="{$wifidb_host_url}themes/wifidb/img/logo.png"></p></td>
+                                                    <td colspan="2">
+                                                        <p align="center"><img src="{$wifidb_host_url}themes/{$wifidb_theme}/img/logo.png"></p>
+                                                        {$message}
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <td>Username</td>
@@ -33,10 +36,15 @@ if not, write to the
                                                     <td><input type="password" name="time_pass"></td>
                                                 </tr>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><input type="hidden" name="return" value="{$wifidb_host_url}index.php"><input type="submit" value="Login"></p></td>
+                                                    <td colspan="2"><p align="center"><input type="hidden" name="return" value="{$logon_return_url}"><input type="submit" value="Login"></p></td>
                                                 </tr>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br><a class="links" href="{$wifidb_host_url}login.php?func=reset_user_pass">Forgot your password?</a></p></td>
+                                                    <td colspan="2">
+                                                        <p align="center">
+                                                            <a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br>
+                                                            <a class="links" href="{$wifidb_host_url}login.php?func=reset_user_pass_request">Forgot your password?</a>
+                                                        </p>
+                                                    </td>
                                                 </tr>
                                             </tbody>
                                         </table>

@@ -20,39 +20,57 @@ if not, write to the
 {include file="header.tpl"}
 <br>
 <table border="1" width="90%">
-    <tr class="style4">
-        <th colspan="9" align="center">Files already imported</th>
-    </tr>
-    {foreach name=done_all item=wifidb_done from=$wifidb_done_all_array}
-    <tr class="sub_head">
-        <th>ID</th>
-        <th>Filename</th>
-        <th>Title</th>
-        <th>User</th>
-        <th>Size</th>
-    </tr>
-    <tr class="{$wifidb_done.class}">
-        <td align="center">{$wifidb_done.id}</td>
-        <td align="center"><a class="links" href="../opt/userstats.php?func=useraplist&row={$wifidb_done.user_row}">{$wifidb_done.file}</a></td>
-        <td align="center">{$wifidb_done.title}</td>
-        <td align="center"><a class="links" href ="../opt/userstats.php?func=alluserlists&user={$wifidb_done.user}">{$wifidb_done.user}</a></td>
-        <td align="center">{$wifidb_done.size}</td>
-    </tr>
-    <tr class="sub_head">
-        <th colspan="3">Hash</th>
-        <th>Date</th>
-        <th>APs/GPS Count</th>
-    </tr>
-    <tr class="{$wifidb_done.class}">
-        <td align="center" colspan="3">{$wifidb_done.hash}</td>
-        <td align="center">{$wifidb_done.date}</td>
-        <td align="center">{$wifidb_done.aps}/{$wifidb_done.gps}</td>
-    </tr>
-    <tr class="sub_head"><td></td></tr>
-    {foreachelse}
-    <tr class="sub_head">
-        <td>There are no Imports yet, go get some...</td>
-    </tr>
-    {/foreach}
+	<tr class="style4">
+		<th colspan="9" align="center">Files already imported</th>
+	</tr>
+	<tr>
+		<td>
+			{foreach name=done_all item=wifidb_done from=$wifidb_done_all_array}
+			<table border="1" style="width:100%;">
+				<tr class="sub_head">
+					<th>ID</th>
+					<th>Title</th>
+					<th>Filename</th>					
+					<th>Notes</th>
+					<th>Hash</th>
+				</tr>
+				<tr class="{$wifidb_done.class}">
+					<td align="center">{$wifidb_done.id}</td>
+					<td align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.title}</a></td>
+					<td align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file}</a></td>
+					<td align="center">{$wifidb_done.notes}</td>
+					<td align="center">{$wifidb_done.hash}</td>					
+				</tr>
+			</table>
+			<table border="1" style="width:100%;">
+				<tr class="sub_head">
+					<th>GPS</th>
+					<th>Date</th>
+					<th>Size</th>
+					<th>APs/GPS Count</th>
+					<th>Efficiency</th>
+					<th>User(s)</th>
+				</tr>
+				<tr class="{$wifidb_done.class}">
+					<td align="center">{$wifidb_done.globe_html}</td>
+					<td align="center">{$wifidb_done.date}</td>
+					<td align="center">{$wifidb_done.size}</td>
+					<td align="center">{$wifidb_done.aps} - {$wifidb_done.gps}</td>
+					<td align="center">{$wifidb_done.efficiency}%</td>
+					<td align="center">
+						{foreach name=users_all item=user from=$wifidb_done.user}
+						<a class="links" href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}">{$user}</a><br>
+						{/foreach}
+					</td>
+				</tr>
+			</table>
+			<br/>
+			{foreachelse}
+			<tr class="sub_head">
+				<td>There are no Imports yet, go get some...</td>
+			</tr>
+			{/foreach}
+		</td>
+	</tr>
 </table>
 {include file="footer.tpl"}
