@@ -323,7 +323,7 @@ class export extends dbcore
 				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`AP_ID` = ? And HighGps_ID IS NOT NULL";
+				. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
@@ -376,6 +376,7 @@ class export extends dbcore
 	{
 		$Import_Map_Data = "";
 		$latlon_array = array();
+		
 		$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
 			. "`whFA`.`Hist_Date` As `FA`,\n"
 			. "`whLA`.`Hist_Date` As `LA`,\n"
@@ -387,48 +388,61 @@ class export extends dbcore
 			. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.`LastHist_ID`\n"
 			. "LEFT JOIN `wifi_gps`As `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
 			. "LEFT JOIN `files` AS `wf` ON `wf`.`id` = `wap`.`File_ID`\n"
-			. "WHERE `wf`.`user` LIKE ? And `wf`.`completed` = 1 And `wap`.`BSSID` != '00:00:00:00:00:00' And `wap`.`HighGps_ID` IS NOT NULL ORDER BY `wap`.`AP_ID` DESC";
+			. "WHERE \n"
+			. "    `wap`.`HighGps_ID` IS NOT NULL And\n"
+			. "    `wap`.`BSSID` != '00:00:00:00:00:00' And\n"
+			. "    `wap`.`AP_ID` IN (\n"
+			. "        SELECT DISTINCT (`wifi_hist`.`AP_ID`)\n"
+			. "        FROM `wifi_hist`\n"
+			. "        WHERE \n"
+			. "            `wifi_hist`.`File_ID` IN (\n"
+			. "                SELECT DISTINCT (`files`.`id`)\n"
+			. "                FROM `files`\n"
+ 			. "                WHERE `files`.`user` LIKE ? And `files`.`completed` = 1 And `files`.`ValidGPS` = 1\n"
+ 			. "            )\n"
+ 			. "    )";
+
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
 		$prep->execute();
 		$appointer = $prep->fetchAll();
-		foreach($appointer as $ap)
+		foreach($appointer as $apinfo)
 		{
 			#Get AP GeoJSON
 			$ap_info = array(
-			"id" => $ap['AP_ID'],
+			"id" => $apinfo['AP_ID'],
 			"new_ap" => $new_icons,
 			"named" => $named,
-			"mac" => $ap['BSSID'],
-			"ssid" => $ap['SSID'],
-			"chan" => $ap['CHAN'],
-			"radio" => $ap['RADTYPE'],
-			"NT" => $ap['NETTYPE'],
-			"sectype" => $ap['SECTYPE'],
-			"auth" => $ap['AUTH'],
-			"encry" => $ap['ENCR'],
-			"BTx" => $ap['BTX'],
-			"OTx" => $ap['OTX'],
-			"FA" => $ap['FA'],
-			"LA" => $ap['LA'],
-			"lat" => $this->convert->dm2dd($ap['Lat']),
-			"lon" => $this->convert->dm2dd($ap['Lon']),
-			"alt" => $ap['Alt'],
-			"manuf"=>$this->findManuf($ap['BSSID']),
-			"user" => $ap['user']
+			"mac" => $apinfo['BSSID'],
+			"ssid" => $apinfo['SSID'],
+			"chan" => $apinfo['CHAN'],
+			"radio" => $apinfo['RADTYPE'],
+			"NT" => $apinfo['NETTYPE'],
+			"sectype" => $apinfo['SECTYPE'],
+			"auth" => $apinfo['AUTH'],
+			"encry" => $apinfo['ENCR'],
+			"BTx" => $apinfo['BTX'],
+			"OTx" => $apinfo['OTX'],
+			"FA" => $apinfo['FA'],
+			"LA" => $apinfo['LA'],
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"lon" => $this->convert->dm2dd($apinfo['Lon']),
+			"alt" => $apinfo['Alt'],
+			"manuf"=>$this->findManuf($apinfo['BSSID']),
+			"user" => $apinfo['user']
 			);
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 			$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
 			
 			$latlon_info = array(
-			"lat" => $this->convert->dm2dd($ap['Lat']),
-			"long" => $this->convert->dm2dd($ap['Lon']),
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"long" => $this->convert->dm2dd($apinfo['Lon']),
 			);
 			$latlon_array[] = $latlon_info;
 		}
 		$ret_data = array(
-		"data" => $Import_Map_Data,
-		"latlongarray" => $latlon_array,
+			"data" => $Import_Map_Data,
+			"latlongarray" => $latlon_array,
 		);
 		
 		return $ret_data;
@@ -457,7 +471,7 @@ class export extends dbcore
 				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`AP_ID` = ? And HighGps_ID IS NOT NULL";
+				. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
