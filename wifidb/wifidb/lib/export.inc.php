@@ -221,7 +221,7 @@ class export extends dbcore
 			"lon" => $this->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
 			"manuf"=>$this->findManuf($ap['BSSID']),
-			"username" => $ap['user']
+			"user" => $ap['user']
 			);
 
 			$KML_data = $this->createKML->CreateApPlacemark($ap_info);
@@ -415,7 +415,7 @@ class export extends dbcore
 			"lon" => $this->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
 			"manuf"=>$this->findManuf($ap['BSSID']),
-			"username" => $ap['user']
+			"user" => $ap['user']
 			);
 			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 			$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
