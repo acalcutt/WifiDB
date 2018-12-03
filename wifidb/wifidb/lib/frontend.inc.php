@@ -240,6 +240,7 @@ class frontend extends dbcore
 				
 				$sigarr[]= array(
 					'class'=>$class2,
+					'id'=>$signals['AP_ID'],
 					'Sig'=>$signals['Sig'],
 					'RSSI'=>$signals['RSSI'],
 					'Lat'=>$signals['Lat'],
@@ -263,7 +264,7 @@ class frontend extends dbcore
 			);
 
 		}
-		$ap_data['from'] = $signals[0]['AP_ID'];
+		$ap_data['from'] = $signals[0]['id'];
 		$ap_data['limit'] = $prep2->rowCount();
 		return array(
 			$newArray['SSID'],
@@ -338,88 +339,93 @@ class frontend extends dbcore
 	Public function AllUsers()
 	{
 		$this->all_users_data = array();
-		$tablerowid = 0;
-		$row_color = 0;
-		$prev_id = 0;		
+		$flip = 0;
+		$rowid = 0;
 		
 		$sql = "SELECT DISTINCT(`user`) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
 		$result = $this->sql->conn->query($sql);
 		$result->execute();
-		while($user = $result->fetch(2))
-		{
-
-			$sql = "SELECT `id`, `user`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title` FROM `files` WHERE completed = 1 AND `user`= ? ORDER BY `date` DESC";
+		while($userfetch = $result->fetch(2))
+		{			
+			$user = $userfetch['user'];
+			
+			$sql = "SELECT COUNT(`id`) AS `ApCount` FROM `files` WHERE `user` = ? And `ValidGPS` = 1";
+			$globeprep = $this->sql->conn->prepare($sql);
+			$globeprep->bindParam(1, $user, PDO::PARAM_STR);
+			$globeprep->execute();
+			$globeprepfetch = $globeprep->fetch(2);
+			if($globeprepfetch['ApCount'] !== "0")
+			{
+				$user_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_all&labeled=0&user=".$user."\" title=\"Show User APs on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";				
+				$user_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_user_all&user=".$user."\" title=\"Export User APs to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";							
+				$user_globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_user_netlink&user=".$user."\" title=\"Export User APs to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
+			}
+			else
+			{
+				$user_globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
+				$user_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
+				$user_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
+			}
+	
+			$all_users_files = array();
+			$flip2 = 0;
+			$sql = "SELECT `id`, `user`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title`, `ValidGPS` FROM `files` WHERE completed = 1 AND `user`= ? ORDER BY `date` DESC";
 			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user['user'] , PDO::PARAM_STR);
+			$prep->bindParam(1, $user , PDO::PARAM_STR);
 			$prep->execute();
-
 			$imports = (int) $prep->rowCount();
-			if($imports === 0){continue;}
-
-			$row_color2 = 1;
-			$pre_user = 1;
-			$tablerowid++;
 			while ($user_array = $prep->fetch(2))
 			{
+				if($user_array['ValidGPS'] == 1)
+				{
+					$list_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$user_array['id']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";				
+					$list_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$user_array['id']."\" title=\"Export List to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";							
+					$list_globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$user_array['id']."\" title=\"Export List to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
+				}
+				else
+				{
+					$list_globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
+					$list_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";	
+					$list_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
+				}
+				
+				if($flip2)
+					{$class2 = "dark";$flip2=0;}
+				else
+					{$class2="light";$flip2=1;}
+				
+				$user_array['notes'] = str_replace(array('\n','\r','\n\r'), "", $user_array['notes']);
+				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
 				if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
 				if ($user_array['date'] === ""){ $user_array['date']="No date, hmm..";}
 
-				$search = array('\n','\r','\n\r');
-				$user_array['notes'] = str_replace($search, "", $user_array['notes']);
-
-				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
-				$notes = $user_array['notes'];
-
-				if($pre_user)
-				{
-					if($prev_id == $user_array['id'] )
-					{$prev_id = $user_array['id'];continue 2;}
-					else{$prev_id = $user_array['id'];}
-
-					if($row_color2 == 1)
-					{$row_color2 = 0; $color2 = "light";}
-					else{$row_color2 = 1; $color2 = "dark";}
-
-					if($row_color == 1)
-					{$row_color = 0; $color = "light";}
-					else{$row_color = 1; $color = "dark";}
-
-					$this->all_users_data[$user['user']] = array(
-								'rowid'	=> $tablerowid,
-								'class'	=> $color,
-								'id'	   => $user_array['id'],
-								'imports'  => $imports,
-								'username' => $user_array['user'],
-								'data'	 => array(
-													array(
-														'id'	=> $user_array['id'],
-														'class' => $color2,
-														'title' => $user_array['title'],
-														'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-														'aps'   => $user_array['aps'],
-														'NewAPPercent' => $user_array['NewAPPercent']."%",
-														'date'  => $user_array['date']
-													),
-												),
-							);
-					$pre_user = 0;
-				}else
-				{
-					if($row_color2 == 1)
-					{$row_color2 = 0; $color2 = "light";}
-					else{$row_color2 = 1; $color2 = "dark";}
-
-					$this->all_users_data[$user['user']]['data'][] = array(
-								'id'	=> $user_array['id'],
-								'class' => $color2,
-								'title' => $user_array['title'],
-								'notes' => wordwrap(str_replace("\r\n", "", $notes), 56, "<br />\n"),
-								'aps'   => $user_array['aps'],
-                                'NewAPPercent' => $user_array['NewAPPercent']."%",
-								'date'  => $user_array['date']
-							);
-				}
+				$all_users_files[]= array(
+					'class'=>$class2,
+					'id'=>$user_array['id'],
+					'globe'=>$list_globe_html,
+					'title' => $user_array['title'],
+					'notes' => $user_array['notes'],
+					'aps'   => $user_array['aps'],
+					'NewAPPercent' => $user_array['NewAPPercent']."%",
+					'date'  => $user_array['date']
+				);
 			}
+			
+			$rowid++;
+			
+			if($flip)
+				{$class = "dark";$flip=0;}
+			else
+				{$class="light";$flip=1;}
+			
+			$this->all_users_data[]= array(
+				'rowid'=>$rowid,
+				'class'=>$class,
+				'user'=>$user,
+				'globe'=>$user_globe_html,
+				'imports' => $imports,
+				'files' => $all_users_files,
+			);
 		}
 		return 1;
 	}
