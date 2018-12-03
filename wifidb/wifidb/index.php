@@ -95,7 +95,7 @@ $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $lastusername, PDO::PARAM_STR);
 $prep->execute();
 $appointer = $prep->fetch(2);
-if($appointer['ApCount'] !== 0)
+if($appointer['ApCount'] !== "0")
 {
 	$user_globe_html = "<a href=\"".$dbcore->URL_PATH."opt/map.php?func=user_all&labeled=0&user=".$lastusername."\" title=\"Show User APs on Map\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";				
 	$user_globe_html .= "<a href=\"".$dbcore->URL_PATH."api/geojson.php?json=1&func=exp_user_all&user=".$lastusername."\" title=\"Export User APs to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_on.png\"></a>";							
