@@ -164,14 +164,16 @@ class createGeoJSON
 		return $ret_data;
 	}
 	
-	public function CreateUserAllGeoJsonLayer($user, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	public function CreateUserAllGeoJsonLayer($user, $labeled=0, $from = NULL, $limit = NULL, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
+		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user;
+		if($from !== NULL And $limit !== NULL){$layer_url .=  "&from=".$from."&limit=".$limit;}
 		$layer_sname = "list-".$user;
 		$layer_lname = "listl-".$user;
 		$layer_source = "
 													map.addSource('".$layer_sname."', {
 														type: 'geojson',
-														data: '".$this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user."',
+														data: '".$layer_url."',
 														buffer: 0,
 													});
 

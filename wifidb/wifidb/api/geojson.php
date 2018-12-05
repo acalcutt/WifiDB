@@ -94,8 +94,13 @@ switch($func)
 	case "exp_user_all":
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+		if ($from == ""){$from = NULL;}
+		if ($limit == ""){$limit = NULL;}
 		
-		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user);
+		
+		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user, $from, $limit);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserGeoJSON['latlongarray']);
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($UserGeoJSON['data'], $labeled);
 		$file_name = $title.".geojson";

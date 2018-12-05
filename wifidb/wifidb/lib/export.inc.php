@@ -372,10 +372,11 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function UserAllGeoJSON($user)
+	public function UserAllGeoJSON($user, $from = NULL, $inc = NULL)
 	{
 		$Import_Map_Data = "";
 		$latlon_array = array();
+		$apcount = 0;
 		
 		$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
 			. "`whFA`.`Hist_Date` As `FA`,\n"
@@ -398,13 +399,28 @@ class export extends dbcore
 			. "            `wifi_hist`.`File_ID` IN (\n"
 			. "                SELECT DISTINCT (`files`.`id`)\n"
 			. "                FROM `files`\n"
- 			. "                WHERE `files`.`user` LIKE ? And `files`.`completed` = 1 And `files`.`ValidGPS` = 1\n"
- 			. "            )\n"
- 			. "    )";
+			. "                WHERE `files`.`user` LIKE ? And `files`.`completed` = 1 And `files`.`ValidGPS` = 1\n"
+			. "            )\n"
+			. "    )\n"
+			. "ORDER BY `wap`.`ModDate` DESC";
+#			. "        FROM `wifi_hist`\n"
+#			. "        INNER JOIN `wifi_ap` ON `wifi_ap`.`AP_ID` = `wifi_hist`.`AP_ID`\n"
+#			. "        INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
+#			. "        WHERE \n"
+#			. "        	`wifi_ap`.`HighGps_ID` IS NOT NULL And\n"
+#			. "        	`wifi_ap`.`BSSID` != '00:00:00:00:00:00' And\n"
+#			. "        	`files`.`completed` = 1 And\n"
+#			. "        	`files`.`ValidGPS` = 1 And\n"
+#			. "        	`files`.`user` LIKE ?
+#			. "    )\n"
+#			. "ORDER BY `wap`.`ModDate` DESC";
 
+		if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+		
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
 		$prep->execute();
+		$apcount = $prep->rowCount();
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $apinfo)
 		{
@@ -441,6 +457,7 @@ class export extends dbcore
 			$latlon_array[] = $latlon_info;
 		}
 		$ret_data = array(
+			"count" => $apcount,
 			"data" => $Import_Map_Data,
 			"latlongarray" => $latlon_array,
 		);

@@ -70,14 +70,40 @@ switch($func)
 		$dbcore->smarty->display('map_wifidb.tpl');
 		break;
 	case "user_all":
-		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));	
+		$clat	=   filter_input(INPUT_GET, 'clat', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+		$clon   =	filter_input(INPUT_GET, 'clon', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user);
-		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserGeoJSON['latlongarray']);		
+		if ($from == ""){$from = 0;}
+		
+		if($limit == "" || $clat == "")
+		{
+			if ($limit == ""){$limit = 250000;}
+			$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user);
+			$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserGeoJSON['latlongarray']);	
+			$ApCount = $UserGeoJSON['count'];
+			$clat = $Center_LatLon['lat'];
+			$clon = $Center_LatLon['long'];
+			if($ApCount > $limit)
+			{
+				$ldivs = ceil($ApCount / $limit);
+				$dbcore->smarty->assign('labeled', $labeled);
+				$dbcore->smarty->assign('user', $user);
+				$dbcore->smarty->assign('limit', $limit);
+				$dbcore->smarty->assign('count', $ApCount);
+				$dbcore->smarty->assign('ldivs', $ldivs);
+				$dbcore->smarty->assign('clat', $clat);
+				$dbcore->smarty->assign('clon', $clon);
+				$dbcore->smarty->display('map_segments.tpl');
+				break;
+			}
+		}		
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_ESRIOSM/style.json";
-		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
+		$centerpoint =  "[".$clon.",".$clat."]";
 		$zoom = 9;
 		
 		$layer_source_all = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
@@ -102,7 +128,7 @@ switch($func)
 		if ($labeled) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['layer_name'],"","label","{ssid}","Open Sans Regular",11,"none");}		
 		if ($channels) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['layer_name'],"","label","{chan}","Open Sans Regular",11,"none");;}
 		
-		$ml = $dbcore->createGeoJSON->CreateUserAllGeoJsonLayer($user, $labeled);
+		$ml = $dbcore->createGeoJSON->CreateUserAllGeoJsonLayer($user, $labeled, $from, $limit);
 		$layer_source_all .= $ml['layer_source'];
 		$layer_name = "'".$ml['layer_name']."','".$dl['layer_name']."','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
 
@@ -117,6 +143,7 @@ switch($func)
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
+
 		break;
 	case "user_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
