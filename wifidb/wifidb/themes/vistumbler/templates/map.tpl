@@ -111,18 +111,17 @@ if not, write to the
 											{
 												var address = document.getElementById('searchadrbox').value;
 												var address = address.replace(/ /g, "+");
-												var url = 'https://maps.google.com/maps/api/geocode/json?sensor=false&address=' + address
+												var url = 'https://geocoder.api.here.com/6.2/geocode.json?app_id=PosJ3G7XOlfZLXeYgxeZ&app_code=4yaMcu0yxndGUH6X1_vHAw&searchtext=' + address
+												console.log('url: ', url);
 												fetch(url)
 													.then(res => res.json())
 													.then((data) => {
 														console.log('Output: ', data);
-														for(var i=0;i<data.results.length;i++) {
-															var lat = data.results[i].geometry.location.lat;
-															var lng = data.results[i].geometry.location.lng;
-															var lnglat = [lng.toFixed(6),lat.toFixed(6)];
-															map.setCenter(lnglat);
-															console.log('lnglat: ', lnglat);
-														}
+														var lat = data.Response.View[0].Result[0].Location.DisplayPosition.Latitude;
+														var lng = data.Response.View[0].Result[0].Location.DisplayPosition.Longitude;
+														var lnglat = [lng.toFixed(6),lat.toFixed(6)];
+														map.setCenter(lnglat);
+														console.log('lnglat: ', lnglat);
 														
 												}).catch(err => console.error(err));
 											}
