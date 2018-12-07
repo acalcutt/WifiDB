@@ -89,7 +89,7 @@ class daemon extends wdbcli
 			}
 		}
 
-		$sql = "INSERT INTO `files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,? FROM `files_importing` WHERE `id` = ?";
+		$sql = "INSERT INTO `files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,? FROM `files_importing` WHERE `id` = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
@@ -151,7 +151,7 @@ class daemon extends wdbcli
 	{
 		$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
 
-		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`) SELECT `file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
+		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`, `type`) SELECT `file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id`, `type` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
 		$result = $this->sql->conn->prepare($daemon_sql);
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
@@ -229,80 +229,23 @@ class daemon extends wdbcli
 	function ImportProcess($file_to_Import = array())
 	{
 		$importing_id = $file_to_Import['id'];
-
-		$source = $this->PATH.'import/up/'.$file_to_Import['file'];
-
-		#echo $file_to_Import['file']."\r\n";
-		$file_src = explode(".",$file_to_Import['file']);
-		$file_type = strtolower($file_src[1]);
 		$file_name = $file_to_Import['file'];
 		$file_hash = $file_to_Import['hash'];
 		$file_size = $file_to_Import['size'];
 		$file_date = $file_to_Import['date'];
-		#Lets check and see if it is has a valid VS1 file header.
-		if(in_array($file_type, $this->convert_extentions))
-		{
-			$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-			$update_tmp = "UPDATE `files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
-			$prep = $this->sql->conn->prepare($update_tmp);
-			$prep->bindParam(1, $file_type, PDO::PARAM_STR);
-			$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
-			$prep->execute();
-			$err = $this->sql->conn->errorCode();
-			if($err[0] != "00000")
-			{
-				$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-				//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-				throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
-			}
-			$ret_file_name = $this->convert->main($source);
-			if($ret_file_name === -1)
-			{
-				$this->verbosed("Error Converting File. $source, Skipping to next file.");
-				if( !$this->daemonize )
-				{
-					$this->return_message = "ErrorConvertingFile:$source";
-					return -1;
-				}else
-				{
-					return 0;
-				}
+		$file_type = $file_to_Import['type'];
+		$file_user = $file_to_Import['user'];
+		$file_otherusers = $file_to_Import['otherusers'];
+		$file_notes = $file_to_Import['notes'];
+		$file_title = $file_to_Import['title'];	
+		$file_ext = pathinfo($file_name, PATHINFO_EXTENSION);		
 
-			}
-
-			$parts = pathinfo($ret_file_name);
-			$dest_name = $parts['basename'];
-			$file_hash1 = hash_file('md5', $ret_file_name);
-			$file_size1 = (filesize($ret_file_name)/1024);
-
-			$update = "UPDATE `files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
-			$prep = $this->sql->conn->prepare($update);
-			$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
-			$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
-			$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-			$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
-			$prep->execute();
-			$err = $this->sql->conn->errorCode();
-			if($err[0] == "00000")
-			{
-				$this->verbosed("Conversion completed.", 1);
-				//$this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $this->This_is_me);
-				$source = $ret_file_name;
-				$file_name = $dest_name;
-				$file_hash = $file_hash1;
-				$file_size = $file_size1;
-			}else
-			{
-				$this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-				//$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-				throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1));
-			}
-		}
+		$source = $this->PATH.'import/up/'.$file_name;
 		$return	=	file($source);
 		$count	=	count($return);
-		if(!($count <= 8) && preg_match("/Vistumbler VS1/", $return[0]))//make sure there is at least a 'valid' file in the field
+		if(!($count <= 8))//make sure there is at least a 'valid' file in the field
 		{
-			$this->verbosed("Hey look! a valid file waiting to be imported, lets import it.", 1);
+			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
 			$update_tmp = "UPDATE `files_importing` SET `ap` = 'Preparing for Import', `importing` = '1' WHERE `id` = ?";
 			$prep4 = $this->sql->conn->prepare($update_tmp);
 			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
@@ -316,61 +259,28 @@ class daemon extends wdbcli
 			}
 
 			//check to see if this file has already been imported into the DB
-			$sql_check = "SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1";
+			$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ? LIMIT 1";
 			$prep = $this->sql->conn->prepare($sql_check);
 			$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
 			$prep->execute();
-			if($this->sql->checkError(__LINE__, __FILE__))
+			$ids = $prep->fetch(1);
+			$hash_count = $ids[0];
+			if($hash_count == 0)
 			{
-				//$this->logd("Failed to select file hash from files table. :(","Error", $this->This_is_me);
-				$this->verbosed("Failed to select file hash from files table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
-				Throw new ErrorException("Failed to select file hash from files table. :(");
-			}
-
-			$fileqq = $prep->fetch(2);
-
-			if($file_hash !== @$fileqq['hash'])
-			{
-				$sql_select_tmp_file_ext = "SELECT `converted`, `prev_ext` FROM `files_importing` WHERE `hash` = ?";
-				$prep_ext = $this->sql->conn->prepare($sql_select_tmp_file_ext);
-				$prep_ext->bindParam(1, $file_hash, PDO::PARAM_STR);
-				$prep_ext->execute();
-				if($this->sql->checkError())
-				{
-					//$this->logd("Failed to select previous convert extension. :(","Error", $this->This_is_me);
-					$this->verbosed("Failed to select previous convert extension. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
-					Throw new ErrorException("Failed to select previous convert extension. :(");
-				}
-				$prev_ext = $prep_ext->fetch(2);
-				$user = $file_to_Import['user'];
-				$otherusers = $file_to_Import['otherusers'];
-				$notes = $file_to_Import['notes'];
-				$title = $file_to_Import['title'];
-                if( $prev_ext['prev_ext'] == "")
-                {
-                    $PrevExt = "";
-                }else
-                {
-                    $PrevExt =  $prev_ext['prev_ext'];
-                }
-				
 				$sql_insert_file = "INSERT INTO `files`
-				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `converted`, `prev_ext`, `node_name`)
-				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?, ?)";
+				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `node_name`)
+				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)";
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 				$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
 				$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
 				$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
-				$prep1->bindParam(5, $user, PDO::PARAM_STR);
-				$prep1->bindParam(6, $otherusers, PDO::PARAM_STR);
-				$prep1->bindParam(7, $notes, PDO::PARAM_STR);
-				$prep1->bindParam(8, $title, PDO::PARAM_STR);
-				$prep1->bindParam(9, $prev_ext['converted'], PDO::PARAM_INT);
-				$prep1->bindParam(10, $PrevExt, PDO::PARAM_STR);
-				$prep1->bindParam(11, $this->node_name, PDO::PARAM_STR);
+				$prep1->bindParam(5, $file_user, PDO::PARAM_STR);
+				$prep1->bindParam(6, $file_otherusers, PDO::PARAM_STR);
+				$prep1->bindParam(7, $file_notes, PDO::PARAM_STR);
+				$prep1->bindParam(8, $file_title, PDO::PARAM_STR);
+				$prep1->bindParam(9, $this->node_name, PDO::PARAM_STR);
 				$prep1->execute();
-
 				if($this->sql->checkError(__LINE__, __FILE__))
 				{
 					//$this->logd("Failed to Insert the results of the new Import into the files table. :(","Error", $this->This_is_me);
@@ -382,10 +292,87 @@ class daemon extends wdbcli
 					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
 				}
 
-				$import_ids = $this->GenerateUserImportIDs($user, $notes, $title, $file_hash, $file_row);
+				$import_ids = $this->GenerateUserImportIDs($file_user, $file_notes, $file_title, $file_hash, $file_row);
+				
+				if($file_type == "vistumbler" || $file_type == "")
+				{
+					if(in_array($file_ext, $this->convert_extentions))
+					{
+						$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
+						$update_tmp = "UPDATE `files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
+						$prep = $this->sql->conn->prepare($update_tmp);
+						$prep->bindParam(1, $file_ext, PDO::PARAM_STR);
+						$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
+						$prep->execute();
+						$err = $this->sql->conn->errorCode();
+						if($err[0] != "00000")
+						{
+							$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
+							//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+							throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
+						}
+						$ret_file_name = $this->convert->main($source);
+						if($ret_file_name === -1)
+						{
+							$this->verbosed("Error Converting File. $source, Skipping to next file.");
+							if( !$this->daemonize )
+							{
+								$this->return_message = "ErrorConvertingFile:$source";
+								return -1;
+							}else
+							{
+								return 0;
+							}
 
-				$tmp = $this->import->import_vs1( $source, $user, $file_row,  $importing_id);
+						}
 
+						$parts = pathinfo($ret_file_name);
+						$dest_name = $parts['basename'];
+						$file_hash1 = hash_file('md5', $ret_file_name);
+						$file_size1 = (filesize($ret_file_name)/1024);
+
+						$update = "UPDATE `files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+						$prep = $this->sql->conn->prepare($update);
+						$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
+						$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
+						$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
+						$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
+						$prep->execute();
+						
+						$update = "UPDATE `files` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+						$prep = $this->sql->conn->prepare($update);
+						$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
+						$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
+						$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
+						$prep->bindParam(4, $file_row, PDO::PARAM_INT);
+						$prep->execute();
+						$err = $this->sql->conn->errorCode();
+						if($err[0] == "00000")
+						{
+							$this->verbosed("Conversion completed.", 1);
+							//$this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $this->This_is_me);
+							$source = $ret_file_name;
+							$file_name = $dest_name;
+							$file_hash = $file_hash1;
+							$file_size = $file_size1;
+						}else
+						{
+							$this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
+							//$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+							throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1));
+						}
+					}
+					$tmp = $this->import->import_vs1($source, $file_user, $file_row,  $importing_id);
+				}
+				elseif ($file_type == "swardriving")
+				{
+					$tmp = $this->import->import_swardriving($source, $file_user, $file_row,  $importing_id);
+				}
+				else
+				{
+					$tmp = array(-1, "Unknown File Type");
+				}
+			
 				if(@$tmp[0] === -1)
 				{
 					trigger_error("Import Error! Reason: $tmp[1] |=| $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
@@ -446,7 +433,8 @@ class daemon extends wdbcli
 					}
 					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];
 				}
-			}else
+			}
+			else
 			{
 				trigger_error("File already imported. $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
 				//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($importing_id)","Warning", $this->This_is_me);
@@ -455,7 +443,8 @@ class daemon extends wdbcli
 				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($importing_id)");
 				$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);
 			}
-		}else
+		}
+		else
 		{
 			trigger_error("File is Empty or bad $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
 			//$this->logd("File is empty or not valid. $source ($importing_id)","Warning", $this->This_is_me);

@@ -256,7 +256,7 @@ class convert extends dbcore
 	 * @param string $Found_Capabilities
 	 * @return array
 	 */
-	private function findCapabilities($Found_Capabilities = "")
+	public function findCapabilities($Found_Capabilities = "")
 	{
 		If(stristr($Found_Capabilities, "WPA2-PSK-CCMP") Or stristr($Found_Capabilities, "WPA2-PSK-TKIP+CCMP"))
 		{	$Found_AUTH = "WPA2-Personal";
@@ -314,7 +314,7 @@ class convert extends dbcore
 	 * @param $frequency
 	 * @return array
 	 */
-	private function findFreq($frequency = 0)
+	public function findFreq($frequency = 0)
 	{
 		switch($frequency)
 		{

@@ -62,8 +62,277 @@ class import extends dbcore
 	{
 		return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $mac) == 1);
 	}
+	
+	private function UpdateHighPoints($ap_id)
+	{
+		#Find New First Seen Timestamp
+		$FA_id = "";
+		$FA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date ASC LIMIT 1";
+		$faprep = $this->sql->conn->prepare($FA_SQL);
+		$faprep->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$faprep->execute();
+		$fetchfaprep = $faprep->fetch(2);
+		$FA_id = $fetchfaprep['Hist_ID'];
 
+		#Find New Last Seen Timestamp
+		$LA_id = "";
+		$LA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date DESC LIMIT 1";
+		$laprep = $this->sql->conn->prepare($LA_SQL);
+		$laprep->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$laprep->execute();
+		$fetchlaprep = $laprep->fetch(2);
+		$LA_id = $fetchlaprep['Hist_ID'];
+		
+		#Find High Sig
+		$HighSig_id = "";
+		$Sig_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1";
+		$Sigprep = $this->sql->conn->prepare($Sig_SQL);
+		$Sigprep->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$Sigprep->execute();
+		$fetchSigprep = $Sigprep->fetch(2);
+		$HighSig_id = $fetchSigprep['Hist_ID'];
+		
+		#Find High RSSI
+		$HighRSSI_id = "";
+		$RSSI_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1";
+		$RSSIprep = $this->sql->conn->prepare($RSSI_SQL);
+		$RSSIprep->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$RSSIprep->execute();
+		$fetchRSSIprep = $RSSIprep->fetch(2);
+		$HighRSSI_id = $fetchRSSIprep['Hist_ID'];
 
+		#Find Highest GPS Position
+		$HighGps_id = "";
+		$sql = "SELECT `wifi_hist`.`GPS_ID`\n"
+			. "FROM `wifi_hist`\n"
+			. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_hist`.`AP_ID` = ? And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+			. "ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
+			. "LIMIT 1";
+		$resgps = $this->sql->conn->prepare($sql);
+		$resgps->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$resgps->execute();
+		$fetchgps = $resgps->fetch(2);
+		$HighGps_id = $fetchgps['GPS_ID'];
+
+		#Update AP IDs
+		$sql = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";
+
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $FA_id, PDO::PARAM_INT);
+		$prep->bindParam(2, $LA_id, PDO::PARAM_INT);
+		$prep->bindParam(3, $HighRSSI_id, PDO::PARAM_INT);
+		$prep->bindParam(4, $HighSig_id, PDO::PARAM_INT);
+		$prep->bindParam(5, $HighGps_id, PDO::PARAM_INT);
+		$prep->bindParam(6, $ap_id, PDO::PARAM_INT);
+		$prep->execute();
+		if($this->sql->checkError() !== 0)
+		{
+			$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+			//$this->logd("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			throw new ErrorException("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
+		}
+		$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
+		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
+	}
+	
+	
+	public function import_swardriving($source="" , $user="Unknown", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+		
+		if(@$user[-1] == "|")
+		{
+			$user = str_replace("|", "", $user);
+		}else
+		{
+			$user = explode("|", $user)[0];
+		}
+
+		# Open the file and dump its contents into an array. probably should re think this part...
+		$file_contents = @file_get_contents($source);
+		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
+		
+		if($file_contents === "")
+		{
+			return array(-1, "File was empty, or error opening file.");
+		}
+
+		$File_return	 = explode("\n", $file_contents);
+		$File_lcount = count($File_return);
+
+		# Now lets loop through the file and see what we have.
+		$this->verbosed("Compiling data from file to array:", 3);
+		$imported_aps = array();
+		$NewAPs = 0;
+		$ap_count = 0;
+		$gps_count = 0;
+		
+		foreach($File_return as $key => $file_line)
+		{	
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = 'Importing File Data' WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $calc, PDO::PARAM_STR);
+			$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError() !== 0)
+			{
+				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
+				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			}
+			$apinfo = str_getcsv ($file_line);
+			
+			$fBSSID = strtoupper($apinfo[0]);
+			if($fBSSID == "BSSID" || $fBSSID == "" ){continue;}
+			$fSSID = $apinfo[1];
+			$fAuthMode = $apinfo[2];
+			$fchannel = $apinfo[3];
+			$ffrequency = $apinfo[4];
+			$fDate1 = $apinfo[5];
+			$fDate2 = $apinfo[6];
+			$fLat = $this->convert->all2dm(number_format($apinfo[7],7));
+			$fLon = $this->convert->all2dm(number_format($apinfo[8],7));
+			$fAltitudeMeters = $apinfo[9];
+			$fDate = $fDate1.','.$fDate2;
+			$fSignal = 0;
+			$fRSSI = -99;
+			
+			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fAuthMode);
+			list($chan, $radio) = $this->convert->findFreq($ffrequency);
+			
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+
+			if (($timestamp = strtotime($fDate)) !== false) {
+				$GpsDate = date("Y-m-d H:i:s", $timestamp);
+
+				$sql = "INSERT INTO `wifi_gps` ( `File_ID`, `Lat`, `Lon`, `GPS_Date`)
+						VALUES (?, ?, ?, ?)";
+				
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1,$file_id, PDO::PARAM_INT);
+				$prep->bindParam(2,$fLat, PDO::PARAM_STR);
+				$prep->bindParam(3,$fLon, PDO::PARAM_STR);
+				$prep->bindParam(4,$GpsDate,PDO::PARAM_STR);
+				$prep->execute();
+				if($this->sql->checkError())
+				{
+					echo "Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1);
+					$this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
+					//$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
+					throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
+				}
+				$gps_id = $this->sql->conn->lastInsertId();
+				
+				if($gps_id == ""){continue;}
+				$gps_count++;
+				
+				$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
+				$res = $this->sql->conn->prepare($sql);
+				$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
+				$res->execute();
+				$this->sql->checkError();
+
+				$fetch = $res->fetch(2);
+				$new = 0;
+				$ap_id = "";
+				if($fetch['AP_ID'])
+				{
+					$ap_id	= $fetch['AP_ID'];
+					
+				}else
+				{
+					$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `FLAGS`, `ap_hash`, `File_ID`)
+							VALUES ( ?,?,?,?,?,?,?,?,?,?,? )";
+							
+					$prep = $this->sql->conn->prepare($sql);
+					#var_dump($aps);
+					$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);					
+					$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+					$prep->bindParam(3, $chan, PDO::PARAM_INT);
+					$prep->bindParam(4, $authen, PDO::PARAM_STR);		
+					$prep->bindParam(5, $encry, PDO::PARAM_STR);					
+					$prep->bindParam(6, $sectype, PDO::PARAM_INT);
+					$prep->bindParam(7, $radio, PDO::PARAM_STR);
+					$prep->bindParam(8, $nt, PDO::PARAM_STR);
+					$prep->bindParam(9, $fAuthMode, PDO::PARAM_STR);
+					$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(11, $file_id, PDO::PARAM_INT);
+					$prep->execute();
+					if($this->sql->checkError())
+					{
+						$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+						//$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
+						throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					}
+					$ap_id = $this->sql->conn->lastInsertId();
+					$imported_aps[] = $ap_id.":0";
+					$new = 1;
+					$NewAPs++;
+					$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
+					#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");					
+				}
+				
+				if($ap_id == ""){continue;}
+				$ap_count++;
+				
+				$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
+				$preps = $this->sql->conn->prepare($sql);
+				$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
+				$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
+				$preps->bindParam(3, $file_id, PDO::PARAM_INT);
+				$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
+				$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
+				$preps->bindParam(6, $new, PDO::PARAM_INT);
+				$preps->bindParam(7, $GpsDate, PDO::PARAM_STR);
+				$preps->execute();
+				
+				$hist_id = $this->sql->conn->lastInsertId();
+				if($hist_id == ""){continue;}
+				
+				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
+				$this->UpdateHighPoints($ap_id);
+					
+			}
+		}
+		
+		#Find if file had Valid GPS
+		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
+			. "FROM `wifi_hist`\n"
+			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+			. "LIMIT 1";
+		$prepvgps = $this->sql->conn->prepare($sql);
+		$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
+		$prepvgps->execute();
+		$prepvgps_fetch = $prepvgps->fetch(2);
+		if($prepvgps_fetch)
+		{
+			$ValidGPS = 1;
+			$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
+			$prepvgpsu = $this->sql->conn->prepare($sql);
+			$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
+			$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
+			$prepvgpsu->execute();
+		}
+		#Finish off Import and give credit to the user.
+		
+		$imported = implode("-", $imported_aps);
+		$date = date("Y-m-d H:i:s");
+		
+		$ret = array(
+				'imported'=> $imported,
+				'date'=>$date,
+				'aps'=>$ap_count,
+				'gps'=>$gps_count,
+				'newaps'=>$NewAPs
+			);
+		return $ret;
+	}
 ####################
 	/**
 	 * @param string $source
@@ -472,76 +741,9 @@ class import extends dbcore
 
 				#$r = $this->RotateSpinner($r);
 			}
-
-			#Find New First Seen Timestamp
-			$FA_id = "";
-			$FA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date ASC LIMIT 1";
-			$faprep = $this->sql->conn->prepare($FA_SQL);
-			$faprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-			$faprep->execute();
-			$fetchfaprep = $faprep->fetch(2);
-			$FA_id = $fetchfaprep['Hist_ID'];
-
-			#Find New Last Seen Timestamp
-			$LA_id = "";
-			$LA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date DESC LIMIT 1";
-			$laprep = $this->sql->conn->prepare($LA_SQL);
-			$laprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-			$laprep->execute();
-			$fetchlaprep = $laprep->fetch(2);
-			$LA_id = $fetchlaprep['Hist_ID'];
 			
-			#Find High Sig
-			$HighSig_id = "";
-			$Sig_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1";
-			$Sigprep = $this->sql->conn->prepare($Sig_SQL);
-			$Sigprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-			$Sigprep->execute();
-			$fetchSigprep = $Sigprep->fetch(2);
-			$HighSig_id = $fetchSigprep['Hist_ID'];
-			
-			#Find High RSSI
-			$HighRSSI_id = "";
-			$RSSI_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1";
-			$RSSIprep = $this->sql->conn->prepare($RSSI_SQL);
-			$RSSIprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-			$RSSIprep->execute();
-			$fetchRSSIprep = $RSSIprep->fetch(2);
-			$HighRSSI_id = $fetchRSSIprep['Hist_ID'];
-
-			#Find Highest GPS Position
-			$HighGps_id = "";
-			$sql = "SELECT `wifi_hist`.`GPS_ID`\n"
-				. "FROM `wifi_hist`\n"
-				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-				. "WHERE `wifi_hist`.`AP_ID` = ? And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-				. "ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
-				. "LIMIT 1";
-			$resgps = $this->sql->conn->prepare($sql);
-			$resgps->bindParam(1, $ap_id, PDO::PARAM_INT);
-			$resgps->execute();
-			$fetchgps = $resgps->fetch(2);
-			$HighGps_id = $fetchgps['GPS_ID'];
-
-			#Update AP IDs
-			$sql = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";
-
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $FA_id, PDO::PARAM_INT);
-			$prep->bindParam(2, $LA_id, PDO::PARAM_INT);
-			$prep->bindParam(3, $HighRSSI_id, PDO::PARAM_INT);
-			$prep->bindParam(4, $HighSig_id, PDO::PARAM_INT);
-			$prep->bindParam(5, $HighGps_id, PDO::PARAM_INT);
-			$prep->bindParam(6, $ap_id, PDO::PARAM_INT);
-			$prep->execute();
-			if($this->sql->checkError() !== 0)
-			{
-				$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-				//$this->logd("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
-				throw new ErrorException("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
-			}
-			$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
-			$this->verbosed("------------------------\r\n", 1);# Done with this AP.
+			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
+			$this->UpdateHighPoints($ap_id);
 		}
 		#Find if file had Valid GPS
 		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"

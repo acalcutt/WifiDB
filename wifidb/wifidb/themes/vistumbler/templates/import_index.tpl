@@ -79,6 +79,18 @@ if not, write to the
                                                         </p>
                                                     </td>
                                                 </tr>
+                                                <tr>
+                                                    <td class="style4">
+                                                        <p>Import Type:
+                                                        </p>
+                                                    </td>
+                                                    <td class="light">
+                                                        <p>
+                                                              <input type="radio" name="type" value="vistumbler" checked>Vistumbler<br>
+															  <input type="radio" name="type" value="swardriving">SWardriving<br>
+                                                        </p>
+                                                    </td>
+                                                </tr>
                                                 <tr class="light">
                                                     <td>&nbsp;</td><td>
                                                         <p>

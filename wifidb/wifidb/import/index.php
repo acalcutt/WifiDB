@@ -69,6 +69,7 @@ switch($func)
 		$notes = (empty($_POST['notes'])) ? "No Notes" : $_POST['notes'];
 		$user = (empty($_POST['user'])) ? "Unknown" : $_POST['user'];
 		$otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
+		$type = (empty($_POST['type'])) ? "" : $_POST['type'];
 		$sql = "SELECT `username` FROM `wifi`.`user_info` WHERE `username` LIKE ?";
 		$stmt = $dbcore->sql->conn->prepare($sql);
 		$stmt->bindParam(1, $user, PDO::PARAM_STR);
@@ -85,12 +86,9 @@ switch($func)
 		}else
 		{
 			$tmp = $_FILES['file']['tmp_name'];
-			$upfilename = $_FILES['file']['name'];
-			$prefilename = str_replace( " ", "_", $upfilename);
-			$file_ext = explode('.', $prefilename);
-			$ext = strtolower($file_ext[1]);
 			$rand = rand(00000000, 99999999);
-			$filename = $rand.'_'.$prefilename;
+			$filename = $rand.'_'.str_replace( " ", "_", $_FILES['file']['name']);
+			$ext = pathinfo($filename, PATHINFO_EXTENSION);
 			$uploadfolder = getcwd().'/up/';
 			$uploadfile = $uploadfolder.$filename;
 
@@ -157,8 +155,8 @@ switch($func)
 						//in order that they where uploaded
 						$date = date("y-m-d H:i:s");
 						$sql = "INSERT INTO `files_tmp`
-										( `file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`  )
-								 VALUES ( ?,	  ?,	  ?,	  ?,		?,	  ?,	  ?,	  ?)";
+										( `file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`  )
+								 VALUES ( ?,	  ?,	  ?,	  ?,		?,	  ?,	  ?,	  ?,	  ?)";
 						$result = $dbcore->sql->conn->prepare( $sql );
 						$result->bindValue(1, $filename, PDO::PARAM_STR);
 						$result->bindValue(2, $date, PDO::PARAM_STR);
@@ -168,6 +166,7 @@ switch($func)
 						$result->bindValue(6, $title, PDO::PARAM_STR);
 						$result->bindValue(7, $size, PDO::PARAM_STR);
 						$result->bindValue(8, $hash, PDO::PARAM_STR);
+						$result->bindValue(9, $type, PDO::PARAM_STR);
 						$result->execute();
 						if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
 						{
