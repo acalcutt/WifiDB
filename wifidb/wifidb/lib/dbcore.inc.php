@@ -70,7 +70,7 @@ class dbcore
 		$this->csv_out				  = $this->PATH.$config['csv_out'];
 		$this->csv_htmlpath			 = $this->URL_PATH.$config['csv_out'];
 
-		$this->theme					= ($_COOKIE['wifidb_theme']!='' ? $_COOKIE['wifidb_theme'] : $config['default_theme']);
+		if (isset($_COOKIE['wifidb_theme']) && $_COOKIE['wifidb_theme'] != '') {$this->theme = $_COOKIE['wifidb_theme'];}else{$this->theme = $config['default_theme'];}
 		$this->PATH_THEMES			  = $this->PATH.'themes/'.$this->theme;
 
 		$this->open_loc				 = $config['open_loc'];
