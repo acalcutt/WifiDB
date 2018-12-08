@@ -268,8 +268,8 @@ class daemon extends wdbcli
 			if($hash_count == 0)
 			{
 				$sql_insert_file = "INSERT INTO `files`
-				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `node_name`)
-				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?)";
+				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `type`, `node_name`)
+				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 				$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
@@ -279,7 +279,8 @@ class daemon extends wdbcli
 				$prep1->bindParam(6, $file_otherusers, PDO::PARAM_STR);
 				$prep1->bindParam(7, $file_notes, PDO::PARAM_STR);
 				$prep1->bindParam(8, $file_title, PDO::PARAM_STR);
-				$prep1->bindParam(9, $this->node_name, PDO::PARAM_STR);
+				$prep1->bindParam(9, $file_type, PDO::PARAM_STR);
+				$prep1->bindParam(10, $this->node_name, PDO::PARAM_STR);
 				$prep1->execute();
 				if($this->sql->checkError(__LINE__, __FILE__))
 				{
@@ -363,6 +364,10 @@ class daemon extends wdbcli
 						}
 					}
 					$tmp = $this->import->import_vs1($source, $file_user, $file_row,  $importing_id);
+				}
+				elseif ($file_type == "wigglewificsv")
+				{
+					$tmp = $this->import->import_wigglewificsv($source, $file_user, $file_row,  $importing_id);
 				}
 				elseif ($file_type == "swardriving")
 				{

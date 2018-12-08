@@ -316,162 +316,162 @@ class convert extends dbcore
 	 */
 	public function findFreq($frequency = 0)
 	{
-		switch($frequency)
+		switch(true)
 		{
-			case 2412:
+			case ($frequency == 2412 || $frequency == 1):
 				$chan = 1;
 				$radio = "802.11g";
 				break;
-			case 2417:
+			case ($frequency == 2417 || $frequency == 2):
 				$chan = 2;
 				$radio = "802.11g";
 				break;
-			case 2422:
+			case ($frequency == 2422 || $frequency == 3):
 				$chan = 3;
 				$radio = "802.11g";
 				break;
-			case 2427:
+			case ($frequency == 2427 || $frequency == 4):
 				$chan = 4;
 				$radio = "802.11g";
 				break;
-			case 2432:
+			case ($frequency == 2432 || $frequency == 5):
 				$chan = 5;
 				$radio = "802.11g";
 				break;
-			case 2437:
+			case ($frequency == 2437 || $frequency == 6):
 				$chan = 6;
 				$radio = "802.11g";
 				break;
-			case 2442:
+			case ($frequency == 2442 || $frequency == 7):
 				$chan = 7;
 				$radio = "802.11g";
 				break;
-			case 2447:
+			case ($frequency == 2447 || $frequency == 8):
 				$chan = 8;
 				$radio = "802.11g";
 				break;
-			case 2452:
+			case ($frequency == 2452 || $frequency == 9):
 				$chan = 9;
 				$radio = "802.11g";
 				break;
-			case 2457:
+			case ($frequency == 2457 || $frequency == 10):
 				$chan = 10;
 				$radio = "802.11g";
 				break;
-			case 2462:
+			case ($frequency == 2462 || $frequency == 11):
 				$chan = 11;
 				$radio = "802.11g";
 				break;
-			case 2467:
+			case ($frequency == 2467 || $frequency == 12):
 				$chan = 12;
 				$radio = "802.11g";
 				break;
-			case 2472:
+			case ($frequency == 2472 || $frequency == 13):
 				$chan = 13;
 				$radio = "802.11g";
 				break;
-			case 2484:
+			case ($frequency == 2484 || $frequency == 14):
 				$chan = 14;
 				$radio = "802.11g";
 				break;
-			case 5180:
+			case ($frequency == 5180 || $frequency == 36):
 				$chan = 36;
 				$radio = "802.11n";
 				break;
-			case 5200:
+			case ($frequency == 5200 || $frequency == 40):
 				$chan = 40;
 				$radio = "802.11n";
 				break;
-			case 5220:
+			case ($frequency == 5220 || $frequency == 44):
 				$chan = 44;
 				$radio = "802.11n";
 				break;
-			case 5240:
+			case ($frequency == 5240 || $frequency == 48):
 				$chan = 48;
 				$radio = "802.11n";
 				break;
-			case 5260:
+			case ($frequency == 5260 || $frequency == 52):
 				$chan = 52;
 				$radio = "802.11n";
 				break;
-			case 5280:
+			case ($frequency == 5280 || $frequency == 56):				
 				$chan = 56;
 				$radio = "802.11n";
 				break;
-			case 5300:
+			case ($frequency == 5300 || $frequency == 60):
 				$chan = 60;
 				$radio = "802.11n";
 				break;
-			case 5320:
+			case ($frequency == 5320 || $frequency == 64):
 				$chan = 64;
 				$radio = "802.11n";
 				break;
-			case 5500:
+			case ($frequency == 5500 || $frequency == 100):
 				$chan = 100;
 				$radio = "802.11n";
 				break;
-			case 5520:
+			case ($frequency == 5520 || $frequency == 104):
 				$chan = 104;
 				$radio = "802.11n";
 				break;
-			case 5540:
+			case ($frequency == 5540 || $frequency == 108):
 				$chan = 108;
 				$radio = "802.11n";
 				break;
-			case 5560:
+			case ($frequency == 5560 || $frequency == 112):
 				$chan = 112;
 				$radio = "802.11n";
 				break;
-			case 5580:
+			case ($frequency == 5580 || $frequency == 116):
 				$chan = 116;
 				$radio = "802.11n";
 				break;
-			case 5600:
+			case ($frequency == 5600 || $frequency == 120):
 				$chan = 120;
 				$radio = "802.11n";
 				break;
-			case 5620:
+			case ($frequency == 5620 || $frequency == 124):
 				$chan = 124;
 				$radio = "802.11n";
 				break;
-			case 5640:
+			case ($frequency == 5640 || $frequency == 128):
 				$chan = 128;
 				$radio = "802.11n";
 				break;
-			case 5660:
+			case ($frequency == 5660 || $frequency == 132):
 				$chan = 132;
 				$radio = "802.11n";
 				break;
-			case 5680:
+			case ($frequency == 5680 || $frequency == 136):
 				$chan = 136;
 				$radio = "802.11n";
 				break;
-			case 5700:
+			case ($frequency == 5700 || $frequency == 140):
 				$chan = 140;
 				$radio = "802.11n";
 				break;
-			case 5745:
+			case ($frequency == 5745 || $frequency == 149):
 				$chan = 149;
 				$radio = "802.11n";
 				break;
-			case 5765:
+			case ($frequency == 5765 || $frequency == 153):
 				$chan = 153;
 				$radio = "802.11n";
 				break;
-			case 5785:
+			case ($frequency == 5785 || $frequency == 157):
 				$chan = 157;
 				$radio = "802.11n";
 				break;
-			case 5805:
+			case ($frequency == 5805 || $frequency == 161):
 				$chan = 161;
 				$radio = "802.11n";
 				break;
-			case 5825:
+			case ($frequency == 5825 || $frequency == 165):
 				$chan = 165;
 				$radio = "802.11n";
 				break;
 			default:
-				$chan = 6;
+				$chan = $frequency;
 				$radio = "802.11g";
 				break;
 		}
