@@ -20,9 +20,9 @@ if not, write to the
 {include file="header.tpl"}
                                     <h2>{$mesg}</h2>
                                     <h2>Import Access Points</h2>
-                                    <br><a class="links" href="https://github.com/RIEI/Vistumbler/wiki/Vistumbler-VS1-Format" target="_blank">VS1</a>,
-                                    <a class="links" href="https://github.com/RIEI/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>,
-                                    <a class="links" href="https://play.google.com/store/apps/details?id=ki.wardrive4&hl=en" target="_blank">Wardrive for Android 4+</a>, and <a class="links" href="https://play.google.com/store/apps/details?id=ki.wardrive&hl=en" target="_blank">Old Wardrive</a> are Supported.<br>
+                                    <br><a class="links" href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-VS1-Format" target="_blank">VS1</a>,
+                                    <a class="links" href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>,
+                                    <a class="links" href="https://github.com/raffaeleragni/android-wardrive4/releases" target="_blank">Wardrive4 for Android</a>, and <a class="links" href="https://play.google.com/store/apps/details?id=com.Buckynet.Wifi.Scanner.Wireless.SWardriving&hl=en_US" target="_blank">SWardriving for Android</a> are Supported.<br>
                                     Username is optional, but it helps keep track of who has imported what Access Points<br>
                                         <form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">
                                             <table border="1" cellpadding="2" cellspacing="0">
@@ -86,8 +86,8 @@ if not, write to the
                                                     </td>
                                                     <td class="light">
                                                         <p>
-                                                              <input type="radio" name="type" value="vistumbler" checked>Vistumbler<br>
-															  <input type="radio" name="type" value="swardriving">SWardriving<br>
+                                                              <input type="radio" name="type" value="vistumbler" checked>Vistumbler VS1/CSV - Wardrive DB/DB3<br>
+															  <input type="radio" name="type" value="swardriving">SWardriving CSV<br>
                                                         </p>
                                                     </td>
                                                 </tr>
