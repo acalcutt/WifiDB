@@ -404,11 +404,8 @@ class export extends dbcore
 			. "    )\n"
 			. "ORDER BY `wap`.`ModDate` DESC";
 #			. "        FROM `wifi_hist`\n"
-#			. "        INNER JOIN `wifi_ap` ON `wifi_ap`.`AP_ID` = `wifi_hist`.`AP_ID`\n"
 #			. "        INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
 #			. "        WHERE \n"
-#			. "        	`wifi_ap`.`HighGps_ID` IS NOT NULL And\n"
-#			. "        	`wifi_ap`.`BSSID` != '00:00:00:00:00:00' And\n"
 #			. "        	`files`.`completed` = 1 And\n"
 #			. "        	`files`.`ValidGPS` = 1 And\n"
 #			. "        	`files`.`user` LIKE ?
