@@ -251,11 +251,11 @@ class import extends dbcore
 							
 					$prep = $this->sql->conn->prepare($sql);
 					#var_dump($aps);
-					$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);					
+					$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
 					$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
 					$prep->bindParam(3, $chan, PDO::PARAM_INT);
 					$prep->bindParam(4, $authen, PDO::PARAM_STR);		
-					$prep->bindParam(5, $encry, PDO::PARAM_STR);					
+					$prep->bindParam(5, $encry, PDO::PARAM_STR);
 					$prep->bindParam(6, $sectype, PDO::PARAM_INT);
 					$prep->bindParam(7, $radio, PDO::PARAM_STR);
 					$prep->bindParam(8, $nt, PDO::PARAM_STR);
@@ -492,8 +492,8 @@ class import extends dbcore
 						break;
 					}
 					
-					#Check if line 10 id HighSig or Manufacturer
-					if(is_numeric($ap_line[10]))
+					
+					if(is_numeric($ap_line[10]))#Check if line 10 id HighSig or Manufacturer
 					{
 						#Detailed Export Version 4.0, Current vistumbler format (correctly formatted)
 						$apdata[] = array(
@@ -509,13 +509,13 @@ class import extends dbcore
 							'btx'	   =>  $ap_line[8],
 							'otx'	   =>  $ap_line[9],
 							'HighSig'   =>  $ap_line[10],
-							'HighRSSI'  =>  $ap_line[11],									
+							'HighRSSI'  =>  $ap_line[11],
 							'nt'		=>  $ap_line[12],
 							'label'	 =>  $ap_line[13],
 							'signals'   =>  $ap_line[14]
 							);
 					}
-					else
+					else if(is_numeric($ap_line[7]))
 					{
 						#Detailed Export Version 4.0, Vistumbler v10.6 Beta 16.2 (incorrectly formatted)
 						$highestRSSI = $this->convert->Sig2dBm($ap_line[2]);
@@ -523,7 +523,7 @@ class import extends dbcore
 							'ap_hash'   => "",
 							'ssid'	  =>  $ap_line[0],
 							'mac'	   =>  $ap_line[1],
-							'HighSig'   =>  $ap_line[2],							
+							'HighSig'   =>  $ap_line[2],
 							'auth'	  =>  $ap_line[3],
 							'encry'	 =>  $ap_line[4],
 							'sectype'   =>  (int) $ap_line[5],
@@ -533,8 +533,31 @@ class import extends dbcore
 							'otx'	   =>  $ap_line[9],
 							'manuf'	 =>  $this->findManuf($ap_line[1]),
 							'label'	 =>  $ap_line[11],
-							'nt'		=>  $ap_line[12],							
+							'nt'		=>  $ap_line[12],
 							'HighRSSI'  =>  $highestRSSI,
+							'signals'   =>  $ap_line[14]
+							);
+					}
+					else if(is_numeric($ap_line[11]))
+					{
+						#Detailed Export Version 4.0,RanInt WiFiDB Alpha (incorrectly formatted)
+						$highestRSSI = $this->convert->Sig2dBm($ap_line[2]);
+						$apdata[] = array(
+							'ap_hash'   => "",
+							'ssid'	  =>  $ap_line[0],
+							'mac'	   =>  $ap_line[1],
+							'HighSig'   =>  $ap_line[2],
+							'label'	 =>  $ap_line[3],
+							'auth'	  =>  $ap_line[4],
+							'sectype'   =>  (int) $ap_line[5],
+							'encry'	 =>  $ap_line[6],
+							'radio'	 =>  $ap_line[7],
+							'chan'	  =>  (int) $ap_line[8],
+							'otx'	   =>  $ap_line[9],
+							'manuf'	 =>  $this->findManuf($ap_line[1]),
+							'HighRSSI'  =>  $ap_line[11],
+							'btx'	   =>  $ap_line[12],
+							'nt'		=>  $ap_line[13],
 							'signals'   =>  $ap_line[14]
 							);
 					}
@@ -669,14 +692,14 @@ class import extends dbcore
 						
 				$prep = $this->sql->conn->prepare($sql);
 				#var_dump($aps);
-				$prep->bindParam(1, $aps['mac'], PDO::PARAM_STR);					
+				$prep->bindParam(1, $aps['mac'], PDO::PARAM_STR);
 				$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
 				$prep->bindParam(3, $aps['chan'], PDO::PARAM_INT);
-				$prep->bindParam(4, $aps['auth'], PDO::PARAM_STR);		
-				$prep->bindParam(5, $aps['encry'], PDO::PARAM_STR);					
+				$prep->bindParam(4, $aps['auth'], PDO::PARAM_STR);
+				$prep->bindParam(5, $aps['encry'], PDO::PARAM_STR);
 				$prep->bindParam(6, $aps['sectype'], PDO::PARAM_INT);
 				$prep->bindParam(7, $aps['radio'], PDO::PARAM_STR);
-				$prep->bindParam(8, $aps['nt'], PDO::PARAM_STR);					
+				$prep->bindParam(8, $aps['nt'], PDO::PARAM_STR);
 				$prep->bindParam(9, $aps['btx'], PDO::PARAM_STR);
 				$prep->bindParam(10, $aps['otx'], PDO::PARAM_STR);
 				$prep->bindParam(11, $ap_hash, PDO::PARAM_STR);
@@ -709,6 +732,7 @@ class import extends dbcore
 				if($file_gps_id == ""){continue;}
 				$signal = $sig_gps_exp[1];
 				if($signal == ""){$signal = 0;}
+				if($this->rssi_signals_flag){if($sig_gps_exp[2] == "Ltd."){$rssi = $this->convert->Sig2dBm($signal);}}#fix for old incorrectly formatted file 
 				if($this->rssi_signals_flag){$rssi = $sig_gps_exp[2];}else{$rssi = $this->convert->Sig2dBm($signal);}
 				
 				$GID_SQL = "SELECT GPS_ID, GPS_Date FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";
