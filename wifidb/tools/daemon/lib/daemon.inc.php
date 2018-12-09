@@ -330,8 +330,8 @@ class daemon extends wdbcli
 						$parts = pathinfo($ret_file_name);
 						$dest_name = $parts['basename'];
 						$file_hash1 = hash_file('md5', $ret_file_name);
-						$file_size1 = (filesize($ret_file_name)/1024);
-						$file_size1 = $this->format_size($filesize);
+						$file_size1 = filesize($ret_file_name);
+						$file_size1 = $this->format_size($file_size1);
 						
 						//check to see if this file has already been imported into the DB
 						$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ? LIMIT 1";
@@ -360,8 +360,8 @@ class daemon extends wdbcli
 							$err = $this->sql->conn->errorCode();
 							if($err[0] == "00000")
 							{
-								$this->verbosed("Conversion completed.", 1);
-								//$this->logd("Conversion completed.".$file_src[0].".".$file_src[1]." -> ".$dest_name, $this->This_is_me);
+								$this->verbosed("Conversion completed. ".$source." -> ".$ret_file_name, 1);
+								//$this->logd("Conversion completed. ".$source." -> ".$ret_file_name, $this->This_is_me);
 								$source = $ret_file_name;
 								$file_name = $dest_name;
 								$file_hash = $file_hash1;
@@ -384,14 +384,17 @@ class daemon extends wdbcli
 							return 0;
 						}
 					}
+					$this->verbosed("Importing VS1. ".$source, 1);
 					$tmp = $this->import->import_vs1($source, $file_user, $file_row,  $importing_id);
 				}
 				elseif ($file_type == "wigglewificsv")
 				{
+					$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
 					$tmp = $this->import->import_wigglewificsv($source, $file_user, $file_row,  $importing_id);
 				}
 				elseif ($file_type == "swardriving")
 				{
+					$this->verbosed("Importing SWardriving. ".$source, 1);
 					$tmp = $this->import->import_swardriving($source, $file_user, $file_row,  $importing_id);
 				}
 				else
