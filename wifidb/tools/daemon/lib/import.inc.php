@@ -65,59 +65,32 @@ class import extends dbcore
 	
 	private function UpdateHighPoints($ap_id)
 	{
-		#Find New First Seen Timestamp
-		$FA_id = "";
-		$FA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date ASC LIMIT 1";
-		$faprep = $this->sql->conn->prepare($FA_SQL);
-		$faprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$faprep->execute();
-		$fetchfaprep = $faprep->fetch(2);
-		$FA_id = $fetchfaprep['Hist_ID'];
-
-		#Find New Last Seen Timestamp
-		$LA_id = "";
-		$LA_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Hist_Date DESC LIMIT 1";
-		$laprep = $this->sql->conn->prepare($LA_SQL);
-		$laprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$laprep->execute();
-		$fetchlaprep = $laprep->fetch(2);
-		$LA_id = $fetchlaprep['Hist_ID'];
-		
-		#Find High Sig
-		$HighSig_id = "";
-		$Sig_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1";
-		$Sigprep = $this->sql->conn->prepare($Sig_SQL);
-		$Sigprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$Sigprep->execute();
-		$fetchSigprep = $Sigprep->fetch(2);
-		$HighSig_id = $fetchSigprep['Hist_ID'];
-		
-		#Find High RSSI
-		$HighRSSI_id = "";
-		$RSSI_SQL = "SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = ? And `Hist_date` IS NOT NULL ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1";
-		$RSSIprep = $this->sql->conn->prepare($RSSI_SQL);
-		$RSSIprep->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$RSSIprep->execute();
-		$fetchRSSIprep = $RSSIprep->fetch(2);
-		$HighRSSI_id = $fetchRSSIprep['Hist_ID'];
-
-		#Find Highest GPS Position
-		$HighGps_id = "";
-		$sql = "SELECT `wifi_hist`.`GPS_ID`\n"
-			. "FROM `wifi_hist`\n"
-			. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_hist`.`AP_ID` = ? And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-			. "ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
-			. "LIMIT 1";
+		$sql = "SELECT \n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY Hist_Date Asc LIMIT 1) As `FA_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY Hist_Date DESC LIMIT 1) As `LA_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1) As `HighSig_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1) As `HighRSSI_id`,\n"
+			. "(SELECT `wifi_hist`.`GPS_ID`\n"
+			. "    FROM `wifi_hist`\n"
+			. "    INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "    WHERE `wifi_hist`.`AP_ID` = `wap`.`AP_ID` And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+			. "    ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
+			. "    LIMIT 1) As `HighGps_id`\n"
+			. "FROM `wifi_ap` As `wap`\n"
+			. "WHERE `wap`.`AP_ID` = ?";
 		$resgps = $this->sql->conn->prepare($sql);
 		$resgps->bindParam(1, $ap_id, PDO::PARAM_INT);
 		$resgps->execute();
 		$fetchgps = $resgps->fetch(2);
-		$HighGps_id = $fetchgps['GPS_ID'];
+		$FA_id = $fetchgps['FA_id'];
+		$LA_id = $fetchgps['LA_id'];
+		$HighSig_id = $fetchgps['HighSig_id'];
+		$HighRSSI_id = $fetchgps['HighRSSI_id'];
+		$HighGps_id = $fetchgps['HighGps_id'];
+		
 
 		#Update AP IDs
 		$sql = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";
-
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $FA_id, PDO::PARAM_INT);
 		$prep->bindParam(2, $LA_id, PDO::PARAM_INT);
@@ -170,19 +143,7 @@ class import extends dbcore
 		$gps_count = 0;
 		
 		foreach($File_return as $key => $file_line)
-		{	
-			$calc = "Line: ".($key+1)." / ".$File_lcount;
-			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = 'Importing File Data' WHERE `id` = ?";
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $calc, PDO::PARAM_STR);
-			$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-			$prep->execute();
-			if($this->sql->checkError() !== 0)
-			{
-				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
-				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
-				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
-			}
+		{
 			$apinfo = str_getcsv ($file_line);
 			
 			$fBSSID = strtoupper($apinfo[0]);
@@ -205,6 +166,20 @@ class import extends dbcore
 			list($chan, $radio) = $this->convert->findFreq($fchannel);
 			
 			$ap_hash = md5($fSSID.$fBSSID.$fchannel.$sectype.$radio.$authen.$encry);
+			
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $calc, PDO::PARAM_STR);
+			$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError() !== 0)
+			{
+				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
+				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			}
 
 			if (($timestamp = strtotime($fDate)) !== false) {
 				$GpsDate = date("Y-m-d H:i:s", $timestamp);
@@ -370,18 +345,7 @@ class import extends dbcore
 		
 		foreach($File_return as $key => $file_line)
 		{	
-			$calc = "Line: ".($key+1)." / ".$File_lcount;
-			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = 'Importing File Data' WHERE `id` = ?";
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $calc, PDO::PARAM_STR);
-			$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-			$prep->execute();
-			if($this->sql->checkError() !== 0)
-			{
-				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
-				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
-				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
-			}
+			# Read CSV
 			$apinfo = str_getcsv ($file_line);
 			
 			$fBSSID = strtoupper($apinfo[0]);
@@ -403,6 +367,20 @@ class import extends dbcore
 			list($chan, $radio) = $this->convert->findFreq($ffrequency);
 			
 			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+			
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $calc, PDO::PARAM_STR);
+			$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError() !== 0)
+			{
+				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
+				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			}
 
 			if (($timestamp = strtotime($fDate)) !== false) {
 				$GpsDate = date("Y-m-d H:i:s", $timestamp);
