@@ -230,26 +230,19 @@ class convert extends dbcore
 	public function extractVSZ($source = "")
 	{
 		$dir = $this->PATH."import/up/";
-		$file_exp = explode(".", $source);
-		$folder_exp = explode("/", $file_exp[0]);
-		$c = count($folder_exp)-1;
-		$folder = $folder_exp[$c];
-		$rand_folder = rand(000000, 999999).'_'.$folder;
-		$extract_path = $dir."convert/".$rand_folder;
+		$extract_path = $dir."convert/";
+		
+		$path_parts = pathinfo($source);
+		$detination_vs1 = $extract_path.$path_parts['filename'].".VS1";
 
-		$this->verbosed("Make Extract folder for this file: $source\r\n$extract_path");
-		if(@mkdir($extract_path))
-		{
-			$this->verbosed("Folder created!", 2);
-		}else
-		{
-			$this->verbosed("Failed to create the folder", -1);
+		$VSZ = new ZipArchive();
+		if ($VSZ->open($source) === TRUE) {
+			if($fileData = $VSZ->getFromName('data.vs1')) {
+				file_put_contents($detination_vs1, $fileData);
+			}
 		}
-		$zip = new ZipArchive;
-		$zip->open($source, ZIPARCHIVE::CREATE);
-		$zip->extractTo($extract_path, array($zip->getNameIndex(0)));
-		rename($extract_path."/data.vs1", $extract_path."/$folder.vs1");
-		return $extract_path."/$folder.vs1";
+		
+		return $detination_vs1;
 	}
 
 	/**
