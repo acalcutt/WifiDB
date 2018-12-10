@@ -81,7 +81,7 @@ class frontend extends dbcore
 	function APFetch($id = "")
 	{
 
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS,\n"
 			. "whFA.Hist_Date As FA,\n"
 			. "whLA.Hist_Date As LA,\n"
 			. "wGPS.Lat As Lat,\n"
@@ -109,6 +109,7 @@ class frontend extends dbcore
 			'auth'=>$newArray['AUTH'],
 			'btx'=>$newArray["BTX"],
 			'otx'=>$newArray["OTX"],
+			'flags'=>$newArray["FLAGS"],
 			'fa'=>$newArray["FA"],
 			'la'=>$newArray["LA"],
 			'nt'=>$newArray["NETTYPE"],
@@ -119,7 +120,13 @@ class frontend extends dbcore
 
 		$list_geonames = array();
 		$flip = 0;
-		if($newArray['Lat'] !== '0.0000' || $newArray['Lat'] !== '')
+		if($newArray['Lat'] == '0.0000' || $newArray['Lat'] == '')
+		{
+			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'img/globe_off.png">';
+			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
+			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
+		}
+		else
 		{
 			$Latdd = $this->convert->dm2dd($newArray["Lat"]);
 			$Londd = $this->convert->dm2dd($newArray["Lon"]);
@@ -174,12 +181,6 @@ class frontend extends dbcore
 			$globe_html .= '<a href="'.$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$newArray['AP_ID'].'" title="Export AP to JSON"><img width="20px" src="'.$this->URL_PATH.'/img/json_on.png"></a>';
 			$globe_html .= '<a href="'.$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export AP to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/kmz_on.png"></a>';
 		}
-		else
-		{
-			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'img/globe_off.png">';
-			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
-			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
-		}
 
 		$list = array();
 		$flip = 0;
@@ -222,7 +223,7 @@ class frontend extends dbcore
 			
 			$flip2=0;
 			$sigarr = array();			
-			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
+			$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`AccuracyMeters`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
 				. "FROM `wifi_hist`\n"
 				. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID`=`wifi_gps`.`GPS_ID`\n"
 				. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ?\n"
@@ -247,6 +248,7 @@ class frontend extends dbcore
 					'Lon'=>$signals['Lon'],
 					'Alt'=>$signals['Alt'],
 					'NumOfSats'=>$signals['NumOfSats'],
+					'AccuracyMeters'=>$signals['AccuracyMeters'],
 					'GPS_Date'=>$signals['GPS_Date']
 				);				
 			}
