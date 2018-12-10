@@ -41,7 +41,7 @@ class daemon extends wdbcli
 		$this->DaemonSleepTime			=	$daemon_config['time_interval_to_check'];
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->return_message			=	"";
-		$this->convert_extentions   = array('csv','db','db3','vsz');
+		$this->convert_extentions   = array('csv','vsz');
 
 		$this->daemon_version			=	"3.0";
 		$this->ver_array['Daemon']  = array(
@@ -297,105 +297,130 @@ class daemon extends wdbcli
 				
 				if($file_type == "vistumbler" || $file_type == "")
 				{
-					if(in_array($file_ext, $this->convert_extentions))
+					if($file_ext == 'mdb')
 					{
-						$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-						$update_tmp = "UPDATE `files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
-						$prep = $this->sql->conn->prepare($update_tmp);
-						$prep->bindParam(1, $file_ext, PDO::PARAM_STR);
-						$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
-						$prep->execute();
-						$err = $this->sql->conn->errorCode();
-						if($err[0] != "00000")
+						$this->verbosed("Importing MDB. ".$source, 1);
+						$tmp = $this->import->import_vistumblermdb($source, $file_row,  $importing_id);
+					}
+					else
+					{
+						if(in_array($file_ext, $this->convert_extentions))
 						{
-							$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-							//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-							throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
-						}
-						$ret_file_name = $this->convert->main($source);
-						if($ret_file_name === -1)
-						{
-							$this->verbosed("Error Converting File. $source, Skipping to next file.");
-							if( !$this->daemonize )
-							{
-								$this->return_message = "ErrorConvertingFile:$source";
-								return -1;
-							}else
-							{
-								return 0;
-							}
-
-						}
-
-						$parts = pathinfo($ret_file_name);
-						$dest_name = $parts['basename'];
-						$file_hash1 = hash_file('md5', $ret_file_name);
-						$file_size1 = filesize($ret_file_name);
-						$file_size1 = $this->format_size($file_size1);
-						
-						//check to see if this file has already been imported into the DB
-						$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ? LIMIT 1";
-						$prep = $this->sql->conn->prepare($sql_check);
-						$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
-						$prep->execute();
-						$ids = $prep->fetch(1);
-						$hash_count = $ids[0];
-						if($hash_count == 0)
-						{
-							$update = "UPDATE `files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
-							$prep = $this->sql->conn->prepare($update);
-							$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
-							$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
-							$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-							$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
-							$prep->execute();
-							
-							$update = "UPDATE `files` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
-							$prep = $this->sql->conn->prepare($update);
-							$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
-							$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
-							$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-							$prep->bindParam(4, $file_row, PDO::PARAM_INT);
+							$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
+							$update_tmp = "UPDATE `files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
+							$prep = $this->sql->conn->prepare($update_tmp);
+							$prep->bindParam(1, $file_ext, PDO::PARAM_STR);
+							$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
 							$prep->execute();
 							$err = $this->sql->conn->errorCode();
-							if($err[0] == "00000")
+							if($err[0] != "00000")
 							{
-								$this->verbosed("Conversion completed. ".$source." -> ".$ret_file_name, 1);
-								//$this->logd("Conversion completed. ".$source." -> ".$ret_file_name, $this->This_is_me);
-								$source = $ret_file_name;
-								$file_name = $dest_name;
-								$file_hash = $file_hash1;
-								$file_size = $file_size1;
-							}else
+								$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
+								//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+								throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
+							}
+							$ret_file_name = $this->convert->main($source);
+							if($ret_file_name === -1)
 							{
-								$this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-								//$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-								throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1));
+								$this->verbosed("Error Converting File. $source, Skipping to next file.");
+								if( !$this->daemonize )
+								{
+									$this->return_message = "ErrorConvertingFile:$source";
+									return -1;
+								}else
+								{
+									return 0;
+								}
+
+							}
+
+							$parts = pathinfo($ret_file_name);
+							$dest_name = $parts['basename'];
+							$file_hash1 = hash_file('md5', $ret_file_name);
+							$file_size1 = filesize($ret_file_name);
+							$file_size1 = $this->format_size($file_size1);
+							
+							//check to see if this file has already been imported into the DB
+							$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ? LIMIT 1";
+							$prep = $this->sql->conn->prepare($sql_check);
+							$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
+							$prep->execute();
+							$ids = $prep->fetch(1);
+							$hash_count = $ids[0];
+							if($hash_count == 0)
+							{
+								$update = "UPDATE `files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+								$prep = $this->sql->conn->prepare($update);
+								$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
+								$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
+								$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
+								$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
+								$prep->execute();
+								
+								$update = "UPDATE `files` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+								$prep = $this->sql->conn->prepare($update);
+								$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
+								$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
+								$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
+								$prep->bindParam(4, $file_row, PDO::PARAM_INT);
+								$prep->execute();
+								$err = $this->sql->conn->errorCode();
+								if($err[0] == "00000")
+								{
+									$this->verbosed("Conversion completed. ".$source." -> ".$ret_file_name, 1);
+									//$this->logd("Conversion completed. ".$source." -> ".$ret_file_name, $this->This_is_me);
+									$source = $ret_file_name;
+									$file_name = $dest_name;
+									$file_hash = $file_hash1;
+									$file_size = $file_size1;
+								}else
+								{
+									$this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
+									//$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
+									throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1));
+								}
+							}
+							else
+							{
+								trigger_error("File already imported. $ret_file_name Thread ID: ".$this->thread_id, E_USER_NOTICE);
+								//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$ret_file_name ($importing_id)","Warning", $this->This_is_me);
+								//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$ret_file_name ($importing_id)");
+								//unlink($ret_file_name);
+								$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$ret_file_name ($importing_id)");
+								$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);	
+								return 0;
 							}
 						}
-						else
-						{
-							trigger_error("File already imported. $ret_file_name Thread ID: ".$this->thread_id, E_USER_NOTICE);
-							//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$ret_file_name ($importing_id)","Warning", $this->This_is_me);
-							//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$ret_file_name ($importing_id)");
-							//unlink($ret_file_name);
-							$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$ret_file_name ($importing_id)");
-							$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);	
-							return 0;
-						}
+						$this->verbosed("Importing VS1. ".$source, 1);
+						$tmp = $this->import->import_vs1($source, $file_row,  $importing_id);
 					}
-					$this->verbosed("Importing VS1. ".$source, 1);
-					$tmp = $this->import->import_vs1($source, $file_user, $file_row,  $importing_id);
+				}
+				elseif ($file_type == "wardrive")
+				{
+					if($file_ext == "db")
+					{
+						$this->verbosed("Importing Wardrive4. ".$source, 1);
+						$tmp = $this->import->import_wardrive4($source, $file_row,  $importing_id);
+					}
+					elseif ($file_ext == "db3")
+					{
+						$this->verbosed("Importing Wardrive3. ".$source, 1);
+						$tmp = $this->import->import_wardrive3($source, $file_row,  $importing_id);
+					}
+					else
+					{
+						$tmp = array(-1, "Unknown File Type");
+					}
 				}
 				elseif ($file_type == "wigglewificsv")
 				{
 					$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
-					$tmp = $this->import->import_wigglewificsv($source, $file_user, $file_row,  $importing_id);
+					$tmp = $this->import->import_wigglewificsv($source, $file_row,  $importing_id);
 				}
 				elseif ($file_type == "swardriving")
 				{
 					$this->verbosed("Importing SWardriving. ".$source, 1);
-					$tmp = $this->import->import_swardriving($source, $file_user, $file_row,  $importing_id);
+					$tmp = $this->import->import_swardriving($source, $file_row,  $importing_id);
 				}
 				else
 				{

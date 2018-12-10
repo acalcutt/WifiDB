@@ -63,6 +63,29 @@ class import extends dbcore
 		return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $mac) == 1);
 	}
 	
+	private function UpdateFileValidGPS($file_id)
+	{
+		#Find if file had Valid GPS
+		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
+			. "FROM `wifi_hist`\n"
+			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+			. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+			. "LIMIT 1";
+		$prepvgps = $this->sql->conn->prepare($sql);
+		$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
+		$prepvgps->execute();
+		$prepvgps_fetch = $prepvgps->fetch(2);
+		if($prepvgps_fetch)
+		{
+			$ValidGPS = 1;
+			$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
+			$prepvgpsu = $this->sql->conn->prepare($sql);
+			$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
+			$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
+			$prepvgpsu->execute();
+		}
+	}
+	
 	private function UpdateHighPoints($ap_id)
 	{
 		$sql = "SELECT \n"
@@ -108,20 +131,345 @@ class import extends dbcore
 		$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 	}
-	
-	public function import_wigglewificsv($source="" , $user="Unknown", $file_id, $file_importing_id)
+
+	public function import_wardrive3($source="", $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
 			return array(-1, "File does not exist");
 		}
 		
-		if(@$user[-1] == "|")
+		$dbh = new PDO("sqlite:$source");
+		$dbh->setAttribute(PDO::ATTR_ERRMODE,
+			PDO::ERRMODE_EXCEPTION);
+		$APQuery = $dbh->query("SELECT * FROM networks");
+		$all_aps = $APQuery->fetchAll();
+		$File_lcount = count($all_aps);
+		$imported_aps = array();
+		$NewAPs = 0;
+		$ap_count = 0;
+		$gps_count = 0;
+		foreach ($all_aps as $key => $ap)
 		{
-			$user = str_replace("|", "", $user);
-		}else
+			$fBSSID = strtoupper($ap['bssid']);
+			if(!$this->validateMacAddress($fBSSID)){continue;}
+			$fSSID = $ap['ssid'];
+			$fFrequency = $ap["frequency"];
+			$fCapabilities = $ap["capabilities"];
+			$fRSSI = $ap['level'];
+			if($fRSSI == 0){$fRSSI = -99;}
+			$fSignal = $this->convert->dBm2Sig($fRSSI);
+			$fLat = $this->convert->all2dm(number_format($ap['lat'], 7));
+			$fLon = $this->convert->all2dm(number_format($ap['lon'], 7));
+			$fAlt = $ap['alt'];
+			$fDate = date("Y-m-d H:i:s", substr($ap['timestamp'], 0, -3));
+			
+			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
+			list($chan, $radio) = $this->convert->findFreq($fFrequency);
+			
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+			
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $calc, PDO::PARAM_STR);
+			$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError() !== 0)
+			{
+				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
+				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			}
+			
+			$sql = "SELECT `AP_ID`, `FLAGS` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
+			$res = $this->sql->conn->prepare($sql);
+			$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
+			$res->execute();
+			$this->sql->checkError();
+			$fetch = $res->fetch(2);
+			$new = 0;
+			$ap_id = "";
+			if($fetch['AP_ID'])
+			{
+				$ap_id	= $fetch['AP_ID'];
+				$ap_FLAGS	= $fetch['FLAGS'];
+				if($ap_FLAGS == "" && $fCapabilities != "")
+				{
+					$sql = "UPDATE `wifi_ap` SET `FLAGS` = ? WHERE `AP_ID` = ?";
+					$prepu = $this->sql->conn->prepare($sql);
+					$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
+					$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+					$prepu->execute();
+				}
+			}
+			else
+			{
+				$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `FLAGS`, `ap_hash`, `File_ID`)
+						VALUES ( ?,?,?,?,?,?,?,?,?,?,? )";
+						
+				$prep = $this->sql->conn->prepare($sql);
+				#var_dump($aps);
+				$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
+				$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+				$prep->bindParam(3, $chan, PDO::PARAM_INT);
+				$prep->bindParam(4, $authen, PDO::PARAM_STR);		
+				$prep->bindParam(5, $encry, PDO::PARAM_STR);
+				$prep->bindParam(6, $sectype, PDO::PARAM_INT);
+				$prep->bindParam(7, $radio, PDO::PARAM_STR);
+				$prep->bindParam(8, $nt, PDO::PARAM_STR);
+				$prep->bindParam(9, $fCapabilities, PDO::PARAM_STR);
+				$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
+				$prep->bindParam(11, $file_id, PDO::PARAM_INT);
+				$prep->execute();
+				if($this->sql->checkError())
+				{
+					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+					//$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
+					throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
+				}
+				$ap_id = $this->sql->conn->lastInsertId();
+				$imported_aps[] = $ap_id.":0";
+				$new = 1;
+				$NewAPs++;
+				$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);			
+			}
+			if($ap_id == ""){continue;}
+			$ap_count++;
+
+			$sql = "INSERT INTO `wifi_gps` ( `File_ID`, `Lat`, `Lon`, `Alt`, `GPS_Date`)
+					VALUES (?, ?, ?, ?, ?)";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1,$file_id, PDO::PARAM_INT);
+			$prep->bindParam(2,$fLat, PDO::PARAM_STR);
+			$prep->bindParam(3,$fLon, PDO::PARAM_STR);
+			$prep->bindParam(4,$fAlt, PDO::PARAM_STR);
+			$prep->bindParam(5,$fDate,PDO::PARAM_STR);
+			$prep->execute();
+			if($this->sql->checkError())
+			{
+				echo "Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1);
+				$this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
+				//$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
+				throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
+			}
+			$gps_id = $this->sql->conn->lastInsertId();	
+			if($gps_id == ""){continue;}
+			$gps_count++;
+			
+			$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
+			$preps = $this->sql->conn->prepare($sql);
+			$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
+			$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
+			$preps->bindParam(3, $file_id, PDO::PARAM_INT);
+			$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
+			$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
+			$preps->bindParam(6, $new, PDO::PARAM_INT);
+			$preps->bindParam(7, $fDate, PDO::PARAM_STR);
+			$preps->execute();
+			
+			$hist_id = $this->sql->conn->lastInsertId();
+			if($hist_id == ""){continue;}
+			
+			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
+			$this->UpdateHighPoints($ap_id);
+		}
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		#Finish off Import and give credit to the user.
+		$imported = implode("-", $imported_aps);
+		$date = date("Y-m-d H:i:s");
+		
+		$ret = array(
+				'imported'=> $imported,
+				'date'=>$date,
+				'aps'=>$ap_count,
+				'gps'=>$gps_count,
+				'newaps'=>$NewAPs
+			);
+		return $ret;
+	}
+	
+	public function import_wardrive4($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
 		{
-			$user = explode("|", $user)[0];
+			return array(-1, "File does not exist");
+		}
+		
+		$dbh = new PDO("sqlite:$source");
+		$dbh->setAttribute(PDO::ATTR_ERRMODE,
+			PDO::ERRMODE_EXCEPTION);
+
+		$APQuery = $dbh->query("SELECT * FROM `wifi`");
+		if($dbh->errorCode() != "00000")
+		{
+			return array(-1, "File does not have any access points");
+		}
+		$all_aps = $APQuery->fetchAll(2);
+		$File_lcount = count($all_aps);
+		$imported_aps = array();
+		$NewAPs = 0;
+		$ap_count = 0;
+		$gps_count = 0;
+		foreach($all_aps as $key => $ap)
+		{
+			$fid = $ap['_id'];
+			$fBSSID = strtoupper($ap['bssid']);
+			if(!$this->validateMacAddress($fBSSID)){continue;}
+			$fSSID = $ap['ssid'];
+			$fFrequency = $ap["frequency"];
+			$fCapabilities = $ap["capabilities"];
+
+			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
+			list($chan, $radio) = $this->convert->findFreq($fFrequency);
+			
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+			
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $calc, PDO::PARAM_STR);
+			$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
+			$prep->execute();
+			if($this->sql->checkError() !== 0)
+			{
+				$this->verbosed("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
+				//$this->logd("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
+				throw new ErrorException("Error Updating Temp Files Table for current GPS.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			}
+			
+			$sql = "SELECT `AP_ID`, `FLAGS` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
+			$res = $this->sql->conn->prepare($sql);
+			$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
+			$res->execute();
+			$this->sql->checkError();
+			$fetch = $res->fetch(2);
+			$new = 0;
+			$ap_id = "";
+			if($fetch['AP_ID'])
+			{
+				$ap_id	= $fetch['AP_ID'];
+				$ap_FLAGS	= $fetch['FLAGS'];
+				if($ap_FLAGS == "" && $fCapabilities != "")
+				{
+					$sql = "UPDATE `wifi_ap` SET `FLAGS` = ? WHERE `AP_ID` = ?";
+					$prepu = $this->sql->conn->prepare($sql);
+					$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
+					$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+					$prepu->execute();
+				}
+			}
+			else
+			{
+				$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `FLAGS`, `ap_hash`, `File_ID`)
+						VALUES ( ?,?,?,?,?,?,?,?,?,?,? )";
+						
+				$prep = $this->sql->conn->prepare($sql);
+				#var_dump($aps);
+				$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
+				$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+				$prep->bindParam(3, $chan, PDO::PARAM_INT);
+				$prep->bindParam(4, $authen, PDO::PARAM_STR);		
+				$prep->bindParam(5, $encry, PDO::PARAM_STR);
+				$prep->bindParam(6, $sectype, PDO::PARAM_INT);
+				$prep->bindParam(7, $radio, PDO::PARAM_STR);
+				$prep->bindParam(8, $nt, PDO::PARAM_STR);
+				$prep->bindParam(9, $fCapabilities, PDO::PARAM_STR);
+				$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
+				$prep->bindParam(11, $file_id, PDO::PARAM_INT);
+				$prep->execute();
+				if($this->sql->checkError())
+				{
+					$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+					//$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
+					throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
+				}
+				$ap_id = $this->sql->conn->lastInsertId();
+				$imported_aps[] = $ap_id.":0";
+				$new = 1;
+				$NewAPs++;
+				$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);			
+			}
+			if($ap_id == ""){continue;}
+			$ap_count++;
+				
+			$sql1 = "SELECT * FROM `wifispot` WHERE `fk_wifi` = '$fid'";
+			$gps_query = $dbh->query($sql1);
+			$gps_fetch = $gps_query->fetchAll(2);
+			foreach($gps_fetch as $point)
+			{
+				$fRSSI = $point['level'];
+				if($fRSSI == 0){$fRSSI = -99;}
+				$fSignal = $this->convert->dBm2Sig($fRSSI);
+				$fLat = $this->convert->all2dm(number_format($point['lat'], 7));
+				$fLon = $this->convert->all2dm(number_format($point['lon'], 7));
+				$fAlt = $point['alt'];
+				$fDate = date("Y-m-d H:i:s", substr($point['timestamp'], 0, -3));
+				
+				$sql = "INSERT INTO `wifi_gps` ( `File_ID`, `Lat`, `Lon`, `Alt`, `GPS_Date`)
+						VALUES (?, ?, ?, ?, ?)";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1,$file_id, PDO::PARAM_INT);
+				$prep->bindParam(2,$fLat, PDO::PARAM_STR);
+				$prep->bindParam(3,$fLon, PDO::PARAM_STR);
+				$prep->bindParam(4,$fAlt, PDO::PARAM_STR);
+				$prep->bindParam(5,$fDate,PDO::PARAM_STR);
+				$prep->execute();
+				if($this->sql->checkError())
+				{
+					echo "Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1);
+					$this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
+					//$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
+					throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
+				}
+				$gps_id = $this->sql->conn->lastInsertId();	
+				if($gps_id == ""){continue;}
+				$gps_count++;
+				
+				$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
+				$preps = $this->sql->conn->prepare($sql);
+				$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
+				$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
+				$preps->bindParam(3, $file_id, PDO::PARAM_INT);
+				$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
+				$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
+				$preps->bindParam(6, $new, PDO::PARAM_INT);
+				$preps->bindParam(7, $fDate, PDO::PARAM_STR);
+				$preps->execute();
+				
+				$hist_id = $this->sql->conn->lastInsertId();
+				if($hist_id == ""){continue;}
+				
+				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
+				$this->UpdateHighPoints($ap_id);
+			}
+		}
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		#Finish off Import and give credit to the user.
+		$imported = implode("-", $imported_aps);
+		$date = date("Y-m-d H:i:s");
+		
+		$ret = array(
+				'imported'=> $imported,
+				'date'=>$date,
+				'aps'=>$ap_count,
+				'gps'=>$gps_count,
+				'newaps'=>$NewAPs
+			);
+		return $ret;
+	}
+	
+	public function import_wigglewificsv($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
 		}
 
 		# Open the file and dump its contents into an array. probably should re think this part...
@@ -138,6 +486,7 @@ class import extends dbcore
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);
 		$imported_aps = array();
+		$newhashes = array();
 		$NewAPs = 0;
 		$ap_count = 0;
 		$gps_count = 0;
@@ -151,6 +500,7 @@ class import extends dbcore
 			$fSSID = $apinfo[1];
 			$fAuthMode = $apinfo[2];
 			$fDate = $apinfo[3];
+			if(substr($fDate, 0, 4) == "1969"){continue;}//Fix for bad date
 			$fchannel = $apinfo[4];
 			$fRSSI = $apinfo[5];
 			if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
@@ -207,20 +557,27 @@ class import extends dbcore
 				if($gps_id == ""){continue;}
 				$gps_count++;
 				
-				$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
+				$sql = "SELECT `AP_ID`, `FLAGS` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
 				$res = $this->sql->conn->prepare($sql);
 				$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$res->execute();
 				$this->sql->checkError();
-
 				$fetch = $res->fetch(2);
-				$new = 0;
 				$ap_id = "";
 				if($fetch['AP_ID'])
 				{
 					$ap_id	= $fetch['AP_ID'];
-					
-				}else
+					$ap_FLAGS	= $fetch['FLAGS'];
+					if($ap_FLAGS == "" && $fAuthMode != "")
+					{
+						$sql = "UPDATE `wifi_ap` SET `FLAGS` = ? WHERE `AP_ID` = ?";
+						$prepu = $this->sql->conn->prepare($sql);
+						$prepu->bindParam(1, $fAuthMode, PDO::PARAM_STR);
+						$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+						$prepu->execute();
+					}
+				}
+				else
 				{
 					$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `FLAGS`, `ap_hash`, `File_ID`)
 							VALUES ( ?,?,?,?,?,?,?,?,?,?,? )";
@@ -247,14 +604,15 @@ class import extends dbcore
 					}
 					$ap_id = $this->sql->conn->lastInsertId();
 					$imported_aps[] = $ap_id.":0";
-					$new = 1;
 					$NewAPs++;
+					$newhashes[$ap_hash] = 1;
 					$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
 					#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");					
 				}
 				
 				if($ap_id == ""){continue;}
 				$ap_count++;
+				if(isset($newhashes[$ap_hash]) && $newhashes[$ap_hash] == 1){$new = 1;}else{$new = 0;}
 				
 				$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
@@ -271,32 +629,13 @@ class import extends dbcore
 				if($hist_id == ""){continue;}
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-				$this->UpdateHighPoints($ap_id);
-					
+				$this->UpdateHighPoints($ap_id);	
 			}
 		}
-		
 		#Find if file had Valid GPS
-		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
-			. "FROM `wifi_hist`\n"
-			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-			. "LIMIT 1";
-		$prepvgps = $this->sql->conn->prepare($sql);
-		$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prepvgps->execute();
-		$prepvgps_fetch = $prepvgps->fetch(2);
-		if($prepvgps_fetch)
-		{
-			$ValidGPS = 1;
-			$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
-			$prepvgpsu = $this->sql->conn->prepare($sql);
-			$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
-			$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
-			$prepvgpsu->execute();
-		}
-		#Finish off Import and give credit to the user.
+		$this->UpdateFileValidGPS($file_id);
 		
+		#Finish off Import and give credit to the user.
 		$imported = implode("-", $imported_aps);
 		$date = date("Y-m-d H:i:s");
 		
@@ -310,19 +649,11 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_swardriving($source="" , $user="Unknown", $file_id, $file_importing_id)
+	public function import_swardriving($source="", $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
 			return array(-1, "File does not exist");
-		}
-		
-		if(@$user[-1] == "|")
-		{
-			$user = str_replace("|", "", $user);
-		}else
-		{
-			$user = explode("|", $user)[0];
 		}
 
 		# Open the file and dump its contents into an array. probably should re think this part...
@@ -407,20 +738,28 @@ class import extends dbcore
 				if($gps_id == ""){continue;}
 				$gps_count++;
 				
-				$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
+				$sql = "SELECT `AP_ID`, `FLAGS` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
 				$res = $this->sql->conn->prepare($sql);
 				$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
 				$res->execute();
 				$this->sql->checkError();
-
 				$fetch = $res->fetch(2);
 				$new = 0;
 				$ap_id = "";
 				if($fetch['AP_ID'])
 				{
 					$ap_id	= $fetch['AP_ID'];
-					
-				}else
+					$ap_FLAGS	= $fetch['FLAGS'];
+					if($ap_FLAGS == "" && $fAuthMode != "")
+					{
+						$sql = "UPDATE `wifi_ap` SET `FLAGS` = ? WHERE `AP_ID` = ?";
+						$prepu = $this->sql->conn->prepare($sql);
+						$prepu->bindParam(1, $fAuthMode, PDO::PARAM_STR);
+						$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+						$prepu->execute();
+					}
+				}
+				else
 				{
 					$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `FLAGS`, `ap_hash`, `File_ID`)
 							VALUES ( ?,?,?,?,?,?,?,?,?,?,? )";
@@ -475,28 +814,10 @@ class import extends dbcore
 					
 			}
 		}
-		
 		#Find if file had Valid GPS
-		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
-			. "FROM `wifi_hist`\n"
-			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-			. "LIMIT 1";
-		$prepvgps = $this->sql->conn->prepare($sql);
-		$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prepvgps->execute();
-		$prepvgps_fetch = $prepvgps->fetch(2);
-		if($prepvgps_fetch)
-		{
-			$ValidGPS = 1;
-			$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
-			$prepvgpsu = $this->sql->conn->prepare($sql);
-			$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
-			$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
-			$prepvgpsu->execute();
-		}
-		#Finish off Import and give credit to the user.
+		$this->UpdateFileValidGPS($file_id);
 		
+		#Finish off Import and give credit to the user.
 		$imported = implode("-", $imported_aps);
 		$date = date("Y-m-d H:i:s");
 		
@@ -509,30 +830,14 @@ class import extends dbcore
 			);
 		return $ret;
 	}
-####################
-	/**
-	 * @param string $source
-	 * @param string $user
-	 * @param integer $file_id
-	 * @param integer $file_importing_id
-	 * @return array
-	 * @throws ErrorException
-	 */
-	public function import_vs1($source="" , $user="Unknown", $file_id, $file_importing_id)
+
+	public function import_vs1($source="", $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
 			return array(-1, "File does not exist");
 		}
 		
-		if(@$user[-1] == "|")
-		{
-			$user = str_replace("|", "", $user);
-		}else
-		{
-			$user = explode("|", $user)[0];
-		}
-		$r = 0;
 		$increment_ids = 0;
 		$apdata = array();
 		$gdata = array();
@@ -745,18 +1050,17 @@ class import extends dbcore
 					$this->verbosed($file_line_exp_count."\r\nummm.... wrong number of columns... I'm going to ignore this line:/\r\n", -1);
 					break;
 			}
-			//$r = $this->RotateSpinner($r);
 		}
 		if(count($apdata) === 0)
 		{
-			$this->verbosed("File did not have an valid AP data, dropping file. $source from user: $user.", -1);
-			//$this->logd("File did not have an valid AP data, dropping file. $source from user: $user.", "Warning");
+			$this->verbosed("File did not have an valid AP data, dropping file.", -1);
+			//$this->logd("File did not have an valid AP data, dropping file.", "Warning");
 			return array(-1, "File does not have any valid AP data.");
 		}
 		if(count($gdata) === 0)
 		{
-			$this->verbosed("File did not have an valid GPS data, dropping file. $source from user: $user.", -1);
-			//$this->logd("File did not have an valid GPS data, dropping file. $source from user: $user.", "Warning");
+			$this->verbosed("File did not have an valid GPS data, dropping file.", -1);
+			//$this->logd("File did not have an valid GPS data, dropping file.", "Warning");
 			return array(-1, "File does not have any valid GPS data.");
 		}
 
@@ -943,26 +1247,9 @@ class import extends dbcore
 			$this->UpdateHighPoints($ap_id);
 		}
 		#Find if file had Valid GPS
-		$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
-			. "FROM `wifi_hist`\n"
-			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-			. "LIMIT 1";
-		$prepvgps = $this->sql->conn->prepare($sql);
-		$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prepvgps->execute();
-		$prepvgps_fetch = $prepvgps->fetch(2);
-		if($prepvgps_fetch)
-		{
-			$ValidGPS = 1;
-			$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
-			$prepvgpsu = $this->sql->conn->prepare($sql);
-			$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
-			$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
-			$prepvgpsu->execute();
-		}
+		$this->UpdateFileValidGPS($file_id);
+		
 		#Finish off Import and give credit to the user.
-
 		$imported = implode("-", $imported_aps);
 		$date = date("Y-m-d H:i:s");
 
@@ -975,4 +1262,265 @@ class import extends dbcore
 			);
 		return $ret;
 	}
+	
+	public function import_vistumblermdb($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+		
+		$gdata = array();
+		$apdata = array();
+		$imported_aps = array();
+		$NewAPs = 0;
+		$ap_count = 0;
+		$gps_count = 0;
+		
+		$table = "GPS";
+		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
+		$output = shell_exec($command);
+		$gps_return	 = explode("\n", $output);
+		$gps_lcount = count($gps_return);
+		foreach ($gps_return as $key => $gps)
+		{
+			if($key==0){continue;}
+			$GPS_Arr = str_getcsv ($gps);
+			$GPS_Row_Count = count($GPS_Arr);
+			if($GPS_Row_Count == 12)
+			{
+				
+				$og_id = (int) $GPS_Arr[0];
+				$og_lat = $this->convert->all2dm($GPS_Arr[1]);
+				$og_long = $this->convert->all2dm($GPS_Arr[2]);
+				$og_sats = (int) $GPS_Arr[3];
+				$og_hdp = (float) $GPS_Arr[4];
+				$og_alt = (float) $GPS_Arr[5];
+				$og_geo = (float) $GPS_Arr[6];
+				$og_kmh = (float) $GPS_Arr[7];
+				$og_mph = (float) $GPS_Arr[8];
+				$og_track = (float) $GPS_Arr[9];
+				$og_datetime = $GPS_Arr[10]." ".$GPS_Arr[11];
+				
+				$calc = "GPS: ".($key+1)." / ".$gps_lcount;
+				$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = 'Importing GPS Data' WHERE `id` = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $calc, PDO::PARAM_STR);
+				$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+				$prep->execute();
+				
+				$sql = "INSERT INTO `wifi_gps` ( `File_ID`, `File_GPS_ID`, `Lat`, `Lon`, `NumOfSats`, `HorDilPitch`, `Alt`, `Geo`, `KPH`, `MPH`, `TrackAngle`, `GPS_Date`)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
+				
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1,$file_id, PDO::PARAM_INT);
+				$prep->bindParam(2,$og_id, PDO::PARAM_INT);
+				$prep->bindParam(3,$og_lat, PDO::PARAM_STR);
+				$prep->bindParam(4,$og_long, PDO::PARAM_STR);
+				$prep->bindParam(5,$og_sats,PDO::PARAM_INT);
+				$prep->bindParam(6,$og_hdp,PDO::PARAM_STR);
+				$prep->bindParam(7,$og_alt,PDO::PARAM_STR);
+				$prep->bindParam(8,$og_geo,PDO::PARAM_STR);
+				$prep->bindParam(9,$og_kmh,PDO::PARAM_STR);
+				$prep->bindParam(10,$og_mph,PDO::PARAM_STR);
+				$prep->bindParam(11,$og_track,PDO::PARAM_STR);
+				$prep->bindParam(12,$og_datetime,PDO::PARAM_STR);
+				$prep->execute();
+				if($this->sql->checkError())
+				{
+					$this->verbosed("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), -1);
+					//$this->logd("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1), "Error");
+					throw new ErrorException("Failed Insert of GPS.".var_export($this->sql->conn->errorInfo(),1));
+				}
+				$new_gps_id = $this->sql->conn->lastInsertId();
+				$gdata[$og_id] = array(
+							'old_gps_id'	=>  (int) $og_id,
+							'new_gps_id'	=>  (int) $new_gps_id
+				);
+				$gps_count++;
+			}
+		}
+		
+		$table = "AP";
+		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
+		$output = shell_exec($command);
+		$ap_return	 = explode("\n", $output);
+		$ap_lcount = count($ap_return);
+		foreach ($ap_return as $key => $ap)
+		{
+			if($key==0){continue;}	
+			$AP_Arr = str_getcsv ($ap);
+			$AP_Row_Count = count($AP_Arr);
+			if($AP_Row_Count == 31)
+			{
+				$oa_id = $AP_Arr[0];
+				$oa_mac = $AP_Arr[3];
+				$oa_ssid = $AP_Arr[4];
+				$oa_chan = (int) $AP_Arr[5];
+				$oa_auth = $AP_Arr[6];
+				$oa_encry = $AP_Arr[7];
+				$oa_sectype = (int) $AP_Arr[8];	
+				$oa_nt = $AP_Arr[9];
+				$oa_radio = $AP_Arr[10];
+				$oa_btx = $AP_Arr[11];
+				$oa_otx = $AP_Arr[12];
+				$ap_hash = md5($oa_ssid.$oa_mac.$oa_chan.$oa_sectype.$oa_radio.$oa_auth.$oa_encry);
+				
+				$calc = "AP: ".($key+1)." / ".$ap_lcount;
+				$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $calc, PDO::PARAM_STR);
+				$prep->bindParam(2, $oa_ssid, PDO::PARAM_STR);
+				$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
+				$prep->execute();
+				
+				$sql = "SELECT `AP_ID`, `BTX`, `OTX` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";
+				$res = $this->sql->conn->prepare($sql);
+				$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
+				$res->execute();
+				$this->sql->checkError();
+				$fetch = $res->fetch(2);
+				$new = 0;
+				$ap_id = 0;
+				if($fetch['AP_ID'])
+				{
+					$ap_id	= $fetch['AP_ID'];
+					$ap_BTX	= $fetch['BTX'];
+					$ap_OTX	= $fetch['OTX'];
+					if(($ap_BTX == "" && $oa_btx != "") || ($ap_OTX == "" && $oa_otx != ""))
+					{
+						$sql = "UPDATE `wifi_ap` SET `BTX` = ?, `OTX` = ? WHERE `AP_ID` = ?";
+						$prepu = $this->sql->conn->prepare($sql);
+						$prepu->bindParam(1, $oa_btx, PDO::PARAM_STR);
+						$prepu->bindParam(2, $oa_otx, PDO::PARAM_STR);
+						$prepu->bindParam(3, $ap_id, PDO::PARAM_INT);
+						$prepu->execute();
+					}
+				}
+				else
+				{
+					$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `BTX`, `OTX`, `ap_hash`, `File_ID`)
+							VALUES ( ?,?,?,?,?,?,?,?,?,?,?,? )";
+							
+					$prep = $this->sql->conn->prepare($sql);
+					#var_dump($aps);
+					$prep->bindParam(1, $oa_mac, PDO::PARAM_STR);
+					$prep->bindParam(2, $oa_ssid, PDO::PARAM_STR);
+					$prep->bindParam(3, $oa_chan, PDO::PARAM_INT);
+					$prep->bindParam(4, $oa_auth, PDO::PARAM_STR);
+					$prep->bindParam(5, $oa_encry, PDO::PARAM_STR);
+					$prep->bindParam(6, $oa_sectype, PDO::PARAM_INT);
+					$prep->bindParam(7, $oa_radio, PDO::PARAM_STR);
+					$prep->bindParam(8, $oa_nt, PDO::PARAM_STR);
+					$prep->bindParam(9, $oa_btx, PDO::PARAM_STR);
+					$prep->bindParam(10, $oa_otx, PDO::PARAM_STR);
+					$prep->bindParam(11, $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(12, $file_id, PDO::PARAM_INT);
+					$prep->execute();
+					if($this->sql->checkError())
+					{
+						$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+						//$this->logd("Error insering wifi pointer. ".var_export($this->sql->conn->errorInfo(),1));
+						throw new ErrorException("Error insering wifi pointer.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					}
+					else
+					{
+						$ap_id = $this->sql->conn->lastInsertId();
+						$new = 1;	
+						$imported_aps[] = $ap_id.":0";
+						$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
+						#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
+					}
+					$NewAPs++;
+				}
+
+				
+				$apdata[$oa_id] = array(
+					'new'	=>  (int) $new,
+					'old_ap_id'	=>  (int) $oa_id,
+					'new_ap_id'	=>  (int) $ap_id
+				);
+				$ap_count++;
+			}
+		}
+		
+		$table = "Hist";
+		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
+		$output = shell_exec($command);
+		$hist_return	 = explode("\n", $output);
+		$hist_lcount = count($hist_return);
+		foreach ($hist_return as $key => $hist)
+		{
+			if($key==0){continue;}	
+			$Hist_Arr = str_getcsv ($hist);
+			$Hist_Row_Count = count($Hist_Arr);
+			if($Hist_Row_Count == 7)
+			{
+				$oh_id = (int) $Hist_Arr[0];
+				$oh_ap_id = (int) $Hist_Arr[1];
+				$oh_gps_id = (int) $Hist_Arr[2];
+				$oh_sig = (int) $Hist_Arr[3];
+				$oh_rssi = (int) $Hist_Arr[4];
+				$oh_datetime = $Hist_Arr[5]." ".$Hist_Arr[6];
+				
+				$gps_id_arr = $gdata[$oh_gps_id];
+				$new_gps_id = $gps_id_arr['new_gps_id'];
+				
+				$ap_id_arr = $apdata[$oh_ap_id];
+				$new_ap_id = $ap_id_arr['new_ap_id'];
+				$new = $ap_id_arr['new'];
+				
+				$calc = "HIST: ".($key+1)." / ".$hist_lcount;
+				$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = 'Importing HIST Data' WHERE `id` = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $calc, PDO::PARAM_STR);
+				$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+				$prep->execute();
+				
+				if($gps_id_arr != "" && $new_ap_id != "")
+				{
+					$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
+					$preps = $this->sql->conn->prepare($sql);
+					$preps->bindParam(1, $new_ap_id, PDO::PARAM_INT);
+					$preps->bindParam(2, $new_gps_id, PDO::PARAM_INT);
+					$preps->bindParam(3, $file_id, PDO::PARAM_INT);
+					$preps->bindParam(4, $oh_sig, PDO::PARAM_INT);
+					$preps->bindParam(5, $oh_rssi, PDO::PARAM_INT);
+					$preps->bindParam(6, $new, PDO::PARAM_INT);
+					$preps->bindParam(7, $oh_datetime, PDO::PARAM_STR);
+					$preps->execute();
+
+					if($this->sql->checkError() !== 0)
+					{
+						$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
+						//$this->logd("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
+						throw new ErrorException("Error inserting wifi signal.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					}
+				}
+			}
+		}
+		
+		foreach ($apdata as $key => $ap)
+		{
+			$ap_id = $ap['new_ap_id'];
+			$this->UpdateHighPoints($ap_id);
+		}
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		#Finish off Import and give credit to the user.
+		$imported = implode("-", $imported_aps);
+		$date = date("Y-m-d H:i:s");
+
+		$ret = array(
+				'imported'=> $imported,
+				'date'=>$date,
+				'aps'=>$ap_count,
+				'gps'=>$gps_count,
+				'newaps'=>$NewAPs
+			);
+		return $ret;
+	}	
+	
 }
+
