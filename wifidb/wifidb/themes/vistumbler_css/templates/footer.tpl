@@ -1,4 +1,3 @@
-			</div>
 			<div class="foot">
 				<div class="inside_text_center">
 				Vistumbler WifiDB {$wifidb_version_label}

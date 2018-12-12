@@ -12,8 +12,4 @@
 				<a href="http://www.wifidb.net/"><img alt="WifiDB Logo" src="{$wifidb_host_url}themes/vistumbler_css/img/logo.png"></a>
 		</div>
 		<div class='bodywrap'>
-			<!-- CUSTOM NAV -->
 {include file="navigation.tpl"}
-			<!-- END CUSTOM NAV-->
-			<div class="main">
-			

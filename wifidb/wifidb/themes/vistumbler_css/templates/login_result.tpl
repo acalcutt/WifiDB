@@ -1,13 +1,15 @@
 {include file="header.tpl"}
-                                    <table align="center">
-                                        <tbody>
-                                            <tr>
-                                                <td>
-                                                    <p align="center">
-                                                        {$message}
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
+			<div class="main">
+				<table align="center">
+					<tbody>
+						<tr>
+							<td>
+								<p align="center">
+									{$message}
+								</p>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 {include file="footer.tpl"}

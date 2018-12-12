@@ -6,8 +6,8 @@ body {
     background: #145285;
 }
 
-table, th, td {
-  border: 1px solid black;
+th, td {
+  border: 0px solid black;
 }
 
 .wrap{
@@ -78,31 +78,6 @@ a:visited {
 	color: #002448;
 }
 
-
-
-.style1 {
-	text-align: center;
-	color: #000000;
-	background-color: #477DA9;
-	font-weight: bold;
-}
-
-.style3 {
-	text-align: center;
-	color: #000000;
-	background-color: #477DA9;
-	font-weight: bold;
-	border: 1px inset black;
-}
-
-.style4
-{
-	text-align: center;
-	color: #000000;
-	background-color: #477DA9;
-	font-weight: bold;
-}
-
 a.links {
 	font-weight: bold; 
 	color: #123;
@@ -125,13 +100,6 @@ a.links {
 	font-weight: bold;
 }
 
-.centered_content_table {
-    margin: 0 auto;
-	padding: 1px;
-    border-collapse: collapse;
-    border-spacing: 0;
-}
-
 .content_table {
     margin: 0 auto;
 	width:100%;
@@ -140,44 +108,87 @@ a.links {
     border-spacing: 0;
 }
 
-.content_table_header {
-	text-align: center;
-	background-color: #477DA9;
-	font-weight: bold;
-	border: 1px inset black;
-}
-
-.content_table_data_light {
-	text-align: center;
-	background-color: #BAD0E2;
-	font-weight: bold;
-	border: 1px inset black;
-}
-
-.content_table_data_dark {
-	text-align: center;
-	background-color: #85ABCB;
-	font-weight: bold;
-	border: 1px inset black;
-}
-
-.header_left {
+.header {
 	text-align: left;
-	background-color: #477DA9;
+	background-color: #5b86aa;
 	font-weight: bold;
 	border: 1px inset black;
 }
 
 .dark {
 	text-align: left;
-	background-color: #85ABCB;
+	background-color: #a1bace;
 	border: 1px inset black;
 }
+
+.dark a {
+	font-weight: bold;
+}
+
 .light {
 	text-align: left;
-	background-color: #BAD0E2;
+	background-color: #d0dce7;
 	border: 1px inset black;
 }
+
+.light a {
+	font-weight: bold;
+}
+
+.content_table-centered {
+    margin: 0 auto;
+	padding: 1px;
+    border-collapse: collapse;
+    border-spacing: 0;
+	border: 0px;
+}
+
+.header-centered {
+	text-align: center;
+	background-color: #5b86aa;
+	font-weight: bold;
+	border: 1px inset black;
+}
+
+.dark-centered {
+	text-align: center;
+	background-color: #a1bace;
+	border: 1px inset black;
+}
+
+.dark-centered a {
+	font-weight: bold;
+}
+
+.light-centered {
+	text-align: center;
+	background-color: #d0dce7;
+	border: 1px inset black;
+}
+
+.light-centered a {
+	font-weight: bold;
+}
+
+.yellow-centered {
+	text-align: center;
+	background-color: yellow;
+	border: 1px inset black;
+}
+
+.green-centered {
+	text-align: center;
+	background-color: green;
+	border: 1px inset black;
+}
+
+.content-centered {
+	text-align: center;
+	background-color: #6388C7;
+	border: 1px inset black;
+}
+
+
 
 
 

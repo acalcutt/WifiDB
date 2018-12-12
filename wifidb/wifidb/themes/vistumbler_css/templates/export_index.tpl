@@ -1,6 +1,6 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+
+Copyright (C) 2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -18,58 +18,61 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                                        <h2>Exports Page</h2>
-                                        <form action="{$wifidb_host_url}opt/export.php?func=exp_user_list" method="post" enctype="multipart/form-data">
-                                            <table border="1" cellspacing="0" cellpadding="3" align="center">
-                                                <tbody>
-                                                    <tr class="style4">
-                                                        <th colspan="2">Export a Users Import List to KMZ</th>
-                                                    </tr>
-                                                    <tr class="light">
-                                                        <td>User Import List: </td>
-                                                        <td>
-                                                            <select name="id">
+			<div class="main">
+				<h2>Exports Page</h2>
+				<form action="{$wifidb_host_url}opt/export.php?func=exp_user_list" method="post" enctype="multipart/form-data">
+					<table border="1" cellspacing="0" cellpadding="3" align="center">
+						<tbody>
+							<tr class="header">
+								<th colspan="2">Export a Users Import List to KMZ</th>
+							</tr>
+							<tr class="light">
+								<td>User Import List: </td>
+								<td>
+									<select name="id">
 
-                                                                {foreach name=outer item=export_titles from=$wifidb_export_imports_all}
-                                                                <option value="{$export_titles.id}">User: {$export_titles.username} - Title: {$export_titles.title} - # APs: {$export_titles.aps} - # Date: {$export_titles.date}</option>
-                                                                {foreachelse}
-                                                                <option value="">No Imports</option>
-                                                                {/foreach}
-                                                            </select>
-                                                        </td>
-                                                        </tr>
-                                                        <tr class="light">
-                                                            <td colspan="2" align="right">
-                                                                <input type="submit" value="Export This Users List">
-                                                            </td>
-                                                        </tr>
-                                                </tbody>
-                                            </table>
-                                        </form>
-                                        <form action="{$wifidb_host_url}opt/export.php?func=exp_user_all_kml" method="post" enctype="multipart/form-data">
-                                            <table border="1" cellspacing="0" cellpadding="3" align="center">
-                                                <tbody>
-                                                    <tr class="style4">
-                                                        <th colspan="2">Export All Access Points for a User</th>
-                                                    </tr>
-                                                <tr class="light">
-                                                    <td>Username: </td>
-                                                    <td>
-                                                        <select name="user">
-                                                            {foreach name=outer item=export_user from=$wifidb_export_users_all}
-                                                            <option value="{$export_user}">{$export_user}</option>
-                                                            {foreachelse}
-                                                            <option value="">No Users</option>
-                                                            {/foreach}
-                                                        </select>
-                                                    </td>
-                                                </tr>
-                                                <tr class="light">
-                                                    <td colspan="2" align="right">
-                                                        <input type="submit" value="Export This Users Access points">
-                                                    </td>
-                                                </tr>
-                                                </tbody>
-                                            </table>
-                                        </form>
+										{foreach name=outer item=export_titles from=$wifidb_export_imports_all}
+										<option value="{$export_titles.id}">User: {$export_titles.username} - Title: {$export_titles.title} - # APs: {$export_titles.aps} - # Date: {$export_titles.date}</option>
+										{foreachelse}
+										<option value="">No Imports</option>
+										{/foreach}
+									</select>
+								</td>
+								</tr>
+								<tr class="light">
+									<td colspan="2" align="right">
+										<input type="submit" value="Export This Users List">
+									</td>
+								</tr>
+						</tbody>
+					</table>
+				</form>
+				<br/>
+				<form action="{$wifidb_host_url}opt/export.php?func=exp_user_all_kml" method="post" enctype="multipart/form-data">
+					<table border="1" cellspacing="0" cellpadding="3" align="center">
+						<tbody>
+							<tr class="header">
+								<th colspan="2">Export All Access Points for a User</th>
+							</tr>
+						<tr class="light">
+							<td>Username: </td>
+							<td>
+								<select name="user">
+									{foreach name=outer item=export_user from=$wifidb_export_users_all}
+									<option value="{$export_user}">{$export_user}</option>
+									{foreachelse}
+									<option value="">No Users</option>
+									{/foreach}
+								</select>
+							</td>
+						</tr>
+						<tr class="light">
+							<td colspan="2" align="right">
+								<input type="submit" value="Export This Users Access points">
+							</td>
+						</tr>
+						</tbody>
+					</table>
+				</form>
+			</div>
 {include file="footer.tpl"}

@@ -1,6 +1,6 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+
+Copyright (C) 2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -18,6 +18,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
+			<div class="main">
                 <table class="content_table">
                     <tbody>
                         <tr>
@@ -71,7 +72,7 @@ if not, write to the
                                 <br/>
                                 <table border="1" style="width:100%;">
                                     <tbody>
-                                        <tr class="style4">
+                                        <tr class="header">
                                             <th>AP ID</th>
                                             <th>Update / New</th>
                                             <th>GPS</th>
@@ -105,5 +106,5 @@ if not, write to the
                         </tr>
                     </tbody>
                 </table>
-                        <br/>
+			</div>
 {include file="footer.tpl"}

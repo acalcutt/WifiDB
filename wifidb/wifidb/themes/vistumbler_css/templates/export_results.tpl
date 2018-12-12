@@ -1,6 +1,6 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+
+Copyright (C) 2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -18,11 +18,13 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                                        <table style="50%" cellspacing="3" cellpadding="0" class="style3">
-                                            <tr>
-                                                <td class="style2">
-                                                    {$results.mesg}
-                                                </td>
-                                            </tr>
-                                        </table>
+			<div class="main">
+				<table style="50%" cellspacing="3" cellpadding="0" class="style3">
+					<tr>
+						<td class="style2">
+							{$results.mesg}
+						</td>
+					</tr>
+				</table>
+			</div>
 {include file="footer.tpl"}

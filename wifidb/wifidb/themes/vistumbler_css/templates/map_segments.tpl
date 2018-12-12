@@ -1,6 +1,6 @@
 <!--
 index.tpl: The Smarty Index template for WiFiDB.
-Copyright (C) 2018 Andrew Calcutt
+Copyright (C) 2018 Andrew Calcutt Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -19,11 +19,13 @@ if not, write to the
 -->
 
 {include file="header.tpl"}
-{$user} has {$count} APs, which is greater than the {$limit} AP map limit. Please pick a smaller segment bellow.<br/><br/>
-The segments are ordered by ModDate, with the last modified APs first.<br/><br/>
-{for $multiplier=1 to $ldivs}
-	<a class="links" href="{$wifidb_host_url}opt/map.php?func=user_all&labeled={$labeled}&user={$user}&from={($multiplier-1)*$limit}&limit={$limit}&clat={$clat}&clon={$clon}" title="View {$user} Map {$multiplier}">{$user} Map {$multiplier}</a><br/>
-{/for}
-<br/>
-*Note* If the user has this many APs, the map may take a long time to load. Don't be surprised if you are looking at a blank map for a while, just let it load. It takes a while to dynamically generate this many access points. It will take a least as long as it took to load this page.
+			<div class="main">
+				{$user} has {$count} APs, which is greater than the {$limit} AP map limit. Please pick a smaller segment bellow.<br/><br/>
+				The segments are ordered by ModDate, with the last modified APs first.<br/><br/>
+				{for $multiplier=1 to $ldivs}
+					<a class="links" href="{$wifidb_host_url}opt/map.php?func=user_all&labeled={$labeled}&user={$user}&from={($multiplier-1)*$limit}&limit={$limit}&clat={$clat}&clon={$clon}" title="View {$user} Map {$multiplier}">{$user} Map {$multiplier}</a><br/>
+				{/for}
+				<br/>
+				*Note* If the user has this many APs, the map may take a long time to load. Don't be surprised if you are looking at a blank map for a while, just let it load. It takes a while to dynamically generate this many access points. It will take a least as long as it took to load this page.
+			</div>
 {include file="footer.tpl"}
