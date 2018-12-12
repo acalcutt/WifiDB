@@ -49,15 +49,10 @@ table, th, td {
 .main {
 	margin-left: 228px;
 	margin-right: 0px;
-	margin: auto;
 	background: #6388C7;
 	border-radius: 10px;
 	padding: 10px; 
 	min-width: 700px;
-}
-
-#main .wrap {
-    margin: auto;
 }
 
 .inside_dark_header {
