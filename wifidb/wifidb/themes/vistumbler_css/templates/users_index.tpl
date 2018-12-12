@@ -36,7 +36,7 @@ if not, write to the
 			</script>
 			</p>
                         <h1>Stats For: All Users</h1>
-                        <table border="1" align="center" width="90%">
+                        <table class="content_table">
                             <tbody>
                                 <tr class="style4">
                                     <th width="50px">Show/Hide</th>

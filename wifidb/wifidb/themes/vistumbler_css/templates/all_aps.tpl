@@ -18,8 +18,8 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                                    <table border="1" width="100%" cellspacing="0">
-                                        <tr class="style4">
+                                    <table class="content_table"">
+                                        <tr class="header_left">
                                             <td>
                                                 GPS
                                             </td>
@@ -57,31 +57,31 @@ if not, write to the
                                         </tr>
                                         {foreach name=outer item=wifidb_ap from=$wifidb_aps_all}
                                         <tr class="{$wifidb_ap.class}">
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.globe_html}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_ap.id}" title="View AP Details">{$wifidb_ap.ssid}</a>
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.mac}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.chan}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.radio}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.auth}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.encry}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.fa}
                                             </td>
-                                            <td align="center">
+                                            <td>
                                                 {$wifidb_ap.la}
                                             </td>
                                         </tr>

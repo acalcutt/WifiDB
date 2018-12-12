@@ -19,7 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
 <br>
-<table border="1" width="90%">
+<table class="content_table">
 	<tr class="style4">
 		<th colspan="9" align="center">Files already imported</th>
 	</tr>

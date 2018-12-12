@@ -19,82 +19,43 @@ if not, write to the
 -->
 
 {include file="header.tpl"}
-<table width="85%" border="1" cellpadding="2" cellspacing="0">
+<table class="content_table">
     <tbody>
         <tr>
-            <td colspan="4" class="style1"><strong><em>Statistics</em></strong></td>
-    </tr>
-    <tr class="style3"><td class="style2" colspan="4"></td></tr>
-    <tr>
-            <th class="style3" style="width: 100px">Total AP's</th>
-            <th class="style3">Open APs</th>
-            <th class="style3">WEP APs</th>
-            <th class="style3">Secure APs</th>
-    </tr>
-    <tr class="light">
-            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="All Users">{$total_aps}</a></td>
-            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&from=0&to=25" title="Open APs">{$open_aps}</a></td>
-            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&from=0&to=25" title="WEP APs">{$wep_aps}</a></td>
-            <td align="center" class="style2"><a class="links" href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&from=0&to=25" title="Secure APs">{$sec_aps}</a></td>
-    </tr>
-    <tr class="style3"><td class="style2" colspan="4"></td></tr>
-    <tr>
-            <th class="style3" style="width: 100px">Total Users</th>
-            <th class="style3">Last user to import</th>
-            <th class="style3">Last AP added</th>
-            <th class="style3">Last Import List</th>
-    </tr>
-    <tr class="dark">
-            <td align="center" class="style2" style="width: 100px"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users}</a></td>
-            <td align="center" class="style2">
-                <p align="center">
-                <table>
-                    <tbody>
-                        <tr>
-                            <td align="right" width="100%">
-                                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a>
-                            </td>
-                            <td align="left">
-                                {$user_globe_html}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                </p>
-            </td>
-            <td align="center" class="style2">
-                <p align="center">
-                <table>
-                    <tbody>
-                        <tr>
-                            <td align="right" width="100%">
-                                <a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}" title="View AP Details">{$new_ap_ssid}</a>
-                            </td>
-                            <td align="left">
-                                {$ap_globe_html}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                </p>
-            </td>
-            <td align="center" class="style2">
-                <p align="center">
-                <table>
-                    <tbody>
-                        <tr>
-                            <td align="right" width="100%">
-                                <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>
-                            </td>
-                            <td align="left">
-                                {$list_globe_html}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                </p>
-            </td>
-    </tr>
+            <td colspan="4" class="content_table_header">Statistics</td>
+		</tr>
+		<tr>
+				<th class="content_table_header">Total AP's</th>
+				<th class="content_table_header">Open APs</th>
+				<th class="content_table_header">WEP APs</th>
+				<th class="content_table_header">Secure APs</th>
+		</tr>
+		<tr>
+				<td class="content_table_data_light"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="All Users">{$total_aps}</a></td>
+				<td class="content_table_data_light"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&from=0&to=25" title="Open APs">{$open_aps}</a></td>
+				<td class="content_table_data_light"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&from=0&to=25" title="WEP APs">{$wep_aps}</a></td>
+				<td class="content_table_data_light"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&from=0&to=25" title="Secure APs">{$sec_aps}</a></td>
+		</tr>
+		<tr>
+				<th class="content_table_header">Total Users</th>
+				<th class="content_table_header">Last user to import</th>
+				<th class="content_table_header">Last AP added</th>
+				<th class="content_table_header">Last Import List</th>
+		</tr>
+		<tr>
+				<td class="content_table_data_dark">
+					<a href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users}</a>
+				</td>
+				<td class="content_table_data_dark">
+					<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a>{$user_globe_html}
+				</td>
+				<td class="content_table_data_dark">
+					<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}" title="View AP Details">{$new_ap_ssid}</a>{$ap_globe_html}
+				</td>
+				<td class="content_table_data_dark">
+					<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>{$list_globe_html}
+				</td>
+		</tr>
     </tbody>
 </table>
 {include file="footer.tpl"}

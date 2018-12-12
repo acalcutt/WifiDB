@@ -19,7 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
         <meta http-equiv="refresh" content="15">
-                <table border="1" width="90%">
+                <table class="content_table">
                     <tr class="style4">
                         <th colspan="2">Schedule Display Settings</th>
                     </tr>
@@ -48,7 +48,7 @@ if not, write to the
                     </tr>
                 </table>
                 <br />
-                <table border="1" width="90%">
+                <table class="content_table">
                     <tr class="style4">
                         <th colspan="7">Daemon Schedule</th>
                     </tr>
@@ -78,7 +78,7 @@ if not, write to the
                     {/foreach}
                 </table>
                 <br />
-                <table border="1" width="90%">
+                <table class="content_table">
                     <tr class="style4">
                         <th colspan="7">Daemon Status</th>
                     </tr>
@@ -110,7 +110,7 @@ if not, write to the
                     {/foreach}
                 </table>
                 <br />
-                <table border="1" width="90%">
+                <table class="content_table">
                     <tr class="style4">
                         <th border="1" colspan="7" align="center">Files being imported</th>
                     </tr>
@@ -154,7 +154,7 @@ if not, write to the
                     </tr>
                 </table>
 				<br />
-                <table border="1" width="90%">
+                <table class="content_table">
                     <tr class="style4">
                         <th border="1" colspan="7" align="center">Files waiting for import</th>
                     </tr>

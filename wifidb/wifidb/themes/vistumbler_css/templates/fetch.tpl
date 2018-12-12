@@ -57,7 +57,7 @@ if not, write to the
                                 </table>
                                 <br/>
 								
-								<table width="85%" border="1" cellpadding="2" cellspacing="0">
+								<table class="content_table">
 									<tr>
 										<td class="style1">Geographical data ( datasource: Geonames.org )</td>
 									</tr>
@@ -101,7 +101,7 @@ if not, write to the
 								</table>
 								<br/>
 
-								<table width="85%" border="1" cellpadding="2" cellspacing="0">
+								<table class="content_table">
 									<tr>
 										<td class="style1">Associated Lists</td>
 									</tr>

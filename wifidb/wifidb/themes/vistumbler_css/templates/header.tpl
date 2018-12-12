@@ -7,13 +7,13 @@
 	{$redirect_func}
 </head>
 <body>
-	{$install_header}
-	{$wifidb_announce_header}
-    <div id="wrapper">
-        <div id="headerwrap">
-        <div id="header">
-			<a href="http://www.wifidb.net"><img alt="WifiDB Logo" src="{$wifidb_host_url}themes/vistumbler_css/img/logo.png" class="no_border" /></a>
-        </div>
-        </div>
-        <div id="contentliquid"><div id="contentwrap_wide">
-        <div id="content">
+	<div class="wrap">
+		<div class="head">{$install_header}{$wifidb_announce_header}
+				<a href="http://www.wifidb.net/"><img alt="WifiDB Logo" src="{$wifidb_host_url}themes/vistumbler_css/img/logo.png"></a>
+		</div>
+		<div class='bodywrap'>
+			<!-- CUSTOM NAV -->
+{include file="navigation.tpl"}
+			<!-- END CUSTOM NAV-->
+			<div class="main">
+			

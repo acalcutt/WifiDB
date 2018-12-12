@@ -18,7 +18,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                <table>
+                <table class="content_table">
                     <tbody>
                         <tr>
                             <td>
@@ -69,7 +69,7 @@ if not, write to the
                                     </tbody>
                                 </table>
                                 <br/>
-                                <table border="1" align="center">
+                                <table border="1" style="width:100%;">
                                     <tbody>
                                         <tr class="style4">
                                             <th>AP ID</th>
