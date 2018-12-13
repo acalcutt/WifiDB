@@ -23,7 +23,7 @@ if not, write to the
 				<table class="content_table">
 					<tbody>
 						<tr>
-							<td colspan="4" class="header-centered">Statistics</td>
+							<td colspan="4" class="subheading">Statistics</td>
 						</tr>
 						<tr>
 								<th class="header-centered">Total AP's</th>

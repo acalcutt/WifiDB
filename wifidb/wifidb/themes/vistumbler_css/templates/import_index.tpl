@@ -19,24 +19,19 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<table class="content_table-centered">
-					<tr>
-						<td>
-							<h2>{$mesg}</h2>
-							<h2>Import Access Points</h2>
-							Vistumbler 
-							<a class="links" href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-VS1-Format" target="_blank">VS1</a> /
-							<a class="links" href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>
-							files are the main import formats.<br/>
-							For Android, we support 
-							<a class="links" href="https://play.google.com/store/apps/details?id=net.wigle.wigleandroid" target="_blank">WiggleWifi CSV</a>,
-							<a class="links" href="https://play.google.com/store/apps/details?id=com.Buckynet.Wifi.Scanner.Wireless.SWardriving&hl=en_US" target="_blank">SWardriving CSV</a>, and 
-							<a class="links" href="https://github.com/raffaeleragni/android-wardrive4/releases" target="_blank">Wardrive DB/DB3</a><br><br>
-							Username is optional, but it helps keep track of who has imported what Access Points<br><br>
-
-						</td>
-					</tr>
-				</table>
+				<div class="center">
+					<h2>{$mesg}</h2>
+					<h2>Import Access Points</h2>
+					Vistumbler 
+					<a href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-VS1-Format" target="_blank">VS1</a> /
+					<a href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>
+					files are the main import formats.<br/>
+					For Android, we support 
+					<a href="https://play.google.com/store/apps/details?id=net.wigle.wigleandroid" target="_blank">WiggleWifi CSV</a>,
+					<a href="https://play.google.com/store/apps/details?id=com.Buckynet.Wifi.Scanner.Wireless.SWardriving&hl=en_US" target="_blank">SWardriving CSV</a>, and 
+					<a href="https://github.com/raffaeleragni/android-wardrive4/releases" target="_blank">Wardrive DB/DB3</a><br><br>
+					Username is optional, but it helps keep track of who has imported what Access Points<br><br>
+				</div>
 					<form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">				
 						<table class="content_table-centered">
 							<tbody>

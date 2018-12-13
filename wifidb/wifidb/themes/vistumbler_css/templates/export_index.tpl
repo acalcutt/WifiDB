@@ -19,7 +19,9 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<h2>Exports Page</h2>
+				<div class="center">
+					<h2>Exports Page</h2>
+				</div>
 				<form action="{$wifidb_host_url}opt/export.php?func=exp_user_list" method="post" enctype="multipart/form-data">
 					<table border="1" cellspacing="0" cellpadding="3" align="center">
 						<tbody>

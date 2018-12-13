@@ -19,47 +19,50 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<table width="90%" border="1" align="center">
-					<tbody>
-						<tr class="header">
-							<th colspan="4">Stats for : {$wifidb_user_details.user}</th>
-						</tr>
-						<tr class="sub_head">
-							<th>ID</th><th>Total APs</th><th>First Import</th><th>Last Import</th>
-						</tr>
-						<tr class="dark">
-							<td>{$wifidb_user_details.user_id}</td>
-							<td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.user}">{$wifidb_user_details.total_aps}</a></td>
-							<td>{$wifidb_user_details.first_import_date}</td>
-							<td>{$wifidb_user_details.newest_date}</td>
-						</tr>
-					</tbody>
-				</table>
-				<br/>
-				<table width="90%" border="1" align="center">
-					<tbody>
-						<tr class="header">
-							<th colspan="6">Imported Files</th>
-						</tr>
-						<tr class="sub_head">
-							<th>ID</th>
-							<th>GPS</th>
-							<th>Title</th>
-							<th>Total APs</th>
-							<th>Efficiency</th>
-							<th>Date</th>
-						</tr>
-						{foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
-						<tr class="{$wifidb_user_prev.class}">
-							<td>{$wifidb_user_prev.id}</td>
-							<td>{$wifidb_user_prev.globe_html}</td>
-							<td><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.title}</a></td>
-							<td>{$wifidb_user_prev.aps}</td>
-							<td>{$wifidb_user_prev.efficiency}%</td>
-							<td>{$wifidb_user_prev.date}</td>
-						</tr>
-						{/foreach}
-					</tbody>
-				</table>
+				<div class="center">
+					<h2>Imports for: {$wifidb_user_details.user}</h2>
+					<table class="content_table">
+						<tbody>
+							<tr class="header">
+								<th class="header">ID</th>
+								<th class="header">Total APs</th>
+								<th class="header">First Import</th>
+								<th class="header">Last Import</th>
+							</tr>
+							<tr class="light">
+								<td class="light">{$wifidb_user_details.user_id}</td>
+								<td class="light"><a href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.user}">{$wifidb_user_details.total_aps}</a></td>
+								<td class="light">{$wifidb_user_details.first_import_date}</td>
+								<td class="light">{$wifidb_user_details.newest_date}</td>
+							</tr>
+						</tbody>
+					</table>
+					<br/>
+					<table class="content_table">
+						<tbody>
+							<tr class="subheading">
+								<th class="subheading" colspan="6">Imported Files</th>
+							</tr>
+							<tr class="header">
+								<th class="header">ID</th>
+								<th class="header">GPS</th>
+								<th class="header">Title</th>
+								<th class="header">Total APs</th>
+								<th class="header">Efficiency</th>
+								<th class="header">Date</th>
+							</tr>
+							{foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
+							<tr class="{$wifidb_user_prev.class}">
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.id}</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.globe_html}</td>
+								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.title}</a></td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.aps}</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.efficiency}%</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.date}</td>
+							</tr>
+							{/foreach}
+						</tbody>
+					</table>
+				</div>
 			</div>
 {include file="footer.tpl"}

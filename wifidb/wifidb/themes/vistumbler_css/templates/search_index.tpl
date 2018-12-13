@@ -19,60 +19,62 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<h2>Search for Access Points</h2>
-                <form action="{$wifidb_host_url}opt/results.php?ord=ASC&amp;sort=ssid&amp;from=0&amp;to=25" method="post" enctype="multipart/form-data">
-					<table class="content_table-centered">
-						<thead>
-							<tr>
-								<th class="header">SSID:</th>
-								<th>
-									<input type="text" name="ssid" size="40" id="ssid" onkeyup="doCompletion();"/>
-								</th>
-							</tr>
-							<tr>
-								<th class="header">MacAddress:</th>
-								<th>
-									<input type="text" name="mac" size="40" id="mac" onkeyup="doCompletion();"/>
-								</th>
-							</tr>
-							<tr>
-								<th class="header">Authentication:</th>
-								<th>
-									<input type="text" name="auth" size="40" id="auth" onkeyup="doCompletion();"/>
-								</th>
-							</tr>
-							<tr>
-								<th class="header">Encryption:</th>
-								<th>
-									<input type="text" name="encry" size="40" id="encry" onkeyup="doCompletion();"/>
-								</th>
-							</tr>
-							<tr>
-								<th class="header">Radio Type:</th>
-								<th>
-									<input type="text" name="radio" size="40" id="radio" onkeyup="doCompletion();"/>
-								</th>
-							</tr>
-							<tr>
-								<th class="header">Channel:</th>
-								<th>
-									<input type="text" name="chan" size="40" id="chan" onkeyup="doCompletion();"/>
-								</th>
-							</tr>
-							<tr>
-								<td align="center" colspan="2">
-									<input type="submit" name="submit" value="Submit" style="width: 0.71in; height: 0.36in"/>
-								</td>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td align="center" id="auto-row" colspan="2">
-									<table class="popupBox" style="display:none"></table>
-								</td>
-							</tr>
-						</tbody>
-					</table>
-                </form>
+				<div class="center">
+					<h2>Search for Access Points</h2>
+					<form action="{$wifidb_host_url}opt/results.php?ord=ASC&amp;sort=ssid&amp;from=0&amp;to=25" method="post" enctype="multipart/form-data">
+						<table class="content_table-centered">
+							<thead>
+								<tr>
+									<th class="header">SSID:</th>
+									<th>
+										<input type="text" name="ssid" size="40" id="ssid" onkeyup="doCompletion();"/>
+									</th>
+								</tr>
+								<tr>
+									<th class="header">MacAddress:</th>
+									<th>
+										<input type="text" name="mac" size="40" id="mac" onkeyup="doCompletion();"/>
+									</th>
+								</tr>
+								<tr>
+									<th class="header">Authentication:</th>
+									<th>
+										<input type="text" name="auth" size="40" id="auth" onkeyup="doCompletion();"/>
+									</th>
+								</tr>
+								<tr>
+									<th class="header">Encryption:</th>
+									<th>
+										<input type="text" name="encry" size="40" id="encry" onkeyup="doCompletion();"/>
+									</th>
+								</tr>
+								<tr>
+									<th class="header">Radio Type:</th>
+									<th>
+										<input type="text" name="radio" size="40" id="radio" onkeyup="doCompletion();"/>
+									</th>
+								</tr>
+								<tr>
+									<th class="header">Channel:</th>
+									<th>
+										<input type="text" name="chan" size="40" id="chan" onkeyup="doCompletion();"/>
+									</th>
+								</tr>
+								<tr>
+									<td align="center" colspan="2">
+										<input type="submit" name="submit" value="Submit" style="width: 0.71in; height: 0.36in"/>
+									</td>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td align="center" id="auto-row" colspan="2">
+										<table class="popupBox" style="display:none"></table>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</form>
+				</div>
 			</div>
 {include file="footer.tpl"}

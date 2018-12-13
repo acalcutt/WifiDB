@@ -18,68 +18,59 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                <table>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <table border="1" align="center" width="100%">
-                                    <tbody>
-                                        <tr class="style4">
-                                            <th colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a></th>
-                                        </tr>
-                                        <tr class="sub_head">
-                                            <td width="190px"><b>Total Access Points...</b></td>
-                                            <td>{$wifidb_all_user_aps.total_aps}</td>
-                                        </tr>
-                                        <tr class="sub_head">
-                                            <td width="190px"><b>Export This list To...</b></td>
-                                            <td><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_user_netlink&amp;user={$wifidb_all_user_aps.user}">KMZ</a></td>
-                                        </tr>
-										<tr class="sub_head">
-											<td width="190px"><b>Access Point Efficiency...</b></td>
-											<td>{$wifidb_all_user_aps.NewAPPercent}</td>
-										</tr>
-                                    </tbody>
-                                </table>
-                                <br/>
-                                <table border="1" align="center">
-                                    <tbody>
-                                        <tr class="style4">
-                                            <th>AP ID</th>
-                                            <th>GPS</th>
-                                            <th>SSID</th>
-                                            <th>Mac Address</th>
-                                            <th>Authentication</th>
-                                            <th>Encryption</th>
-                                            <th>Radio</th>
-                                            <th>Channel</th>
-                                            <th>First Active</th>
-                                            <th>Last Active</th>
-                                        </tr>
+			<div class="main">
+				<div class="center">
+					<table class="content_table">
+						<tbody>
+							<tr class="header">
+								<th class="header" colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a></th>
+							</tr>
+							<tr class="dark">
+								<td class="dark" width="190px"><b>Total Access Points...</b></td>
+								<td class="dark">{$wifidb_all_user_aps.total_aps}</td>
+							</tr>
+							<tr class="dark">
+								<td class="dark" width="190px"><b>Export This list To...</b></td>
+								<td class="dark"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_user_netlink&amp;user={$wifidb_all_user_aps.user}">KMZ</a></td>
+							</tr>
+							<tr class="dark">
+								<td class="dark" width="190px"><b>Access Point Efficiency...</b></td>
+								<td class="dark">{$wifidb_all_user_aps.NewAPPercent}</td>
+							</tr>
+						</tbody>
+					</table>
+					<br/>
+					<table class="content_table">
+						<tbody>
+							<tr class="header">
+								<th class="header">AP ID</th>
+								<th class="header">GPS</th>
+								<th class="header">SSID</th>
+								<th class="header">Mac Address</th>
+								<th class="header">Authentication</th>
+								<th class="header">Encryption</th>
+								<th class="header">Radio</th>
+								<th class="header">Channel</th>
+								<th class="header">First Active</th>
+								<th class="header">Last Active</th>
+							</tr>
 {foreach name=outer item=wifidb_users_aps from=$wifidb_all_user_aps.allaps}
-                                        <tr class="{$wifidb_users_aps.class}">
-                                            <td align="center">{$wifidb_users_aps.id}</td>
-                                            <td align="center">{$wifidb_users_aps.globe_html}</td>
-                                            <td align="center"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid}</a></td>
-                                            <td>{$wifidb_users_aps.mac}</td>
-                                            <td align="center">{$wifidb_users_aps.auth}</td>
-                                            <td align="center">{$wifidb_users_aps.encry}</td>
-                                            <td align="center">{$wifidb_users_aps.radio}</td>
-                                            <td align="center">{$wifidb_users_aps.chan}</td>
-                                            <td align="center">{$wifidb_users_aps.fa}</td>
-                                            <td align="center">{$wifidb_users_aps.la}</td>
-                                        </tr>
+							<tr class="{$wifidb_users_aps.class}">
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.globe_html}</td>
+								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid}</a></td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la}</td>
+							</tr>
 {/foreach}
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                        <tr class="sub_head">
-                            <td colspan="6" align="center">
-                                {$pages_together}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                        <br/>
+						</tbody>
+					</table>
+{$pages_together}
+				</div>
+			</div>
 {include file="footer.tpl"}

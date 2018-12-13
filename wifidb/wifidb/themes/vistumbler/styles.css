@@ -289,3 +289,34 @@ table.asscotable {
 .light {
 	background-color: #BAD0E2;
 }
+
+.loader {
+	margin: -10px 0 0 -250px;
+	height: 100px;
+	width: 20%;
+	position: fixed;
+	text-align: center;
+	padding: 1em;
+	top: 50%;
+	left: 50%;
+	margin: 0 auto 1em;
+	z-index: 9999;
+}
+
+.yellow {
+	text-align: center;
+	background-color: yellow;
+	border: 1px inset black;
+}
+
+.lime {
+	text-align: center;
+	background-color: lime;
+	border: 1px inset black;
+}
+
+.red {
+	text-align: center;
+	background-color: red;
+	border: 1px inset black;
+}

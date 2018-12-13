@@ -376,6 +376,7 @@ switch($func)
             $importing_row[$n]['id'] = $newArray['id'];
             $importing_row[$n]['file'] = $newArray['file'];
             $importing_row[$n]['title'] = $newArray['title'];
+			$importing_row[$n]['notes'] = $newArray['notes'];
             $importing_row[$n]['date'] = $newArray['date'];
             $importing_row[$n]['size'] = $newArray['size'];
             $importing_row[$n]['hash'] = $newArray['hash'];
@@ -386,20 +387,20 @@ switch($func)
             switch($newArray['ap'])
             {
                 case "":
-                    $ssid = "<td colspan='2' align='center'>Processing...</td>";
+                    $ssid = "<td colspan='2' class='".$color."'>Processing...</td>";
                     break;
                 case "Preparing for Import":
-                    $ssid = "<td colspan='2' align='center'>Preparing for Import...</td>";
+                    $ssid = "<td colspan='2' class='".$color."'>Preparing for Import...</td>";
                     break;
                 case "File is already in table array (":
-                    $ssid = "<td colspan='2' align='center'>File is already in table...</td>";
+                    $ssid = "<td colspan='2' class='".$color."'>File is already in table...</td>";
                     break;
                 case "@#@#_CONVERTING TO VS1_@#@#":
-                    $ssid = "<td colspan='2' align='center'>Converting file to VS1 Format...</td>";
+                    $ssid = "<td colspan='2' class='".$color."'>Converting file to VS1 Format...</td>";
                     break;
                 default:
-                    $ssid = '<td align="center">'.$newArray['ap'].'</td>';
-                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = '<td align="center">'.$newArray['tot'].'</td>';}
+                    $ssid = "<td class='".$color."'>".$newArray['ap']."</td>";
+                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = "<td class='".$color."'>".$newArray['tot']."</td>";}
                     break;
             }
             $importing_row[$n]['last_cell'] = $ssid.$tot;
@@ -417,6 +418,7 @@ switch($func)
             $waiting_row[$n]['id'] = $newArray['id'];
             $waiting_row[$n]['file'] = $newArray['file'];
             $waiting_row[$n]['title'] = $newArray['title'];
+			$waiting_row[$n]['notes'] = $newArray['notes'];
             $waiting_row[$n]['date'] = $newArray['date'];
             $waiting_row[$n]['size'] = $newArray['size'];
             $waiting_row[$n]['hash'] = $newArray['hash'];
