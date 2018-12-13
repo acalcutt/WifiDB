@@ -25,8 +25,9 @@ th, td {
 }
 
 .bodywrap{
-    margin:0 auto;
-    min-width:700px
+	width:100%;
+    min-width:700px;
+	display: table
 }
 
 .sidenav{
@@ -53,6 +54,7 @@ th, td {
 	border-radius: 10px;
 	padding: 10px; 
 	min-width: 700px;
+	word-wrap: break-word;
 }
 
 .inside_dark_header {
