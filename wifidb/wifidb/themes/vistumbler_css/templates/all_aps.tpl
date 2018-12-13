@@ -21,44 +21,53 @@ if not, write to the
 			<div class="main">
 				<table class="content_table"">
 					<tr class="header">
-						<td>
+						<td class="header">
 							GPS
 						</td>
-						<td>
-							SSID<a href="?sort=SSID&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=SSID&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=SSID&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"border="0" src="{$themeurl}img/down.png"></a>
+							<a href="?sort=SSID&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							SSID
 						</td>
-						<td>
-							MAC<a href="?sort=BSSID&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=BSSID&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=BSSID&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/down.png"></a>
+							<a href="?sort=BSSID&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							MAC
 						</td>
-						<td>
-							Channel<a href="?sort=CHAN&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=CHAN&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=CHAN&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/down.png"></a>
+							<a href="?sort=CHAN&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							Channel
 						</td>
-						<td>
-							Radio Type<a href="?sort=RADTYPE&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=RADTYPE&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a></td>
-						<td>
-							Authentication<a href="?sort=AUTH&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=AUTH&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=RADTYPE&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+							<a href="?sort=RADTYPE&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							Radio Type
 						</td>
-						<td>
-							Encryption<a href="?sort=ENCR&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=ENCR&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=AUTH&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+							<a href="?sort=AUTH&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							Authentication
 						</td>
-						<td>
-							First Active<a href="?sort=FA&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=FA&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=ENCR&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+							<a href="?sort=ENCR&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							Encryption
 						</td>
-						<td>
-							Last Active<a href="?sort=LA&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="themes/{$wifidb_theme}/img/down.png"></a>
-							<a href="?sort=LA&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="themes/{$wifidb_theme}/img/up.png"></a>
+						<td class="header">
+							<a href="?sort=FA&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+							<a href="?sort=FA&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							First Active
+						</td>
+						<td class="header">
+							<a href="?sort=LA&ord=ASC&from={$from}&to={$inc}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+							<a href="?sort=LA&ord=DESC&from={$from}&to={$inc}"><img height="15" width="15" border="0"src="{$themeurl}img/up.png"></a>
+							Last Active
 						</td>
 					</tr>
 					{foreach name=outer item=wifidb_ap from=$wifidb_aps_all}
 					<tr class="{$wifidb_ap.class}">
-						<td class="{$wifidb_ap.class}">
+						<td class="{$wifidb_ap.class}" width="75px">
 							{$wifidb_ap.globe_html}
 						</td>
 						<td class="{$wifidb_ap.class}">
