@@ -36,12 +36,13 @@ if(!function_exists('WiFiDBexception_handler')) {
 		switch (strtolower(SWITCH_SCREEN)) {
 			case "html":
 				//var_dump($err);
-				$WWW_DIR = $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/";
+				$WWW_DIR = $_SERVER['DOCUMENT_ROOT'].$config['root']."/";
 				$smarty = new Smarty();
 				$smarty->template_dir = $WWW_DIR.'themes/'.$config['default_theme'].'/templates/';
 				$smarty->compile_dir  = $WWW_DIR.'smarty/templates_c/'.$config['default_theme'].'/';
 				$smarty->config_dir   = $WWW_DIR.'smarty/configs/'.$config['default_theme'].'/';
 				$smarty->cache_dir    = $WWW_DIR.'smarty/cache/'.$config['default_theme'].'/';
+				$smarty->assign('themeurl', $config['hosturl'].$config['root'].'/themes/'.$config['default_theme'].'/');
 				$smarty->assign('wifidb_error_mesg', $trace);
 				$smarty->display("error.tpl");			
 				break;

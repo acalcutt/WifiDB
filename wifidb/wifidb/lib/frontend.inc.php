@@ -40,13 +40,14 @@ class frontend extends dbcore
 			$this->meta->tracker = $config['tracker'];
 			$this->meta->header = $config['header'];
 
-			$this->WWW_DIR = $_SERVER['DOCUMENT_ROOT'] . "/".$config['root']."/";
+			$this->WWW_DIR = $_SERVER['DOCUMENT_ROOT'].$config['root']."/";
 			$this->smarty = new Smarty();
 			$this->smarty->template_dir = $this->WWW_DIR.'themes/'.$this->theme.'/templates/';
 			$this->smarty->compile_dir  = $this->WWW_DIR.'smarty/templates_c/'.$this->theme.'/';
 			$this->smarty->config_dir   = $this->WWW_DIR.'smarty/configs/'.$this->theme.'/';
 			$this->smarty->cache_dir    = $this->WWW_DIR.'smarty/cache/'.$this->theme.'/';
 
+			$this->smarty->assign('themeurl', $this->URL_PATH.'themes/'.$this->theme.'/');
 			$this->smarty->assign('wifidb_host_url', $this->URL_PATH);
 			$this->smarty->assign('wifidb_meta_header', $this->meta->header);
 			$this->smarty->assign('wifidb_theme', $this->theme);

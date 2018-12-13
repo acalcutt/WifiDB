@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
     <head>
-        <link rel="stylesheet" href="{$wifidb_host_url}themes/vistumbler/styles.css" />
+        <link rel="stylesheet" href="{$themeurl}styles.css" />
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
         {$wifidb_meta_header}
         {$redirect_func}
@@ -17,7 +17,7 @@
                         <tr>
                             <td style="width: 228px">
                                 <a href="http://www.wifidb.net">
-                                <img alt="Random Intervals Logo" src="{$wifidb_host_url}themes/vistumbler/img/logo.png" class="no_border" /></a>
+                                <img alt="WifiDB Logo" src="{$themeurl}img/logo.png" class="no_border" /></a>
                             </td>
                         </tr>
                     </table>
@@ -30,13 +30,13 @@
                     <table style="width: 100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td style="width: 10px; height: 20px" class="cell_top_left">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                             </td>
                             <td class="cell_top_mid" style="height: 20px">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="185" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="185" height="1" />
                             </td>
                             <td style="width: 10px" class="cell_top_right">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                             </td>
                         </tr>
                         <tr width="185px">
@@ -61,8 +61,8 @@
                                     <a href="{$wifidb_host_url}opt/export.php?func=index">Export</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/search.php">Search</a></strong></div>
-                                <!--<div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>-->
+                                <div class="inside_text_bold"><strong>
+                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>
                                 <div class="inside_text_bold"><strong>
                                     <a href="{$wifidb_host_url}opt/userstats.php?func=allusers">View All Users</a></strong></div>
                                 <div class="inside_text_bold"><strong>
@@ -95,7 +95,7 @@
                     <table style="width: 100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td style="width: 10px; height: 20px" class="cell_top_left">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
@@ -106,7 +106,7 @@
                             </td>
                             <!-- ---------------------------- -->
                             <td style="width: 10px" class="cell_top_right">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                             </td>
                         </tr>
                         <tr>

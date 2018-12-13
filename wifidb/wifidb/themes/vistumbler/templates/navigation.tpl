@@ -1,12 +1,12 @@
                         <tr>
                             <td style="width: 10px; height: 20px" class="cell_top_left">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                             </td>
                             <td class="cell_top_mid" style="height: 20px">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="185" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="185" height="1" />
                             </td>
                             <td style="width: 10px" class="cell_top_right">
-                                <img alt="" src="{$wifidb_host_url}themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                                <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                             </td>
                         </tr>
                         <tr>
