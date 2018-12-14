@@ -17,8 +17,8 @@
 				<div class="inside_text_bold"><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></div>
 				<div class="inside_text_bold"><a href="https://forum.techidiots.net/forum/">Forum</a></div>
 				<div class="inside_text_bold"><a href="https://live.wifidb.net/wifidb/">WiFiDB</a></div>
-				<div class="inside_text_bold"><a href="https://github.com/RIEI/Vistumbler/wiki">Wiki</a></div>
-				<div class="inside_text_bold"><a href="https://github.com/RIEI/Vistumbler">Git Repository</a></div>								
+				<div class="inside_text_bold"><a href="https://github.com/acalcutt/Vistumbler/wiki">Wiki</a></div>
+				<div class="inside_text_bold"><a href="https://github.com/acalcutt/Vistumbler">Git Repository</a></div>								
 				<div class="inside_text_bold"><a href="http://www.vistumbler.net/downloads.html">Downloads</a></div>
 				<div class="inside_text_bold"><a href="http://www.vistumbler.net/verhist.html">Version History</a></div>
 				<div class="inside_text_bold"><a href="http://www.vistumbler.net/donate.htm">Donate</a></div>
