@@ -16,7 +16,6 @@
 					</script>
 				</div>
 				<!-- End ads -->
-				</div>
 			</div>
 		</div>
 	</div>
