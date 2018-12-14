@@ -37,75 +37,62 @@ if not, write to the
 							<tbody>
 							<tr height="40">
 								<td class="header">
-									<p>Title of Import:
-									</p>
+									Title of Import:
 								</td>
 								<td class="light">
-									<p><a name="title"></a><input type="TEXT" name="title" size="28" style="width: 2.42in; height: 0.25in"/></p>
+									<a name="title"></a><input type="TEXT" name="title" size="28" style="width: 2.42in; height: 0.25in"/>
 								</td>
 							</tr>
 							<tr height="40">
 								<td class="header">
-									<p>File location:
-									</p>
+									File location:
 								</td>
 								<td class="light">
-									<p><a name="file"></a><input type="FILE" name="file" size="56" style="width: 5.41in; height: 0.25in"/></p>
+									<a name="file"></a><input type="FILE" name="file" size="56" style="width: 5.41in; height: 0.25in"/>
 								</td>
 							</tr>
 							<tr height="40">
 								<td class="header">
-									<p>Username:
-									</p>
+									Username:
 								</td>
 								<td class="light">
-									<p>
 										<a name="user"></a>
 										{$import_username_field|default:'<input type="text" name="username" size="56" style="width: 5.41in; height: 0.25in"/>'}
-									</p>
 								</td>
 							</tr>
 							<tr>
 							<tr height="40">
 								<td class="header">
-									<p>Other Users:<br/>
+									Other Users:<br/>
 										<font size=1>(Separate by a pipe "|" )</font>
-									</p>
 								</td>
 								<td class="light">
-									<p><a name="otherusers"></a><input type="text" name="otherusers" size="56" style="width: 5.41in; height: 0.25in"/></p>
+									<a name="otherusers"></a><input type="text" name="otherusers" size="56" style="width: 5.41in; height: 0.25in"/>
 								</td>
 							</tr>
 							<tr>
 								<td class="header">
-									<p>Notes:
-									</p>
+									Notes:
 								</td>
 								<td class="light">
-									<p>
 										<textarea name="notes" rows="4" cols="50" style="width: 4.42in; height: 1.01in"></textarea><br>
-									</p>
 								</td>
 							</tr>
 							<tr>
 								<td class="header">
-									<p>Import Type:
-									</p>
+									Import Type:
 								</td>
 								<td class="light">
-									<p>
 										  <input type="radio" name="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br>
 										  <input type="radio" name="type" value="wardrive4">Wardrive4 DB<br>
 										  <input type="radio" name="type" value="wigglewificsv">WiggleWifi CSV<br>
 										  <input type="radio" name="type" value="swardriving">SWardriving CSV<br>
-									</p>
 								</td>
 							</tr>
 							<tr class="light">
-								<td>&nbsp;</td><td>
-									<p>
+								<td class="light-centered" colspan = "2">
 										{$import_button}
-									</p>
+									
 								</td>
 							</tr>
 						</tbody>
