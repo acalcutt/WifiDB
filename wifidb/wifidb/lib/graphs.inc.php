@@ -1,7 +1,7 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+
+Copyright (C) 2011 Phil Ferland,2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -21,23 +21,19 @@ if not, write to the
 
 class graphs
 {
-    public function __construct($PATH, $URL_PATH)
-    {
-        $this->PATH         =   $PATH;
-        $this->URL_PATH     =   $URL_PATH;
-        $this->lastedit     =   "05-05-2013";
-        $this->ver_graph    =   array(
-                                    "graphs" => array(
-                                                    "wifiline"  =>  "2.0.4",
-                                                    "wifibar"   =>  "2.0.4",
-                                                    "imagegrid" =>  "1.0",
-                                                    ),
-                                    );
-
-    }
+	public function __construct($PATH, $URL_PATH)
+	{
+		$this->PATH		 =   $PATH;
+		$this->URL_PATH	 =   $URL_PATH;
+		$this->lastedit	 =   "05-05-2013";
+		$this->ver_graph	=   array("graphs" => array(
+								"wifiline"  =>  "2.0.4",
+								"wifibar"   =>  "2.0.4",
+								"imagegrid" =>  "1.0"));
+	}
 
 #==============================================================================================================================================================#
-#													Image Grid Function												         #
+#													Image Grid Function														 #
 #==============================================================================================================================================================#
 
 	private function imagegrid($image, $w, $h, $s, $color)
@@ -55,31 +51,31 @@ class graphs
 	}
 
 #==============================================================================================================================================================#
-#													WiFi Graph Linegraph												         #
+#													WiFi Graph Linegraph														 #
 #==============================================================================================================================================================#
 
 	public function wifigraphline($apdata)
 	{
-        $ssid = $apdata['ssid'];
-        $mac = $apdata['mac'];
-        $man = $apdata['man'];
-        $auth = $apdata['auth'];
-        $encry = $apdata['encry'];
-        $radio = $apdata['radio'];
-        $chan = $apdata['chan'];
-        $lat = $apdata['lat'];
-        $long = $apdata['long'];
-        $BTx = $apdata['btx'];
-        $OTx = $apdata['otx'];
-        $FA = $apdata['fa'];
-        $LU = $apdata['lu'];
-        $NT = $apdata['nt'];
-        $label = $apdata['label'];
-        $sig = $apdata['sig'];
-        $name = $apdata['name'];
-        $bgc = $apdata['bgc'];
-        $linec = $apdata['linec'];
-        $text = $apdata['text'];
+		$ssid = $apdata['ssid'];
+		$mac = $apdata['mac'];
+		$man = $apdata['man'];
+		$auth = $apdata['auth'];
+		$encry = $apdata['encry'];
+		$radio = $apdata['radio'];
+		$chan = $apdata['chan'];
+		$lat = $apdata['lat'];
+		$long = $apdata['long'];
+		$BTx = $apdata['btx'];
+		$OTx = $apdata['otx'];
+		$FA = $apdata['fa'];
+		$LU = $apdata['lu'];
+		$NT = $apdata['nt'];
+		$user = $apdata['user'];
+		$sig = $apdata['sig'];
+		$name = $apdata['name'];
+		$bgc = $apdata['bgc'];
+		$linec = $apdata['linec'];
+		$text = $apdata['text'];
 
 		$y=20;
 		$yy=21;
@@ -113,33 +109,33 @@ class graphs
 		{
 			$ssid="UNNAMED";
 		}
-        $signal = explode("-", $sig);
-        $count = count($signal);
-        $c1 = 'SSID: '.$ssid.'   Channel: '.$chan.'   Radio: '.$radio.'   Network: '.$NT.'   OTx: '.$OTx;
-        $check[] = strlen($c1);
-        $c2 = 'Mac: '.$mac.'   Auth: '.$auth.' '.$encry.'   BTx: '.$BTx.'   Lat: '.$lat.'   Long: '.$long;
-        $check[] = strlen($c2);
-        $c3 = 'Manuf: '.$man.'   Label: '.$label.'   First: '.$FA.'   Last: '.$LU;
-        $check[] = strlen($c3);
-        #FIND OUT IF THE IMG NEEDS TO BE WIDER
-        rsort($check);
-		if(900 < ($count*6.2))
+		$signal = explode("-", $sig);
+		$count = count($signal);
+		$c1 = 'SSID: '.$ssid.'   Channel: '.$chan.'   Radio: '.$radio.'   Network: '.$NT.'   OTx: '.$OTx;
+		$check[] = strlen($c1);
+		$c2 = 'Mac: '.$mac.'   Auth: '.$auth.' '.$encry.'   BTx: '.$BTx.'   Lat: '.$lat.'   Long: '.$long;
+		$check[] = strlen($c2);
+		$c3 = 'Manuf: '.$man.'   User: '.$user.'   First: '.$FA.'   Last: '.$LU;
+		$check[] = strlen($c3);
+		#FIND OUT IF THE IMG NEEDS TO BE WIDER
+		rsort($check);
+		if(1000 < ($count*6.2))
 		{
-			$Height = 480;
-			$wid    = ($count*6.2)+40;
+			$Height = 500;
+			$wid	= ($count*6.2)+40;
 
-		}elseif(900 < ($check[0]*6.2))
-        {
-            $Height = 480;
-            $wid    = ($check[0]*6.2)+40;
-        }else
+		}elseif(1000 < ($check[0]*6.2))
 		{
-			$wid    = 900;
-			$Height = 480;
+			$Height = 500;
+			$wid	= ($check[0]*6.2)+40;
+		}else
+		{
+			$wid	= 1000;
+			$Height = 500;
 		}
-		$img    = ImageCreateTrueColor($wid, $Height);
+		$img	= ImageCreateTrueColor($wid, $Height);
 		$bgcc	= explode(":",$bgc);
-		$bg     = imagecolorallocate($img, $bgcc[0], $bgcc[1], $bgcc[2]);
+		$bg	 = imagecolorallocate($img, $bgcc[0], $bgcc[1], $bgcc[2]);
 		if($bgc !== "000:000:000")
 		{
 			$grid   = imagecolorallocate($img,0,0,0);
@@ -178,44 +174,44 @@ class graphs
 			$nn++;
 			$count--;
 		}
-        $date = date("m-d-y");
-        $file = 'out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'_v.png';
-        $filepath = $this->PATH.$file;
-        $file_url = $this->URL_PATH.$file;
-        ImagePNG($img, $filepath);
-        ImageDestroy($img);
-        $array = array( $ssid,
-            $file,
-            $file_url);
-        return $array;
+		$date = date("m-d-y");
+		$file = 'out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'_v.png';
+		$filepath = $this->PATH.$file;
+		$file_url = $this->URL_PATH.$file;
+		ImagePNG($img, $filepath);
+		ImageDestroy($img);
+		$array = array( $ssid,
+			$file,
+			$file_url);
+		return $array;
 	}
 
 	#==============================================================================================================================================================#
-	#													WiFi Graph Bargraph													         #
+	#													WiFi Graph Bargraph															 #
 	#==============================================================================================================================================================#
 	public function wifigraphbar($apdata = array())
 	{
-        $ssid = $apdata['ssid'];
-        $mac = $apdata['mac'];
-        $man = $apdata['man'];
-        $auth = $apdata['auth'];
-        $encry = $apdata['encry'];
-        $radio = $apdata['radio'];
-        $chan = $apdata['chan'];
-        $lat = $apdata['lat'];
-        $long = $apdata['long'];
-        $BTx = $apdata['btx'];
-        $OTx = $apdata['otx'];
-        $FA = $apdata['fa'];
-        $LU = $apdata['lu'];
-        $NT = $apdata['nt'];
-        $label = $apdata['label'];
-        $sig = $apdata['sig'];
-        $name = $apdata['name'];
-        $bgc = $apdata['bgc'];
-        $linec = $apdata['linec'];
-        $text = $apdata['text'];
-        $p=460;
+		$ssid = $apdata['ssid'];
+		$mac = $apdata['mac'];
+		$man = $apdata['man'];
+		$auth = $apdata['auth'];
+		$encry = $apdata['encry'];
+		$radio = $apdata['radio'];
+		$chan = $apdata['chan'];
+		$lat = $apdata['lat'];
+		$long = $apdata['long'];
+		$BTx = $apdata['btx'];
+		$OTx = $apdata['otx'];
+		$FA = $apdata['fa'];
+		$LU = $apdata['lu'];
+		$NT = $apdata['nt'];
+		$user = $apdata['user'];
+		$sig = $apdata['sig'];
+		$name = $apdata['name'];
+		$bgc = $apdata['bgc'];
+		$linec = $apdata['linec'];
+		$text = $apdata['text'];
+		$p=460;
 		$I=0;
 
 		if ($text == 'rand' or $text == '')
@@ -252,26 +248,26 @@ class graphs
 		$check[] = strlen($c1);
 		$c2 = 'Mac: '.$mac.'   Auth: '.$auth.' '.$encry.'   BTx: '.$BTx.'   Lat: '.$lat.'   Long: '.$long;
 		$check[] = strlen($c2);
-		$c3 = 'Manuf: '.$man.'   Label: '.$label.'   First: '.$FA.'   Last: '.$LU;
+		$c3 = 'Manuf: '.$man.'   User: '.$user.'   First: '.$FA.'   Last: '.$LU;
 		$check[] = strlen($c3);
 		#FIND OUT IF THE IMG NEEDS TO BE WIDER
-		if(900 < ($count*3))
+		if(1000 < ($count*3))
 		{
-			$Height = 480;
-			$wid    = ($count*3)+38;
+			$Height = 500;
+			$wid	= ($count*3)+38;
 
-        }elseif(900 < ($check[0]*8))
+		}elseif(1000 < ($check[0]*8))
 		{
-			$Height = 480;
-			$wid    = ($check[0]*8)+40;
+			$Height = 500;
+			$wid	= ($check[0]*8)+40;
 		}else
 		{
-			$wid    = 900;
-			$Height = 480;
+			$wid	= 1000;
+			$Height = 500;
 		}
-		$img    = ImageCreateTrueColor($wid, $Height);
+		$img	= ImageCreateTrueColor($wid, $Height);
 		$bgcc	= explode(":",$bgc);
-		$bg     = imagecolorallocate($img, $bgcc[0], $bgcc[1], $bgcc[2]);
+		$bg	 = imagecolorallocate($img, $bgcc[0], $bgcc[1], $bgcc[2]);
 		if($bgc !== "000:000:000")
 		{
 			$grid   = imagecolorallocate($img,0,0,0);
@@ -318,16 +314,16 @@ class graphs
 			$n++;
 			$count--;
 		}
-        $date = date("m-d-y");
-        $file = '/out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'.png';
-        $filepath = $this->PATH.$file;
-        $file_url = $this->URL_PATH.$file;
+		$date = date("m-d-y");
+		$file = '/out/graph/'.$name.'_'.$date.'_'.str_pad(rand(0,999999), 6, "0").'.png';
+		$filepath = $this->PATH.$file;
+		$file_url = $this->URL_PATH.$file;
 		ImagePNG($img, $filepath);
 		ImageDestroy($img);
-        $array = array( $ssid,
-            $file,
-            $file_url);
-        return $array;
+		$array = array( $ssid,
+			$file,
+			$file_url);
+		return $array;
 	}
 
 	public function timeline($bgcolor = "", $lcolor = "", $start = "", $end = "")

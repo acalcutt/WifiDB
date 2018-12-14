@@ -1,7 +1,7 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+
+Copyright (C) 2011 Phil Ferland,2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -26,27 +26,27 @@ define("SWITCH_EXTRAS", "graph");
 
 include('../lib/init.inc.php');
 $apdata = array(
-    "ssid" => $_POST['ssid'],
-    "mac" => $_POST['mac'],
-    "man" => $_POST['man'],
-    "auth" => $_POST['auth'],
-    "encry" => $_POST['encry'],
-    "radio" => $_POST['radio'],
-    "chan" => $_POST['chan'],
-    "lat" => $_POST['lat'],
-    "long" => $_POST['long'],
-    "btx" => $_POST['btx'],
-    "otx" => $_POST['otx'],
-    "fa" => $_POST['fa'],
-    "lu" => $_POST['lu'],
-    "nt" => $_POST['nt'],
-    "label" => $_POST['label'],
-    "sig" => $_POST['sig'],
-    "name" => $_POST['name'],
+	"ssid" => $_POST['ssid'],
+	"mac" => $_POST['mac'],
+	"man" => $_POST['man'],
+	"auth" => $_POST['auth'],
+	"encry" => $_POST['encry'],
+	"radio" => $_POST['radio'],
+	"chan" => $_POST['chan'],
+	"lat" => $_POST['lat'],
+	"long" => $_POST['long'],
+	"btx" => $_POST['btx'],
+	"otx" => $_POST['otx'],
+	"fa" => $_POST['fa'],
+	"lu" => $_POST['lu'],
+	"nt" => $_POST['nt'],
+	"user" => $_POST['user'],
+	"sig" => $_POST['sig'],
+	"name" => $_POST['name'],
 	"line" => $_POST['line'],
-    "bgc" => $_POST['bgc'],
-    "linec" => $_POST['linec'],
-    "text" => $_POST['text']
+	"bgc" => $_POST['bgc'],
+	"linec" => $_POST['linec'],
+	"text" => $_POST['text']
 );
 
 if($_POST['line'] === 'line')

@@ -1,7 +1,7 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+
+Copyright (C) 2011 Phil Ferland,2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -31,7 +31,18 @@ $func=$_REQUEST['func'];
 $row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
 $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 
-$sql = "SELECT * FROM `wifi_pointers` WHERE `id` = ?";
+$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"
+	. "whFA.Hist_Date As FA,\n"
+	. "whLA.Hist_Date As LA,\n"
+	. "wGPS.Lat As Lat,\n"
+	. "wGPS.Lon As Lon,\n"
+	. "wf.user As user\n"
+	. "FROM `wifi_ap` AS wap\n"
+	. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+	. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+	. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+	. "WHERE wap.AP_ID = ?";
 $result = $dbcore->sql->conn->prepare($sql);
 $result->bindParam(1, $id, PDO::PARAM_INT);
 $result->execute();
@@ -43,18 +54,18 @@ $pointer = $result->fetch(2);
 
 switch ($func) {
 	case "graph_list_ap":
-		$sql = "SELECT * FROM `wifi_signals` WHERE `ap_hash` = ? AND `file_id` = ? ORDER BY `time_stamp` ASC";
+		$sql = "SELECT * FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` = ? ORDER BY `Hist_Date` ASC";
 		$result = $dbcore->sql->conn->prepare($sql);
-		$result->bindParam(1, $pointer['ap_hash'], PDO::PARAM_STR);
+		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->bindParam(2, $row, PDO::PARAM_INT);
 		$result->execute();
 		$signals = $result->fetchAll(2);
 		$sig_size = $result->rowCount();
 		break;
 	default:
-		$sql = "SELECT * FROM `wifi_signals` WHERE `ap_hash` = ? ORDER BY `time_stamp` ASC";
+		$sql = "SELECT * FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `Hist_Date` ASC";
 		$result = $dbcore->sql->conn->prepare($sql);
-		$result->bindParam(1, $pointer['ap_hash'], PDO::PARAM_STR);
+		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
 		$signals = $result->fetchAll(2);
 		$sig_size = $result->rowCount();
@@ -64,27 +75,27 @@ $sig="";
 foreach($signals as $points)
 {
 	if($sig<>""){$sig.="-";}
-	$sig.=$points['signal'];
+	$sig.=$points['Sig'];
 }
 
 $apdata = array(
-	"ssid"=>$pointer['ssid'],
-	"mac"=>$pointer["mac"],
-	"man"=>$pointer["manuf"],
-	"auth"=>$pointer["auth"],
-	"encry"=>$pointer["encry"],
-	"radio"=>$pointer['radio'],
-	"chan"=>$pointer["chan"],
-	"lat"=>$pointer["lat"],
-	"long"=>$pointer["long"],
-	"btx"=>$pointer["BTx"],
-	"otx"=>$pointer["OTx"],
+	"ssid"=>$pointer['SSID'],
+	"mac"=>$pointer["BSSID"],
+	"man"=>$dbcore->findManuf($pointer['BSSID']),
+	"auth"=>$pointer["AUTH"],
+	"encry"=>$pointer["ENCR"],
+	"radio"=>$pointer['RADTYPE'],
+	"chan"=>$pointer["CHAN"],
+	"lat"=>$pointer["Lat"],
+	"long"=>$pointer["Lon"],
+	"btx"=>$pointer["BTX"],
+	"otx"=>$pointer["OTX"],
 	"fa"=>$pointer['FA'],
 	"lu"=>$pointer['LA'],
-	"nt"=>$pointer["NT"],
-	"label"=>$pointer["label"],
-	"sig"=>$sig,
-	"name"=>$pointer['ap_hash']
+	"nt"=>$pointer['NETTYPE'],
+	"user"=>$pointer['user'],
+	"name"=>$pointer['ap_hash'],
+	"sig"=>$sig
 );
 $dbcore->smarty->assign("wifidb_page_label", "WiFiDB AP Graphing");
 $dbcore->smarty->assign("AP_data", $apdata);

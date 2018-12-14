@@ -37,7 +37,7 @@ if not, write to the
                 <input name="fa" type="hidden" value="{$AP_data.fa}">
                 <input name="lu" type="hidden" value="{$AP_data.lu}">
                 <input name="nt" type="hidden" value="{$AP_data.nt}">
-                <input name="label" type="hidden" value="{$AP_data.label}">
+                <input name="user" type="hidden" value="{$AP_data.user}">
                 <input name="sig" type="hidden" value="{$AP_data.sig}">
                 <input name="name" type="hidden" value="{$AP_data.name}">
                 Choose Graph Type:
