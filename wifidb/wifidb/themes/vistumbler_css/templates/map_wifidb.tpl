@@ -106,17 +106,19 @@ if not, write to the
 								var address = address.replace(/ /g, "+");
 								var url = 'https://geocoder.api.here.com/6.2/geocode.json?app_id=PosJ3G7XOlfZLXeYgxeZ&app_code=4yaMcu0yxndGUH6X1_vHAw&searchtext=' + address
 								console.log('url: ', url);
-								fetch(url)
-									.then(res => res.json())
-									.then((data) => {
-										console.log('Output: ', data);
-										var lat = data.Response.View[0].Result[0].Location.DisplayPosition.Latitude;
-										var lng = data.Response.View[0].Result[0].Location.DisplayPosition.Longitude;
-										var lnglat = [lng.toFixed(6),lat.toFixed(6)];
-										map.setCenter(lnglat);
-										console.log('lnglat: ', lnglat);
-										
-								}).catch(err => console.error(err));
+								var req = new XMLHttpRequest();
+								req.overrideMimeType("application/json");
+								req.open('GET', url, true);
+								req.onload  = function() {
+									console.log(req.responseText);
+									var jsonResponse = JSON.parse(req.responseText);
+									var lat = jsonResponse.Response.View[0].Result[0].Location.DisplayPosition.Latitude;
+									var lng = jsonResponse.Response.View[0].Result[0].Location.DisplayPosition.Longitude;
+									var lnglat = [lng.toFixed(6),lat.toFixed(6)];
+									map.setCenter(lnglat);
+									console.log('lnglat: ', lnglat);
+								};
+								req.send(null);							
 							}
 							var input = document.getElementById("searchadrbox");
 							input.addEventListener("keyup", function(event) {
@@ -181,7 +183,7 @@ if not, write to the
 									map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 								});
 							});
-							map.on('style.load', () => {
+							map.on('style.load', function () {
 								// Reset toggle buttons since the layers reset on style change
 								var toggleButtonIds = ['WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'];
 								for(var index in toggleButtonIds) {
@@ -193,7 +195,7 @@ if not, write to the
 									el.firstChild.data = "Hide" + btext;
 								}
 								// Reload dynamic layers since they are lost on style change
-								const waiting = () => {
+								const waiting = function () {
 									if (!map.isStyleLoaded()) {
 									  setTimeout(waiting, 200);
 									} else {
