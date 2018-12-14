@@ -18,72 +18,58 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
+			<div class="main">
 {include file="user_cp_header.tpl"}
-<table  BORDER=0 CELLPADDING=0 CELLSPACING=0 style="width: 100%">
-	<tr>
-		<td colspan="6" class="style4">
-			{$user_cp_profile.message|default:''}
-			<form method="post" action="?func=update_user_pref">
-				<table BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 100%">
-					<tr>
-						<th width="30%" class="style4">Email me about updates</th>
-						<td align="center" class="dark"><input name="mail_updates" type="checkbox" {$user_cp_profile.mail_updates}></td>
-					</tr>
-					<tr>
-						<td colspan='2'>
-							<table BORDER=1 CELLPADDING=2 CELLSPACING=0 style="width: 100%">
-								<tr>
-									<th width="30%" class="style4">Announcements</th>
-									<td align="center" class="light"><input name="announcements" type="checkbox" {$user_cp_profile.announcements}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">Announcement Comments</th>
-									<td align="center" class="dark"><input name="announce_comment" type="checkbox" {$user_cp_profile.announce_comment}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">New Public Geocaches</th>
-									<td align="center" class="light"><input name="pub_geocache" type="checkbox" {$user_cp_profile.pub_geocache}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">New Users</th>
-									<td align="center" class="dark"><input name="new_users" type="checkbox" {$user_cp_profile.new_users}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">Scheduled Import</th>
-									<td align="center" class="light"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">Import Finished</th>
-									<td align="center" class="dark"><input name="imports" type="checkbox" {$user_cp_profile.imports}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">New Full DB KML</th>
-									<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">GeoNames Daemon</th>
-									<td align="center" class="dark"><input name="geonamed" type="checkbox" {$user_cp_profile.geonamed}></td></td>
-								</tr>
-								<tr>
-									<th width="30%" class="style4">Database Statistics Daemon</th>
-									<td align="center" class="light"><input name="statistics" type="checkbox" {$user_cp_profile.statistics}></td></td>
-								</tr>
-							</table>
-						</td>
-					</tr>
-					<tr>
-						<td colspan="2">
-							<p align="center">
-								<input type="hidden" name="username" value="{$user_cp_profile.username}">
-								<input type="hidden" name="user_id" value="{$user_cp_profile.id}">
-								<input type="submit" value="Update Me!">
-							</p>
-						</td>
-					</tr>
-				</table>
-			</form>
-		</td>
-	</tr>
-</table>
-{include file="user_cp_footer.tpl"}
+				<form method="post" action="?func=update_user_pref">
+					<table class="content_table">
+						<tr>
+							<th width="30%" class="header">Email me about updates</th>
+							<td align="center" class="dark"><input name="mail_updates" type="checkbox" {$user_cp_profile.mail_updates}></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">Announcements</th>
+							<td align="center" class="light"><input name="announcements" type="checkbox" {$user_cp_profile.announcements}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">Announcement Comments</th>
+							<td align="center" class="dark"><input name="announce_comment" type="checkbox" {$user_cp_profile.announce_comment}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">New Public Geocaches</th>
+							<td align="center" class="light"><input name="pub_geocache" type="checkbox" {$user_cp_profile.pub_geocache}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">New Users</th>
+							<td align="center" class="dark"><input name="new_users" type="checkbox" {$user_cp_profile.new_users}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">Scheduled Import</th>
+							<td align="center" class="light"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">Import Finished</th>
+							<td align="center" class="dark"><input name="imports" type="checkbox" {$user_cp_profile.imports}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">New Full DB KML</th>
+							<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">GeoNames Daemon</th>
+							<td align="center" class="dark"><input name="geonamed" type="checkbox" {$user_cp_profile.geonamed}></td></td>
+						</tr>
+						<tr>
+							<th width="30%" class="header">Database Statistics Daemon</th>
+							<td align="center" class="light"><input name="statistics" type="checkbox" {$user_cp_profile.statistics}></td></td>
+						</tr>
+						<tr class="light-centered">
+							<td colspan="2">
+									<input type="hidden" name="username" value="{$user_cp_profile.username}">
+									<input type="hidden" name="user_id" value="{$user_cp_profile.id}">
+									<input type="submit" value="Update Me!">
+							</td>
+						</tr>
+					</table>
+				</form>
+			</div>
 {include file="footer.tpl"}

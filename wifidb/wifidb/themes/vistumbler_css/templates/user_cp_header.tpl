@@ -17,17 +17,15 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 -->
-<table style="width: 80%" align="center" BORDER=1 CELLPADDING=0 CELLSPACING=0>
-	<tr>
-		<td class="style1"><strong>User Control Panel</strong></td>
-	</tr>
-	<tr>
-		<td class="dark">
-			<a href="?func=profile"><span class="dark">Profile</span></a> 
-			<span class="dark"> | </span>
-			<a href="?func=pref"><span class="dark">Email Preferences</span></a>
-		</td>
-	</tr>
-	<tr>
-		<td class="light">
-			<div>
+				<table class="content_table">
+					<tr>
+						<td class="subheading">User Control Panel</td>
+					</tr>
+					<tr>
+						<td class="header">
+							<a href="?func=profile">Profile</a> 
+							|
+							<a href="?func=pref">Email Preferences</a>
+						</td>
+					</tr>
+				</table>
