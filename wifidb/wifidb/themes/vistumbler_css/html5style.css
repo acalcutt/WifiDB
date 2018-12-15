@@ -201,8 +201,22 @@ a.links {
   text-align: center;
 }
 
+
 .subheading {
 	text-align: center;
 	background-color: #477DA9;
 	font-weight: bold;
+}
+
+.lefthead{
+    float:left;
+    display: inline;
+}
+
+.righthead{
+    float:right;
+    display: inline;
+	background: #6388C7;
+	border-radius: 4px;
+	padding: 4px; 
 }
