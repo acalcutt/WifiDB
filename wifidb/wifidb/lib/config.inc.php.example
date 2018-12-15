@@ -55,7 +55,7 @@ $config = array
     'pid_file_loc'          =>   '/var/run/wifidb/',
 
     #-------------Themes Settings--------------#
-    'default_theme'         =>   'vistumbler',
+    'default_theme'         =>   'vistumbler_css',
     'default_refresh'       =>   15,
     'default_timezone'      =>   0,
     'default_dst'           =>   0,
