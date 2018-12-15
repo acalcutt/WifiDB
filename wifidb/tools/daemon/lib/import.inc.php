@@ -86,23 +86,38 @@ class import extends dbcore
 		}
 	}
 	
-	private function UpdateHighPoints($ap_id)
+	private function UpdateHighPoints($file_importing_id, $ap_id, $FirstDate = NULL, $LastDate = NULL, $HighSig = 0, $HighRSSI = -99, $HighRSSIwGPS = -99)
 	{
+		if($HighSig == ""){$HighSig = 0;}
+		if($HighRSSI == ""){$HighRSSI = -99;}
+		if($HighRSSIwGPS == ""){$HighRSSIwGPS = -99;}
+		$text = "Updating High Points";
+		$sql = "UPDATE `files_importing` SET `tot` = ? WHERE `id` = ?";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $text, PDO::PARAM_STR);
+		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+		$prep->execute();
+		
 		$sql = "SELECT \n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY Hist_Date Asc LIMIT 1) As `FA_id`,\n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY Hist_Date DESC LIMIT 1) As `LA_id`,\n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1) As `HighSig_id`,\n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1) As `HighRSSI_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `Hist_Date` <= ? ORDER BY Hist_Date Asc LIMIT 1) As `FA_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `Hist_Date` >= ? ORDER BY Hist_Date DESC LIMIT 1) As `LA_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `Sig` >= ? ORDER BY Sig DESC, `Hist_Date` DESC LIMIT 1) As `HighSig_id`,\n"
+			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `RSSI` >= ? ORDER BY RSSI DESC, `Hist_Date` DESC LIMIT 1) As `HighRSSI_id`,\n"
 			. "(SELECT `wifi_hist`.`GPS_ID`\n"
 			. "    FROM `wifi_hist`\n"
 			. "    INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "    WHERE `wifi_hist`.`AP_ID` = `wap`.`AP_ID` And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
+			. "    WHERE `wifi_hist`.`RSSI` >= ? And `wifi_hist`.`AP_ID` = `wap`.`AP_ID` And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
 			. "    ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC\n"
 			. "    LIMIT 1) As `HighGps_id`\n"
 			. "FROM `wifi_ap` As `wap`\n"
 			. "WHERE `wap`.`AP_ID` = ?";
 		$resgps = $this->sql->conn->prepare($sql);
-		$resgps->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$resgps->bindParam(1, $FirstDate, PDO::PARAM_STR);
+		$resgps->bindParam(2, $LastDate, PDO::PARAM_STR);
+		$resgps->bindParam(3, $HighSig, PDO::PARAM_INT);
+		$resgps->bindParam(4, $HighRSSI, PDO::PARAM_INT);
+		$resgps->bindParam(5, $HighRSSI, PDO::PARAM_INT);
+		$resgps->bindParam(6, $ap_id, PDO::PARAM_INT);
 		$resgps->execute();
 		$fetchgps = $resgps->fetch(2);
 		$FA_id = $fetchgps['FA_id'];
@@ -128,6 +143,14 @@ class import extends dbcore
 			//$this->logd("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
 			throw new ErrorException("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
 		}
+		
+		$text = "";
+		$sql = "UPDATE `files_importing` SET `tot` = ? WHERE `id` = ?";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $text, PDO::PARAM_STR);
+		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+		$prep->execute();
+		
 		$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 	}
@@ -273,7 +296,8 @@ class import extends dbcore
 			if($hist_id == ""){continue;}
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			$this->UpdateHighPoints($ap_id);
+			if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -445,7 +469,8 @@ class import extends dbcore
 				if($hist_id == ""){continue;}
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-				$this->UpdateHighPoints($ap_id);
+				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS);
 			}
 		}
 		#Find if file had Valid GPS
@@ -629,7 +654,8 @@ class import extends dbcore
 				if($hist_id == ""){continue;}
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-				$this->UpdateHighPoints($ap_id);	
+				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS);
 			}
 		}
 		#Find if file had Valid GPS
@@ -810,7 +836,8 @@ class import extends dbcore
 				if($hist_id == ""){continue;}
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-				$this->UpdateHighPoints($ap_id);
+				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS);
 					
 			}
 		}
@@ -1199,6 +1226,11 @@ class import extends dbcore
 				$NewAPs++;
 			}
 
+			$HighRSSI = -99;
+			$HighRSSIwGPS = -99;
+			$HighSig = 0;
+			$FirstDate = "";
+			$LastDate = "";
 			//Import Wifi Signals
 			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
 			$this->verbosed("Starting Import of Wifi Signal ( ".count($ap_sig_exp)." Signal Points )... ", 1);
@@ -1211,8 +1243,11 @@ class import extends dbcore
 				if($signal == ""){$signal = 0;}
 				if($this->rssi_signals_flag){if($sig_gps_exp[2] == "Ltd."){$rssi = $this->convert->Sig2dBm($signal);}}#fix for old incorrectly formatted file 
 				if($this->rssi_signals_flag){$rssi = $sig_gps_exp[2];}else{$rssi = $this->convert->Sig2dBm($signal);}
+				if($rssi > $HighRSSI){$HighRSSI = $rssi;}
+				if($signal > $HighSig){$HighSig = $signal;}
 				
-				$GID_SQL = "SELECT GPS_ID, GPS_Date FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";
+				
+				$GID_SQL = "SELECT GPS_ID, GPS_Date, Lat, Lon FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";
 				$gidprep = $this->sql->conn->prepare($GID_SQL);
 				$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
 				$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
@@ -1220,7 +1255,13 @@ class import extends dbcore
 				$fetchgidprep = $gidprep->fetch(2);
 				$gps_id = $fetchgidprep['GPS_ID'];
 				$datetime = $fetchgidprep['GPS_Date'];
+				$gps_lat = $fetchgidprep['Lat'];
+				$gps_lon = $fetchgidprep['Lat'];
 				if($gps_id == ""){continue;}
+				if ($FirstDate > $datetime || $FirstDate == ""){$FirstDate = $datetime;}
+				if ($LastDate < $datetime || $LastDate == ""){$LastDate = $datetime;}
+				if ($gps_lat != "0.0000" && $gps_lon != "0.0000" && $rssi > $HighRSSIwGPS){$HighRSSIwGPS = $rssi;}
+				
 
 				$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
 				$preps = $this->sql->conn->prepare($sql);
@@ -1244,7 +1285,7 @@ class import extends dbcore
 			}
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			$this->UpdateHighPoints($ap_id);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $HighSig, $HighRSSI, $HighRSSIwGPS);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -1270,8 +1311,9 @@ class import extends dbcore
 			return array(-1, "File does not exist");
 		}
 		
-		$gdata = array();
 		$apdata = array();
+		$gdata = array();
+		$hdata = array();
 		$imported_aps = array();
 		$NewAPs = 0;
 		$ap_count = 0;
@@ -1292,7 +1334,7 @@ class import extends dbcore
 				
 				$og_id = (int) $GPS_Arr[0];
 				$og_lat = $this->convert->all2dm($GPS_Arr[1]);
-				$og_long = $this->convert->all2dm($GPS_Arr[2]);
+				$og_lon = $this->convert->all2dm($GPS_Arr[2]);
 				$og_sats = (int) $GPS_Arr[3];
 				$og_hdp = (float) $GPS_Arr[4];
 				$og_alt = (float) $GPS_Arr[5];
@@ -1316,7 +1358,7 @@ class import extends dbcore
 				$prep->bindParam(1,$file_id, PDO::PARAM_INT);
 				$prep->bindParam(2,$og_id, PDO::PARAM_INT);
 				$prep->bindParam(3,$og_lat, PDO::PARAM_STR);
-				$prep->bindParam(4,$og_long, PDO::PARAM_STR);
+				$prep->bindParam(4,$og_lon, PDO::PARAM_STR);
 				$prep->bindParam(5,$og_sats,PDO::PARAM_INT);
 				$prep->bindParam(6,$og_hdp,PDO::PARAM_STR);
 				$prep->bindParam(7,$og_alt,PDO::PARAM_STR);
@@ -1335,7 +1377,9 @@ class import extends dbcore
 				$new_gps_id = $this->sql->conn->lastInsertId();
 				$gdata[$og_id] = array(
 							'old_gps_id'	=>  (int) $og_id,
-							'new_gps_id'	=>  (int) $new_gps_id
+							'new_gps_id'	=>  (int) $new_gps_id,
+							'lat'	=>  (int) $og_lat,
+							'lon'	=>  (int) $og_lon
 				);
 				$gps_count++;
 			}
@@ -1465,6 +1509,8 @@ class import extends dbcore
 				
 				$gps_id_arr = $gdata[$oh_gps_id];
 				$new_gps_id = $gps_id_arr['new_gps_id'];
+				$gps_lat = $gps_id_arr['lat'];
+				$gps_lon = $gps_id_arr['lon'];
 				
 				$ap_id_arr = $apdata[$oh_ap_id];
 				$new_ap_id = $ap_id_arr['new_ap_id'];
@@ -1479,6 +1525,31 @@ class import extends dbcore
 				
 				if($gps_id_arr != "" && $new_ap_id != "")
 				{
+					$harr = $hdata[$new_ap_id];
+					$FirstDate = $harr['FirstDate'];
+					$LastDate = $harr['LastDate'];
+					$HighRSSI = $harr['HighRSSI'];
+					$HighRSSIwGPS = $harr['HighRSSI'];
+					$HighSig = $harr['HighSig'];
+					if($HighRSSI == ""){$HighRSSI == -99;}
+					if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
+					if($HighSig == ""){$HighSig == 0;}
+						
+					if($oh_datetime > $LastDate || $LastDate == ""){$LastDate = $oh_datetime;}
+					if($oh_datetime < $FirstDate || $FirstDate == ""){$FirstDate = $oh_datetime;}
+					if($oh_rssi > $HighRSSI){$HighRSSI = $oh_rssi;}
+					if($oh_sig > $HighSig){$HighSig = $oh_sig;}
+					if($gps_lat != "" && $gps_lon != "" && $gps_lat != "0.0000" && $gps_lon != "0.0000" && $oh_rssi > $HighRSSIwGPS){$HighRSSIwGPS = $oh_rssi;}
+
+					$hdata[$new_ap_id] = array(
+						'ap_id'	=>  $new_ap_id,
+						'FirstDate'	=>  $FirstDate,
+						'LastDate'	=>  $LastDate,
+						'HighRSSI'	=>  $HighRSSI,
+						'HighRSSIwGPS'	=>  $HighRSSIwGPS,
+						'HighSig'	=>  $HighSig
+					);
+					
 					$sql = "INSERT INTO `wifi_hist` (`AP_ID`, `GPS_ID`, `File_ID`, `Sig`, `RSSI`, `New`, `Hist_Date`) VALUES (?, ?, ?, ?, ?, ?, ?)";
 					$preps = $this->sql->conn->prepare($sql);
 					$preps->bindParam(1, $new_ap_id, PDO::PARAM_INT);
@@ -1500,10 +1571,15 @@ class import extends dbcore
 			}
 		}
 		
-		foreach ($apdata as $key => $ap)
+		foreach ($hdata as $key => $ap)
 		{
-			$ap_id = $ap['new_ap_id'];
-			$this->UpdateHighPoints($ap_id);
+			$ap_id = $ap['ap_id'];
+			$FirstDate = $ap['FirstDate'];
+			$LastDate = $ap['LastDate'];
+			$HighRSSI = $ap['HighRSSI'];
+			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
+			$HighSig = $ap['HighSig'];
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
