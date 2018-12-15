@@ -35,15 +35,15 @@ if(!function_exists('WiFiDBexception_handler')) {
 		$trace = array('Error' => strval($err->getCode()), 'Message' => str_replace("\n", "</br>\r\n", $err->getMessage()), 'Code' => strval($err->getCode()), 'File' => $err->getFile(), 'Line' => strval($err->getLine()));
 		switch (strtolower(SWITCH_SCREEN)) {
 			case "html":
-				$WWW_DIR = $_SERVER['DOCUMENT_ROOT'].$config['root']."/";
+				$WWW_DIR = $config['wifidb_install'];
 				$URL_PATH = $config['hosturl'].$config['root'].'/';
 				if (isset($_COOKIE['wifidb_theme']) && $_COOKIE['wifidb_theme'] != '') {$theme = $_COOKIE['wifidb_theme'];}else{$theme = $config['default_theme'];}
 				
 				$smarty = new Smarty();
-				$smarty->template_dir = $WWW_DIR.'themes/'.$theme.'/templates/';
-				$smarty->compile_dir  = $WWW_DIR.'smarty/templates_c/'.$theme.'/';
-				$smarty->config_dir   = $WWW_DIR.'smarty/configs/'.$theme.'/';
-				$smarty->cache_dir    = $WWW_DIR.'smarty/cache/'.$theme.'/';
+				$smarty->template_dir = $config['wifidb_install'].'themes/'.$theme.'/templates/';
+				$smarty->compile_dir  = $config['wifidb_install'].'smarty/templates_c/'.$theme.'/';
+				$smarty->config_dir   = $config['wifidb_install'].'smarty/configs/'.$theme.'/';
+				$smarty->cache_dir    = $config['wifidb_install'].'smarty/cache/'.$theme.'/';
 				$smarty->assign('themeurl', $URL_PATH .'themes/'.$theme.'/');
 				$smarty->assign('wifidb_error_mesg', $trace);
 				$smarty->display("error.tpl");
