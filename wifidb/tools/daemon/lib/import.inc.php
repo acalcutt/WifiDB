@@ -1142,20 +1142,14 @@ class import extends dbcore
 		$NewAPs = 0;
 		foreach($vs1data['apdata'] as $key=>$aps)
 		{
-			
-			$calc = "AP: ".($key+1)." / ".$ap_count;
+			$ap_num = $key + 1;
+			$calc = "AP: ".($ap_num)." / ".$ap_count;
 			$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = ? WHERE `id` = ?";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $calc, PDO::PARAM_STR);
 			$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
 			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
-			if($this->sql->checkError() !== 0)
-			{
-				$this->verbosed("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), -1);
-				//$this->logd("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1), "Error");
-				throw new ErrorException("Error Updating Temp Files Table for current AP.\r\n".var_export($this->sql->conn->errorInfo(),1));
-			}
 
 			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
 
@@ -1163,13 +1157,12 @@ class import extends dbcore
 			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
 			if(strlen($aps['radio']) < 7){$pad_radio = 20;}else{$pad_radio = strlen($aps['radio']);}
 			if(strlen($aps['encry']) < 7){$pad_encr = 20;}else{$pad_encr = strlen($aps['encry']);}
-			$key_c = $key+1;
 			$ssid = str_pad($aps['ssid'], $pad_ssid);
 			$chan = str_pad($aps['chan'], $pad_chan);
 			$radio = str_pad($aps['radio'], $pad_radio);
 			$encry = str_pad($aps['encry'], $pad_encr);
 			$this->verbosed("------------------------
-			File AP/Total: {$key_c}/{$ap_count}
+			File AP/Total: {$ap_num}/{$ap_count}
 			SSID:  {$ssid} | MAC: {$aps['mac']}
 			CHAN:  {$chan} | SECTYPE: {$aps['sectype']}
 			RADIO: {$radio}| AUTH: {$aps['auth']}
@@ -1233,9 +1226,18 @@ class import extends dbcore
 			$LastDate = "";
 			//Import Wifi Signals
 			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
-			$this->verbosed("Starting Import of Wifi Signal ( ".count($ap_sig_exp)." Signal Points )... ", 1);
-			foreach($ap_sig_exp as $sig_gps_id)
+			$hist_count = count($ap_sig_exp);
+			$this->verbosed("Starting Import of Wifi Signal ( ".$hist_count." Signal Points )... ", 1);
+			foreach($ap_sig_exp as $key2=>$sig_gps_id)
 			{
+				$hist_num = $key2 + 1;
+				$calc = "AP: ".($ap_num)." / ".$ap_count." (".$hist_num." / ".$hist_count.")";
+				$sql = "UPDATE `files_importing` SET `tot` = ? WHERE `id` = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $calc, PDO::PARAM_STR);
+				$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+				$prep->execute();
+				
 				$sig_gps_exp = explode(",", $sig_gps_id);
 				$file_gps_id = $sig_gps_exp[0];
 				if($file_gps_id == ""){continue;}
