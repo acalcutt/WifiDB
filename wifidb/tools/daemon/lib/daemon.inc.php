@@ -59,7 +59,10 @@ class daemon extends wdbcli
 	 */
 	public function CheckDaemonKill()
 	{
-		$D_SQL = "SELECT `daemon_state` FROM `settings` WHERE `node_name` = ? LIMIT 1";
+		if($this->sql->service == "mysql")
+			{$D_SQL = "SELECT `daemon_state` FROM `settings` WHERE `node_name` = ? LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$D_SQL = "SELECT TOP 1 [daemon_state] FROM [settings] WHERE [node_name] = ?";}
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
 		$Dresult->execute();
@@ -89,7 +92,10 @@ class daemon extends wdbcli
 			}
 		}
 
-		$sql = "INSERT INTO `files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,? FROM `files_importing` WHERE `id` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "INSERT INTO `files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,? FROM `files_importing` WHERE `id` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "INSERT INTO [files_bad] ([file],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],[error_msg]) SELECT [file],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],? FROM [files_importing] WHERE [id] = ?";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
@@ -102,7 +108,10 @@ class daemon extends wdbcli
 			$this->verbosed("Added file to the Bad Import table.");
 		}
 		$thread_row_id = $this->sql->conn->lastInsertId();
-		$sql = "UPDATE `files_bad` SET `thread_id` = ?, `node_name` = ? WHERE `id` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "UPDATE `files_bad` SET `thread_id` = ?, `node_name` = ? WHERE `id` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "UPDATE [files_bad] SET [thread_id] = ?, [node_name] = ? WHERE [id] = ?";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $this->thread_id, PDO::PARAM_INT);
 		$prep->bindParam(2, $this->node_name, PDO::PARAM_STR);
@@ -118,7 +127,10 @@ class daemon extends wdbcli
 		}
 
 		if ($file_importing_id !== 0) {
-			$sql = "DELETE FROM `files_importing` WHERE `id` = ?";
+			if($this->sql->service == "mysql")
+				{$sql = "DELETE FROM `files_importing` WHERE `id` = ?";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "DELETE FROM [files_importing] WHERE [id] = ?";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
@@ -132,7 +144,10 @@ class daemon extends wdbcli
 		}
 
 		if ($file_id !== 0) {
-			$sql = "DELETE FROM `files` WHERE `id` = ?";
+			if($this->sql->service == "mysql")
+				{$sql = "DELETE FROM `files` WHERE `id` = ?";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "DELETE FROM [files] WHERE [id] = ?";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep->execute();
@@ -149,30 +164,67 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
+		if($this->sql->service == "mysql")
+		{
+			$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
 
-		$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`, `type`) SELECT `file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id`, `type` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1;";
-		$result = $this->sql->conn->prepare($daemon_sql);
-		$result->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		$LastInsert = $this->sql->conn->lastInsertID();
-		//var_dump($LastInsert);
+			$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`, `type`) SELECT `file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id`, `type` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1";
+			$result = $this->sql->conn->prepare($daemon_sql);
+			$result->execute();
+			$this->sql->checkError(__LINE__, __FILE__);
+			$LastInsert = $this->sql->conn->lastInsertID();
+			//var_dump($LastInsert);
 
-		$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
-		$prep = $this->sql->conn->prepare($select);
-		$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+			$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
+			$prep = $this->sql->conn->prepare($select);
+			$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
+			$prep->execute();
+			$this->sql->checkError(__LINE__, __FILE__);
 
-		$tmp_id = $prep->fetch(2)['tmp_id'];
-		$delete = "DELETE FROM files_tmp WHERE id = ?";
-		$prep = $this->sql->conn->prepare($delete);
-		$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
-		$prep->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
+			$tmp_id = $prep->fetch(2)['tmp_id'];
+			$delete = "DELETE FROM files_tmp WHERE id = ?";
+			$prep = $this->sql->conn->prepare($delete);
+			$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
+			$prep->execute();
+			$this->sql->checkError(__LINE__, __FILE__);
 
-		$this->sql->conn->query("UNLOCK TABLES");
+			$this->sql->conn->query("UNLOCK TABLES");
+		}
+		else if($this->sql->service == "sqlsrv")
+		{
+			$daemon_sql = "DELETE [files_tmp]\n"
+				. "OUTPUT DELETED.[id], DELETED.[file], DELETED.[user], DELETED.[otherusers], DELETED.[title], DELETED.[notes], DELETED.[size], DELETED.[date], DELETED.[hash], DELETED.[type]\n"
+				. "WHERE [files_tmp].[id] IN (SELECT TOP 1 [id] FROM [files_tmp] ORDER BY [date] ASC)";
+
+			$result = $this->sql->conn->prepare($daemon_sql);
+			$result->execute();
+			$this->sql->checkError(__LINE__, __FILE__);
+			$temp_imp_id_arr = $result->fetch();
+			if($temp_imp_id_arr['id'] != '')
+			{
+				$sql = "INSERT INTO [files_importing] ([file], [user], [otherusers], [title], [notes], [size], [date], [hash], [tmp_id], [type]) VALUES (?,?,?,?,?,?,?,?,?,?)";
+				$result2 = $this->sql->conn->prepare($sql);
+				$result2->bindParam(1, $temp_imp_id_arr['file'], PDO::PARAM_STR);
+				$result2->bindParam(2, $temp_imp_id_arr['user'], PDO::PARAM_STR);
+				$result2->bindParam(3, $temp_imp_id_arr['otherusers'], PDO::PARAM_STR);
+				$result2->bindParam(4, $temp_imp_id_arr['title'], PDO::PARAM_STR);
+				$result2->bindParam(5, $temp_imp_id_arr['notes'], PDO::PARAM_STR);
+				$result2->bindParam(6, $temp_imp_id_arr['size'], PDO::PARAM_STR);
+				$result2->bindParam(7, $temp_imp_id_arr['date'], PDO::PARAM_STR);
+				$result2->bindParam(8, $temp_imp_id_arr['hash'], PDO::PARAM_STR);
+				$result2->bindParam(9, $temp_imp_id_arr['id'], PDO::PARAM_INT);
+				$result2->bindParam(10, $temp_imp_id_arr['type'], PDO::PARAM_STR);
+				$result2->execute();
+				$this->sql->checkError(__LINE__, __FILE__);
+				$LastInsert = $this->sql->conn->lastInsertID();
+			}
+			else
+			{
+				$LastInsert = "";
+			}
+		}
 		return $LastInsert;
+		
 	}
 
     /**
@@ -199,7 +251,10 @@ class daemon extends wdbcli
         $rows = array();
         $n = 0;
         # Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
-        $sql = "INSERT INTO `user_imports` ( `username` , `notes` , `title`, `hash`, `file_id`) VALUES ( ?, ?, ?, ?, ?)";
+		if($this->sql->service == "mysql")
+			{$sql = "INSERT INTO `user_imports` (`username`, `notes`, `title`, `hash`, `file_id`) VALUES (?, ?, ?, ?, ?)";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "INSERT INTO [user_imports] ([username], [notes] , [title], [hash], [file_id]) VALUES (?, ?, ?, ?, ?)";}
         $prep = $this->sql->conn->prepare($sql);
         foreach($multi_user as $muser)
         {
@@ -246,7 +301,10 @@ class daemon extends wdbcli
 		if(!($count <= 8))//make sure there is at least a 'valid' file in the field
 		{
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
-			$update_tmp = "UPDATE `files_importing` SET `ap` = 'Preparing for Import', `importing` = '1' WHERE `id` = ?";
+			if($this->sql->service == "mysql")
+				{$update_tmp = "UPDATE `files_importing` SET `ap` = 'Preparing for Import', `importing` = '1' WHERE `id` = ?";}
+			else if($this->sql->service == "sqlsrv")
+				{$update_tmp = "UPDATE [files_importing] SET [ap] = 'Preparing for Import', [importing] = '1' WHERE [id] = ?";}
 			$prep4 = $this->sql->conn->prepare($update_tmp);
 			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
 			$prep4->execute();
@@ -259,7 +317,10 @@ class daemon extends wdbcli
 			}
 
 			//check to see if this file has already been imported into the DB
-			$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ? LIMIT 1";
+			if($this->sql->service == "mysql")
+				{$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ?";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
 			$prep = $this->sql->conn->prepare($sql_check);
 			$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
 			$prep->execute();
@@ -267,9 +328,18 @@ class daemon extends wdbcli
 			$hash_count = $ids[0];
 			if($hash_count == 0)
 			{
-				$sql_insert_file = "INSERT INTO `files`
-				(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `type`, `node_name`)
-				VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+				if($this->sql->service == "mysql")
+					{
+						$sql_insert_file = "INSERT INTO `files`
+						(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `type`, `node_name`)
+						VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+					}
+				else if($this->sql->service == "sqlsrv")
+					{
+						$sql_insert_file = "INSERT INTO [files]
+						([file], [date], [size], [aps], [gps], [hash], [user], [otherusers], [notes], [title], [type], [node_name])
+						VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+					}
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 				$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
@@ -307,7 +377,10 @@ class daemon extends wdbcli
 						if(in_array($file_ext, $this->convert_extentions))
 						{
 							$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-							$update_tmp = "UPDATE `files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";
+							if($this->sql->service == "mysql")
+								{$update_tmp = "UPDATE `files_importing` SET `ap` = '@#@# CONVERTING TO VS1 @#@#', `converted` = '1', `prev_ext` = ? WHERE `id` = ?";}
+							else if($this->sql->service == "sqlsrv")
+								{$update_tmp = "UPDATE [files_importing] SET [ap] = '@#@# CONVERTING TO VS1 @#@#', [converted] = '1', [prev_ext] = ? WHERE [id] = ?";}
 							$prep = $this->sql->conn->prepare($update_tmp);
 							$prep->bindParam(1, $file_ext, PDO::PARAM_STR);
 							$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
@@ -341,7 +414,10 @@ class daemon extends wdbcli
 							$file_size1 = $this->format_size($file_size1);
 							
 							//check to see if this file has already been imported into the DB
-							$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ? LIMIT 1";
+							if($this->sql->service == "mysql")
+								{$sql_check = "SELECT COUNT(`id`) FROM `files` WHERE `hash` = ?";}
+							else if($this->sql->service == "sqlsrv")
+								{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
 							$prep = $this->sql->conn->prepare($sql_check);
 							$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
 							$prep->execute();
@@ -349,7 +425,10 @@ class daemon extends wdbcli
 							$hash_count = $ids[0];
 							if($hash_count == 0)
 							{
-								$update = "UPDATE `files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+								if($this->sql->service == "mysql")
+									{$update = "UPDATE `files_importing` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";}
+								else if($this->sql->service == "sqlsrv")
+									{$update = "UPDATE [files_importing] SET [file] = ?, [hash] = ?, [size] = ? WHERE [id] = ?";}
 								$prep = $this->sql->conn->prepare($update);
 								$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
 								$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
@@ -357,7 +436,10 @@ class daemon extends wdbcli
 								$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
 								$prep->execute();
 								
-								$update = "UPDATE `files` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";
+								if($this->sql->service == "mysql")
+									{$update = "UPDATE `files` SET `file` = ?, `hash` = ?, `size` = ? WHERE `id` = ?";}
+								else if($this->sql->service == "sqlsrv")
+									{$update = "UPDATE [files] SET [file] = ?, [hash] = ?, [size] = ? WHERE [id] = ?";}
 								$prep = $this->sql->conn->prepare($update);
 								$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
 								$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
@@ -438,7 +520,10 @@ class daemon extends wdbcli
 				{
 					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
 					$NewAPPercent = (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 );
-					$update_files_table_sql = "UPDATE `files` SET `aps` = ?, `gps` = ?, `NewAPPercent` = ?, `completed` = 1 WHERE `id` = ?";
+					if($this->sql->service == "mysql")
+						{$update_files_table_sql = "UPDATE `files` SET `aps` = ?, `gps` = ?, `NewAPPercent` = ?, `completed` = 1 WHERE `id` = ?";}
+					else if($this->sql->service == "sqlsrv")
+						{$update_files_table_sql = "UPDATE [files] SET [aps] = ?, [gps] = ?, [NewAPPercent] = ?, [completed] = 1 WHERE [id] = ?";}
 					$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
 					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
@@ -448,7 +533,10 @@ class daemon extends wdbcli
 					$prep_update_files_table->execute();
 					$this->sql->checkError(__LINE__, __FILE__);
 
-					$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ?, `NewAPPercent` = ? WHERE `id` = ?";
+					if($this->sql->service == "mysql")
+						{$sql = "UPDATE `user_imports` SET `points` = ?, `date` = ?, `aps` = ?, `gps` = ?, `file_id` = ?, `converted` = ?, `prev_ext` = ?, `NewAPPercent` = ? WHERE `id` = ?";}
+					else if($this->sql->service == "sqlsrv")
+						{$sql = "UPDATE [user_imports] SET [points] = ?, [date] = ?, [aps] = ?, [gps] = ?, [file_id] = ?, [converted] = ?, [prev_ext] = ?, [NewAPPercent] = ? WHERE [id] = ?";}
 					$prep3 = $this->sql->conn->prepare($sql);
 					foreach($import_ids as $id)
 					{
@@ -466,7 +554,10 @@ class daemon extends wdbcli
 						$this->verbosed("Updated User Import row. ($id : $file_hash)", 2);
 					}
 
-					$del_file_tmp = "DELETE FROM `files_importing` WHERE `id` = ?";
+					if($this->sql->service == "mysql")
+						{$del_file_tmp = "DELETE FROM `files_importing` WHERE `id` = ?";}
+					else if($this->sql->service == "sqlsrv")
+						{$del_file_tmp = "DELETE FROM [files_importing] WHERE [id] = ?";}
 					#echo $del_file_tmp."\r\n";
 					$prep = $this->sql->conn->prepare($del_file_tmp);
 					$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
@@ -541,8 +632,10 @@ class daemon extends wdbcli
 		}
 		//$this->logd("=== Start Daemon Prep of ".$file." ===");
 
-		$sql = "INSERT INTO `files_tmp` (`file`, `date`, `user`, `notes`, `title`, `size`, `hash`  )
-																VALUES ('$file', '$date', '$user', '$notes', '$title', '$size1', '$hash_')";
+		if($this->sql->service == "mysql")
+			{$sql = "INSERT INTO `files_tmp` (`file`, `date`, `user`, `notes`, `title`, `size`, `hash`) VALUES (?, ?, ?, ?, ?, ?, ?)";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "INSERT INTO [files_tmp] ([file], [date], [user], [notes], [title], [size], [hash]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $file, PDO::PARAM_STR);
 		$prep->bindParam(2, $date, PDO::PARAM_STR);
@@ -572,7 +665,10 @@ class daemon extends wdbcli
 		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"));
 		$this->verbosed("Setting Job Next Run to ".$nextrun, 1);
 
-		$sql = "UPDATE `schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "UPDATE `schedule` SET `nextrun` = ? , `status` = ? WHERE `id` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "UPDATE [schedule] SET [nextrun] = ? , [status] = ? WHERE [id] = ?";}
 		$prepnr = $this->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $this->StatusWaiting, PDO::PARAM_STR);
@@ -587,7 +683,10 @@ class daemon extends wdbcli
 		$nextrun = date("Y-m-d G:i:s", strtotime("+".$this->job_interval." minutes"))."";
 		$this->verbosed("Starting - Job:".$this->daemon_name." Id:".$job_id, 1);
 
-		$sql = "UPDATE `schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "UPDATE `schedule` SET `status` = ?, `nextrun` = ? WHERE `id` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "UPDATE [schedule] SET [status] = ?, [nextrun] = ? WHERE [id] = ?";}
 		$prepsr = $this->sql->conn->prepare($sql);
 		$prepsr->bindParam(1, $this->StatusRunning, PDO::PARAM_STR);
 		$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
@@ -599,14 +698,20 @@ class daemon extends wdbcli
 
     public function GetWaitingImportRowCount()
     {
-        $result = $this->sql->conn->query("SELECT count(id) FROM `files_tmp`");
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT count(`id`) FROM `files_tmp`";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT count([id]) FROM [files_tmp]";}
+        $result = $this->sql->conn->query($sql);
         $fetch = $result->fetch();
-        //var_dump($fetch[0]);
     }
 
     public function  RemoveUserImport($import_ID = 0)
     {
-        $sql = "DELETE FROM `user_imports` WHERE `id` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "DELETE FROM `user_imports` WHERE `id` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "DELETE FROM [user_imports] WHERE [id] = ?";}
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $import_ID, PDO::PARAM_STR);
         $prep->execute();

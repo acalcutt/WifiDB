@@ -9,12 +9,21 @@ class SQL
 		$this->charset       = $config['charset'];
 		$this->collate       = $config['collate'];
 		
-		$dsn = $this->service.':dbname='.$this->database.';host='.$this->host.';charset='.$this->charset;
-		$options = array(
-			PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$this->charset.' COLLATE '.$this->collate,
-			PDO::ATTR_PERSISTENT => TRUE,
-		);
-		$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+		if($this->service == "mysql")
+		{
+			$dsn = $this->service.':dbname='.$this->database.';host='.$this->host.';charset='.$this->charset;
+			$options = array(
+				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$this->charset.' COLLATE '.$this->collate,
+				PDO::ATTR_PERSISTENT => TRUE,
+			);
+			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+		}
+		else if($this->service == "sqlsrv")
+		{
+			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database;
+			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
+			$this->conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
+		}
 	}
 
 	function checkError($line=0, $file="")

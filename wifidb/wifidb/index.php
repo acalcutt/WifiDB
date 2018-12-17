@@ -24,31 +24,45 @@ define("SWITCH_EXTRAS", "");
 include('lib/init.inc.php');
 
 $usersa =  array();
-$sql = "SELECT count(`AP_ID`) AS ApCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL";
-#echo $sql;
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT count(`AP_ID`) AS ApCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT count([AP_ID]) AS ApCount FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL";}
 $result = $dbcore->sql->conn->query($sql);
 $rows = $result->fetch(2);
 
-
-$sql = "SELECT count(`AP_ID`) AS OpenCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL AND `sectype`='1'";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT count(`AP_ID`) AS OpenCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL AND `sectype`='1'";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT count([AP_ID]) AS OpenCount FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL AND [sectype]='1'";}
 $result = $dbcore->sql->conn->query($sql);
 $open = $result->fetch(2);
 
-
-$sql = "SELECT count(`AP_ID`) AS WepCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL AND `sectype`='2'";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT count(`AP_ID`) AS WepCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL AND `sectype`='2'";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT count([AP_ID]) AS WepCount FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL AND [sectype]='2'";}
 $result = $dbcore->sql->conn->query($sql);
 $wep = $result->fetch(2);
 
-
-$sql = "SELECT count(`AP_ID`) AS SecCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL AND `sectype`='3'";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT count(`AP_ID`) AS SecCount FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL AND `sectype`='3'";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT count([AP_ID]) AS SecCount FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL AND [sectype]='3'";}
 $result = $dbcore->sql->conn->query($sql);
 $sec = $result->fetch(2);
 
-$sql = "SELECT count(Distinct `user`) AS UserCount FROM `files` WHERE `completed` = 1";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT count(Distinct `user`) AS UserCount FROM `files` WHERE `completed` = 1";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT count(Distinct [user]) AS UserCount FROM [files] WHERE [completed] = 1";}
 $result = $dbcore->sql->conn->query($sql);
 $usercount = $result->fetch(2);
 
-$sql = "SELECT `AP_ID`,`SSID`,`HighGps_ID` FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL ORDER BY `AP_ID` DESC LIMIT 1";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT `AP_ID`,`SSID`,`HighGps_ID` FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL ORDER BY `AP_ID` DESC LIMIT 1";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT TOP 1 [AP_ID],[SSID],[HighGps_ID] FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
@@ -68,7 +82,10 @@ if($lastap_array['HighGps_ID'] == "")
 	$ap_globe_html .= "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$lastap_array['AP_ID']."\" title=\"Export AP to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/kmz_on.png\"></a>";
 }
 
-$sql = "SELECT `user`, `id`, `title`, `date`, `ValidGPS` FROM `files` WHERE `completed`=1 order by `date` desc limit 1";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT `user`, `id`, `title`, `date`, `ValidGPS` FROM `files` WHERE `completed`=1 order by `date` desc limit 1";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT TOP 1 [user], [id], [title], [date], [ValidGPS] FROM [files] WHERE [completed]=1 order by [date] desc";}
 $result = $dbcore->sql->conn->query($sql);
 $lastuser = $result->fetch(2);
 $lastusername =  $lastuser['user'];
@@ -90,7 +107,10 @@ else
 	$list_globe_html .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/kmz_off.png\">";
 }
 
-$sql = "SELECT COUNT(`id`) AS `ApCount` FROM `files` WHERE `user` = ? And `ValidGPS` = 1";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT COUNT(`id`) AS `ApCount` FROM `files` WHERE `user` = ? And `ValidGPS` = 1";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT COUNT([id]) AS [ApCount] FROM [files] WHERE [user] = ? And [ValidGPS] = 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $lastusername, PDO::PARAM_STR);
 $prep->execute();

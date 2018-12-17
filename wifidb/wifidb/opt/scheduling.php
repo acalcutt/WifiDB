@@ -46,11 +46,18 @@ switch($func)
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
     case 'done':
-        #$sql = "SELECT `files`.`id`, `user_imports`.`id` as `UserImportID`, `user_imports`.`username`, `files`.`file`, `user_imports`.`NewAPPercent`, `files`.`title`, `files`.`date`, `files`.`size`, `files`.`aps`, `files`.`gps`, `files`.`hash` FROM `files` INNER JOIN user_imports WHERE `files`.`completed` = 1 AND `files`.`id` = `user_imports`.`file_id` ORDER BY `files`.`id` DESC";
-        #echo $sql;
-		$sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `aps`, `gps`, `ValidGPS`, `size`, `NewAPPercent`, `hash` \n"
-			. "FROM `files` \n"
-			. "WHERE `completed` = 1 ORDER BY `date` DESC";
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `aps`, `gps`, `ValidGPS`, `size`, `NewAPPercent`, `hash` \n"
+					. "FROM `files` \n"
+					. "WHERE `completed` = 1 ORDER BY `date` DESC";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [id], [file], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
+					. "FROM [files] \n"
+					. "WHERE [completed] = 1 ORDER BY [date] DESC";
+			}
         $result = $dbcore->sql->conn->query($sql);
         $class_f = 0;
         $files_all = array();
@@ -208,12 +215,23 @@ switch($func)
         $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">Download!</a>';
         $kmldate=date ("Y-m-d");
 		#-----------
-		$sql = "SELECT `wifi_gps`.`GPS_Date`\n"
-			. "FROM `wifi_ap`\n"
-			. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_ap`.`HighGps_ID` IS NOT NULL and `wifi_gps`.`Lat` != '0.0000'\n"
-			. "ORDER BY `wifi_gps`.`GPS_Date` DESC\n"
-			. "LIMIT 1";
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT `wifi_gps`.`GPS_Date`\n"
+					. "FROM `wifi_ap`\n"
+					. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
+					. "WHERE `wifi_ap`.`HighGps_ID` IS NOT NULL and `wifi_gps`.`Lat` != '0.0000'\n"
+					. "ORDER BY `wifi_gps`.`GPS_Date` DESC\n"
+					. "LIMIT 1";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT TOP 1 [wifi_gps].[GPS_Date]\n"
+					. "FROM [wifi_ap]\n"
+					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
+					. "WHERE [wifi_ap].[HighGps_ID] IS NOT NULL and [wifi_gps].[Lat] != '0.0000'\n"
+					. "ORDER BY [wifi_gps].[GPS_Date] DESC";
+			}
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -241,7 +259,10 @@ switch($func)
         }
 		#-----------
 		$date_search = $kmldate."%";
-        $sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [id], [date] FROM [files] ORDER BY [date] DESC";}
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -269,7 +290,10 @@ switch($func)
             $kml_head['daily_labeled_size'] = "0.00 kB";
         }
 		#-----------
-        $sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [id], [date] FROM [files] ORDER BY [date] DESC";}
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
@@ -305,8 +329,10 @@ switch($func)
     break;
 
     default:
-        #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
-        $sql = "SELECT * FROM `settings` WHERE `id` = '1'";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `settings` WHERE `id` = '1'";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [settings] WHERE [id] = '1'";}
         $result = $dbcore->sql->conn->query($sql);
         $file_array = $result->fetch(2);
         $timezone_opt = '';
@@ -361,7 +387,10 @@ switch($func)
         }
         $importing_row = array();
         $n=0;
-        $sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [files_importing] ORDER BY [date] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -409,7 +438,10 @@ switch($func)
 		
         $waiting_row = array();
         $n=0;
-        $sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [files_tmp] ORDER BY [date] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -432,7 +464,10 @@ switch($func)
 
         $schedule_row = array();
         $n=0;
-        $sql = "SELECT * FROM `schedule` ORDER BY `nodename` ASC";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `schedule` ORDER BY `nodename` ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [schedule] ORDER BY [nodename] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -481,7 +516,10 @@ switch($func)
 
         $pid_row = array();
         $n=0;
-        $sql = "SELECT * FROM `daemon_pid_stats` ORDER BY `nodename` ASC";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `daemon_pid_stats` ORDER BY `nodename` ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [daemon_pid_stats] ORDER BY [nodename] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {

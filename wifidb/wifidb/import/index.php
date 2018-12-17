@@ -121,7 +121,11 @@ switch($func)
 				case "db":
 					$ext_fail = 0;
 					$task = "import";
-					break;
+				break;
+				case "mdb":
+					$ext_fail = 0;
+					$task = "import";
+				break;
 				default:
 					$ext_fail = 1;
 					$task = "";
@@ -153,10 +157,12 @@ switch($func)
 						//lets try a scheduled import table that has a cron job
 						//that runs and imports all of them at once into the DB
 						//in order that they where uploaded
-						$date = date("y-m-d H:i:s");
-						$sql = "INSERT INTO `files_tmp`
-										( `file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`  )
-								 VALUES ( ?,	  ?,	  ?,	  ?,		?,	  ?,	  ?,	  ?,	  ?)";
+						$date = date("Y-m-d H:i:s");
+						if($dbcore->sql->service == "mysql")
+							{$sql = "INSERT INTO `files_tmp`(`file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+						else if($dbcore->sql->service == "sqlsrv")
+							{$sql = "INSERT INTO [files_tmp]([file], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+
 						$result = $dbcore->sql->conn->prepare( $sql );
 						$result->bindValue(1, $filename, PDO::PARAM_STR);
 						$result->bindValue(2, $date, PDO::PARAM_STR);

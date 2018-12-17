@@ -38,34 +38,43 @@ $dbcore->smarty->assign('inc', $inputs['to']);
 $dbcore->smarty->assign('ord', $inputs['ord']);
 $dbcore->smarty->assign('sort', $inputs['sort']);
 
-$sql = "SELECT COUNT(*) FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT COUNT(*) FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT COUNT(*) FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL";}
 $sqlprep = $dbcore->sql->conn->prepare($sql);       
 $sqlprep->execute();
 $total_rows = $sqlprep->fetchColumn();
 
-#$sql = "SELECT * FROM `wifi_ap` ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
-#$sql = "SELECT AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX,\n"
-#    . "(SELECT Hist_Date FROM wifi_hist WHERE Hist_ID = WAP.FirstHist_ID) As FA,\n"
-#    . "(SELECT Hist_Date FROM wifi_hist WHERE Hist_ID = WAP.LastHist_ID) As LA,\n"
-#    . "(SELECT (SELECT Lat FROM wifi_gps WHERE GPS_ID = WGPS.GPS_ID) As Lon FROM `wifi_hist` AS WGPS WHERE Hist_ID = WAP.HighGpsHist_ID) As Lat,\n"
-#    . "(SELECT (SELECT Lon FROM wifi_gps WHERE GPS_ID = WGPS.GPS_ID) As Lon FROM `wifi_hist` AS WGPS WHERE Hist_ID = WAP.HighGpsHist_ID) As Lon\n"
-#    . "FROM `wifi_ap` AS WAP  \n"
-#    . "ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
-
-
-$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-    . "whFA.Hist_Date As FA,\n"
-    . "whLA.Hist_Date As LA,\n"
-    . "wGPS.Lat As Lat,\n"
-    . "wGPS.Lon As Lon\n"
-    . "FROM `wifi_ap` AS wap\n"
-    . "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-    . "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-    . "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-    . "WHERE wap.FirstHist_ID IS NOT NULL\n"	
-    . "ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
-
-
+if($dbcore->sql->service == "mysql")
+	{
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+			. "whFA.Hist_Date As FA,\n"
+			. "whLA.Hist_Date As LA,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM `wifi_ap` AS wap\n"
+			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "WHERE wap.FirstHist_ID IS NOT NULL\n"	
+			. "ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";
+	}
+else if($dbcore->sql->service == "sqlsrv")
+	{
+		$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+			. "[whFA].[Hist_Date] As [FA],\n"
+			. "[whLA].[Hist_Date] As [LA],\n"
+			. "[wGPS].[Lat] As [Lat],\n"
+			. "[wGPS].[Lon] As [Lon]\n"
+			. "FROM [wifi_ap] AS [wap]\n"
+			. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+			. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+			. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+			. "WHERE [wap].[FirstHist_ID] IS NOT NULL\n"	
+			. "ORDER BY [AP_ID] DESC OFFSET ".$inputs['from']." ROWS\n"	
+			. "FETCH NEXT ".$inputs['to']." ROWS ONLY";
+	}
 
 $pre_page_list = $dbcore->sql->conn->query($sql);
 

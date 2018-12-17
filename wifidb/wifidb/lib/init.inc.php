@@ -75,8 +75,24 @@ $options = array(
 	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$config['charset'].' COLLATE '.$config['collate'],
 );
 
-$conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-$sql = "SELECT `version` FROM `settings` LIMIT 1";
+
+if($config['srvc'] == "mysql")
+{
+	$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'].';charset='.$config['charset'];
+	$options = array(
+		PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$config['charset'].' COLLATE '.$config['collate']
+	);
+	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+	$sql = "SELECT `version` FROM `settings` LIMIT 1";
+}
+else if($config['srvc'] == "sqlsrv")
+{
+	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'];
+	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
+	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
+	$sql = "SELECT TOP 1 [version] FROM [settings]";
+}
+
 $res = $conn->query($sql);
 $fetch = $res->fetch(2);
 
