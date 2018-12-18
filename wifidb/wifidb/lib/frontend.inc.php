@@ -587,7 +587,10 @@ class frontend extends dbcore
 					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [f] ON [f].[id] = [wap].[File_ID]\n"
-					. "WHERE [f].[user] LIKE ? And [f].[completed] = 1 ORDER BY [{$inputs['sort']}] {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";	
+					. "WHERE [f].[user] LIKE ? And [f].[completed] = 1\n"
+					. "ORDER BY [{$inputs['sort']}] {$inputs['ord']}\n"
+					. "OFFSET {$inputs['from']} ROWS\n"
+					. "FETCH NEXT {$inputs['to']} ROWS ONLY";	
 			}			
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);

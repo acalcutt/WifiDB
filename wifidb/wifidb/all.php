@@ -72,8 +72,8 @@ else if($dbcore->sql->service == "sqlsrv")
 			. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 			. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 			. "WHERE [wap].[FirstHist_ID] IS NOT NULL\n"	
-			. "ORDER BY [AP_ID] DESC OFFSET ".$inputs['from']." ROWS\n"	
-			. "FETCH NEXT ".$inputs['to']." ROWS ONLY";
+			. "ORDER BY [{$inputs['sort']}] {$inputs['ord']} OFFSET {$inputs['from']} ROWS\n"	
+			. "FETCH NEXT {$inputs['to']} ROWS ONLY";
 	}
 
 $pre_page_list = $dbcore->sql->conn->query($sql);
