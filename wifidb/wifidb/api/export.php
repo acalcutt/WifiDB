@@ -82,7 +82,10 @@ switch($func)
 		case "exp_ap_netlink":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			#Get SSID
-			$sql = "SELECT SSID FROM `wifi_ap` WHERE `AP_ID` = ?";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -98,14 +101,20 @@ switch($func)
 			
 		case "exp_all":
 			$results="";
-			$sql = "SELECT DISTINCT(`user`) FROM `files` ORDER BY `user` ASC";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT DISTINCT(`user`) FROM `files` ORDER BY `user` ASC";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT DISTINCT([user]) FROM [files] ORDER BY [user] ASC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll(2);
 			foreach($fetch_user as $user)
 			{
 				$username = $user['user'];
-				$sql1 = "SELECT `id` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";
+				if($dbcore->sql->service == "mysql")
+					{$sql1 = "SELECT `id` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
 				$prep1 = $dbcore->sql->conn->prepare($sql1);
 				$prep1->bindParam(1, $username, PDO::PARAM_STR);
 				$prep1->execute();
@@ -130,7 +139,10 @@ switch($func)
 			else
 			{	
 				#Get the date of the newest import
-				$sql = "SELECT `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT `date` FROM `files` WHERE `completed` = 1 ORDER BY `date` DESC LIMIT 1";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 ORDER BY [date] DESC";}
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
 				$datestamp = $date_fetch['date'];
@@ -141,8 +153,12 @@ switch($func)
 			
 			#Get lists from the date specified
 			$date_search = $date."%";
-			$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `date` LIKE '$date_search' And `ValidGPS` = 1 ORDER BY id DESC";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `id` FROM `files` WHERE `date` LIKE ? ORDER BY `date` DESC";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [id] FROM [files] WHERE [date] LIKE ? ORDER BY [date] DESC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $date_search, PDO::PARAM_STR);
 			$prep->execute();
 			$fetch_imports = $prep->fetchAll();
 			$results="";
@@ -150,10 +166,20 @@ switch($func)
 			{
 				#Calculate region box
 				$box_latlon = array();
-				$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
-					. "FROM `wifi_hist`\n"
-					. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
-					. "WHERE `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
+				if($dbcore->sql->service == "mysql")
+					{
+						$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
+							. "FROM `wifi_hist`\n"
+							. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
+							. "WHERE `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
+					}
+				else if($dbcore->sql->service == "sqlsrv")
+					{
+						$sql = "SELECT [wifi_gps].[Lat] AS [Lat], [wifi_gps].[Lon] AS [Lon]\n"
+							. "FROM [wifi_hist]\n"
+							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
+							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
 				$result->execute();
@@ -189,7 +215,10 @@ switch($func)
 
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -200,10 +229,20 @@ switch($func)
 			{
 				#Calculate region box
 				$box_latlon = array();
-				$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
-					. "FROM `wifi_hist`\n"
-					. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
-					. "WHERE `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
+				if($dbcore->sql->service == "mysql")
+					{
+						$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
+							. "FROM `wifi_hist`\n"
+							. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
+							. "WHERE `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
+					}
+				else if($dbcore->sql->service == "sqlsrv")
+					{
+						$sql = "SELECT [wifi_gps].[Lat] AS [Lat], [wifi_gps].[Lon] AS [Lon]\n"
+							. "FROM [wifi_hist]\n"
+							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
+							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
 				$result->execute();
@@ -237,7 +276,10 @@ switch($func)
 			
 		case "exp_list":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			$sql = "SELECT `title` FROM `files` WHERE `id` = ?";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -279,7 +321,10 @@ switch($func)
 			$KML_Signal_data = "";
 			
 			# -Get Unique Files with this AP_ID-
-			$sql = "SELECT DISTINCT(File_ID) FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID`";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT DISTINCT(`File_ID`) FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID`";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT DISTINCT([File_ID]) FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID]";}
 			$prep_file_id = $dbcore->sql->conn->prepare($sql);
 			$prep_file_id->bindParam(1, $id, PDO::PARAM_INT);
 			$prep_file_id->execute();
@@ -287,7 +332,10 @@ switch($func)
 			foreach($fetch_file_id as $file_id)
 			{
 				# -Get File Info-
-				$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ? And `ValidGPS` = 1";
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ? And `ValidGPS` = 1";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ? And [ValidGPS] = 1";}
 				$prep_file = $dbcore->sql->conn->prepare($sql);
 				$prep_file->bindParam(1, $file_id['File_ID'], PDO::PARAM_INT);
 				$prep_file->execute();
@@ -296,10 +344,20 @@ switch($func)
 				{
 					# -Calculate region box-
 					$box_latlon = array();
-					$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
-						. "FROM `wifi_hist`\n"
-						. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
-						. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
+					if($dbcore->sql->service == "mysql")
+						{
+							$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
+								. "FROM `wifi_hist`\n"
+								. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
+								. "WHERE `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
+						}
+					else if($dbcore->sql->service == "sqlsrv")
+						{
+							$sql = "SELECT [wifi_gps].[Lat] AS [Lat], [wifi_gps].[Lon] AS [Lon]\n"
+								. "FROM [wifi_hist]\n"
+								. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
+								. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+						}
 					$result = $dbcore->sql->conn->prepare($sql);
 					$result->bindParam(1, $id, PDO::PARAM_INT);
 					$result->bindParam(2, $file_id['File_ID'], PDO::PARAM_INT);
@@ -334,7 +392,10 @@ switch($func)
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 			
 			#Get AP Name
-			$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
 			$prep_name = $dbcore->sql->conn->prepare($sql);
 			$prep_name->bindParam(1, $id, PDO::PARAM_INT);
 			$prep_name->execute();
@@ -342,7 +403,10 @@ switch($func)
 			$ssid = $dbcore->formatSSID($ap_array['SSID']);
 			
 			#Get List Title 
-			$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
 			$prep_title = $dbcore->sql->conn->prepare($sql);
 			$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep_title->execute();

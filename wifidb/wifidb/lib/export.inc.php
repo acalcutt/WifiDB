@@ -75,13 +75,24 @@ class export extends dbcore
 		if($type == "full")
 		{
 			#Create Queries
-			$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
-			$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And completed = 1";
+			if($this->sql->service == "mysql")
+				{
+					$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
+					$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And completed = 1";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 ORDER BY [user] ASC";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [completed] = 1";
+				}
 		}
 		elseif($type == "daily")
 		{
 			#Get the date of the latest import
-			$sql = "SELECT `date` FROM `files` WHERE completed = 1 ORDER BY `date` DESC LIMIT 1";
+			if($this->sql->service == "mysql")
+				{$sql = "SELECT `date` FROM `files` WHERE completed = 1 ORDER BY `date` DESC LIMIT 1";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 ORDER BY [date] DESC";}	
 			$date_query = $this->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$datestamp = $date_fetch['date'];
@@ -91,8 +102,16 @@ class export extends dbcore
 			
 			#Create Queries
 			$date_search = $latest_date."%";
-			$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 And `date` LIKE '$date_search' ORDER BY `user` ASC";
-			$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE completed = 1 And `user` LIKE ? AND `date` LIKE '$date_search'";
+			if($this->sql->service == "mysql")
+				{
+					$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 And `date` LIKE '$date_search' ORDER BY `user` ASC";
+					$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE completed = 1 And `user` LIKE ? AND `date` LIKE '$date_search'";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [date] LIKE '$date_search' ORDER BY [user] ASC";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [user] LIKE ? AND [date] LIKE '$date_search'";
+				}
 		}	
 		
 		$ZipC = clone $this->Zip;
@@ -180,20 +199,38 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		$export_ssid="";
-		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-			. "whFA.Hist_Date As FA,\n"
-			. "whLA.Hist_Date As LA,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
-			. "wf.user As user\n"
-			. "FROM `wifi_ap` AS wap\n"
-			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-			. "WHERE `wap`.`AP_ID` = ?";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+					. "whFA.Hist_Date As FA,\n"
+					. "whLA.Hist_Date As LA,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM `wifi_ap` AS wap\n"
+					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+					. "WHERE `wap`.`AP_ID` = ?";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "WHERE [wap].[AP_ID] = ?";
+			}	
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -235,7 +272,10 @@ class export extends dbcore
 	public function ExportCurrentAP($named=0, $new_icons=0)
 	{
 		$KML_data="";
-		$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [id], [ssid], [ap_hash] FROM [wifi_pointers] WHERE [lat] != '0.0000' ORDER BY [id] DESC";}
 		$result = $this->sql->conn->query($sql);
 		$ap_array = $result->fetch(2);
 		if($ap_array['id'])
@@ -251,7 +291,10 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		#Get Import Name
-		$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
 		$prep_title = $this->sql->conn->prepare($sql);
 		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
 		$prep_title->execute();
@@ -260,14 +303,28 @@ class export extends dbcore
 		$ap_list_date = $fetch_title['date'];
 		
 		#Get AP Signal History for this file	
-		$sql = "SELECT\n"
-			. "`wifi_hist`.Sig, `wifi_hist`.RSSI, `wifi_hist`.Hist_Date,\n"
-			. "`wifi_gps`.Lat, `wifi_gps`.`Lon`, `wifi_gps`.NumOfSats, `wifi_gps`.HorDilPitch, `wifi_gps`.Alt, \n"
-			. "`wifi_gps`.Geo, `wifi_gps`.KPH, `wifi_gps`.MPH, `wifi_gps`.TrackAngle, `wifi_gps`.GPS_Date\n"
-			. "FROM `wifi_hist`\n"
-			. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ? AND `wifi_gps`.`Lat` != '0.0000'\n"
-			. "ORDER BY `wifi_gps`.`GPS_Date` ASC";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT\n"
+					. "`wifi_hist`.Sig, `wifi_hist`.RSSI, `wifi_hist`.Hist_Date,\n"
+					. "`wifi_gps`.Lat, `wifi_gps`.`Lon`, `wifi_gps`.NumOfSats, `wifi_gps`.HorDilPitch, `wifi_gps`.Alt, \n"
+					. "`wifi_gps`.Geo, `wifi_gps`.KPH, `wifi_gps`.MPH, `wifi_gps`.TrackAngle, `wifi_gps`.GPS_Date\n"
+					. "FROM `wifi_hist`\n"
+					. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+					. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ? AND `wifi_gps`.`Lat` != '0.0000'\n"
+					. "ORDER BY `wifi_gps`.`GPS_Date` ASC";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT\n"
+					. "[wifi_hist].[Sig], [wifi_hist].[RSSI], [wifi_hist].[Hist_Date],\n"
+					. "[wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_gps].[NumOfSats], [wifi_gps].[HorDilPitch], [wifi_gps].[Alt], \n"
+					. "[wifi_gps].[Geo], [wifi_gps].[KPH], [wifi_gps].[MPH], [wifi_gps].[TrackAngle], [wifi_gps].[GPS_Date]\n"
+					. "FROM [wifi_hist]\n"
+					. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
+					. "WHERE [wifi_hist].[AP_ID] = ? AND [wifi_hist].[File_ID] = ? AND [wifi_gps].[Lat] != '0.0000'\n"
+					. "ORDER BY [wifi_gps].[GPS_Date] ASC";
+			}
 		$ap_query = $this->sql->conn->prepare($sql);
 		$ap_query->bindParam(1, $ap_id, PDO::PARAM_INT);
 		$ap_query->bindParam(2, $file_id, PDO::PARAM_INT);
@@ -284,10 +341,20 @@ class export extends dbcore
 	
 	public function UserAll($user)
 	{
-		$sql = "SELECT wifi_ap.AP_ID\n"
-			. "FROM `wifi_ap`\n"
-			. "LEFT JOIN `files` ON `files`.`id` = `wifi_ap`.`File_ID`\n"
-			. "WHERE `files`.`user` LIKE ? And  `wifi_ap`.`BSSID` != '00:00:00:00:00:00' And `wifi_ap`.`HighGps_ID` IS NOT NULL";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wifi_ap.AP_ID\n"
+					. "FROM `wifi_ap`\n"
+					. "LEFT JOIN `files` ON `files`.`id` = `wifi_ap`.`File_ID`\n"
+					. "WHERE `files`.`user` LIKE ? And  `wifi_ap`.`BSSID` != '00:00:00:00:00:00' And `wifi_ap`.`HighGps_ID` IS NOT NULL";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wifi_ap].[AP_ID]\n"
+					. "FROM [wifi_ap]\n"
+					. "LEFT JOIN [files] ON [files].[id] = [wifi_ap].[File_ID]\n"
+					. "WHERE [files].[user] LIKE ? And [wifi_ap].[BSSID] != '00:00:00:00:00:00' And [wifi_ap].[HighGps_ID] IS NOT NULL";
+			}
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
 		$result1->execute();
@@ -302,7 +369,10 @@ class export extends dbcore
 
 	public function UserList($file_id, $named=0, $only_new=0, $new_icons=0)
 	{
-		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -310,20 +380,39 @@ class export extends dbcore
 		$box_latlon = array();
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
-			$apid = $array['AP_ID'];
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-				. "whFA.Hist_Date As FA,\n"
-				. "whLA.Hist_Date As LA,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
-				. "wf.user As user\n"
-				. "FROM `wifi_ap` AS wap\n"
-				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
+			$apid = $array['AP_ID'];	
+			if($this->sql->service == "mysql")
+				{
+					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+						. "whFA.Hist_Date As FA,\n"
+						. "whLA.Hist_Date As LA,\n"
+						. "wGPS.Lat As Lat,\n"
+						. "wGPS.Lon As Lon,\n"
+						. "wGPS.Alt As Alt,\n"
+						. "wf.user As user\n"
+						. "FROM `wifi_ap` AS wap\n"
+						. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+						. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+						. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+						. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+						. "[whFA].[Hist_Date] As [FA],\n"
+						. "[whLA].[Hist_Date] As [LA],\n"
+						. "[wGPS].[Lat] As [Lat],\n"
+						. "[wGPS].[Lon] As [Lon],\n"
+						. "[wGPS].[Alt] As [Alt],\n"
+						. "[wf].[user] As [user]\n"
+						. "FROM [wifi_ap] AS [wap]\n"
+						. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+						. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+						. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
+				}
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
@@ -378,42 +467,66 @@ class export extends dbcore
 		$latlon_array = array();
 		$apcount = 0;
 		
-		$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
-			. "`whFA`.`Hist_Date` As `FA`,\n"
-			. "`whLA`.`Hist_Date` As `LA`,\n"
-			. "`wGPS`.`Lat` As `Lat`,\n"
-			. "`wGPS`.`Lon` As `Lon`,\n"
-			. "`wf`.`user` AS `user`\n"
-			. "FROM `wifi_ap` AS `wap`\n"
-			. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
-			. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.`LastHist_ID`\n"
-			. "LEFT JOIN `wifi_gps`As `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
-			. "LEFT JOIN `files` AS `wf` ON `wf`.`id` = `wap`.`File_ID`\n"
-			. "WHERE \n"
-			. "    `wap`.`HighGps_ID` IS NOT NULL And\n"
-			. "    `wap`.`BSSID` != '00:00:00:00:00:00' And\n"
-			. "    `wap`.`AP_ID` IN (\n"
-			. "        SELECT DISTINCT (`wifi_hist`.`AP_ID`)\n"
-			. "        FROM `wifi_hist`\n"
-			. "        WHERE \n"
-			. "            `wifi_hist`.`File_ID` IN (\n"
-			. "                SELECT DISTINCT (`files`.`id`)\n"
-			. "                FROM `files`\n"
-			. "                WHERE `files`.`user` LIKE ? And `files`.`completed` = 1 And `files`.`ValidGPS` = 1\n"
-			. "            )\n"
-			. "    )\n"
-			. "ORDER BY `wap`.`ModDate` DESC";
-#			. "        FROM `wifi_hist`\n"
-#			. "        INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
-#			. "        WHERE \n"
-#			. "        	`files`.`completed` = 1 And\n"
-#			. "        	`files`.`ValidGPS` = 1 And\n"
-#			. "        	`files`.`user` LIKE ?
-#			. "    )\n"
-#			. "ORDER BY `wap`.`ModDate` DESC";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
+					. "`whFA`.`Hist_Date` As `FA`,\n"
+					. "`whLA`.`Hist_Date` As `LA`,\n"
+					. "`wGPS`.`Lat` As `Lat`,\n"
+					. "`wGPS`.`Lon` As `Lon`,\n"
+					. "`wf`.`user` AS `user`\n"
+					. "FROM `wifi_ap` AS `wap`\n"
+					. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
+					. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.`LastHist_ID`\n"
+					. "LEFT JOIN `wifi_gps`As `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
+					. "LEFT JOIN `files` AS `wf` ON `wf`.`id` = `wap`.`File_ID`\n"
+					. "WHERE \n"
+					. "    `wap`.`HighGps_ID` IS NOT NULL And\n"
+					. "    `wap`.`BSSID` != '00:00:00:00:00:00' And\n"
+					. "    `wap`.`AP_ID` IN (\n"
+					. "        SELECT DISTINCT (`wifi_hist`.`AP_ID`)\n"
+					. "        FROM `wifi_hist`\n"
+					. "        WHERE \n"
+					. "            `wifi_hist`.`File_ID` IN (\n"
+					. "                SELECT DISTINCT (`files`.`id`)\n"
+					. "                FROM `files`\n"
+					. "                WHERE `files`.`user` LIKE ? And `files`.`completed` = 1 And `files`.`ValidGPS` = 1\n"
+					. "            )\n"
+					. "    )\n"
+					. "ORDER BY `wap`.`ModDate` DESC";
+					if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wf].[user] AS [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+					. "LEFT JOIN [wifi_gps] As [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
+					. "WHERE \n"
+					. "    [wap].[HighGps_ID] IS NOT NULL And\n"
+					. "    [wap].[BSSID] != '00:00:00:00:00:00' And\n"
+					. "    [wap].[AP_ID] IN (\n"
+					. "        SELECT DISTINCT ([wifi_hist].[AP_ID])\n"
+					. "        FROM [wifi_hist]\n"
+					. "        WHERE \n"
+					. "            [wifi_hist].[File_ID] IN (\n"
+					. "                SELECT DISTINCT ([files].[id])\n"
+					. "                FROM [files]\n"
+					. "                WHERE [files].[user] LIKE ? And [files].[completed] = 1 And [files].[ValidGPS] = 1\n"
+					. "            )\n"
+					. "    )\n"
+					. "ORDER BY [wap].[ModDate] DESC";
+				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
 
-		if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
-		
+			}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
 		$prep->execute();
@@ -464,7 +577,10 @@ class export extends dbcore
 
 	public function UserListGeoJSON($file_id, $new_icons=0)
 	{
-		$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -473,19 +589,39 @@ class export extends dbcore
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-				. "whFA.Hist_Date As FA,\n"
-				. "whLA.Hist_Date As LA,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
-				. "wf.user As user\n"
-				. "FROM `wifi_ap` AS wap\n"
-				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
+
+			if($this->sql->service == "mysql")
+				{
+					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+						. "whFA.Hist_Date As FA,\n"
+						. "whLA.Hist_Date As LA,\n"
+						. "wGPS.Lat As Lat,\n"
+						. "wGPS.Lon As Lon,\n"
+						. "wGPS.Alt As Alt,\n"
+						. "wf.user As user\n"
+						. "FROM `wifi_ap` AS wap\n"
+						. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+						. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+						. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+						. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+						. "[whFA].[Hist_Date] As [FA],\n"
+						. "[whLA].[Hist_Date] As [LA],\n"
+						. "[wGPS].[Lat] As [Lat],\n"
+						. "[wGPS].[Lon] As [Lon],\n"
+						. "[wGPS].[Alt] As [Alt],\n"
+						. "[wf].[user] As [user]\n"
+						. "FROM [wifi_ap] AS [wap]\n"
+						. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+						. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+						. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
+				}
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
@@ -686,8 +822,12 @@ class export extends dbcore
 	{
 		$boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
 		$this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
-
-		$results = $this->sql->conn->query("SELECT * FROM `boundaries`");
+		
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT * FROM `boundaries`";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [boundaries]";}
+		$results = $this->sql->conn->query($sql);
 		$fetched = $results->fetchAll(2);
 		$KML_data = "";
 		foreach($fetched as $boundary)
@@ -707,7 +847,38 @@ class export extends dbcore
 	public function ExportGPXAll()
 	{
 		$this->verbosed("Starting GPX Export of WiFiDB.");
-		$sql = "SELECT * FROM `wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER by `id` ASC";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+					. "whFA.Hist_Date As FA,\n"
+					. "whLA.Hist_Date As LA,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM `wifi_ap` AS wap\n"
+					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+					. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
+			}
 		$prep = $this->sql->conn->execute($sql);
 		$aparray_all = $prep->fetchAll(2);
 		$this->verbosed("Pointers Table Queried.");
@@ -729,7 +900,7 @@ class export extends dbcore
 	xsi:schemaLocation=\"http://www.topografix.com/GPX/1/1\">";
 			// write file header buffer var
 
-			$type = $aparray['sectype'];
+			$type = $aparray['SECTYPE'];
 			switch($type)
 			{
 				case 1:
@@ -745,53 +916,60 @@ class export extends dbcore
 					$color = "Navaid, Green";
 					break;
 			}
-			$date = $aparray["date"];
-			$time = $aparray["time"];
-			$alt = $aparray['alt'] * 3.28;
-			$lat = $this->convert->dm2dd($aparray['lat']);
-			$long = $this->convert->dm2dd($aparray['long']);
+			$date = date("Y-m-d\TH:i:s.000\Z", strtotime($aparray["LA"]));
+			$alt = $aparray['Alt'] * 3.28;
+			$lat = $this->convert->dm2dd($aparray['Lat']);
+			$lon = $this->convert->dm2dd($aparray['Lon']);
 
-			$file_data .= "<wpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
+			$file_data .= "<wpt lat=\"".$lat."\" lon=\"".$lon."\">\r\n"
 				."<ele>".$alt."</ele>\r\n"
-				."<time>".$date."T".$time."Z</time>\r\n"
-				."<name>".$aparray['ssid']."</name>\r\n"
-				."<cmt>".$aparray['mac']."</cmt>\r\n"
-				."<desc>".$aparray['label']."</desc>\r\n"
+				."<time>".$date."</time>\r\n"
+				."<name>".$aparray['SSID']."</name>\r\n"
+				."<cmt>".$aparray['BSSID']."</cmt>\r\n"
+				."<desc>".$this->findManuf($aparray['BSSID'])."</desc>\r\n"
 				."<sym>".$color."</sym>\r\n<extensions>\r\n"
 				."<gpxx:WaypointExtension xmlns:gpxx=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://www.garmin.com/xmlschemas/GpxExtensions/v3 http://www.garmin.com/xmlschemas/GpxExtensions/v3/GpxExtensionsv3.xsd\">\r\n"
 				."<gpxx:DisplayMode>SymbolAndName</gpxx:DisplayMode>\r\n<gpxx:Categories>\r\n"
 				."<gpxx:Category>Category ".$type."</gpxx:Category>\r\n</gpxx:Categories>\r\n</gpxx:WaypointExtension>\r\n</extensions>\r\n</wpt>\r\n\r\n";
-			if($aparray['rssi'])
+
+			#Get AP Signal History for this AP
+			if($this->sql->service == "mysql")
+				{
+					$sql = "SELECT\n"
+						. "`wifi_hist`.Sig, `wifi_hist`.RSSI, `wifi_hist`.Hist_Date,\n"
+						. "`wifi_gps`.Lat, `wifi_gps`.`Lon`, `wifi_gps`.NumOfSats, `wifi_gps`.HorDilPitch, `wifi_gps`.Alt, \n"
+						. "`wifi_gps`.Geo, `wifi_gps`.KPH, `wifi_gps`.MPH, `wifi_gps`.TrackAngle, `wifi_gps`.GPS_Date\n"
+						. "FROM `wifi_hist`\n"
+						. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
+						. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_gps`.`Lat` != '0.0000'\n"
+						. "ORDER BY `wifi_gps`.`GPS_Date` ASC";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT\n"
+						. "[wifi_hist].[Sig], [wifi_hist].[RSSI], [wifi_hist].[Hist_Date],\n"
+						. "[wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_gps].[NumOfSats], [wifi_gps].[HorDilPitch], [wifi_gps].[Alt], \n"
+						. "[wifi_gps].[Geo], [wifi_gps].[KPH], [wifi_gps].[MPH], [wifi_gps].[TrackAngle], [wifi_gps].[GPS_Date]\n"
+						. "FROM [wifi_hist]\n"
+						. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
+						. "WHERE [wifi_hist].[AP_ID] = ? AND [wifi_gps].[Lat] != '0.0000'\n"
+						. "ORDER BY [wifi_gps].[GPS_Date] ASC";
+				}
+			$ap_query = $this->sql->conn->prepare($sql);
+			$ap_query->bindParam(1, $aparray['AP_ID'], PDO::PARAM_INT);
+			$ap_query->execute();
+			$sig_gps_data = $ap_query->fetchAll(2);
+			if(count($sig_gps_data) > 0)
 			{
-				$signals = explode("\\", $aparray['signals']);
-			}else
-			{
-				$signals = explode("-",$aparray['sig']);
-			}
-
-			$file_data .= "<trk>\r\n<name>GPS Track</name>\r\n<trkseg>\r\n";
-			foreach($signals as $signal)
-			{
-				$sig_exp	= explode(",",$signal);
-				$gpsid	  = $sig_exp[0];
-
-				$sql = "SELECT * FROM `wifi_gps` WHERE `id` = ? LIMIT 1";
-				$prepgps = $this->sql->conn->prepare($sql);
-				$prepgps->bindParam(1, $gpsid, PDO::PARAM_INT);
-				$prepgps->execute();
-				$gps = $prepgps->fetch(2);
-
-				$alt = $gps['alt'] * 3.28;
-
-				$lat =& $this->convert->dm2dd($gps['lat']);
-
-				$long =& $this->convert->dm2dd($gps['long']);
-				$file_data .= "<trkpt lat=\"".$lat."\" lon=\"".$long."\">\r\n"
+				$lat =& $this->convert->dm2dd($sig_gps_data['Lat']);
+				$lon =& $this->convert->dm2dd($sig_gps_data['Lon']);
+				$alt = $sig_gps_data['alt'] * 3.28;
+				$date = date("Y-m-d\TH:i:s.000\Z", strtotime($sig_gps_data["GPS_Date"]));
+				$file_data .= "<trkpt lat=\"".$lat."\" lon=\"".$lon."\">\r\n"
 					."<ele>".$alt."</ele>\r\n"
-					."<time>".$date."T".$time."Z</time>\r\n"
+					."<time>".$date."</time>\r\n"
 					."</trkpt>\r\n";
 			}
-			$this->verbosed('Plotted AP: '.$aparray['ssid']);
 		}
 
 		$file_data .= "</trkseg>\r\n</trk></gpx>";

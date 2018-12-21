@@ -39,42 +39,55 @@ switch($func)
 		switch($view)
 		{
 			case 1800:
-				$interval = "30 MINUTE";
+				$interval_v = 30;
+				$interval_i = "minute";
 				$intervalt = "30 Minutes";
 				break;
 			case 3600:
-				$interval = "60 MINUTE";
+				$interval_v = 60;
+				$interval_i = "minute";
 				$intervalt = "60 Minutes";
 				break;
 			case 7200:
-				$interval = "2 HOUR";
+				$interval_v = 2;
+				$interval_i = "hour";
 				$intervalt = "2 Hours";
 				break;
 			case 21600:
-				$interval = "6 HOUR";
+				$interval_v = 6;
+				$interval_i = "hour";
 				$intervalt = "6 Hours";
 				break;
 			case 86400:
-				$interval = "1 DAY";
-				$intervalt = "1 Day";				
+				$interval_v = 1;
+				$interval_i = "day";
+				$intervalt = "1 Day";
 				break;
 			case 604800:
-				$interval = "1 WEEK";
-				$intervalt = "1 Week";	
+				$interval_v = 1;
+				$interval_i = "week";
+				$intervalt = "1 Week";
 				break;
 			default:
-				$interval = "1 DAY";
-				$intervalt = "1 Day";	
+				$interval_v = 1;
+				$interval_i = "day";
+				$intervalt = "1 Day";
 		}
 		
-		$sql = "SELECT COUNT(*) FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval})";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT COUNT(*) FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval_v} {$interval_i})";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT COUNT(*) FROM [live_aps] WHERE [la] >= dateadd({$interval_i}, -{$interval_v}, getdate())";}
 		$sqlprep = $dbcore->sql->conn->prepare($sql);       
 		$sqlprep->execute();
 		$total_rows = $sqlprep->fetchColumn();
 		
 		$liveaps = array();
 		$row_color = 1;
-		$sql = "SELECT `id`, `ssid`, `mac`, `radio`, `chan`, `auth`, `encry`, `sectype`, `sig` , `fa`, `la`, `username`, `Label`, `lat`, `long` FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval}) ORDER BY `{$sort}` {$ord} LIMIT {$from}, {$to}";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `id`, `ssid`, `mac`, `radio`, `chan`, `auth`, `encry`, `sectype`, `sig` , `fa`, `la`, `username`, `Label`, `lat`, `long` FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval_v} {$interval_i}) ORDER BY `{$sort}` {$ord} LIMIT {$from}, {$to}";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [id], [ssid], [mac], [radio], [chan], [auth], [encry], [sectype], [sig] , [fa], [la], [username], [Label], [lat], [long] FROM [live_aps] WHERE [la] >= dateadd({$interval_i}, -{$interval_v}, getdate()) ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$to} ROWS ONLY";}
 		$prep = $dbcore->sql->conn->query($sql);
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)

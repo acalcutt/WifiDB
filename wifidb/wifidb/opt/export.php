@@ -71,8 +71,11 @@ switch($func)
 				throw new ErrorException('$id value for export::UserList() is NaN');
 				return 0;
 			}
-			
-			$sql = "SELECT `user`, `title`, `date` FROM `files` WHERE `id` = ?";
+
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `user`, `title`, `date` FROM `files` WHERE `id` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [user], [title], [date] FROM [files] WHERE [id] = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -256,7 +259,10 @@ switch($func)
 
 			$imports = array();
 			$usernames = array();
-			$sql = "SELECT `id`,`title`, `user`, `aps`, `date` FROM `files` ORDER BY `user`, `title`";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `id`,`title`, `user`, `aps`, `date` FROM `files` ORDER BY `user`, `title`";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [id],[title], [user], [aps], [date] FROM [files] ORDER BY [user], [title]";}
 			$result = $dbcore->sql->conn->query($sql);
 			while($user_array = $result->fetch(2))
 			{
@@ -269,7 +275,10 @@ switch($func)
 							 );
 			}
 
-			$sql = "SELECT `user` FROM `files` ORDER BY `user`";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `user` FROM `files` ORDER BY `user`";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$$sql = "SELECT [user] FROM [files] ORDER BY [user]";}
 			$result = $dbcore->sql->conn->query($sql);
 			while($user_array = $result->fetch(2))
 			{

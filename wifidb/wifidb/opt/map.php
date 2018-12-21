@@ -147,7 +147,10 @@ switch($func)
 		break;
 	case "user_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$sql = "SELECT `title` FROM `files` WHERE `id` = ?";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -202,10 +205,20 @@ switch($func)
 		break;
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
-			. "FROM `wifi_ap`\n"
-			. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "WHERE `wifi_ap`.`AP_ID` = ?";
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
+					. "FROM `wifi_ap`\n"
+					. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
+					. "WHERE `wifi_ap`.`AP_ID` = ?";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wifi_gps].[Lat], [wifi_gps].[Lon]\n"
+					. "FROM [wifi_ap]\n"
+					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
+					. "WHERE [wifi_ap].[AP_ID] = ?";
+			}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -317,24 +330,41 @@ switch($func)
 		if ($sort == ""){$sort = "ssid";}
 		
 		list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
-		
 
-			
 		$Import_Map_Data = "";
 		foreach($results_all as $ResultAP) {
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-				. "whFA.Hist_Date As FA,\n"
-				. "whLA.Hist_Date As LA,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
-				. "wf.user As user\n"
-				. "FROM `wifi_ap` AS wap\n"
-				. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-				. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-				. "WHERE `wap`.`AP_ID` = ?";
+			if($dbcore->sql->service == "mysql")
+				{
+					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+						. "whFA.Hist_Date As FA,\n"
+						. "whLA.Hist_Date As LA,\n"
+						. "wGPS.Lat As Lat,\n"
+						. "wGPS.Lon As Lon,\n"
+						. "wGPS.Alt As Alt,\n"
+						. "wf.user As user\n"
+						. "FROM `wifi_ap` AS wap\n"
+						. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+						. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+						. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+						. "WHERE `wap`.`AP_ID` = ?";
+				}
+			else if($dbcore->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+						. "[whFA].[Hist_Date] As [FA],\n"
+						. "[whLA].[Hist_Date] As [LA],\n"
+						. "[wGPS].[Lat] As [Lat],\n"
+						. "[wGPS].[Lon] As [Lon],\n"
+						. "[wGPS].[Alt] As [Alt],\n"
+						. "[wf].[user] As [user]\n"
+						. "FROM [wifi_ap] AS [wap]\n"
+						. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+						. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+						. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+						. "WHERE [wap].[AP_ID] = ?";
+				}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $ResultAP['id'], PDO::PARAM_INT);
 			$prep->execute();

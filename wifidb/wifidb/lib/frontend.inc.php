@@ -590,7 +590,7 @@ class frontend extends dbcore
 					. "WHERE [f].[user] LIKE ? And [f].[completed] = 1\n"
 					. "ORDER BY [{$inputs['sort']}] {$inputs['ord']}\n"
 					. "OFFSET {$inputs['from']} ROWS\n"
-					. "FETCH NEXT {$inputs['to']} ROWS ONLY";	
+					. "FETCH NEXT {$inputs['to']} ROWS ONLY";
 			}			
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);

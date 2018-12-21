@@ -25,20 +25,38 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
 		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-			. "whFA.Hist_Date As FA,\n"
-			. "whLA.Hist_Date As LA,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
-			. "wf.user As user\n"
-			. "FROM `wifi_ap` AS wap\n"
-			. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-			. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-			. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`AP_ID` = ?";
-		
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+					. "whFA.Hist_Date As FA,\n"
+					. "whLA.Hist_Date As LA,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM `wifi_ap` AS wap\n"
+					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+					. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`AP_ID` = ?";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[AP_ID] = ?";
+			}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -76,7 +94,10 @@ switch($func)
 	
 	case "exp_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$sql = "SELECT 'title' FROM `files` WHERE `id` = ?";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -114,7 +135,10 @@ switch($func)
 		else
 		{	
 			#Get the date of the newest import
-			$sql = "SELECT `date` FROM `files` ORDER BY `date` DESC LIMIT 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `date` FROM `files` WHERE `completed` = 1 ORDER BY `date` DESC LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 ORDER BY [date] DESC";}
 			$date_query = $dbcore->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$datestamp = $date_fetch['date'];
@@ -125,8 +149,12 @@ switch($func)
 		
 		#Get lists from the date specified
 		$date_search = $date."%";
-		$sql = "SELECT `id` FROM `files` WHERE `date` LIKE '$date_search' ORDER BY `date` DESC";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `id` FROM `files` WHERE `date` LIKE ? ORDER BY `date` DESC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [id] FROM [files] WHERE [date] LIKE ? ORDER BY [date] DESC";}
 		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $date_search, PDO::PARAM_STR);
 		$prep->execute();
 		$fetch_imports = $prep->fetchAll();
 		$AllListGeoJSON = "";
@@ -144,19 +172,41 @@ switch($func)
 	case "exp_daily":
 		#Get lists from the last day and a half
 		$row_count = 1000;	
-		$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
-			. "`whFA`.`Hist_Date` As `FA`,\n"
-			. "`whLA`.`Hist_Date` As `LA`,\n"
-			. "`wGPS`.`Lat` As `Lat`,\n"
-			. "`wGPS`.`Lon` As `Lon`,\n"
-			. "`wGPS`.`Alt` As `Alt`,\n"
-			. "`wf`.`user` As `user`\n"
-			. "FROM `wifi_ap` AS `wap`\n"
-			. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
-			. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.LastHist_ID\n"
-			. "LEFT JOIN `wifi_gps` AS `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
-			. "LEFT JOIN `files` AS `wf` ON `whFA`.`File_ID` = `wf`.`id`\n"
-			. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`ModDate` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) ORDER BY `wap`.`AP_ID` LIMIT ?,?";
+
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
+					. "`whFA`.`Hist_Date` As `FA`,\n"
+					. "`whLA`.`Hist_Date` As `LA`,\n"
+					. "`wGPS`.`Lat` As `Lat`,\n"
+					. "`wGPS`.`Lon` As `Lon`,\n"
+					. "`wGPS`.`Alt` As `Alt`,\n"
+					. "`wf`.`user` As `user`\n"
+					. "FROM `wifi_ap` AS `wap`\n"
+					. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
+					. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.LastHist_ID\n"
+					. "LEFT JOIN `wifi_gps` AS `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
+					. "LEFT JOIN `files` AS `wf` ON `whFA`.`File_ID` = `wf`.`id`\n"
+					. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`ModDate` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) ORDER BY `wap`.`AP_ID` LIMIT ?,?";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[ModDate] >= dateadd(day, -1.5, getdate()) ORDER BY [wap].[AP_ID]\n"
+					. "OFFSET ? ROWS\n"
+					. "FETCH NEXT ? ROWS ONLY";
+			}
 		$Import_Map_Data = "";
 		for ($i = 0; TRUE; $i++) {
 			$offset = $i*$row_count ;
