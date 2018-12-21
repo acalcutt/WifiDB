@@ -44,7 +44,9 @@ if(!function_exists('WiFiDBexception_handler')) {
 				$smarty->compile_dir  = $config['wifidb_install'].'smarty/templates_c/'.$theme.'/';
 				$smarty->config_dir   = $config['wifidb_install'].'smarty/configs/'.$theme.'/';
 				$smarty->cache_dir    = $config['wifidb_install'].'smarty/cache/'.$theme.'/';
-				$smarty->assign('themeurl', $URL_PATH .'themes/'.$theme.'/');
+				$smarty->assign('themeurl', $URL_PATH.'themes/'.$theme.'/');
+				$smarty->assign('wifidb_theme', $theme);
+				$smarty->assign('wifidb_host_url', $URL_PATH);
 				$smarty->assign('wifidb_error_mesg', $trace);
 				$smarty->display("error.tpl");
 				break;
