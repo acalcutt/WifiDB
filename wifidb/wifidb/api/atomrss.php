@@ -30,7 +30,10 @@ $TestFeed->setLink($dbcore->URL_PATH."api/atomrss.php");
 $TestFeed->setChannelElement('updated', date(DATE_ATOM , time()));
 $TestFeed->setChannelElement('author', array('name'=>$dbcore->WDBadmin));
 
-$query = "SELECT * FROM `files` ORDER BY `id` DESC";
+if($dbcore->sql->service == "mysql")
+	{$query = "SELECT * FROM `files` ORDER BY `id` DESC";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$query = "SELECT * FROM [files] ORDER BY [id] DESC";}
 $result = $dbcore->sql->conn->query($query);
 
 while($row = $result->fetch(2))
