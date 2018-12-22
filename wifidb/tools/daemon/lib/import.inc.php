@@ -229,7 +229,7 @@ class import extends dbcore
 			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
 			list($chan, $radio) = $this->convert->findFreq($fFrequency);
 			
-			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
 			
 			$calc = "Line: ".($key+1)." / ".$File_lcount;
 			if($this->sql->service == "mysql")
@@ -405,7 +405,7 @@ class import extends dbcore
 			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
 			list($chan, $radio) = $this->convert->findFreq($fFrequency);
 			
-			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
 			
 			$calc = "Line: ".($key+1)." / ".$File_lcount;
 			if($this->sql->service == "mysql")
@@ -610,7 +610,7 @@ class import extends dbcore
 			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fAuthMode);
 			list($chan, $radio) = $this->convert->findFreq($fchannel);
 			
-			$ap_hash = md5($fSSID.$fBSSID.$fchannel.$sectype.$radio.$authen.$encry);
+			$ap_hash = md5($fSSID.$fBSSID.$fchannel.$sectype.$authen.$encry);
 			
 			$calc = "Line: ".($key+1)." / ".$File_lcount;
 			if($this->sql->service == "mysql")
@@ -807,7 +807,7 @@ class import extends dbcore
 			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fAuthMode);
 			list($chan, $radio) = $this->convert->findFreq($ffrequency);
 			
-			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$radio.$authen.$encry);
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
 			
 			$calc = "Line: ".($key+1)." / ".$File_lcount;
 			if($this->sql->service == "mysql")
@@ -1256,7 +1256,7 @@ class import extends dbcore
 			$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
 
-			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['radio'].$aps['auth'].$aps['encry']);
+			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['auth'].$aps['encry']);
 
 			if(strlen($aps['ssid']) < 7){$pad_ssid = 20;}else{$pad_ssid = strlen($aps['ssid']);}
 			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
@@ -1275,9 +1275,9 @@ class import extends dbcore
 			#//$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
 
 			if($this->sql->service == "mysql")
-				{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";}
+				{$sql = "SELECT `AP_ID`, `RADTYPE` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";}
 			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT TOP 1 [AP_ID] FROM [wifi_ap] WHERE [ap_hash] = ?";}
+				{$sql = "SELECT TOP 1 [AP_ID], [RADTYPE] FROM [wifi_ap] WHERE [ap_hash] = ?";}
 			$res = $this->sql->conn->prepare($sql);
 			$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
 			$res->execute();
@@ -1289,8 +1289,21 @@ class import extends dbcore
 			if($fetch['AP_ID'])
 			{
 				$ap_id	= $fetch['AP_ID'];
-				
-			}else
+				#The Vistumbler radio type is more accurate. Use this files radio type if it is different from whats in the db.
+				$ap_RADTYPE	= $fetch['RADTYPE'];
+				if($aps['radio'] != $ap_RADTYPE && $aps['radio'] != "")
+				{
+					if($this->sql->service == "mysql")
+						{$sql = "UPDATE `wifi_ap` SET `RADTYPE` = ? WHERE `AP_ID` = ?";}
+					else if($this->sql->service == "sqlsrv")
+						{$sql = "UPDATE [wifi_ap] SET [RADTYPE] = ? WHERE [AP_ID] = ?";}
+					$prepu = $this->sql->conn->prepare($sql);
+					$prepu->bindParam(1, $aps['radio'], PDO::PARAM_STR);
+					$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+					$prepu->execute();
+				}
+			}
+			else
 			{
 				if($this->sql->service == "mysql")
 					{$sql = "INSERT INTO `wifi_ap` (`BSSID`, `SSID`, `CHAN`, `AUTH`, `ENCR`, `SECTYPE`, `RADTYPE`, `NETTYPE`, `BTX`, `OTX`, `ap_hash`, `File_ID`) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
@@ -1530,7 +1543,7 @@ class import extends dbcore
 				$oa_radio = $AP_Arr[10];
 				$oa_btx = $AP_Arr[11];
 				$oa_otx = $AP_Arr[12];
-				$ap_hash = md5($oa_ssid.$oa_mac.$oa_chan.$oa_sectype.$oa_radio.$oa_auth.$oa_encry);
+				$ap_hash = md5($oa_ssid.$oa_mac.$oa_chan.$oa_sectype.$oa_auth.$oa_encry);
 				
 				$calc = "AP: ".($key+1)." / ".$ap_lcount;
 				if($this->sql->service == "mysql")
