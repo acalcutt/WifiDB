@@ -225,7 +225,6 @@ function stop($command = '')
 		break;
 	}
 	require(dirname(__FILE__).'/../daemon.config.inc.php');
-	require($daemon_config['wifidb_install'].$daemon_config['dim'].'lib'.$daemon_config['dim'].'daemon.config.inc.php');
 	#var_dump($daemon_);
 	if(is_array($daemon_))
 	{
