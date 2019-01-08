@@ -2,7 +2,7 @@
 <?php
 /*
 exportd.php, WiFiDB Export Daemon
-Copyright (C) 2015 Andrew Calcutt, Phil Ferland
+Copyright (C) 2018 Andrew Calcutt, Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -129,7 +129,10 @@ $dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
 #Checking for Export Jobs
 $currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT TOP 1 [id], [interval] FROM [schedule] WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
 $prepgj = $dbcore->sql->conn->prepare($sql);
 $prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 $prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
@@ -170,19 +173,22 @@ else
 		}
 
 		#Find How Many APs had GPS on the last run
-		$sql = "SELECT `apswithgps` FROM `settings` LIMIT 1";
-		$result =  $dbcore->sql->conn->query($sql);
-		if($dbcore->sql->checkError(__LINE__, __FILE__))
-		{
-			$dbcore->verbosed("There was an error running the SQL");
-			throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-		}
-		$settingarray = $result->fetch(2);
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `apswithgps` FROM `settings` WHERE `node_name` = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [apswithgps] FROM [settings] WHERE [node_name] = ?";}
+		$prep5 = $dbcore->sql->conn->prepare($sql);
+		$prep5->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
+		$prep5->execute();
+		$settingarray = $prep5->fetch(2);
 		$apswithgps_last = $settingarray['apswithgps'];
 		$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 		#Find How Many APs have GPS now
-		$sql = "SELECT `AP_ID`, `SSID`, `ap_hash` FROM `wifi_ap` WHERE `HighGPS_ID` IS NOT NULL";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `AP_ID`, `SSID`, `ap_hash` FROM `wifi_ap` WHERE `HighGPS_ID` IS NOT NULL";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGPS_ID] IS NOT NULL";}
 		$result = $dbcore->sql->conn->query($sql);
 		if($dbcore->sql->checkError(__LINE__, __FILE__))
 		{
@@ -196,19 +202,23 @@ else
 
 		if ($apswithgps_last >= $apswithgps_now)
 		{
-			$dbcore->verbosed("Number of APs with GPS has not changed. Go Export something and try again.");
+			$dbcore->verbosed("Number of APs with GPS has not changed. Go import something and try again.");
 		}
 		else
 		{
 			#Run Deamon Exports
 			$dbcore->verbosed("Looks like there are some new results...now this script has something to eat...");
 			$dbcore->verbosed("Running Daily and a Full DB KML Export if one does not already exists.");
-			$dbcore->export->GenerateDaemonKMLData();
+			$dbcore->export->GenerateDaemonKMLData($dbcore->verbose);
 
 			#Set current number of APs with GPS into the settings table
-			$sqlup2 = "UPDATE `settings` SET `apswithgps` = ? WHERE `id` = 1";
+			if($dbcore->sql->service == "mysql")
+				{$sqlup2 = "UPDATE `settings` SET `apswithgps` = ? WHERE `node_name` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sqlup2 = "UPDATE [settings] SET [apswithgps] = ? WHERE [node_name] = ?";}
 			$prep6 = $dbcore->sql->conn->prepare($sqlup2);
 			$prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
+			$prep6->bindParam(2, $dbcore->node_name, PDO::PARAM_STR);
 			$prep6->execute();
 
 			if($dbcore->NodeSyncing)

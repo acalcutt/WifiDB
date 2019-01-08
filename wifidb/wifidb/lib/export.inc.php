@@ -70,50 +70,46 @@ class export extends dbcore
 	 */
 	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0)
 	{
-		$this->verbosed("Compiling Data for Export.");
+		$this->verbosed("Compiling Data for ".$type." Export. Labeled:".$this->named);
 
 		if($type == "full")
 		{
-			#Create Queries
 			if($this->sql->service == "mysql")
 				{
-					$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";
-					$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And completed = 1";
+					$user_query = "SELECT DISTINCT(`user`) FROM `files` WHERE completed = 1 And ValidGPS = 1 ORDER BY `user` ASC";
+					$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And completed = 1 And ValidGPS = 1";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
-					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [completed] = 1";
+					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [user] ASC";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [completed] = 1 And [ValidGPS] = 1";
 				}
 		}
 		elseif($type == "daily")
 		{
-			#Get the date of the latest import
+			#Get the last full export date
 			if($this->sql->service == "mysql")
-				{$sql = "SELECT `date` FROM `files` WHERE completed = 1 ORDER BY `date` DESC LIMIT 1";}
+				{$sql = "SELECT `last_export_file` FROM `settings` WHERE id = 1";}
 			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 ORDER BY [date] DESC";}	
-			$date_query = $this->sql->conn->query($sql);
-			$date_fetch = $date_query->fetch(2);
-			$datestamp = $date_fetch['date'];
-			$datestamp_split = explode(" ", $datestamp);
-			$latest_date = $datestamp_split[0];
-			$latest_date = (empty($latest_date)) ? date($this->date_format) : $latest_date;
+				{$sql = "SELECT [last_export_file] FROM [settings] WHERE [id] = 1";}
+			$id_query = $this->sql->conn->query($sql);
+			$id_fetch = $id_query->fetch(2);
+			$last_export_file = $id_fetch['last_export_file'];
 			
 			#Create Queries
-			$date_search = $latest_date."%";
 			if($this->sql->service == "mysql")
 				{
-					$user_query = "SELECT DISTINCT(user) FROM `files` WHERE completed = 1 And `date` LIKE '$date_search' ORDER BY `user` ASC";
-					$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE completed = 1 And `user` LIKE ? AND `date` LIKE '$date_search'";
+					$user_query = "SELECT DISTINCT(`user`) FROM `files` WHERE completed = 1 And ValidGPS = 1 And `id` > '$last_export_file' ORDER BY `user` ASC";
+					$user_list_query = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE completed = 1 And ValidGPS = 1 And `user` LIKE ? AND `id` > '$last_export_file'";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
-					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [date] LIKE '$date_search' ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [user] LIKE ? AND [date] LIKE '$date_search'";
+					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [id] > '$last_export_file' ORDER BY [user] ASC";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [user] LIKE ? AND [id] > '$last_export_file'";
 				}
 		}	
-		
+		$this->verbosed($user_query);
+		$this->verbosed($user_list_query);
 		$ZipC = clone $this->Zip;
 		
 		#Get list of users and go through them
@@ -128,12 +124,14 @@ class export extends dbcore
 			$user_results = "";
 			$user_files = 0;
 			$username = $user['user'];
+			$this->verbosed("---------------------".$username."---------------------");
 			$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
 			$prep_user_list->execute();
 			$fetch_imports = $prep_user_list->fetchAll();
 			foreach($fetch_imports as $import)
 			{
 				$id = $import['id'];
+				$this->verbosed($username." - ".$id);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
 				$ListKML = $this->UserList($id, $this->named, $only_new, $new_icons);
 				if($ListKML['data'] !== "")
@@ -370,9 +368,15 @@ class export extends dbcore
 	public function UserList($file_id, $named=0, $only_new=0, $new_icons=0)
 	{
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";}
+			{
+				$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";
+				if($only_new == 1){$sql .= " And `New` = 1";}
+			}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";}
+			{
+				$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";
+				if($only_new == 1){$sql .= " And [New] = 1";}
+			}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -380,7 +384,9 @@ class export extends dbcore
 		$box_latlon = array();
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
-			$apid = $array['AP_ID'];	
+			$apid = $array['AP_ID'];
+
+				
 			if($this->sql->service == "mysql")
 				{
 					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
@@ -994,63 +1000,91 @@ class export extends dbcore
 	/*
 	 * Generate the Daily Daemon KML files
 	 */
-	public function GenerateDaemonKMLData()
+	public function GenerateDaemonKMLData($verbose = 0)
 	{
-		$date = date($this->date_format);
-		$daily_folder = $this->PATH.'out/daemon/'.$date;
-		if(!@file_exists($daily_folder))
+		$this->verbose = $verbose;
+		$ForcedFullRun = 1;
+		$full_folder = $this->PATH.'out/kmz/full/';
+		$daily_folder = $this->PATH.'out/kmz/incremental/';
+		$filedate = date("Y-m-d_H-i-s");
+		
+		#Find if there has been a full export in the last 32 days. If there is a file less than 32 days, disable the forced full export.
+		$full_files = glob($full_folder."labeled/*");
+		$now   = time();
+		foreach ($full_files as $full_file) 
 		{
-			$this->verbosed("Need to make a daily export folder...", 1);
-			if(!@mkdir($daily_folder))
+			if (is_file($full_file)) 
 			{
-				$this->verbosed("Error making new daily export folder...", -1);
+				if ($now - filemtime($full_file) <= 60 * 60 * 24 * 32) {$ForcedFullRun = 0;}
 			}
 		}
 		
-		#Generate Full KML if it doesn't already exist
-		$this->named = 0;
-		$kmz_filepath = $daily_folder."/full_db.kmz";
-		if(!file_exists($kmz_filepath))
+		#Get the id of the latest imported file with gps
+		$sql = "SELECT `id` FROM `files` WHERE completed = 1 And ValidGPS = 1 ORDER BY `date` DESC LIMIT 1";
+		$id_query = $this->sql->conn->query($sql);
+		$id_fetch = $id_query->fetch(2);
+		$Last_File_ID = $id_fetch['id'];
+		
+		#If a file with vaid gps was found, 
+		if($Last_File_ID != '')
 		{
-			$this->verbosed("Generating Full DB KML");
-			$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
-		}
-		
-		#Generate Full Labeled KML if it doesn't already exist
-		$this->named = 1;
-		$kmz_filepath = $daily_folder."/full_db_label.kmz";
-		if(!file_exists($kmz_filepath))
-		{
-			$this->verbosed("Generating Full DB Labeled KML");
-			$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
-		}
-		
-		#Generate Daily KML
-		$this->named = 0;
-		$kmz_filepath = $daily_folder."/daily_db.kmz";
-		$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
-		
-		#Generate Daily Labeled KML
-		$this->named = 1;
-		$kmz_filepath = $daily_folder."/daily_db_label.kmz";
-		$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
+			#Generate Full KMZ if it is the first of the month or full run forced.
+			if(date('j') === '1' || $ForcedFullRun == 1)
+			{
+				#Generate Full Un-Labeled KMZ if it doesn't already exist
+				$this->named = 0;
+				$kmz_filepath = $full_folder."unlabeled/full_db".$filedate.".kmz";
+				if(!file_exists($kmz_filepath))
+				{
+					$this->verbosed("Generating Full DB KML - ".$kmz_filepath);
+					$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
+				}
+				
+				#Generate Full Labeled KMZ if it doesn't already exist
+				$this->named = 1;
+				$kmz_filepath = $daily_folder."labeled/full_db_".$filedate."_labeled.kmz";
+				if(!file_exists($kmz_filepath))
+				{
+					$this->verbosed("Generating Full DB Labeled KML - ".$kmz_filepath);
+					$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
+				}
+				
+				#Set last full export id into the settings table
+				$sql = "UPDATE `settings` SET `last_export_file` = ? WHERE `id` = 1";
+				$prep = $dbcore->sql->conn->prepare($sql);
+				$prep->bindParam(1, $Last_File_ID, PDO::PARAM_INT);
+				$prep->execute();
+			}
 
-		#Generate History KML
-		if($this->HistoryKMLLink() === -1)
-		{
-			$this->verbosed("Failed to Create Daemon History KML Links", -1);
-		}else
-		{
-			$this->verbosed("Created Daemon History KML Links");
-		}
+			#Generate Daily KML
+			$this->named = 0;
+			$kmz_filepath = $daily_folder."unlabeled/daily_db".$filedate.".kmz";
+			$this->verbosed("Generating Daily KMZ - ".$kmz_filepath);
+			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
+			
+			#Generate Daily Labeled KML
+			$this->named = 1;
+			$kmz_filepath = $daily_folder."labeled/daily_db_".$filedate."_labeled.kmz";
+			$this->verbosed("Generating Daily Labeled KMZ - ".$kmz_filepath);
+			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
 
-		#Generate Update KML
-		if($this->GenerateUpdateKML() === -1)
-		{
-			$this->verbosed("Failed to Create Update.kml File", -1);
-		}else
-		{
-			$this->verbosed("Created Update.kml File");
+			#Generate History KML
+			if($this->HistoryKMLLink() === -1)
+			{
+				$this->verbosed("Failed to Create Daemon History KML Links", -1);
+			}else
+			{
+				$this->verbosed("Created Daemon History KML Links");
+			}
+
+			#Generate Update KML
+			if($this->GenerateUpdateKML() === -1)
+			{
+				$this->verbosed("Failed to Create Update.kml File", -1);
+			}else
+			{
+				$this->verbosed("Created Update.kml File");
+			}
 		}
 		return 1;
 	}
