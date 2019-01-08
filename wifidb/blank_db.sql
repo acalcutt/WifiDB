@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Dec 08, 2018 at 03:50 PM
+-- Generation Time: Jan 08, 2019 at 01:53 AM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
--- PHP Version: 7.2.12-1+0~20181112102304.11+stretch~1.gbp55f215
+-- PHP Version: 7.2.13-1+0~20181207100540.13+stretch~1.gbpf57305
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
@@ -438,7 +438,8 @@ CREATE TABLE `schedule` (
 --
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
-(1, 'prod', 'Import', 1, 0, 'wait', '0000-00-00 00:00:00');
+(1, 'prod', 'Import', 1, 10, 'Waiting', '2019-01-06 20:44:01'),
+(10, 'prod', 'Export', 1, 30, 'Waiting', '2019-01-07 08:24:45');
 
 -- --------------------------------------------------------
 
@@ -450,7 +451,8 @@ CREATE TABLE `settings` (
   `id` int(255) NOT NULL,
   `daemon_state` int(2) NOT NULL,
   `version` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `apswithgps` int(255) NOT NULL,
+  `apswithgps` int(255) NOT NULL DEFAULT 0,
+  `last_export_file` bigint(20) NOT NULL DEFAULT 0,
   `node_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -458,8 +460,8 @@ CREATE TABLE `settings` (
 -- Dumping data for table `settings`
 --
 
-INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `node_name`) VALUES
-(1, 1, '0.40', 0, 'prod');
+INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `last_export_file`, `node_name`) VALUES
+(1, 1, '0.40', 0, 0, 'prod');
 
 -- --------------------------------------------------------
 
@@ -640,7 +642,7 @@ CREATE TABLE `wifi_ap` (
   `HighRSSI_ID` bigint(20) DEFAULT NULL,
   `File_ID` bigint(20) DEFAULT NULL,
   `ap_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3)
+  `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1051,7 +1053,7 @@ ALTER TABLE `manufacturers`
 -- AUTO_INCREMENT for table `schedule`
 --
 ALTER TABLE `schedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `settings`
