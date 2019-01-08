@@ -1,7 +1,7 @@
 <?php
 /*
 Export.inc.php, holds the WiFiDB exporting functions.
-Copyright (C) 2012 Phil Ferland
+Copyright (C) 2018 Andrew Calcutt 2012 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -58,7 +58,7 @@ class export extends dbcore
 			"get_point"	=>  "2.0",
 			"CreateBoundariesKML"	=>  "1.0",
 			"ExportGPXAll"	=>  "1.0",			
-			"GenerateDaemonKMLData" =>  "1.1",
+			"GenerateDaemonKMLData" =>  "2.0",
 			"HistoryKMLLink"		=>  "1.0",
 			"GenerateUpdateKML"	 =>  "1.0",
 		);
@@ -197,6 +197,7 @@ class export extends dbcore
 	{
 		$KML_data = "";
 		$export_ssid="";
+
 		if($this->sql->service == "mysql")
 			{
 				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
@@ -228,7 +229,8 @@ class export extends dbcore
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
 					. "WHERE [wap].[AP_ID] = ?";
-			}	
+			}
+				
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -271,9 +273,9 @@ class export extends dbcore
 	{
 		$KML_data="";
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";}
+			{$sql = "SELECT `AP_ID`, `SSID`, `ap_hash` FROM `wifi_ap` WHERE `HighGps_ID` IS NOT NULL ORDER BY `AP_ID` DESC LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [id], [ssid], [ap_hash] FROM [wifi_pointers] WHERE [lat] != '0.0000' ORDER BY [id] DESC";}
+			{$sql = "SELECT TOP 1 [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGps_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
 		$result = $this->sql->conn->query($sql);
 		$ap_array = $result->fetch(2);
 		if($ap_array['id'])
@@ -344,7 +346,7 @@ class export extends dbcore
 				$sql = "SELECT wifi_ap.AP_ID\n"
 					. "FROM `wifi_ap`\n"
 					. "LEFT JOIN `files` ON `files`.`id` = `wifi_ap`.`File_ID`\n"
-					. "WHERE `files`.`user` LIKE ? And  `wifi_ap`.`BSSID` != '00:00:00:00:00:00' And `wifi_ap`.`HighGps_ID` IS NOT NULL";
+					. "WHERE `files`.`user` LIKE ? And `wifi_ap`.`BSSID` != '00:00:00:00:00:00' And `wifi_ap`.`HighGps_ID` IS NOT NULL";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
@@ -531,7 +533,6 @@ class export extends dbcore
 					. "ORDER BY [wap].[ModDate] DESC";
 				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
 				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
-
 			}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $user, PDO::PARAM_STR);
@@ -976,6 +977,7 @@ class export extends dbcore
 					."<time>".$date."</time>\r\n"
 					."</trkpt>\r\n";
 			}
+			$this->verbosed('Plotted AP: '.$aparray['ssid']);
 		}
 
 		$file_data .= "</trkseg>\r\n</trk></gpx>";
