@@ -596,7 +596,6 @@ class export extends dbcore
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
-
 			if($this->sql->service == "mysql")
 				{
 					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
@@ -829,7 +828,7 @@ class export extends dbcore
 	{
 		$boundaries_kml_file = $this->PATH.'out/daemon/boundaries.kml';
 		$this->verbosed("Generating World Boundaries KML File : ".$boundaries_kml_file);
-		
+
 		if($this->sql->service == "mysql")
 			{$sql = "SELECT * FROM `boundaries`";}
 		else if($this->sql->service == "sqlsrv")
