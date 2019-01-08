@@ -131,7 +131,7 @@ class export extends dbcore
 			foreach($fetch_imports as $import)
 			{
 				$id = $import['id'];
-				$this->verbosed($username." - ".$id);
+				$this->verbosed($username." - ".$import['date']." - ".$id." - ".$import['title']);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
 				$ListKML = $this->UserList($id, $this->named, $only_new, $new_icons);
 				if($ListKML['data'] !== "")
