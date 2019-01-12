@@ -124,7 +124,8 @@ if not, write to the
 							<th class="header-centered">Title</th>
 							<th class="header-centered">Filename</th>
 							<th class="header-centered">Notes</th>
-							<th class="header-centered">Size</th>
+							<th class="header-centered">Date</th>
+							
 						</tr>
 						<tr class="{$wifidb_imp.color}">
 							<td class="{$wifidb_imp.color}"></td>
@@ -132,11 +133,12 @@ if not, write to the
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.title}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.file}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.notes}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.size}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.date}</td>
+							
 						</tr>
 						<tr class="header-centered">
 							<th class="{$wifidb_imp.color}"></th>
-							<th class="header-centered">Date</th>
+							<th class="header-centered">Size</th>
 							<th class="header-centered">User</th>
 							<th class="header-centered">Hash Sum</th>
 							<th class="header-centered">Current SSID</th>
@@ -144,7 +146,7 @@ if not, write to the
 						</tr>
 						<tr class="green">
 							<td class="{$wifidb_imp.color}"></td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.date}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.size}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.user}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.hash}</td>
 							{$wifidb_imp.last_cell}
@@ -174,7 +176,7 @@ if not, write to the
 							<th class="header-centered">Title</th>
 							<th class="header-centered">Filename</th>
 							<th class="header-centered">Notes</th>
-							<th class="header-centered">Size</th>
+							<th class="header-centered">Date</th>
 						</tr>
 						<tr style="background-color: {$wifidb_wait.color}">
 							<td class="yellow"></td>
@@ -182,18 +184,18 @@ if not, write to the
 							<td class="yellow">{$wifidb_wait.title}</td>
 							<td class="yellow">{$wifidb_wait.file}</td>
 							<td class="yellow">{$wifidb_wait.notes}</td>
-							<td class="yellow">{$wifidb_wait.size}</td>
+							<td class="yellow">{$wifidb_wait.date}</td>
 						</tr>
 						<tr class="header-centered">
 							<th class="yellow"></th>
-							<th class="header-centered">Date</th>
+							<th class="header-centered">Size</th>
 							<th class="header-centered">User</th>
 							<th class="header-centered">Hash Sum</th>
 							<th class="header-centered" colspan="2">Status</th>
 						</tr>
 						<tr style="background-color: {$wifidb_wait.color}">
 							<td class="yellow"></td>
-							<td class="yellow">{$wifidb_wait.date}</td>
+							<td class="yellow">{$wifidb_wait.size}</td>
 							<td class="yellow">{$wifidb_wait.user}</td>
 							<td class="yellow">{$wifidb_wait.hash}</td>
 							{$wifidb_wait.last_cell}
