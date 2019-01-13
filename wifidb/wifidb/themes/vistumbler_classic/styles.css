@@ -284,10 +284,43 @@ table.asscotable {
 }
 
 .dark {
-	background-color: #85ABCB;
+	text-align: left;
+	background-color: #a1bace;
+	border: 1px inset black;
 }
+
+.dark a {
+	font-weight: bold;
+}
+
 .light {
-	background-color: #BAD0E2;
+	text-align: left;
+	background-color: #d0dce7;
+	border: 1px inset black;
+}
+
+.light a {
+	font-weight: bold;
+}
+
+.dark-centered {
+	text-align: center;
+	background-color: #a1bace;
+	border: 1px inset black;
+}
+
+.dark-centered a {
+	font-weight: bold;
+}
+
+.light-centered {
+	text-align: center;
+	background-color: #d0dce7;
+	border: 1px inset black;
+}
+
+.light-centered a {
+	font-weight: bold;
 }
 
 .loader {
@@ -318,5 +351,41 @@ table.asscotable {
 .red {
 	text-align: center;
 	background-color: red;
+	border: 1px inset black;
+}
+
+.content_table {
+    margin: 0 auto;
+	width:100%;
+	padding: 1px;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.content_table-centered {
+    margin: 0 auto;
+	padding: 1px;
+    border-collapse: collapse;
+    border-spacing: 0;
+	border: 0px;
+}
+
+.subheading {
+	text-align: center;
+	background-color: #477DA9;
+	font-weight: bold;
+}
+
+.header {
+	text-align: left;
+	background-color: #5b86aa;
+	font-weight: bold;
+	border: 1px inset black;
+}
+
+.header-centered {
+	text-align: center;
+	background-color: #5b86aa;
+	font-weight: bold;
 	border: 1px inset black;
 }

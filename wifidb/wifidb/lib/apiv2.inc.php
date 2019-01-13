@@ -431,13 +431,19 @@ class apiv2 extends dbcore
         $files_ret = $files_prep->fetch(2);
         if($tmp_ret['hash'] != "")
         {
-            $this->mesg = array("error"=>"File Hash already waiting for import: $hash");
+            $this->mesg['error'] = "File Hash already waiting for import: ".$hash;
             return -1;
         }
         if($files_ret['hash'] != "")
         {
-            $this->mesg = array("error"=>"File Hash already exists in WiFiDB:  $hash");
+            $this->mesg['error'] ="File Hash already exists in WiFiDB:  $hash";
             return -1;
+        }
+        $this->mesg['import']["title"] = $title;
+        $this->mesg['import']["user"] = $user;
+        if($otherusers)
+        {
+            $this->mesg['import']['otherusers'] = $otherusers;
         }
 
         switch($ext)
@@ -479,14 +485,11 @@ class apiv2 extends dbcore
                 $result->bindValue(7, $size, PDO::PARAM_STR);
                 $result->bindValue(8, $hash, PDO::PARAM_STR);
 				$result->execute();
-				$error = $this->sql->conn->errorCode();
-				if($error[0] == "00000")
-				{
-					$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
-				}else
-				{
-					$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
-				}
+				$this->sql->checkError($result->execute(), __LINE__, __FILE__);
+				$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
+				$this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
+				$this->mesg['import']["filehash"] = $hash;
+				return 1;
                 break;
             default:
                 $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files");

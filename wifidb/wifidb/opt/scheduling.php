@@ -98,8 +98,135 @@ switch($func)
         $dbcore->smarty->display('scheduling_done.tpl');
     break;
 #######################################################################
-    case 'daemon_kml':
-        $kml_head = array();
+    case 'full_kml':
+	$flip=0;
+	$files = array();
+	foreach (array_reverse(glob($dbcore->PATH."out/kmz/full/unlabeled/*.kmz")) as $file) {
+		$filename = basename($file);
+		$filesize = $dbcore->format_size(@filesize($file), 2);
+		$fileurl = $dbcore->URL_PATH."out/kmz/full/unlabeled/".$filename;
+		
+		if($flip)
+		{
+			$class="dark";
+			$flip=0;
+		}else
+		{
+			$class="light";
+			$flip=1;
+		}
+		
+		$files[] = array(
+			"class"		=> $class,
+			"filename"	=> $filename,
+			"filesize"	=> $filesize,
+			"fileurl"	=> $fileurl,
+		);
+	}
+	
+	$dbcore->smarty->assign('wifidb_page_label', "Full KMZ Export Archive");
+	$dbcore->smarty->assign('files', $files);
+	$dbcore->smarty->display('scheduling_kml_list.tpl');
+
+    break;
+#######################################################################
+    case 'full_labeled_kml':
+	$flip=0;
+	$files = array();
+	foreach (array_reverse(glob($dbcore->PATH."out/kmz/full/labeled/*.kmz")) as $file) {
+		$filename = basename($file);
+		$filesize = $dbcore->format_size(@filesize($file), 2);
+		$fileurl = $dbcore->URL_PATH."out/kmz/full/labeled/".$filename;
+		
+		if($flip)
+		{
+			$class="dark";
+			$flip=0;
+		}else
+		{
+			$class="light";
+			$flip=1;
+		}
+		
+		$files[] = array(
+			"class"		=> $class,
+			"filename"	=> $filename,
+			"filesize"	=> $filesize,
+			"fileurl"	=> $fileurl,
+		);
+	}
+	
+	$dbcore->smarty->assign('wifidb_page_label', "Full Labeled KMZ Export Archive");
+	$dbcore->smarty->assign('files', $files);
+	$dbcore->smarty->display('scheduling_kml_list.tpl');
+
+    break;
+#######################################################################
+    case 'incremental_kml':
+	$flip=0;
+	$files = array();
+	foreach (array_reverse(glob($dbcore->PATH."out/kmz/incremental/unlabeled/*.kmz")) as $file) {
+		$filename = basename($file);
+		$filesize = $dbcore->format_size(@filesize($file), 2);
+		$fileurl = $dbcore->URL_PATH."out/kmz/incremental/unlabeled/".$filename;
+		
+		if($flip)
+		{
+			$class="dark";
+			$flip=0;
+		}else
+		{
+			$class="light";
+			$flip=1;
+		}
+		
+		$files[] = array(
+			"class"		=> $class,
+			"filename"	=> $filename,
+			"filesize"	=> $filesize,
+			"fileurl"	=> $fileurl,
+		);
+	}
+	
+	$dbcore->smarty->assign('wifidb_page_label', "Daily KMZ Export Archive");
+	$dbcore->smarty->assign('files', $files);
+	$dbcore->smarty->display('scheduling_kml_list.tpl');
+
+    break;
+#######################################################################
+    case 'incremental_labeled_kml':
+	$flip=0;
+	$files = array();
+	foreach (array_reverse(glob($dbcore->PATH."out/kmz/incremental/labeled/*.kmz")) as $file) {
+		$filename = basename($file);
+		$filesize = $dbcore->format_size(@filesize($file), 2);
+		$fileurl = $dbcore->URL_PATH."out/kmz/incremental/labeled/".$filename;
+		
+		if($flip)
+		{
+			$class="dark";
+			$flip=0;
+		}else
+		{
+			$class="light";
+			$flip=1;
+		}
+		
+		$files[] = array(
+			"class"		=> $class,
+			"filename"	=> $filename,
+			"filesize"	=> $filesize,
+			"fileurl"	=> $fileurl,
+		);
+	}
+	
+	$dbcore->smarty->assign('wifidb_page_label', "Daily Labeled KMZ Export Archive");
+	$dbcore->smarty->assign('files', $files);
+	$dbcore->smarty->display('scheduling_kml_list.tpl');
+
+    break;
+#######################################################################
+    case 'legacy_kml':
         $daemon_out = $dbcore->PATH."out/daemon/";
         $url_base = $dbcore->URL_PATH."out/daemon/";;
         $kml_all = array();
@@ -211,8 +338,14 @@ switch($func)
 				"link_url"  => $link_url
             );
         }
-
-        $kml_head['update_kml'] = 'Current WiFiDB Network Link: <a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">Download!</a>';
+        $dbcore->smarty->assign('wifidb_page_label', "Legacy KMZ Exports");
+        $dbcore->smarty->assign('wifidb_kml_all_array', $kml_all);
+        $dbcore->smarty->display('scheduling_kml_lecacy.tpl');
+    break;
+#######################################################################
+    case 'daemon_kml':
+        $kml_head = array();
+        $kml_head['update_kml'] = '<a class="links" href="'.$dbcore->URL_PATH.'api/export.php?func=exp_combined_netlink">WifiDB Network Link Download</a>';
         $kmldate=date ("Y-m-d");
 		#-----------
 		if($dbcore->sql->service == "mysql")
@@ -258,73 +391,61 @@ switch($func)
             $kml_head['newest_labeled_size'] = "0.00 kB";
         }
 		#-----------
-		$date_search = $kmldate."%";
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [id], [date] FROM [files] ORDER BY [date] DESC";}
-        $result = $dbcore->sql->conn->query($sql);
-        $ap_array = $result->fetch(2);
-
-        if($ap_array['id'])
+        if(file_exists($dbcore->PATH."out/daemon/daily_db.kmz"))
         {
-            if(strpos($ap_array['date'], ".")){$lastapdate = substr($ap_array['date'], 0, strpos($ap_array['date'], "."));}else{$lastapdate = $ap_array['date'];}
-
-            
-            $kml_head['daily_date'] = $lastapdate;
-            $kml_head['daily_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=0";
-            $kml_head['daily_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_link'])));
-
-            $kml_head['daily_labeled_date'] = $lastapdate;
-            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=1";
-            $kml_head['daily_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_labeled_link'])));
+            $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/daily_db.kmz";
+			$kml_head['daily_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/daily_db.kmz"));
+            $kml_head['daily_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/daily_db.kmz"));
         }
         else
         {
             $kml_head['daily_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['daily_link'] = "#";
             $kml_head['daily_size'] = "0.00 kB";
+		}
 
+        if(file_exists($dbcore->PATH."out/daemon/daily_db_labeled.kmz"))
+        {
+            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/daily_db_labeled.kmz";
+			$kml_head['daily_labeled_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/daily_db_labeled.kmz"));
+            $kml_head['daily_labeled_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/daily_db_labeled.kmz"));
+        }
+        else
+        {
             $kml_head['daily_labeled_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['daily_labeled_link'] = "#";
             $kml_head['daily_labeled_size'] = "0.00 kB";
         }
 		#-----------
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT `id`, `date` FROM `files` ORDER BY `date` DESC LIMIT 1";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [id], [date] FROM [files] ORDER BY [date] DESC";}
-        $result = $dbcore->sql->conn->query($sql);
-        $ap_array = $result->fetch(2);
-
-        if($ap_array['id'])
+        if(file_exists($dbcore->PATH."out/daemon/full_db.kmz"))
         {
-            if(strpos($ap_array['date'], ".")){$lastapdate = substr($ap_array['date'], 0, strpos($ap_array['date'], "."));}else{$lastapdate = $ap_array['date'];}
-
-            
-            $kml_head['full_date'] = $lastapdate;
-            $kml_head['full_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=0";
-            $kml_head['full_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['full_link'])));
-
-            $kml_head['full_labeled_date'] = $lastapdate;
-            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_all_netlink&labeled=1";
-            $kml_head['full_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['full_labeled_link'])));
+            $kml_head['full_link'] = $dbcore->URL_PATH."out/daemon/full_db.kmz";
+			$kml_head['full_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/full_db.kmz"));
+            $kml_head['full_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/full_db.kmz"));
         }
         else
         {
             $kml_head['full_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['full_link'] = "#";
             $kml_head['full_size'] = "0.00 kB";
+		}
 
+        if(file_exists($dbcore->PATH."out/daemon/full_db_labeled.kmz"))
+        {
+            $kml_head['full_labeled_link'] = $dbcore->URL_PATH."out/daemon/full_db_labeled.kmz";
+			$kml_head['full_labeled_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/full_db_labeled.kmz"));
+            $kml_head['full_labeled_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/full_db_labeled.kmz"));
+        }
+        else
+        {
             $kml_head['full_labeled_date'] = "None generated for ".$kmldate." yet.";
             $kml_head['full_labeled_link'] = "#";
             $kml_head['full_labeled_size'] = "0.00 kB";
         }
 		#-----------
 
-        $dbcore->smarty->assign('wifidb_page_label', "Daemon KML Exports");
+        $dbcore->smarty->assign('wifidb_page_label', "Daemon KMZ Exports");
         $dbcore->smarty->assign('wifidb_kml_head', $kml_head);
-        $dbcore->smarty->assign('wifidb_kml_all_array', $kml_all);
         $dbcore->smarty->display('scheduling_kml.tpl');
     break;
 

@@ -24,14 +24,15 @@ if not, write to the
 						<td align="left">
 							<div id='map' style='float:left; width: 100%; height:75vh;'></div>
 							<div id='basemap'>
-								<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM'>
+								<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
 								<label for='WDB_OSM'>Open Street Map</label>
 								<input id='WDB_ESRI' type='radio' name='rtoggle' value='WDB_ESRI'>
 								<label for='WDB_ESRI'>ESRI World Imagery</label>
-								<input id='WDB_ESRIOSM' type='radio' name='rtoggle' value='WDB_ESRIOSM' checked='checked'>
+								<input id='WDB_ESRIOSM' type='radio' name='rtoggle' value='WDB_ESRIOSM'>
 								<label for='WDB_ESRIOSM'>World Imagery + Open Street Map</label>
 							</div>
 							<div>
+								<button id="latest" onClick="toggle_latest_layer_button(this.id)">Hide Latest</button>
 								<button id="daily" onClick="toggle_layer_button(this.id)">Hide Daily</button>
 								<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">Hide 0-1 year</button>
 								<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">Hide 1-2 year</button>
@@ -43,6 +44,9 @@ if not, write to the
 								<button id="searchadr" onClick="searchadr()">Search</button>
 							</div>
 							<div>
+								<button id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest AP</button>
+							</div>
+							<div>
 								{if $labeled eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">[View Un-Labeled]</a>
 								{else}
@@ -50,12 +54,52 @@ if not, write to the
 								{/if}
 							</div>
 							<script>
+
 							var map = new mapboxgl.Map({
 								container: 'map',
 								style: '{$style}',
 								center: {$centerpoint},
 								zoom: {$zoom},
 							});
+							
+							function GoToLatest() {
+								var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap'
+								console.log('url: ', url);
+								map.getSource('latest').setData(url);
+								var req = new XMLHttpRequest();
+								req.overrideMimeType("application/json");
+								req.open('GET', url, true);
+								req.onload  = function() {
+									console.log(req.responseText);
+									var jsonResponse = JSON.parse(req.responseText);
+									var lat = parseFloat(jsonResponse.features[0].properties.lat);
+									var lng = parseFloat(jsonResponse.features[0].properties.lon);
+									console.log('lat: ', lat);
+									console.log('lng: ', lng);
+									var lnglat = [lng.toFixed(6),lat.toFixed(6)];
+									map.setCenter(lnglat);
+									console.log('lnglat: ', lnglat);
+									
+								};
+								req.send(null);	
+							}
+							
+							var FollowLatest = false;
+							var LatestTimer;
+							function toggleFollowLatest(clicked_id) {
+								var el = document.getElementById(clicked_id);
+								if (FollowLatest) {
+									clearInterval(LatestTimer);
+									FollowLatest = false;
+									el.firstChild.data = "Follow Latest AP"
+								} else {
+									LatestTimer = setInterval(function () {
+										GoToLatest()
+									}, 2500);
+									FollowLatest = true;
+									el.firstChild.data = "Un-Follow Latest AP"
+								}
+							}
 							
 							// --- Start Map Style Selection ---
 							var layerList = document.getElementById('basemap');
@@ -82,7 +126,7 @@ if not, write to the
 								var visibility = map.getLayoutProperty(clicked_id, 'visibility');
 								if (visibility === 'visible') {	
 									map.setLayoutProperty(clicked_id, 'visibility', 'none');
-{if $labeled eq 1}
+{if $labeled eq 1 }
 									map.setLayoutProperty(clicked_id + '-label', 'visibility', 'none');
 {/if}
 									this.className = '';
@@ -93,6 +137,28 @@ if not, write to the
 {if $labeled eq 1}
 									map.setLayoutProperty(clicked_id + '-label', 'visibility', 'visible');
 {/if}
+									el.firstChild.data = "Hide" + btext;
+								}
+
+							}
+
+							function toggle_latest_layer_button(clicked_id)
+							{
+								var el = document.getElementById(clicked_id);
+								var btext = el.firstChild.data;
+								var btext = btext.replace("Show", "");
+								var btext = btext.replace("Hide", "");
+							
+								var visibility = map.getLayoutProperty(clicked_id, 'visibility');
+								if (visibility === 'visible') {	
+									map.setLayoutProperty(clicked_id, 'visibility', 'none');
+									map.setLayoutProperty(clicked_id + '-label', 'visibility', 'none');
+									this.className = '';
+									el.firstChild.data = "Show" + btext;
+								} else {
+									this.className = 'active';
+									map.setLayoutProperty(clicked_id, 'visibility', 'visible');
+									map.setLayoutProperty(clicked_id + '-label', 'visibility', 'visible');
 									el.firstChild.data = "Hide" + btext;
 								}
 

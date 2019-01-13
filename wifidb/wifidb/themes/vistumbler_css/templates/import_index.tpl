@@ -84,7 +84,7 @@ if not, write to the
 								</td>
 								<td class="light">
 										  <input type="radio" name="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br>
-										  <input type="radio" name="type" value="wardrive4">Wardrive4 DB<br>
+										  <input type="radio" name="type" value="wardrive">Wardrive DB/DB3<br>
 										  <input type="radio" name="type" value="wigglewificsv">WiggleWifi CSV<br>
 										  <input type="radio" name="type" value="swardriving">SWardriving CSV<br>
 								</td>

@@ -21,6 +21,80 @@ if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra de
 $func=$_REQUEST['func'];
 switch($func)
 {
+	case "exp_latest_ap":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$Import_Map_Data = "";
+		
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+					. "whFA.Hist_Date As FA,\n"
+					. "whLA.Hist_Date As LA,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM `wifi_ap` AS wap\n"
+					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+					. "WHERE `wap`.`HighGps_ID` IS NOT NULL\n"
+					. "ORDER BY wap.AP_ID DESC\n"
+					. "LIMIT 1";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT TOP 1 [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[AP_ID] = ?\n"
+					. "ORDER BY [wap].[AP_ID] DESC";
+			}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $ap['AP_ID'],
+			"new_ap" => $new_icons,
+			"named" => $named,
+			"mac" => $ap['BSSID'],
+			"ssid" => $ap['SSID'],
+			"chan" => $ap['CHAN'],
+			"radio" => $ap['RADTYPE'],
+			"NT" => $ap['NETTYPE'],
+			"sectype" => $ap['SECTYPE'],
+			"auth" => $ap['AUTH'],
+			"encry" => $ap['ENCR'],
+			"BTx" => $ap['BTX'],
+			"OTx" => $ap['OTX'],
+			"FA" => $ap['FA'],
+			"LA" => $ap['LA'],
+			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
+			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
+			"alt" => $ap['Alt'],
+			"manuf"=>$dbcore->findManuf($ap['BSSID']),
+			"user" => $ap['user']
+			);
+			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+		}
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+	break;
+
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
@@ -172,7 +246,6 @@ switch($func)
 	case "exp_daily":
 		#Get lists from the last day and a half
 		$row_count = 1000;	
-
 		if($dbcore->sql->service == "mysql")
 			{
 				$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"

@@ -68,7 +68,7 @@ class export extends dbcore
 	/*
 	 * Export to Google KML File
 	 */
-	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0)
+	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0, $symlink_name = "")
 	{
 		$this->verbosed("Compiling Data for ".$type." Export. Labeled:".$this->named);
 
@@ -87,7 +87,7 @@ class export extends dbcore
 		}
 		elseif($type == "daily")
 		{
-			#Get the last full export date
+			#Get the last full export id
 			if($this->sql->service == "mysql")
 				{$sql = "SELECT `last_export_file` FROM `settings` WHERE id = 1";}
 			else if($this->sql->service == "sqlsrv")
@@ -178,12 +178,15 @@ class export extends dbcore
 		{
 			$this->verbosed("KMZ created at ".$kmz_filepath);
 			chmod($kmz_filepath, 0664);
-			###
-			$link = $this->daemon_out.basename($kmz_filepath);
-			$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
-			unlink($link);
-			symlink($kmz_filepath, $link);
-			chmod($link, 0664);
+			if($symlink_name != "")
+			{
+				$link = $this->daemon_out.basename($symlink_name);
+				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
+				unlink($link);
+				symlink($kmz_filepath, $link);
+				chmod($link, 0664);
+			}
+			
 			Return true;
 		}
 		else
@@ -1034,40 +1037,42 @@ class export extends dbcore
 			{
 				#Generate Full Un-Labeled KMZ if it doesn't already exist
 				$this->named = 0;
-				$kmz_filepath = $full_folder."unlabeled/full_db".$filedate.".kmz";
+				$kmz_filepath = $full_folder."unlabeled/full_db_".$filedate.".kmz";
 				if(!file_exists($kmz_filepath))
 				{
 					$this->verbosed("Generating Full DB KML - ".$kmz_filepath);
-					$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
+					$this->ExportDaemonKMZ($kmz_filepath, "full", 1, 0, "full_db.kmz");
 				}
+		if (file_exists($kmz_filepath)) 
+		{$link = $this->daemon_out.basename($kmz_filepath);}
 				
 				#Generate Full Labeled KMZ if it doesn't already exist
 				$this->named = 1;
-				$kmz_filepath = $daily_folder."labeled/full_db_".$filedate."_labeled.kmz";
+				$kmz_filepath = $full_folder."labeled/full_db_".$filedate."_labeled.kmz";
 				if(!file_exists($kmz_filepath))
 				{
 					$this->verbosed("Generating Full DB Labeled KML - ".$kmz_filepath);
-					$this->ExportDaemonKMZ($kmz_filepath, "full" ,1 ,0);
+					$this->ExportDaemonKMZ($kmz_filepath, "full", 1, 0, "full_db_labeled.kmz");
 				}
 				
 				#Set last full export id into the settings table
 				$sql = "UPDATE `settings` SET `last_export_file` = ? WHERE `id` = 1";
-				$prep = $dbcore->sql->conn->prepare($sql);
+				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $Last_File_ID, PDO::PARAM_INT);
 				$prep->execute();
 			}
 
 			#Generate Daily KML
 			$this->named = 0;
-			$kmz_filepath = $daily_folder."unlabeled/daily_db".$filedate.".kmz";
+			$kmz_filepath = $daily_folder."unlabeled/daily_db_".$filedate.".kmz";
 			$this->verbosed("Generating Daily KMZ - ".$kmz_filepath);
-			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
+			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1, "daily_db.kmz");
 			
 			#Generate Daily Labeled KML
 			$this->named = 1;
 			$kmz_filepath = $daily_folder."labeled/daily_db_".$filedate."_labeled.kmz";
 			$this->verbosed("Generating Daily Labeled KMZ - ".$kmz_filepath);
-			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1);
+			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1, "daily_db_labeled.kmz");
 
 			#Generate History KML
 			if($this->HistoryKMLLink() === -1)

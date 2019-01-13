@@ -32,7 +32,7 @@ switch($func)
 {
 	case "wifidbmap":
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_ESRIOSM/style.json";
+		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$centerpoint =  "[-95.712891, 37.090240]";
 		$zoom =  3.5;
 		$layer_source_all = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",2.25,1,0.5,"visible");
@@ -56,8 +56,11 @@ switch($func)
 		$layer_source_all .= $dl['layer_source'];
 		if ($labeled) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['layer_name'],"","label","{ssid}","Open Sans Regular",11,"none");}		
 		if ($channels) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['layer_name'],"","label","{chan}","Open Sans Regular",11,"none");;}
+		
+		$ll = $dbcore->createGeoJSON->CreateLatestGeoJsonLayer(1);
+		$layer_source_all .= $ll['layer_source'];
 	
-		$layer_name = "'".$dl['layer_name']."','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
+		$layer_name = "'".$ll['layer_name']."','".$dl['layer_name']."','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -102,7 +105,7 @@ switch($func)
 		}		
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_ESRIOSM/style.json";
+		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$centerpoint =  "[".$clon.",".$clat."]";
 		$zoom = 9;
 		
@@ -161,7 +164,7 @@ switch($func)
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);		
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_ESRIOSM/style.json";
+		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
 		$zoom = 9;
 		
@@ -228,7 +231,7 @@ switch($func)
 
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_ESRIOSM/style.json";
+		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['Lon']).",".$dbcore->convert->dm2dd($latlng['Lat'])."]";
 		$zoom = 12;
 		
