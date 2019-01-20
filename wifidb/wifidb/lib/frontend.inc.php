@@ -222,24 +222,20 @@ class frontend extends dbcore
 			
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wf.File_ID, files.title, files.user, files.date, files.ValidGPS, wf.New,\n"
-					. "(SELECT COUNT(DISTINCT wifi_hist.AP_ID) FROM wifi_hist WHERE wifi_hist.File_ID = wf.File_ID) AS `AP_COUNT`\n"
-					. "FROM wifi_hist AS `wf`\n"
-					. "INNER JOIN wifi_ap ON wf.AP_ID = wifi_ap.AP_ID\n"
-					. "INNER JOIN files ON wf.File_ID = files.id\n"
-					. "WHERE wf.AP_ID = ?\n"
-					. "GROUP BY wf.File_ID\n"
-					. "ORDER BY files.date DESC";
+				$sql = "SELECT `wifi_hist`.`File_ID`, `files`.`title`, `files`.`notes`, `files`.`user`, `files`.`date`, `files`.`ValidGPS`, `wifi_hist`.`New`, COUNT(`wifi_hist`.`Hist_Date`) As `points`\n"
+					. "FROM `wifi_hist`\n"
+					. "INNER JOIN `files` ON `wifi_hist`.`File_ID` = `files`.`id`\n"
+					. "WHERE `wifi_hist`.`AP_ID` = ?\n"
+					. "GROUP BY `wifi_hist`.`File_ID`, `wifi_hist`.`New`\n"
+					. "ORDER BY `files`.`date` DESC";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wf].[File_ID], [files].[title], [files].[user], [files].[date], [files].[ValidGPS], [wf].[New],\n"
-					. "(SELECT COUNT(DISTINCT [wifi_hist].[AP_ID]) FROM [wifi_hist] WHERE [wifi_hist].[File_ID] = [wf].[File_ID]) AS [AP_COUNT]\n"
-					. "FROM [wifi_hist] AS [wf]\n"
-					. "INNER JOIN [wifi_ap] ON [wf].[AP_ID] = [wifi_ap].[AP_ID]\n"
-					. "INNER JOIN [files] ON [wf].[File_ID] = [files].[id]\n"
-					. "WHERE [wf].[AP_ID] = ?\n"
-					. "GROUP BY [wf].[File_ID], [files].[title], [files].[user], [files].[date], [files].[ValidGPS], [wf].[New]\n"
+				$sql = "SELECT [wifi_hist].[File_ID], [files].[title], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New], COUNT([wifi_hist].[Hist_Date]) As [points]\n"
+					. "FROM [wifi_hist]\n"
+					. "INNER JOIN [files] ON [wifi_hist].[File_ID] = [files].[id]\n"
+					. "WHERE [wifi_hist].[AP_ID] = ?\n"
+					. "GROUP BY [wifi_hist].[File_ID], [wifi_hist].[New]\n"
 					. "ORDER BY [files].[date] DESC";
 			}
 		$prep2 = $this->sql->conn->prepare($sql);
@@ -320,9 +316,10 @@ class frontend extends dbcore
 				'globe'=>$list_globe_html,
 				'nu'=>$field['New'],
 				'date'=>$field['date'],
-				'aps'=>$field['AP_COUNT'],
+				'points'=>$field['points'],
 				'user'=>$field['user'],
 				'title'=>$field['title'],
+				'notes'=>$field['notes'],
 				'signals'=>$sigarr
 			);
 
@@ -776,9 +773,9 @@ class frontend extends dbcore
 		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
 
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT DISTINCT(`AP_ID`) From `wifi_hist` WHERE `File_ID` = ?";}
+			{$sql = "SELECT `AP_ID`, `New`, Min(`Hist_Date`) As `fa`, Max(`Hist_Date`) As `la`, Count(`Hist_Date`) As `points` FROM `wifi_hist` WHERE `File_ID` = ? GROUP BY `AP_ID`, `New` ORDER BY `AP_ID` DESC";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";}
+			{$sql = "SELECT [AP_ID], [New], Min([Hist_Date]) As [fa], Max([Hist_Date]) As [la], Count([Hist_Date]) As [points] FROM [wifi_hist] WHERE [File_ID] = ? GROUP BY [AP_ID], [New] ORDER BY [AP_ID] DESC";}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$user_array['id'], PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -787,37 +784,16 @@ class frontend extends dbcore
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
+			$List_AP_FA = $array['fa'];
+			$List_AP_LA = $array['la'];
+			$List_points = $array['points'];
+			if($array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
 			$count++;
 			
 			if($flip)
 				{$style = "dark";$flip=0;}
 			else
 				{$style="light";$flip=1;}
-			
-			#Find AP First Date in this list
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT Hist_Date, New From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date ASC LIMIT 1";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT TOP 1 [Hist_Date], [New] From [wifi_hist] WHERE [File_ID] = ? And [AP_ID] = ? And [Hist_Date] <> '' ORDER BY Hist_Date ASC";}
-			$list_AP_FA_prep = $this->sql->conn->prepare($sql);
-			$list_AP_FA_prep->bindParam(1, $user_array['id'], PDO::PARAM_INT);
-			$list_AP_FA_prep->bindParam(2, $apid, PDO::PARAM_INT);
-			$list_AP_FA_prep->execute();
-			$list_AP_FA_array = $list_AP_FA_prep->fetch(2);
-			$List_AP_FA = $list_AP_FA_array['Hist_Date'];
-			if($list_AP_FA_array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
-			
-			#Find AP Last Date in this list
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT Hist_Date From wifi_hist WHERE File_ID = ? And AP_ID = ? And Hist_Date <> '' ORDER BY Hist_Date DESC LIMIT 1";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT TOP 1 [Hist_Date] From [wifi_hist] WHERE [File_ID] = ? And [AP_ID] = ? And [Hist_Date] <> '' ORDER BY [Hist_Date] DESC";}
-			$list_AP_LA_prep = $this->sql->conn->prepare($sql);
-			$list_AP_LA_prep->bindParam(1, $user_array['id'], PDO::PARAM_INT);
-			$list_AP_LA_prep->bindParam(2, $apid, PDO::PARAM_INT);
-			$list_AP_LA_prep->execute();
-			$list_AP_LA_array = $list_AP_LA_prep->fetch(2);
-			$List_AP_LA = $list_AP_LA_array['Hist_Date'];
 
 			if($this->sql->service == "mysql")
 				{
@@ -842,6 +818,8 @@ class frontend extends dbcore
 			$result->execute();
 			$ap_array = $result->fetch(2);
 			
+			if($ap_array['BSSID']  == "00:00:00:00:00:00"){continue;}
+				
 			if($ap_array['Lat']  == "0.0000" || $ap_array['Lat']  == "")
 			{
 				$globe = "off";
@@ -870,6 +848,7 @@ class frontend extends dbcore
 					'encry' => $ap_array['ENCR'],
 					'fa' => $List_AP_FA,
 					'la' => $List_AP_LA,
+					'points' => $List_points,
 					'lat' => $ap_array['Lat'],
 					'lon' => $ap_array['Lon']
 			);

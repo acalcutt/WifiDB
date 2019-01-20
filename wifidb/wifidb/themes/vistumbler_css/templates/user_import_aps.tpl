@@ -80,6 +80,7 @@ if not, write to the
 								<th class="header">Channel</th>
 								<th class="header">First Active</th>
 								<th class="header">Last Active</th>
+								<th class="header">Points</th>
 							</tr>
 							{foreach name=outer item=wifidb_users_aps from=$wifidb_all_user_aps.allaps}
 							<tr class="{$wifidb_users_aps.class}">
@@ -94,6 +95,7 @@ if not, write to the
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.points}</td>
 							</tr>
 							{/foreach}
 						</tbody>

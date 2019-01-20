@@ -115,22 +115,22 @@ if not, write to the
 							<tr>
 								<th class="header">ID</th>
 								<th class="header">GPS</th>
-								<th class="header">Title</th>
 								<th class="header">User</th>
-								<th class="header">Total APs</th>
+								<th class="header">Title</th>
+								<th class="header">Notes</th>
 								<th class="header">Date</th>
 								<th class="header">New/Update</th>
 								<th class="header">Export</th>
-								<th class="header">Signal History</th>
+								<th class="header">{$wifidb_assoc.points} Points</th>
 							</tr>
 						</tbody>
 						<tbody>
 							<tr>
 								<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>	
 								<td class="light" align="center">{$wifidb_assoc.globe}</td>
-								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
-								<td class="light" align="center">{$wifidb_assoc.aps}</td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
+								<td class="light">{$wifidb_assoc.notes}</td>
 								<td class="light">{$wifidb_assoc.date}</td>
 								<td class="light">{$wifidb_assoc.nu}</td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;file_id={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>
