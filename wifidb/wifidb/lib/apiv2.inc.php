@@ -448,42 +448,58 @@ class apiv2 extends dbcore
 
         switch($ext)
         {
-            case "vs1":
-                $task = "import";
-                break;
-            case "vsz":
-                $task = "import";
-                break;
-            case "vscz":
-                $task = "experimental";
-                break;
-            case "csv":
-                $task = "import";
-                break;
-            case "db3":
-                $task = "import";
-                break;
-            default:
-                $task = "";
-                break;
+			case "vs1":
+				$task = "import";
+				$type = "vistumbler";
+			break;
+			case "txt":
+				$task = "import";
+				$type = "vistumbler";
+			break;
+			case "vsz":
+				$task = "import";
+				$type = "vistumbler";
+			break;
+			case "csv":
+				$task = "import";
+				$type = "vistumbler";
+			break;
+			case "mdb":
+				$task = "import";
+				$type = "vistumbler";
+			break;			
+			case "db3":
+				$task = "import";
+				$type = "wardrive";
+			break;
+			case "db":
+				$task = "import";
+				$type = "wardrive";
+			break;
+			default:
+				$task = "";
+				$type = "";
+			break;
         }
 
         switch($task)
         {
             case "import":
-                $sql = "INSERT INTO `files_tmp`
-								( `file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`  )
-						VALUES ( ?, ?, ?, ?, ?, ?, ?, ?)";
-                $result = $this->sql->conn->prepare( $sql );
+				if($this->sql->service == "mysql")
+					{$sql = "INSERT INTO `files_tmp`(`file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql = "INSERT INTO [files_tmp]([file], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
-                $result->bindValue(1, $filename, PDO::PARAM_STR);
-                $result->bindValue(2, $date, PDO::PARAM_STR);
-                $result->bindValue(3, $user, PDO::PARAM_STR);
+				$result = $this->sql->conn->prepare( $sql );
+				$result->bindValue(1, $filename, PDO::PARAM_STR);
+				$result->bindValue(2, $date, PDO::PARAM_STR);
+				$result->bindValue(3, $user, PDO::PARAM_STR);
 				$result->bindValue(4, $otherusers, PDO::PARAM_STR);
-                $result->bindValue(5, $notes, PDO::PARAM_STR);
-                $result->bindValue(6, $title, PDO::PARAM_STR);
-                $result->bindValue(7, $size, PDO::PARAM_STR);
-                $result->bindValue(8, $hash, PDO::PARAM_STR);
+				$result->bindValue(5, $notes, PDO::PARAM_STR);
+				$result->bindValue(6, $title, PDO::PARAM_STR);
+				$result->bindValue(7, $size, PDO::PARAM_STR);
+				$result->bindValue(8, $hash, PDO::PARAM_STR);
+				$result->bindValue(9, $type, PDO::PARAM_STR);
 				$result->execute();
 				$this->sql->checkError($result->execute(), __LINE__, __FILE__);
 				$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";

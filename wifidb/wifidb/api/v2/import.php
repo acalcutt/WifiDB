@@ -67,7 +67,7 @@ switch($func)
 				'title'=>$title,
 				'user'=>$dbcore->username,
 				'otherusers'=>$otherusers,
-				'size'=>$size,
+				'size'=>$dbcore->format_size($size),
 				'notes'=>$notes,
 				'ext'=>$ext,
 				'filename'=>$filename,
