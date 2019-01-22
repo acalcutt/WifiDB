@@ -350,27 +350,25 @@ switch($func)
 		#-----------
 		if($dbcore->sql->service == "mysql")
 			{
-				$sql = "SELECT `wifi_gps`.`GPS_Date`\n"
+				$sql = "SELECT `wifi_ap`.`ModDate`\n"
 					. "FROM `wifi_ap`\n"
-					. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
-					. "WHERE `wifi_ap`.`HighGps_ID` IS NOT NULL and `wifi_gps`.`Lat` != '0.0000'\n"
-					. "ORDER BY `wifi_gps`.`GPS_Date` DESC\n"
+					. "WHERE `wifi_ap`.`HighGps_ID` IS NOT NULL\n"
+					. "ORDER BY `wifi_ap`.`AP_ID` DESC\n"
 					. "LIMIT 1";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT TOP 1 [wifi_gps].[GPS_Date]\n"
+				$sql = "SELECT TOP 1 [wifi_ap].[ModDate]\n"
 					. "FROM [wifi_ap]\n"
-					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
-					. "WHERE [wifi_ap].[HighGps_ID] IS NOT NULL and [wifi_gps].[Lat] != '0.0000'\n"
-					. "ORDER BY [wifi_gps].[GPS_Date] DESC";
+					. "WHERE [wifi_ap].[HighGps_ID] IS NOT NULL\n"
+					. "ORDER BY [wifi_ap].[AP_ID] DESC";
 			}
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
-        if($ap_array['GPS_Date'])
+        if($ap_array['ModDate'])
         {
-            if(strpos($ap_array['GPS_Date'], ".")){$lastapdate = substr($ap_array['GPS_Date'], 0, strpos($ap_array['GPS_Date'], "."));}else{$lastapdate = $ap_array['GPS_Date'];}
+            if(strpos($ap_array['ModDate'], ".")){$lastapdate = substr($ap_array['ModDate'], 0, strpos($ap_array['ModDate'], "."));}else{$lastapdate = $ap_array['ModDate'];}
 
             $kml_head['newest_date'] = $lastapdate;
             $kml_head['newest_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=0";
