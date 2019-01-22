@@ -99,12 +99,12 @@ class import extends dbcore
 		}
 	}
 	
-	private function UpdateHighPoints($file_importing_id, $ap_id, $FirstDate = NULL, $LastDate = NULL, $HighSig = 0, $HighRSSI = -99, $HighRSSIwGPS = -99)
+	private function UpdateHighPoints($file_importing_id, $ap_id, $FirstDate = NULL, $LastDate = NULL, $HighSig = 0, $HighRSSI = -99, $HighRSSIwGPS = -99, $msg = "")
 	{
 		if($HighSig == ""){$HighSig = 0;}
 		if($HighRSSI == ""){$HighRSSI = -99;}
 		if($HighRSSIwGPS == ""){$HighRSSIwGPS = -99;}
-		$text = "Updating High Points";
+		$text = "$msg (UHP)";
 		if($this->sql->service == "mysql")
 			{$sql = "UPDATE `files_importing` SET `tot` = ? WHERE `id` = ?";}
 		else if($this->sql->service == "sqlsrv")
@@ -352,7 +352,7 @@ class import extends dbcore
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
 			if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS, $calc);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -540,7 +540,7 @@ class import extends dbcore
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
 				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-				$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS);
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS, $calc);
 			}
 		}
 		#Find if file had Valid GPS
@@ -739,7 +739,7 @@ class import extends dbcore
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
 				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS);
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS, $calc);
 			}
 		}
 		#Find if file had Valid GPS
@@ -935,7 +935,7 @@ class import extends dbcore
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
 				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS);
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS, $calc);
 					
 			}
 		}
@@ -1416,7 +1416,7 @@ class import extends dbcore
 			}
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -1722,15 +1722,17 @@ class import extends dbcore
 			}
 		}
 		
+		$h_lcount = count($hdata);
 		foreach ($hdata as $key => $ap)
 		{
+			$calc = "AP: ".($key+1)." / ".$h_lcount;
 			$ap_id = $ap['ap_id'];
 			$FirstDate = $ap['FirstDate'];
 			$LastDate = $ap['LastDate'];
 			$HighRSSI = $ap['HighRSSI'];
 			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
 			$HighSig = $ap['HighSig'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
