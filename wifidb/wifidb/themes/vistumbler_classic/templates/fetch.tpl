@@ -1,6 +1,6 @@
 <!--
 fetch.tpl: template for a single AP's data results.
-Copyright (C) 2011 Phil Ferland
+Copyright (C) 2018 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -18,156 +18,162 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                                <script language="JavaScript">
-								// Row Hide function.
-								// by tcadieux
-								function expandcontract(tbodyid,ClickIcon)
-								{
-									if (document.getElementById(ClickIcon).innerHTML == "+")
-									{
-										document.getElementById(tbodyid).style.display = "";
-										document.getElementById(ClickIcon).innerHTML = "-";
-									}else{
-										document.getElementById(tbodyid).style.display = "none";
-										document.getElementById(ClickIcon).innerHTML = "+";
-									}
-								}
-								</script>
-                                <h1>{$wifidb_ap.ssid}{$wifidb_ap_globe_html}</h1>
-                                <table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
-                                <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
-                                    <tbody>
-                                        <tr><td class="style4" width="112"><p>MAC Address</p></td><td class="light" width="439"><p>{$wifidb_ap.mac}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Manufacture</p></td><td class="light" width="439"><p>{$wifidb_ap.manuf}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112" height="26"><p>Authentication</p></td><td class="light" width="439"><p>{$wifidb_ap.auth}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Encryption Type</p></td><td class="light" width="439"><p>{$wifidb_ap.encry}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Radio Type</p></td><td class="light" width="439"><p>{$wifidb_ap.radio}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Channel #</p></td><td class="light" width="439"><p>{$wifidb_ap.chan}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>BTx</p></td><td class="light" width="439"><p>{$wifidb_ap.btx}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>OTx</p></td><td class="light" width="439"><p>{$wifidb_ap.otx}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Network Type</p></td><td class="light" width="439"><p>{$wifidb_ap.nt}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>First Active</p></td><td class="light" width="439"><p>{$wifidb_ap.fa}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
-										<tr valign="TOP"><td class="style4" width="112"><p>Latitude</p></td><td class="light" width="439"><p>{$wifidb_ap.lat}</p></td></tr>
-										<tr valign="TOP"><td class="style4" width="112"><p>Longitude</p></td><td class="light" width="439"><p>{$wifidb_ap.lon}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}&labeled=1">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <br/>
-								
-								<table width="85%" border="1" cellpadding="2" cellspacing="0">
-									<tr>
-										<td class="style1">Geographical data ( datasource: Geonames.org )</td>
-									</tr>
-									<tr>
-										<td class="style1">
-												
-												<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
-													<tbody>
-														<tr>
-															<th class="style4">ID</th>
-															<th class="style4">Closest Landmark</th>
-															<th class="style4">Admin1 Name</th>
-															<th class="style4">Admin2 Name</th>
-															<th class="style4">Country Name</th>
-															<th class="style4">Timezone</th>
-															<th class="style4">Latitude</th>
-															<th class="style4">Longitude</th>
-															<th class="style4">Distance(mi)</th>
-															<th class="style4">Distance(km)</th>
-														</tr>
-													</tbody>
-													<tbody>
-														{foreach name=outer item=wifidb_gi from=$wifidb_geonames}
-														<tr class="{$wifidb_gi.class}">
-															<td>{$wifidb_gi.id}</td>
-															<td>{$wifidb_gi.asciiname}</td>	
-															<td>{$wifidb_gi.admin1name}</td>
-															<td>{$wifidb_gi.admin2name}</td>
-															<td>{$wifidb_gi.country_code}</td>
-															<td>{$wifidb_gi.timezone}</td>
-															<td>{$wifidb_gi.latitude}</td>
-															<td>{$wifidb_gi.longitude}</td>
-															<td>{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
-															<td>{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
-														</tr>
-														{/foreach}
-													</tbody>
-												</table>
-										</td>
-									</tr>
-								</table>
-								<br/>
+			<div class="main">
+				<div class="center">
+					<script language="JavaScript">
+					// Row Hide function.
+					// by tcadieux
+					function expandcontract(tbodyid,ClickIcon)
+					{
+						if (document.getElementById(ClickIcon).innerHTML == "+")
+						{
+							document.getElementById(tbodyid).style.display = "";
+							document.getElementById(ClickIcon).innerHTML = "-";
+						}else{
+							document.getElementById(tbodyid).style.display = "none";
+							document.getElementById(ClickIcon).innerHTML = "+";
+						}
+					}
+					</script>
+					<h1>{$wifidb_ap.ssid}{$wifidb_ap_globe_html}</h1>
+					<table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
+					<table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
+						<tbody>
+							<tr><td class="header" width="112">MAC Address</td><td class="light" width="439">{$wifidb_ap.mac}</td></tr>
+							<tr><td class="header" width="112">Manufacture</td><td class="light" width="439">{$wifidb_ap.manuf}</td></tr>
+							<tr><td class="header" width="112" height="26">Authentication</td><td class="light" width="439">{$wifidb_ap.auth}</td></tr>
+							<tr><td class="header" width="112">Encryption Type</td><td class="light" width="439">{$wifidb_ap.encry}</td></tr>
+							<tr><td class="header" width="112">Radio Type</td><td class="light" width="439">{$wifidb_ap.radio}</td></tr>
+							<tr><td class="header" width="112">Channel #</td><td class="light" width="439">{$wifidb_ap.chan}</td></tr>
+							<tr><td class="header" width="112">BTx</td><td class="light" width="439">{$wifidb_ap.btx}</td></tr>
+							<tr><td class="header" width="112">OTx</td><td class="light" width="439">{$wifidb_ap.otx}</td></tr>
+							<tr><td class="header" width="112">Flags</td><td class="light" width="439">{$wifidb_ap.flags}</td></tr>
+							<tr><td class="header" width="112">Network Type</td><td class="light" width="439">{$wifidb_ap.nt}</td></tr>
+							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.fa}</td></tr>
+							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.la}</td></tr>
+							<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_ap.lat}</td></tr>
+							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_ap.lon}</td></tr>
+							<tr><td class="header" width="112">User</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></td></tr>
+							<tr><td class="header" width="112">Export:</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}&labeled=1">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
+							</tr>
+						</tbody>
+					</table>
+					<br/>
+					
+					<table class="content_table">
+						<tr>
+							<td class="subheading">Geographical data ( datasource: Geonames.org )</td>
+						</tr>
+						<tr>
+							<td>
+									
+									<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
+										<tbody>
+											<tr>
+												<th class="header">ID</th>
+												<th class="header">Closest Landmark</th>
+												<th class="header">Admin1 Name</th>
+												<th class="header">Admin2 Name</th>
+												<th class="header">Country Name</th>
+												<th class="header">Timezone</th>
+												<th class="header">Latitude</th>
+												<th class="header">Longitude</th>
+												<th class="header">Distance(mi)</th>
+												<th class="header">Distance(km)</th>
+											</tr>
+										</tbody>
+										<tbody>
+											{foreach name=outer item=wifidb_gi from=$wifidb_geonames}
+											<tr class="{$wifidb_gi.class}">
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.id}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.asciiname}</td>	
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.admin1name}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.admin2name}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.country_code}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.timezone}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.latitude}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.longitude}</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
+												<td class="{$wifidb_gi.class}">{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
+											</tr>
+											{/foreach}
+										</tbody>
+									</table>
+							</td>
+						</tr>
+					</table>
+					<br/>
 
-								<table width="85%" border="1" cellpadding="2" cellspacing="0">
-									<tr>
-										<td class="style1">Associated Lists</td>
-									</tr>
-									<tr>
-										<td class="style1">
-												{foreach name=outer item=wifidb_assoc from=$wifidb_assoc_lists}
-												<table align="center" width="100%" border="1" cellpadding="4" cellspacing="0">
-													<tbody>
-														<tr>
-															<th class="style4">ID</th>
-															<th class="style4">GPS</th>
-															<th class="style4">Title</th>
-															<th class="style4">User</th>
-															<th class="style4">Total APs</th>
-															<th class="style4">Date</th>
-															<th class="style4">New/Update</th>
-															<th class="style4">Export</th>
-															<th class="style4">Signal History</th>
-														</tr>
-													</tbody>
-													<tbody>
-														<tr>
-															<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>	
-															<td class="light" align="center">{$wifidb_assoc.globe}</td>
-															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
-															<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
-															<td class="light" align="center">{$wifidb_assoc.aps}</td>
-															<td class="light">{$wifidb_assoc.date}</td>
-															<td class="light">{$wifidb_assoc.nu}</td>
-															<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;file_id={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>
-															<td class="style4" onclick="expandcontract('Row{$wifidb_assoc.id}','ClickIcon{$wifidb_assoc.id}')" id="ClickIcon{$wifidb_assoc.id}" style="cursor: pointer; cursor: hand;">+</td>
-														</tr>
-													</tbody>
-													<tbody id="Row{$wifidb_assoc.id}" style="display:none">
-														<tr class="style4">
-															<th>Signal</th>
-															<th>RSSI</th>
-															<th>Lat</th>
-															<th>Long</th>
-															<th>Alt</th>
-															<th>Sats</th>
-															<th>Date</th>
-												
-														</tr>
-														{foreach item=wifidb_ap_gps from=$wifidb_assoc.signals}
-														<tr class="{$wifidb_ap_gps.class}">
-															<td>{$wifidb_ap_gps.Sig}</td>
-															<td>{$wifidb_ap_gps.RSSI}</td>
-															<td>{$wifidb_ap_gps.Lat}</td>
-															<td>{$wifidb_ap_gps.Lon}</td>
-															<td>{$wifidb_ap_gps.Alt}</td>
-															<td>{$wifidb_ap_gps.NumOfSats}</td>
-															<td>{$wifidb_ap_gps.GPS_Date}</td>
-												
-														</tr>
-														{/foreach}
-													</tbody>
-												</table>
-												<br/>
-												{foreachelse}
-												<tr class="style4">
-													<td colspan="5"> There are no GPS Points for this AP :/</td>
-												</tr>    
-												{/foreach}
-										</td>
-									</tr>
-								</table>
-                                <br/>
+					<table class="content_table">
+						<tbody>
+							<tr>
+								<td class="subheading" colspan="9">Associated Lists</td>
+							</tr>
+						</tbody>
+						{foreach name=outer item=wifidb_assoc from=$wifidb_assoc_lists}
+						<tbody>
+							<tr>
+								<th class="header">ID</th>
+								<th class="header">GPS</th>
+								<th class="header">User</th>
+								<th class="header">Title</th>
+								<th class="header">Notes</th>
+								<th class="header">Date</th>
+								<th class="header">New/Update</th>
+								<th class="header">Export</th>
+								<th class="header">{$wifidb_assoc.points} Points</th>
+							</tr>
+						</tbody>
+						<tbody>
+							<tr>
+								<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>	
+								<td class="light" align="center">{$wifidb_assoc.globe}</td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
+								<td class="light">{$wifidb_assoc.notes}</td>
+								<td class="light">{$wifidb_assoc.date}</td>
+								<td class="light">{$wifidb_assoc.nu}</td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}api/export.php?func=exp_list_ap_signal&amp;file_id={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?func=graph_list_ap&amp;row={$wifidb_assoc.id}&amp;id={$wifidb_ap.id}">Graph Signal</a></td>
+								<td class="header" onclick="expandcontract('Row{$wifidb_assoc.id}','ClickIcon{$wifidb_assoc.id}')" id="ClickIcon{$wifidb_assoc.id}" style="cursor: pointer; cursor: hand;">+</td>
+							</tr>
+						</tbody>
+						<tbody id="Row{$wifidb_assoc.id}" style="display:none">
+							<tr class="header">
+								<th class="header">Signal</th>
+								<th class="header">RSSI</th>
+								<th class="header">Lat</th>
+								<th class="header">Long</th>
+								<th class="header">Alt</th>
+								<th class="header">Sats</th>
+								<th class="header">ACC</th>
+								<th class="header" colspan="2">Date</th>
+							</tr>
+							{foreach item=wifidb_ap_gps from=$wifidb_assoc.signals}
+							<tr class="{$wifidb_ap_gps.class}">
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Sig}</td>
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.RSSI}</td>
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Lat}</td>
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Lon}</td>
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Alt}</td>
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.NumOfSats}</td>
+								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.AccuracyMeters}</td>
+								<td class="{$wifidb_ap_gps.class}" colspan="2">{$wifidb_ap_gps.GPS_Date}</td>
+							</tr>
+							{/foreach}
+						</tbody>
+						{if not $smarty.foreach.outer.last}
+						<tbody>
+						<tr">
+							<th colspan="9"><br/></th>
+						</tr>
+						</tbody>
+						{/if}
+						{foreachelse}
+						<tr class="light-centered">
+							<td colspan="9"> There are no GPS Points for this AP :/</td>
+						</tr>    
+						{/foreach}
+					</table>
+				</div>
+			</div>
 {include file="footer.tpl"}
