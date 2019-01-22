@@ -240,6 +240,7 @@ try
 
 				default:
 					$dbcore = new frontend($config);
+					$dbcore->wdbmail = new wdbmail($dbcore);
 				break;
 			}
 			$dbcore->cli = 0;

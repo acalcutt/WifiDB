@@ -80,10 +80,13 @@ class dbcore
 
 		$this->smarty_path			  = $config['smarty_path'];
 
-		$this->wifidb_email_updates	 = 0;
-		$this->email_validation		 = 1;
-		$this->WDBadmin				 = $config['admin_email'];
-		$this->smtp					 = $config['wifidb_smtp'];
+		$this->wifidb_email_updates	 	= $config['wifidb_email_updates'];
+		$this->email_validation		 	= $config['email_validation'];
+		$this->admin_email				= $config['admin_email'];
+		$this->wifidb_from				= $config['wifidb_from'];
+		$this->wifidb_from_pass			= $config['wifidb_from_pass'];
+		$this->wifidb_smtp				= $config['wifidb_smtp'];
+		$this->wifidb_smtp_port			= $config['wifidb_smtp_port'];
 		if(empty($config['colors_setting']) or PHP_OS != "Linux")
 		{
 			$this->colors = array(

@@ -24,19 +24,38 @@ class wdbmail
 {
     function __construct($dbcore)
     {
-        require_once('MAIL5.php');
-        $this->mail     =   new MAIL5();
-        $this->SMTP     =   $dbcore->smtp;
-        $this->WDBadmin =   $dbcore->WDBadmin;
+		$this->URL_PATH			= $dbcore->URL_PATH;
+		$this->sec				= $dbcore->sec;
+		$this->sql              = &$dbcore->sql;
+		
+        $this->mail = new PHPMailer();
+        $this->mail->SMTPDebug = 0;                                 // Enable verbose debug output
+        $this->mail->isSMTP();                                      // Set mailer to use SMTP
+        $this->mail->Host = $dbcore->wifidb_smtp;					// Specify main and backup SMTP servers
+        $this->mail->SMTPAuth = false;                               // Enable SMTP authentication
+		$this->mail->admin_email = $dbcore->admin_email;               // Admin email address
+        $this->mail->Username = $dbcore->wifidb_from;               // SMTP username
+        $this->mail->Password = $dbcore->wifidb_from_pass;                          // SMTP password
+        $this->mail->SMTPSecure = 'tls';                            // Enable TLS encryption, `ssl` also accepted
+        $this->mail->Port = $dbcore->wifidb_smtp_port;  
+		$this->mail->setFrom($dbcore->wifidb_from, 'WifiDB');
+		$this->mail->AddReplyTo($dbcore->admin_email, 'WifiDB');
+		$this->mail->SMTPOptions = array(
+			'ssl' => array(
+				'verify_peer' => false,
+				'verify_peer_name' => false,
+				'allow_self_signed' => true
+			)
+		);
     }
     
     function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
     {
         
         ##########################
-        $validatecode = $this->gen_keys(12);
+        $validatecode = $this->GenerateKey(12);
         ##########################
-        if(!$this->mail->from($this->wdbadmin))
+        if(!$this->mail->from($this->wifidb_from))
         {die("Failed to add From address\r\n");}
         if(!$this->mail->addto($Useremail))
         {die("Failed to add To address\r\n");}
@@ -148,78 +167,49 @@ Go here to reset it to one you choose:
     function mail_users($contents = '', $subject = "WifiDB Notifications", $type = "none", $error_f = 0)
     {
         if($type != 'none' or $type != '')
-        {
-        #	echo $GLOBALS['wifidb_email_updates'];
+        {	
             if($this->wifidb_email_updates)
             {
-                $db			= 	$GLOBALS['db'];
-                $user_logins_table	=	$GLOBALS['user_logins_table'];
-                $from			=	$GLOBALS['admin_email'];
-                $wifidb_smtp		=	$this->smtp;
-                $sender			=	$from;
-                $sender_pass		=	$GLOBALS['wifidb_from_pass'];
-                $to			=	array();
-                $sql			=	"SELECT `email`, `username` FROM `$user_logins_table` WHERE `disabled` = '0' AND `validated` = '0'";
-    #		echo $sql."<BR>";
+				# Get all users
+                $sql = "SELECT `email`, `username` FROM `user_info` WHERE `disabled` = '0' AND `validated` = '0'";
                 $sql .= sql_type_mail_filter($type);
                 if($error_f)
                 {
                     $sql .= " AND `admins` = '1'";
                 }
-    #		echo $sql."<BR>";
                 if(!$error_f){$sql .= " AND `username` NOT LIKE 'admin%'";}
-    #		echo $sql."<BR>";
-                $result = $this->sql->conn->query($sql);
-                while($users = mysql_fetch_array($result))
-                {
-        #           echo "To: ".$users['email']."\r\n";
-                    if($this->mail->addbcc($users['email']))
-                    {continue;}else{die("Failed to add BCC".$users['email']."\r\n");}
-                }
-
-                if(!$this->mail->from($from))
-                {die("Failed to add From address\r\n");}
-                if(!$this->mail->addto($from))
-                {die("Failed to add Initial To address\r\n");}
-
-                if($error_f){$subject .= " ^*^*^*^ ERROR! ^*^*^*^";}
-    #	echo "subject: ".$subject."\r\n";
-                if(!$this->mail->subject($subject))
-                {die("Failed to add subject\r\n");}
-
-    #	echo "Contents: ".$contents."\r\n";
-                if(!$this->mail->text($contents))
-                {die("Failed to add message\r\n");}
-
-    #	echo "Trying to connect....\r\n";
-                $smtp_conn = $this->mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
-                if ($smtp_conn)
-                {
-    #	echo "Successfully connected !\r\n";
-                    $smtp_send = $this->mail->send($smtp_conn);
-                    if($smtp_send)
-                    {
-                    #	echo "Sent!\r\n";
-                        return 1;
-                    }
-                    else
-                    {
-                    #	print_r($_RESULT);
-                        return 0;
-                    }
-                }else
-                {
-                #	print_r($_RESULT);
-                    return 0;
-                }
-                $this->mail->disconnect();
-            }else
+				$prep = $this->sql->conn->prepare($$sql);
+				$prep->execute();
+				while ($userArray = $prep->fetch(2))
+				{
+					#Add the users to email BCC
+					$this->mail->addBcc($userArray['email']);
+				}
+				
+				#Send the email
+				try 
+				{
+					if($error_f){$subject .= " ^*^*^*^ ERROR! ^*^*^*^";}
+					$this->mail->Subject = $subject;
+					$this->mail->addAddress($this->mail->admin_email);     // Add a recipient
+					$this->mail->Body    = $contents;
+					$this->mail->send();
+				} 
+				catch (Exception $e) 
+				{
+					echo 'Message could not be sent. Mailer Error: ', $mail->ErrorInfo;
+					return 0;
+				}
+				return 1;
+            }
+			else
             {
                 #echo $GLOBALS['wifidb_email_updates'];
-                #echo "Mail updates is turned off.";
+                #echo "Mail updates are turned off.";
                 return 1;
             }
-        }else
+        }
+		else
         {
             echo "$"."type var is not set, check your code.<br>\r\n";
             return 0;
@@ -229,81 +219,50 @@ Go here to reset it to one you choose:
     #===================================#
     #   Email for user verification     #
     #===================================#
-    function mail_validation($to = '', $username = '')
+    function mail_validation($function = 'validate_user', $to = '', $username = '', $message = '', $subject)
     {
-        require_once('config.inc.php');
-        require_once('security.inc.php');
-        require_once('MAIL5.php');
+		$date				=	date("Y-m-d H:i:s");
+		$validate_code = $this->sec->GenerateKey(48);
+		
+		$contents = $message."\r\n";
+		$contents .= "Your account: $username \r\n";
+		$contents .= "Validation Link: $this->URL_PATH/login.php?func=".$function."&username=$username&validate_code=$validate_code \r\n\r\n";
+		$contents .= "---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+	
+		try 
+		{
+			$this->mail->addAddress($to);     // Add a recipient
+			$this->mail->Subject = $subject;
+			$this->mail->Body    = $contents;
+			$this->mail->send();
+		} 
+		catch (Exception $e) 
+		{
+			echo 'Message could not be sent. Mailer Error: ', $mail->ErrorInfo;
+			return 0;
+		}
 
-        $conn		=	$GLOBALS['conn'];
-        $db			=	$GLOBALS['db'];
-        $validate_table	=	$GLOBALS['validate_table'];
-        $from		=	$GLOBALS['admin_email'];
-        $wifidb_smtp	=	$GLOBALS['wifidb_smtp'];
-        $sender		=	$from;
-        $sender_pass	=	$GLOBALS['wifidb_from_pass'];
-        $UPATH		=	$GLOBALS['UPATH'];
-        $mail		=	new MAIL5();
-        $sec		=	new security();
-        $date		=	date("Y-m-d H:i:s");
-        if(!$mail->from($from))
-        {die("Failed to add From address\r\n");}
+		$insert = "INSERT INTO `user_validate` (`username`, `code`, `date`) VALUES ('$username', '$validate_code', '$date')";
+		#echo $insert;
+		if($this->sql->conn->query($insert))
+		{
+			$return =1;
+			#echo "Message sent and inserted into DB.";
+		}
+		else
+		{
+			$insert = "UPDATE `user_validate` SET `code` = '$validate_code', `date` = '$date' WHERE `username` LIKE '$username' LIMIT 1";
+			if($this->sql->conn->query($insert))
+			{
+				$return =1;
+			#	echo "Message sent and Updated to newest data.";
+			}else
+			{
+				$return = 0;
+				echo "Message sent, but insert into table failed.";
+			}
+		}
 
-        if(!$mail->addto($to))
-        {die("Failed to add To address\r\n");}
-
-        $subject = "WifiDB New User Validation";
-        if(!$mail->subject($subject))
-        {die("Failed to add subject\r\n");}
-
-        $validate_code = $sec->gen_keys(48);
-
-        $contents = "The Administrator of This WiFiDB has enabled user validation before you can use your login.
-    Your account: $username\r\n
-    Validation Link: $UPATH/login.php?func=validate_user&validate_code=$validate_code
-
-    -WiFiDB Service";
-        if(!$mail->text($contents))
-        {echo "Failed to add Message"; return 0;}
-
-        $smtp_conn = $mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
-        if ($smtp_conn)
-        {
-            $smtp_send = $mail->send($smtp_conn);
-            if($smtp_send)
-            {
-                $insert = "INSERT INTO `$db`.`$validate_table` (`username`, `code`, `date`) VALUES ('$username', '$validate_code', '$date')";
-        #	echo $insert."<BR>";
-                if($this->sql->conn->query($insert))
-                {
-                    $return =1;
-                #	echo "Message sent and inserted into DB.";
-                }else
-                {
-                    $insert = "UPDATE `$db`.`$validate_table` SET `code` = '$validate_code', `date` = '$date' WHERE `username` LIKE '$username' LIMIT 1";
-            #	echo $insert."<BR>";
-                    if($this->sql->conn->query($insert))
-                    {
-                        $return =1;
-                    #	echo "Message sent and Updated to newest data.";
-                    }else
-                    {
-                        $return = 0;
-                        echo "Message sent, but insert into table failed.";
-                    }
-                }
-            }
-            else
-            {
-                $return = 0;
-                echo "Failed to send message.";
-            }
-        }else
-        {
-            $return = 0;
-            echo "Failed to connect to SMTP server";
-        }
-        $mail->disconnect();
         return $return;
     }
 }

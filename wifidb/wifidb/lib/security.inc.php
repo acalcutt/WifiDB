@@ -22,7 +22,7 @@ class security
         $this->privs              = 0;
         $this->username           = "AnonCoward";
         $this->apikey             = "";
-        $this->email_validation   = 0; #$dbcore->email_validation;
+        $this->email_validation   = $dbcore->email_validation;
         $this->reserved_users     = $dbcore->reserved_users;
         $this->timeout            = $dbcore->timeout;
         $this->config_fails       = $config['config_fails'];
@@ -152,6 +152,7 @@ class security
         $sql = "INSERT INTO `user_info` (`username`, `password`, `uid`, `validated`, 
                                         `locked`, `permissions`, `email`, `join_date`, `apikey`) 
                                         VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
+
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
@@ -161,6 +162,7 @@ class security
         $prep->bindParam(6, $join_date, PDO::PARAM_STR);
         $prep->bindParam(7, $api_key, PDO::PARAM_STR);
         $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+		
 
         $this->logd("User created! $username : $email : $join_date", "Info");
         #var_dump(get_defined_vars());

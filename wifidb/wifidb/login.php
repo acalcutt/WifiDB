@@ -154,16 +154,18 @@ switch($func)
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
                     if($dbcore->sec->email_validation)
                     {
-                        if($dbcore->wdbmail->mail_validation($email, $username))
+						$msg = "The WiFiDB requires user validation before you can login. Please click the following link to activate your account";
+						$subject = "WifiDB New User Validation";
+                        if($dbcore->wdbmail->mail_validation('validate_user', $email, $username, $msg, $subject))
                         {
-                            $message = "User Created! You should be getting a Validation email soon, click on the link to confirm your account and to start you uploads!.";
+							$message = "<font color='Green'><h2>User Created! You should be getting a Validation email soon. Please click on the email link to confirm your account.</h2></font>";
                         }else
                         {
-                            $message = "Email Validation has been enabled, but failed to send the email. Contact the Admins for help.";
+							$message = "<font color='Yellow'><h2>Email Validation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
                         }
                     }else
                     {
-                        $message = "User Created! Go ahead and login.";
+                        $message = "<font color='Green'><h2>User Created! Go ahead and login.</h2></font>";
                     }
                     $dbcore->smarty->assign('message', $message);
                     $dbcore->smarty->display('login_index.tpl');
@@ -187,6 +189,7 @@ switch($func)
         $result = $dbcore->sql->conn->prepare($sql);
         $result->execute(array($validate_code));
         $v_array = $result->fetch(2);
+		$success = 0;
         $username = $v_array['username'];
         if($username)
         {
@@ -195,33 +198,38 @@ switch($func)
             $result->bindParam(1, $username);
             $result->execute();
             $err = $dbcore->sql->conn->errorCode();
-#		echo $update."<br>";
-            if($err[0] == "00000")
+			#echo $update."<br>";
+			if($err == "00000")
             {
                 $delete = "DELETE FROM `user_validate` WHERE `username` = ?";
                 $result = $dbcore->sql->conn->prepare($delete);
                 $result->bindParam(1, $username);
                 $result->execute();
                 $err = $dbcore->sql->conn->errorCode();
-#		
-        #	echo $delete."<BR>";
-                if($err[0] == "00000")
+				#echo $delete."<BR>";
+                if($err == "00000")
                 {
                     $message = "<font color='Green'><h2>Username: {$username}\r\n<BR>Has been activated! Go login -></h2></font>";
+					$success = 1;
                 }else
                 {
                     $message = "<font color='Yellow'><h2>Username: {$username}\r\n<BR>Activated, but failed to remove from activation table, <br>
                     This isnt a critical issue, but should be looked into by an administrator.
                     <br>".var_export($dbcore->sql->conn->errorInfo())."</h2></font>";
+					$success = 1;
                 }
             }else
             {
                 $message = "<font color='red'><h2>Username: {$username}\r\n<BR>Failed to activate...<br>".var_export($dbcore->sql->conn->errorInfo())."</h2></font>";
+				$success = 0;
             }
         }else
         {
             $message = "<font color='red'><h2>Invalid Activation Code, Would you like to <a class='links' href='?func=revalidate'>send another</a> validation code?.</h2></font>";
+			$success = 0;
         }
+        $dbcore->smarty->assign("message", $message);
+        $dbcore->smarty->display("login_index.tpl");
     break;
 
     case "revalidate_proc":
@@ -239,7 +247,9 @@ switch($func)
     #	echo $pass_seed." == ".$user_pwd_db."<BR>";
             if($pass_seed == $user_pwd_db)
             {
-                if($dbcore->mail->mail_validation($user_email, $username))
+				$msg = "The WiFiDB requires user validation before you can login. Please click the following link to activate your account";
+				$subject = "WifiDB User Validation";
+                if($dbcore->mail->mail_validation('validate_user', $user_email, $username, $msg, $subject))
                 {
                     $message = "<font color='green'><h2>Validation Email sent again.</h2></font>";
                 }else
@@ -383,7 +393,122 @@ Your account: $username_db
     break;
 
     case "reset_password_request_proc":
+        $username   = $_REQUEST['username_f'];
+        $email      = $_REQUEST['email_f'];
+		if(!$username || !$email)
+        {
+            $dbcore->smarty->assign('message', 'Username or Email not specified');
+            $dbcore->smarty->display('reset_password_request.tpl');
+        }
+        else
+        {
+			$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";
+			$prep = $dbcore->sql->conn->prepare($sql0);
+			$prep->bindParam(1, $username, PDO::PARAM_STR);
+			$prep->execute();
+			$err = $dbcore->sql->conn->errorCode();
+			$newArray = $prep->fetch(2);
+			$db_email = $newArray['email'];
+			if(strtolower($email) != strtolower($db_email))
+			{
+				$message = "Username or Password did not match.";
+				$dbcore->logd("User failed to reset password. ". $_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
+			}
+			else
+			{
+				$msg = "To reset your wifidb password, click the following link. If you did not reset your password, please ignore this email.";
+				$subject = "WifiDB Password Reset";
+				if($dbcore->wdbmail->mail_validation('reset_password_validated', $email, $username, $msg, $subject))
+				{
+					$message = "<font color='Green'><h2>Password reset requested! You should be getting a Validation email soon, click on the email link to confirm your account.</h2></font>";
+				}else
+				{
+					$message = "Email Validation has been enabled, but failed to send the email. Contact the Admins for help.";
+				}
+			}
+		}
+		$dbcore->smarty->assign("message", $message);
+        $dbcore->smarty->display("login_index.tpl");
+    break;
+	
+    case "reset_password_validated":
+		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
+        $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
 
+        $sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ?";
+		$result = $dbcore->sql->conn->prepare($sql);
+		$result->bindParam(1, $username);
+		$result->bindParam(2, $validate_code);
+		$result->execute();
+        $v_array = $result->fetch(2);
+        $username = $v_array['username'];
+        if($username)
+        {
+			$dbcore->smarty->assign("username", $username);
+			$dbcore->smarty->assign("validate_code", $validate_code);
+			$dbcore->smarty->display("reset_password_validate.tpl");
+		}
+		else
+		{
+			$message = "<font color='red'><h2>Error. Username or Validation Code is incorrect or no longer valid.</h2></font>";
+			$dbcore->smarty->assign('message', $message);
+			$dbcore->smarty->assign("logon_return_url", $return);
+			$dbcore->smarty->display('login_result.tpl');
+		}
+    break;
+	
+    case "reset_password_finish":
+		$username = filter_input(INPUT_POST, 'usernameh', FILTER_SANITIZE_STRING);
+        $validate_code = filter_input(INPUT_POST, 'validate_code', FILTER_SANITIZE_STRING);
+        $newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
+        $newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
+		
+		if($newpassword === $newpassword2)
+		{
+			#Change the users password
+			$salt               = $dbcore->sec->GenerateKey(29);
+			$password_hashed    = crypt($newpassword, '$2a$07$'.$salt.'$');
+
+			$update = "UPDATE `user_info` SET `password` = ? WHERE `username` LIKE ?";
+			$prep1 = $dbcore->sql->conn->prepare($update);
+			$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
+			$prep1->bindParam(2, $username, PDO::PARAM_STR);
+			$prep1->execute();
+			$uperr = $dbcore->sql->conn->errorCode();
+			if($uperr == "00000")
+			{
+				#DELETE validation entry for this user
+				$delete = "DELETE FROM `user_validate` WHERE `username` = ?";
+				$result = $dbcore->sql->conn->prepare($delete);
+				$result->bindParam(1, $username);
+				$result->execute();
+				$delerr = $dbcore->sql->conn->errorCode();
+				if($delerr == "00000")
+				{
+					$message = "<font color='Green'><h2>Password for {$username} has been updated!</h2></font>";
+				}else
+				{
+					$message = "<font color='Yellow'><h2>Password for {$username} has been updated, but the user_validate entry was not deleted.</h2></font>";
+				}
+			}else
+			{
+				$message = "<font color='red'><h2>Error. Failed to update password.</h2></font>";
+				$dbcore->smarty->assign('message', $message);
+				$dbcore->smarty->assign("username", $username);
+				$dbcore->smarty->assign("validate_code", $validate_code);
+				$dbcore->smarty->display("reset_password_validate.tpl");
+			}
+		}
+		else
+		{
+			$message = "<font color='red'><h2>Error. Passwords do not match.</h2></font>";
+			$dbcore->smarty->assign('message', $message);
+			$dbcore->smarty->assign("username", $username);
+			$dbcore->smarty->assign("validate_code", $validate_code);
+			$dbcore->smarty->display("reset_password_validate.tpl");
+		}
+        $dbcore->smarty->assign("message", $message);
+        $dbcore->smarty->display("login_index.tpl");
     break;
 
     default :
