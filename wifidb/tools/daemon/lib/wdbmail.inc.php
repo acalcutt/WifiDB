@@ -1,7 +1,7 @@
 <?php
 /*
 Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+Copyright (C) 2019 Andrew Calcutt, 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -22,24 +22,34 @@ if not, write to the
 
 class wdbmail
 {
-    function __construct($dbcore)
+    function __construct($config)
     {
-		$this->URL_PATH			= $dbcore->URL_PATH;
-		$this->sec				= $dbcore->sec;
-		$this->sql              = &$dbcore->sql;
+		$this->HOSTURL				  = $config['hosturl'];
+		$this->root					 = $config['root'];
+		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';
+		$this->wifidb_email_updates	 	= $config['wifidb_email_updates'];
+		$this->email_validation		 	= $config['email_validation'];
+		$this->admin_email				= $config['admin_email'];
+		$this->wifidb_from				= $config['wifidb_from'];
+		$this->wifidb_from_pass			= $config['wifidb_from_pass'];
+		$this->wifidb_smtp				= $config['wifidb_smtp'];
+		$this->wifidb_smtp_port			= $config['wifidb_smtp_port'];
 		
-        $this->mail = new PHPMailer();
-        $this->mail->SMTPDebug = 0;                                 // Enable verbose debug output
-        $this->mail->isSMTP();                                      // Set mailer to use SMTP
-        $this->mail->Host = $dbcore->wifidb_smtp;					// Specify main and backup SMTP servers
-        $this->mail->SMTPAuth = false;                               // Enable SMTP authentication
-		$this->mail->admin_email = $dbcore->admin_email;               // Admin email address
-        $this->mail->Username = $dbcore->wifidb_from;               // SMTP username
-        $this->mail->Password = $dbcore->wifidb_from_pass;                          // SMTP password
-        $this->mail->SMTPSecure = 'tls';                            // Enable TLS encryption, `ssl` also accepted
-        $this->mail->Port = $dbcore->wifidb_smtp_port;  
-		$this->mail->setFrom($dbcore->wifidb_from, 'WifiDB');
-		$this->mail->AddReplyTo($dbcore->admin_email, 'WifiDB');
+		$this->sec					  = new security($this, $config);
+		$this->sql					  = new SQL($config);
+		
+		$this->mail = new PHPMailer();
+		$this->mail->SMTPDebug = 0;                                 // Enable verbose debug output 0:disable 2:verbose
+		$this->mail->isSMTP();                                      // Set mailer to use SMTP
+		$this->mail->Host = $this->wifidb_smtp;					// Specify main and backup SMTP servers
+		$this->mail->SMTPAuth = false;                               // Enable SMTP authentication
+		$this->mail->admin_email = $this->admin_email;               // Admin email address
+		$this->mail->Username = $this->wifidb_from;               // SMTP username
+		$this->mail->Password = $this->wifidb_from_pass;                          // SMTP password
+		$this->mail->SMTPSecure = 'tls';                            // Enable TLS encryption, `ssl` also accepted
+		$this->mail->Port = $this->wifidb_smtp_port;  
+		$this->mail->setFrom($this->wifidb_from, 'WifiDB');
+		$this->mail->AddReplyTo($this->admin_email, 'WifiDB');
 		$this->mail->SMTPOptions = array(
 			'ssl' => array(
 				'verify_peer' => false,
@@ -104,7 +114,7 @@ Go here to reset it to one you choose:
         $this->mail->disconnect();
     }
     #===============================================#
-    #   Filtering of Mail to User privlidge type    #
+    #   Filtering of Mail to User privileged type    #
     #===============================================#
     function sql_type_mail_filter($type = 'none')
     {
@@ -170,41 +180,43 @@ Go here to reset it to one you choose:
         {	
             if($this->wifidb_email_updates)
             {
-				# Get all users
-                $sql = "SELECT `email`, `username` FROM `user_info` WHERE `disabled` = '0' AND `validated` = '0'";
-                $sql .= sql_type_mail_filter($type);
+				#Create Email Subject and Body
+				if($error_f){$subject .= " ^*^*^*^ ERROR! ^*^*^*^";}
+				$this->mail->Subject = $subject;
+				$this->mail->Body    = $contents;
+
+				#Get users this email will be sent to
+				$sql = "SELECT `email`, `username` FROM `user_info` WHERE `disabled` = '0' AND `validated` = '0'";
+                $sql .= $this->sql_type_mail_filter($type);
                 if($error_f)
                 {
-                    $sql .= " AND `admins` = '1'";
+                    $sql .= " AND `admin` = '1'";
                 }
                 if(!$error_f){$sql .= " AND `username` NOT LIKE 'admin%'";}
-				$prep = $this->sql->conn->prepare($$sql);
+				$prep = $this->sql->conn->prepare($sql);
 				$prep->execute();
 				while ($userArray = $prep->fetch(2))
 				{
-					#Add the users to email BCC
-					$this->mail->addBcc($userArray['email']);
-				}
-				
-				#Send the email
-				try 
-				{
-					if($error_f){$subject .= " ^*^*^*^ ERROR! ^*^*^*^";}
-					$this->mail->Subject = $subject;
-					$this->mail->addAddress($this->mail->admin_email);     // Add a recipient
-					$this->mail->Body    = $contents;
-					$this->mail->send();
-				} 
-				catch (Exception $e) 
-				{
-					echo 'Message could not be sent. Mailer Error: ', $mail->ErrorInfo;
-					return 0;
+					#Add recipient
+					$this->mail->addAddress($userArray['email']);
+
+					#Send email
+					if (!$this->mail->send()) {
+						echo "Mailer Error (" . str_replace("@", "&#64;", $userArray['email']) . ') ' . $this->mail->ErrorInfo . '<br />';
+						return 0;
+					}
+					else
+					{
+						echo "Email sent to: ".$userArray['email']."\r\n";
+					}
+					
+					#Clear recipient
+					$this->mail->clearAddresses();
 				}
 				return 1;
             }
 			else
             {
-                #echo $GLOBALS['wifidb_email_updates'];
                 #echo "Mail updates are turned off.";
                 return 1;
             }
@@ -238,7 +250,7 @@ Go here to reset it to one you choose:
 		} 
 		catch (Exception $e) 
 		{
-			echo 'Message could not be sent. Mailer Error: ', $mail->ErrorInfo;
+			echo 'Validation email could not be sent. Mailer Error: ', $this->mail->ErrorInfo;
 			return 0;
 		}
 

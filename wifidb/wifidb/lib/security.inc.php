@@ -10,9 +10,11 @@ class security
         $this->cli                = &$dbcore->cli;
         $this->mesg               = array();
         $this->log_level          = 42;
-        $this->This_is_me         = $dbcore->This_is_me;
-        $this->datetime_format    = $dbcore->datetime_format;
-        $this->EnableAPIKey       = 1; #$config['EnableAPIKey'];
+        $this->This_is_me         = getmypid();
+        $this->date_format        = "Y-m-d";
+        $this->time_format        = "H:i:s";
+        $this->datetime_format    = $this->date_format." ".$this->time_format;
+        $this->EnableAPIKey       = $config['EnableAPIKey'];
         $this->login_val          = "No Cookie";
         $this->last_login         = 0;
         $this->login_check        = 0;
@@ -22,13 +24,13 @@ class security
         $this->privs              = 0;
         $this->username           = "AnonCoward";
         $this->apikey             = "";
-        $this->email_validation   = $dbcore->email_validation;
-        $this->reserved_users     = $dbcore->reserved_users;
-        $this->timeout            = $dbcore->timeout;
+        $this->email_validation   = $config['email_validation'];
+        $this->reserved_users     = $config['reserved_users'];
+        $this->timeout            = $config['timeout'];
         $this->config_fails       = $config['config_fails'];
-        $this->HOSTURL            = $dbcore->HOSTURL;
-        $this->root               = $dbcore->root;
-        $this->URL_PATH           = $dbcore->URL_PATH;
+        $this->HOSTURL            = $config['hosturl'];
+        $this->root               = $config['root'];
+        $this->URL_PATH           = $this->HOSTURL.$this->root.'/';
         $this->SessionID          = "";
         $ssl_flag                 = parse_url($this->URL_PATH, PHP_URL_SCHEME);
         if($ssl_flag == "https")

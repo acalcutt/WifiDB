@@ -564,16 +564,15 @@ class daemon extends wdbcli
 					$prep->execute();
 					if($this->sql->checkError(__LINE__, __FILE__))
 					{
-						//**TODO
-						#mail_users("Error removing file: $source ($importing_id)", "Error removing file: $source ($importing_id)", "import", 1);
+						$this->wdbmail->mail_users("Error removing file: $file_name ($importing_id)", "Error removing file: $file_name ($importing_id)", "import", 1);
 						//$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
 						$this->verbosed("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
 						Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
 					}else
 					{
-						//**TODO
-						#$message = "File has finished importing.\r\nUser: $user\r\nTitle: $title\r\nFile: $source ($importing_id)\r\nLink: ".$this->PATH."/opt/userstats.php?func=useraplist&row=$newrow \r\n-WiFiDB Daemon.";
-						#mail_users($message, $subject, "import");
+						$subject = "WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
+						$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+						$this->wdbmail->mail_users($message, $subject, "import");
 						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
 					}
 					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];

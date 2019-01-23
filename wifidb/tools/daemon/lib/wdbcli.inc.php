@@ -13,6 +13,7 @@ class wdbcli extends dbcore
         $this->pid_file =   "";
         $this->log_path	= $daemon_config['daemon_log_folder'];
         $this->cli      =   1;
+        $this->wdbmail = new wdbmail($config);
         if($daemon_config['colors_setting'] == 0 or PHP_OS == "WINNT")
         {
             $this->colors = array(

@@ -154,8 +154,8 @@ switch($func)
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
                     if($dbcore->sec->email_validation)
                     {
-						$msg = "The WiFiDB requires user validation before you can login. Please click the following link to activate your account";
-						$subject = "WifiDB New User Validation";
+						$msg = "The WiFiDB requires user validation before you can log in. Please click the following link to activate your account";
+						$subject = "WifiDB - New User Validation";
                         if($dbcore->wdbmail->mail_validation('validate_user', $email, $username, $msg, $subject))
                         {
 							$message = "<font color='Green'><h2>User Created! You should be getting a Validation email soon. Please click on the email link to confirm your account.</h2></font>";
@@ -185,13 +185,14 @@ switch($func)
 
     case "validate_user":
         $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
+		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
         $sql = "SELECT * FROM `user_validate` WHERE `code` = ?";
         $result = $dbcore->sql->conn->prepare($sql);
         $result->execute(array($validate_code));
         $v_array = $result->fetch(2);
 		$success = 0;
-        $username = $v_array['username'];
-        if($username)
+        $db_username = $v_array['username'];
+        if($db_username)
         {
             $update = "UPDATE `user_info` SET `validated` = '0' WHERE `username` = ?";
             $result = $dbcore->sql->conn->prepare($update);
@@ -225,167 +226,44 @@ switch($func)
             }
         }else
         {
-            $message = "<font color='red'><h2>Invalid Activation Code, Would you like to <a class='links' href='?func=revalidate'>send another</a> validation code?.</h2></font>";
+            $message = "<font color='red'><h2>Invalid Activation Code, Would you like to <a class='links' href='?func=revalidate&username=$username'>send another</a> validation code?.</h2></font>";
 			$success = 0;
         }
         $dbcore->smarty->assign("message", $message);
         $dbcore->smarty->display("login_index.tpl");
     break;
 
-    case "revalidate_proc":
-            $seed = $dbcore->global_seed;
-            $pass_seed = md5($_POST['time_pass'].$seed);
-
-            $sql = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
-            $result = $dbcore->sql->conn->prepare($sql);
-            $result->execute(array($_POST['time_user']));
-            $newArray = $result->fetch(2);
-
-            $username_db = $newArray['username'];
-            $user_email = $newArray['email'];
-            $user_pwd_db = $newArray['password'];
-    #	echo $pass_seed." == ".$user_pwd_db."<BR>";
-            if($pass_seed == $user_pwd_db)
-            {
-				$msg = "The WiFiDB requires user validation before you can login. Please click the following link to activate your account";
-				$subject = "WifiDB User Validation";
-                if($dbcore->mail->mail_validation('validate_user', $user_email, $username, $msg, $subject))
-                {
-                    $message = "<font color='green'><h2>Validation Email sent again.</h2></font>";
-                }else
-                {
-                    $message = "<font color='red'><h2>Failed to send Validation Email.</h2></font>";
-                }
-            }else
-            {
-                $message = "<font color='red'><h2>You entered the wrong password.</h2></font>";
-            }
-    break;
-
     case "revalidate":
-        ##########################
-        ##########################
-        $message = "Resend User Email Validation Code";
+		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
+		
+		#Get users email address
+		$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";
+		$prep = $dbcore->sql->conn->prepare($sql0);
+		$prep->bindParam(1, $username, PDO::PARAM_STR);
+		$prep->execute();
+		$newArray = $prep->fetch(2);
+		$db_email = $newArray['email'];
+		
+		#If the user email address way found, send them a new validation email
+        if($db_email)
+        {
+			$msg = "The WiFiDB requires user validation before you can log in. Please click the following link to activate your account";
+			$subject = "WifiDB - Account Validation";
+			if($dbcore->wdbmail->mail_validation('validate_user', $db_email, $username, $msg, $subject))
+			{
+				$message = "<font color='Green'><h2>Validation has been re-sent! You should be getting a Validation email soon. Please click on the email link to confirm your account.</h2></font>";
+			}else
+			{
+				$message = "<font color='Yellow'><h2>Email Validation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
+			}
+		}
+		else
+		{
+			$message = "<font color='Red'><h2>Error: No email address found for $username. No validation can be sent.</h2></font>";
+		}
+
         $dbcore->smarty->assign('message', $message);
         $dbcore->smarty->display('login_result.tpl');
-    break;
-
-    case "reset_password_form":
-        $token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_SPECIAL_CHARS);
-        $dbcore->smarty->assign("token", $token);
-        $dbcore->smarty->display("reset_password_form.tpl");
-    break;
-
-    case "reset_password_proc":
-        $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
-        $token = filter_input(INPUT_POST, 'token', FILTER_SANITIZE_SPECIAL_CHARS);
-        $newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
-        $newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
-
-        $from           =   $this->WDBadmin;
-        $wifidb_smtp    =   $this->smtp;
-        $sender         =   $from;
-        $sender_pass    =   $dbcore->smtp_pass;
-        $seed           =   $dbcore->login_seed;
-        $success        =   0;
-        $sql0 = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
-        $prep = $dbcore->sql->conn->prepare($sql0);
-        $prep->bindParam(1, $username, PDO::PARAM_STR);
-        $prep->execute();
-        $err = $dbcore->sql->conn->errorCode();
-        if($err[0] !== "00000")
-        {
-            throw new Exception($this->sql->conn->errorInfo());
-        }
-        $newArray = $prep->fetch(2);
-        $username_db = $newArray['username'];
-        $user_email = $newArray['email'];
-        $password_db = $newArray['password'];
-        if($username_db == '')
-        {
-            $message = "";
-            $dbcore->smarty->display("reset_password_form.tpl");
-            die();
-        }else
-        {
-            if($newpassword === $newpassword2)
-            {
-                $password = sha1($password.$seed);
-                if($password === $password_db)
-                {
-                    $setpassword = sha1($newpassword.$seed);
-                    $update = "UPDATE `user_info` SET `password` = ? WHERE `username` = ?";
-                #   echo $update."<BR>";
-                    $prep1 = $dbcore->sql->conn->prepare($update);
-                    $prep1->bindParam(1, $setpassword.":sha1", PDO::PARAM_STR);
-                    $prep1->bindParam(2, $username_db, PDO::PARAM_STR);
-                    $prep1->execute();
-
-                    $err = $dbcore->sql->conn->errorCode();
-                    if($err[0] === "00000")
-                    {
-                        #clear the token from the table.
-                        $remove = "DELETE FROM `reset_token` where `token` = ? and `username` = ?";
-                        $prep2 = $dbcore->sql->conn->prepare($remove);
-                        $prep2->bindParam(1, $token, PDO::PARAM_STR);
-                        $prep2->bindParam(2, $username, PDO::PARAM_STR);
-                        $prep2->execute();
-                        $err = $this->sql->conn->errorCode();
-                        if($err[0] !== "00000")
-                        {
-                            $dbcore->logd("Error removing user password reset token from table: ".var_export($dbcore->sql->conn->errorInfo(), 1).var_export($dbcore, 1), "error");
-                        }
-                        if($dbcore->mail->from($from))
-                        {$dbcore->logd("Failed to add From address". var_export($dbcore,1), "error");}
-                        if(!$dbcore->mail->addto($user_email))
-                        {$dbcore->logd("Failed to add To address". var_export($dbcore,1), "error");}
-
-                        if(!$dbcore->mail->subject("WiFiDB User Password Reset"))
-                        {$dbcore->logd("Failed to add subject". var_export($dbcore,1), "error");}
-
-                        $contents = "You have just reset your password, if you did not do this, I would email the admin...
-
-Your account: $username_db
-
--WiFiDB Service";
-
-                        if(!$dbcore->mail->text($contents))
-                        {$dbcore->logd("Failed to add message". var_export($dbcore,1), "error");}
-
-                        $smtp_conn = $dbcore->mail->connect($wifidb_smtp, 465, $sender, $sender_pass, 'tls', 10);
-                        if ($smtp_conn)
-                        {
-                            if($dbcore->mail->send($smtp_conn))
-                            {
-                                $message = "Your password has been reset, you can now go login.";
-                            }else
-                            {
-                                $message = "Your password has been reset, but failed to send confirmation email.";
-                            }
-                        }else
-                        {
-                            $dbcore->logd("Failed to connect to SMTP Host". var_export($dbcore,1), "error");
-                            $message = "Failed to connect to SMTP Host.";
-                        }
-                        $success =  1;
-                    }else
-                    {
-                        $message = "There was an error, please try again.";
-                        $dbcore->logd("SQL Error: ". var_export($dbcore->sql->conn->errorInfo(),1). var_export($dbcore, 1));
-                    }
-                }else
-                {
-                    $message = "Username or Password did not match.";
-                    $dbcore->logd("User failed to reset password. ". $_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
-                }
-            }else
-            {
-                $message = "New Passwords did not match.";
-            }
-        }
-        if($success) $dbcore-redirect_page("", 5);
-        $dbcore->smarty->assign("message", $message);
-        $dbcore->smarty->display("login_results.tpl");
     break;
 
     case "reset_user_pass_request":
@@ -406,18 +284,17 @@ Your account: $username_db
 			$prep = $dbcore->sql->conn->prepare($sql0);
 			$prep->bindParam(1, $username, PDO::PARAM_STR);
 			$prep->execute();
-			$err = $dbcore->sql->conn->errorCode();
 			$newArray = $prep->fetch(2);
 			$db_email = $newArray['email'];
 			if(strtolower($email) != strtolower($db_email))
 			{
-				$message = "Username or Password did not match.";
+				$message = "Username or Password not found.";
 				$dbcore->logd("User failed to reset password. ". $_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
 			}
 			else
 			{
 				$msg = "To reset your wifidb password, click the following link. If you did not reset your password, please ignore this email.";
-				$subject = "WifiDB Password Reset";
+				$subject = "WifiDB - Password Reset";
 				if($dbcore->wdbmail->mail_validation('reset_password_validated', $email, $username, $msg, $subject))
 				{
 					$message = "<font color='Green'><h2>Password reset requested! You should be getting a Validation email soon, click on the email link to confirm your account.</h2></font>";
@@ -428,13 +305,14 @@ Your account: $username_db
 			}
 		}
 		$dbcore->smarty->assign("message", $message);
-        $dbcore->smarty->display("login_index.tpl");
+        $dbcore->smarty->display('login_result.tpl');
     break;
 	
     case "reset_password_validated":
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
         $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
 
+		#Check if username and validation code exist
         $sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ?";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
@@ -463,49 +341,61 @@ Your account: $username_db
         $newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
         $newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
 		
-		if($newpassword === $newpassword2)
-		{
-			#Change the users password
-			$salt               = $dbcore->sec->GenerateKey(29);
-			$password_hashed    = crypt($newpassword, '$2a$07$'.$salt.'$');
-
-			$update = "UPDATE `user_info` SET `password` = ? WHERE `username` LIKE ?";
-			$prep1 = $dbcore->sql->conn->prepare($update);
-			$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
-			$prep1->bindParam(2, $username, PDO::PARAM_STR);
-			$prep1->execute();
-			$uperr = $dbcore->sql->conn->errorCode();
-			if($uperr == "00000")
+		#Check if username and validation code exist
+        $sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ?";
+		$result = $dbcore->sql->conn->prepare($sql);
+		$result->bindParam(1, $username);
+		$result->bindParam(2, $validate_code);
+		$result->execute();
+        $v_array = $result->fetch(2);
+        $username = $v_array['username'];
+        if($username)
+        {
+			#Check if new password fields match
+			if($newpassword === $newpassword2)
 			{
-				#DELETE validation entry for this user
-				$delete = "DELETE FROM `user_validate` WHERE `username` = ?";
-				$result = $dbcore->sql->conn->prepare($delete);
-				$result->bindParam(1, $username);
-				$result->execute();
-				$delerr = $dbcore->sql->conn->errorCode();
-				if($delerr == "00000")
+				#Change the users password
+				$salt               = $dbcore->sec->GenerateKey(29);
+				$password_hashed    = crypt($newpassword, '$2a$07$'.$salt.'$');
+
+				$update = "UPDATE `user_info` SET `password` = ? WHERE `username` LIKE ?";
+				$prep1 = $dbcore->sql->conn->prepare($update);
+				$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
+				$prep1->bindParam(2, $username, PDO::PARAM_STR);
+				$prep1->execute();
+				$uperr = $dbcore->sql->conn->errorCode();
+				if($uperr == "00000")
 				{
-					$message = "<font color='Green'><h2>Password for {$username} has been updated!</h2></font>";
+					#DELETE validation entry for this user
+					$delete = "DELETE FROM `user_validate` WHERE `username` = ?";
+					$result = $dbcore->sql->conn->prepare($delete);
+					$result->bindParam(1, $username);
+					$result->execute();
+					$delerr = $dbcore->sql->conn->errorCode();
+					if($delerr == "00000")
+					{
+						$message = "<font color='Green'><h2>Password for {$username} has been updated!</h2></font>";
+					}else
+					{
+						$message = "<font color='Yellow'><h2>Password for {$username} has been updated, but the user_validate entry was not deleted.</h2></font>";
+					}
 				}else
 				{
-					$message = "<font color='Yellow'><h2>Password for {$username} has been updated, but the user_validate entry was not deleted.</h2></font>";
+					$message = "<font color='red'><h2>Error. Failed to update password.</h2></font>";
+					$dbcore->smarty->assign('message', $message);
+					$dbcore->smarty->assign("username", $username);
+					$dbcore->smarty->assign("validate_code", $validate_code);
+					$dbcore->smarty->display("reset_password_validate.tpl");
 				}
-			}else
+			}
+			else
 			{
-				$message = "<font color='red'><h2>Error. Failed to update password.</h2></font>";
+				$message = "<font color='red'><h2>Error. Passwords do not match.</h2></font>";
 				$dbcore->smarty->assign('message', $message);
 				$dbcore->smarty->assign("username", $username);
 				$dbcore->smarty->assign("validate_code", $validate_code);
 				$dbcore->smarty->display("reset_password_validate.tpl");
 			}
-		}
-		else
-		{
-			$message = "<font color='red'><h2>Error. Passwords do not match.</h2></font>";
-			$dbcore->smarty->assign('message', $message);
-			$dbcore->smarty->assign("username", $username);
-			$dbcore->smarty->assign("validate_code", $validate_code);
-			$dbcore->smarty->display("reset_password_validate.tpl");
 		}
         $dbcore->smarty->assign("message", $message);
         $dbcore->smarty->display("login_index.tpl");

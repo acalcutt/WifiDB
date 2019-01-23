@@ -167,6 +167,7 @@ try
 				case "import":
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
+					$dbcore->wdbmail = new wdbmail($config);
 					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
 				####
 				case "daemon":
@@ -240,7 +241,7 @@ try
 
 				default:
 					$dbcore = new frontend($config);
-					$dbcore->wdbmail = new wdbmail($dbcore);
+					$dbcore->wdbmail = new wdbmail($config);
 				break;
 			}
 			$dbcore->cli = 0;
