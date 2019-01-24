@@ -280,10 +280,11 @@ class export extends dbcore
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGps_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
 		$result = $this->sql->conn->query($sql);
+		$result->execute();
 		$ap_array = $result->fetch(2);
-		if($ap_array['id'])
+		if($ap_array['AP_ID'])
 		{
-			$id = (int)$ap_array['id'];
+			$id = (int)$ap_array['AP_ID'];
 			list($KML_AP_data, $export_ssid) = $this->ExportSingleAp($id, $named, $new_icons);
 			$KML_data = $KML_AP_data;
 		}
