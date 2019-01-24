@@ -149,15 +149,9 @@ if($login_check)
 		case 'update_user_pref':
 			$username = addslashes(strtolower($_POST['username']));
 			$user_id = addslashes(strtolower($_POST['user_id']));
-			$mail_updates = ((@$_POST['mail_updates']) == 'on' ? 1 : 0);
 			$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
 			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
 			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
-			$statistics = ((@$_POST['statistics']) == 'on' ? 1 : 0);
-			$announcements = ((@$_POST['announcements']) == 'on' ? 1 : 0);
-			$announce_comment = ((@$_POST['announce_comment']) == 'on' ? 1 : 0);
-			$geonamed = ((@$_POST['geonamed']) == 'on' ? 1 : 0);
-			$pub_geocache = ((@$_POST['pub_geocache']) == 'on' ? 1 : 0);
 			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
 			$sql0 = "SELECT `id` FROM `user_info` WHERE `username` = '$username' LIMIT 1";
 			$result = $dbcore->sql->conn->prepare($sql0);
@@ -167,16 +161,10 @@ if($login_check)
 			if($array['id']+0 === $user_id+0)
 			{
 				$sql1 = "UPDATE `user_info` SET
-															`mail_updates` = '$mail_updates',
 															`schedule`	=	'$schedule',
 															`imports` = '$imports',
 															`kmz` = '$kmz',
-															`new_users` = '$new_users',
-															`statistics` = '$statistics',
-															`announcements` = '$announcements',
-															`announce_comment` = '$announce_comment',
-															`geonamed` = '$geonamed',
-															`pub_geocache` = '$pub_geocache'
+															`new_users` = '$new_users'
 															WHERE `id` = '$user_id'";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				if($result->execute())

@@ -1011,6 +1011,8 @@ class export extends dbcore
 		$ForcedFullRun = 1;
 		$full_folder = $this->PATH.'out/kmz/full/';
 		$daily_folder = $this->PATH.'out/kmz/incremental/';
+		$full_folder_url = $this->URL_PATH.'out/kmz/full/';
+		$daily_folder_url = $this->URL_PATH.'out/kmz/incremental/';
 		$filedate = date("Y-m-d_H-i-s");
 		
 		#Find if there has been a full export in the last 32 days. If there is a file less than 32 days, disable the forced full export.
@@ -1039,22 +1041,36 @@ class export extends dbcore
 				#Generate Full Un-Labeled KMZ if it doesn't already exist
 				$this->named = 0;
 				$kmz_filepath = $full_folder."unlabeled/full_db_".$filedate.".kmz";
+				$kmz_urlpath = $full_folder_url."unlabeled/full_db_".$filedate.".kmz";
 				if(!file_exists($kmz_filepath))
 				{
 					$this->verbosed("Generating Full DB KML - ".$kmz_filepath);
 					$this->ExportDaemonKMZ($kmz_filepath, "full", 1, 0, "full_db.kmz");
+					if (file_exists($kmz_filepath)) 
+					{
+						$subject = "WifiDB - New Full KMZ Export";
+						$message = "New Full Export Created for $filedate.\r\nDownload: ".$kmz_urlpath." \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+						$this->wdbmail->mail_users($message, $subject, "kmz", 0);
+					}					
 				}
-		if (file_exists($kmz_filepath)) 
-		{$link = $this->daemon_out.basename($kmz_filepath);}
+
 				
 				#Generate Full Labeled KMZ if it doesn't already exist
 				$this->named = 1;
 				$kmz_filepath = $full_folder."labeled/full_db_".$filedate."_labeled.kmz";
+				$kmz_urlpath = $full_folder_url."labeled/full_db_".$filedate.".kmz";
 				if(!file_exists($kmz_filepath))
 				{
 					$this->verbosed("Generating Full DB Labeled KML - ".$kmz_filepath);
 					$this->ExportDaemonKMZ($kmz_filepath, "full", 1, 0, "full_db_labeled.kmz");
+					if (file_exists($kmz_filepath)) 
+					{
+						$subject = "WifiDB - New Full Labeled KMZ Export";
+						$message = "New Full Labeled Export Created for $filedate.\r\nDownload: ".$kmz_urlpath." \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+						$this->wdbmail->mail_users($message, $subject, "kmz", 0);
+					}					
 				}
+
 				
 				#Set last full export id into the settings table
 				$sql = "UPDATE `settings` SET `last_export_file` = ? WHERE `id` = 1";
@@ -1066,14 +1082,28 @@ class export extends dbcore
 			#Generate Daily KML
 			$this->named = 0;
 			$kmz_filepath = $daily_folder."unlabeled/daily_db_".$filedate.".kmz";
+			$kmz_urlpath = $daily_folder_url."unlabeled/daily_db_".$filedate.".kmz";
 			$this->verbosed("Generating Daily KMZ - ".$kmz_filepath);
 			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1, "daily_db.kmz");
+			if (file_exists($kmz_filepath))
+			{
+				$subject = "WifiDB - New Incremental KMZ Export";
+				$message = "New Incremental Export Created for $filedate.\r\nDownload: ".$kmz_urlpath." \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+				$this->wdbmail->mail_users($message, $subject, "kmz", 0);
+			}
 			
 			#Generate Daily Labeled KML
 			$this->named = 1;
 			$kmz_filepath = $daily_folder."labeled/daily_db_".$filedate."_labeled.kmz";
+			$kmz_urlpath = $daily_folder_url."labeled/daily_db_".$filedate."_labeled.kmz";
 			$this->verbosed("Generating Daily Labeled KMZ - ".$kmz_filepath);
 			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1, "daily_db_labeled.kmz");
+			if (file_exists($kmz_filepath))
+			{
+				$subject = "WifiDB - New Incremental Labeled KMZ Export";
+				$message = "New Incremental Labeled Export Created for $filedate.\r\nDownload: ".$kmz_urlpath." \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+				$this->wdbmail->mail_users($message, $subject, "kmz", 0);
+			}
 
 			#Generate History KML
 			if($this->HistoryKMLLink() === -1)

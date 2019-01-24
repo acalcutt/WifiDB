@@ -23,44 +23,20 @@ if not, write to the
 				<form method="post" action="?func=update_user_pref">
 					<table class="content_table">
 						<tr>
-							<th width="30%" class="header">Email me about updates</th>
-							<td align="center" class="dark"><input name="mail_updates" type="checkbox" {$user_cp_profile.mail_updates}></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">Announcements</th>
-							<td align="center" class="light"><input name="announcements" type="checkbox" {$user_cp_profile.announcements}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">Announcement Comments</th>
-							<td align="center" class="dark"><input name="announce_comment" type="checkbox" {$user_cp_profile.announce_comment}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">New Public Geocaches</th>
-							<td align="center" class="light"><input name="pub_geocache" type="checkbox" {$user_cp_profile.pub_geocache}></td></td>
-						</tr>
-						<tr>
 							<th width="30%" class="header">New Users</th>
 							<td align="center" class="dark"><input name="new_users" type="checkbox" {$user_cp_profile.new_users}></td></td>
 						</tr>
 						<tr>
-							<th width="30%" class="header">Scheduled Import</th>
-							<td align="center" class="light"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td></td>
+							<th width="30%" class="header">New KMZ Export</th>
+							<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td></td>
+						</tr>						
+						<tr>
+							<th width="30%" class="header">Import Started</th>
+							<td align="center" class="dark"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td></td>
 						</tr>
 						<tr>
 							<th width="30%" class="header">Import Finished</th>
-							<td align="center" class="dark"><input name="imports" type="checkbox" {$user_cp_profile.imports}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">New Full DB KML</th>
-							<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">GeoNames Daemon</th>
-							<td align="center" class="dark"><input name="geonamed" type="checkbox" {$user_cp_profile.geonamed}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">Database Statistics Daemon</th>
-							<td align="center" class="light"><input name="statistics" type="checkbox" {$user_cp_profile.statistics}></td></td>
+							<td align="center" class="light"><input name="imports" type="checkbox" {$user_cp_profile.imports}></td></td>
 						</tr>
 						<tr class="light-centered">
 							<td colspan="2">

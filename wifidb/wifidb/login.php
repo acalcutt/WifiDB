@@ -154,6 +154,9 @@ switch($func)
             switch($ret)
             {
                 case 1:
+					$subject = "WifiDB - User '$username' Created";
+					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+					$dbcore->wdbmail->mail_users($message, $subject, "new_users", 0);
                     #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
                     if($dbcore->sec->email_validation)
                     {
