@@ -100,7 +100,10 @@ switch($func)
             else{$path  = '/';}
         }
         list($cookie_pass_hash, $username) = explode(":", base64_decode($_COOKIE[$cookie_name]));
-        $sql = "DELETE FROM `user_login_hashes` WHERE `username` = ?";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "DELETE FROM `user_login_hashes` WHERE `username` = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "DELETE FROM [user_login_hashes] WHERE [username] = ?";}
         $prep = $dbcore->sql->conn->prepare($sql);
         $prep->bindParam(1, $username, PDO::PARAM_STR);
         $prep->execute();
@@ -186,7 +189,10 @@ switch($func)
     case "validate_user":
         $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
-        $sql = "SELECT * FROM `user_validate` WHERE `code` = ?";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `username` FROM `user_validate` WHERE `code` = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [username] FROM [user_validate] WHERE [code] = ?";}
         $result = $dbcore->sql->conn->prepare($sql);
         $result->execute(array($validate_code));
         $v_array = $result->fetch(2);
@@ -194,7 +200,10 @@ switch($func)
         $db_username = $v_array['username'];
         if($db_username)
         {
-            $update = "UPDATE `user_info` SET `validated` = '0' WHERE `username` = ?";
+			if($dbcore->sql->service == "mysql")
+				{$update = "UPDATE `user_info` SET `validated` = '0' WHERE `username` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$update = "UPDATE [user_info] SET [validated] = '0' WHERE [username] = ?";}
             $result = $dbcore->sql->conn->prepare($update);
             $result->bindParam(1, $username);
             $result->execute();
@@ -202,7 +211,10 @@ switch($func)
 			#echo $update."<br>";
 			if($err == "00000")
             {
-                $delete = "DELETE FROM `user_validate` WHERE `username` = ?";
+				if($dbcore->sql->service == "mysql")
+					{$delete = "DELETE FROM `user_validate` WHERE `username` = ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$delete = "DELETE FROM [user_validate] WHERE [username] = ?";}
                 $result = $dbcore->sql->conn->prepare($delete);
                 $result->bindParam(1, $username);
                 $result->execute();
@@ -237,7 +249,10 @@ switch($func)
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
 		
 		#Get users email address
-		$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";
+		if($dbcore->sql->service == "mysql")
+			{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] LIKE ?";}
 		$prep = $dbcore->sql->conn->prepare($sql0);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->execute();
@@ -280,7 +295,10 @@ switch($func)
         }
         else
         {
-			$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] LIKE ?";}
 			$prep = $dbcore->sql->conn->prepare($sql0);
 			$prep->bindParam(1, $username, PDO::PARAM_STR);
 			$prep->execute();
@@ -313,16 +331,19 @@ switch($func)
         $validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
 
 		#Check if username and validation code exist
-        $sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ?";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [username] FROM [user_validate] WHERE [username] = ? AND [code] = ?";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
 		$result->bindParam(2, $validate_code);
 		$result->execute();
         $v_array = $result->fetch(2);
-        $username = $v_array['username'];
-        if($username)
+        $db_username = $v_array['username'];
+        if($db_username)
         {
-			$dbcore->smarty->assign("username", $username);
+			$dbcore->smarty->assign("username", $db_username);
 			$dbcore->smarty->assign("validate_code", $validate_code);
 			$dbcore->smarty->display("reset_password_validate.tpl");
 		}
@@ -342,14 +363,17 @@ switch($func)
         $newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
 		
 		#Check if username and validation code exist
-        $sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ?";
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [username] FROM [user_validate] WHERE [username] = ? AND [code] = ?";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
 		$result->bindParam(2, $validate_code);
 		$result->execute();
         $v_array = $result->fetch(2);
-        $username = $v_array['username'];
-        if($username)
+        $db_username = $v_array['username'];
+        if($db_username)
         {
 			#Check if new password fields match
 			if($newpassword === $newpassword2)
@@ -358,32 +382,40 @@ switch($func)
 				$salt               = $dbcore->sec->GenerateKey(29);
 				$password_hashed    = crypt($newpassword, '$2a$07$'.$salt.'$');
 
-				$update = "UPDATE `user_info` SET `password` = ? WHERE `username` LIKE ?";
+				if($dbcore->sql->service == "mysql")
+					{$update = "UPDATE `user_info` SET `password` = ? WHERE `username` LIKE ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$update = "UPDATE [user_info] SET [password] = ? WHERE [username] LIKE ?";}
 				$prep1 = $dbcore->sql->conn->prepare($update);
 				$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
-				$prep1->bindParam(2, $username, PDO::PARAM_STR);
+				$prep1->bindParam(2, $db_username, PDO::PARAM_STR);
 				$prep1->execute();
 				$uperr = $dbcore->sql->conn->errorCode();
 				if($uperr == "00000")
 				{
 					#DELETE validation entry for this user
-					$delete = "DELETE FROM `user_validate` WHERE `username` = ?";
+					if($dbcore->sql->service == "mysql")
+						{$delete = "DELETE FROM `user_validate` WHERE `username` = ?";}
+					else if($dbcore->sql->service == "sqlsrv")
+						{$delete = "DELETE FROM [user_validate] WHERE [username] = ?";}
 					$result = $dbcore->sql->conn->prepare($delete);
-					$result->bindParam(1, $username);
+					$result->bindParam(1, $db_username);
 					$result->execute();
 					$delerr = $dbcore->sql->conn->errorCode();
 					if($delerr == "00000")
 					{
-						$message = "<font color='Green'><h2>Password for {$username} has been updated!</h2></font>";
+						$message = "<font color='Green'><h2>Password for {$db_username} has been updated!</h2></font>";
 					}else
 					{
-						$message = "<font color='Yellow'><h2>Password for {$username} has been updated, but the user_validate entry was not deleted.</h2></font>";
+						$message = "<font color='Yellow'><h2>Password for {$db_username} has been updated, but the user_validate entry was not deleted.</h2></font>";
 					}
+					$dbcore->smarty->assign("message", $message);
+					$dbcore->smarty->display("login_index.tpl");					
 				}else
 				{
 					$message = "<font color='red'><h2>Error. Failed to update password.</h2></font>";
 					$dbcore->smarty->assign('message', $message);
-					$dbcore->smarty->assign("username", $username);
+					$dbcore->smarty->assign("username", $db_username);
 					$dbcore->smarty->assign("validate_code", $validate_code);
 					$dbcore->smarty->display("reset_password_validate.tpl");
 				}
@@ -397,8 +429,14 @@ switch($func)
 				$dbcore->smarty->display("reset_password_validate.tpl");
 			}
 		}
-        $dbcore->smarty->assign("message", $message);
-        $dbcore->smarty->display("login_index.tpl");
+		else
+		{
+			$message = "<font color='red'><h2>Error. Username or Validation Code is incorrect or no longer valid.</h2></font>";
+			$dbcore->smarty->assign('message', $message);
+			$dbcore->smarty->assign("logon_return_url", $return);
+			$dbcore->smarty->display('login_result.tpl');
+		}
+
     break;
 
     default :
