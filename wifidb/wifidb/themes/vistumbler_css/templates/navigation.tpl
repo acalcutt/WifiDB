@@ -1,17 +1,18 @@
 			<div class="sidenav">
 				<div class="inside_dark_header">WiFiDB Links</div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}">Main Page</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500">AP List</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">AP Map</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imported Files</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Waiting for Import</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Daemon Generated KMZ</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/export.php?func=index">Export</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}">Home</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>					
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>		
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import Files</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Imports Waiting</a></div>				
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imports Finished</a></div>
+
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Export KMZ</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500">List APs</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers">View All Users</a></div>
-				<div class="inside_text_bold"><a class="links" href="http://forum.techidiots.net/forum/viewforum.php?f=47">Help / Support</a></div>
+				<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Help / Support</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}ver.php">WiFiDB Version</a></div>
 				<div class="inside_dark_header">Vistumbler Links</div>
 				<div class="inside_text_bold"><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></div>

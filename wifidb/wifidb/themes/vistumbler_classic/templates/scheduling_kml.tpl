@@ -84,17 +84,28 @@ if not, write to the
 						</tr>
 						<tr>
 							<td class="header">Full</td>
-							<td class="light"><a href='https://live.wifidb.net/wifidb/opt/scheduling.php?func=full_kml'>Non-Labeled Archive</a></td>
-							<td class="light"><a href='https://live.wifidb.net/wifidb/opt/scheduling.php?func=full_labeled_kml'>Labeled Archive</a></td>
+							<td class="light"><a href='{$wifidb_host_url}opt/scheduling.php?func=full_kml'>Non-Labeled Archive</a></td>
+							<td class="light"><a href='{$wifidb_host_url}opt/scheduling.php?func=full_labeled_kml'>Labeled Archive</a></td>
 						</tr>
 						<tr>
 							<td class="header">Incremental</td>
-							<td class="dark"><a href='https://live.wifidb.net/wifidb/opt/scheduling.php?func=incremental_kml'>Non-Labeled Archive</a></td>
-							<td class="dark"><a href='https://live.wifidb.net/wifidb/opt/scheduling.php?func=incremental_labeled_kml'>Labeled Archive</a></td>
+							<td class="dark"><a href='{$wifidb_host_url}opt/scheduling.php?func=incremental_kml'>Non-Labeled Archive</a></td>
+							<td class="dark"><a href='{$wifidb_host_url}opt/scheduling.php?func=incremental_labeled_kml'>Labeled Archive</a></td>
 						</tr>
 						<tr>
 							<td class="header">Legacy</td>
-							<td class="light" colspan="2"><a href='https://live.wifidb.net/wifidb/opt/scheduling.php?func=legacy_kml'>Archive</a></td>
+							<td class="light" colspan="2"><a href='{$wifidb_host_url}opt/scheduling.php?func=legacy_kml'>Archive</a></td>
+						</tr>
+					</table>
+					<br/>
+					<table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
+						<tr>
+							<td class="subheading">User Exports</td>
+						</tr>
+						<tr>
+							<td class="light-centered">
+								<a href='{$wifidb_host_url}opt/export.php?func=index'>Generate</a>
+							</td>
 						</tr>
 					</table>
 				</div>

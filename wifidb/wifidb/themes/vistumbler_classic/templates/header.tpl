@@ -42,33 +42,21 @@
                         <tr width="185px">
                             <td class="cell_side_left">&nbsp;</td>
                             <td class="cell_color">
-                                <div class="inside_dark_header">WiFiDB Links</div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}">Main Page</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500">AP List</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">AP Map</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}import/">Import</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imported Files</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php">Files Waiting for Import</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Daemon Generated KMZ</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/export.php?func=index">Export</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/search.php">Search</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}themes/">Themes</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}opt/userstats.php?func=allusers">View All Users</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a class="links" href="http://forum.techidiots.net/forum/viewforum.php?f=47">Help / Support</a></strong></div>
-                                <div class="inside_text_bold"><strong>
-                                    <a href="{$wifidb_host_url}ver.php">WiFiDB Version</a></strong></div>
+								<div class="inside_dark_header">WiFiDB Links</div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}">Home</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>					
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>		
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import Files</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Imports Waiting</a></div>				
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imports Finished</a></div>
+
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Export KMZ</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500">List APs</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers">View All Users</a></div>
+								<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Help / Support</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}ver.php">WiFiDB Version</a></div>
 								<!--
                                 {if $login_val eq "1"}
                                 <div class="inside_text_bold"><strong>

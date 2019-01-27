@@ -7,6 +7,11 @@
 						<table align="center">
 							<tbody>
 								<tr>
+									<td colspan="2">
+										{$message}
+									</td>
+								</tr>
+								<tr>
 									<td>Username</td>
 									<td><input type="text" name="username_f"></td>
 								</tr>
