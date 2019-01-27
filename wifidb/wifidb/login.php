@@ -154,17 +154,20 @@ switch($func)
             switch($ret)
             {
                 case 1:
-                    #User created!, now if the admin has enabled Email Validation before a user can be used, send it out, other wise let them login.
+					$subject = "Vistumbler WifiDB - User '$username' Created";
+					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n";
+					$dbcore->wdbmail->mail_users($message, $subject, "new_users", 0);
+                    #User created!, now if the admin has enabled Email Confirmation before a user can be used, send it out, other wise let them login.
                     if($dbcore->sec->email_validation)
                     {
-						$msg = "The WiFiDB requires user validation before you can log in. Please click the following link to activate your account";
-						$subject = "WifiDB - New User Validation";
+						$msg = "The WiFiDB requires confirmation before you can log in. Please click the following link to activate your account";
+						$subject = "Vistumbler WifiDB - New User Confirmation";
                         if($dbcore->wdbmail->mail_validation('validate_user', $email, $username, $msg, $subject))
                         {
-							$message = "<font color='Green'><h2>User Created! You should be getting a Validation email soon. Please click on the email link to confirm your account.</h2></font>";
+							$message = "<font color='Green'><h2>User Created! You should be getting a Confirmation email soon. Please click on the email link to confirm your account.</h2></font>";
                         }else
                         {
-							$message = "<font color='Yellow'><h2>Email Validation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
+							$message = "<font color='Yellow'><h2>Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
                         }
                     }else
                     {
@@ -262,19 +265,19 @@ switch($func)
 		#If the user email address way found, send them a new validation email
         if($db_email)
         {
-			$msg = "The WiFiDB requires user validation before you can log in. Please click the following link to activate your account";
-			$subject = "WifiDB - Account Validation";
+			$msg = "The WiFiDB requires confirmation before you can log in. Please click the following link to activate your account";
+			$subject = "Vistumbler WifiDB - Account Confirmation";
 			if($dbcore->wdbmail->mail_validation('validate_user', $db_email, $username, $msg, $subject))
 			{
-				$message = "<font color='Green'><h2>Validation has been re-sent! You should be getting a Validation email soon. Please click on the email link to confirm your account.</h2></font>";
+				$message = "<font color='Green'><h2>Confirmation has been re-sent! You should be getting a Confirmation email soon. Please click on the email link to confirm your account.</h2></font>";
 			}else
 			{
-				$message = "<font color='Yellow'><h2>Email Validation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
+				$message = "<font color='Yellow'><h2>Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
 			}
 		}
 		else
 		{
-			$message = "<font color='Red'><h2>Error: No email address found for $username. No validation can be sent.</h2></font>";
+			$message = "<font color='Red'><h2>Error: No email address found for $username. No confirmation can be sent.</h2></font>";
 		}
 
         $dbcore->smarty->assign('message', $message);
@@ -290,7 +293,7 @@ switch($func)
         $email      = $_REQUEST['email_f'];
 		if(!$username || !$email)
         {
-            $dbcore->smarty->assign('message', 'Username or Email not specified');
+            $dbcore->smarty->assign('message', "<font color='Red'><h2>Username or Email not specified</h2></font>");
             $dbcore->smarty->display('reset_password_request.tpl');
         }
         else
@@ -306,24 +309,26 @@ switch($func)
 			$db_email = $newArray['email'];
 			if(strtolower($email) != strtolower($db_email))
 			{
-				$message = "Username or Password not found.";
-				$dbcore->logd("User failed to reset password. ". $_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
+				$message = "Username or Email is incorrect.";
+				$dbcore->logd("User failed to reset password. ".$message." ".$_SERVER['REMOTE_ADDR'] . var_export($dbcore, 1), "error");
+				$dbcore->smarty->assign('message', "<font color='Red'><h2>".$message."</h2></font>");
+				$dbcore->smarty->display('reset_password_request.tpl');
 			}
 			else
 			{
 				$msg = "To reset your wifidb password, click the following link. If you did not reset your password, please ignore this email.";
-				$subject = "WifiDB - Password Reset";
+				$subject = "Vistumbler WifiDB - Password Reset Confirmation";
 				if($dbcore->wdbmail->mail_validation('reset_password_validated', $email, $username, $msg, $subject))
 				{
-					$message = "<font color='Green'><h2>Password reset requested! You should be getting a Validation email soon, click on the email link to confirm your account.</h2></font>";
+					$message = "<font color='Green'><h2>Password reset requested! You should be getting a Confirmation email soon, click on the email link to confirm your account.</h2></font>";
 				}else
 				{
-					$message = "Email Validation has been enabled, but failed to send the email. Contact the Admins for help.";
+					$message = "Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.";
 				}
+				$dbcore->smarty->assign("message", $message);
+				$dbcore->smarty->display('login_result.tpl');				
 			}
 		}
-		$dbcore->smarty->assign("message", $message);
-        $dbcore->smarty->display('login_result.tpl');
     break;
 	
     case "reset_password_validated":
@@ -378,14 +383,14 @@ switch($func)
 			#Check if new password fields match
 			if($newpassword === $newpassword2)
 			{
-				#Change the users password
+				#Change the users password, validate them, and unlock account
 				$salt               = $dbcore->sec->GenerateKey(29);
 				$password_hashed    = crypt($newpassword, '$2a$07$'.$salt.'$');
 
 				if($dbcore->sql->service == "mysql")
-					{$update = "UPDATE `user_info` SET `password` = ? WHERE `username` LIKE ?";}
+					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` LIKE ?";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$update = "UPDATE [user_info] SET [password] = ? WHERE [username] LIKE ?";}
+					{$update = "UPDATE [user_info] SET [password] = ?, validated = 0, locked = 0 WHERE [username] LIKE ?";}
 				$prep1 = $dbcore->sql->conn->prepare($update);
 				$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
 				$prep1->bindParam(2, $db_username, PDO::PARAM_STR);
