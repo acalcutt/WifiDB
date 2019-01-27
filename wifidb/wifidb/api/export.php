@@ -41,17 +41,19 @@ switch($func)
 		case "exp_combined_netlink":
 			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_latest_netlink&#x26;debug='.$debug, "Newest AP", 1, 0, "onChange", 86400, 1);
 			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_daily_netlink&#x26;debug='.$debug, "Daily APs", 1, 0, "onChange", 86400, 1);
-			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all_netlink&#x26;debug='.$debug, "All APs", 0, 0, "onChange", 86400, 1);
-			$results = $dbcore->createKML->createKMLstructure("Combined Network Link", $results);
-			$file_name = "Combined_NetworkLink_Latest.kmz";
+			$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all_netlink&#x26;debug='.$debug, "All APs", 0, 0, "onChange", 86400, 0);
+			$results = $dbcore->createKML->createKMLstructure("WifiDB Network Link", $results);
+			$file_name = "WifiDB_NetworkLink_Latest.kmz";
 			break;
 			
 		case "exp_all_netlink":
-			#$Full = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all&#x26;labeled=0&#x26;all=0&#x26;new_icons=0&#x26;debug='.$debug, "All Exports (No Label)", 1, 0, "onInterval", 86400, 1);
-			#$Full_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_all&#x26;labeled=1&#x26;all=0&#x26;new_icons=0&#x26;debug='.$debug, "All Exports (Label)", 0, 0, "onInterval", 86400, 1);
-			$Full = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'out/daemon/full_db.kmz', "All Exports (No Label)", 1, 0, "onInterval", 86400, 1);
-			$Full_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'out/daemon/full_db_labeled.kmz', "All Exports (Label)", 0, 0, "onInterval", 86400, 1);
-			$results = $dbcore->createKML->createKMLstructure("All Exports Network Link", $Full.$Full_Labeled);
+			$Incremental = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'out/daemon/daily_db.kmz', "Incremental Export (No Label)", 1, 0, "onInterval", 86400, 1);
+			$Incremental_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'out/daemon/daily_db_labeled.kmz', "Incremental Export (Label)", 0, 0, "onInterval", 86400, 1);
+			$Incremental_Folder = $dbcore->createKML->createFolder("Incremental Exports", $Incremental.$Incremental_Labeled, 0, 1);		
+			$Full = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'out/daemon/full_db.kmz', "Full Export (No Label)", 1, 0, "onInterval", 86400, 1);
+			$Full_Labeled = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'out/daemon/full_db_labeled.kmz', "Full Export (Label)", 0, 0, "onInterval", 86400, 1);
+			$Full_Folder = $dbcore->createKML->createFolder("Full Exports", $Full.$Full_Labeled, 0, 1);
+			$results = $dbcore->createKML->createKMLstructure("All Exports Network Link", $Incremental_Folder.$Full_Folder);
 			if($labeled){$file_name = "All_Export_Labeled_NetworkLink.kmz";}else{$file_name = "All_Export_NetworkLink.kmz";}
 			break;
 
@@ -134,25 +136,35 @@ switch($func)
 			break;
 
 		case "exp_daily":
-			#Get the last full export id
-			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `last_export_file` FROM `settings` WHERE id = 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [last_export_file] FROM [settings] WHERE [id] = 1";}
-			$id_query = $dbcore->sql->conn->query($sql);
-			$id_fetch = $id_query->fetch(2);
-			$last_export_file = $id_fetch['last_export_file'];
+			if(!empty($_REQUEST['date']))
+			{
+				$date = $_REQUEST['date'];
+			}
+			else
+			{	
+				#Get the date of the newest import
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT `date` FROM `files` WHERE `completed` = 1 And `ValidGPS` = 1 ORDER BY `date` DESC LIMIT 1";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [date] DESC";}
+				$date_query = $dbcore->sql->conn->query($sql);
+				$date_fetch = $date_query->fetch(2);
+				$datestamp = $date_fetch['date'];
+				$datestamp_split = explode(" ", $datestamp);
+				$date = $datestamp_split[0];
+			}
+			$date = (empty($date)) ? date($dbcore->export->date_format) : $date;
+			
+			#Get lists from the date specified
+			$date_search = $date."%";
 			
 			#Create Queries
 			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE completed = 1 And ValidGPS = 1 AND `id` > '$last_export_file'";
-				}
+				{$sql = "SELECT `id`, `title` FROM `files` WHERE `date` LIKE ? ORDER BY `date` DESC";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 AND [id] > '$last_export_file'";
-				}
+				{$sql = "SELECT [id], [title] FROM [files] WHERE [date] LIKE ? ORDER BY [date] DESC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $date_search, PDO::PARAM_STR);
 			$prep->execute();
 			$fetch_imports = $prep->fetchAll();
 			$results="";

@@ -27,6 +27,7 @@ class export extends dbcore
 		$this->createKML = $createKMLObj;
 		$this->createGeoJSON = $createGeoJSONObj;
 		$this->Zip = $ZipObj;
+		$this->wdbmail = new wdbmail($config);
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
 		$this->month_names  = array(
@@ -280,10 +281,11 @@ class export extends dbcore
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGps_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
 		$result = $this->sql->conn->query($sql);
+		$result->execute();
 		$ap_array = $result->fetch(2);
-		if($ap_array['id'])
+		if($ap_array['AP_ID'])
 		{
-			$id = (int)$ap_array['id'];
+			$id = (int)$ap_array['AP_ID'];
 			list($KML_AP_data, $export_ssid) = $this->ExportSingleAp($id, $named, $new_icons);
 			$KML_data = $KML_AP_data;
 		}
@@ -1010,6 +1012,8 @@ class export extends dbcore
 		$ForcedFullRun = 1;
 		$full_folder = $this->PATH.'out/kmz/full/';
 		$daily_folder = $this->PATH.'out/kmz/incremental/';
+		$full_folder_url = $this->URL_PATH.'out/kmz/full/';
+		$daily_folder_url = $this->URL_PATH.'out/kmz/incremental/';
 		$filedate = date("Y-m-d_H-i-s");
 		
 		#Find if there has been a full export in the last 32 days. If there is a file less than 32 days, disable the forced full export.
@@ -1032,27 +1036,34 @@ class export extends dbcore
 		#If a file with vaid gps was found, 
 		if($Last_File_ID != '')
 		{
+			$Full_Exported = 0;
+			$Full_Labeled_Exported = 0;
+			$Incremental_Exported = 0;
+			$Incremental_Labeled_Exported = 0;
+			
 			#Generate Full KMZ if it is the first of the month or full run forced.
 			if(date('j') === '1' || $ForcedFullRun == 1)
 			{
 				#Generate Full Un-Labeled KMZ if it doesn't already exist
 				$this->named = 0;
-				$kmz_filepath = $full_folder."unlabeled/full_db_".$filedate.".kmz";
+				$kmz_full_filepath = $full_folder."unlabeled/full_db_".$filedate.".kmz";
+				$kmz_full_urlpath = $full_folder_url."unlabeled/full_db_".$filedate.".kmz";
 				if(!file_exists($kmz_filepath))
 				{
-					$this->verbosed("Generating Full DB KML - ".$kmz_filepath);
-					$this->ExportDaemonKMZ($kmz_filepath, "full", 1, 0, "full_db.kmz");
+					$this->verbosed("Generating Full DB KML - ".$kmz_full_filepath);
+					$this->ExportDaemonKMZ($kmz_full_filepath, "full", 1, 0, "full_db.kmz");
+					if(file_exists($kmz_full_filepath)){$Full_Exported = 1;}
 				}
-		if (file_exists($kmz_filepath)) 
-		{$link = $this->daemon_out.basename($kmz_filepath);}
-				
+
 				#Generate Full Labeled KMZ if it doesn't already exist
 				$this->named = 1;
-				$kmz_filepath = $full_folder."labeled/full_db_".$filedate."_labeled.kmz";
-				if(!file_exists($kmz_filepath))
+				$kmz_full_labeled_filepath = $full_folder."labeled/full_db_".$filedate."_labeled.kmz";
+				$kmz_full_labeled_urlpath = $full_folder_url."labeled/full_db_".$filedate.".kmz";
+				if(!file_exists($kmz_full_labeled_filepath))
 				{
-					$this->verbosed("Generating Full DB Labeled KML - ".$kmz_filepath);
-					$this->ExportDaemonKMZ($kmz_filepath, "full", 1, 0, "full_db_labeled.kmz");
+					$this->verbosed("Generating Full DB Labeled KML - ".$kmz_full_labeled_filepath);
+					$this->ExportDaemonKMZ($kmz_full_labeled_filepath, "full", 1, 0, "full_db_labeled.kmz");
+					if(file_exists($kmz_full_labeled_filepath)){$Full_Labeled_Exported = 1;}
 				}
 				
 				#Set last full export id into the settings table
@@ -1064,15 +1075,31 @@ class export extends dbcore
 
 			#Generate Daily KML
 			$this->named = 0;
-			$kmz_filepath = $daily_folder."unlabeled/daily_db_".$filedate.".kmz";
-			$this->verbosed("Generating Daily KMZ - ".$kmz_filepath);
-			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1, "daily_db.kmz");
+			$kmz_increm_filepath = $daily_folder."unlabeled/daily_db_".$filedate.".kmz";
+			$kmz_increm_urlpath = $daily_folder_url."unlabeled/daily_db_".$filedate.".kmz";
+			$this->verbosed("Generating Daily KMZ - ".$kmz_increm_filepath);
+			$this->ExportDaemonKMZ($kmz_increm_filepath, "daily" ,0 ,1, "daily_db.kmz");
+			if(file_exists($kmz_increm_filepath)){$Incremental_Exported = 1;}
 			
 			#Generate Daily Labeled KML
 			$this->named = 1;
-			$kmz_filepath = $daily_folder."labeled/daily_db_".$filedate."_labeled.kmz";
-			$this->verbosed("Generating Daily Labeled KMZ - ".$kmz_filepath);
-			$this->ExportDaemonKMZ($kmz_filepath, "daily" ,0 ,1, "daily_db_labeled.kmz");
+			$kmz_increm_labeled_filepath = $daily_folder."labeled/daily_db_".$filedate."_labeled.kmz";
+			$kmz_increm_labeled_urlpath = $daily_folder_url."labeled/daily_db_".$filedate."_labeled.kmz";
+			$this->verbosed("Generating Daily Labeled KMZ - ".$kmz_increm_labeled_filepath);
+			$this->ExportDaemonKMZ($kmz_increm_labeled_filepath, "daily" ,0 ,1, "daily_db_labeled.kmz");
+			if(file_exists($kmz_increm_filepath)){$Incremental_Labeled_Exported = 1;}
+			
+			#Email Users
+			if($Full_Exported || $Full_Labeled_Exported || $Incremental_Exported || $Incremental_Labeled_Exported) 
+			{
+				$subject = "WifiDB - New KMZ Exports";
+				$message = "New KMZ Exports for $filedate. \r\nWifiDB Network Link: ".$this->URL_PATH."api/export.php?func=exp_combined_netlink \r\n";
+				if($Full_Exported){$message .= "Full Export Download: $kmz_full_urlpath \r\n";}
+				if($Full_Labeled_Exported){$message .= "Full Labeled Export Download: $kmz_full_labeled_urlpath \r\n";}
+				if($Incremental_Exported){$message .= "Incremental Export Download: $kmz_increm_urlpath \r\n";}
+				if($Incremental_Labeled_Exported){$message .= "Incremental Labeled Export Download: $kmz_increm_labeled_urlpath \r\n";}
+				$this->wdbmail->mail_users($message, $subject, "kmz", 0);
+			}
 
 			#Generate History KML
 			if($this->HistoryKMLLink() === -1)
