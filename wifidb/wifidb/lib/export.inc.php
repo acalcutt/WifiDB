@@ -1092,7 +1092,7 @@ class export extends dbcore
 			#Email Users
 			if($Full_Exported || $Full_Labeled_Exported || $Incremental_Exported || $Incremental_Labeled_Exported) 
 			{
-				$subject = "WifiDB - New KMZ Exports";
+				$subject = "Vistumbler WifiDB - New KMZ Exports";
 				$message = "New KMZ Exports for $filedate. \r\nWifiDB Network Link: ".$this->URL_PATH."api/export.php?func=exp_combined_netlink \r\n";
 				if($Full_Exported){$message .= "Full Export Download: $kmz_full_urlpath \r\n";}
 				if($Full_Labeled_Exported){$message .= "Full Labeled Export Download: $kmz_full_labeled_urlpath \r\n";}
