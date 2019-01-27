@@ -21,10 +21,39 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				<div class="center">
-					<h2>Vistumbler WiFiDB</h2>
+					<br/>
+					<a class="links" title="Import File" style="text-decoration: none;" href="{$wifidb_host_url}import/">
+						<img src="{$themeurl}img/upload-cloud.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle; text-decoration: none;">Import File</span>
+					</a>
+					<a class="links" title="Map" style="text-decoration: none;" href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">
+						<img src="{$themeurl}img/map.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle;">Map</span>
+					</a>
+					<a class="links" title="Imported Files" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done">
+						<img src="{$themeurl}img/list.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle;">Imported Files</span>
+					</a>
+					<a class="links" title="Stats" style="text-decoration: none;" href="{$wifidb_host_url}stats.php">
+						<img src="{$themeurl}img/stats.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle;">Stats</span>
+					</a>
+					<a class="links" title="Export KMZ" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">
+						<img src="{$themeurl}img/download-cloud.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle;">Export KMZ</span>
+					</a>
+					<a class="links" title="Users" style="text-decoration: none;" href="{$wifidb_host_url}opt/userstats.php?func=allusers">
+						<img src="{$themeurl}img/users.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle;">Users</span>
+					</a>					
+					<a class="links" title="Log In/Out" style="text-decoration: none;" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">
+						<img src="{$themeurl}img/user.png" style="vertical-align: middle;"/>
+						<span style="vertical-align: middle;">{$wifidb_login_label|default:'Login'}</span>
+					</a>
+					<br/><br/>
 					<table border="0" cellpadding="4" width="100%" border="2" id="details">
 						<tr class="dark">
-							<td>Project Description</td><td><a class="links" title="Vistumbler WifiDB" href="{$wifidb_host_url}">Vistumbler WifiDB</a> is a project to gather wireless accesss points gathered by <a class="links" title="Vistumbler" href="https://www.vistumbler.net">Vistumbler</a> or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads.</td>
+							<td>Project Description</td><td><a class="links" title="Vistumbler WifiDB" href="{$wifidb_host_url}">Vistumbler WifiDB</a> is a project to collect wireless accesss points gathered by <a class="links" title="Vistumbler" href="https://www.vistumbler.net">Vistumbler</a> or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads.</td>
 						</tr>
 						<tr class="light">
 							<td>Project Github</td><td><b><a class="links" title="Vistumbler WifiDB Github" href="https://github.com/acalcutt/WiFiDB">https://github.com/acalcutt/WiFiDB</a></b></td>
@@ -39,13 +68,7 @@ if not, write to the
 							<td>Project Support</td><td><b><a class="links" title="Forum" href="https://forum.techidiots.net/forum/viewforum.php?f=44">WiFiDB Forum</a></b></td>
 						</tr>
 					</table>
-					<br/>
-					<a class="links" title="Import" href="{$wifidb_host_url}import/"><img alt="Import" src="{$themeurl}img/upload-cloud.png">Import Files</a>
-					<a class="links" title="Map" href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0"><img alt="Map" src="{$themeurl}img/map.png">Map</a>
-					<a class="links" title="Stats" href="{$wifidb_host_url}stats.php"><img alt="Stats" src="{$themeurl}img/stats.png">Stats</a>
-					<a class="links" title="Export KMZ" href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml"><img alt="Export KMZ" src="{$themeurl}img/download-cloud.png">Export KMZ</a>
-					<a class="links" title="Log In/Out" href="{$wifidb_host_url}login.php{$wifidb_current_uri}"><img alt="Log In/Out" src="{$themeurl}img/log-in.png">{$wifidb_login_label|default:'Login'}</a>
-					<br/>
+
 				</div>
 			</div>
 {include file="footer.tpl"}
