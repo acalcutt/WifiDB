@@ -207,7 +207,7 @@ Go here to reset it to one you choose:
 					}
 					else
 					{
-						echo "Email sent to: ".$userArray['email']."\r\n";
+						//echo "Email sent to: ".$userArray['email']."\r\n";
 					}
 					
 					#Clear recipient

@@ -180,8 +180,8 @@ class daemon extends wdbcli
 			$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
 			$prep->execute();
 			$this->sql->checkError(__LINE__, __FILE__);
-
 			$tmp_id = $prep->fetch(2)['tmp_id'];
+
 			$delete = "DELETE FROM files_tmp WHERE id = ?";
 			$prep = $this->sql->conn->prepare($delete);
 			$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
@@ -299,7 +299,7 @@ class daemon extends wdbcli
 		$return	=	file($source);
 		$count	=	count($return);
 		if(!($count <= 8))//make sure there is at least a 'valid' file in the field
-		{
+		{			
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
 			if($this->sql->service == "mysql")
 				{$update_tmp = "UPDATE `files_importing` SET `ap` = 'Preparing for Import', `importing` = '1' WHERE `id` = ?";}
@@ -359,8 +359,11 @@ class daemon extends wdbcli
 					Throw new ErrorException("Failed to Insert the results of the new Import into the files table. :(");
 				}else{
 					$file_row = $this->sql->conn->lastInsertID();
-					//var_dump($file_row);
 					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
+					
+					$subject = "WifiDB - File Import Started (User:$file_user ImportID:$importing_id FileID:$file_row Filename:$file_name)";
+					$message = "File has started importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name\r\nFileID: $file_row\r\nImport ID: $importing_id\r\nImport Information: ".$this->URL_PATH."opt/scheduling.php \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+					$this->wdbmail->mail_users($message, $subject, "schedule");
 				}
 
 				$import_ids = $this->GenerateUserImportIDs($file_user, $file_notes, $file_title, $file_hash, $file_row);

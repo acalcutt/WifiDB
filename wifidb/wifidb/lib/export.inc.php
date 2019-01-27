@@ -1065,6 +1065,7 @@ class export extends dbcore
 					$this->ExportDaemonKMZ($kmz_full_labeled_filepath, "full", 1, 0, "full_db_labeled.kmz");
 					if(file_exists($kmz_full_labeled_filepath)){$Full_Labeled_Exported = 1;}
 				}
+
 				
 				#Set last full export id into the settings table
 				$sql = "UPDATE `settings` SET `last_export_file` = ? WHERE `id` = 1";
