@@ -59,7 +59,7 @@ if($login_check)
 	{
 		##-------------##
 		case '':
-			header('Location: /wifidb/cp/?func=profile');
+			header('Location: /wifidb/cp/index.php?func=profile');
 		break;
 		
 		case 'profile':
@@ -114,7 +114,7 @@ if($login_check)
 				$cp_profile['message'] = "<br>User ID's did not match, there was an error, contact the support forums for more help<br><br>";
 			}
 			
-			$dbcore->redirect_page('/wifidb/cp/?func=profile', 2000);
+			$dbcore->redirect_page('/wifidb/cp/index.php?func=profile', 2000);
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_msg.tpl');
 		break;
@@ -179,7 +179,7 @@ if($login_check)
 				$cp_profile['message'] = "<br>User ID's did not match, there was an error, contact the <a href='http://forum.techidiots.net/forum/viewforum.php?f=47'>support forums</a> for more help.<br><br>";
 			}
 			
-			$dbcore->redirect_page('/wifidb/cp/?func=pref', 2000);
+			$dbcore->redirect_page('/wifidb/cp/index.php?func=pref', 2000);
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_msg.tpl');
 		break;
@@ -187,7 +187,7 @@ if($login_check)
 }
 else
 {
-	$dbcore->redirect_page('/wifidb/login.php?return=%2Fwifidb%2Fcp', 2000);
+	$dbcore->redirect_page("/wifidb/login.php?return=".urlencode("/wifidb/cp/".basename($_SERVER['REQUEST_URI'])), 1000);
 	$cp_profile['message'] = "<br>You must be logged in to go into the User Control Panel. Redirecting to login page.<br><br>";
 	$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 	$dbcore->smarty->display('user_cp_msg.tpl');
