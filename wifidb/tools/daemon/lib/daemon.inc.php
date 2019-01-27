@@ -29,11 +29,11 @@ class daemon extends wdbcli
 		$this->default_notes			=	$daemon_config['default_notes'];
 		$this->StatusWaiting			=	$daemon_config['status_waiting'];
 		$this->StatusRunning			=	$daemon_config['status_running'];
-		$this->node_name 				= 	$daemon_config['wifidb_nodename'];
-        $this->NumberOfThreads          =   $daemon_config['NumberOfThreads'];
+		$this->node_name 				=	$daemon_config['wifidb_nodename'];
+		$this->NumberOfThreads			=	$daemon_config['NumberOfThreads'];
 		$this->daemon_name				=	"";
 		$this->job_interval				=	0;
-		$this->ForceDaemonRun			=   0;
+		$this->ForceDaemonRun			=	0;
 		$this->daemonize				=	0;
 		$this->RunOnceThrough			=	0;
 		$this->ImportID					=	0;
@@ -41,17 +41,17 @@ class daemon extends wdbcli
 		$this->DaemonSleepTime			=	$daemon_config['time_interval_to_check'];
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->return_message			=	"";
-		$this->convert_extentions   = array('csv','vsz');
+		$this->convert_extentions		=	array('csv','vsz');
 
 		$this->daemon_version			=	"3.0";
-		$this->ver_array['Daemon']  = array(
-									"last_edit"				=>	"2015-Mar-21",
-									"CheckDaemonKill"		=>	"1.0",#
-									"cleanBadImport"		=>	"1.0",
-									"GenerateUserImport"	=>	"1.0",
-									"insert_file"			=>	"1.0",
-									"parseArgs"				=>	"1.0"
-									);
+		$this->ver_array['Daemon']		=	array(
+												"last_edit"				=>	"2015-Mar-21",
+												"CheckDaemonKill"		=>	"1.0",#
+												"cleanBadImport"		=>	"1.0",
+												"GenerateUserImport"	=>	"1.0",
+												"insert_file"			=>	"1.0",
+												"parseArgs"				=>	"1.0"
+												);
 	}
 ####################
 	/**
@@ -227,58 +227,58 @@ class daemon extends wdbcli
 		
 	}
 
-    /**
-     * @param string $user
-     * @param string $notes
-     * @param string $title
-     * @param string $hash
+	/**
+	 * @param string $user
+	 * @param string $notes
+	 * @param string $title
+	 * @param string $hash
 	 * @param integer $file_row
-     * @return array
-     * @throws ErrorException
-     */
-    function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
-    {
-        if($file_row === 0)
-        {
-            throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
-        }
+	 * @return array
+	 * @throws ErrorException
+	 */
+	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
+	{
+		if($file_row === 0)
+		{
+			throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
+		}
 
-        if($user === "")
-        {
-            throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
-        }
-        $multi_user = explode("|", $user);
-        $rows = array();
-        $n = 0;
-        # Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
+		if($user === "")
+		{
+			throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
+		}
+		$multi_user = explode("|", $user);
+		$rows = array();
+		$n = 0;
+		# Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
 		if($this->sql->service == "mysql")
 			{$sql = "INSERT INTO `user_imports` (`username`, `notes`, `title`, `hash`, `file_id`) VALUES (?, ?, ?, ?, ?)";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "INSERT INTO [user_imports] ([username], [notes] , [title], [hash], [file_id]) VALUES (?, ?, ?, ?, ?)";}
-        $prep = $this->sql->conn->prepare($sql);
-        foreach($multi_user as $muser)
-        {
-            if ($muser === ""){continue;}
-            $prep->bindParam(1, $muser, PDO::PARAM_STR);
-            $prep->bindParam(2, $notes, PDO::PARAM_STR);
-            $prep->bindParam(3, $title, PDO::PARAM_STR);
-            $prep->bindParam(4, $hash, PDO::PARAM_STR);
-            $prep->bindParam(5, $file_row, PDO::PARAM_INT);
-            $prep->execute();
+		$prep = $this->sql->conn->prepare($sql);
+		foreach($multi_user as $muser)
+		{
+			if ($muser === ""){continue;}
+			$prep->bindParam(1, $muser, PDO::PARAM_STR);
+			$prep->bindParam(2, $notes, PDO::PARAM_STR);
+			$prep->bindParam(3, $title, PDO::PARAM_STR);
+			$prep->bindParam(4, $hash, PDO::PARAM_STR);
+			$prep->bindParam(5, $file_row, PDO::PARAM_INT);
+			$prep->execute();
 
-            if($this->sql->checkError())
-            {
-                //$this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
-                $this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
-                Throw new ErrorException;
-            }
-            $n++;
-            $rows[$n] = $this->sql->conn->lastInsertId();
-            //$this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
-            $this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
-        }
-        return $rows;
-    }
+			if($this->sql->checkError())
+			{
+				//$this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
+				$this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
+				Throw new ErrorException;
+			}
+			$n++;
+			$rows[$n] = $this->sql->conn->lastInsertId();
+			//$this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
+			$this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
+		}
+		return $rows;
+	}
 
 
 	function ImportProcess($file_to_Import = array())
@@ -361,8 +361,8 @@ class daemon extends wdbcli
 					$file_row = $this->sql->conn->lastInsertID();
 					$this->verbosed("Added $source ($importing_id) to the Files table.\n");
 					
-					$subject = "WifiDB - File Import Started (User:$file_user ImportID:$importing_id FileID:$file_row Filename:$file_name)";
-					$message = "File has started importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name\r\nFileID: $file_row\r\nImport ID: $importing_id\r\nImport Information: ".$this->URL_PATH."opt/scheduling.php \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+					$subject = "Vistumbler WifiDB - File Import Started (User:$file_user ImportID:$importing_id FileID:$file_row Filename:$file_name)";
+					$message = "File has started importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name\r\nFileID: $file_row\r\nImport ID: $importing_id\r\nImport Information: ".$this->URL_PATH."opt/scheduling.php \r\n";
 					$this->wdbmail->mail_users($message, $subject, "schedule");
 				}
 
@@ -573,8 +573,8 @@ class daemon extends wdbcli
 						Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
 					}else
 					{
-						$subject = "WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
-						$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n\r\n---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+						$subject = "Vistumbler WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
+						$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n";
 						$this->wdbmail->mail_users($message, $subject, "import");
 						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
 					}
@@ -698,36 +698,36 @@ class daemon extends wdbcli
 		$this->sql->checkError(__LINE__, __FILE__);
 	}
 
-    public function GetWaitingImportRowCount()
-    {
+	public function GetWaitingImportRowCount()
+	{
 		if($this->sql->service == "mysql")
 			{$sql = "SELECT count(`id`) FROM `files_tmp`";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT count([id]) FROM [files_tmp]";}
-        $result = $this->sql->conn->query($sql);
-        $fetch = $result->fetch();
-    }
+		$result = $this->sql->conn->query($sql);
+		$fetch = $result->fetch();
+	}
 
-    public function  RemoveUserImport($import_ID = 0)
-    {
+	public function  RemoveUserImport($import_ID = 0)
+	{
 		if($this->sql->service == "mysql")
 			{$sql = "DELETE FROM `user_imports` WHERE `id` = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "DELETE FROM [user_imports] WHERE [id] = ?";}
-        $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam(1, $import_ID, PDO::PARAM_STR);
-        $prep->execute();
-        if($this->sql->checkError())
-        {
-            $this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
-            //$this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
-            throw new ErrorException("Failed to remove bad file from the user import table.");
-        }else
-        {
-            $this->verbosed("Cleaned file from the User Import table.");
-        }
-        return 1;
-    }
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $import_ID, PDO::PARAM_STR);
+		$prep->execute();
+		if($this->sql->checkError())
+		{
+			$this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
+			//$this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
+			throw new ErrorException("Failed to remove bad file from the user import table.");
+		}else
+		{
+			$this->verbosed("Cleaned file from the User Import table.");
+		}
+		return 1;
+	}
 
 #END DAEMON CLASS
 }

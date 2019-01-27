@@ -32,19 +32,35 @@ $config = array
     'hosturl'               =>   'http://wifidb.foo.lan',
     'dim'                   =>   DIRECTORY_SEPARATOR,
     'timetilldead'          =>   2,
-    'admin_email'           =>   'wifidb@someemail.net',
     'config_fails'          =>   3,
-    'wifidb_from'           =>   'wifidb@someemail.com',
-    'wifidb_from_pass'      =>   'supersecretpw',
-    'wifidb_smtp'           =>   'smtp.someemail.com',
     'email_validation'      =>   1,
-    'wifidb_email_updates'  =>   0,
+    'wifidb_email_updates'  =>   1,
     'GeoNamesLoopGiveUp'    =>   5000,
-    'reserved_users'        =>   'WiFiDB::wifidb:Recovery:root:system',
-    'dBmMaxSignal'			=>   '-30',
-    'dBmDissociationSignal'	=>   '-85',
-	'verbose'      			=>   1,
-	'EnableAPIKey'      	=>   0,
+    'reserved_users'        =>   'WiFiDB::wifidb:Recovery:root:system:admin',
+    'dBmMaxSignal'          =>   '-30',
+    'dBmDissociationSignal'.=>   '-85',
+    'verbose'               =>   1,
+    'EnableAPIKey'          =>   0,
+    #----------SMTP Settings------------#
+    'smtp_debug'            =>   0,                         // Enable verbose debug output 0:disable 2:verbose
+    'smtp_host'             =>   'smtp.someemail.com',      // Specify main and backup SMTP servers
+    'smtp_port'             =>   587,                       // Specify smtp port
+    'smtp_user'             =>   'wifidb@someemail.com',    // SMTP username
+    'smtp_pass'             =>   'supersecretpw',           // SMTP password    
+    'smtp_from'             =>   'wifidb@someemail.com',    // SMTP from
+    'smtp_replyto'          =>   '',                        // SMTP reply to
+    'smtp_secure'           =>   'tls',                     // Auth type, tls or ssl
+    'smtp_auth'             =>   true,
+    'smtp_authtype'         =>   'LOGIN',
+    'smtp_options'          =>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
+    'DKIM_domain'           =>   'someemail.com',
+    'DKIM_private'          =>   'private.pem',
+    'DKIM_selector'         =>   'wdb',
+    'DKIM_passphrase'       =>   '',
+    'DKIM_identity'         =>   'wifidb@someemail.com',
+    'DKIM_copyHeaderFields' =>   true,
+    'ListUnsubscribe'       =>   '<wifidb@someemail.com>, <https://wifidb.foo.lan/cp/?func=pref>',
+    'XMailer'               =>   'WifiDB <https://wifidb.foo.lan/wifidb/>',
 
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
@@ -92,9 +108,17 @@ $config = array
     'sep'                   =>   '-',
 
     #---------------- SQL Info ----------------#
+    #MS SQL SERVER
+    #'srvc'                  =>   'sqlsrv',
+    #'host'                  =>   'localhost',
+    #'db'                      =>   'wifi',
+    #'db_user'               =>   'wdbuser',
+    #'db_pwd'                =>   'supersecretpw',
+    
+    #MySQL Server
     'srvc'                  =>   'mysql',
     'host'                  =>   'localhost',
-    'db'                  	=>   'wifi',
+    'db'                      =>   'wifi',
     'db_user'               =>   'wdbuser',
     'db_pwd'                =>   'supersecretpw',
     'charset'               =>   'utf8mb4',
@@ -111,7 +135,7 @@ $config = array
     'daemon_out'            =>   'out/daemon/',
     'gpx_out'               =>   'out/gpx/',
     'csv_out'               =>   'out/csv/',
-	'region_out'            =>   'out/region/',
+    'region_out'            =>   'out/region/',
 
     #---------------- Header and Footer Additional Info -----------------#
     'ads'                   => '', # <-- put the code for your ads in here www.google.com/adsense

@@ -24,39 +24,54 @@ class wdbmail
 {
     function __construct($config)
     {
-		$this->HOSTURL				  = $config['hosturl'];
-		$this->root					 = $config['root'];
-		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';
+		$this->URL_PATH				 	= $config['hosturl'].$config['root'].'/';
 		$this->wifidb_email_updates	 	= $config['wifidb_email_updates'];
 		$this->email_validation		 	= $config['email_validation'];
-		$this->admin_email				= $config['admin_email'];
-		$this->wifidb_from				= $config['wifidb_from'];
-		$this->wifidb_from_pass			= $config['wifidb_from_pass'];
-		$this->wifidb_smtp				= $config['wifidb_smtp'];
-		$this->wifidb_smtp_port			= $config['wifidb_smtp_port'];
+		$this->smtp_debug				= $config['smtp_debug'];
+		$this->smtp_host				= $config['smtp_host'];
+		$this->smtp_port				= $config['smtp_port'];
+		$this->smtp_user				= $config['smtp_user'];
+		$this->smtp_pass				= $config['smtp_pass'];
+		$this->smtp_from				= $config['smtp_from'];
+		$this->smtp_replyto				= $config['smtp_replyto'];		
+		$this->smtp_secure				= $config['smtp_secure'];
+		$this->smtp_auth				= $config['smtp_auth'];
+		$this->smtp_authtype			= $config['smtp_authtype'];
+		$this->smtp_options				= $config['smtp_options'];
+		$this->DKIM_domain				= $config['DKIM_domain'];
+		$this->DKIM_private				= $config['DKIM_private'];
+		$this->DKIM_selector			= $config['DKIM_selector'];
+		$this->DKIM_passphrase			= $config['DKIM_passphrase'];
+		$this->DKIM_identity			= $config['DKIM_identity'];
+		$this->DKIM_copyHeaderFields	= $config['DKIM_copyHeaderFields'];
+		$this->ListUnsubscribe			= $config['ListUnsubscribe'];
+		$this->XMailer					= $config['XMailer'];
 		
-		$this->sec					  = new security($this, $config);
-		$this->sql					  = new SQL($config);
+		$this->sec					  	= new security($this, $config);
+		$this->sql					  	= new SQL($config);
 		
-		$this->mail = new PHPMailer();
-		$this->mail->SMTPDebug = 0;                                 // Enable verbose debug output 0:disable 2:verbose
-		$this->mail->isSMTP();                                      // Set mailer to use SMTP
-		$this->mail->Host = $this->wifidb_smtp;					// Specify main and backup SMTP servers
-		$this->mail->SMTPAuth = false;                               // Enable SMTP authentication
-		$this->mail->admin_email = $this->admin_email;               // Admin email address
-		$this->mail->Username = $this->wifidb_from;               // SMTP username
-		$this->mail->Password = $this->wifidb_from_pass;                          // SMTP password
-		$this->mail->SMTPSecure = 'tls';                            // Enable TLS encryption, `ssl` also accepted
-		$this->mail->Port = $this->wifidb_smtp_port;  
-		$this->mail->setFrom($this->wifidb_from, 'WifiDB');
-		$this->mail->AddReplyTo($this->admin_email, 'WifiDB');
-		$this->mail->SMTPOptions = array(
-			'ssl' => array(
-				'verify_peer' => false,
-				'verify_peer_name' => false,
-				'allow_self_signed' => true
-			)
-		);
+		$this->mail 					= new PHPMailer();
+		$this->mail->isSMTP();										// Set mailer to use SMTP			
+		$this->mail->XMailer 			= $this->XMailer;			//What to put in the X-Mailer header. An empty string for PHPMailer default, whitespace for none, or a string to use.		
+		$this->mail->SMTPDebug 			= $this->smtp_debug;		// Enable verbose debug output 0:disable 2:verbose
+		$this->mail->Host 				= $this->smtp_host;			// Specify main and backup SMTP servers
+		$this->mail->Port 				= $this->smtp_port;			// Specify smtp port
+		$this->mail->Username 			= $this->smtp_user;			// SMTP username
+		$this->mail->Password 			= $this->smtp_pass;			// SMTP password		
+		$this->mail->SetFrom($this->smtp_from);						// SMTP from
+		$this->mail->AddReplyTo($this->smtp_replyto);				// SMTP reply to
+		$this->mail->SMTPSecure 		= $this->smtp_secure;		// Enable TLS encryption, `ssl` also accepted		
+		$this->mail->SMTPAuth 			= $this->smtp_auth;			// Enable SMTP authentication
+		$this->mail->AuthType 			= $this->smtp_authtype;		// Auth type, tls or ssl
+		$this->mail->SMTPOptions 		= $this->smtp_options;
+		
+		$this->mail->DKIM_domain 		= $this->DKIM_domain;
+		$this->mail->DKIM_private 		= $this->DKIM_private;
+		$this->mail->DKIM_selector 		= $this->DKIM_selector;		//Set this to your own selector
+		$this->mail->DKIM_passphrase 	= $this->DKIM_passphrase;	//Put your private key's passphrase in here if it has one
+		$this->mail->DKIM_identity 		= $this->DKIM_identity;		//The identity you're signing as - usually your From address
+		$this->mail->DKIM_copyHeaderFields = $this->DKIM_copyHeaderFields;//Suppress listing signed header fields in signature, defaults to true for debugging purpose
+		$this->mail->addCustomHeader("List-Unsubscribe",$this->ListUnsubscribe);
     }
     
     function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
@@ -180,6 +195,10 @@ Go here to reset it to one you choose:
         {	
             if($this->wifidb_email_updates)
             {
+				#Add Signature, Unsubscribe
+				$contents .= "\r\nVistumbler WiFiDB (".$this->URL_PATH.") \r\n";
+				$contents .= "To stop receiving these messages, log into the WifiDB control panel at ".$this->URL_PATH."cp/?func=pref";
+
 				#Create Email Subject and Body
 				if($error_f){$subject .= " ^*^*^*^ ERROR! ^*^*^*^";}
 				$this->mail->Subject = $subject;
@@ -238,8 +257,8 @@ Go here to reset it to one you choose:
 		
 		$contents = $message."\r\n";
 		$contents .= "Your account: $username \r\n";
-		$contents .= "Validation Link: $this->URL_PATH/login.php?func=".$function."&username=$username&validate_code=$validate_code \r\n\r\n";
-		$contents .= "---- Vistumbler WiFiDB ( https://live.wifidb.net ) ----";
+		$contents .= "Validation Link: ".$this->URL_PATH."login.php?func=".$function."&username=$username&validate_code=$validate_code \r\n";
+		$contents .= "\r\nVistumbler WiFiDB (".$this->URL_PATH.")";
 	
 		try 
 		{
