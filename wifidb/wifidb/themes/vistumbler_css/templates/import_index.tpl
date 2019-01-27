@@ -57,7 +57,7 @@ if not, write to the
 								</td>
 								<td class="light">
 										<a name="user"></a>
-										{$import_username_field|default:'<input type="text" name="username" size="56" style="width: 5.41in; height: 0.25in"/>'}
+										<input type="TEXT" name="user" value="{$wifidb_login_user|default:""}" size="28" style="width: 2.42in; height: 0.25in">
 								</td>
 							</tr>
 							<tr>

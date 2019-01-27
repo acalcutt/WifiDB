@@ -3,7 +3,7 @@
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}">Home</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>					
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>		
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import Files</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import File</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Imports Waiting</a></div>				
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imports Finished</a></div>
 
