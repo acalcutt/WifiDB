@@ -263,7 +263,15 @@ class convert extends dbcore
 		{	$Found_AUTH = "WPA2-Enterprise";
 			$Found_ENCR = "CCMP";
 			$Found_SecType = 3;
+		}ElseIf(stristr($Found_Capabilities, "WPA2-EAP") And stristr($Found_Capabilities, "EAP-CCMP"))
+		{	$Found_AUTH = "WPA2-Enterprise";
+			$Found_ENCR = "CCMP";
+			$Found_SecType = 3;
 		}ElseIf(stristr($Found_Capabilities, "WPA-EAP-CCMP") Or stristr($Found_Capabilities, "WPA-EAP-TKIP+CCMP"))
+		{	$Found_AUTH = "WPA-Enterprise";
+			$Found_ENCR = "CCMP";
+			$Found_SecType = 3;
+		}ElseIf(stristr($Found_Capabilities, "WPA-EAP") And stristr($Found_Capabilities, "EAP-CCMP"))
 		{	$Found_AUTH = "WPA-Enterprise";
 			$Found_ENCR = "CCMP";
 			$Found_SecType = 3;
