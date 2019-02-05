@@ -61,7 +61,14 @@ if not, write to the
 								center: {$centerpoint},
 								zoom: {$zoom},
 							});
-							
+
+							map.addControl(new mapboxgl.GeolocateControl({
+							positionOptions: {
+							enableHighAccuracy: true
+							},
+							trackUserLocation: true
+							}));
+
 							function GoToLatest() {
 								var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap'
 								console.log('url: ', url);
@@ -234,6 +241,7 @@ if not, write to the
 											'<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>' +
 											'<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>' +
 											'<li>ALTITUDE: <b>' + feature.properties.alt + '</b></li>' +
+											'<li>POINTS: <b>' + feature.properties.points + '</b></li>' +
 											'<li>First Active: <b>' + feature.properties.FA + '</b></li>' +
 											'<li>Last Active: <b>' + feature.properties.LA + '</b></li>' +
 											'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>' +
