@@ -27,7 +27,7 @@ if not, write to the
 					<a href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-Detailed-CSV-Format" target="_blank">CSV</a>
 					files are the main import formats.<br/>
 					For Android, we support 
-					<a href="https://play.google.com/store/apps/details?id=net.wigle.wigleandroid" target="_blank">WiggleWifi CSV</a>,
+					<a href="https://play.google.com/store/apps/details?id=net.wigle.wigleandroid" target="_blank">WigleWifi CSV</a>,
 					<a href="https://play.google.com/store/apps/details?id=com.Buckynet.Wifi.Scanner.Wireless.SWardriving&hl=en_US" target="_blank">SWardriving CSV</a>, and 
 					<a href="https://github.com/raffaeleragni/android-wardrive4/releases" target="_blank">Wardrive DB/DB3</a><br><br>
 					Username is optional, but it helps keep track of who has imported what Access Points<br><br>
@@ -85,7 +85,7 @@ if not, write to the
 								<td class="light">
 										  <input type="radio" name="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br>
 										  <input type="radio" name="type" value="wardrive">Wardrive DB/DB3<br>
-										  <input type="radio" name="type" value="wigglewificsv">WiggleWifi CSV<br>
+										  <input type="radio" name="type" value="wiglewificsv">WigleWifi CSV<br>
 										  <input type="radio" name="type" value="swardriving">SWardriving CSV<br>
 								</td>
 							</tr>
