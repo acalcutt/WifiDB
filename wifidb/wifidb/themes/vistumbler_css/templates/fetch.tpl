@@ -35,7 +35,17 @@ if not, write to the
 						}
 					}
 					</script>
-					<h1>{$wifidb_ap.ssid}{$wifidb_ap_globe_html}</h1>
+					<h1>{$wifidb_ap.ssid}
+						{if $wifidb_ap.validgps eq 1}
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_ap.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+							<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$wifidb_ap.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+							<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$wifidb_ap.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+						{else}
+							<img width="20px" src="{$themeurl}img/globe_off.png">
+							<img width="20px" src="{$themeurl}img/json_off.png">
+							<img width="20px" src="{$themeurl}img/kmz_off.png">
+						{/if}
+					</h1>
 					<table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
 					<table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
 						<tbody>
@@ -49,10 +59,11 @@ if not, write to the
 							<tr><td class="header" width="112">OTx</td><td class="light" width="439">{$wifidb_ap.otx}</td></tr>
 							<tr><td class="header" width="112">Flags</td><td class="light" width="439">{$wifidb_ap.flags}</td></tr>
 							<tr><td class="header" width="112">Network Type</td><td class="light" width="439">{$wifidb_ap.nt}</td></tr>
-							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.fa}</td></tr>
-							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.la}</td></tr>
 							<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_ap.lat}</td></tr>
 							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_ap.lon}</td></tr>
+							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.fa}</td></tr>
+							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.la}</td></tr>
+							<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_ap.points}</td></tr>
 							<tr><td class="header" width="112">User</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></td></tr>
 							<tr><td class="header" width="112">Export:</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}&labeled=1">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
 							</tr>
@@ -127,7 +138,17 @@ if not, write to the
 						<tbody>
 							<tr>
 								<td class="light" align="center"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.id}</a></td>	
-								<td class="light" align="center">{$wifidb_assoc.globe}</td>
+								<td class="light" align="center">
+								{if $wifidb_assoc.validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_assoc.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_assoc.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_assoc.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{else}
+									<img width="20px" src="{$themeurl}img/globe_off.png">
+									<img width="20px" src="{$themeurl}img/json_off.png">
+									<img width="20px" src="{$themeurl}img/kmz_off.png">
+								{/if}
+								</td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
 								<td class="light">{$wifidb_assoc.notes}</td>

@@ -94,19 +94,15 @@ class frontend extends dbcore
 					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE wap.AP_ID = ?";
+					. "WHERE wap.AP_ID = ? LIMIT 1";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[FLAGS],\n"
-					. "[whFA].[Hist_Date] As [FA],\n"
-					. "[whLA].[Hist_Date] As [LA],\n"
+				$sql = "SELECT TOP 1 [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[FLAGS],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wf].[user] As [user]\n"
 					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
-					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
 					. "WHERE [wap].[AP_ID] = ?";
@@ -116,36 +112,24 @@ class frontend extends dbcore
 		$prep->execute();
 		$newArray = $prep->fetch(2);
 		
-		$ap_data = array(
-			'id'=>$newArray['AP_ID'],
-			'radio'=>$newArray['RADTYPE'],
-			'manuf'=>$this->findManuf($newArray['BSSID']),
-			'mac'=>$newArray['BSSID'],
-			'ssid'=>$this->formatSSID($newArray['SSID']),
-			'chan'=>$newArray['CHAN'],
-			'encry'=>$newArray['ENCR'],
-			'auth'=>$newArray['AUTH'],
-			'btx'=>$newArray["BTX"],
-			'otx'=>$newArray["OTX"],
-			'flags'=>$newArray["FLAGS"],
-			'fa'=>$newArray["FA"],
-			'la'=>$newArray["LA"],
-			'nt'=>$newArray["NETTYPE"],
-			'lat'=>$newArray["Lat"],
-			'lon'=>$newArray["Lon"],
-			'user'=>$newArray["user"]
-		);
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
+		$prep2 = $this->sql->conn->prepare($sql);
+		$prep2->bindParam(1, $id, PDO::PARAM_INT);
+		$prep2->execute();
+		$falaparr = $prep2->fetch(2);
 
 		$list_geonames = array();
 		$flip = 0;
 		if($newArray['Lat'] == '0.0000' || $newArray['Lat'] == '')
 		{
-			$globe_html = '<img width="20px" src="'.$this->URL_PATH.'img/globe_off.png">';
-			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
-			$globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
+			$validgps = 0;
 		}
 		else
 		{
+			$validgps = 1;
 			$Latdd = $this->convert->dm2dd($newArray["Lat"]);
 			$Londd = $this->convert->dm2dd($newArray["Lon"]);
 			$lat_search = bcdiv($Latdd, 1, 1);
@@ -217,6 +201,28 @@ class frontend extends dbcore
 			$globe_html .= '<a href="'.$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$newArray['AP_ID'].'" title="Export AP to KMZ"><img width="20px" src="'.$this->URL_PATH.'/img/kmz_on.png"></a>';
 		}
 
+		$ap_data = array(
+			'id'=>$newArray['AP_ID'],
+			'radio'=>$newArray['RADTYPE'],
+			'manuf'=>$this->findManuf($newArray['BSSID']),
+			'mac'=>$newArray['BSSID'],
+			'ssid'=>$this->formatSSID($newArray['SSID']),
+			'chan'=>$newArray['CHAN'],
+			'encry'=>$newArray['ENCR'],
+			'auth'=>$newArray['AUTH'],
+			'btx'=>$newArray["BTX"],
+			'otx'=>$newArray["OTX"],
+			'flags'=>$newArray["FLAGS"],
+			'nt'=>$newArray["NETTYPE"],
+			'lat'=>$newArray["Lat"],
+			'lon'=>$newArray["Lon"],
+			'user'=>$newArray["user"],
+			'fa'=>$falaparr["fa"],
+			'la'=>$falaparr["la"],
+			'points'=>$falaparr["points"],
+			'validgps'=>$validgps
+		);
+		
 		$list = array();
 		$flip = 0;
 
@@ -253,18 +259,7 @@ class frontend extends dbcore
 				{$class="dark";$flip=0;}
 			else
 				{$class="light";$flip=1;}
-			
-			if($field['ValidGPS'] == 1)
-			{
-				$list_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$field['File_ID']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
-				$list_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$field['File_ID']."\" title=\"Export List to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";					
-				$list_globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$field['File_ID']."\" title=\"Export List to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/kmz_on.png\"></a>";
-			}else
-			{
-				$list_globe_html = '<img width="20px" src="'.$this->URL_PATH.'img/globe_off.png">';
-				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/json_off.png">';
-				$list_globe_html .= '<img width="20px" src="'.$this->URL_PATH.'img/kmz_off.png">';
-			}
+
 			$file_id = $field["File_ID"];
 			
 			$flip2=0;
@@ -314,14 +309,14 @@ class frontend extends dbcore
 			$list[]= array(
 				'class'=>$class,
 				'id'=>$field['File_ID'],
-				'globe'=>$list_globe_html,
 				'nu'=>$field['New'],
 				'date'=>$field['date'],
 				'points'=>$field['points'],
 				'user'=>$field['user'],
 				'title'=>$field['title'],
 				'notes'=>$field['notes'],
-				'signals'=>$sigarr
+				'signals'=>$sigarr,
+				'validgps'=>$field['ValidGPS']
 			);
 
 		}
@@ -330,7 +325,6 @@ class frontend extends dbcore
 		return array(
 			$newArray['SSID'],
 			$list,
-			$globe_html,
 			$ap_data,
 			$list_geonames
 		);
@@ -752,9 +746,9 @@ class frontend extends dbcore
 		if(!$row){return 0;}
 		
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT `id`, `file`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size` FROM `files` WHERE `id`= ?";}
+			{$sql = "SELECT `id`, `file`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size`, `ValidGPS` FROM `files` WHERE `id`= ?";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [id], [file], [user], [aps], [gps], [notes], [title], [date], [hash], [converted], [prev_ext], [NewAPPercent], [size] FROM [files] WHERE [id]= ?";}
+			{$sql = "SELECT [id], [file], [user], [aps], [gps], [notes], [title], [date], [hash], [converted], [prev_ext], [NewAPPercent], [size], [ValidGPS] FROM [files] WHERE [id]= ?";}
         $result = $this->sql->conn->prepare($sql);
 		$result->execute(array($row));
 		$user_array = $result->fetch(2);
@@ -772,6 +766,7 @@ class frontend extends dbcore
 		$all_aps_array['hash'] = $user_array['hash'];
 		$all_aps_array['date'] = $user_array['date'];
 		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
+		$all_aps_array['validgps'] = $user_array['ValidGPS'];
 
 		if($this->sql->service == "mysql")
 			{$sql = "SELECT `AP_ID`, `New`, Min(`Hist_Date`) As `fa`, Max(`Hist_Date`) As `la`, Count(`Hist_Date`) As `points` FROM `wifi_hist` WHERE `File_ID` = ? GROUP BY `AP_ID`, `New` ORDER BY `AP_ID` DESC";}
@@ -820,27 +815,12 @@ class frontend extends dbcore
 			$ap_array = $result->fetch(2);
 			
 			if($ap_array['BSSID']  == "00:00:00:00:00:00"){continue;}
-				
-			if($ap_array['Lat']  == "0.0000" || $ap_array['Lat']  == "")
-			{
-				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
-			}else
-			{
-				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$ap_array['AP_ID']."\" title=\"Show AP on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/globe_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$ap_array['AP_ID']."\" title=\"Export AP to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/json_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$ap_array['AP_ID']."\" title=\"Export AP to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."/img/kmz_on.png\"></a>";
-			}
+			if($ap_array['Lat']  == "0.0000" || $ap_array['Lat']  == ""){$validgps = 0;}else{$validgps = 1;}
 
 			$all_aps_array['allaps'][] = array(
 					'id' => $ap_array['AP_ID'],
 					'class' => $style,
 					'un' => $update_or_new,
-					'globe' => $globe,
-					'globe_html' => $globe_html,
 					'ssid' => $this->formatSSID($ap_array['SSID']),
 					'mac' => $ap_array['BSSID'],
 					'chan' => $ap_array['CHAN'],
@@ -851,7 +831,8 @@ class frontend extends dbcore
 					'la' => $List_AP_LA,
 					'points' => $List_points,
 					'lat' => $ap_array['Lat'],
-					'lon' => $ap_array['Lon']
+					'lon' => $ap_array['Lon'],
+					'validgps' => $validgps
 			);
 		}
 		$all_aps_array['total_aps'] = $count;

@@ -60,8 +60,18 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
-								<td width="190px"><b>Export This list To...</b></td>
-								<td><a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$wifidb_all_user_row}&labeled=1">Map</a> | <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&amp;id={$wifidb_all_user_row}&amp;all=1">GeoJSON</a> | <a href="{$wifidb_host_url}api/export.php?func=exp_list&amp;id={$wifidb_all_user_row}&amp;all=1">KMZ</a></td>
+								<td width="40px"><b>GPS:</b></td>
+								<td>
+								{if $wifidb_all_user_aps.validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_all_user_aps.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_all_user_aps.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_all_user_aps.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{else}
+									<img width="20px" src="{$themeurl}img/globe_off.png">
+									<img width="20px" src="{$themeurl}img/json_off.png">
+									<img width="20px" src="{$themeurl}img/kmz_off.png">
+								{/if}
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -86,7 +96,17 @@ if not, write to the
 							<tr class="{$wifidb_users_aps.class}">
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.globe_html}</td>
+								<td class="{$wifidb_users_aps.class}">
+								{if $wifidb_users_aps.validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_users_aps.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$wifidb_users_aps.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+									<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$wifidb_users_aps.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{else}
+									<img width="20px" src="{$themeurl}img/globe_off.png">
+									<img width="20px" src="{$themeurl}img/json_off.png">
+									<img width="20px" src="{$themeurl}img/kmz_off.png">
+								{/if}
+								</td>
 								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid}</a></td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>
