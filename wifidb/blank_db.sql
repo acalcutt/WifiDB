@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 172.16.1.111
--- Generation Time: Jan 08, 2019 at 01:53 AM
+-- Generation Time: Feb 05, 2019 at 01:49 PM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.13-1+0~20181207100540.13+stretch~1.gbpf57305
 
@@ -48,6 +48,39 @@ CREATE TABLE `boundaries` (
   `id` int(255) NOT NULL,
   `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `polygon` text COLLATE utf8mb4_unicode_ci NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cell_hist`
+--
+
+CREATE TABLE `cell_hist` (
+  `cell_hist_id` bigint(20) NOT NULL,
+  `cell_id` bigint(20) NOT NULL,
+  `rssi` int(11) NOT NULL,
+  `lat` decimal(9,4) NOT NULL,
+  `lon` decimal(9,4) NOT NULL,
+  `alt` decimal(7,2) NOT NULL,
+  `accuracy` decimal(10,2) NOT NULL,
+  `hist_date` datetime(3) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `cell_id`
+--
+
+CREATE TABLE `cell_id` (
+  `cell_id` bigint(20) NOT NULL,
+  `mac` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ssid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `authmode` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `chan` int(10) NOT NULL,
+  `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cell_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -438,8 +471,8 @@ CREATE TABLE `schedule` (
 --
 
 INSERT INTO `schedule` (`id`, `nodename`, `daemon`, `enabled`, `interval`, `status`, `nextrun`) VALUES
-(1, 'prod', 'Import', 1, 10, 'Waiting', '2019-01-06 20:44:01'),
-(10, 'prod', 'Export', 1, 30, 'Waiting', '2019-01-07 08:24:45');
+(1, 'prod', 'Import', 1, 10, 'Waiting', '2019-02-05 23:51:02'),
+(50, 'prod', 'Export', 1, 1440, 'Waiting', '2019-02-06 20:13:32');
 
 -- --------------------------------------------------------
 
@@ -533,17 +566,12 @@ CREATE TABLE `user_info` (
   `permissions` varchar(4) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0001',
   `last_login` datetime DEFAULT NULL,
   `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `mail_updates` tinyint(1) NOT NULL DEFAULT 1,
-  `schedule` tinyint(1) NOT NULL DEFAULT 1,
-  `imports` tinyint(1) NOT NULL DEFAULT 1,
-  `kmz` tinyint(1) NOT NULL DEFAULT 1,
-  `new_users` tinyint(1) NOT NULL DEFAULT 1,
-  `statistics` tinyint(1) NOT NULL DEFAULT 1,
-  `announcements` tinyint(1) NOT NULL DEFAULT 1,
-  `announce_comment` tinyint(1) NOT NULL DEFAULT 1,
-  `geonamed` tinyint(1) NOT NULL DEFAULT 1,
-  `pub_geocache` tinyint(1) NOT NULL DEFAULT 1,
-  `h_email` tinyint(1) NOT NULL DEFAULT 1,
+  `admin` tinyint(4) DEFAULT 0,
+  `schedule` tinyint(1) NOT NULL DEFAULT 0,
+  `imports` tinyint(1) NOT NULL DEFAULT 0,
+  `kmz` tinyint(1) NOT NULL DEFAULT 0,
+  `new_users` tinyint(1) NOT NULL DEFAULT 0,
+  `h_email` tinyint(1) NOT NULL DEFAULT 0,
   `join_date` datetime DEFAULT NULL,
   `friends` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `foes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -584,7 +612,7 @@ CREATE TABLE `user_stats` (
 --
 
 CREATE TABLE `user_validate` (
-  `id` int(255) NOT NULL,
+  `id` bigint(20) NOT NULL,
   `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `code` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT current_timestamp()
@@ -629,7 +657,7 @@ CREATE TABLE `wifi_ap` (
   `CHAN` int(11) DEFAULT NULL,
   `AUTH` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `ENCR` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `SECTYPE` int(11) DEFAULT NULL,
+  `SECTYPE` int(2) DEFAULT NULL,
   `RADTYPE` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `NETTYPE` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `BTX` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -703,6 +731,18 @@ ALTER TABLE `annunc`
 ALTER TABLE `boundaries`
   ADD PRIMARY KEY (`id`),
   ADD KEY `id` (`id`);
+
+--
+-- Indexes for table `cell_hist`
+--
+ALTER TABLE `cell_hist`
+  ADD PRIMARY KEY (`cell_hist_id`);
+
+--
+-- Indexes for table `cell_id`
+--
+ALTER TABLE `cell_id`
+  ADD PRIMARY KEY (`cell_id`);
 
 --
 -- Indexes for table `daemon_pid_stats`
@@ -911,7 +951,8 @@ ALTER TABLE `wifi_ap`
   ADD KEY `File_ID` (`File_ID`),
   ADD KEY `HighSig_ID` (`HighSig_ID`),
   ADD KEY `HighRSSI_ID` (`HighRSSI_ID`),
-  ADD KEY `BSSID` (`BSSID`);
+  ADD KEY `BSSID` (`BSSID`),
+  ADD KEY `SECTYPE` (`SECTYPE`);
 
 --
 -- Indexes for table `wifi_gps`
@@ -929,7 +970,10 @@ ALTER TABLE `wifi_hist`
   ADD KEY `AP_ID` (`AP_ID`),
   ADD KEY `GPS_ID` (`GPS_ID`),
   ADD KEY `File_ID` (`File_ID`),
-  ADD KEY `Hist_Date` (`Hist_Date`);
+  ADD KEY `Hist_Date` (`Hist_Date`),
+  ADD KEY `RSSI` (`RSSI`),
+  ADD KEY `Sig` (`Sig`),
+  ADD KEY `New` (`New`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -946,6 +990,18 @@ ALTER TABLE `annunc`
 --
 ALTER TABLE `boundaries`
   MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `cell_hist`
+--
+ALTER TABLE `cell_hist`
+  MODIFY `cell_hist_id` bigint(20) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `cell_id`
+--
+ALTER TABLE `cell_id`
+  MODIFY `cell_id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `daemon_pid_stats`
@@ -1053,7 +1109,7 @@ ALTER TABLE `manufacturers`
 -- AUTO_INCREMENT for table `schedule`
 --
 ALTER TABLE `schedule`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `settings`
@@ -1095,7 +1151,7 @@ ALTER TABLE `user_stats`
 -- AUTO_INCREMENT for table `user_validate`
 --
 ALTER TABLE `user_validate`
-  MODIFY `id` int(255) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user_waypoints`
@@ -1146,8 +1202,7 @@ ALTER TABLE `wifi_ap`
   ADD CONSTRAINT `wifi_ap_ibfk_2` FOREIGN KEY (`HighGps_ID`) REFERENCES `wifi_gps` (`GPS_ID`),
   ADD CONSTRAINT `wifi_ap_ibfk_3` FOREIGN KEY (`FirstHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
   ADD CONSTRAINT `wifi_ap_ibfk_4` FOREIGN KEY (`LastHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
-  ADD CONSTRAINT `wifi_ap_ibfk_5` FOREIGN KEY (`HighSig_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
-  ADD CONSTRAINT `wifi_ap_ibfk_6` FOREIGN KEY (`HighRSSI_ID`) REFERENCES `wifi_hist` (`Hist_ID`);
+  ADD CONSTRAINT `wifi_ap_ibfk_5` FOREIGN KEY (`HighSig_ID`) REFERENCES `wifi_hist` (`Hist_ID`);
 
 --
 -- Constraints for table `wifi_gps`
