@@ -63,23 +63,9 @@ switch($func)
         $files_all = array();
         while ($newArray = $result->fetch(2))
         {
-			if($newArray['ValidGPS'] == 1)
-			{
-				$globe_html = "<a href=\"".$dbcore->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$newArray['id']."\" title=\"Show on Map\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_on.png\"></a>";				
-				$globe_html .= "<a href=\"".$dbcore->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$newArray['id']."\" title=\"Export to JSON\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_on.png\"></a>";							
-				$globe_html .= "<a href=\"".$dbcore->URL_PATH."api/export.php?func=exp_list&id=".$newArray['id']."\" title=\"Export to KMZ\"><img width=\"20px\" src=\"".$dbcore->URL_PATH."img/kmz_on.png\"></a>";		
-			}
-			else
-			{
-				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/json_off.png\">";	
-				$globe_html .= "<img width=\"20px\" src=\"".$dbcore->URL_PATH."img/kmz_off.png\">";
-			}
-
             if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
             $files_all[] = array(
                                     'class'=>$class,
-                                    'globe_html'=>$globe_html,
                                     'id'=>$newArray['id'],
                                     'file'=>html_entity_decode($newArray['file']),
                                     'date'=>$newArray['date'],
@@ -90,7 +76,8 @@ switch($func)
                                     'aps'=>$newArray['aps'],
                                     'gps'=>$newArray['gps'],
                                     'size'=>$newArray['size'],
-                                    'hash'=>$newArray['hash']
+                                    'hash'=>$newArray['hash'],
+                                    'validgps'=>$newArray['ValidGPS']
                                 );
         }
         $dbcore->smarty->assign('wifidb_page_label', "Files Imported Page");

@@ -28,17 +28,13 @@ switch($func)
 		if($dbcore->sql->service == "mysql")
 			{
 				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-					. "whFA.Hist_Date As FA,\n"
-					. "whLA.Hist_Date As LA,\n"
 					. "wGPS.Lat As Lat,\n"
 					. "wGPS.Lon As Lon,\n"
 					. "wGPS.Alt As Alt,\n"
 					. "wf.user As user\n"
 					. "FROM `wifi_ap` AS wap\n"
-					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+					. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
 					. "WHERE `wap`.`HighGps_ID` IS NOT NULL\n"
 					. "ORDER BY wap.AP_ID DESC\n"
 					. "LIMIT 1";
@@ -46,17 +42,13 @@ switch($func)
 		else if($dbcore->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT TOP 1 [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
-					. "[whFA].[Hist_Date] As [FA],\n"
-					. "[whLA].[Hist_Date] As [LA],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wGPS].[Alt] As [Alt],\n"
 					. "[wf].[user] As [user]\n"
 					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
-					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
 					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[AP_ID] = ?\n"
 					. "ORDER BY [wap].[AP_ID] DESC";
 			}
@@ -66,6 +58,15 @@ switch($func)
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
+			$prep2 = $dbcore->sql->conn->prepare($sql);
+			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
+			$prep2->execute();
+			$falaparr = $prep2->fetch(2);
+
 			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $ap['AP_ID'],
@@ -81,8 +82,9 @@ switch($func)
 			"encry" => $ap['ENCR'],
 			"BTx" => $ap['BTX'],
 			"OTx" => $ap['OTX'],
-			"FA" => $ap['FA'],
-			"LA" => $ap['LA'],
+			"FA" => $falaparr['fa'],
+			"LA" => $falaparr['la'],
+			"points" => $falaparr['points'],
 			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
 			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
@@ -102,33 +104,25 @@ switch($func)
 		if($dbcore->sql->service == "mysql")
 			{
 				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-					. "whFA.Hist_Date As FA,\n"
-					. "whLA.Hist_Date As LA,\n"
 					. "wGPS.Lat As Lat,\n"
 					. "wGPS.Lon As Lon,\n"
 					. "wGPS.Alt As Alt,\n"
 					. "wf.user As user\n"
 					. "FROM `wifi_ap` AS wap\n"
-					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
+					. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
 					. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`AP_ID` = ?";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
-					. "[whFA].[Hist_Date] As [FA],\n"
-					. "[whLA].[Hist_Date] As [LA],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wGPS].[Alt] As [Alt],\n"
 					. "[wf].[user] As [user]\n"
 					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
-					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
 					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[AP_ID] = ?";
 			}
 		$prep = $dbcore->sql->conn->prepare($sql);
@@ -137,6 +131,15 @@ switch($func)
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
+			$prep2 = $dbcore->sql->conn->prepare($sql);
+			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
+			$prep2->execute();
+			$falaparr = $prep2->fetch(2);
+
 			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $ap['AP_ID'],
@@ -152,8 +155,9 @@ switch($func)
 			"encry" => $ap['ENCR'],
 			"BTx" => $ap['BTX'],
 			"OTx" => $ap['OTX'],
-			"FA" => $ap['FA'],
-			"LA" => $ap['LA'],
+			"FA" => $falaparr['fa'],
+			"LA" => $falaparr['la'],
+			"points" => $falaparr['points'],
 			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
 			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
@@ -249,33 +253,25 @@ switch($func)
 		if($dbcore->sql->service == "mysql")
 			{
 				$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
-					. "`whFA`.`Hist_Date` As `FA`,\n"
-					. "`whLA`.`Hist_Date` As `LA`,\n"
 					. "`wGPS`.`Lat` As `Lat`,\n"
 					. "`wGPS`.`Lon` As `Lon`,\n"
 					. "`wGPS`.`Alt` As `Alt`,\n"
 					. "`wf`.`user` As `user`\n"
 					. "FROM `wifi_ap` AS `wap`\n"
-					. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
-					. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.LastHist_ID\n"
 					. "LEFT JOIN `wifi_gps` AS `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
-					. "LEFT JOIN `files` AS `wf` ON `whFA`.`File_ID` = `wf`.`id`\n"
+					. "LEFT JOIN `files` AS `wf` ON `wap`.`File_ID` = `wf`.`id`\n"
 					. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`ModDate` >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) ORDER BY `wap`.`AP_ID` LIMIT ?,?";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
-					. "[whFA].[Hist_Date] As [FA],\n"
-					. "[whLA].[Hist_Date] As [LA],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wGPS].[Alt] As [Alt],\n"
 					. "[wf].[user] As [user]\n"
 					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
-					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
 					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[ModDate] >= dateadd(day, -1.5, getdate()) ORDER BY [wap].[AP_ID]\n"
 					. "OFFSET ? ROWS\n"
 					. "FETCH NEXT ? ROWS ONLY";
@@ -290,6 +286,15 @@ switch($func)
 			$appointer = $prep->fetchAll();
 			foreach($appointer as $ap)
 			{
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
+				$prep2 = $dbcore->sql->conn->prepare($sql);
+				$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
+				$prep2->execute();
+				$falaparr = $prep2->fetch(2);
+				
 				#Get AP KML
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
@@ -305,8 +310,9 @@ switch($func)
 				"encry" => $ap['ENCR'],
 				"BTx" => $ap['BTX'],
 				"OTx" => $ap['OTX'],
-				"FA" => $ap['FA'],
-				"LA" => $ap['LA'],
+				"FA" => $falaparr['fa'],
+				"LA" => $falaparr['la'],
+				"points" => $falaparr['points'],
 				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
 				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
