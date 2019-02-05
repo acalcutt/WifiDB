@@ -451,6 +451,10 @@ class convert extends dbcore
 				$chan = 140;
 				$radio = "802.11n";
 				break;
+			case ($frequency == 5720 || $frequency == 144):
+				$chan = 144;
+				$radio = "802.11n";
+				break;
 			case ($frequency == 5745 || $frequency == 149):
 				$chan = 149;
 				$radio = "802.11n";
