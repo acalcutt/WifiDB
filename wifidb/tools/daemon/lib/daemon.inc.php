@@ -298,7 +298,7 @@ class daemon extends wdbcli
 		$source = $this->PATH.'import/up/'.$file_name;
 		$return	=	file($source);
 		$count	=	count($return);
-		if(!($count <= 8))//make sure there is at least a 'valid' file in the field
+		if(!($count < 1))//make sure there is at least a 'valid' file in the field
 		{			
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
 			if($this->sql->service == "mysql")
@@ -497,10 +497,10 @@ class daemon extends wdbcli
 						$tmp = array(-1, "Unknown File Type");
 					}
 				}
-				elseif ($file_type == "wigglewificsv")
+				elseif ($file_type == "wiglewificsv")
 				{
 					$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
-					$tmp = $this->import->import_wigglewificsv($source, $file_row,  $importing_id);
+					$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
 				}
 				elseif ($file_type == "swardriving")
 				{
@@ -519,9 +519,18 @@ class daemon extends wdbcli
 					$this->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
 					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
-				}else
+				}
+				elseif($tmp['aps'] == 0 && $tmp['gps'] == 0 && $tmp['cells'] == 0 && $tmp['cells_hist'] == 0)
 				{
-					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps'], 3);
+					trigger_error("Import Error! Reason: Import did not have any aps, gps, cells, or cell hist |=| $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
+					//$this->logd("Skipping Import \nReason: Import did not have any aps, gps, cells, or cell hist\n".$file_name,"Error", $this->This_is_me);
+					$this->verbosed("Skipping Import \nReason: Import did not have any aps, gps, cells, or cell hist\n".$file_name, -1);
+					//remove files_tmp row and user_imports row
+					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: Import did not have any aps, gps, cells, or cell hist |=| $source", $this->thread_id);
+				}
+				else
+				{
+					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps']." - Cell Count: ".$tmp['gps']." - Cell Hist Count: ".$tmp['gps'], 3);
 					$NewAPPercent = (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 );
 					if($this->sql->service == "mysql")
 						{$update_files_table_sql = "UPDATE `files` SET `aps` = ?, `gps` = ?, `NewAPPercent` = ?, `completed` = 1 WHERE `id` = ?";}
