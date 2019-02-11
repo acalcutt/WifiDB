@@ -6,18 +6,23 @@ if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$filewrite = fopen("filenames.txt", 'w');
+$filewrite = fopen("filenames_v2.txt", 'w');
 $sql = "select * from `files` ORDER BY `id` ASC";
 $result = $dbcore->sql->conn->query($sql);
 $dbcore->verbosed("Gathered file data");
-$write = "# FILE HASH | FILENAME | USERNAME | TITLE | DATE | NOTES\r\n";
+$write = "# FILE HASH | TYPE | FILENAME | ORIG_FILENAME | USERNAME | TITLE | DATE | NOTES\r\n";
 while($array = $result->fetch(1))
 {
 	if ($array['hash'] != "")
 	{
-		if (trim($array['title']) == ""){$array['title'] = "Untitled";}
-		$write .= trim($array['hash']."|".$array['file']."|".str_replace("|", "", $array['user'])."|".$array['title']."|".$array['date']."|".$array['notes'])."\r\n";
-		echo $array['id']."|".$array['hash']."|".$array['file']."|".$array['user']."|".$array['title']."|".$array['date']."|".$array['notes']."\r\n";
+		if (trim($array['title']) == ""){$title = "Untitled";}else{$title = trim($array['title']);}
+		if (trim($array['type']) == ""){$type = "vistumbler";}else{$type = trim($array['type']);}
+		$title = str_replace(array("|", "\n", "\r"), "", $title);
+		$notes = str_replace(array("|", "\n", "\r"), "", $array['notes']);
+		$user = str_replace(array("|", "\n", "\r"), "", $array['user']);
+		$hash = trim($array['hash']);
+		$write .= $hash."|".$type."|".$array['file_orig']."|".$array['file']."|".$user."|".$title."|".$array['date']."|".$notes."\r\n";
+		echo $array['id']."|".$hash."|".$type."|".$array['file_orig']."|".$array['file']."|".$user."|".$title."|".$array['date']."|".$notes."\r\n";
 		
 	}
 }

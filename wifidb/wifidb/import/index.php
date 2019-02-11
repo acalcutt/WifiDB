@@ -31,14 +31,6 @@ $type = "schedule";
 $subject = "New WiFiDB Import waiting...";
 $mesg = "";
 
-if($dbcore->login_check)
-{
-	$import_username_field = '<INPUT TYPE=Text DISABLED NAME="user_display" value="'.$GLOBALS['username'].'"/>
-	<INPUT TYPE=hidden NAME="user" value="'.$GLOBALS['username'].'">';
-}else
-{
-	$import_username_field = '<INPUT TYPE=TEXT NAME="user" SIZE=28 STYLE="width: 2.42in; height: 0.25in">';
-}
 if($dbcore->rebuild === 0)
 {
 	$import_button = '<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit" STYLE="width: 0.71in; height: 0.36in"></P>';
@@ -54,7 +46,6 @@ if(@$dbcore->username == 'admin')
 	$mesg = '';
 }
 $dbcore->smarty->assign('import_button', $import_button);
-$dbcore->smarty->assign('import_username_field', $import_username_field);
 
 //Switchboard for import file or index form to upload file
 switch($func)
@@ -87,6 +78,7 @@ switch($func)
 		{
 			$tmp = $_FILES['file']['tmp_name'];
 			$rand = rand(00000000, 99999999);
+			$filename_orig = $_FILES['file']['name'];
 			$filename = $rand.'_'.str_replace( " ", "_", $_FILES['file']['name']);
 			$ext = pathinfo($filename, PATHINFO_EXTENSION);
 			$uploadfolder = getcwd().'/up/';
@@ -159,20 +151,21 @@ switch($func)
 						//in order that they where uploaded
 						$date = date("Y-m-d H:i:s");
 						if($dbcore->sql->service == "mysql")
-							{$sql = "INSERT INTO `files_tmp`(`file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+							{$sql = "INSERT INTO `files_tmp`(`file`, `file_orig`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 						else if($dbcore->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [files_tmp]([file], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+							{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
 						$result = $dbcore->sql->conn->prepare( $sql );
 						$result->bindValue(1, $filename, PDO::PARAM_STR);
-						$result->bindValue(2, $date, PDO::PARAM_STR);
-						$result->bindValue(3, $user, PDO::PARAM_STR);
-						$result->bindValue(4, $otherusers, PDO::PARAM_STR);
-						$result->bindValue(5, $notes, PDO::PARAM_STR);
-						$result->bindValue(6, $title, PDO::PARAM_STR);
-						$result->bindValue(7, $size, PDO::PARAM_STR);
-						$result->bindValue(8, $hash, PDO::PARAM_STR);
-						$result->bindValue(9, $type, PDO::PARAM_STR);
+						$result->bindValue(2, $filename_orig, PDO::PARAM_STR);
+						$result->bindValue(3, $date, PDO::PARAM_STR);
+						$result->bindValue(4, $user, PDO::PARAM_STR);
+						$result->bindValue(5, $otherusers, PDO::PARAM_STR);
+						$result->bindValue(6, $notes, PDO::PARAM_STR);
+						$result->bindValue(7, $title, PDO::PARAM_STR);
+						$result->bindValue(8, $size, PDO::PARAM_STR);
+						$result->bindValue(9, $hash, PDO::PARAM_STR);
+						$result->bindValue(10, $type, PDO::PARAM_STR);
 						$result->execute();
 						if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
 						{

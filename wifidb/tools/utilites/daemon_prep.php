@@ -2,7 +2,7 @@
 <?php
 /*
 daemon_prep.php
-Copyright (C) 2015 Andrew Calcutt, based on imp_expd.php by Phil Ferland.
+Copyright (C) 2019 Andrew Calcutt, 2015 Phil Ferland
 Used to prepare for a recovery import. Will take filenames.txt that is a | seperated file that was generated with filenames_create.php as a psudo-backup, as long as you have the import files still.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
@@ -27,9 +27,9 @@ else
 	$dbcore->verbose = 0;
 }
 
-$lastedit="2013.04.28";
+$lastedit="2019.02.10";
 $start="2008.05.23";
-$ver="2.0";
+$ver="2.1";
 $i=0;
 
 $TOTAL_START = date("Y-m-d H:i:s");
@@ -50,8 +50,8 @@ Please do this first then run this again.
 
 echo "Directory: ".$vs1dir."\r\n";
 #Lets parse out the filenames file.
-echo "Parsing Filenames.txt\r\n";
-$filenames = @file("filenames.txt");
+echo "Parsing filenames_v2.txt\r\n";
+$filenames = @file("filenames_v2.txt");
 if(!is_null(@$filenames[0]))
 {
     foreach(@$filenames as $filen)
@@ -59,7 +59,7 @@ if(!is_null(@$filenames[0]))
         if($filen[0] == "#"){continue;}
         $filen_e = explode("|", $filen);
         if(count($filen_e)==1){continue;}
-        $file_names[$filen_e[0]] = array("hash" => $filen_e[0], "file"=>$filen_e[1],"user"=>$filen_e[2],"title"=>$filen_e[3],"date"=>$filen_e[4],"notes"=>$filen_e[5]);
+        $file_names[$filen_e[0]] = array("hash" => $filen_e[0], "type" => $filen_e[1], "file"=>$filen_e[2], "file_orig"=>$filen_e[3],"user"=>$filen_e[4],"title"=>$filen_e[5],"date"=>$filen_e[6],"notes"=>$filen_e[7]);
     }
 }else
 {
@@ -82,10 +82,8 @@ while (!(($file = readdir($dh)) == false))
 
     if ((is_file("$vs1dir/$file")))
     {
-        $file_e = explode('.',$file);
-        $file_max = count($file_e);
-        $fileext = strtolower($file_e[$file_max-1]);
-        if ($fileext=='vs1' or $fileext=="db3" or $fileext=="csv" or $fileext=="db" or $fileext=="vsz")
+        $fileext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        if ($fileext=='vs1' or $fileext=="txt" or $fileext=="vsz" or $fileext=="vscz" or $fileext=="csv" or $fileext=="db3" or $fileext=="db" or $fileext=="mdb")
         {
         	$ret = $dbcore->insert_file($file, @$file_names);
             if($ret)

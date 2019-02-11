@@ -93,9 +93,9 @@ class daemon extends wdbcli
 		}
 
 		if($this->sql->service == "mysql")
-			{$sql = "INSERT INTO `files_bad` (`file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,`error_msg`) SELECT `file`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,? FROM `files_importing` WHERE `id` = ?";}
+			{$sql = "INSERT INTO `files_bad` (`file`,`file_orig`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,`error_msg`) SELECT `file`,`file_orig`,`user`,`notes`,`title`,`size`,`date`,`hash`,`converted`,`prev_ext`,`type`,? FROM `files_importing` WHERE `id` = ?";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "INSERT INTO [files_bad] ([file],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],[error_msg]) SELECT [file],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],? FROM [files_importing] WHERE [id] = ?";}
+			{$sql = "INSERT INTO [files_bad] ([file],[file_orig],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],[error_msg]) SELECT [file],[file_orig],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],? FROM [files_importing] WHERE [id] = ?";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
@@ -168,7 +168,7 @@ class daemon extends wdbcli
 		{
 			$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
 
-			$daemon_sql = "INSERT INTO `files_importing` (`file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`, `type`) SELECT `file`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id`, `type` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1";
+			$daemon_sql = "INSERT INTO `files_importing` (`file`, `file_orig`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `tmp_id`, `type`) SELECT `file`, `file_orig`, `user`, `otherusers`, `title`, `notes`, `size`, `date`, `hash`, `id`, `type` FROM `files_tmp` ORDER BY `date` ASC LIMIT 1";
 			$result = $this->sql->conn->prepare($daemon_sql);
 			$result->execute();
 			$this->sql->checkError(__LINE__, __FILE__);
@@ -285,6 +285,7 @@ class daemon extends wdbcli
 	{
 		$importing_id = $file_to_Import['id'];
 		$file_name = $file_to_Import['file'];
+		$file_orig = $file_to_Import['file_orig'];
 		$file_hash = $file_to_Import['hash'];
 		$file_size = $file_to_Import['size'];
 		$file_date = $file_to_Import['date'];
@@ -331,26 +332,27 @@ class daemon extends wdbcli
 				if($this->sql->service == "mysql")
 					{
 						$sql_insert_file = "INSERT INTO `files`
-						(`file`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `type`, `node_name`)
-						VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+						(`file`, `file_orig`, `date`, `size`, `aps`, `gps`, `hash`, `user`, `otherusers`, `notes`, `title`, `type`, `node_name`)
+						VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
 					}
 				else if($this->sql->service == "sqlsrv")
 					{
 						$sql_insert_file = "INSERT INTO [files]
-						([file], [date], [size], [aps], [gps], [hash], [user], [otherusers], [notes], [title], [type], [node_name])
-						VALUES (?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
+						([file], [file_orig], [date], [size], [aps], [gps], [hash], [user], [otherusers], [notes], [title], [type], [node_name])
+						VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
 					}
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
-				$prep1->bindParam(2, $file_date, PDO::PARAM_STR);
-				$prep1->bindParam(3, $file_size, PDO::PARAM_STR);
-				$prep1->bindParam(4, $file_hash, PDO::PARAM_STR);
-				$prep1->bindParam(5, $file_user, PDO::PARAM_STR);
-				$prep1->bindParam(6, $file_otherusers, PDO::PARAM_STR);
-				$prep1->bindParam(7, $file_notes, PDO::PARAM_STR);
-				$prep1->bindParam(8, $file_title, PDO::PARAM_STR);
-				$prep1->bindParam(9, $file_type, PDO::PARAM_STR);
-				$prep1->bindParam(10, $this->node_name, PDO::PARAM_STR);
+				$prep1->bindParam(2, $file_orig, PDO::PARAM_STR);
+				$prep1->bindParam(3, $file_date, PDO::PARAM_STR);
+				$prep1->bindParam(4, $file_size, PDO::PARAM_STR);
+				$prep1->bindParam(5, $file_hash, PDO::PARAM_STR);
+				$prep1->bindParam(6, $file_user, PDO::PARAM_STR);
+				$prep1->bindParam(7, $file_otherusers, PDO::PARAM_STR);
+				$prep1->bindParam(8, $file_notes, PDO::PARAM_STR);
+				$prep1->bindParam(9, $file_title, PDO::PARAM_STR);
+				$prep1->bindParam(10, $file_type, PDO::PARAM_STR);
+				$prep1->bindParam(11, $this->node_name, PDO::PARAM_STR);
 				$prep1->execute();
 				if($this->sql->checkError(__LINE__, __FILE__))
 				{
@@ -625,6 +627,8 @@ class daemon extends wdbcli
 		$size1 = $this->format_size(filesize($source));
 		if(@is_array($file_names[$hash]))
 		{
+			$type	=	$file_names[$hash]['type'];
+			$file_orig	=	$file_names[$hash]['file_orig'];
 			$user	=	$file_names[$hash]['user'];
 			$title	=	$file_names[$hash]['title'];
 			$notes	=	$file_names[$hash]['notes'];
@@ -633,6 +637,8 @@ class daemon extends wdbcli
 			#echo "Is in filenames.txt\n";
 		}else
 		{
+			$type	=	'vistumbler';
+			$file_orig	= $file;
 			$user	=	$this->default_user;
 			$title	=	$this->default_title;
 			$notes	=	$this->default_notes;
@@ -644,17 +650,19 @@ class daemon extends wdbcli
 		//$this->logd("=== Start Daemon Prep of ".$file." ===");
 
 		if($this->sql->service == "mysql")
-			{$sql = "INSERT INTO `files_tmp` (`file`, `date`, `user`, `notes`, `title`, `size`, `hash`) VALUES (?, ?, ?, ?, ?, ?, ?)";}
+			{$sql = "INSERT INTO `files_tmp` (`type`, `file`, `file_orig`, `date`, `user`, `notes`, `title`, `size`, `hash`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "INSERT INTO [files_tmp] ([file], [date], [user], [notes], [title], [size], [hash]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
+			{$sql = "INSERT INTO [files_tmp] ([type], [file], [file_orig], [date], [user], [notes], [title], [size], [hash]) VALUES (/, ?, ?, ?, ?, ?, ?, ?, ?)";}
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $file, PDO::PARAM_STR);
-		$prep->bindParam(2, $date, PDO::PARAM_STR);
-		$prep->bindParam(3, $user, PDO::PARAM_STR);
-		$prep->bindParam(4, $notes, PDO::PARAM_STR);
-		$prep->bindParam(5, $title, PDO::PARAM_STR);
-		$prep->bindParam(6, $size1, PDO::PARAM_STR);
-		$prep->bindParam(7, $hash, PDO::PARAM_STR);
+		$prep->bindParam(1, $type, PDO::PARAM_STR);
+		$prep->bindParam(2, $file, PDO::PARAM_STR);
+		$prep->bindParam(3, $file_orig, PDO::PARAM_STR);
+		$prep->bindParam(4, $date, PDO::PARAM_STR);
+		$prep->bindParam(5, $user, PDO::PARAM_STR);
+		$prep->bindParam(6, $notes, PDO::PARAM_STR);
+		$prep->bindParam(7, $title, PDO::PARAM_STR);
+		$prep->bindParam(8, $size1, PDO::PARAM_STR);
+		$prep->bindParam(9, $hash, PDO::PARAM_STR);
 		$prep->execute();
 
 		$err = $this->sql->conn->errorInfo();

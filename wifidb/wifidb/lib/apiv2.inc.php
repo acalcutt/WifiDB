@@ -410,6 +410,7 @@ class apiv2 extends dbcore
         $hash		   = $details['hash'];
         $ext			= $details['ext'];
         $filename	   = $details['filename'];
+		$file_orig	   = $details['file_orig'];
 
         if(substr($user, -1) == "|")
         {
@@ -486,20 +487,21 @@ class apiv2 extends dbcore
         {
             case "import":
 				if($this->sql->service == "mysql")
-					{$sql = "INSERT INTO `files_tmp`(`file`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					{$sql = "INSERT INTO `files_tmp`(`file`, `file_orig`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				else if($this->sql->service == "sqlsrv")
-					{$sql = "INSERT INTO [files_tmp]([file], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
 				$result = $this->sql->conn->prepare( $sql );
 				$result->bindValue(1, $filename, PDO::PARAM_STR);
-				$result->bindValue(2, $date, PDO::PARAM_STR);
-				$result->bindValue(3, $user, PDO::PARAM_STR);
-				$result->bindValue(4, $otherusers, PDO::PARAM_STR);
-				$result->bindValue(5, $notes, PDO::PARAM_STR);
-				$result->bindValue(6, $title, PDO::PARAM_STR);
-				$result->bindValue(7, $size, PDO::PARAM_STR);
-				$result->bindValue(8, $hash, PDO::PARAM_STR);
-				$result->bindValue(9, $type, PDO::PARAM_STR);
+				$result->bindValue(2, $file_orig, PDO::PARAM_STR);
+				$result->bindValue(3, $date, PDO::PARAM_STR);
+				$result->bindValue(4, $user, PDO::PARAM_STR);
+				$result->bindValue(5, $otherusers, PDO::PARAM_STR);
+				$result->bindValue(6, $notes, PDO::PARAM_STR);
+				$result->bindValue(7, $title, PDO::PARAM_STR);
+				$result->bindValue(8, $size, PDO::PARAM_STR);
+				$result->bindValue(9, $hash, PDO::PARAM_STR);
+				$result->bindValue(10, $type, PDO::PARAM_STR);
 				$result->execute();
 				$this->sql->checkError($result->execute(), __LINE__, __FILE__);
 				$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";

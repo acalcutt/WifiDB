@@ -35,6 +35,7 @@ switch($func)
 			$rand           =   rand(00000000, 99999999);
 			$uploadfolder   =   $dbcore->PATH.'import/up/';
 			$filename       =   'APIupload_'.$rand.'_'.$prefilename;
+			$file_orig		=	$_FILES['file']['name'];
 			$uploadfile     =   $uploadfolder.$filename;
 
 			if(!copy($tmp, $uploadfile))
@@ -50,6 +51,7 @@ switch($func)
 				'notes'=>$notes,
 				'ext'=>$ext,
 				'filename'=>$filename,
+				'file_orig'=>$file_orig,
 				'hash'=>$hash,
 				'date'=>$date
 			);
