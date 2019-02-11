@@ -483,10 +483,14 @@ class export extends dbcore
 		if($this->sql->service == "mysql")
 			{
 				$sql = "SELECT `wap`.`AP_ID`, `wap`.`BSSID`, `wap`.`SSID`, `wap`.`CHAN`, `wap`.`AUTH`, `wap`.`ENCR`, `wap`.`SECTYPE`, `wap`.`RADTYPE`, `wap`.`NETTYPE`, `wap`.`BTX`, `wap`.`OTX`,\n"
+					. "`whFA`.`Hist_Date` As `FA`,\n"
+					. "`whLA`.`Hist_Date` As `LA`,\n"
 					. "`wGPS`.`Lat` As `Lat`,\n"
 					. "`wGPS`.`Lon` As `Lon`,\n"
 					. "`wf`.`user` AS `user`\n"
 					. "FROM `wifi_ap` AS `wap`\n"
+					. "LEFT JOIN `wifi_hist` AS `whFA` ON `whFA`.`Hist_ID` = `wap`.`FirstHist_ID`\n"
+					. "LEFT JOIN `wifi_hist` AS `whLA` ON `whLA`.`Hist_ID` = `wap`.`LastHist_ID`\n"
 					. "LEFT JOIN `wifi_gps`As `wGPS` ON `wGPS`.`GPS_ID` = `wap`.`HighGps_ID`\n"
 					. "LEFT JOIN `files` AS `wf` ON `wf`.`id` = `wap`.`File_ID`\n"
 					. "WHERE \n"
@@ -508,10 +512,14 @@ class export extends dbcore
 		else if($this->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+					. "[whFA].[Hist_Date] As [FA],\n"
+					. "[whLA].[Hist_Date] As [LA],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wf].[user] AS [user]\n"
 					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] As [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
 					. "WHERE \n"
@@ -538,15 +546,16 @@ class export extends dbcore
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $apinfo)
 		{
+			#Get number of AP points
 			if($this->sql->service == "mysql")
-				{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
+				{$sqlp = "SELECT count(`Hist_Date`) AS `points` FROM `wifi_hist` WHERE `AP_ID` = ?";}
 			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
-			$prep2 = $this->sql->conn->prepare($sql);
-			$prep2->bindParam(1, $apinfo['AP_ID'], PDO::PARAM_INT);
+				{$sqlp = "SELECT count([Hist_Date]) AS [points] FROM [wifi_hist] WHERE [AP_ID] = ?";}
+			$prep2 = $this->sql->conn->prepare($sqlp);
+			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
 			$prep2->execute();
-			$falaparr = $prep2->fetch(2);
-				
+			$prep2_fetch = $prep2->fetch(2);
+
 			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $apinfo['AP_ID'],
@@ -562,9 +571,9 @@ class export extends dbcore
 			"encry" => $apinfo['ENCR'],
 			"BTx" => $apinfo['BTX'],
 			"OTx" => $apinfo['OTX'],
-			"FA" => $$falaparr['fa'],
-			"LA" => $$falaparr['la'],
-			"points" => $$falaparr['points'],
+			"FA" => $apinfo['FA'],
+			"LA" => $apinfo['LA'],
+			"points" => $prep2_fetch['points'],
 			"lat" => $this->convert->dm2dd($apinfo['Lat']),
 			"lon" => $this->convert->dm2dd($apinfo['Lon']),
 			"alt" => $apinfo['Alt'],
@@ -606,25 +615,33 @@ class export extends dbcore
 			if($this->sql->service == "mysql")
 				{
 					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
+						. "whFA.Hist_Date As FA,\n"
+						. "whLA.Hist_Date As LA,\n"
 						. "wGPS.Lat As Lat,\n"
 						. "wGPS.Lon As Lon,\n"
 						. "wGPS.Alt As Alt,\n"
 						. "wf.user As user\n"
 						. "FROM `wifi_ap` AS wap\n"
+						. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
+						. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-						. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
+						. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
 						. "WHERE `wap`.`AP_ID` = ? And `wap`.`HighGps_ID` IS NOT NULL And `wap`.`BSSID` != '00:00:00:00:00:00'";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
 					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
+						. "[whFA].[Hist_Date] As [FA],\n"
+						. "[whLA].[Hist_Date] As [LA],\n"
 						. "[wGPS].[Lat] As [Lat],\n"
 						. "[wGPS].[Lon] As [Lon],\n"
 						. "[wGPS].[Alt] As [Alt],\n"
 						. "[wf].[user] As [user]\n"
 						. "FROM [wifi_ap] AS [wap]\n"
+						. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
+						. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-						. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
+						. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
 						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
 				}
 			$result = $this->sql->conn->prepare($sql);
@@ -633,14 +650,15 @@ class export extends dbcore
 			$appointer = $result->fetchAll();
 			foreach($appointer as $ap)
 			{
+				#Get number of AP points
 				if($this->sql->service == "mysql")
-					{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
+					{$sqlp = "SELECT count(`Hist_Date`) AS `points` FROM `wifi_hist` WHERE `AP_ID` = ?";}
 				else if($this->sql->service == "sqlsrv")
-					{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
-				$prep2 = $this->sql->conn->prepare($sql);
+					{$sqlp = "SELECT count([Hist_Date]) AS [points] FROM [wifi_hist] WHERE [AP_ID] = ?";}
+				$prep2 = $this->sql->conn->prepare($sqlp);
 				$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
 				$prep2->execute();
-				$falaparr = $prep2->fetch(2);
+				$prep2_fetch = $prep2->fetch(2);
 
 				#Get AP GeoJSON
 				$ap_info = array(
@@ -656,9 +674,9 @@ class export extends dbcore
 				"encry" => $ap['ENCR'],
 				"BTx" => $ap['BTX'],
 				"OTx" => $ap['OTX'],
-				"FA" => $falaparr['fa'],
-				"LA" => $falaparr['la'],
-				"points" => $falaparr['points'],
+				"FA" => $ap['FA'],
+				"LA" => $ap['LA'],
+				"points" => $prep2_fetch['points'],
 				"lat" => $this->convert->dm2dd($ap['Lat']),
 				"lon" => $this->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
