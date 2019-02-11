@@ -44,7 +44,7 @@ if not, write to the
 							<th class="header" style="width: 11%">Size</th>
 						</tr>
 						<tr class="light">
-							<th rowspan="2" style="width: 200px">Newest AP KMZ</th>
+							<th rowspan="2" style="width: 200px">Newest AP Network Link KMZ</th>
 							<th style="width: 148px"><a href="{$wifidb_kml_head.newest_link}">Non-Labeled SSIDs</a></th>
 							<td style="width: 43%; text-align: center">{$wifidb_kml_head.newest_date}</td>
 							<td style="width: 11%; text-align: center">{$wifidb_kml_head.newest_size}</td>
@@ -55,7 +55,7 @@ if not, write to the
 							<td style="width: 11%; text-align: center">{$wifidb_kml_head.newest_labeled_size}</td>
 						</tr>
 						<tr class="dark">
-							<th rowspan="2" style="width: 200px">Incremental KMZ</th>
+							<th rowspan="2" style="width: 200px">Daily Network Link KMZ</th>
 							<th style="width: 148px"><a href="{$wifidb_kml_head.daily_link}">Non-Labeled SSIDs</a></th>
 							<td style="width: 43%; text-align: center">{$wifidb_kml_head.daily_date}</td>
 							<td style="width: 11%; text-align: center">{$wifidb_kml_head.daily_size}</td>
@@ -64,14 +64,25 @@ if not, write to the
 							<th style="width: 148px"><a href="{$wifidb_kml_head.daily_labeled_link}">Labeled SSIDs</a></th>
 							<td style="width: 43%; text-align: center">{$wifidb_kml_head.daily_labeled_date}</td>
 							<td style="width: 11%; text-align: center">{$wifidb_kml_head.daily_labeled_size}</td>
-						</tr>								
+						</tr>
 						<tr class="light">
+							<th rowspan="2" style="width: 200px">Incremental KMZ</th>
+							<th style="width: 148px"><a href="{$wifidb_kml_head.incremental_link}">Non-Labeled SSIDs</a></th>
+							<td style="width: 43%; text-align: center">{$wifidb_kml_head.incremental_date}</td>
+							<td style="width: 11%; text-align: center">{$wifidb_kml_head.incremental_size}</td>
+						</tr>
+						<tr class="light">
+							<th style="width: 148px"><a href="{$wifidb_kml_head.incremental_labeled_link}">Labeled SSIDs</a></th>
+							<td style="width: 43%; text-align: center">{$wifidb_kml_head.incremental_labeled_date}</td>
+							<td style="width: 11%; text-align: center">{$wifidb_kml_head.incremental_labeled_size}</td>
+						</tr>								
+						<tr class="dark">
 							<th rowspan="2" style="width: 200px">Full KMZ</th>
 							<th style="width: 148px"><a href="{$wifidb_kml_head.full_link}">Non-Labeled SSIDs</a></th>
 							<td style="width: 43%; text-align: center">{$wifidb_kml_head.full_date}</td>
 							<td style="width: 11%; text-align: center">{$wifidb_kml_head.full_size}</td>
 						</tr>
-						<tr class="light">
+						<tr class="dark">
 							<th style="width: 148px"><a href="{$wifidb_kml_head.full_labeled_link}">Labeled SSIDs</a></th>
 							<td style="width: 43%; text-align: center">{$wifidb_kml_head.full_labeled_date}</td>
 							<td style="width: 11%; text-align: center">{$wifidb_kml_head.full_labeled_size}</td>

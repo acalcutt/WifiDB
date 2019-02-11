@@ -38,6 +38,7 @@ if not, write to the
 								<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">Hide 1-2 year</button>
 								<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">Hide 2-3 year</button>
 								<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">Hide 3+ year</button>
+								<button id="cell_networks" onClick="toggle_layer_button(this.id)">Hide Cell Netwotks</button>
 							</div>
 							<div>
 								<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
@@ -61,13 +62,6 @@ if not, write to the
 								center: {$centerpoint},
 								zoom: {$zoom},
 							});
-
-							map.addControl(new mapboxgl.GeolocateControl({
-							positionOptions: {
-							enableHighAccuracy: true
-							},
-							trackUserLocation: true
-							}));
 
 							function GoToLatest() {
 								var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap'
@@ -210,12 +204,21 @@ if not, write to the
 							};
 
 							map.once('style.load', function(e) {
+								//Add GeoLocate button
+								map.addControl(new mapboxgl.GeolocateControl({
+								positionOptions: {
+								enableHighAccuracy: true
+								},
+								trackUserLocation: true
+								}));
 								//Add Fullscreen Button
 								const fs = new mapboxgl.FullscreenControl();
 								map.addControl(fs)
 								fs._fullscreenButton.classList.add('needsclick');
 								//Add Navigation Control
 								map.addControl(new mapboxgl.NavigationControl());
+								//Ad Inspect
+								map.addControl(new MapboxInspect());
 								//WifiDB Information Popup
 								map.on('click', function(e) {
 									var features = map.queryRenderedFeatures(e.point, {
@@ -248,18 +251,48 @@ if not, write to the
 											'</ul>')
 										.addTo(map);
 								});
+								
+								map.on('click', function(e) {
+									var features = map.queryRenderedFeatures(e.point, {
+										layers: [{$cell_layer_name}]
+									});
+									if (!features.length) {
+										return;
+									}
+									var feature = features[0];
+
+									var popup = new mapboxgl.Popup()
+										.setLngLat(map.unproject(e.point))
+										.setHTML('<ul>' +
+											'<li>ID: <b>' + feature.properties.id + '</b></li>' +
+											'<li>NAME: <b>' + feature.properties.name + '</b></li>' +
+											'<li>MAC: <b>' + feature.properties.mac + '</b></li>' +
+											'<li>SSID: <b>' + feature.properties.ssid + '</b></li>' +
+											'<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>' +
+											'<li>CHAN: <b>' + feature.properties.chan + '</b></li>' +
+											'<li>TYPE: <b>' + feature.properties.type + '</b></li>' +
+											'<li>RSSI: <b>' + feature.properties.rssi + '</b></li>' +
+											'<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>' +
+											'<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>' +
+											'<li>POINTS: <b>' + feature.properties.points + '</b></li>' +
+											'<li>First Active: <b>' + feature.properties.fa + '</b></li>' +
+											'<li>Last Active: <b>' + feature.properties.la + '</b></li>' +
+											'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>' +
+											'</ul>')
+										.addTo(map);
+								});
 
 								// indicate that the symbols are clickableby changing the cursor style to 'pointer'.
 								map.on('mousemove', function(e) {
 									var features = map.queryRenderedFeatures(e.point, {
-										layers: [{$layer_name}]
+										layers: [{$layer_name},{$cell_layer_name}]
 									});
 									map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 								});
 							});
 							map.on('style.load', function () {
 								// Reset toggle buttons since the layers reset on style change
-								var toggleButtonIds = ['WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'];
+								var toggleButtonIds = ['WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy','cell_networks'];
 								for(var index in toggleButtonIds) {
 									var clicked_id = toggleButtonIds[index];
 									var el = document.getElementById(clicked_id);
