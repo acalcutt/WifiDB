@@ -364,42 +364,58 @@ switch($func)
             $kml_head['newest_labeled_date'] = $lastapdate;
             $kml_head['newest_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_latest_netlink&labeled=1";
             $kml_head['newest_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['newest_labeled_link'])));
+			
+            $kml_head['daily_date'] = $lastapdate;
+            $kml_head['daily_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=0";
+            $kml_head['daily_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_link'])));
+
+            $kml_head['daily_labeled_date'] = $lastapdate;
+            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."api/export.php?func=exp_daily_netlink&labeled=1";
+            $kml_head['daily_labeled_size'] = $dbcore->format_size(strlen(file_get_contents($kml_head['daily_labeled_link'])));
         }
         else
         {
-            $kml_head['newest_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['newest_date'] = "None APs yet.";
             $kml_head['newest_link'] = "#";
             $kml_head['newest_size'] = "0.00 kB";
 
-            $kml_head['newest_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['newest_labeled_date'] = "None APs yet.";
             $kml_head['newest_labeled_link'] = "#";
             $kml_head['newest_labeled_size'] = "0.00 kB";
+			
+			$kml_head['daily_date'] = "None APs yet.";
+            $kml_head['daily_link'] = "#";
+            $kml_head['daily_size'] = "0.00 kB";
+
+            $kml_head['daily_labeled_date'] = "None APs yet.";
+            $kml_head['daily_labeled_link'] = "#";
+            $kml_head['daily_labeled_size'] = "0.00 kB";
         }
 		#-----------
         if(file_exists($dbcore->PATH."out/daemon/daily_db.kmz"))
         {
-            $kml_head['daily_link'] = $dbcore->URL_PATH."out/daemon/daily_db.kmz";
-			$kml_head['daily_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/daily_db.kmz"));
-            $kml_head['daily_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/daily_db.kmz"));
+            $kml_head['incremental_link'] = $dbcore->URL_PATH."out/daemon/daily_db.kmz";
+			$kml_head['incremental_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/daily_db.kmz"));
+            $kml_head['incremental_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/daily_db.kmz"));
         }
         else
         {
-            $kml_head['daily_date'] = "None generated for ".$kmldate." yet.";
-            $kml_head['daily_link'] = "#";
-            $kml_head['daily_size'] = "0.00 kB";
+            $kml_head['incremental_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['incremental_link'] = "#";
+            $kml_head['incremental_size'] = "0.00 kB";
 		}
 
         if(file_exists($dbcore->PATH."out/daemon/daily_db_labeled.kmz"))
         {
-            $kml_head['daily_labeled_link'] = $dbcore->URL_PATH."out/daemon/daily_db_labeled.kmz";
-			$kml_head['daily_labeled_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/daily_db_labeled.kmz"));
-            $kml_head['daily_labeled_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/daily_db_labeled.kmz"));
+            $kml_head['incremental_labeled_link'] = $dbcore->URL_PATH."out/daemon/daily_db_labeled.kmz";
+			$kml_head['incremental_labeled_date'] = date ("Y-m-d H:i:s", filemtime ($dbcore->PATH."out/daemon/daily_db_labeled.kmz"));
+            $kml_head['incremental_labeled_size'] = $dbcore->format_size(filesize($dbcore->PATH."out/daemon/daily_db_labeled.kmz"));
         }
         else
         {
-            $kml_head['daily_labeled_date'] = "None generated for ".$kmldate." yet.";
-            $kml_head['daily_labeled_link'] = "#";
-            $kml_head['daily_labeled_size'] = "0.00 kB";
+            $kml_head['incremental_labeled_date'] = "None generated for ".$kmldate." yet.";
+            $kml_head['incremental_labeled_link'] = "#";
+            $kml_head['incremental_labeled_size'] = "0.00 kB";
         }
 		#-----------
         if(file_exists($dbcore->PATH."out/daemon/full_db.kmz"))
