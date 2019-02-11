@@ -40,7 +40,17 @@ foreach ($exports as list($filename, $sql)) {
 		$prep->execute();
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
-		{		
+		{
+			#Get number of AP points
+			if($dbcore->sql->service == "mysql")
+				{$sqlp = "SELECT count(`Hist_Date`) AS `points` FROM `wifi_hist` WHERE `AP_ID` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sqlp = "SELECT count([Hist_Date]) AS [points] FROM [wifi_hist] WHERE [AP_ID] = ?";}
+			$prep2 = $dbcore->sql->conn->prepare($sqlp);
+			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
+			$prep2->execute();
+			$prep2_fetch = $prep2->fetch(2);
+			
 			#Get AP KML
 			$ap_info = array(
 			"id" => $ap['AP_ID'],
@@ -58,6 +68,7 @@ foreach ($exports as list($filename, $sql)) {
 			"OTx" => $ap['OTX'],
 			"FA" => $ap['FA'],
 			"LA" => $ap['LA'],
+			"points" => $prep2_fetch['points'],
 			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
 			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],

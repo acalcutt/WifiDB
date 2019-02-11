@@ -40,6 +40,23 @@ class createGeoJSON
 		Return $GeoJSON_DATA;
 	}
 
+	public function CreateCellFeature($ap_info_array, $tc = 0)
+	{
+		
+		if($tc == 0){
+			$tippecanoe = '';
+		}else{
+			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":3},';
+		}		
+		
+		$ap_info_array['mac'] = json_encode($ap_info_array['mac']);
+		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
+		$ap_info_array['authmode'] = json_encode($ap_info_array['authmode']);
+		$tmp = '{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","name":"'.$ap_info_array['name'].'","mac":'.$ap_info_array['mac'].',"ssid":'.$ap_info_array['ssid'].',"authmode":'.$ap_info_array['authmode'].',"chan":'.$ap_info_array['chan'].',"type":"'.$ap_info_array['type'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","rssi":"'.$ap_info_array['rssi'].'","fa":"'.$ap_info_array['fa'].'","la":"'.$ap_info_array['la'].'","user":"'.$ap_info_array['user'].'","points":"'.$ap_info_array['points'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+
+		return $tmp;
+	}
+	
 	public function CreateApFeature($ap_info_array, $tc = 0)
 	{
 		
@@ -78,6 +95,28 @@ class createGeoJSON
 																	[3, '".$sec_color."']
 																]
 															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});";
+		return $layer_source;
+	}
+	
+	public function CreateCellLayer($source, $source_layer = "", $cell_color = "#885FCD", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	{
+
+		$layer_source = "
+													map.addLayer({
+														'id': '".$source_layer."',
+														'type': 'circle',
+														'source': '".$source."',
+														'source-layer': '".$source_layer."',
+														'layout': {
+															 'visibility': '".$visibility."'
+														},
+														'paint': {
+															'circle-color': '".$cell_color."',
 															'circle-radius': ".$radius.",
 															'circle-opacity': ".$opacity.",
 															'circle-blur': ".$blur."
