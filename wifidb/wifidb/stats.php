@@ -72,9 +72,9 @@ if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
 
 #Find if last user has valid GPS
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `ValidGPS` FROM `files` WHERE `user` = ? And `ValidGPS` = 1 LIMIT 1";}
+	{$sql = "SELECT `ValidGPS` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 [ValidGPS] FROM [files] WHERE [user] = ? And [ValidGPS] = 1";}
+	{$sql = "SELECT TOP 1 [ValidGPS] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $lastusername, PDO::PARAM_STR);
 $prep->execute();
