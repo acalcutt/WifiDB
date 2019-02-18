@@ -746,9 +746,9 @@ class frontend extends dbcore
 		if(!$row){return 0;}
 		
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT `id`, `file`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size`, `ValidGPS` FROM `files` WHERE `id`= ?";}
+			{$sql = "SELECT `id`, `file_orig`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size`, `ValidGPS` FROM `files` WHERE `id`= ?";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [id], [file], [user], [aps], [gps], [notes], [title], [date], [hash], [converted], [prev_ext], [NewAPPercent], [size], [ValidGPS] FROM [files] WHERE [id]= ?";}
+			{$sql = "SELECT [id], [file_orig], [user], [aps], [gps], [notes], [title], [date], [hash], [converted], [prev_ext], [NewAPPercent], [size], [ValidGPS] FROM [files] WHERE [id]= ?";}
         $result = $this->sql->conn->prepare($sql);
 		$result->execute(array($row));
 		$user_array = $result->fetch(2);
@@ -756,7 +756,7 @@ class frontend extends dbcore
 		$all_aps_array = array();
 		$all_aps_array['allaps'] = array();
 		$all_aps_array['id'] = $user_array['id'];
-		$all_aps_array['file'] = $user_array['file'];
+		$all_aps_array['file'] = $user_array['file_orig'];
 		$all_aps_array['user'] = $user_array['user'];
 		$all_aps_array['notes'] = $user_array['notes'];
 		$all_aps_array['title'] = $user_array['title'];

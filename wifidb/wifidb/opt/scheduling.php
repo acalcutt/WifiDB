@@ -48,13 +48,13 @@ switch($func)
     case 'done':
 		if($dbcore->sql->service == "mysql")
 			{
-				$sql = "SELECT `id`, `file`, `user`, `notes`, `title`, `date`, `aps`, `gps`, `ValidGPS`, `size`, `NewAPPercent`, `hash` \n"
+				$sql = "SELECT `id`, `file_orig`, `user`, `notes`, `title`, `date`, `aps`, `gps`, `ValidGPS`, `size`, `NewAPPercent`, `hash` \n"
 					. "FROM `files` \n"
 					. "WHERE `completed` = 1 ORDER BY `date` DESC";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [id], [file], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
+				$sql = "SELECT [id], [file_orig], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
 					. "FROM [files] \n"
 					. "WHERE [completed] = 1 ORDER BY [date] DESC";
 			}
@@ -67,7 +67,7 @@ switch($func)
             $files_all[] = array(
                                     'class'=>$class,
                                     'id'=>$newArray['id'],
-                                    'file'=>html_entity_decode($newArray['file']),
+                                    'file'=>html_entity_decode($newArray['file_orig']),
                                     'date'=>$newArray['date'],
                                     'user'=>$newArray["user"],
                                     'notes'=>$newArray['notes'],
@@ -525,7 +525,7 @@ switch($func)
             }
             $importing_row[$n]['color'] = $color;
             $importing_row[$n]['id'] = $newArray['id'];
-            $importing_row[$n]['file'] = $newArray['file'];
+            $importing_row[$n]['file'] = $newArray['file_orig'];
             $importing_row[$n]['title'] = $newArray['title'];
 			$importing_row[$n]['notes'] = $newArray['notes'];
             $importing_row[$n]['date'] = $newArray['date'];
@@ -570,7 +570,7 @@ switch($func)
             $color = 'yellow';
             $waiting_row[$n]['color'] = $color;
             $waiting_row[$n]['id'] = $newArray['id'];
-            $waiting_row[$n]['file'] = $newArray['file'];
+            $waiting_row[$n]['file'] = $newArray['file_orig'];
             $waiting_row[$n]['title'] = $newArray['title'];
 			$waiting_row[$n]['notes'] = $newArray['notes'];
             $waiting_row[$n]['date'] = $newArray['date'];
