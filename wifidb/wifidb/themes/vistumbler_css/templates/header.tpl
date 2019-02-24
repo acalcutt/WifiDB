@@ -3,10 +3,11 @@
 <head>
 	<link rel="stylesheet" href="{$themeurl}html5style.css" />
 	<title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
-	{$wifidb_meta_header}
-	{$redirect_func}
+	{$WebSocketScripts|default:""}
+	{$wifidb_meta_header|default:""}
+	{$redirect_func|default:""}
 </head>
-<body {$redirect_html}>
+<body {$redirect_html|default:""} {$OnLoad|default:""}>
 	<div class="wrap">
 		<div class="head">{$install_header}{$wifidb_announce_header}
 			<div class="lefthead">

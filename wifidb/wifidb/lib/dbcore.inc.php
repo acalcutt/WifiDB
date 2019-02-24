@@ -53,6 +53,7 @@ class dbcore
 		$this->apache_group			 = $config['apache_group'];
 
 		$this->dim					  = DIRECTORY_SEPARATOR;
+		$this->WebSocketURL            = $config['WebSocketURL'];
 		$this->HOSTURL				  = $config['hosturl'];
 		$this->root					 = $config['root'];
 		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';

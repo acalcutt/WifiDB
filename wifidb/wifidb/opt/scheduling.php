@@ -450,6 +450,76 @@ switch($func)
         $dbcore->smarty->display('scheduling_kml.tpl');
     break;
 
+    case 'websockets':
+		$wspath = $dbcore->WebSocketURL;
+        $dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/jquery-1.11.3.js"></script>
+		<script type="text/javascript">
+			var host = "'.$dbcore->WebSocketURL.'Scheduling";
+		</script>
+		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
+        $dbcore->smarty->assign('OnLoad', "onload='init()'");
+
+        $timezone_opt = '';
+        $offsets = array(-12, -11, -10, -9, -8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+        foreach($offsets as $key=>$value)
+        {
+
+            if(((int)$TZone === $value))
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }
+            $timezone_opt .= '<OPTION '.$select.' VALUE="'.$value.'"> '.$value.'</option>
+            ';
+        }
+
+        if($dst == 1)
+        {
+            $dst_opt = "checked";
+        }else
+        {
+            $dst_opt = "";
+        }
+
+        $refresh_opt = "";
+        $val = 1;
+        $max = 300;
+        while($val < $max)
+        {
+            if($refresh == $val)
+            {
+                $select = "selected ";
+            }else
+            {
+                $select = "";
+            }
+            if($val > 60)
+            {
+                $time_inc_name = "Minutes";
+                $d=60;
+            }
+            else
+            {
+                $time_inc_name = "Seconds";
+                $d=1;
+            }
+            $refresh_opt .= '<OPTION '.$select.' VALUE="'.$val.'"> '.($val/$d).' '.$time_inc_name.'</option>
+            ';
+            $val = $val*2;
+        }
+        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
+        $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
+        $dbcore->smarty->assign('wifidb_timezone_options', $timezone_opt);
+        $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
+        $dbcore->smarty->assign('wifidb_schedules', "");
+        $dbcore->smarty->assign('wifidb_daemons', "");
+        $dbcore->smarty->assign('wifidb_importing', "");
+		$dbcore->smarty->assign('wifidb_waiting', "");
+        $dbcore->smarty->display('scheduling_waiting_websockets.tpl');
+    break;
+	
     default:
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT * FROM `settings` WHERE `id` = '1'";}
