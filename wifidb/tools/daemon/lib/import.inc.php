@@ -99,19 +99,20 @@ class import extends dbcore
 		}
 	}
 	
-	private function UpdateHighPoints($file_importing_id, $ap_id, $FirstDate = NULL, $LastDate = NULL, $HighSig = 0, $HighRSSI = -99, $HighRSSIwGPS = -99, $msg = "")
+	private function UpdateHighPoints($file_importing_id, $ap_id, $FirstDate = NULL, $LastDate = NULL, $HighSig = 0, $HighRSSI = -99, $HighRSSIwGPS = -99, $msg = "", $ap_name = "")
 	{
 		if($HighSig == ""){$HighSig = 0;}
 		if($HighRSSI == ""){$HighRSSI = -99;}
 		if($HighRSSIwGPS == ""){$HighRSSIwGPS = -99;}
 		$text = "$msg (UHP)";
 		if($this->sql->service == "mysql")
-			{$sql = "UPDATE `files_importing` SET `tot` = ? WHERE `id` = ?";}
+			{$sql = "UPDATE `files_importing` SET `ap` = ?, `tot` = ? WHERE `id` = ?";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "UPDATE [files_importing] SET [tot] = ? WHERE [id] = ?";}
+			{$sql = "UPDATE [files_importing] SET [ap] = ?, [tot] = ? WHERE [id] = ?";}
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $text, PDO::PARAM_STR);
-		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
+		$prep->bindParam(1, $ap_name, PDO::PARAM_STR);
+		$prep->bindParam(2, $text, PDO::PARAM_STR);
+		$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
 		$prep->execute();
 		if($this->sql->service == "mysql")
 		{
@@ -875,6 +876,7 @@ class import extends dbcore
 
 					$hdata[$ap_id] = array(
 						'ap_id'	=>  $ap_id,
+						'SSID'	=>  $fSSID,
 						'FirstDate'	=>  $FirstDate,
 						'LastDate'	=>  $LastDate,
 						'HighRSSI'	=>  $HighRSSI,
@@ -968,12 +970,13 @@ class import extends dbcore
 			$h_ccount++;
 			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
 			$ap_id = $ap['ap_id'];
+			$SSID = $ap['SSID'];
 			$FirstDate = $ap['FirstDate'];
 			$LastDate = $ap['LastDate'];
 			$HighRSSI = $ap['HighRSSI'];
 			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
 			$HighSig = $ap['HighSig'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc, $SSID);
 		}
 		
 		#Update Cell/BT High Points
