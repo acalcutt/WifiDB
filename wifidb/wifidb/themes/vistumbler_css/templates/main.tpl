@@ -59,7 +59,7 @@ if not, write to the
 							<td>Project Github</td><td><b><a class="links" title="Vistumbler WifiDB Github" href="https://github.com/acalcutt/WiFiDB">https://github.com/acalcutt/WiFiDB</a></b></td>
 						</tr>
 						<tr class="dark">
-							<td>Project Author</td><td><a class="links" title="ACalcutt Github" href="https://github.com/acalcutt"><b>Andrew Calcutt</b></a>, based on work by <a class="links" title="PFerland Github" href="https://github.com/pferland"><b>Phil Ferland</b></a></td>
+							<td>Project Author</td><td><a class="links" title="ACalcutt Github" href="https://github.com/acalcutt"><b>Andrew Calcutt</b></a>, based on <a class="links" title="PFerland Github" href="https://github.com/riei/wifidb/">Random Intervals Wireless Database</a> by <a class="links" title="PFerland Github" href="https://github.com/pferland"><b>Phil Ferland</b></a></td>
 						</tr>
 						<tr class="light">
 							<td>Project Change Log</td><td><b><a class="links" title="Commits" href="https://github.com/acalcutt/WifiDB/commits/master">Commits</a>, <a class="links" title="Commits" href="ver.php">Version History</a></b></td>
