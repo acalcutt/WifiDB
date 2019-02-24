@@ -284,157 +284,76 @@ switch($func)
 		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
-		
-		if(@$_REQUEST['ssid'])
-		{
-			$ssid   =   $_REQUEST['ssid'];
-		}else
-		{
-			$ssid   =   "";
-		}
-		
-		if(@$_REQUEST['mac'])
-		{
-			$mac	=   $_REQUEST['mac'];
-		}else
-		{
-			$mac	=   "";
-		}
-		
-		if(@$_REQUEST['radio'])
-		{
-			$radio  =   $_REQUEST['radio'];
-		}else
-		{
-			$radio  =   "";
-		}
-		
-		if(@$_REQUEST['chan'])
-		{
-			$chan   =   $_REQUEST['chan'];
-		}else
-		{
-			$chan   =   "";
-		}
-		
-		if(@$_REQUEST['auth'])
-		{
-			$auth   =   $_REQUEST['auth'];
-		}else
-		{
-			$auth   =   "";
-		}
-		
-		if(@$_REQUEST['encry'])
-		{
-			$encry  =   $_REQUEST['encry'];
-		}else
-		{
-			$encry  =   "";
-		}
+
+		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
+		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
+		if(@$_REQUEST['radio']){$radio = $_REQUEST['radio'];}else{$radio = "";}	
+		if(@$_REQUEST['chan']){$chan = $_REQUEST['chan'];}else{$chan = "";}
+		if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
+		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
+		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
+
 		if ($from == ""){$from = NULL;}
 		if ($inc == ""){$inc = NULL;}
 		if ($ord == ""){$ord = "ASC";}
 		if ($sort == ""){$sort = "ssid";}
 		
-		list($total_rows, $results_all, $save_url, $export_url) = $dbcore->Search($ssid, $mac, $radio, $chan, $auth, $encry, $ord, $sort, $from, $inc);
+		list($total_rows, $results_all, $save_url, $export_url) = $dbcore->export->Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from, $inc, 1);
 
-		$Import_Map_Data = "";
-		foreach($results_all as $ResultAP) {
-			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-						. "whFA.Hist_Date As FA,\n"
-						. "whLA.Hist_Date As LA,\n"
-						. "wGPS.Lat As Lat,\n"
-						. "wGPS.Lon As Lon,\n"
-						. "wGPS.Alt As Alt,\n"
-						. "wf.user As user\n"
-						. "FROM `wifi_ap` AS wap\n"
-						. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-						. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-						. "LEFT JOIN files AS wf ON whFA.File_ID = wf.id\n"
-						. "WHERE `wap`.`AP_ID` = ?";
-				}
-			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
-						. "[whFA].[Hist_Date] As [FA],\n"
-						. "[whLA].[Hist_Date] As [LA],\n"
-						. "[wGPS].[Lat] As [Lat],\n"
-						. "[wGPS].[Lon] As [Lon],\n"
-						. "[wGPS].[Alt] As [Alt],\n"
-						. "[wf].[user] As [user]\n"
-						. "FROM [wifi_ap] AS [wap]\n"
-						. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
-						. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
-						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-						. "LEFT JOIN [files] AS [wf] ON [whFA].[File_ID] = [wf].[id]\n"
-						. "WHERE [wap].[AP_ID] = ?";
-				}
-			$prep = $dbcore->sql->conn->prepare($sql);
-			$prep->bindParam(1, $ResultAP['id'], PDO::PARAM_INT);
-			$prep->execute();
-			$appointer = $prep->fetchAll();
-			foreach($appointer as $ap)
-			{
-				#Get AP GeoJSON
-				$ap_info = array(
-				"id" => $id,
-				"new_ap" => $new_icons,
-				"named" => $named,
-				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
-				"chan" => $ap['CHAN'],
-				"radio" => $ap['RADTYPE'],
-				"NT" => $ap['NETTYPE'],
-				"sectype" => $ap['SECTYPE'],
-				"auth" => $ap['AUTH'],
-				"encry" => $ap['ENCR'],
-				"BTx" => $ap['BTX'],
-				"OTx" => $ap['OTX'],
-				"FA" => $ap['FA'],
-				"LA" => $ap['LA'],
-				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
-				"alt" => $ap['Alt'],
-				"manuf"=>$dbcore->findManuf($ap['BSSID']),
-				"user" => $ap['user']
-				);
-				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
-			}
-		}
-
-		if($KML_data == "")
+		#Get Center GPS
+		$latlon_array = array();
+		foreach($results_all as $ap) 
 		{
-			$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+			$latlon_info = array(
+			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
+			"long" => $dbcore->convert->dm2dd($ap['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
 		}
-		else
-		{
-			$KML_data = $dbcore->createKML->createFolder("Search Export", $KML_data, 0);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), "Search_Export");
-			$kmz_filename = $dbcore->kml_out.$title.".kmz";
-			#$this->verbosed("Writing KMZ for ".$title." : ".$kmz_filename);
-			$KML_data = $dbcore->createKML->createKMLstructure($title, $KML_data);
-			$dbcore->Zip->addFile($KML_data, 'doc.kml');
-			$dbcore->Zip->setZipFile($kmz_filename);
-			$dbcore->Zip->getZipFile();
-			
-			if (file_exists($kmz_filename)) 
-			{
-				$results = array("mesg" => 'File is ready: <a href="'.$dbcore->kml_htmlpath.$title.'.kmz">'.$title.'.kmz</a>');
-			}
-			else
-			{
-				$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
-			}
-		}
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($latlon_array);
 
-		$dbcore->smarty->assign('results', $results);
-		$dbcore->smarty->display('export_results.tpl');
+		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
+		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
+		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
+		$zoom = 9;
 		
+		$layer_source_all = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
+		if ($labeled) {
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_Legacy","label","{ssid}","Open Sans Regular",11,"none");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year","label","{ssid}","Open Sans Regular",11,"none");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year","label","{ssid}","Open Sans Regular",11,"none");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year","label","{ssid}","Open Sans Regular",11,"none");
+		}
+		if ($channels) {
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_Legacy","channel","{chan}","Open Sans Regular",11,"visible");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year","channel","{chan}","Open Sans Regular",11,"visible");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year","channel","{chan}","Open Sans Regular",11,"visible");
+			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year","channel","{chan}","Open Sans Regular",11,"visible");
+		}		
+
+		$dl = $dbcore->createGeoJSON->CreateDailyGeoJsonLayer($labeled,"#00802b","#cc7a00","#b30000",3,1,0.5,"none");
+		$layer_source_all .= $dl['layer_source'];	
+		if ($labeled) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['layer_name'],"","label","{ssid}","Open Sans Regular",11,"none");}		
+		if ($channels) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['layer_name'],"","label","{chan}","Open Sans Regular",11,"none");;}
+		
+		$ml = $dbcore->createGeoJSON->CreateSearchGeoJsonLayer($export_url, $labeled);
+		$layer_source_all .= $ml['layer_source'];
+		$layer_name = "'".$ml['layer_name']."','".$dl['layer_name']."','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
+
+		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
+		$dbcore->smarty->assign('layer_name', $layer_name);
+		$dbcore->smarty->assign('style', $style);
+		$dbcore->smarty->assign('centerpoint', $centerpoint);
+		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('labeled', $labeled);
+		$dbcore->smarty->assign('channels', $channels);
+		$dbcore->smarty->assign('list', 1);
+		$dbcore->smarty->assign('id', $id);
+		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
+		$dbcore->smarty->display('map.tpl');
 		break;
 }
 ?>

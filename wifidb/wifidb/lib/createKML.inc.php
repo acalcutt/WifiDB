@@ -232,6 +232,7 @@ class createKML
 	{
 		if($name != "")
 		{
+			$name = $this->stripInvalidXml($name);
 			$name = "
 			<name>$name</name>";
 		}
@@ -273,6 +274,7 @@ class createKML
 		   $radiofolder = "
 			<styleUrl>#check</styleUrl>";
 		}
+		$title = $this->stripInvalidXml($title);
 		$tmp = '
 		<NetworkLink>'.$radiofolder.$regionkml.'
 				<name>'.$title.'</name>
@@ -304,7 +306,7 @@ class createKML
 				$sec_type_label = "open";
 				break;
 		}
-		$ap_ssid = dbcore::formatSSID($this->stripInvalidXml(htmlspecialchars($ap_info_array['ssid'])));
+		$ap_ssid = dbcore::formatSSID($this->stripInvalidXml($ap_info_array['ssid']));
 		if($ap_info_array['named'])
 		{	
 			$named = "			<name>".$ap_ssid."</name>";
@@ -811,6 +813,7 @@ class createKML
 				$ret .= " ";
 			}
 		}
+		$ret = str_replace(array('&', '<', '>', '\'', '"'), array('&amp;', '&lt;', '&gt;', '&apos;', '&quot;'), $ret);
 		return $ret;
 	}
 }

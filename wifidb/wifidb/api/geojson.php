@@ -355,6 +355,70 @@ switch($func)
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 		$file_name = "Daily_Exports.geojson";
 		break;
+		
+		case "exp_search":
+			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+			
+			if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
+			if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
+			if(@$_REQUEST['radio']){$radio = $_REQUEST['radio'];}else{$radio = "";}	
+			if(@$_REQUEST['chan']){$chan = $_REQUEST['chan'];}else{$chan = "";}
+			if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
+			if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
+			if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
+			
+			if ($from == ""){$from = NULL;}
+			if ($inc == ""){$inc = NULL;}
+			if ($ord == ""){$ord = "ASC";}
+			if ($sort == ""){$sort = "ssid";}
+			
+			list($total_rows, $results_all, $save_url, $export_url) = $dbcore->export->Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from, $inc, 1);
+			$Import_Map_Data = "";
+			foreach($results_all as $ap) 
+			{
+				#Get number of AP points
+				if($dbcore->sql->service == "mysql")
+					{$sqlp = "SELECT count(`Hist_Date`) AS `points` FROM `wifi_hist` WHERE `AP_ID` = ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sqlp = "SELECT count([Hist_Date]) AS [points] FROM [wifi_hist] WHERE [AP_ID] = ?";}
+				$prep2 = $dbcore->sql->conn->prepare($sqlp);
+				$prep2->bindParam(1, $ap['id'], PDO::PARAM_INT);
+				$prep2->execute();
+				$prep2_fetch = $prep2->fetch(2);
+
+				#Get AP GeoJSON
+				$ap_info = array(
+				"id" => $ap['id'],
+				"new_ap" => $new_icons,
+				"named" => $named,
+				"mac" => $ap['mac'],
+				"ssid" => $ap['ssid'],
+				"chan" => $ap['chan'],
+				"radio" => $ap['radio'],
+				"NT" => $ap['NT'],
+				"sectype" => $ap['sectype'],
+				"auth" => $ap['auth'],
+				"encry" => $ap['encry'],
+				"BTx" => $ap['BTx'],
+				"OTx" => $ap['OTx'],
+				"FA" => $ap['FA'],
+				"LA" => $ap['LA'],
+				"points" => $prep2_fetch['points'],
+				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
+				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
+				"alt" => $ap['Alt'],
+				"manuf"=>$dbcore->findManuf($ap['mac']),
+				"user" => $ap['user']
+				);
+				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+			}
+			$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+			
+			break;
 }	
 if($json)
 {

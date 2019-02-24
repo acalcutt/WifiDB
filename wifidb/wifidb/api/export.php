@@ -426,6 +426,76 @@ switch($func)
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
+			
+		case "exp_search":
+			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+			
+			if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
+			if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
+			if(@$_REQUEST['radio']){$radio = $_REQUEST['radio'];}else{$radio = "";}	
+			if(@$_REQUEST['chan']){$chan = $_REQUEST['chan'];}else{$chan = "";}
+			if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
+			if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
+			if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
+			
+			if ($from == ""){$from = NULL;}
+			if ($inc == ""){$inc = NULL;}
+			if ($ord == ""){$ord = "ASC";}
+			if ($sort == ""){$sort = "ssid";}
+			
+			list($total_rows, $results_all, $save_url, $export_url) = $dbcore->export->Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from, $inc, 1);
+			
+			$results = "";
+			foreach($results_all as $ResultAP) 
+			{
+				$id = $ResultAP['id'];
+				
+				#Get the AP Center point
+				list($ap_kml, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
+				if($ap_kml)
+				{
+					#Get the AP Signal History
+					$KML_Signal_data = "";
+					
+					# -Get Unique Files with this AP_ID-
+					if($dbcore->sql->service == "mysql")
+						{$sql = "SELECT DISTINCT(`File_ID`) FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID`";}
+					else if($dbcore->sql->service == "sqlsrv")
+						{$sql = "SELECT DISTINCT([File_ID]) FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID]";}
+					$prep_file_id = $dbcore->sql->conn->prepare($sql);
+					$prep_file_id->bindParam(1, $id, PDO::PARAM_INT);
+					$prep_file_id->execute();
+					$fetch_file_id = $prep_file_id->fetchAll();
+					foreach($fetch_file_id as $file_id)
+					{
+						#Get List Title 
+						if($dbcore->sql->service == "mysql")
+							{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
+						else if($dbcore->sql->service == "sqlsrv")
+							{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
+						$prep_title = $dbcore->sql->conn->prepare($sql);
+						$prep_title->bindParam(1, $file_id['File_ID'], PDO::PARAM_INT);
+						$prep_title->execute();
+						$fetch_title = $prep_title->fetch(2);
+						$ap_list_title = $fetch_title['title'];
+						
+						#Get List AP Signal History
+						$ap_signal = $dbcore->export->ExportSignal3dSingleListAp($file_id['File_ID'], $id, 0);
+						if($ap_signal){$KML_Signal_data .= $dbcore->createKML->createFolder($file_id['File_ID']."-".$ap_list_title."-".$ResultAP['ssid'], $ap_signal, 1);}
+					}			
+					if($KML_Signal_data == ""){$KML_Signal_data .= $dbcore->createKML->createFolder("No Signal History", $KML_Signal_data, 0);}
+					$ap_kml .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 0);
+					$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid."-".$ResultAP['mac']);
+					$results .= $dbcore->createKML->createFolder($title, $ap_kml, 0);
+				}
+			}
+			$results = $dbcore->createKML->createKMLstructure("Search_Export", $results);
+			if($labeled){$file_name = "Search_Export_Labeled.kmz";}else{$file_name = "Search_Export.kmz";}
+			
+			break;
 
 		default:
 			echo 'No function or incorrect function has been given...what am I supposed to do with this request?';
