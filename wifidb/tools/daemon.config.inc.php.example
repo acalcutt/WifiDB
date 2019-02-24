@@ -25,6 +25,10 @@ $daemon_config = array(
 	'status_waiting'        =>	'Waiting',
 	'status_running'        =>	'Running',
 
+	//WebSocket Settings
+	'WebSocketBindIP'     =>  '127.0.0.1',
+    'WebSocketPort'     =>  9000,
+
     //IF you are running windows you need to define the install path to the PHP binary, this is so the daemon can restart itself every once and a while.
     'php_install'	=>	'C:\\program files\\php5\\',
 

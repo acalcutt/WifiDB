@@ -30,6 +30,7 @@ $config = array
     'timezn'                =>   'UTC',
     'root'                  =>   'wifidb',
     'hosturl'               =>   'http://wifidb.foo.lan',
+    'WebSocketURL'          =>   'wss://wifidb.foo.lan/ws/',
     'dim'                   =>   DIRECTORY_SEPARATOR,
     'timetilldead'          =>   2,
     'config_fails'          =>   3,
