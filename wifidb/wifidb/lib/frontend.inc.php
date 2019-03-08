@@ -83,22 +83,18 @@ class frontend extends dbcore
 	{
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS,\n"
-					. "whFA.Hist_Date As FA,\n"
-					. "whLA.Hist_Date As LA,\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points,\n"
 					. "wGPS.Lat As Lat,\n"
 					. "wGPS.Lon As Lon,\n"
 					. "wf.user As user\n"
 					. "FROM `wifi_ap` AS wap\n"
-					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 					. "WHERE wap.AP_ID = ? LIMIT 1";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT TOP 1 [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[FLAGS],\n"
+				$sql = "SELECT TOP 1 [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[FLAGS], [wap].[fa], [wap].[la], [wap].[points],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wf].[user] As [user]\n"
@@ -111,15 +107,6 @@ class frontend extends dbcore
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$newArray = $prep->fetch(2);
-		
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT Count(`Hist_Date`) AS `points`, Min(`Hist_Date`) AS `fa`, Max(`Hist_Date`) AS `la`  FROM `wifi_hist` WHERE AP_ID = ? GROUP BY AP_ID";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT Count([Hist_Date]) AS [points], Min([Hist_Date]) AS [fa], Max([Hist_Date]) AS [la]  FROM [wifi_hist] WHERE AP_ID = ? GROUP BY AP_ID";}
-		$prep2 = $this->sql->conn->prepare($sql);
-		$prep2->bindParam(1, $id, PDO::PARAM_INT);
-		$prep2->execute();
-		$falaparr = $prep2->fetch(2);
 
 		$list_geonames = array();
 		$flip = 0;
@@ -141,11 +128,11 @@ class frontend extends dbcore
 						. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(`latitude`)))) AS `miles`,\n"
 						. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(`latitude`)))) AS `kilometers`\n"
 						. "FROM `geonames` \n"
-						. "WHERE `latitude` LIKE '".$lat_search."%' AND `longitude` LIKE '".$long_search."%' ORDER BY `kilometers` ASC LIMIT 5";
+						. "WHERE `latitude` LIKE '".$lat_search."%' AND `longitude` LIKE '".$long_search."%' ORDER BY `kilometers` ASC LIMIT 10";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
-					$sql = "SELECT TOP 5 [id], [asciiname], [country_code], [admin1_code], [admin2_code], [timezone], [latitude], [longitude], \n"
+					$sql = "SELECT TOP 10 [id], [asciiname], [country_code], [admin1_code], [admin2_code], [timezone], [latitude], [longitude], \n"
 						. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [miles],\n"
 						. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [kilometers]\n"
 						. "FROM [geonames] \n"
@@ -217,9 +204,9 @@ class frontend extends dbcore
 			'lat'=>$newArray["Lat"],
 			'lon'=>$newArray["Lon"],
 			'user'=>$newArray["user"],
-			'fa'=>$falaparr["fa"],
-			'la'=>$falaparr["la"],
-			'points'=>$falaparr["points"],
+			'fa'=>$newArray["fa"],
+			'la'=>$newArray["la"],
+			'points'=>$newArray["points"],
 			'validgps'=>$validgps
 		);
 		
@@ -793,7 +780,7 @@ class frontend extends dbcore
 
 			if($this->sql->service == "mysql")
 				{
-					$sql = "SELECT `wifi_ap`.`AP_ID`, `wifi_ap`.`BSSID`, `wifi_ap`.`SSID`, `wifi_ap`.`CHAN`, `wifi_ap`.`AUTH`, `wifi_ap`.`ENCR`, `wifi_ap`.`SECTYPE`, `wifi_ap`.`RADTYPE`, `wifi_ap`.`NETTYPE`, `wifi_ap`.`BTX`, `wifi_ap`.`OTX`,\n"
+					$sql = "SELECT `wifi_ap`.`AP_ID`, `wifi_ap`.`BSSID`, `wifi_ap`.`SSID`, `wifi_ap`.`CHAN`, `wifi_ap`.`AUTH`, `wifi_ap`.`ENCR`, `wifi_ap`.`SECTYPE`, `wifi_ap`.`RADTYPE`, `wifi_ap`.`NETTYPE`, `wifi_ap`.`BTX`, `wifi_ap`.`OTX`, `wifi_ap`.`points`,\n"
 						. "`wifi_gps`.`Lat` AS Lat,\n"
 						. "`wifi_gps`.`Lon` AS Lon\n"
 						. "FROM `wifi_ap`\n"
@@ -802,7 +789,7 @@ class frontend extends dbcore
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
-					$sql = "SELECT [wifi_ap].[AP_ID], [wifi_ap].[BSSID], [wifi_ap].[SSID], [wifi_ap].[CHAN], [wifi_ap].[AUTH], [wifi_ap].[ENCR], [wifi_ap].[SECTYPE], [wifi_ap].[RADTYPE], [wifi_ap].[NETTYPE], [wifi_ap].[BTX], [wifi_ap].[OTX],\n"
+					$sql = "SELECT [wifi_ap].[AP_ID], [wifi_ap].[BSSID], [wifi_ap].[SSID], [wifi_ap].[CHAN], [wifi_ap].[AUTH], [wifi_ap].[ENCR], [wifi_ap].[SECTYPE], [wifi_ap].[RADTYPE], [wifi_ap].[NETTYPE], [wifi_ap].[BTX], [wifi_ap].[OTX], [wifi_ap].[points],\n"
 						. "[wifi_gps].[Lat] AS [Lat],\n"
 						. "[wifi_gps].[Lon] AS [Lon]\n"
 						. "FROM [wifi_ap]\n"
@@ -829,7 +816,8 @@ class frontend extends dbcore
 					'encry' => $ap_array['ENCR'],
 					'fa' => $List_AP_FA,
 					'la' => $List_AP_LA,
-					'points' => $List_points,
+					'list_points' => $List_points,
+					'points' => $ap_array['points'],
 					'lat' => $ap_array['Lat'],
 					'lon' => $ap_array['Lon'],
 					'validgps' => $validgps

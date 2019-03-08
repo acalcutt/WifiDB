@@ -198,12 +198,13 @@ class createGeoJSON
 		$ret_data = array(
 		"layer_source" => $layer_source,
 		"layer_name" => $layer_lname,
+		"source_name" => $layer_sname
 		);
 		
 		return $ret_data;
 	}
 	
-	public function CreateSearchGeoJsonLayer($search_str, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	public function CreateSearchGeoJsonLayer($search_str, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		$layer_sname = 'slist-'.uniqid();
 		$layer_lname = 'slistl-'.uniqid();
@@ -237,12 +238,10 @@ class createGeoJSON
 														}
 													});
 ";
-
-		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
-
 		$ret_data = array(
 		"layer_source" => $layer_source,
 		"layer_name" => $layer_lname,
+		"source_name" => $layer_sname
 		);
 		
 		return $ret_data;
@@ -295,10 +294,10 @@ class createGeoJSON
 		return $ret_data;
 	}
 	
-	public function CreateDailyGeoJsonLayer($labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	public function CreateDailyGeoJsonLayer($open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
-		$layer_sname = "daily";
-		$layer_lname = "daily";
+		$layer_sname = 'dailys';
+		$layer_lname = 'daily';
 		$layer_source = "
 													map.addSource('".$layer_sname."', {
 														type: 'geojson',
@@ -333,23 +332,23 @@ class createGeoJSON
 		$ret_data = array(
 		"layer_source" => $layer_source,
 		"layer_name" => $layer_lname,
+		"source_name" => $layer_sname
 		);
 		
 		return $ret_data;
 	}
 	
-	public function CreateLatestGeoJsonLayer($labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	public function CreateLatestGeoJsonLayer($open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
-		$layer_sname = "latest";
-		$layer_lname = "latest";
+		$layer_sname = 'latests';
+		$layer_lname = 'latest';
 		$layer_source = "
 													map.addSource('".$layer_sname."', {
 														type: 'geojson',
 														data: '".$this->URL_BASE."api/geojson.php?func=exp_latest_ap',
 														buffer: 0,
-													});";
-		if($labeled){$layer_source .= $this->CreateLabelLayer($layer_sname,"","label","{ssid}","Open Sans Regular",11,"visible");}
-		$layer_source .= "
+													});
+
 													map.addLayer({
 														'id': '".$layer_lname."',
 														'type': 'circle',
@@ -377,7 +376,7 @@ class createGeoJSON
 		$ret_data = array(
 		"layer_source" => $layer_source,
 		"layer_name" => $layer_lname,
-		"layer_sname" => $layer_sname,
+		"source_name" => $layer_sname
 		);
 		
 		return $ret_data;
