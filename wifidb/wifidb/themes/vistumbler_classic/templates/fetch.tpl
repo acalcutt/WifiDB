@@ -63,9 +63,9 @@ if not, write to the
 							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_ap.lon}</td></tr>
 							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.fa}</td></tr>
 							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.la}</td></tr>
-							<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_ap.points}</td></tr>
+							<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_ap.points|number_format:0}</td></tr>
 							<tr><td class="header" width="112">User</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></td></tr>
-							<tr><td class="header" width="112">Export:</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}&labeled=1">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
+							<tr><td class="header" width="112">Export:</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifidb_ap.id}&labeled=0">Map</a> | <a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_ap&amp;id={$wifidb_ap.id}">GeoJSON</a> | <a class="links" href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;from=0&amp;limit={$wifidb_ap.limit}">KMZ</a> | <a class="links" href="{$wifidb_host_url}graph/?id={$wifidb_ap.id}">Graph Signal</a></td>
 							</tr>
 						</tbody>
 					</table>

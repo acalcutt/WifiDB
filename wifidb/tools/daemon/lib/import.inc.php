@@ -99,88 +99,117 @@ class import extends dbcore
 		}
 	}
 	
-	private function UpdateHighPoints($file_importing_id, $ap_id, $FirstDate = NULL, $LastDate = NULL, $HighSig = 0, $HighRSSI = -99, $HighRSSIwGPS = -99, $msg = "", $ap_name = "")
+	private function UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS = -99, $msg = "")
 	{
-		if($HighSig == ""){$HighSig = 0;}
-		if($HighRSSI == ""){$HighRSSI = -99;}
 		if($HighRSSIwGPS == ""){$HighRSSIwGPS = -99;}
+		
+		#Get AP Info, SSID and old High GPS RSSI value
+		$sql = "SELECT SSID, high_gps_rssi FROM `wifi_ap` WHERE AP_ID = ?";
+		$gaip = $this->sql->conn->prepare($sql);
+		$gaip->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$gaip->execute();
+		$fetchgai = $gaip->fetch(2);
+		$ssid = $fetchgai['SSID'];
+		$high_gps_rssi = $fetchgai['high_gps_rssi'];
+
+		#Update Import Status
 		$text = "$msg (UHP)";
-		if($this->sql->service == "mysql")
-			{$sql = "UPDATE `files_importing` SET `ap` = ?, `tot` = ? WHERE `id` = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "UPDATE [files_importing] SET [ap] = ?, [tot] = ? WHERE [id] = ?";}
+		$sql = "UPDATE files_importing SET ap = ?, tot = ? WHERE id = ?";
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $ap_name, PDO::PARAM_STR);
+		$prep->bindParam(1, $ssid, PDO::PARAM_STR);
 		$prep->bindParam(2, $text, PDO::PARAM_STR);
 		$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
 		$prep->execute();
-		if($this->sql->service == "mysql")
-		{
-			$sql = "SELECT \n"
-				. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `Hist_Date` <= ? ORDER BY `Hist_Date` ASC, `Hist_ID` ASC LIMIT 1) As `FA_id`,\n"
-				. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `Hist_Date` >= ? ORDER BY `Hist_Date` DESC, `Hist_ID` ASC LIMIT 1) As `LA_id`,\n"
-				. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `Sig` >= ? ORDER BY Sig DESC, `Hist_Date` DESC, `Hist_ID` ASC LIMIT 1) As `HighSig_id`,\n"
-				. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL And `RSSI` >= ? ORDER BY RSSI DESC, `Hist_Date` DESC, `Hist_ID` ASC LIMIT 1) As `HighRSSI_id`,\n"
-				. "(SELECT `wifi_hist`.`GPS_ID`\n"
-				. "    FROM `wifi_hist`\n"
-				. "    INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-				. "    WHERE `wifi_hist`.`RSSI` >= ? And `wifi_hist`.`AP_ID` = `wap`.`AP_ID` And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-				. "    ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC, `wifi_hist`.`Hist_ID` ASC\n"
-				. "    LIMIT 1) As `HighGps_id`\n"
-				. "FROM `wifi_ap` As `wap`\n"
-				. "WHERE `wap`.`AP_ID` = ?";
-		}
-		else if($this->sql->service == "sqlsrv")
-		{
-			$sql = "SELECT\n"
-				. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL And [Hist_Date] <= ? ORDER BY [Hist_Date] ASC, [Hist_ID] ASC) AS [FA_id],\n"
-				. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL And [Hist_Date] >= ? ORDER BY [Hist_Date] DESC, [Hist_ID] ASC) AS [LA_id],\n"
-				. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL And [Sig] >= ? ORDER BY Sig DESC, [Hist_Date] DESC, [Hist_ID] ASC) AS [HighSig_id],\n"
-				. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL And [RSSI] >= ? ORDER BY RSSI DESC, [Hist_Date] DESC, [Hist_ID] ASC) AS [HighRSSI_id],\n"
-				. "(SELECT TOP 1 [wifi_hist].[GPS_ID]\n"
-				. "    FROM [wifi_hist]\n"
-				. "    INNER JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
-				. "    WHERE [wifi_hist].[RSSI] >= ? AND [wifi_hist].[AP_ID] = [wap].[AP_ID] AND [wifi_hist].[Hist_Date] IS NOT NULL AND [wifi_gps].[Lat] != '0.0000'\n"
-				. "    ORDER BY [wifi_hist].[RSSI] DESC, [wifi_hist].[Hist_Date] DESC, [wifi_gps].[NumOfSats] DESC) As [HighGps_id], [wifi_hist].[Hist_ID] ASC\n"
-				. "FROM [wifi_ap] As [wap]\n"
-				. "WHERE [wap].[AP_ID] = ?";
-		}
-		$resgps = $this->sql->conn->prepare($sql);
-		$resgps->bindParam(1, $FirstDate, PDO::PARAM_STR);
-		$resgps->bindParam(2, $LastDate, PDO::PARAM_STR);
-		$resgps->bindParam(3, $HighSig, PDO::PARAM_INT);
-		$resgps->bindParam(4, $HighRSSI, PDO::PARAM_INT);
-		$resgps->bindParam(5, $HighRSSIwGPS, PDO::PARAM_INT);
-		$resgps->bindParam(6, $ap_id, PDO::PARAM_INT);
-		$resgps->execute();
-		$fetchgps = $resgps->fetch(2);
-		$FA_id = $fetchgps['FA_id'];
-		$LA_id = $fetchgps['LA_id'];
-		$HighSig_id = $fetchgps['HighSig_id'];
-		$HighRSSI_id = $fetchgps['HighRSSI_id'];
-		$HighGps_id = $fetchgps['HighGps_id'];
 		
+		#Update First Active, Last Active, High RSSI, High Signal and point count
+		$sql = "SELECT Min(Hist_Date) AS fa, Max(Hist_Date) AS la, Max(RSSI) AS high_rssi, Max(Sig) AS high_sig, Count(Hist_Date) AS points FROM wifi_hist WHERE AP_ID = ? GROUP BY AP_ID";
+		$hpp = $this->sql->conn->prepare($sql);
+		$hpp->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$hpp->execute();
+		$fetchhp = $hpp->fetch(2);
+		if($fetchhp['fa'] || $fetchhp['la'] || $fetchhp['high_rssi'] || $fetchhp['high_sig'] || $fetchhp['points'])
+		{
+			$sql = "UPDATE wifi_ap SET fa = ? , la = ? , high_rssi = ? , high_sig = ? , points = ? WHERE AP_ID = ?";
+			$uhpp = $this->sql->conn->prepare($sql);
+			$uhpp->bindParam(1, $fetchhp['fa'], PDO::PARAM_STR);
+			$uhpp->bindParam(2, $fetchhp['la'], PDO::PARAM_STR);
+			$uhpp->bindParam(3, $fetchhp['high_rssi'], PDO::PARAM_INT);
+			$uhpp->bindParam(4, $fetchhp['high_sig'], PDO::PARAM_INT);
+			$uhpp->bindParam(5, $fetchhp['points'], PDO::PARAM_INT);
+			$uhpp->bindParam(6, $ap_id, PDO::PARAM_INT);
+			$uhpp->execute();
+		}
+		
+		#Update First ID and Last ID (I plan to remove this and some point, since fa and la and now in the ap table)
+		$sql = "SELECT Hist_ID AS fa_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date ASC, Hist_ID ASC LIMIT 1";
+		
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT Hist_ID AS fa_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date ASC, Hist_ID ASC LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 Hist_ID AS fa_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date ASC, Hist_ID ASC";}
+		$fp = $this->sql->conn->prepare($sql);
+		$fp->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$fp->execute();
+		$fetchf = $fp->fetch(2);
+		$fa_id = $fetchf['fa_id'];
+		
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT Hist_ID AS la_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date DESC, Hist_ID ASC LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 Hist_ID AS la_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date DESC, Hist_ID ASC";}
+		$lp = $this->sql->conn->prepare($sql);
+		$lp->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$lp->execute();
+		$fetchl = $lp->fetch(2);
+		$la_id = $fetchl['la_id'];
 
-		#Update AP IDs
-		if($this->sql->service == "mysql")
-			{$sql = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "UPDATE [wifi_ap] SET [FirstHist_ID] = ? , [LastHist_ID] = ? , [HighRSSI_ID] = ?, [HighSig_ID] = ? , [HighGps_ID] = ? WHERE [AP_ID] = ?";}
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $FA_id, PDO::PARAM_INT);
-		$prep->bindParam(2, $LA_id, PDO::PARAM_INT);
-		$prep->bindParam(3, $HighRSSI_id, PDO::PARAM_INT);
-		$prep->bindParam(4, $HighSig_id, PDO::PARAM_INT);
-		$prep->bindParam(5, $HighGps_id, PDO::PARAM_INT);
-		$prep->bindParam(6, $ap_id, PDO::PARAM_INT);
-		$prep->execute();
-		if($this->sql->checkError() !== 0)
+		if($fa_id || $la_id)
 		{
-			$this->verbosed(var_export($this->sql->conn->errorInfo(),1), -1);
-			//$this->logd("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Error Updating AP Hist IDs.\r\n".var_export($this->sql->conn->errorInfo(),1));
+			$sql = "UPDATE wifi_ap SET 	FirstHist_ID = ? , LastHist_ID = ? WHERE AP_ID = ?";
+			$uflidp = $this->sql->conn->prepare($sql);
+			$uflidp->bindParam(1, $fa_id, PDO::PARAM_INT);
+			$uflidp->bindParam(2, $la_id, PDO::PARAM_INT);
+			$uflidp->bindParam(3, $ap_id, PDO::PARAM_INT);
+			$uflidp->execute();
 		}
-		
+ 
+		#Update High GPS ID, High GPS RSSI
+		if($HighRSSIwGPS >= $high_gps_rssi || $high_gps_rssi == "")
+		{
+			if($this->sql->service == "mysql")
+				{
+					$sql = "SELECT wifi_hist.GPS_ID, wifi_hist.RSSI, wifi_hist.Sig\n"
+						. "FROM wifi_hist\n"
+						. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
+						. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
+						. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_hist.Hist_ID ASC\n"
+						. "LIMIT 1";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT TOP 1 wifi_hist.GPS_ID, wifi_hist.RSSI, wifi_hist.Sig\n"
+						. "FROM wifi_hist\n"
+						. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
+						. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
+						. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_hist.Hist_ID ASC";
+				}
+			$hgp = $this->sql->conn->prepare($sql);
+			$hgp->bindParam(1, $ap_id, PDO::PARAM_INT);
+			$hgp->execute();
+			$fetchhg = $hgp->fetch(2);
+			if($fetchhg['GPS_ID'] || $fetchhg['RSSI'] || $fetchhg['Sig'])
+			{
+				$sql = "UPDATE wifi_ap SET HighGps_ID = ? , high_gps_rssi = ? , high_gps_sig = ? WHERE AP_ID = ?";
+				$uhgp = $this->sql->conn->prepare($sql);
+				$uhgp->bindParam(1, $fetchhg['GPS_ID'], PDO::PARAM_INT);
+				$uhgp->bindParam(2, $fetchhg['RSSI'], PDO::PARAM_INT);
+				$uhgp->bindParam(3, $fetchhg['Sig'], PDO::PARAM_INT);
+				$uhgp->bindParam(4, $ap_id, PDO::PARAM_INT);
+				$uhgp->execute();
+			}
+		}
+
+		#Clear Import Status
 		$text = "";
 		if($this->sql->service == "mysql")
 			{$sql = "UPDATE `files_importing` SET `tot` = ? WHERE `id` = ?";}
@@ -423,7 +452,7 @@ class import extends dbcore
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
 			if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $fDate, $fDate, $fSignal, $fRSSI, $fRSSIwGPS, $calc);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $fRSSIwGPS, $calc);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -611,28 +640,12 @@ class import extends dbcore
 				if($hist_id == ""){continue;}
 				
 				$harr = @$hdata[$ap_id];
-				$FirstDate = $harr['FirstDate'];
-				$LastDate = $harr['LastDate'];
-				$HighRSSI = $harr['HighRSSI'];
-				$HighRSSIwGPS = $harr['HighRSSI'];
-				$HighSig = $harr['HighSig'];
-				if($HighRSSI == ""){$HighRSSI == -99;}
+				$HighRSSIwGPS = @$harr['HighRSSIwGPS'];
 				if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
-				if($HighSig == ""){$HighSig == 0;}
-					
-				if($fDate > $LastDate || $LastDate == ""){$LastDate = $fDate;}
-				if($fDate < $FirstDate || $FirstDate == ""){$FirstDate = $fDate;}
-				if($fRSSI > $HighRSSI){$HighRSSI = $fRSSI;}
-				if($fSignal > $HighSig){$HighSig = $fSignal;}
 				if($fLat != "" && $fLon != "" && $fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > $HighRSSIwGPS){$HighRSSIwGPS = $fRSSI;}
-
 				$hdata[$ap_id] = array(
 					'ap_id'	=>  $ap_id,
-					'FirstDate'	=>  $FirstDate,
-					'LastDate'	=>  $LastDate,
-					'HighRSSI'	=>  $HighRSSI,
 					'HighRSSIwGPS'	=>  $HighRSSIwGPS,
-					'HighSig'	=>  $HighSig
 				);
 			}
 		}
@@ -645,12 +658,8 @@ class import extends dbcore
 			$h_ccount++;
 			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
 			$ap_id = $ap['ap_id'];
-			$FirstDate = $ap['FirstDate'];
-			$LastDate = $ap['LastDate'];
-			$HighRSSI = $ap['HighRSSI'];
 			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
-			$HighSig = $ap['HighSig'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
 		}
 		
 		#Find if file had Valid GPS
@@ -859,29 +868,12 @@ class import extends dbcore
 					if($hist_id == ""){continue;}
 					
 					$harr = @$hdata[$ap_id];
-					$FirstDate = $harr['FirstDate'];
-					$LastDate = $harr['LastDate'];
-					$HighRSSI = $harr['HighRSSI'];
-					$HighRSSIwGPS = $harr['HighRSSI'];
-					$HighSig = $harr['HighSig'];
-					if($HighRSSI == ""){$HighRSSI == -99;}
+					$HighRSSIwGPS = @$harr['HighRSSIwGPS'];
 					if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
-					if($HighSig == ""){$HighSig == 0;}
-						
-					if($GpsDate > $LastDate || $LastDate == ""){$LastDate = $GpsDate;}
-					if($GpsDate < $FirstDate || $FirstDate == ""){$FirstDate = $GpsDate;}
-					if($fRSSI > $HighRSSI){$HighRSSI = $fRSSI;}
-					if($fSignal > $HighSig){$HighSig = $fSignal;}
 					if($fLat != "" && $fLon != "" && $fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > $HighRSSIwGPS){$HighRSSIwGPS = $fRSSI;}
-
 					$hdata[$ap_id] = array(
 						'ap_id'	=>  $ap_id,
-						'SSID'	=>  $fSSID,
-						'FirstDate'	=>  $FirstDate,
-						'LastDate'	=>  $LastDate,
-						'HighRSSI'	=>  $HighRSSI,
-						'HighRSSIwGPS'	=>  $HighRSSIwGPS,
-						'HighSig'	=>  $HighSig
+						'HighRSSIwGPS'	=>  $HighRSSIwGPS
 					);
 				}
 				else
@@ -970,13 +962,8 @@ class import extends dbcore
 			$h_ccount++;
 			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
 			$ap_id = $ap['ap_id'];
-			$SSID = $ap['SSID'];
-			$FirstDate = $ap['FirstDate'];
-			$LastDate = $ap['LastDate'];
-			$HighRSSI = $ap['HighRSSI'];
 			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
-			$HighSig = $ap['HighSig'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc, $SSID);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
 		}
 		
 		#Update Cell/BT High Points
@@ -1186,7 +1173,7 @@ class import extends dbcore
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
 				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-				$this->UpdateHighPoints($file_importing_id, $ap_id, $GpsDate, $GpsDate, $fSignal, $fRSSI, $fRSSIwGPS, $calc);
+				$this->UpdateHighPoints($file_importing_id, $ap_id, $fRSSIwGPS, $calc);
 					
 			}
 		}
@@ -1594,11 +1581,7 @@ class import extends dbcore
 				$NewAPs++;
 			}
 
-			$HighRSSI = -99;
 			$HighRSSIwGPS = -99;
-			$HighSig = 0;
-			$FirstDate = "";
-			$LastDate = "";
 			//Import Wifi Signals
 			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
 			$hist_count = count($ap_sig_exp);
@@ -1623,10 +1606,7 @@ class import extends dbcore
 				if($signal == ""){$signal = 0;}
 				if($this->rssi_signals_flag){if($sig_gps_exp[2] == "Ltd."){$rssi = $this->convert->Sig2dBm($signal);}}#fix for old incorrectly formatted file 
 				if($this->rssi_signals_flag){$rssi = $sig_gps_exp[2];}else{$rssi = $this->convert->Sig2dBm($signal);}
-				if($rssi > $HighRSSI){$HighRSSI = $rssi;}
-				if($signal > $HighSig){$HighSig = $signal;}
-				
-				
+
 				if($this->sql->service == "mysql")
 					{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
 				else if($this->sql->service == "sqlsrv")
@@ -1641,8 +1621,6 @@ class import extends dbcore
 				$gps_lat = $fetchgidprep['Lat'];
 				$gps_lon = $fetchgidprep['Lat'];
 				if($gps_id == ""){continue;}
-				if ($FirstDate > $datetime || $FirstDate == ""){$FirstDate = $datetime;}
-				if ($LastDate < $datetime || $LastDate == ""){$LastDate = $datetime;}
 				if ($gps_lat != "0.0000" && $gps_lon != "0.0000" && $rssi > $HighRSSIwGPS){$HighRSSIwGPS = $rssi;}
 
 				if($this->sql->service == "mysql")
@@ -1670,7 +1648,7 @@ class import extends dbcore
 			}
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -1931,28 +1909,12 @@ class import extends dbcore
 				if($gps_id_arr != "" && $new_ap_id != "")
 				{
 					$harr = @$hdata[$new_ap_id];
-					$FirstDate = $harr['FirstDate'];
-					$LastDate = $harr['LastDate'];
-					$HighRSSI = $harr['HighRSSI'];
-					$HighRSSIwGPS = $harr['HighRSSI'];
-					$HighSig = $harr['HighSig'];
-					if($HighRSSI == ""){$HighRSSI == -99;}
+					$HighRSSIwGPS = @$harr['HighRSSIwGPS'];
 					if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
-					if($HighSig == ""){$HighSig == 0;}
-						
-					if($oh_datetime > $LastDate || $LastDate == ""){$LastDate = $oh_datetime;}
-					if($oh_datetime < $FirstDate || $FirstDate == ""){$FirstDate = $oh_datetime;}
-					if($oh_rssi > $HighRSSI){$HighRSSI = $oh_rssi;}
-					if($oh_sig > $HighSig){$HighSig = $oh_sig;}
 					if($gps_lat != "" && $gps_lon != "" && $gps_lat != "0.0000" && $gps_lon != "0.0000" && $oh_rssi > $HighRSSIwGPS){$HighRSSIwGPS = $oh_rssi;}
-
 					$hdata[$new_ap_id] = array(
 						'ap_id'	=>  $new_ap_id,
-						'FirstDate'	=>  $FirstDate,
-						'LastDate'	=>  $LastDate,
-						'HighRSSI'	=>  $HighRSSI,
-						'HighRSSIwGPS'	=>  $HighRSSIwGPS,
-						'HighSig'	=>  $HighSig
+						'HighRSSIwGPS'	=>  $HighRSSIwGPS
 					);
 					
 					if($this->sql->service == "mysql")
@@ -1986,12 +1948,8 @@ class import extends dbcore
 			$h_ccount++;
 			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
 			$ap_id = $ap['ap_id'];
-			$FirstDate = $ap['FirstDate'];
-			$LastDate = $ap['LastDate'];
-			$HighRSSI = $ap['HighRSSI'];
 			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
-			$HighSig = $ap['HighSig'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $FirstDate, $LastDate, $HighSig, $HighRSSI, $HighRSSIwGPS, $calc);
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
