@@ -1,21 +1,10 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+user_import_aps.tpl, user ap list smarty template.
+Copyright (C) 2019 Andrew Calcutt
 
-This program is free software; you can redistribute it and/or modify it under the terms
-of the GNU General Public License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with this program;
-if not, write to the
-
-   Free Software Foundation, Inc.,
-   59 Temple Place, Suite 330,
-   Boston, MA 02111-1307 USA
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 -->
 {include file="header.tpl"}
 			<div class="main">
@@ -79,23 +68,69 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
-								<th class="header">AP ID</th>
-								<th class="header">Update / New</th>
-								<th class="header">GPS</th>
-								<th class="header">SSID</th>
-								<th class="header">Mac Address</th>
-								<th class="header">Authentication</th>
-								<th class="header">Encryption</th>
-								<th class="header">Radio</th>
-								<th class="header">Channel</th>
-								<th class="header">First Active</th>
-								<th class="header">Last Active</th>
-								<th class="header">Points (List / Total)</th>
+								<th class="header">
+									<div>GPS</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>New</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>ID</div>
+									<div>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=AP_ID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=AP_ID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>SSID</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>Mac Address</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>Authentication</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>Encryption</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>Radio Type</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>Channel</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header">
+									<div>First Active</div>
+									<div>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=fa&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=fa&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Last Active</div>
+									<div>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=la&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=la&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Points (List / Total)</div>
+									<div>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=useraplist&row={$wifidb_all_user_aps.id}&sort=points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
 							</tr>
 							{foreach name=outer item=wifidb_users_aps from=$wifidb_all_user_aps.allaps}
 							<tr class="{$wifidb_users_aps.class}">
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un}</td>
 								<td class="{$wifidb_users_aps.class}">
 								{if $wifidb_users_aps.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_users_aps.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
@@ -107,6 +142,8 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
 								{/if}
 								</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id}</td>
 								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid}</a></td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>

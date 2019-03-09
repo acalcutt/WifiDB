@@ -116,6 +116,7 @@ a.links {
 	background-color: #5b86aa;
 	font-weight: bold;
 	border: 1px inset black;
+	white-space: nowrap;
 }
 
 .dark {

@@ -728,10 +728,11 @@ class frontend extends dbcore
 	#===============================================#
 	#   Grab the AP's for a given user's Import	 #
 	#===============================================#
-	function UserAPList($row=0)
+	function UserAPList($row=0, $sort = "AP_ID", $ord = "DESC")
 	{
 		if(!$row){return 0;}
 		
+		# Get import list information
 		if($this->sql->service == "mysql")
 			{$sql = "SELECT `id`, `file_orig`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size`, `ValidGPS` FROM `files` WHERE `id`= ?";}
 		else if($this->sql->service == "sqlsrv")
@@ -754,11 +755,13 @@ class frontend extends dbcore
 		$all_aps_array['date'] = $user_array['date'];
 		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
 		$all_aps_array['validgps'] = $user_array['ValidGPS'];
+		
 
+		#Get APs, First Active, Last Active, and points that go with this list
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT `AP_ID`, `New`, Min(`Hist_Date`) As `fa`, Max(`Hist_Date`) As `la`, Count(`Hist_Date`) As `points` FROM `wifi_hist` WHERE `File_ID` = ? GROUP BY `AP_ID`, `New` ORDER BY `AP_ID` DESC";}
+			{$sql = "SELECT `AP_ID`, `New`, Min(`Hist_Date`) As `fa`, Max(`Hist_Date`) As `la`, Count(`Hist_Date`) As `points` FROM `wifi_hist` WHERE `File_ID` = ? GROUP BY `AP_ID`, `New` ORDER BY `$sort` $ord";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [AP_ID], [New], Min([Hist_Date]) As [fa], Max([Hist_Date]) As [la], Count([Hist_Date]) As [points] FROM [wifi_hist] WHERE [File_ID] = ? GROUP BY [AP_ID], [New] ORDER BY [AP_ID] DESC";}
+			{$sql = "SELECT [AP_ID], [New], Min([Hist_Date]) As [fa], Max([Hist_Date]) As [la], Count([Hist_Date]) As [points] FROM [wifi_hist] WHERE [File_ID] = ? GROUP BY [AP_ID], [New] ORDER BY [$sort] $ord";}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$user_array['id'], PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -766,6 +769,7 @@ class frontend extends dbcore
 		$flip=0;
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
+			#Get access point information for this AP
 			$apid = $array['AP_ID'];
 			$List_AP_FA = $array['fa'];
 			$List_AP_LA = $array['la'];
@@ -857,10 +861,10 @@ class frontend extends dbcore
 		$mid_page = (($from + $inc)/$inc);
 		if($no_search)
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">First</a>&#93 &#45; \r\n";
 		}else
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">First</a>&#93 &#45; \r\n";
 		}
 		for($I=($mid_page - 5); $I<=($mid_page + 5); $I++)
 		{
@@ -874,20 +878,20 @@ class frontend extends dbcore
 			{
 				if($no_search)
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">{$I}</a> &#45; \r\n";
 				}else
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">{$I}</a> &#45; \r\n";
 				}
 			}
 		}
 		if($pages==1){$cal_from = 0;}else{$cal_from = (($pages-1)*$inc);}
 		if($no_search)
 		{
-			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}else
 		{
-			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&to={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}
 		
 		$this->pages_together = $pages_together;

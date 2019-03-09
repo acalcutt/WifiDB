@@ -1,12 +1,20 @@
+<!--
+navigation.tpl: The Smarty pae navigation template for WiFiDB.
+Copyright (C) 2019 Andrew Calcutt
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
+-->
 			<div class="sidenav">
 				<div class="inside_dark_header">WiFiDB Links</div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}">Home</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php">List APs</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import File</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Imports Waiting</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imported Files</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Export KMZ</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500">List APs</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
 				<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support</a></div>
