@@ -2,8 +2,8 @@
 -- version 4.8.3
 -- https://www.phpmyadmin.net/
 --
--- Host: 172.16.1.111
--- Generation Time: Feb 10, 2019 at 11:21 PM
+-- Host: 172.16.1.111:3307
+-- Generation Time: Mar 17, 2019 at 12:48 AM
 -- Server version: 10.3.9-MariaDB-1:10.3.9+maria~stretch-log
 -- PHP Version: 7.2.13-1+0~20181207100540.13+stretch~1.gbpf57305
 
@@ -2391,10 +2391,15 @@ CREATE TABLE `wifi_ap` (
   `HighGps_ID` bigint(20) DEFAULT NULL,
   `FirstHist_ID` bigint(20) DEFAULT NULL,
   `LastHist_ID` bigint(20) DEFAULT NULL,
-  `HighSig_ID` bigint(20) DEFAULT NULL,
-  `HighRSSI_ID` bigint(20) DEFAULT NULL,
   `File_ID` bigint(20) DEFAULT NULL,
+  `high_sig` int(11) DEFAULT NULL,
+  `high_rssi` int(11) DEFAULT NULL,
+  `high_gps_sig` int(11) DEFAULT NULL,
+  `high_gps_rssi` int(11) DEFAULT NULL,
   `ap_hash` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `points` bigint(20) DEFAULT NULL,
+  `fa` datetime(3) DEFAULT NULL,
+  `la` datetime(3) DEFAULT NULL,
   `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2680,8 +2685,6 @@ ALTER TABLE `wifi_ap`
   ADD KEY `LastHist_ID` (`LastHist_ID`),
   ADD KEY `ap_hash` (`ap_hash`),
   ADD KEY `File_ID` (`File_ID`),
-  ADD KEY `HighSig_ID` (`HighSig_ID`),
-  ADD KEY `HighRSSI_ID` (`HighRSSI_ID`),
   ADD KEY `BSSID` (`BSSID`),
   ADD KEY `SECTYPE` (`SECTYPE`);
 
@@ -2938,8 +2941,7 @@ ALTER TABLE `wifi_ap`
   ADD CONSTRAINT `wifi_ap_ibfk_1` FOREIGN KEY (`File_ID`) REFERENCES `files` (`id`),
   ADD CONSTRAINT `wifi_ap_ibfk_2` FOREIGN KEY (`HighGps_ID`) REFERENCES `wifi_gps` (`GPS_ID`),
   ADD CONSTRAINT `wifi_ap_ibfk_3` FOREIGN KEY (`FirstHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
-  ADD CONSTRAINT `wifi_ap_ibfk_4` FOREIGN KEY (`LastHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
-  ADD CONSTRAINT `wifi_ap_ibfk_5` FOREIGN KEY (`HighSig_ID`) REFERENCES `wifi_hist` (`Hist_ID`);
+  ADD CONSTRAINT `wifi_ap_ibfk_4` FOREIGN KEY (`LastHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`);
 
 --
 -- Constraints for table `wifi_gps`

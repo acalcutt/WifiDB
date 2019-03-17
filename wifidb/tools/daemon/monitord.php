@@ -62,7 +62,7 @@ while(1)
 			$pid_contents = (int)trim(file_get_contents($dbcore->pid_file_loc.$pidfile));
 			echo "Pid is dead.\n";
 			unlink($dbcore->pid_file_loc.$pidfile);
-			$sql = "DELETE FROM `daemon_pid_stats` where pid LIKE '$pid_contents'";
+			$sql = "DELETE FROM daemon_pid_stats where pid LIKE '$pid_contents'";
 			$result_delete = $dbcore->sql->conn->query($sql);
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			continue;
@@ -74,20 +74,22 @@ while(1)
 		#echo "mem:".$mem."\r\n";
 		#echo "cmd:".$cmd."\r\n";
 
-		$daemon_sql = "SELECT * FROM `daemon_pid_stats` where `nodename` = '$node_name' AND `pidfile` = '$pidfile'";
+		$daemon_sql = "SELECT * FROM daemon_pid_stats where nodename = '$node_name' AND pidfile = '$pidfile'";
 		$result = $dbcore->sql->conn->query($daemon_sql);
-		if($result->rowCount() > 0)
+		$result->execute();
+		$daemon_array = $result->fetch(2);
+		if($daemon_array['id'])
 		{
-			$sql = "UPDATE `daemon_pid_stats` SET `pid` = '$pid', `pidtime` = '$time', `pidmem` = '$mem', `pidcmd` = '$cmd' , `date` = '$timestamp' where `nodename` = '$node_name' AND `pidfile` = '$pidfile'";
+			$sql = "UPDATE daemon_pid_stats SET pid = '$pid', pidtime = '$time', pidmem = '$mem', pidcmd = '$cmd' , date = '$timestamp' where nodename = '$node_name' AND pidfile = '$pidfile'";
 			$result_update = $dbcore->sql->conn->query($sql);
 		}else
 		{
-			$sql = "INSERT INTO `daemon_pid_stats` (nodename, pidfile, pid, pidtime, pidmem, pidcmd, date) VALUES ('$node_name', '$pidfile', '$pid', '$time', '$mem', '$cmd', '$timestamp')";
+			$sql = "INSERT INTO daemon_pid_stats (nodename, pidfile, pid, pidtime, pidmem, pidcmd, date) VALUES ('$node_name', '$pidfile', '$pid', '$time', '$mem', '$cmd', '$timestamp')";
 			$result_update = $dbcore->sql->conn->query($sql);
 		}
 	}
 
-	$sql = "DELETE FROM `daemon_pid_stats` where `date` <> '$timestamp' AND `nodename` = '$node_name'";
+	$sql = "DELETE FROM daemon_pid_stats where date <> '$timestamp' AND nodename = '$node_name'";
 	$result_delete = $dbcore->sql->conn->query($sql);
 
 	sleep(10);

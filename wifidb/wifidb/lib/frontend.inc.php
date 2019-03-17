@@ -229,7 +229,7 @@ class frontend extends dbcore
 					. "FROM [wifi_hist]\n"
 					. "INNER JOIN [files] ON [wifi_hist].[File_ID] = [files].[id]\n"
 					. "WHERE [wifi_hist].[AP_ID] = ?\n"
-					. "GROUP BY [wifi_hist].[File_ID], [wifi_hist].[New]\n"
+					. "GROUP BY [wifi_hist].[File_ID], [files].[title], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New]\n"
 					. "ORDER BY [files].[date] DESC";
 			}
 		$prep2 = $this->sql->conn->prepare($sql);

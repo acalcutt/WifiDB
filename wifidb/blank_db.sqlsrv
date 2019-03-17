@@ -1,0 +1,1269 @@
+USE [prod_wifi]
+GO
+/****** Object:  Table [dbo].[annunc]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[annunc](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[set] [smallint] NOT NULL,
+	[auth] [nvarchar](32) NOT NULL,
+	[title] [nvarchar](120) NOT NULL,
+	[date] [datetime] NOT NULL,
+	[body] [nvarchar](max) NOT NULL,
+	[comments] [nvarchar](max) NOT NULL,
+ CONSTRAINT [PK_annunc_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [annunc$title] UNIQUE NONCLUSTERED 
+(
+	[title] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[boundaries]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[boundaries](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[name] [nvarchar](255) NOT NULL,
+	[polygon] [nvarchar](max) NOT NULL,
+ CONSTRAINT [PK_boundaries_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[cell_carriers]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[cell_carriers](
+	[carrier_id] [bigint] IDENTITY(1691,1) NOT NULL,
+	[mcc] [int] NULL,
+	[mcc_int] [int] NULL,
+	[mnc] [nvarchar](3) NULL,
+	[mnc_int] [int] NULL,
+	[iso] [nvarchar](3) NULL,
+	[country] [nvarchar](33) NULL,
+	[country_code] [nvarchar](4) NULL,
+	[network] [nvarchar](72) NULL,
+ CONSTRAINT [PK_cell_carriers_carrier_id] PRIMARY KEY CLUSTERED 
+(
+	[carrier_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[cell_hist]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[cell_hist](
+	[cell_hist_id] [bigint] IDENTITY(1,1) NOT NULL,
+	[cell_id] [bigint] NOT NULL,
+	[file_id] [bigint] NULL,
+	[rssi] [int] NOT NULL,
+	[lat] [decimal](9, 4) NOT NULL,
+	[lon] [decimal](9, 4) NOT NULL,
+	[alt] [decimal](7, 2) NOT NULL,
+	[accuracy] [decimal](10, 2) NOT NULL,
+	[hist_date] [datetime2](3) NOT NULL,
+ CONSTRAINT [PK_cell_hist_cell_hist_id] PRIMARY KEY CLUSTERED 
+(
+	[cell_hist_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[cell_id]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[cell_id](
+	[cell_id] [bigint] IDENTITY(1,1) NOT NULL,
+	[file_id] [bigint] NULL,
+	[mac] [nvarchar](255) NOT NULL,
+	[ssid] [nvarchar](255) NOT NULL,
+	[authmode] [nvarchar](255) NOT NULL,
+	[chan] [int] NOT NULL,
+	[type] [nvarchar](255) NOT NULL,
+	[highgps_id] [bigint] NULL,
+	[fa_id] [bigint] NULL,
+	[la_id] [bigint] NULL,
+	[cell_hash] [nvarchar](255) NOT NULL,
+ CONSTRAINT [PK_cell_id_cell_id] PRIMARY KEY CLUSTERED 
+(
+	[cell_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[daemon_pid_stats]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[daemon_pid_stats](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[nodename] [nvarchar](255) NOT NULL,
+	[pidfile] [nvarchar](255) NOT NULL,
+	[pid] [nvarchar](255) NOT NULL,
+	[pidtime] [nvarchar](255) NOT NULL,
+	[pidmem] [nvarchar](255) NOT NULL,
+	[pidcmd] [nvarchar](255) NOT NULL,
+	[date] [datetime] NOT NULL,
+ CONSTRAINT [PK_daemon_pid_stats_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[DB_stats]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[DB_stats](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[timestamp] [nvarchar](60) NOT NULL,
+	[graph_min] [nvarchar](255) NOT NULL,
+	[graph_max] [nvarchar](255) NOT NULL,
+	[graph_avg] [nvarchar](255) NOT NULL,
+	[graph_num] [nvarchar](255) NOT NULL,
+	[graph_total] [nvarchar](255) NOT NULL,
+	[kmz_min] [nvarchar](255) NOT NULL,
+	[kmz_max] [nvarchar](255) NOT NULL,
+	[kmz_avg] [nvarchar](255) NOT NULL,
+	[kmz_num] [nvarchar](255) NOT NULL,
+	[kmz_total] [nvarchar](255) NOT NULL,
+	[file_min] [nvarchar](255) NOT NULL,
+	[file_max] [nvarchar](255) NOT NULL,
+	[file_avg] [nvarchar](255) NOT NULL,
+	[file_num] [nvarchar](255) NOT NULL,
+	[file_up_totals] [nvarchar](255) NOT NULL,
+	[gpx_size] [nvarchar](255) NOT NULL,
+	[gpx_num] [nvarchar](255) NOT NULL,
+	[gpx_min] [nvarchar](255) NOT NULL,
+	[gpx_max] [nvarchar](255) NOT NULL,
+	[gpx_avg] [nvarchar](255) NOT NULL,
+	[daemon_size] [nvarchar](255) NOT NULL,
+	[daemon_num] [nvarchar](255) NOT NULL,
+	[daemon_min] [nvarchar](255) NOT NULL,
+	[daemon_max] [nvarchar](255) NOT NULL,
+	[daemon_avg] [nvarchar](255) NOT NULL,
+	[total_aps] [nvarchar](255) NOT NULL,
+	[wep_aps] [nvarchar](255) NOT NULL,
+	[open_aps] [nvarchar](255) NOT NULL,
+	[secure_aps] [nvarchar](255) NOT NULL,
+	[nuap] [nvarchar](255) NOT NULL,
+	[num_priv_geo] [nvarchar](255) NOT NULL,
+	[num_pub_geo] [nvarchar](255) NOT NULL,
+	[user] [varbinary](max) NOT NULL,
+	[ap_gps_totals] [varbinary](max) NOT NULL,
+	[top_ssids] [varbinary](max) NOT NULL,
+	[geos] [varbinary](max) NOT NULL,
+ CONSTRAINT [DB_stats$timestamp] UNIQUE CLUSTERED 
+(
+	[timestamp] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[files]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[files](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[file] [nvarchar](255) NULL,
+	[file_orig] [nvarchar](255) NULL,
+	[node_name] [nvarchar](255) NULL,
+	[user] [nvarchar](255) NULL,
+	[otherusers] [nvarchar](255) NULL,
+	[notes] [nvarchar](max) NULL,
+	[title] [nvarchar](255) NULL,
+	[converted] [smallint] NOT NULL,
+	[prev_ext] [nvarchar](4) NULL,
+	[type] [nvarchar](50) NULL,
+	[date] [datetime2](0) NOT NULL,
+	[size] [nvarchar](14) NULL,
+	[aps] [int] NOT NULL,
+	[gps] [int] NOT NULL,
+	[ValidGPS] [int] NULL,
+	[hash] [nvarchar](255) NULL,
+	[completed] [smallint] NOT NULL,
+	[NewAPPercent] [int] NULL,
+ CONSTRAINT [files$file] UNIQUE NONCLUSTERED 
+(
+	[file] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[files_bad]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[files_bad](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[file] [nvarchar](255) NULL,
+	[file_orig] [nvarchar](255) NULL,
+	[user] [nvarchar](32) NULL,
+	[otherusers] [nvarchar](255) NULL,
+	[notes] [nvarchar](max) NULL,
+	[title] [nvarchar](255) NULL,
+	[size] [nvarchar](14) NULL,
+	[date] [datetime2](0) NOT NULL,
+	[hash] [nvarchar](255) NULL,
+	[converted] [smallint] NOT NULL,
+	[thread_id] [int] NOT NULL,
+	[node_name] [nvarchar](255) NOT NULL,
+	[prev_ext] [nvarchar](4) NULL,
+	[type] [nvarchar](50) NULL,
+	[error_msg] [nvarchar](255) NULL,
+ CONSTRAINT [PK_files_bad_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [files_bad$hash] UNIQUE NONCLUSTERED 
+(
+	[hash] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[files_importing]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[files_importing](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[tmp_id] [int] NULL,
+	[file] [nvarchar](255) NULL,
+	[file_orig] [nvarchar](255) NULL,
+	[user] [nvarchar](32) NULL,
+	[otherusers] [nvarchar](255) NULL,
+	[notes] [nvarchar](max) NULL,
+	[title] [nvarchar](255) NULL,
+	[size] [nvarchar](14) NULL,
+	[date] [datetime2](0) NOT NULL,
+	[hash] [nvarchar](255) NULL,
+	[converted] [smallint] NOT NULL,
+	[prev_ext] [nvarchar](4) NULL,
+	[type] [nvarchar](50) NULL,
+	[importing] [smallint] NOT NULL,
+	[ap] [nvarchar](255) NULL,
+	[tot] [nvarchar](128) NULL,
+ CONSTRAINT [PK_files_importing_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [files_importing$hash] UNIQUE NONCLUSTERED 
+(
+	[hash] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[files_tmp]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[files_tmp](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[file] [nvarchar](255) NOT NULL,
+	[file_orig] [nvarchar](255) NULL,
+	[user] [nvarchar](32) NULL,
+	[otherusers] [nvarchar](255) NULL,
+	[notes] [nvarchar](max) NULL,
+	[title] [nvarchar](255) NULL,
+	[size] [nvarchar](14) NULL,
+	[date] [datetime2](0) NOT NULL,
+	[hash] [nvarchar](255) NULL,
+	[converted] [smallint] NOT NULL,
+	[prev_ext] [nvarchar](4) NULL,
+	[type] [nvarchar](50) NULL,
+ CONSTRAINT [PK_files_tmp_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [files_tmp$hash] UNIQUE NONCLUSTERED 
+(
+	[hash] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[geonames]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[geonames](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[geonameid] [bigint] NOT NULL,
+	[name] [nvarchar](255) NULL,
+	[asciiname] [nvarchar](255) NULL,
+	[alternatenames] [nvarchar](255) NULL,
+	[latitude] [nvarchar](255) NULL,
+	[longitude] [nvarchar](255) NULL,
+	[feature_class] [nvarchar](255) NULL,
+	[feature_code] [nvarchar](255) NULL,
+	[country_code] [nvarchar](255) NULL,
+	[cc2] [nvarchar](255) NULL,
+	[admin1_code] [nvarchar](255) NULL,
+	[admin2_code] [nvarchar](255) NULL,
+	[admin3_code] [nvarchar](255) NULL,
+	[admin4_code] [nvarchar](255) NULL,
+	[population] [nvarchar](255) NULL,
+	[elevation] [nvarchar](255) NULL,
+	[gtopo30] [nvarchar](255) NULL,
+	[timezone] [nvarchar](255) NULL,
+	[mod_date] [nvarchar](255) NULL,
+ CONSTRAINT [PK_geonames_geonameid] PRIMARY KEY CLUSTERED 
+(
+	[geonameid] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[geonames_admin1]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[geonames_admin1](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[admin1] [nvarchar](64) NOT NULL,
+	[name] [nvarchar](200) NULL,
+	[asciiname] [nvarchar](200) NULL,
+	[geonameid] [bigint] NULL,
+ CONSTRAINT [PK_geonames_admin1_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [geonames_admin1$admin1] UNIQUE NONCLUSTERED 
+(
+	[admin1] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[geonames_admin2]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[geonames_admin2](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[admin2] [nvarchar](64) NOT NULL,
+	[name] [nvarchar](200) NULL,
+	[asciiname] [nvarchar](200) NULL,
+	[geonameid] [bigint] NULL,
+ CONSTRAINT [PK_geonames_admin2_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [geonames_admin2$admin2] UNIQUE NONCLUSTERED 
+(
+	[admin2] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[geonames_country_names]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[geonames_country_names](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[ISO] [nvarchar](255) NULL,
+	[ISO3] [nvarchar](255) NULL,
+	[ISO-Numeric] [nvarchar](255) NULL,
+	[fips] [nvarchar](255) NULL,
+	[Country] [nvarchar](255) NULL,
+	[Capital] [nvarchar](255) NULL,
+	[Area] [nvarchar](255) NULL,
+	[Population] [nvarchar](255) NULL,
+	[Continent] [nvarchar](255) NULL,
+	[tld] [nvarchar](255) NULL,
+	[CurrencyCode] [nvarchar](255) NULL,
+	[CurrencyName] [nvarchar](255) NULL,
+	[Phone] [nvarchar](255) NULL,
+	[Postal Code Format] [nvarchar](255) NULL,
+	[Postal Code Regex] [nvarchar](255) NULL,
+	[Languages] [nvarchar](255) NULL,
+	[geonamesid] [bigint] NULL,
+	[neighbors] [nvarchar](255) NULL,
+	[EquivalentFipsCode] [nvarchar](255) NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[live_aps]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[live_aps](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[ssid] [nvarchar](32) NOT NULL,
+	[mac] [nvarchar](64) NOT NULL,
+	[auth] [nvarchar](64) NOT NULL,
+	[encry] [nvarchar](64) NOT NULL,
+	[sectype] [int] NOT NULL,
+	[radio] [nvarchar](7) NOT NULL,
+	[chan] [int] NOT NULL,
+	[sig] [nvarchar](max) NOT NULL,
+	[username] [nvarchar](255) NOT NULL,
+	[session_id] [nvarchar](255) NOT NULL,
+	[ap_hash] [nvarchar](255) NOT NULL,
+	[BTx] [nvarchar](255) NOT NULL,
+	[OTx] [nvarchar](255) NOT NULL,
+	[NT] [nvarchar](255) NOT NULL,
+	[Label] [nvarchar](255) NOT NULL,
+	[FA] [datetime2](0) NULL,
+	[LA] [datetime2](0) NULL,
+	[lat] [nvarchar](255) NOT NULL,
+	[long] [nvarchar](255) NOT NULL,
+ CONSTRAINT [PK_live_aps_ap_hash] PRIMARY KEY CLUSTERED 
+(
+	[ap_hash] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[live_gps]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[live_gps](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[lat] [nvarchar](255) NOT NULL,
+	[long] [nvarchar](255) NOT NULL,
+	[sats] [int] NOT NULL,
+	[hdp] [nvarchar](255) NOT NULL,
+	[alt] [nvarchar](255) NOT NULL,
+	[geo] [nvarchar](255) NOT NULL,
+	[kmh] [nvarchar](255) NOT NULL,
+	[mph] [nvarchar](255) NOT NULL,
+	[track] [nvarchar](255) NOT NULL,
+	[date] [nvarchar](255) NOT NULL,
+	[time] [nvarchar](255) NOT NULL,
+	[session_id] [nvarchar](255) NOT NULL,
+ CONSTRAINT [PK_live_gps_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[live_signals]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[live_signals](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[ap_hash] [nvarchar](255) NOT NULL,
+	[signal] [int] NOT NULL,
+	[rssi] [nvarchar](255) NOT NULL,
+	[gps_id] [int] NOT NULL,
+	[time_stamp] [datetime2](0) NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[live_titles]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[live_titles](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[username] [nvarchar](255) NOT NULL,
+	[title] [nvarchar](255) NOT NULL,
+	[notes] [nvarchar](255) NOT NULL,
+	[session_id] [nvarchar](255) NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[live_users]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[live_users](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[username] [nvarchar](255) NOT NULL,
+	[session_id] [nvarchar](255) NOT NULL,
+	[title_id] [int] NULL,
+ CONSTRAINT [PK_live_users_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC,
+	[session_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[log]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[log](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[message] [nvarchar](max) NOT NULL,
+	[level] [nvarchar](255) NOT NULL,
+	[timestamp] [nvarchar](32) NOT NULL,
+	[prefix] [nvarchar](255) NOT NULL,
+ CONSTRAINT [PK_log_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[manufacturers]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[manufacturers](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[BSSID] [nvarchar](6) NOT NULL,
+	[Manufacturer] [nvarchar](max) NOT NULL,
+	[modified] [datetime2](0) NOT NULL,
+ CONSTRAINT [PK_manufacturers_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY],
+ CONSTRAINT [manufacturers$BSSID] UNIQUE NONCLUSTERED 
+(
+	[BSSID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[schedule]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[schedule](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[nodename] [nvarchar](255) NOT NULL,
+	[daemon] [nvarchar](255) NOT NULL,
+	[enabled] [smallint] NOT NULL,
+	[interval] [int] NOT NULL,
+	[status] [nvarchar](255) NOT NULL,
+	[nextrun] [datetime] NOT NULL,
+ CONSTRAINT [PK_schedule_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[settings]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[settings](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[daemon_state] [int] NOT NULL,
+	[version] [nvarchar](255) NOT NULL,
+	[apswithgps] [int] NOT NULL,
+	[last_export_file] [bigint] NOT NULL,
+	[node_name] [nvarchar](255) NOT NULL,
+ CONSTRAINT [PK_settings_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[share_waypoints]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[share_waypoints](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[author] [nvarchar](255) NOT NULL,
+	[name] [nvarchar](255) NOT NULL,
+	[gcid] [nvarchar](255) NOT NULL,
+	[notes] [nvarchar](max) NOT NULL,
+	[cat] [nvarchar](255) NOT NULL,
+	[type] [nvarchar](255) NOT NULL,
+	[diff] [numeric](3, 2) NOT NULL,
+	[terain] [numeric](3, 2) NOT NULL,
+	[lat] [nvarchar](255) NOT NULL,
+	[long] [nvarchar](255) NOT NULL,
+	[link] [nvarchar](255) NOT NULL,
+	[c_date] [datetime2](0) NOT NULL,
+	[u_date] [datetime2](0) NOT NULL,
+	[pvt_id] [int] NOT NULL,
+	[shared_by] [nvarchar](255) NOT NULL,
+ CONSTRAINT [share_waypoints$id] UNIQUE CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[user_imports]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[user_imports](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[username] [nvarchar](255) NULL,
+	[points] [nvarchar](max) NULL,
+	[notes] [nvarchar](max) NULL,
+	[title] [nvarchar](255) NULL,
+	[date] [nvarchar](255) NULL,
+	[aps] [int] NULL,
+	[gps] [int] NULL,
+	[NewAPPercent] [int] NOT NULL,
+	[hash] [nvarchar](255) NOT NULL,
+	[file_id] [int] NULL,
+	[converted] [smallint] NOT NULL,
+	[prev_ext] [nvarchar](4) NULL,
+	[GPSBOX_NORTH] [nvarchar](255) NULL,
+	[GPSBOX_SOUTH] [nvarchar](255) NULL,
+	[GPSBOX_EAST] [nvarchar](255) NULL,
+	[GPSBOX_WEST] [nvarchar](255) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[user_info]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[user_info](
+	[id] [int] IDENTITY(672,1) NOT NULL,
+	[username] [nvarchar](255) NOT NULL,
+	[password] [nvarchar](255) NOT NULL,
+	[help] [nvarchar](255) NULL,
+	[uid] [nvarchar](255) NOT NULL,
+	[disabled] [smallint] NOT NULL,
+	[validated] [smallint] NOT NULL,
+	[locked] [smallint] NOT NULL,
+	[login_fails] [int] NOT NULL,
+	[permissions] [nvarchar](4) NOT NULL,
+	[last_login] [datetime2](0) NULL,
+	[email] [nvarchar](255) NOT NULL,
+	[admin] [smallint] NULL,
+	[schedule] [smallint] NOT NULL,
+	[imports] [smallint] NOT NULL,
+	[kmz] [smallint] NOT NULL,
+	[new_users] [smallint] NOT NULL,
+	[h_email] [smallint] NOT NULL,
+	[join_date] [datetime2](0) NULL,
+	[friends] [nvarchar](max) NULL,
+	[foes] [nvarchar](max) NULL,
+	[website] [nvarchar](255) NULL,
+	[Vis_ver] [nvarchar](255) NULL,
+	[apikey] [nvarchar](255) NULL,
+ CONSTRAINT [user_info$username] UNIQUE CLUSTERED 
+(
+	[username] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[user_login_hashes]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[user_login_hashes](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[username] [nvarchar](255) NOT NULL,
+	[hash] [nvarchar](255) NOT NULL,
+	[utime] [int] NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[user_stats]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[user_stats](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[newest] [nvarchar](255) NOT NULL,
+	[largest] [nvarchar](255) NOT NULL,
+ CONSTRAINT [user_stats$id] UNIQUE CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[user_validate]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[user_validate](
+	[id] [bigint] IDENTITY(1,1) NOT NULL,
+	[username] [nvarchar](255) NOT NULL,
+	[code] [nvarchar](64) NOT NULL,
+	[date] [datetime] NOT NULL,
+ CONSTRAINT [user_validate$username] UNIQUE CLUSTERED 
+(
+	[username] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[user_waypoints]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[user_waypoints](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[author] [nvarchar](255) NOT NULL,
+	[name] [nvarchar](255) NOT NULL,
+	[shared_by] [nvarchar](255) NOT NULL,
+	[gcid] [nvarchar](255) NOT NULL,
+	[notes] [nvarchar](max) NOT NULL,
+	[cat] [nvarchar](255) NOT NULL,
+	[type] [nvarchar](255) NOT NULL,
+	[diff] [numeric](3, 2) NOT NULL,
+	[terain] [numeric](3, 2) NOT NULL,
+	[lat] [nvarchar](255) NOT NULL,
+	[long] [nvarchar](255) NOT NULL,
+	[link] [nvarchar](255) NOT NULL,
+	[share] [smallint] NOT NULL,
+	[share_id] [int] NOT NULL,
+	[c_date] [datetime2](0) NOT NULL,
+	[u_date] [datetime2](0) NOT NULL,
+ CONSTRAINT [user_waypoints$id] UNIQUE CLUSTERED 
+(
+	[id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[wifi_ap]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[wifi_ap](
+	[AP_ID] [bigint] IDENTITY(1,1) NOT NULL,
+	[BSSID] [varchar](20) NULL,
+	[SSID] [varchar](255) NULL,
+	[CHAN] [int] NULL,
+	[AUTH] [varchar](50) NULL,
+	[ENCR] [varchar](50) NULL,
+	[SECTYPE] [int] NULL,
+	[RADTYPE] [varchar](50) NULL,
+	[NETTYPE] [varchar](100) NULL,
+	[BTX] [varchar](100) NULL,
+	[OTX] [varchar](100) NULL,
+	[FLAGS] [varchar](255) NULL,
+	[HighGps_ID] [bigint] NULL,
+	[FirstHist_ID] [bigint] NULL,
+	[LastHist_ID] [bigint] NULL,
+	[File_ID] [bigint] NULL,
+	[high_sig] [int] NULL,
+	[high_rssi] [int] NULL,
+	[high_gps_sig] [int] NULL,
+	[high_gps_rssi] [int] NULL,
+	[ap_hash] [varchar](255) NULL,
+	[points] [bigint] NULL,
+	[fa] [datetime2](3) NULL,
+	[la] [datetime2](3) NULL,
+	[ModDate] [datetime2](3) NULL,
+ CONSTRAINT [PK_wifi_ap] PRIMARY KEY CLUSTERED 
+(
+	[AP_ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[wifi_gps]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[wifi_gps](
+	[GPS_ID] [bigint] IDENTITY(1,1) NOT NULL,
+	[File_ID] [bigint] NULL,
+	[File_GPS_ID] [bigint] NULL,
+	[Lat] [decimal](9, 4) NULL,
+	[Lon] [decimal](9, 4) NULL,
+	[NumOfSats] [int] NULL,
+	[HorDilPitch] [decimal](10, 2) NULL,
+	[Alt] [decimal](7, 2) NULL,
+	[Geo] [decimal](10, 2) NULL,
+	[MPH] [decimal](6, 2) NULL,
+	[KPH] [decimal](6, 2) NULL,
+	[TrackAngle] [decimal](5, 2) NULL,
+	[AccuracyMeters] [decimal](10, 2) NULL,
+	[GPS_Date] [datetime2](3) NULL,
+ CONSTRAINT [PK_wifi_gps_GPS_ID] PRIMARY KEY CLUSTERED 
+(
+	[GPS_ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[wifi_hist]    Script Date: 3/17/2019 12:32:39 AM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[wifi_hist](
+	[Hist_ID] [bigint] IDENTITY(1,1) NOT NULL,
+	[AP_ID] [bigint] NULL,
+	[GPS_ID] [bigint] NULL,
+	[File_ID] [bigint] NULL,
+	[Sig] [int] NULL,
+	[RSSI] [int] NULL,
+	[New] [smallint] NULL,
+	[Hist_Date] [datetime2](3) NULL,
+ CONSTRAINT [PK_wifi_hist_Hist_ID] PRIMARY KEY CLUSTERED 
+(
+	[Hist_ID] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+ALTER TABLE [dbo].[annunc] ADD  DEFAULT ((0)) FOR [set]
+GO
+ALTER TABLE [dbo].[annunc] ADD  DEFAULT (N'Annon Coward') FOR [auth]
+GO
+ALTER TABLE [dbo].[annunc] ADD  DEFAULT (N'Blank') FOR [title]
+GO
+ALTER TABLE [dbo].[annunc] ADD  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [mcc]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [mcc_int]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [mnc]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [mnc_int]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [iso]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [country]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [country_code]
+GO
+ALTER TABLE [dbo].[cell_carriers] ADD  DEFAULT (NULL) FOR [network]
+GO
+ALTER TABLE [dbo].[cell_hist] ADD  CONSTRAINT [DF__cell_hist__file___3A179ED3]  DEFAULT (NULL) FOR [file_id]
+GO
+ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__file_id__3B0BC30C]  DEFAULT (NULL) FOR [file_id]
+GO
+ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__highgps__3BFFE745]  DEFAULT (NULL) FOR [highgps_id]
+GO
+ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__fa_id__3CF40B7E]  DEFAULT (NULL) FOR [fa_id]
+GO
+ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__la_id__3DE82FB7]  DEFAULT (NULL) FOR [la_id]
+GO
+ALTER TABLE [dbo].[daemon_pid_stats] ADD  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [file]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [file_orig]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [node_name]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [user]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [otherusers]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [notes]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [title]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT ((0)) FOR [converted]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [prev_ext]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [type]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [size]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT ((0)) FOR [aps]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT ((0)) FOR [gps]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT ((0)) FOR [ValidGPS]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [hash]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT ((0)) FOR [completed]
+GO
+ALTER TABLE [dbo].[files] ADD  DEFAULT (NULL) FOR [NewAPPercent]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__file__2CF2ADDF]  DEFAULT (NULL) FOR [file]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__file___2DE6D218]  DEFAULT (NULL) FOR [file_orig]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__user__2EDAF651]  DEFAULT (NULL) FOR [user]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__other__2FCF1A8A]  DEFAULT (NULL) FOR [otherusers]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__notes__30C33EC3]  DEFAULT (NULL) FOR [notes]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__title__31B762FC]  DEFAULT (NULL) FOR [title]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__size__32AB8735]  DEFAULT (NULL) FOR [size]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__date__339FAB6E]  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__hash__3493CFA7]  DEFAULT (NULL) FOR [hash]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__threa__3587F3E0]  DEFAULT ((0)) FOR [thread_id]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__node___367C1819]  DEFAULT (N'0') FOR [node_name]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__prev___37703C52]  DEFAULT (NULL) FOR [prev_ext]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__type__3864608B]  DEFAULT (NULL) FOR [type]
+GO
+ALTER TABLE [dbo].[files_bad] ADD  CONSTRAINT [DF__files_bad__error__395884C4]  DEFAULT (NULL) FOR [error_msg]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__tmp_i__3A4CA8FD]  DEFAULT ((0)) FOR [tmp_id]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impo__file__3B40CD36]  DEFAULT (NULL) FOR [file]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__file___3C34F16F]  DEFAULT (NULL) FOR [file_orig]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impo__user__3D2915A8]  DEFAULT (NULL) FOR [user]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__other__3E1D39E1]  DEFAULT (NULL) FOR [otherusers]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__notes__3F115E1A]  DEFAULT (NULL) FOR [notes]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__title__40058253]  DEFAULT (NULL) FOR [title]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impo__size__40F9A68C]  DEFAULT (NULL) FOR [size]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impo__date__41EDCAC5]  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impo__hash__42E1EEFE]  DEFAULT (NULL) FOR [hash]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__conve__43D61337]  DEFAULT ((0)) FOR [converted]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__prev___44CA3770]  DEFAULT (NULL) FOR [prev_ext]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impo__type__45BE5BA9]  DEFAULT (NULL) FOR [type]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_imp__impor__46B27FE2]  DEFAULT ((0)) FOR [importing]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_import__ap__47A6A41B]  DEFAULT (NULL) FOR [ap]
+GO
+ALTER TABLE [dbo].[files_importing] ADD  CONSTRAINT [DF__files_impor__tot__489AC854]  DEFAULT (NULL) FOR [tot]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__file___498EEC8D]  DEFAULT (NULL) FOR [file_orig]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__user__4A8310C6]  DEFAULT (NULL) FOR [user]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__other__4B7734FF]  DEFAULT (NULL) FOR [otherusers]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__notes__4C6B5938]  DEFAULT (NULL) FOR [notes]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__title__4D5F7D71]  DEFAULT (NULL) FOR [title]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__size__4E53A1AA]  DEFAULT (NULL) FOR [size]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__date__4F47C5E3]  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__hash__503BEA1C]  DEFAULT (NULL) FOR [hash]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__conve__51300E55]  DEFAULT ((0)) FOR [converted]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__prev___5224328E]  DEFAULT (NULL) FOR [prev_ext]
+GO
+ALTER TABLE [dbo].[files_tmp] ADD  CONSTRAINT [DF__files_tmp__type__531856C7]  DEFAULT (NULL) FOR [type]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [name]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [asciiname]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [alternatenames]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [latitude]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [longitude]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [feature_class]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [feature_code]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [country_code]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [cc2]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [admin1_code]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [admin2_code]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [admin3_code]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [admin4_code]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [population]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [elevation]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [gtopo30]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [timezone]
+GO
+ALTER TABLE [dbo].[geonames] ADD  DEFAULT (NULL) FOR [mod_date]
+GO
+ALTER TABLE [dbo].[geonames_admin1] ADD  DEFAULT (NULL) FOR [name]
+GO
+ALTER TABLE [dbo].[geonames_admin1] ADD  DEFAULT (NULL) FOR [asciiname]
+GO
+ALTER TABLE [dbo].[geonames_admin1] ADD  DEFAULT (NULL) FOR [geonameid]
+GO
+ALTER TABLE [dbo].[geonames_admin2] ADD  DEFAULT (NULL) FOR [name]
+GO
+ALTER TABLE [dbo].[geonames_admin2] ADD  DEFAULT (NULL) FOR [asciiname]
+GO
+ALTER TABLE [dbo].[geonames_admin2] ADD  DEFAULT (NULL) FOR [geonameid]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [ISO]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [ISO3]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [ISO-Numeric]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [fips]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Country]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Capital]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Area]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Population]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Continent]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [tld]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [CurrencyCode]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [CurrencyName]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Phone]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Postal Code Format]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Postal Code Regex]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [Languages]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [geonamesid]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [neighbors]
+GO
+ALTER TABLE [dbo].[geonames_country_names] ADD  DEFAULT (NULL) FOR [EquivalentFipsCode]
+GO
+ALTER TABLE [dbo].[live_aps] ADD  DEFAULT (NULL) FOR [FA]
+GO
+ALTER TABLE [dbo].[live_aps] ADD  DEFAULT (NULL) FOR [LA]
+GO
+ALTER TABLE [dbo].[live_aps] ADD  DEFAULT (N'N 0.0000') FOR [lat]
+GO
+ALTER TABLE [dbo].[live_aps] ADD  DEFAULT (N'E 0.0000') FOR [long]
+GO
+ALTER TABLE [dbo].[live_signals] ADD  DEFAULT (N'0') FOR [rssi]
+GO
+ALTER TABLE [dbo].[live_signals] ADD  DEFAULT (NULL) FOR [time_stamp]
+GO
+ALTER TABLE [dbo].[live_users] ADD  DEFAULT (NULL) FOR [title_id]
+GO
+ALTER TABLE [dbo].[schedule] ADD  DEFAULT (getdate()) FOR [nextrun]
+GO
+ALTER TABLE [dbo].[settings] ADD  DEFAULT ((0)) FOR [apswithgps]
+GO
+ALTER TABLE [dbo].[settings] ADD  DEFAULT ((0)) FOR [last_export_file]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [username]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [points]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [notes]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [title]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [date]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [aps]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [gps]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT ((0)) FOR [NewAPPercent]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [file_id]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT ((0)) FOR [converted]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [prev_ext]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [GPSBOX_NORTH]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [GPSBOX_SOUTH]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [GPSBOX_EAST]
+GO
+ALTER TABLE [dbo].[user_imports] ADD  DEFAULT (NULL) FOR [GPSBOX_WEST]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [help]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [disabled]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [validated]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [locked]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [login_fails]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (N'0001') FOR [permissions]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [last_login]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [admin]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [schedule]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [imports]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [kmz]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [new_users]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT ((0)) FOR [h_email]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [join_date]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [friends]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [foes]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [website]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [Vis_ver]
+GO
+ALTER TABLE [dbo].[user_info] ADD  DEFAULT (NULL) FOR [apikey]
+GO
+ALTER TABLE [dbo].[user_validate] ADD  DEFAULT (getdate()) FOR [date]
+GO
+ALTER TABLE [dbo].[wifi_ap] ADD  CONSTRAINT [DF_wifi_ap_ModDate]  DEFAULT (getdate()) FOR [ModDate]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__File_I__27F8EE98]  DEFAULT (NULL) FOR [File_ID]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__File_G__28ED12D1]  DEFAULT (NULL) FOR [File_GPS_ID]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__Lat__29E1370A]  DEFAULT (NULL) FOR [Lat]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__Lon__2AD55B43]  DEFAULT (NULL) FOR [Lon]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__NumOfS__2BC97F7C]  DEFAULT (NULL) FOR [NumOfSats]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__HorDil__2CBDA3B5]  DEFAULT (NULL) FOR [HorDilPitch]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__Alt__2DB1C7EE]  DEFAULT (NULL) FOR [Alt]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__Geo__2EA5EC27]  DEFAULT (NULL) FOR [Geo]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__MPH__2F9A1060]  DEFAULT (NULL) FOR [MPH]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__KPH__308E3499]  DEFAULT (NULL) FOR [KPH]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__TrackA__318258D2]  DEFAULT (NULL) FOR [TrackAngle]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__Accura__32767D0B]  DEFAULT (NULL) FOR [AccuracyMeters]
+GO
+ALTER TABLE [dbo].[wifi_gps] ADD  CONSTRAINT [DF__wifi_gps__GPS_Da__336AA144]  DEFAULT (NULL) FOR [GPS_Date]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__AP_ID__345EC57D]  DEFAULT (NULL) FOR [AP_ID]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__GPS_I__3552E9B6]  DEFAULT (NULL) FOR [GPS_ID]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__File___36470DEF]  DEFAULT (NULL) FOR [File_ID]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__Sig__373B3228]  DEFAULT (NULL) FOR [Sig]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__RSSI__382F5661]  DEFAULT (NULL) FOR [RSSI]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__New__39237A9A]  DEFAULT ((0)) FOR [New]
+GO
+ALTER TABLE [dbo].[wifi_hist] ADD  CONSTRAINT [DF__wifi_hist__Hist___3A179ED3]  DEFAULT (NULL) FOR [Hist_Date]
+GO
+ALTER TABLE [dbo].[live_signals]  WITH CHECK ADD  CONSTRAINT [live_signals$FK_ap_hash_gps] FOREIGN KEY([gps_id])
+REFERENCES [dbo].[live_gps] ([id])
+GO
+ALTER TABLE [dbo].[live_signals] CHECK CONSTRAINT [live_signals$FK_ap_hash_gps]
+GO
+ALTER TABLE [dbo].[wifi_hist]  WITH CHECK ADD  CONSTRAINT [wifi_hist$wifi_hist_ibfk_2] FOREIGN KEY([GPS_ID])
+REFERENCES [dbo].[wifi_gps] ([GPS_ID])
+GO
+ALTER TABLE [dbo].[wifi_hist] CHECK CONSTRAINT [wifi_hist$wifi_hist_ibfk_2]
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.annunc' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'annunc'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.boundaries' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'boundaries'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.cell_carriers' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'cell_carriers'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.cell_hist' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'cell_hist'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.cell_id' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'cell_id'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.daemon_pid_stats' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'daemon_pid_stats'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.DB_stats' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'DB_stats'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.files' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'files'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.files_bad' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'files_bad'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.files_importing' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'files_importing'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.files_tmp' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'files_tmp'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.geonames' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'geonames'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.geonames_admin1' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'geonames_admin1'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.geonames_admin2' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'geonames_admin2'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.geonames_country_names' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'geonames_country_names'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.live_aps' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'live_aps'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.live_gps' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'live_gps'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.live_signals' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'live_signals'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.live_titles' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'live_titles'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.live_users' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'live_users'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.`log`' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'log'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.manufacturers' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'manufacturers'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.schedule' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'schedule'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.settings' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'settings'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.share_waypoints' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'share_waypoints'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.user_imports' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'user_imports'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.user_info' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'user_info'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.user_login_hashes' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'user_login_hashes'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.user_stats' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'user_stats'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.user_validate' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'user_validate'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.user_waypoints' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'user_waypoints'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.wifi_gps' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'wifi_gps'
+GO
+EXEC sys.sp_addextendedproperty @name=N'MS_SSMA_SOURCE', @value=N'prod_wifi.wifi_hist' , @level0type=N'SCHEMA',@level0name=N'dbo', @level1type=N'TABLE',@level1name=N'wifi_hist'
+GO

@@ -60,7 +60,7 @@ class wdbmail
 		$this->mail->Password 			= $this->smtp_pass;			// SMTP password		
 		$this->mail->SetFrom($this->smtp_from);						// SMTP from
 		$this->mail->AddReplyTo($this->smtp_replyto);				// SMTP reply to
-		$this->mail->SMTPSecure 		= $this->smtp_secure;		// Enable TLS encryption, `ssl` also accepted		
+		$this->mail->SMTPSecure 		= $this->smtp_secure;		// Enable TLS encryption, ssl also accepted		
 		$this->mail->SMTPAuth 			= $this->smtp_auth;			// Enable SMTP authentication
 		$this->mail->AuthType 			= $this->smtp_authtype;		// Auth type, tls or ssl
 		$this->mail->SMTPOptions 		= $this->smtp_options;
@@ -107,7 +107,7 @@ Go here to reset it to one you choose:
             if($this->mail->send($smtp_conn))
             {
                 $password = md5($validatecode.$seed);
-                $update = "UPDATE `user_info` SET `password` = '$password' WHERE `username` = '$username'";
+                $update = "UPDATE user_info SET password = '$password' WHERE username = '$username'";
         #	echo $update."<BR>";
                 if($this->sql->conn->query($update))
                 {
@@ -136,43 +136,43 @@ Go here to reset it to one you choose:
         switch($type)
         {
             case "schedule":
-                $sql = " AND `schedule` = '1'";
+                $sql = " AND schedule = '1'";
             break;
 
             case "import":
-                $sql = " AND `imports` = '1'";
+                $sql = " AND imports = '1'";
             break;
 
             case "kmz":
-                $sql = " AND `kmz` = '1'";
+                $sql = " AND kmz = '1'";
             break;
 
             case "new_users":
-                $sql = "AND `new_users` = '1'";
+                $sql = "AND new_users = '1'";
             break;
 
             case "statistics":
-                $sql = " AND `statistics` = '1'";
+                $sql = " AND statistics = '1'";
             break;
 
             case "perfmon":
-                $sql = " AND `perfmon` = '1'";
+                $sql = " AND perfmon = '1'";
             break;
 
             case "announcements":
-                $sql = " AND `announcements` = '1'";
+                $sql = " AND announcements = '1'";
             break;
 
             case "announce_comment":
-                $sql = " AND `announce_comment` = '1'";
+                $sql = " AND announce_comment = '1'";
             break;
 
             case "pub_geocache":
-                $sql = " AND `pub_geocache` = '1'";
+                $sql = " AND pub_geocache = '1'";
             break;
 
             case "geonamed":
-                $sql = " AND `geonamed` = '1'";
+                $sql = " AND geonamed = '1'";
             break;
 
             case "none":
@@ -205,13 +205,13 @@ Go here to reset it to one you choose:
 				$this->mail->Body    = $contents;
 
 				#Get users this email will be sent to
-				$sql = "SELECT `email`, `username` FROM `user_info` WHERE `disabled` = '0' AND `validated` = '0'";
+				$sql = "SELECT email, username FROM user_info WHERE disabled = '0' AND validated = '0'";
                 $sql .= $this->sql_type_mail_filter($type);
                 if($error_f)
                 {
-                    $sql .= " AND `admin` = '1'";
+                    $sql .= " AND admin = '1'";
                 }
-                if(!$error_f){$sql .= " AND `username` NOT LIKE 'admin%'";}
+                if(!$error_f){$sql .= " AND username NOT LIKE 'admin%'";}
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->execute();
 				while ($userArray = $prep->fetch(2))
@@ -273,7 +273,7 @@ Go here to reset it to one you choose:
 			return 0;
 		}
 
-		$insert = "INSERT INTO `user_validate` (`username`, `code`, `date`) VALUES ('$username', '$validate_code', '$date')";
+		$insert = "INSERT INTO user_validate (username, code, date) VALUES ('$username', '$validate_code', '$date')";
 		#echo $insert;
 		if($this->sql->conn->query($insert))
 		{
@@ -282,7 +282,7 @@ Go here to reset it to one you choose:
 		}
 		else
 		{
-			$insert = "UPDATE `user_validate` SET `code` = '$validate_code', `date` = '$date' WHERE `username` LIKE '$username' LIMIT 1";
+			$insert = "UPDATE user_validate SET code = '$validate_code', date = '$date' WHERE username LIKE '$username'";
 			if($this->sql->conn->query($insert))
 			{
 				$return =1;

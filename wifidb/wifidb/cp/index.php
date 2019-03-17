@@ -36,7 +36,7 @@ list($cookie_pass, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_logi
 #echo $cookie_pass;
 
 #Check if user is logged in
-$sql0 = "SELECT * FROM `user_login_hashes` WHERE `username` = ?";
+$sql0 = "SELECT * FROM user_login_hashes WHERE username = ?";
 $result = $dbcore->sql->conn->prepare($sql0);
 $result->bindParam(1, $username, PDO::PARAM_STR);
 $result->execute();
@@ -63,8 +63,10 @@ if($login_check)
 		break;
 		
 		case 'profile':
-
-			$sql0 = "SELECT * FROM `user_info` WHERE `username` = ? LIMIT 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
 			$result->execute();
@@ -93,14 +95,17 @@ if($login_check)
 			if($h_email == "on"){$h_email = 1;}else{$h_email = 0;}
 				$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
 			$Vis_ver = htmlentities(addslashes($_POST['Vis_ver']),ENT_QUOTES);
-				$sql0 = "SELECT `id` FROM `user_info` WHERE `username` = '$username' LIMIT 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql0 = "SELECT id FROM user_info WHERE username = '$username' LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql0 = "SELECT TOP 1 id FROM user_info WHERE username = '$username'";}
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$array = $result->fetch();
 			$cp_profile = array();
 			if($array['id']+0 === $user_id+0)
 			{
-				$sql1 = "UPDATE `user_info` SET `email` = '$email', `h_email` = '$h_email', `website` = '$website', `Vis_ver` = '$Vis_ver' WHERE `id` = '$user_id' LIMIT 1";
+				$sql1 = "UPDATE user_info SET email = '$email', h_email = '$h_email', website = '$website', Vis_ver = '$Vis_ver' WHERE id = '$user_id'";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				if($result->execute())
 				{
@@ -121,7 +126,10 @@ if($login_check)
 
 		##-------------##
 		case 'pref':
-			$sql0 = "SELECT * FROM `user_info` WHERE `username` = '$username' LIMIT 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql0 = "SELECT * FROM user_info WHERE username = '$username' LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = '$username'";}
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$newArray = $result->fetch();				
@@ -153,19 +161,22 @@ if($login_check)
 			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
 			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
 			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
-			$sql0 = "SELECT `id` FROM `user_info` WHERE `username` = '$username' LIMIT 1";
+			if($dbcore->sql->service == "mysql")
+				{$sql0 = "SELECT id FROM user_info WHERE username = '$username' LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql0 = "SELECT TOP 1 id FROM user_info WHERE username = '$username'";}
 			$result = $dbcore->sql->conn->prepare($sql0);
 			$result->execute();
 			$array = $result->fetch();
 			$cp_profile = array();
 			if($array['id']+0 === $user_id+0)
 			{
-				$sql1 = "UPDATE `user_info` SET
-															`schedule`	=	'$schedule',
-															`imports` = '$imports',
-															`kmz` = '$kmz',
-															`new_users` = '$new_users'
-															WHERE `id` = '$user_id'";
+				$sql1 = "UPDATE user_info SET
+															schedule	=	'$schedule',
+															imports = '$imports',
+															kmz = '$kmz',
+															new_users = '$new_users'
+															WHERE id = '$user_id'";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				if($result->execute())
 				{
