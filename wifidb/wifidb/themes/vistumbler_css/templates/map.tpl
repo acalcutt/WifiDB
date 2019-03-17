@@ -139,9 +139,10 @@ if not, write to the
 									FollowLatest = false;
 									el.firstChild.data = "Follow Latest AP"
 								} else {
+									GoToLatest()
 									LatestTimer = setInterval(function () {
 										GoToLatest()
-									}, 4000);
+									}, 2500);
 									FollowLatest = true;
 									el.firstChild.data = "Un-Follow Latest AP"
 								}
