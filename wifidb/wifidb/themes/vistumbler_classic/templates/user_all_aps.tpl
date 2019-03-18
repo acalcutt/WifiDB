@@ -43,7 +43,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
-								<th class="header">
+								<th class="header" width="75px">
 									<div>GPS</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
 								</th>
@@ -131,8 +131,7 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
 								{/if}
 								</td>							
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id}</td>
-
+								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.id}</a></td>
 								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid}</a></td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>

@@ -672,6 +672,7 @@ class frontend extends dbcore
 											'title' => $imports['title'],
 											'notes' => $imports['notes'],
 											'aps' => $imports['aps'],
+											'gps' => $imports['gps'],
 											'efficiency'=>$imports['NewAPPercent'],
 											'date' => $imports['date']
 										   );

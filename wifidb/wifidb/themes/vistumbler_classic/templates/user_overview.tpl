@@ -41,10 +41,10 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="subheading">
-								<th class="subheading" colspan="7">Imported Files</th>
+								<th class="subheading" colspan="9">Imported Files</th>
 							</tr>
 							<tr class="header">
-								<th class="header">
+								<th class="header" width="75px">
 									<div>GPS</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
 								</th>
@@ -56,13 +56,6 @@ if not, write to the
 									</div>
 								</th>
 								<th class="header">
-									<div>Title</div>
-									<div>
-										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=title&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=title&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
-									</div>
-								</th>
-								<th class="header">
 									<div>File</div>
 									<div>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=file_orig&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'file_orig' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
@@ -70,10 +63,31 @@ if not, write to the
 									</div>
 								</th>
 								<th class="header">
-									<div>Total APs</div>
+									<div>Title</div>
+									<div>
+										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=title&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=title&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Notes</div>
+									<div>
+										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=notes&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'notes' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=notes&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'notes' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Total AP</div>
 									<div>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=aps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=aps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Total GPS</div>
+									<div>
+										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=gps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=gps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
@@ -104,10 +118,12 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
 								{/if}
 								</td>
-								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.id}</td>
-								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.title}</a></td>
+								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.id}</a></td>
 								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.file}</a></td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.title}</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.notes}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.aps}</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.gps}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.efficiency}%</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.date}</td>
 							</tr>
