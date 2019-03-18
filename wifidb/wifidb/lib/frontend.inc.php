@@ -137,6 +137,7 @@ class frontend extends dbcore
 						. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [kilometers]\n"
 						. "FROM [geonames] \n"
 						. "WHERE [latitude] LIKE '".$lat_search."%' AND [longitude] LIKE '".$long_search."%' ORDER BY [kilometers] ASC";
+					#echo $sql;
 				}
 			$geoname_res = $this->sql->conn->query($sql);
 			while ($GeonamesArray = $geoname_res->fetch(1))
@@ -410,26 +411,15 @@ class frontend extends dbcore
 			$globeprep->bindParam(1, $user, PDO::PARAM_STR);
 			$globeprep->execute();
 			$globeprepfetch = $globeprep->fetch(2);
-			if($globeprepfetch['ApCount'] !== "0")
-			{
-				$user_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_all&labeled=0&user=".$user."\" title=\"Show User APs on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";				
-				$user_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_user_all&user=".$user."\" title=\"Export User APs to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";							
-				$user_globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_user_netlink&user=".$user."\" title=\"Export User APs to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
-			}
-			else
-			{
-				$user_globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
-				$user_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
-				$user_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
-			}
+			if($globeprepfetch['ApCount'] !== "0"){$user_validgps = 1;}else{$user_validgps = 0;}
 	
 			$all_users_files = array();
 			$flip2 = 0;
 
 			if($this->sql->service == "mysql")
-				{$sql = "SELECT `id`, `user`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title`, `ValidGPS` FROM `files` WHERE completed = 1 AND `user`= ? ORDER BY `date` DESC";}
+				{$sql = "SELECT `id`, `file_orig`, `user`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title`, `ValidGPS` FROM `files` WHERE completed = 1 AND `user`= ? ORDER BY `date` DESC";}
 			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [user], [aps], [gps], [NewAPPercent], [notes], [date], [title], [ValidGPS] FROM [files] WHERE [completed] = 1 AND [user]= ? ORDER BY [date] DESC";}
+				{$sql = "SELECT [id], [file_orig], [user], [aps], [gps], [NewAPPercent], [notes], [date], [title], [ValidGPS] FROM [files] WHERE [completed] = 1 AND [user]= ? ORDER BY [date] DESC";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user , PDO::PARAM_STR);
 			$prep->execute();
@@ -437,20 +427,6 @@ class frontend extends dbcore
 			while ($user_array = $prep->fetch(2))
 			{
 				$imports++;
-				
-				if($user_array['ValidGPS'] == 1)
-				{
-					$list_globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$user_array['id']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";				
-					$list_globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$user_array['id']."\" title=\"Export List to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";							
-					$list_globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$user_array['id']."\" title=\"Export List to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
-				}
-				else
-				{
-					$list_globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
-					$list_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";	
-					$list_globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
-				}
-				
 				if($flip2)
 					{$class2 = "dark";$flip2=0;}
 				else
@@ -464,12 +440,13 @@ class frontend extends dbcore
 				$all_users_files[]= array(
 					'class'=>$class2,
 					'id'=>$user_array['id'],
-					'globe'=>$list_globe_html,
+					'file'=>$user_array['file_orig'],
 					'title' => $user_array['title'],
 					'notes' => $user_array['notes'],
 					'aps'   => $user_array['aps'],
 					'NewAPPercent' => $user_array['NewAPPercent']."%",
-					'date'  => $user_array['date']
+					'date'  => $user_array['date'],
+					'validgps'=>$user_array['ValidGPS']
 				);
 			}
 			
@@ -484,7 +461,7 @@ class frontend extends dbcore
 				'rowid'=>$rowid,
 				'class'=>$class,
 				'user'=>$user,
-				'globe'=>$user_globe_html,
+				'validgps'=>$user_validgps,
 				'imports' => $imports,
 				'files' => $all_users_files,
 			);
@@ -495,13 +472,11 @@ class frontend extends dbcore
 	#=======================================#
 	#   Grab All the AP's for a given user  #
 	#=======================================#
-	function AllUsersAPs($user = "")
+	function AllUsersAPs($user = "", $sort = "AP_ID", $ord = "DESC")
 	{
 		if($user == ""){return 0;}
 
 		$args = array(
-			'ord' => FILTER_SANITIZE_ENCODED,
-			'sort' => FILTER_SANITIZE_ENCODED,
 			'to' => FILTER_SANITIZE_NUMBER_INT,
 			'from' => FILTER_SANITIZE_NUMBER_INT
 		);
@@ -510,8 +485,6 @@ class frontend extends dbcore
 
 		if($inputs['from'] == ''){$inputs['from'] = 0;}
 		if($inputs['to'] == ''){$inputs['to'] = 100;}
-		if($inputs['sort'] == ''){$inputs['sort'] = 'ModDate';}
-		if($inputs['ord'] == ''){$inputs['ord'] = 'DESC';}
 
 		$prep = array();
 		$apprep = array();
@@ -520,16 +493,16 @@ class frontend extends dbcore
 
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT COUNT(*) \n"
-					. "FROM `wifi_ap`\n"
-					. "INNER JOIN `files` ON `wifi_ap`.`File_ID` = `files`.`id`\n"
+				$sql = "SELECT COUNT(DISTINCT `AP_ID`)\n"
+					. "FROM `wifi_hist`\n"
+					. "INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
 					. "WHERE `files`.`user` LIKE ?";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT COUNT(*) \n"
-					. "FROM [wifi_ap]\n"
-					. "INNER JOIN [files] ON [wifi_ap].[File_ID] = [files].[id]\n"
+				$sql = "SELECT COUNT(DISTINCT [AP_ID])\n"
+					. "FROM [wifi_hist]\n"
+					. "INNER JOIN [files] ON [files].[id] = [wifi_hist].[File_ID]\n"
 					. "WHERE [files].[user] LIKE ?";
 			}
 		$result = $this->sql->conn->prepare($sql);
@@ -537,37 +510,49 @@ class frontend extends dbcore
 		$result->execute();
 		$rows = $result->fetch(1);
 		$prep['total_aps'] = $rows[0];
+		
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT COUNT(DISTINCT `AP_ID`)\n"
+					. "FROM `wifi_hist`\n"
+					. "INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
+					. "WHERE `files`.`user` LIKE ? And `wifi_hist`.`New` = 1";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT COUNT(DISTINCT [AP_ID])\n"
+					. "FROM [wifi_hist]\n"
+					. "INNER JOIN [files] ON [files].[id] = [wifi_hist].[File_ID]\n"
+					. "WHERE [files].[user] LIKE ? And [wifi_hist].[New] = 1";
+			}
+		$result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $user, PDO::PARAM_STR);
+		$result->execute();
+		$rows = $result->fetch(1);
+		$prep['new_aps'] = $rows[0];
 
 		$flip = 0;
 
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,\n"
-					. "whFA.Hist_Date As FA,\n"
-					. "whLA.Hist_Date As LA,\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
 					. "wGPS.Lat As Lat,\n"
 					. "wGPS.Lon As Lon\n"
 					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-					. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-					. "WHERE f.user LIKE ? And f.completed = 1 ORDER BY `{$inputs['sort']}` {$inputs['ord']} LIMIT {$inputs['from']}, {$inputs['to']}";	
+					. "WHERE f.user LIKE ? And f.completed = 1 ORDER BY `$sort` $ord LIMIT {$inputs['from']}, {$inputs['to']}";	
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX],\n"
-					. "[whFA].[Hist_Date] As [FA],\n"
-					. "[whLA].[Hist_Date] As [LA],\n"
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon]\n"
 					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_hist] AS [whFA] ON [whFA].[Hist_ID] = [wap].[FirstHist_ID]\n"
-					. "LEFT JOIN [wifi_hist] AS [whLA] ON [whLA].[Hist_ID] = [wap].[LastHist_ID]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [f] ON [f].[id] = [wap].[File_ID]\n"
 					. "WHERE [f].[user] LIKE ? And [f].[completed] = 1\n"
-					. "ORDER BY [{$inputs['sort']}] {$inputs['ord']}\n"
+					. "ORDER BY [$sort] $ord\n"
 					. "OFFSET {$inputs['from']} ROWS\n"
 					. "FETCH NEXT {$inputs['to']} ROWS ONLY";
 			}			
@@ -582,63 +567,52 @@ class frontend extends dbcore
 			else
 				{$style="light";$flip=1;}
 				
-			if($array['Lat'] == "")
-			{
-				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
-			}else
-			{
-				$globe = "on";
-				$globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=exp_ap&labeled=0&id=".$array['AP_ID']."\" title=\"Show AP on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_ap&id=".$array['AP_ID']."\" title=\"Export AP to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_ap_netlink&id=".$array['AP_ID']."\" title=\"Export AP to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
-			}
+			if($array['Lat'] == ""){$validgps = 0;}else{$validgps = 1;}
 
 			$apprep[] = array(
 						"id" => $array['AP_ID'],
 						"class" => $style,
-						"globe" => $globe,
-						"globe_html" => $globe_html,
+						"validgps" => $validgps,
 						"ssid" => $this->formatSSID($array['SSID']),
 						"mac" => $array['BSSID'],
 						"radio" => $array['RADTYPE'],
 						"auth" => $array['AUTH'],
 						"encry" => $array['ENCR'],
 						"chan" => $array['CHAN'],
-						"fa"   => $array['FA'],
-						"la"   => $array['LA'],
+						"fa"   => $array['fa'],
+						"la"   => $array['la'],
+						"points"   => $array['points'],
 						"lat"   => $array['Lat'],
 						"lon"   => $array['Long']
 						);
 		}
 		$prep['allaps'] = $apprep;
+		$prep['efficiency'] = ($prep['new_aps']/$prep['total_aps'])*100;
 		$this->all_users_aps = $prep;
-		$this->GeneratePages($prep['total_aps'], $inputs['from'], $inputs['to'], $inputs['sort'], $inputs['ord'], 'allap', $user);
+		$this->GeneratePages($prep['total_aps'], $inputs['from'], $inputs['to'], $sort, $ord, 'allap', $user);
 		return 1;
 	}
 
 	#===================================#
 	#   Grab all user Import lists	  #
 	#===================================#
-	function UsersLists($username = "")
+	function UsersLists($username = "", $sort = "id", $ord = "DESC")
 	{
 		if($username == ""){return 0;}
 
 		#Total APs
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT COUNT(*) \n"
-					. "FROM `wifi_ap`\n"
-					. "INNER JOIN `files` ON `wifi_ap`.`File_ID` = `files`.`id`\n"
+				$sql = "SELECT COUNT(DISTINCT `AP_ID`)\n"
+					. "FROM `wifi_hist`\n"
+					. "INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
 					. "WHERE `files`.`user` LIKE ?";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT COUNT(*) \n"
-					. "FROM [wifi_ap]\n"
-					. "INNER JOIN [files] ON [wifi_ap].[File_ID] = [files].[id]\n"
+				$sql = "SELECT COUNT(DISTINCT [AP_ID])\n"
+					. "FROM [wifi_hist]\n"
+					. "INNER JOIN [files] ON [files].[id] = [wifi_hist].[File_ID]\n"
 					. "WHERE [files].[user] LIKE ?";
 			}
 		$result = $this->sql->conn->prepare($sql);
@@ -669,9 +643,9 @@ class frontend extends dbcore
 
 		#Get All Imports for User
 		if($this->sql->service == "mysql")
-			{$sql1 = "SELECT `id`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC";}
+			{$sql1 = "SELECT `id`, `file_orig`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `$sort` $ord";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql1 = "SELECT [id], [title], [notes], [date], [aps], [gps], [ValidGPS], [NewAPPercent] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [date] DESC";}
+			{$sql1 = "SELECT [id], [file_orig], [title], [notes], [date], [aps], [gps], [ValidGPS], [NewAPPercent] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [$sort] $ord";}
 		$other_imports = $this->sql->conn->prepare($sql1);
 		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
 		//$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
@@ -681,19 +655,6 @@ class frontend extends dbcore
 		$flip = 0;
 		while($imports = $other_imports->fetch(2))
 		{
-			if($imports['ValidGPS'] == 1)
-			{
-				$globe_html = "<a href=\"".$this->URL_PATH."opt/map.php?func=user_list&labeled=0&id=".$imports['id']."\" title=\"Show List on Map\"><img width=\"20px\" src=\"".$this->URL_PATH."img/globe_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/geojson.php?json=1&func=exp_list&id=".$imports['id']."\" title=\"Export List to JSON\"><img width=\"20px\" src=\"".$this->URL_PATH."img/json_on.png\"></a>";
-				$globe_html .= "<a href=\"".$this->URL_PATH."api/export.php?func=exp_list&id=".$imports['id']."\" title=\"Export List to KMZ\"><img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_on.png\"></a>";
-			}
-			else
-			{
-				$globe_html = "<img width=\"20px\" src=\"".$this->URL_PATH."img/globe_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/json_off.png\">";
-				$globe_html .= "<img width=\"20px\" src=\"".$this->URL_PATH."img/kmz_off.png\">";
-			}
-			
 			if($flip)
 			{
 				$style = "dark";
@@ -705,8 +666,9 @@ class frontend extends dbcore
 			}
 			$other_imports_array[] = array(
 											'class' => $style,
-											'globe_html' => $globe_html,
+											'validgps' => $imports['ValidGPS'],
 											'id' => $imports['id'],
+											'file' => $imports['file_orig'],
 											'title' => $imports['title'],
 											'notes' => $imports['notes'],
 											'aps' => $imports['aps'],

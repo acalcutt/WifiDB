@@ -18,6 +18,9 @@ $ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 $row = filter_input(INPUT_GET, 'row', FILTER_SANITIZE_NUMBER_INT);
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
 
+$ords=array("ASC","DESC");
+if(!in_array($ord, $ords)){$ord = "DESC";}
+
 if($user)
 {
 	$dbcore->smarty->assign("wifidb_page_label", "Stats for User: ".$user);
@@ -36,16 +39,19 @@ switch($func)
 			break;
 		#-------------
 		case "alluserlists":
-			$dbcore->UsersLists($user);
+			$sorts=array("id","title","file_orig","aps","NewAPPercent","date");
+			if(!in_array($sort, $sorts)){$sort = "id";}
+			
+			$dbcore->UsersLists($user, $sort, $ord);
 			$dbcore->smarty->assign('wifidb_user_details', $dbcore->user_all_imports_data);
+			$dbcore->smarty->assign('sort' , $sort);
+			$dbcore->smarty->assign('ord' , $ord);
 			$dbcore->smarty->display('user_overview.tpl');
 			break;
 		#-------------
 		case "useraplist":
 			$sorts=array("AP_ID","fa","la","points");
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
-			$ords=array("ASC","DESC");
-			if(!in_array($ord, $ords)){$ord = "DESC";}
 			
 			$dbcore->UserAPList($row, $sort, $ord);
 			$dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->users_import_aps);
@@ -56,9 +62,14 @@ switch($func)
 			break;
 		#-------------
 		case "allap":
-			$dbcore->AllUsersAPs($user);
+			$sorts=array("AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","fa","la","points");
+			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
+			
+			$dbcore->AllUsersAPs($user, $sort, $ord);
 			$dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->all_users_aps);
 			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
+			$dbcore->smarty->assign('sort' , $sort);
+			$dbcore->smarty->assign('ord' , $ord);
 			$dbcore->smarty->display('user_all_aps.tpl');
 			break;
 		#-------------

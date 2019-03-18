@@ -47,7 +47,17 @@ if not, write to the
 							{foreach name=outer item=wifidb_users from=$wifidb_imports_all}
 							<tr class="{$wifidb_users.class}">
 								<td class="{$wifidb_users.class}" onclick="expandcontract('Row{$wifidb_users.rowid}','ClickIcon{$wifidb_users.rowid}')" id="ClickIcon{$wifidb_users.rowid}" style="cursor: pointer; cursor: hand;">+</td>
-								<td class="{$wifidb_users.class}">{$wifidb_users.globe}</td>
+								<td class="{$wifidb_users.class}">
+								{if $wifidb_users.validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$wifidb_users.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_user_all&user={$wifidb_users.user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_user_netlink&user={$wifidb_users.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{else}
+									<img width="20px" src="{$themeurl}img/globe_off.png">
+									<img width="20px" src="{$themeurl}img/json_off.png">
+									<img width="20px" src="{$themeurl}img/kmz_off.png">
+								{/if}
+								</td>
 								<td class="{$wifidb_users.class}"><a class="links" href="?func=alluserlists&user={$wifidb_users.user}">{$wifidb_users.user}</a></td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.imports}</td>
 							</tr>
@@ -57,19 +67,31 @@ if not, write to the
 										<tbody id="Row{$wifidb_users.rowid}" style="display:none">
 										<tr class="header">
 											<th class="header" width="100px">GPS</th>
-											<th class="header" width="100px">Title</th>
+											<th class="header">ID</th>
+											<th class="header">File</th>
+											<th class="header">Title</th>
 											<th class="header">Number of APs</th>
 											<th class="header">AP Efficiency</th>
-											<th class="header">Import Notes</th>
 											<th class="header">Imported On</th>
 										</tr>
 										{foreach name=outer item=wifidb_import from=$wifidb_users.files}
 										<tr class="{$wifidb_import.class}">
-											<td class="{$wifidb_import.class}">{$wifidb_import.globe}</td>
+											<td class="{$wifidb_import.class}">
+											{if $wifidb_import.validgps eq 1}
+												<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_import.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+												<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_import.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+												<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_import.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+											{else}
+												<img width="20px" src="{$themeurl}img/globe_off.png">
+												<img width="20px" src="{$themeurl}img/json_off.png">
+												<img width="20px" src="{$themeurl}img/kmz_off.png">
+											{/if}
+											</td>
+											<td class="{$wifidb_import.class}"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.id}</a></td>
+											<td class="{$wifidb_import.class}"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.file}</a></td>
 											<td class="{$wifidb_import.class}"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.title}</a></td>
 											<td class="{$wifidb_import.class}">{$wifidb_import.aps}</td>
 											<td class="{$wifidb_import.class}">{$wifidb_import.NewAPPercent}</td>
-											<td class="{$wifidb_import.class}">{$wifidb_import.notes}</td>
 											<td class="{$wifidb_import.class}">{$wifidb_import.date}</td>
 										</tr>
 										{/foreach}
