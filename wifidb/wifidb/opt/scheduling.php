@@ -520,7 +520,7 @@ switch($func)
         $dbcore->smarty->display('scheduling_waiting_websockets.tpl');
     break;
 	
-    default:
+    case 'schedule':
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT * FROM `settings` WHERE `id` = '1'";}
 		else if($dbcore->sql->service == "sqlsrv")
@@ -576,82 +576,6 @@ switch($func)
             $refresh_opt .= '<OPTION '.$select.' VALUE="'.$val.'"> '.($val/$d).' '.$time_inc_name.'</option>
             ';
             $val = $val*2;
-        }
-        $importing_row = array();
-        $n=0;
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_importing] ORDER BY [date] ASC";}
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
-        {
-            if($newArray['importing'] == '1' )
-            {
-                $color = 'lime';
-            }else
-            {
-                $color = 'yellow';
-            }
-            $importing_row[$n]['color'] = $color;
-            $importing_row[$n]['id'] = $newArray['id'];
-            $importing_row[$n]['file'] = $newArray['file_orig'];
-            $importing_row[$n]['title'] = $newArray['title'];
-			$importing_row[$n]['notes'] = $newArray['notes'];
-            $importing_row[$n]['date'] = $newArray['date'];
-            $importing_row[$n]['size'] = $newArray['size'];
-            $importing_row[$n]['hash'] = $newArray['hash'];
-            $importing_row[$n]['user'] = $newArray['user'];
-
-            $tot = "";
-            $ssid = "";
-            switch($newArray['ap'])
-            {
-                case "":
-                    $ssid = "<td colspan='2' class='".$color."'>Processing...</td>";
-                    break;
-                case "Preparing for Import":
-                    $ssid = "<td colspan='2' class='".$color."'>Preparing for Import...</td>";
-                    break;
-                case "File is already in table array (":
-                    $ssid = "<td colspan='2' class='".$color."'>File is already in table...</td>";
-                    break;
-                case "@#@#_CONVERTING TO VS1_@#@#":
-                    $ssid = "<td colspan='2' class='".$color."'>Converting file to VS1 Format...</td>";
-                    break;
-                default:
-                    $ssid = "<td class='".$color."'>".$newArray['ap']."</td>";
-                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = "<td class='".$color."'>".$newArray['tot']."</td>";}
-                    break;
-            }
-            $importing_row[$n]['last_cell'] = $ssid.$tot;
-            $n++;
-        }
-		
-        $waiting_row = array();
-        $n=0;
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_tmp] ORDER BY [date] ASC";}
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
-        {
-            $color = 'yellow';
-            $waiting_row[$n]['color'] = $color;
-            $waiting_row[$n]['id'] = $newArray['id'];
-            $waiting_row[$n]['file'] = $newArray['file_orig'];
-            $waiting_row[$n]['title'] = $newArray['title'];
-			$waiting_row[$n]['notes'] = $newArray['notes'];
-            $waiting_row[$n]['date'] = $newArray['date'];
-            $waiting_row[$n]['size'] = $newArray['size'];
-            $waiting_row[$n]['hash'] = $newArray['hash'];
-            $waiting_row[$n]['user'] = $newArray['user'];
-
-            $tot = "";
-            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
-            $waiting_row[$n]['last_cell'] = $ssid.$tot;
-            $n++;
         }
 
         $schedule_row = array();
@@ -750,6 +674,88 @@ switch($func)
         $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
         $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
         $dbcore->smarty->assign('wifidb_daemons', $pid_row);
+        $dbcore->smarty->display('scheduling_schedule.tpl');
+    break;
+	
+    default:
+        $importing_row = array();
+        $n=0;
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [files_importing] ORDER BY [date] ASC";}
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            if($newArray['importing'] == '1' )
+            {
+                $color = 'lime';
+            }else
+            {
+                $color = 'yellow';
+            }
+            $importing_row[$n]['color'] = $color;
+            $importing_row[$n]['id'] = $newArray['id'];
+            $importing_row[$n]['file'] = $newArray['file_orig'];
+            $importing_row[$n]['title'] = $newArray['title'];
+			$importing_row[$n]['notes'] = $newArray['notes'];
+            $importing_row[$n]['date'] = $newArray['date'];
+            $importing_row[$n]['size'] = $newArray['size'];
+            $importing_row[$n]['hash'] = $newArray['hash'];
+            $importing_row[$n]['user'] = $newArray['user'];
+
+            $tot = "";
+            $ssid = "";
+            switch($newArray['ap'])
+            {
+                case "":
+                    $ssid = "<td colspan='2' class='".$color."'>Processing...</td>";
+                    break;
+                case "Preparing for Import":
+                    $ssid = "<td colspan='2' class='".$color."'>Preparing for Import...</td>";
+                    break;
+                case "File is already in table array (":
+                    $ssid = "<td colspan='2' class='".$color."'>File is already in table...</td>";
+                    break;
+                case "@#@#_CONVERTING TO VS1_@#@#":
+                    $ssid = "<td colspan='2' class='".$color."'>Converting file to VS1 Format...</td>";
+                    break;
+                default:
+                    $ssid = "<td class='".$color."'>".$newArray['ap']."</td>";
+                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = "<td class='".$color."'>".$newArray['tot']."</td>";}
+                    break;
+            }
+            $importing_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
+		
+        $waiting_row = array();
+        $n=0;
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [files_tmp] ORDER BY [date] ASC";}
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            $color = 'yellow';
+            $waiting_row[$n]['color'] = $color;
+            $waiting_row[$n]['id'] = $newArray['id'];
+            $waiting_row[$n]['file'] = $newArray['file_orig'];
+            $waiting_row[$n]['title'] = $newArray['title'];
+			$waiting_row[$n]['notes'] = $newArray['notes'];
+            $waiting_row[$n]['date'] = $newArray['date'];
+            $waiting_row[$n]['size'] = $newArray['size'];
+            $waiting_row[$n]['hash'] = $newArray['hash'];
+            $waiting_row[$n]['user'] = $newArray['user'];
+
+            $tot = "";
+            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
+            $waiting_row[$n]['last_cell'] = $ssid.$tot;
+            $n++;
+        }
+
+        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
         $dbcore->smarty->assign('wifidb_importing', $importing_row);
 		$dbcore->smarty->assign('wifidb_waiting', $waiting_row);
         $dbcore->smarty->display('scheduling_waiting.tpl');
