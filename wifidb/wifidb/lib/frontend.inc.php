@@ -721,10 +721,14 @@ class frontend extends dbcore
 		
 
 		#Get APs, First Active, Last Active, and points that go with this list
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT `AP_ID`, `New`, Min(`Hist_Date`) As `fa`, Max(`Hist_Date`) As `la`, Count(`Hist_Date`) As `points` FROM `wifi_hist` WHERE `File_ID` = ? GROUP BY `AP_ID`, `New` ORDER BY `$sort` $ord";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [AP_ID], [New], Min([Hist_Date]) As [fa], Max([Hist_Date]) As [la], Count([Hist_Date]) As [points] FROM [wifi_hist] WHERE [File_ID] = ? GROUP BY [AP_ID], [New] ORDER BY [$sort] $ord";}
+		$sql = "SELECT wifi_hist.AP_ID, wifi_hist.New, Min(wifi_hist.Hist_Date) As fa, Max(wifi_hist.Hist_Date) As la, Count(wifi_hist.Hist_Date) As list_points, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_gps.Lat, wifi_gps.Lon\n"
+				. "FROM wifi_hist\n"
+				. "INNER JOIN wifi_ap ON wifi_ap.AP_ID = wifi_hist.AP_ID\n"
+				. "LEFT JOIN wifi_gps ON wifi_gps.GPS_ID = wifi_ap.HighGps_ID\n"
+				. "WHERE wifi_hist.File_ID = ? \n"
+				. "GROUP BY wifi_hist.AP_ID, wifi_hist.New, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_gps.Lat, wifi_gps.Lon\n"
+				. "ORDER BY $sort $ord";
+
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$user_array['id'], PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -732,61 +736,33 @@ class frontend extends dbcore
 		$flip=0;
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
-			#Get access point information for this AP
-			$apid = $array['AP_ID'];
-			$List_AP_FA = $array['fa'];
-			$List_AP_LA = $array['la'];
-			$List_points = $array['points'];
-			if($array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
 			$count++;
 			
 			if($flip)
 				{$style = "dark";$flip=0;}
 			else
 				{$style="light";$flip=1;}
-
-			if($this->sql->service == "mysql")
-				{
-					$sql = "SELECT `wifi_ap`.`AP_ID`, `wifi_ap`.`BSSID`, `wifi_ap`.`SSID`, `wifi_ap`.`CHAN`, `wifi_ap`.`AUTH`, `wifi_ap`.`ENCR`, `wifi_ap`.`SECTYPE`, `wifi_ap`.`RADTYPE`, `wifi_ap`.`NETTYPE`, `wifi_ap`.`BTX`, `wifi_ap`.`OTX`, `wifi_ap`.`points`,\n"
-						. "`wifi_gps`.`Lat` AS Lat,\n"
-						. "`wifi_gps`.`Lon` AS Lon\n"
-						. "FROM `wifi_ap`\n"
-						. "LEFT JOIN  `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
-						. "WHERE AP_ID = ?";					
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [wifi_ap].[AP_ID], [wifi_ap].[BSSID], [wifi_ap].[SSID], [wifi_ap].[CHAN], [wifi_ap].[AUTH], [wifi_ap].[ENCR], [wifi_ap].[SECTYPE], [wifi_ap].[RADTYPE], [wifi_ap].[NETTYPE], [wifi_ap].[BTX], [wifi_ap].[OTX], [wifi_ap].[points],\n"
-						. "[wifi_gps].[Lat] AS [Lat],\n"
-						. "[wifi_gps].[Lon] AS [Lon]\n"
-						. "FROM [wifi_ap]\n"
-						. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
-						. "WHERE [wifi_ap].[AP_ID] = ?";					
-				}
-			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $apid, PDO::PARAM_INT);
-			$result->execute();
-			$ap_array = $result->fetch(2);
 			
-			if($ap_array['BSSID']  == "00:00:00:00:00:00"){continue;}
-			if($ap_array['Lat']  == "0.0000" || $ap_array['Lat']  == ""){$validgps = 0;}else{$validgps = 1;}
-
+			if($array['BSSID']  == "00:00:00:00:00:00"){continue;}
+			if($array['Lat']  == "0.0000" || $array['Lat']  == ""){$validgps = 0;}else{$validgps = 1;}
+			if($array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
+			
 			$all_aps_array['allaps'][] = array(
-					'id' => $ap_array['AP_ID'],
+					'id' => $array['AP_ID'],
 					'class' => $style,
 					'un' => $update_or_new,
-					'ssid' => $this->formatSSID($ap_array['SSID']),
-					'mac' => $ap_array['BSSID'],
-					'chan' => $ap_array['CHAN'],
-					'radio' => $ap_array['RADTYPE'],
-					'auth' => $ap_array['AUTH'],
-					'encry' => $ap_array['ENCR'],
-					'fa' => $List_AP_FA,
-					'la' => $List_AP_LA,
-					'list_points' => $List_points,
-					'points' => $ap_array['points'],
-					'lat' => $ap_array['Lat'],
-					'lon' => $ap_array['Lon'],
+					'ssid' => $this->formatSSID($array['SSID']),
+					'mac' => $array['BSSID'],
+					'chan' => $array['CHAN'],
+					'radio' => $array['RADTYPE'],
+					'auth' => $array['AUTH'],
+					'encry' => $array['ENCR'],
+					'fa' => $array['fa'],
+					'la' => $array['la'],
+					'list_points' => $array['list_points'],
+					'points' => $array['points'],
+					'lat' => $array['Lat'],
+					'lon' => $array['Lon'],
 					'validgps' => $validgps
 			);
 		}

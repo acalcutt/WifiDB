@@ -97,7 +97,7 @@ if not, write to the
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=NewAPPercent&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
-								<th class="header">
+								<th class="header" width="150px">
 									<div>Date</div>
 									<div>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=date&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>

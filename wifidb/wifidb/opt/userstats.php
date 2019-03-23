@@ -39,7 +39,7 @@ switch($func)
 			break;
 		#-------------
 		case "alluserlists":
-			$sorts=array("id","title","file_orig","aps","NewAPPercent","date");
+			$sorts=array("id","file_orig","title","notes","aps","gps","NewAPPercent","date");
 			if(!in_array($sort, $sorts)){$sort = "id";}
 			
 			$dbcore->UsersLists($user, $sort, $ord);
@@ -50,7 +50,7 @@ switch($func)
 			break;
 		#-------------
 		case "useraplist":
-			$sorts=array("AP_ID","fa","la","points");
+			$sorts=array("New","AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","fa","la","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 			
 			$dbcore->UserAPList($row, $sort, $ord);

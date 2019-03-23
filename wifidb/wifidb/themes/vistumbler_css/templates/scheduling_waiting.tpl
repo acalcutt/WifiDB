@@ -21,60 +21,8 @@ if not, write to the
 			<div class="main">
 				<meta http-equiv="refresh" content="15">
 				<div class="center">
-					<h2><b>[Files Importing/Waiting]</b> <a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">[Schedule]</a></h2><br/>
-					<table class="content_table">
-						<tr class="subheading">
-							<th colspan="6" align="center">Files being imported</th>
-						</tr>
-						{foreach item=wifidb_imp from=$wifidb_importing name=importing}
-						<tr class="header-centered">
-							<th class="{$wifidb_imp.color}"></th>
-							<th class="header-centered">ID</th>
-							<th class="header-centered">Title</th>
-							<th class="header-centered">Filename</th>
-							<th class="header-centered">Notes</th>
-							<th class="header-centered">Date</th>
-							
-						</tr>
-						<tr class="{$wifidb_imp.color}">
-							<td class="{$wifidb_imp.color}"></td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.id}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.title}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.file}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.notes}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.date}</td>
-							
-						</tr>
-						<tr class="header-centered">
-							<th class="{$wifidb_imp.color}"></th>
-							<th class="header-centered">Size</th>
-							<th class="header-centered">User</th>
-							<th class="header-centered">Hash Sum</th>
-							<th class="header-centered">Current SSID</th>
-							<th class="header-centered">Status</th>
-						</tr>
-						<tr class="green">
-							<td class="{$wifidb_imp.color}"></td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.size}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.user}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.hash}</td>
-							{$wifidb_imp.last_cell}
-						</tr>
-						{if not $smarty.foreach.importing.last}
-						<tr class="content-centered">
-							<th colspan="6"><br/></th>
-						</tr>
-						{/if}
-						{foreachelse}
-						<tr align="center">
-							<td class="light-centered colspan="5">
-								 Sorry there are no files importing...
-							</td>
-						</tr>
-						{/foreach}
-					</table>
-					<br />
-					<table class="content_table">
+					<h2><a href="{$wifidb_host_url}import/">Import File</a> | <a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a> ({$importing_count}) | <b>Files Waiting ({$waiting_count})</b> | <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></h2>
+					<table class="content_table"> 
 						<tr class="header-centered">
 							<th colspan="6" align="center">Files waiting for import</th>
 						</tr>
@@ -107,7 +55,7 @@ if not, write to the
 							<td class="yellow">{$wifidb_wait.size}</td>
 							<td class="yellow">{$wifidb_wait.user}</td>
 							<td class="yellow">{$wifidb_wait.hash}</td>
-							{$wifidb_wait.last_cell}
+							<td class="yellow" colspan="2">{$wifidb_wait.status}</td>
 						</tr>
 						{if not $smarty.foreach.waiting.last}
 						<tr class="content-centered">

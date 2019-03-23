@@ -21,7 +21,7 @@ if not, write to the
 			<div class="main">
 				<meta http-equiv="refresh" content="15">
 				<div class="center">
-					<h2><a href="{$wifidb_host_url}opt/scheduling.php">[Files Importing/Waiting]</a> <b>[Schedule]</b></h2><br/>
+					<h2><a href="{$wifidb_host_url}import/">Import File</a> | <a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a> ({$importing_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a> ({$waiting_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count}) | <b>[Schedule]</b></h2>
 					<table class="content_table">
 						<tr class="subheading">
 							<th colspan="2">Schedule Display Settings</th>

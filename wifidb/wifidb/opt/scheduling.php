@@ -45,45 +45,6 @@ switch($func)
         setcookie( 'wifidb_client_dst' , $POST_dst , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
-    case 'done':
-		if($dbcore->sql->service == "mysql")
-			{
-				$sql = "SELECT `id`, `file_orig`, `user`, `notes`, `title`, `date`, `aps`, `gps`, `ValidGPS`, `size`, `NewAPPercent`, `hash` \n"
-					. "FROM `files` \n"
-					. "WHERE `completed` = 1 ORDER BY `date` DESC";
-			}
-		else if($dbcore->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [id], [file_orig], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
-					. "FROM [files] \n"
-					. "WHERE [completed] = 1 ORDER BY [date] DESC";
-			}
-        $result = $dbcore->sql->conn->query($sql);
-        $class_f = 0;
-        $files_all = array();
-        while ($newArray = $result->fetch(2))
-        {
-            if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
-            $files_all[] = array(
-                                    'class'=>$class,
-                                    'id'=>$newArray['id'],
-                                    'file'=>html_entity_decode($newArray['file_orig']),
-                                    'date'=>$newArray['date'],
-                                    'user'=>$newArray["user"],
-                                    'notes'=>$newArray['notes'],
-                                    'title'=>$newArray['title'],
-                                    'efficiency'=>$newArray['NewAPPercent'],
-                                    'aps'=>$newArray['aps'],
-                                    'gps'=>$newArray['gps'],
-                                    'size'=>$newArray['size'],
-                                    'hash'=>$newArray['hash'],
-                                    'validgps'=>$newArray['ValidGPS']
-                                );
-        }
-        $dbcore->smarty->assign('wifidb_page_label', "Files Imported Page");
-        $dbcore->smarty->assign("wifidb_done_all_array", $files_all);
-        $dbcore->smarty->display('scheduling_done.tpl');
-    break;
 #######################################################################
     case 'full_kml':
 	$flip=0;
@@ -337,10 +298,10 @@ switch($func)
 		#-----------
 		if($dbcore->sql->service == "mysql")
 			{
-				$sql = "SELECT `wifi_ap`.`ModDate`\n"
-					. "FROM `wifi_ap`\n"
-					. "WHERE `wifi_ap`.`HighGps_ID` IS NOT NULL\n"
-					. "ORDER BY `wifi_ap`.`AP_ID` DESC\n"
+				$sql = "SELECT wifi_ap.ModDate\n"
+					. "FROM wifi_ap\n"
+					. "WHERE wifi_ap.HighGps_ID IS NOT NULL\n"
+					. "ORDER BY wifi_ap.AP_ID DESC\n"
 					. "LIMIT 1";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
@@ -522,7 +483,7 @@ switch($func)
 	
     case 'schedule':
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `settings` WHERE `id` = '1'";}
+			{$sql = "SELECT * FROM settings WHERE id = '1'";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT * FROM [settings] WHERE [id] = '1'";}
         $result = $dbcore->sql->conn->query($sql);
@@ -581,7 +542,7 @@ switch($func)
         $schedule_row = array();
         $n=0;
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `schedule` ORDER BY `nodename` ASC";}
+			{$sql = "SELECT * FROM schedule ORDER BY nodename ASC";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT * FROM [schedule] ORDER BY [nodename] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
@@ -633,7 +594,7 @@ switch($func)
         $pid_row = array();
         $n=0;
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `daemon_pid_stats` ORDER BY `nodename` ASC";}
+			{$sql = "SELECT * FROM daemon_pid_stats ORDER BY nodename ASC";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT * FROM [daemon_pid_stats] ORDER BY [nodename] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
@@ -667,6 +628,24 @@ switch($func)
 
             $n++;
         }
+		
+		#Get Complete Count
+		$sql = "SELECT Count(id) AS imp_count FROM files WHERE completed = 1";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$complete_count = $prepf[0];
+		
+		#Get Importing Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_importing";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$importing_count = $prepf[0];
+		
+		#Get Waiting Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$waiting_count = $prepf[0];
 
         $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
         $dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
@@ -674,65 +653,79 @@ switch($func)
         $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
         $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
         $dbcore->smarty->assign('wifidb_daemons', $pid_row);
+		$dbcore->smarty->assign('complete_count', $complete_count);
+		$dbcore->smarty->assign('importing_count', $importing_count);
+		$dbcore->smarty->assign('waiting_count', $waiting_count);
         $dbcore->smarty->display('scheduling_schedule.tpl');
     break;
 	
-    default:
-        $importing_row = array();
-        $n=0;
+    case 'done':
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `files_importing` ORDER BY `date` ASC";}
+			{
+				$sql = "SELECT id, file_orig, user, notes, title, date, aps, gps, ValidGPS, size, NewAPPercent, hash \n"
+					. "FROM files \n"
+					. "WHERE completed = 1 ORDER BY date DESC";
+			}
 		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_importing] ORDER BY [date] ASC";}
-        $result_1 = $dbcore->sql->conn->query($sql);
-        while ($newArray = $result_1->fetch(2))
+			{
+				$sql = "SELECT [id], [file_orig], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
+					. "FROM [files] \n"
+					. "WHERE [completed] = 1 ORDER BY [date] DESC";
+			}
+        $result = $dbcore->sql->conn->query($sql);
+        $class_f = 0;
+        $files_all = array();
+        while ($newArray = $result->fetch(2))
         {
-            if($newArray['importing'] == '1' )
-            {
-                $color = 'lime';
-            }else
-            {
-                $color = 'yellow';
-            }
-            $importing_row[$n]['color'] = $color;
-            $importing_row[$n]['id'] = $newArray['id'];
-            $importing_row[$n]['file'] = $newArray['file_orig'];
-            $importing_row[$n]['title'] = $newArray['title'];
-			$importing_row[$n]['notes'] = $newArray['notes'];
-            $importing_row[$n]['date'] = $newArray['date'];
-            $importing_row[$n]['size'] = $newArray['size'];
-            $importing_row[$n]['hash'] = $newArray['hash'];
-            $importing_row[$n]['user'] = $newArray['user'];
-
-            $tot = "";
-            $ssid = "";
-            switch($newArray['ap'])
-            {
-                case "":
-                    $ssid = "<td colspan='2' class='".$color."'>Processing...</td>";
-                    break;
-                case "Preparing for Import":
-                    $ssid = "<td colspan='2' class='".$color."'>Preparing for Import...</td>";
-                    break;
-                case "File is already in table array (":
-                    $ssid = "<td colspan='2' class='".$color."'>File is already in table...</td>";
-                    break;
-                case "@#@#_CONVERTING TO VS1_@#@#":
-                    $ssid = "<td colspan='2' class='".$color."'>Converting file to VS1 Format...</td>";
-                    break;
-                default:
-                    $ssid = "<td class='".$color."'>".$newArray['ap']."</td>";
-                    if($newArray['tot'] == NULL){$tot = "";}else{$tot = "<td class='".$color."'>".$newArray['tot']."</td>";}
-                    break;
-            }
-            $importing_row[$n]['last_cell'] = $ssid.$tot;
-            $n++;
+            if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
+            $files_all[] = array(
+                                    'class'=>$class,
+                                    'id'=>$newArray['id'],
+                                    'file'=>$newArray['file_orig'],
+                                    'date'=>$newArray['date'],
+                                    'user'=>$newArray["user"],
+                                    'notes'=>$newArray['notes'],
+                                    'title'=>$newArray['title'],
+                                    'efficiency'=>$newArray['NewAPPercent'],
+                                    'aps'=>$newArray['aps'],
+                                    'gps'=>$newArray['gps'],
+                                    'size'=>$newArray['size'],
+                                    'hash'=>$newArray['hash'],
+                                    'validgps'=>$newArray['ValidGPS']
+                                );
         }
 		
+		#Get Complete Count
+		$sql = "SELECT Count(id) AS imp_count FROM files WHERE completed = 1";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$complete_count = $prepf[0];
+		
+		#Get Importing Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_importing";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$importing_count = $prepf[0];
+		
+		#Get Waiting Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$waiting_count = $prepf[0];
+		
+        $dbcore->smarty->assign('wifidb_page_label', "Files Imported Page");
+        $dbcore->smarty->assign("wifidb_done_all_array", $files_all);
+		$dbcore->smarty->assign('complete_count', $complete_count);
+		$dbcore->smarty->assign('importing_count', $importing_count);
+		$dbcore->smarty->assign('waiting_count', $waiting_count);
+        $dbcore->smarty->display('scheduling_done.tpl');
+    break;
+	
+    case 'waiting':
         $waiting_row = array();
         $n=0;
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";}
+			{$sql = "SELECT * FROM files_tmp ORDER BY date ASC";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT * FROM [files_tmp] ORDER BY [date] ASC";}
         $result_1 = $dbcore->sql->conn->query($sql);
@@ -748,16 +741,96 @@ switch($func)
             $waiting_row[$n]['size'] = $newArray['size'];
             $waiting_row[$n]['hash'] = $newArray['hash'];
             $waiting_row[$n]['user'] = $newArray['user'];
-
-            $tot = "";
-            $ssid = "<td colspan='2' align='center'>Not being imported</td>";
-            $waiting_row[$n]['last_cell'] = $ssid.$tot;
+			$waiting_row[$n]['status'] = "Waiting for Import";
             $n++;
         }
 
-        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
-        $dbcore->smarty->assign('wifidb_importing', $importing_row);
+		#Get Complete Count
+		$sql = "SELECT Count(id) AS imp_count FROM files WHERE completed = 1";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$complete_count = $prepf[0];
+		
+		#Get Importing Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_importing";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$importing_count = $prepf[0];
+		
+		#Get Waiting Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$waiting_count = $prepf[0];
+
+        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Files waiting for import)');
 		$dbcore->smarty->assign('wifidb_waiting', $waiting_row);
+		$dbcore->smarty->assign('complete_count', $complete_count);
+		$dbcore->smarty->assign('importing_count', $importing_count);
+		$dbcore->smarty->assign('waiting_count', $waiting_count);
         $dbcore->smarty->display('scheduling_waiting.tpl');
+    break;
+	
+    default:
+        $importing_row = array();
+        $n=0;
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT * FROM files_importing ORDER BY date ASC";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT * FROM [files_importing] ORDER BY [date] ASC";}
+        $result_1 = $dbcore->sql->conn->query($sql);
+        while ($newArray = $result_1->fetch(2))
+        {
+            if($newArray['importing'] == "1" ){$color = "lime";}else{$color = "yellow";}
+            if($newArray['ap'] == "" && $newArray['tot'] == "")
+			{
+				$ap_text = "";
+				$status_text = "Processing";
+			}
+			else
+			{
+				$ap_text = $dbcore->formatSSID($newArray['ap']);
+				$status_text = $newArray['tot'];
+			}
+			
+            $importing_row[$n]['color'] = $color;
+            $importing_row[$n]['id'] = $newArray['id'];
+            $importing_row[$n]['file'] = $newArray['file_orig'];
+            $importing_row[$n]['title'] = $newArray['title'];
+			$importing_row[$n]['notes'] = $newArray['notes'];
+            $importing_row[$n]['date'] = $newArray['date'];
+            $importing_row[$n]['size'] = $newArray['size'];
+            $importing_row[$n]['hash'] = $newArray['hash'];
+            $importing_row[$n]['user'] = $newArray['user'];
+			$importing_row[$n]['ap'] = $ap_text;
+			$importing_row[$n]['status'] = $status_text;
+
+            $n++;
+        }
+		
+		#Get Complete Count
+		$sql = "SELECT Count(id) AS imp_count FROM files WHERE completed = 1";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$complete_count = $prepf[0];
+		
+		#Get Importing Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_importing";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$importing_count = $prepf[0];
+		
+		#Get Waiting Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
+        $prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$waiting_count = $prepf[0];
+		
+        $dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Files being imported)');
+        $dbcore->smarty->assign('wifidb_importing', $importing_row);
+		$dbcore->smarty->assign('complete_count', $complete_count);
+		$dbcore->smarty->assign('importing_count', $importing_count);
+		$dbcore->smarty->assign('waiting_count', $waiting_count);
+        $dbcore->smarty->display('scheduling_importing.tpl');
     break;
 }

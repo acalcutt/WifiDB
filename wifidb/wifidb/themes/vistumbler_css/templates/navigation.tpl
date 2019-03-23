@@ -12,8 +12,9 @@ You should have received a copy of the GNU General Public License along with thi
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php">List APs</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import File</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Imports Waiting</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Imported Files</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Export KMZ</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
