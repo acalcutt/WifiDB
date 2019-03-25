@@ -301,7 +301,7 @@ class apiv2 extends dbcore
                 $i++;
             }
 
-            $this->mesg['daemons'] = $altered;
+			$this->mesg = array("daemons" => $altered);
         }
         return 0;
     }
@@ -315,41 +315,47 @@ class apiv2 extends dbcore
         }
 		
 		if($this->sql->service == "mysql")
-			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
+			{$files_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
+			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ?");}
 		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$imp_prep = $this->sql->conn->prepare("SELECT hash FROM files_importing WHERE hash = ? LIMIT 1");}
+			{$imp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_importing WHERE hash = ?");}
+			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ?");}
 		$imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
+			{$tmp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
+			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ?");}
 		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$bad_prep = $this->sql->conn->prepare("SELECT hash FROM files_bad WHERE hash = ? LIMIT 1");}
+			{$bad_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_bad WHERE hash = ?");}
+			{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ?");}
 		$bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		$files_prep->execute();
 		$imp_prep->execute();
 		$tmp_prep->execute();
 		$bad_prep->execute();
-			
+		
+		$files_ret = $files_prep->fetch(2);
+		$imp_ret = $imp_prep->fetch(2);
+		$tmp_ret = $tmp_prep->fetch(2);
+		$bad_ret = $bad_prep->fetch(2);
+
         if($files_ret['hash'] != "")
         {
-            $this->mesg['scheduling'] = array("finished"=>$files_ret);
-        }
-        elseif($imp_ret['hash'] != "")
-        {
-            $this->mesg['scheduling'] = array("importing"=>$imp_ret);
+            if($imp_ret['hash'] != "")
+            {
+                $this->mesg['scheduling'] = array("importing"=>$imp_ret);
+            }else{
+                $this->mesg['scheduling'] = array("finished"=>$files_ret);
+            }
         }
         elseif($tmp_ret['hash'] != "")
         {
