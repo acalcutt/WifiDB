@@ -62,12 +62,12 @@ class apiv2 extends dbcore
     {
         if($ap_id === 0)
         {
-            $this->mesg['error'] = "AP ID was 0, that cant be...";
+			$this->mesg = array("error" => "AP ID was 0, that cant be...");
             return 0;
         }
-        $APSelectSQL = "SELECT `ssid`, `mac`, `auth`, `encry`, `sectype`,
-                          `chan`, `radio`, `BTx`, `OTx`, `NT`, `Label`, `FA`, `LA`
-                        FROM `live_aps` WHERE `id` = ?";
+        $APSelectSQL = "SELECT ssid, mac, auth, encry, sectype,
+                          chan, radio, BTx, OTx, NT, Label, FA, LA
+                        FROM live_aps WHERE id = ?";
         $ap_prep = $this->sql->conn->prepare($APSelectSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
         #var_dump("Before JOIN query: ".microtime(1));
@@ -77,12 +77,12 @@ class apiv2 extends dbcore
         $APFetch = $ap_prep->fetchAll(2);
 
         $SigHistSQL = "SELECT
-                    `live_gps`.`lat`, `live_gps`.`long`, `live_gps`.`sats`, `live_gps`.`hdp`,
-                    `live_gps`.`alt`, `live_gps`.`geo`, `live_gps`.`kmh`, `live_gps`.`mph`, `live_gps`.`track`, `live_gps`.`timestamp` AS `GPS_timestamp`,
-                    `live_signals`.`signal`, `live_signals`.`rssi`, `live_signals`.`timestamp` AS `signal_timestamp`
-                     FROM `live_aps` INNER JOIN `live_signals` ON
-                         `live_signals`.`ap_id`=`live_aps`.`id` INNER JOIN
-                         `live_gps` ON `live_gps`.`id`=`live_signals`.`gps_id` WHERE `live_aps`.`id` = ?";
+                    live_gps.lat, live_gps.long, live_gps.sats, live_gps.hdp,
+                    live_gps.alt, live_gps.geo, live_gps.kmh, live_gps.mph, live_gps.track, live_gps.timestamp AS GPS_timestamp,
+                    live_signals.signal, live_signals.rssi, live_signals.timestamp AS signal_timestamp
+                     FROM live_aps INNER JOIN live_signals ON
+                         live_signals.ap_id=live_aps.id INNER JOIN
+                         live_gps ON live_gps.id=live_signals.gps_id WHERE live_aps.id = ?";
         $ap_prep = $this->sql->conn->prepare($SigHistSQL);
         $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
         #var_dump("Before JOIN query: ".microtime(1));
@@ -92,136 +92,91 @@ class apiv2 extends dbcore
         return array('apdata'=> $APFetch, 'gdata'=> $SignalDataFetch);
     }
 
-    private function fetch_geoname($lat_low = "", $lat_high = "", $long_low = "", $long_high = "")
-    {
-        #
-        $sql = "SELECT `geonameid`, `country code`, `admin1 code`, `admin2 code`, `asciiname`, `latitude`, `longitude`
-		FROM `geonames`
-		WHERE `latitude` >= ?
-		AND `latitude` <= ?
-		AND `longitude` <= ?
-		AND `longitude` >= ?";
+	public function GeoNames($lat, $long)
+	{
+		$lat_search = bcdiv($lat, 1, 1);
+		$long_search = bcdiv($long, 1, 1);
+		
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
+					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS miles,\n"
+					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS kilometers\n"
+					. "FROM geonames \n"
+					. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC LIMIT 1";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT TOP 1 [id], [asciiname], [country_code], [admin1_code], [admin2_code], [timezone], [latitude], [longitude], \n"
+					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [miles],\n"
+					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [kilometers]\n"
+					. "FROM [geonames] \n"
+					. "WHERE [latitude] LIKE '".$lat_search."%' AND [longitude] LIKE '".$long_search."%' ORDER BY [kilometers] ASC";
+				#echo $sql;
+			}
+		$geoname_res = $this->sql->conn->query($sql);
+		$GeonamesArray = $geoname_res->fetch(2);
+		if($GeonamesArray['id'])
+		{
+			$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
+			if($this->sql->service == "mysql")
+				{$sql = "SELECT name FROM geonames_admin1 WHERE admin1 = ?";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "SELECT [name] FROM [geonames_admin1] WHERE [admin1] = ?";}
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $admin1, PDO::PARAM_STR);
+			$prep_geonames->execute();
+			$Admin1Array = $prep_geonames->fetch(2);
 
-        $result = $this->sql->conn->prepare($sql);
-        $result->bindParam(1, $lat_low, PDO::PARAM_STR);
-        $result->bindParam(2, $lat_high, PDO::PARAM_STR);
-        $result->bindParam(3, $long_low, PDO::PARAM_STR);
-        $result->bindParam(4, $long_high, PDO::PARAM_STR);
-        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
-        $geo_array = $result->fetchall(2);
-
-        if(@$geo_array[0] == "")
-        {
-            return 0;
-        }else
-        {
-            return $geo_array;
-        }
-    }
-
-    public function GeoNames($lat, $long)
-    {
-        $lat_exp = explode(".", $lat);
-        $long_exp = explode(".", $long);
-
-        $lat_alt = substr($lat_exp[1], 0, 2); //Get the first two decimal places
-        $lat = (float) $lat_exp[0].".".$lat_alt; //Recombine and cast as a float
-        $lat_low = ($lat-0.01); // subtract 0.01 to get the first low Lat for searching
-        $lat_high = ($lat+0.01); // add 0.01 to get the first high Lat for searching
-
-        $long_alt = substr($long_exp[1], 0, 3); //Get the first three decimal places
-        $long = (float) $long_exp[0].".".$long_alt; // recombine and cast as a float
-        $long_low = ($long-0.001); // subtract 0.001 to get the first low Long for searching
-        $long_high = ($long+0.001); // add 0.001 to get the first high Long fors searching
-        $i =1;
-
-        do{ //loop till we find a valid geoname, or we hit the wall set by the config.
-            if($i == $this->GeoNamesLoopGiveUp){$this->mesg = "No Geoname found within a respectable area"; return 0;}
-            $geo_array = $this->fetch_geoname($lat_low, $lat_high, $long_low, $long_high);
-            $lat_low = ($lat_low-0.01); //prepare for the next loop if it is going to be needed. we are going to increse the search area a little bit.
-            $lat_high = ($lat_high+0.01);
-            $long_low = ($long_low-0.001);
-            $long_high = ($long_high+0.001);
-            $i++; // increment the search loop key
-        }while($geo_array[0] == "");
-
-        foreach($geo_array as $key=>$names)
-        {
-            //calculate out the differences between the Supplied Lat/Long and each of the Geonames Lat/Long found.
-            $lat_calc = abs($names['latitude']-$lat);
-            $long_calc = abs($names['longitude']-$long);
-            $calcs[] = array($key, $lat_calc, $long_calc);
-        }
-        $sort = $this->subval_sort($calcs,1, 1); //Sort the Lats from lowest to highest
-        $sort1 = $this->subval_sort($calcs,2, 1); // Sort the Longs from lowset to highest
-        if($sort[0][0] != $sort1[0][0]) //check and see if the id's for each sort is the same, if not, we need to do some comparisons
-        {
-            $dist = $this->CalcDistance($lat, $long, $geo_array[$sort[0][0]]['latitude'], $geo_array[$sort[0][0]]['longitude'], 1); //distance of lowest lat geoname to the supplied lat/long
-            $dist1 = $this->CalcDistance($lat, $long, $geo_array[$sort1[0][0]]['latitude'], $geo_array[$sort1[0][0]]['longitude'], 1); //distance of the lowest long geoname to the supplied lat/long
-            if($dist < $dist1) //which ever one has the lowest distance is used.
-            {
-                $chosen = $sort[0];
-            }else
-            {
-                $chosen = $sort1[0];
-            }
-        }else //lowset lat and lowset long id's match
-        {
-            $chosen = $sort[0];
-        }
-
-        $dist = $this->CalcDistance($lat, $long, $geo_array[$chosen[0]]['latitude'], $geo_array[$chosen[0]]['longitude']);
-        $geo_array = $geo_array[$chosen[0]];
-        if($geo_array['admin1 code'])
-        {
-            $admin1 = $geo_array['country code'].".".$geo_array['admin1 code'];
-
-            $sql = "SELECT `asciiname` FROM `geonames_admin1` WHERE `admin1`= ?";
-            $admin1_res = $this->sql->conn->prepare($sql);
-            $admin1_res->bindParam(1, $admin1, PDO::PARAM_STR);
-            $this->sql->checkError($admin1_res->execute(), __LINE__, __FILE__);
-            $admin1_array = $admin1_res->fetch(1);
-        }
-        if(is_numeric($geo_array['admin2 code']))
-        {
-            $admin2 = $geo_array['country code'].".".$geo_array['admin1 code'].".".$geo_array['admin2 code'];
-            $sql = "SELECT `asciiname` FROM `geonames_admin2` WHERE `admin2`= ? ";
-            $admin2_res = $this->sql->conn->prepare($sql);
-            $admin2_res->bindParam(1, $admin2, PDO::PARAM_STR);
-            $this->sql->checkError($admin2_res->execute(), __LINE__, __FILE__);
-            $admin2_array = $admin2_res->fetch(1);
-        }
-        $sql = "SELECT `Country` FROM `geonames_country_names` WHERE `ISO` LIKE ? LIMIT 1";
-        $country_res = $this->sql->conn->prepare($sql);
-        $code = $geo_array['country code']."%";
-        $country_res->bindParam(1, $code, PDO::PARAM_STR);
-        $this->sql->checkError($country_res->execute(), __LINE__, __FILE__);
-        $country_array = $country_res->fetch(1);
-
-        $this->mesg = array(
-            'Country Code'=> str_replace("%20", " ", $geo_array['country code']),
-            'Country Name'=> str_replace("%20", " ", $country_array['Country']),
-            'Admin1 Code'=> str_replace("%20", " ", $geo_array['admin1 code']),
-            'Admin1 Name'=>(@$admin1_array['asciiname'] ? str_replace("%20", " ", $admin1_array['asciiname']) : ""),
-            'Admin2 Name'=>(@$admin2_array['asciiname'] ? str_replace("%20", " ", $admin2_array['asciiname']) : ""),
-            'Area Name'=> str_replace("%20", " ", $geo_array['asciiname']),
-            'miles'=>$dist[0],
-            'km'=>$dist[1],
-            'feet'=>$dist[0]*5280
-        );
-        return 1;
-    }
+			$admin2 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'].".".$GeonamesArray['admin2_code'];
+			if($this->sql->service == "mysql")
+				{$sql = "SELECT name FROM geonames_admin2 WHERE admin2 = ?";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "SELECT [name] FROM [geonames_admin2] WHERE [admin2] = ?";}
+			$prep_geonames = $this->sql->conn->prepare($sql);
+			$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
+			$prep_geonames->execute();
+			$Admin2Array = $prep_geonames->fetch(2);
+			
+			if($this->sql->service == "mysql")
+				{$sql = "SELECT Country FROM geonames_country_names WHERE ISO LIKE ? LIMIT 1";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "SELECT TOP 1 Country FROM geonames_country_names WHERE ISO LIKE ?";}
+			$country_res = $this->sql->conn->prepare($sql);
+			$code = $GeonamesArray['country_code']."%";
+			$country_res->bindParam(1, $code, PDO::PARAM_STR);
+			$country_res->execute();
+			$country_array = $country_res->fetch(1);
+			
+			$this->mesg = array(
+				'Country Code'=> str_replace("%20", " ", $GeonamesArray['country_code']),
+				'Country Name'=> str_replace("%20", " ", $country_array['Country']),
+				'Admin1 Code'=> str_replace("%20", " ", $GeonamesArray['admin1_code']),
+				'Admin1 Name'=>(@$Admin1Array['name'] ? str_replace("%20", " ", $Admin1Array['name']) : ""),
+				'Admin2 Name'=>(@$Admin2Array['name'] ? str_replace("%20", " ", $Admin2Array['name']) : ""),
+				'Area Name'=> str_replace("%20", " ", $GeonamesArray['asciiname']),
+				'miles'=>$GeonamesArray['miles'],
+				'km'=>$GeonamesArray['kilometers'],
+				'feet'=>$GeonamesArray['miles']*5280
+			);
+		}
+		else
+		{
+			$this->mesg = "No Geonames Found";
+		}
+		return 1;
+	}
 
     public function GetWaitingScheduleTable()
     {
         if($this->AllDateRange == 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_tmp`");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp");
         }else {
             if (($this->StartDate == "") OR ($this->EndDate == "")) {
-                $this->mesg['error'] = "StartDate or EndDate are not set.";
+				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_tmp` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp WHERE date >= ? AND date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -248,14 +203,14 @@ class apiv2 extends dbcore
     public function GetImportingScheduleTable()
     {
         if($this->AllDateRange === 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_importing`");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing");
             $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
         }else {
             if (($this->StartDate == "") OR ($this->EndDate == "")) {
-                $this->mesg['error'] = "StartDate or EndDate are not set.";
+				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_importing` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing WHERE date >= ? AND date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -275,14 +230,14 @@ class apiv2 extends dbcore
     public function GetFinishedScheduleTable()
     {
         if($this->AllDateRange === 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files`");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files");
             $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
         }else {
             if (($this->StartDate == "") OR ($this->EndDate == "")) {
-                $this->mesg['error'] = "StartDate or EndDate are not set.";
+				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files WHERE date >= ? AND date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -302,14 +257,14 @@ class apiv2 extends dbcore
     public function GetBadScheduleTable()
     {
         if($this->AllDateRange === 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_bad`");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad");
             $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
         }else {
             if (($this->StartDate == "") OR ($this->EndDate == "")) {
-                $this->mesg['error'] = "StartDate or EndDate are not set.";
+				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM `files_bad` WHERE `date` >= ? AND `date` <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad WHERE date >= ? AND date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -328,7 +283,7 @@ class apiv2 extends dbcore
 
     public function GetDaemonStatuses()
     {
-        $sql = "SELECT `nodename`, `pidfile`, `pid`, `pidtime`, `pidmem`, `pidcmd`, `date` FROM `daemon_pid_stats`";
+        $sql = "SELECT nodename, pidfile, pid, pidtime, pidmem, pidcmd, date FROM daemon_pid_stats";
         $result = $this->sql->conn->query($sql);
         $result->execute();
         $fetch = $result->fetchAll(2);
@@ -358,24 +313,36 @@ class apiv2 extends dbcore
             $this->mesg = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
             return -1;
         }
-        $files_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `node_name`, `prev_ext`, `completed`, `aps`, `gps` FROM `files` WHERE `hash` = ? LIMIT 1");
-        $files_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $imp_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `prev_ext`, `importing`, `ap`, `tot` FROM `files_importing` WHERE `hash` = ? LIMIT 1");
-        $imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $tmp_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `prev_ext` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
-        $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $bad_prep = $this->sql->conn->prepare("SELECT `id`, `hash`, `file`, `user`, `notes`, `title`, `size`, `date`, `converted`, `thread_id`, `node_name`, `prev_ext`, `error_msg` FROM `files_bad` WHERE `hash` = ? LIMIT 1");
-        $bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
+		
+		if($this->sql->service == "mysql")
+			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
+		else if($this->sql->service == "sqlsrv")
+			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
+		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-        $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
-        $this->sql->checkError($imp_prep->execute(), __LINE__, __FILE__);
-        $this->sql->checkError($tmp_prep->execute(), __LINE__, __FILE__);
-        $this->sql->checkError($bad_prep->execute(), __LINE__, __FILE__);
+		if($this->sql->service == "mysql")
+			{$imp_prep = $this->sql->conn->prepare("SELECT hash FROM files_importing WHERE hash = ? LIMIT 1");}
+		else if($this->sql->service == "sqlsrv")
+			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_importing WHERE hash = ?");}
+		$imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-        $files_ret = $files_prep->fetch(2);
-        $imp_ret = $imp_prep->fetch(2);
-        $tmp_ret = $tmp_prep->fetch(2);
-        $bad_ret = $bad_prep->fetch(2);
+		if($this->sql->service == "mysql")
+			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
+		else if($this->sql->service == "sqlsrv")
+			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
+		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
+
+		if($this->sql->service == "mysql")
+			{$bad_prep = $this->sql->conn->prepare("SELECT hash FROM files_bad WHERE hash = ? LIMIT 1");}
+		else if($this->sql->service == "sqlsrv")
+			{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_bad WHERE hash = ?");}
+		$bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
+
+		$files_prep->execute();
+		$imp_prep->execute();
+		$tmp_prep->execute();
+		$bad_prep->execute();
+			
         if($files_ret['hash'] != "")
         {
             $this->mesg['scheduling'] = array("finished"=>$files_ret);
@@ -420,10 +387,16 @@ class apiv2 extends dbcore
             $exp = explode("|", $user);
             $user = $exp[0];
         }
-        $tmp_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files_tmp` WHERE `hash` = ? LIMIT 1");
-        $tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-        $files_prep = $this->sql->conn->prepare("SELECT `hash` FROM `files` WHERE `hash` = ? LIMIT 1");
-        $files_prep->bindParam(1, $hash, PDO::PARAM_STR);
+		if($this->sql->service == "mysql")
+			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
+		else if($this->sql->service == "sqlsrv")
+			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
+		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
+		if($this->sql->service == "mysql")
+			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
+		else if($this->sql->service == "sqlsrv")
+			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
+		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
         $this->sql->checkError($tmp_prep->execute(), __LINE__, __FILE__);
         $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
@@ -432,12 +405,12 @@ class apiv2 extends dbcore
         $files_ret = $files_prep->fetch(2);
         if($tmp_ret['hash'] != "")
         {
-            $this->mesg['error'] = "File Hash already waiting for import: ".$hash;
+			$this->mesg = array("error" => "File Hash already waiting for import: ".$hash);
             return -1;
         }
         if($files_ret['hash'] != "")
         {
-            $this->mesg['error'] ="File Hash already exists in WiFiDB:  $hash";
+			$this->mesg = array("error" => "File Hash already exists in WiFiDB:  $hash");
             return -1;
         }
         $this->mesg['import']["title"] = $title;
@@ -487,7 +460,7 @@ class apiv2 extends dbcore
         {
             case "import":
 				if($this->sql->service == "mysql")
-					{$sql = "INSERT INTO `files_tmp`(`file`, `file_orig`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					{$sql = "INSERT INTO files_tmp(file, file_orig, date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
@@ -510,254 +483,350 @@ class apiv2 extends dbcore
 				return 1;
                 break;
             default:
-                $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://live.wifidb.net/wifidb/import/?func=supported_files");
+                $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://wifidb.net/wifidb/import/?func=supported_files");
                 break;
         }
         return 1;
     }
 
-    public function InsertLiveAP($data = array())
-    {
-        if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
-        $ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['radio'].$data['auth'].$data['encry']);
-        $LA = $data['date']." ".$data['time'];
+	public function InsertLiveAP($data = array())
+	{
+		if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
+		$data['mac'] = preg_replace('/..(?!$)/', '$0:', $data['mac']);
+		$ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['auth'].$data['encry']);
 
-        #var_dump("AP_HASH: ".$ap_hash);
-        #var_dump($this->sec->SessionID);
-        $sql = "SELECT `t1`.`id`, `t1`.`ssid`, `t1`.`mac`, `t1`.`chan`, `t1`.`sectype`, `t1`.`auth`, `t1`.`encry`, `t1`.`radio`, `t1`.`session_id`, `t1`.`lat`, `t1`.`long` FROM `live_aps` as `t1`
-                  INNER JOIN `live_users` as `t2`
-                  ON `t1`.`session_id` = ?
-                  WHERE ap_hash = ?
-                  LIMIT 1";
+				
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, long FROM
+						live_aps
+						WHERE ap_hash = ?
+						AND session_id = ?
+						AND username = ? LIMIT 1";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT TOP 1 id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, long FROM
+						live_aps
+						WHERE ap_hash = ?
+						AND session_id = ?
+						AND username = ?";
+			}
+		$result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $ap_hash, PDO::PARAM_STR);
+		$result->bindParam(2, $data['session_id'], PDO::PARAM_STR);
+		$result->bindParam(3, $data['username'], PDO::PARAM_STR);
+		$result->execute();
+		$err = $this->sql->conn->errorCode();
+		if($err !== "00000")
+		{
+			$this->mesg = array("error"=>array("desc"=>"Error selecting AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+			return -1;
+		}
+		$array = $result->fetch(2);
+		if(@$array['id'])
+		{
+			$AP_id = $array['id'];
+			$this->mesg = "It's an old AP :/" ;
 
-        $result = $this->sql->conn->prepare($sql);
-        $result->bindParam(1, $this->sec->SessionID, PDO::PARAM_STR);
-        $result->bindParam(2, $ap_hash, PDO::PARAM_STR);
-        $this->sql->checkError($result->execute(), __LINE__, __FILE__);
+			$all_sigs = $array['sig'];
 
+			$sig_exp = explode("~", $all_sigs);
 
-        $array = $result->fetch(2);
-        #var_dump($array);
-        if(isset($array['id']))
-        {
-            $ap_id = $array['id'];
-            $this->mesg[] = "Update_AP" ;
+			$sig_c = count($sig_exp)-1;
+			if(!$sig_c)
+			{
+				$sig_exp_id = explode("|", $array['sig']);
+				$id = $sig_exp_id[1];
+			}else
+			{
+				$sig_exp_id = explode("|", $sig_exp[$sig_c]);
+				$id = $sig_exp_id[1];
+			}
 
-            $sql = "SELECT `id`, `lat`, `long` FROM `live_gps` WHERE `ap_id` = ? ORDER BY `timestamp` DESC";
-            $result = $this->sql->conn->prepare($sql);
-            $result->bindParam(1, $ap_id, PDO::PARAM_INT);
-            $this->sql->checkError($result->execute(), __LINE__, __FILE__);
-            $array = $result->fetch(2);
-            if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
-            {
-                $this->mesg[] = "Old Location, New Signal";
-                $gps_select = "SELECT id FROM `live_gps` WHERE `lat` = ? AND `long` = ?";
-                $gps_prep = $this->sql->conn->prepare($gps_select);
-                $gps_prep->bindParam(1, $array['lat'], PDO::PARAM_STR);
-                $gps_prep->bindParam(2, $array['long'], PDO::PARAM_STR);
-
-                $this->sql->checkError( $gps_prep->execute(), __LINE__, __FILE__);
-                $fetch = $gps_prep->fetch(2);
-
-                $sql_sig = "INSERT INTO `live_signals`
-						(`signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
+			$sql = "SELECT * FROM live_gps WHERE id = ?";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $id, PDO::PARAM_STR);
+			$result->execute();
+			$err = $this->sql->conn->errorCode();
+			if($err !== "00000")
+			{
+				$this->mesg = array("error"=>array("desc"=>"Error selecting data from Live GPS Table.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+				return -1;
+			}
+			$array = $result->fetch(2);
+			if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
+			{
+				$sql_sig = "INSERT INTO live_signals
+						(signal, rssi, gps_id, ap_hash, time_stamp)
 						VALUES (?, ?, ?, ?, ?)";
-                $prep_sig = $this->sql->conn->prepare($sql_sig);
-                $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
-                $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
-                $prep_sig->bindParam(3, $fetch['id'], PDO::PARAM_INT);
-                $prep_sig->bindParam(4, $ap_id, PDO::PARAM_INT);
-                $prep_sig->bindParam(5, $LA, PDO::PARAM_STR);
-                $this->sql->checkError( $prep_sig->execute(), __LINE__, __FILE__);
+				$time_stamp = $data['date']." ".$data['time'];
+				$prep_sig = $this->sql->conn->prepare($sql_sig);
+				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
+				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
+				$prep_sig->bindParam(3, $id, PDO::PARAM_INT);
+				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
+				$prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
+				$prep_sig->execute();
+				$err = $this->sql->conn->errorCode();
+				if($err !== "00000")
+				{
+					$this->mesg = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+					return -1;
+				}else
+				{
+					$this->mesg = "Added Signal data.";
+				}
 
-                $this->mesg[] = "Added Signal data.";
+				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$id;
+				$date_time = $data['date']." ".$data['time'];
+				$this->mesg = "Lat/Long are the same, move a little you lazy bastard.";
+				$sql = "UPDATE live_aps SET LA = ?, sig = ? WHERE id = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $date_time, PDO::PARAM_STR);
+				$prep->bindParam(2, $sig, PDO::PARAM_STR);
+				$prep->bindParam(3, $AP_id, PDO::PARAM_INT);
+				$prep->execute();
+				$err = $this->sql->conn->errorCode();
+				if($err !== "00000")
+				{
+					$this->mesg = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+					return -1;
+				}else
+				{
+					$this->mesg = "Updated AP Last Active and Signal.";
+				}
+			}else
+			{
+				$this->mesg = "Lat/Long are different, what aboot the Sats and Date/Time, Eh?";
+				$url_time   = $data['date']." ".$data['time'];
+				$wifi_time	= $array['date']." ".$array['time'];
+				$timecalc   = ($url_time - $wifi_time);
+				$this->mesg = "Oooo its time is newer o_0, lets go insert it ;)";
+				$sql = "INSERT INTO live_gps (lat, long, sats, hdp, alt, geo, kmh, mph, track, date, time, session_id)
+											   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-                $this->mesg[] = "Lat/Long are the same, move a little you lazy bastard.";
-                $sql = "UPDATE `live_aps` SET `LA` = ? WHERE `id` = ?";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $LA, PDO::PARAM_STR);
-                $prep->bindParam(2, $ap_id, PDO::PARAM_INT);
-                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-                $this->mesg[] = "Updated AP Last Active and Signal.";
-            }
-            else
-            {
-                $this->mesg[] = "New_location";
-                $sql = "INSERT INTO `live_gps` (`lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`, `timestamp`, `ap_id`)
-											   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $data['lat'], PDO::PARAM_INT);
+				$prep->bindParam(2, $data['long'], PDO::PARAM_INT);
+				$prep->bindParam(3, $data['sats'], PDO::PARAM_INT);
+				$prep->bindParam(4, $data['hdp'], PDO::PARAM_INT);
+				$prep->bindParam(5, $data['alt'], PDO::PARAM_INT);
+				$prep->bindParam(6, $data['geo'], PDO::PARAM_INT);
+				$prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
+				$prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
+				$prep->bindParam(9, $data['track'], PDO::PARAM_INT);
+				$prep->bindParam(10, $data['date'], PDO::PARAM_STR);
+				$prep->bindParam(11, $data['time'], PDO::PARAM_STR);
+				$prep->bindParam(12, $data['session_id'], PDO::PARAM_STR);
+				$prep->execute();
+				$gps_id = $this->sql->conn->lastInsertId();
+				$err = $this->sql->conn->errorCode();
+				if($err !== "00000")
+				{
+					$this->mesg = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+					return -1;
+				}else
+				{
+					$this->mesg = "Added GPS data.";
+				}
 
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
-                $prep->bindParam(2, $data['long'], PDO::PARAM_STR);
-                $prep->bindParam(3, $data['sats'], PDO::PARAM_INT);
-                $prep->bindParam(4, $data['hdp'], PDO::PARAM_INT);
-                $prep->bindParam(5, $data['alt'], PDO::PARAM_INT);
-                $prep->bindParam(6, $data['geo'], PDO::PARAM_INT);
-                $prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
-                $prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
-                $prep->bindParam(9, $data['track'], PDO::PARAM_INT);
-                $prep->bindParam(10, $LA, PDO::PARAM_STR);
-                $prep->bindParam(11, $ap_id, PDO::PARAM_INT);
-                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-                $gps_id = $this->sql->conn->lastInsertId();
-
-                $this->mesg[] = "Added GPS data.";
-
-                $sql_sig = "INSERT INTO `live_signals`
-					(`signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
+				$sql_sig = "INSERT INTO live_signals
+					(signal, rssi, gps_id, ap_hash, time_stamp)
 					VALUES (?, ?, ?, ?, ?)";
-                $prep_sig = $this->sql->conn->prepare($sql_sig);
-                $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
-                $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
-                $prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
-                $prep_sig->bindParam(4, $ap_id, PDO::PARAM_INT);
-                $prep_sig->bindParam(5, $LA, PDO::PARAM_STR);
-                $this->sql->checkError( $prep_sig->execute(), __LINE__, __FILE__);
+				$time_stamp = $data['date']." ".$data['time'];
+				$prep_sig = $this->sql->conn->prepare($sql_sig);
+				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
+				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
+				$prep_sig->bindParam(3, $data['gps_id'], PDO::PARAM_INT);
+				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
+				$prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
+				$prep_sig->execute();
 
-                $this->mesg[] = "Added Signal data.";
+				$err = $this->sql->conn->errorCode();
+				if($err !== "00000")
+				{
+					$this->mesg = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+					return -1;
+				}else
+				{
+					$this->mesg = "Added Signal data.";
+				}
 
-                $sql = "UPDATE `live_aps` SET `LA` = ?, `lat` = ?, `long` = ? WHERE `id` = ?";
-                #echo $sql."<br /><br />";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $LA, PDO::PARAM_STR);
-                $prep->bindParam(2, $data['lat'], 2);
-                $prep->bindParam(3, $data['long'], 2);
-                $prep->bindParam(4, $ap_id, 1);
-                $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$gps_id;
 
-                $this->mesg[] = "Updated AP data.";
-            }
-        }else
-        {
-            $FA = $data['date']." ".$data['time'];
-            $label = ( isset($data['Label']) ? $data['Label'] : "" );
-            $insert_sql = "INSERT INTO `live_aps` (id, ssid, mac, auth, encry, sectype, radio, chan, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, `long`)
-                              VALUES ('', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $insert_prep = $this->sql->conn->prepare($insert_sql);
-            $insert_prep->bindParam(1 , $data['ssid'], PDO::PARAM_STR);
-            $insert_prep->bindParam(2 , $data['mac'], PDO::PARAM_STR);
-            $insert_prep->bindParam(3 , $data['auth'], PDO::PARAM_STR);
-            $insert_prep->bindParam(4 , $data['encry'], PDO::PARAM_STR);
-            $insert_prep->bindParam(5 , $data['sectype'], PDO::PARAM_INT);
-            $insert_prep->bindParam(6 , $data['radio'], PDO::PARAM_STR);
-            $insert_prep->bindParam(7 , $data['chan'], PDO::PARAM_INT);
-            $insert_prep->bindParam(8 , $_REQUEST['SessionID'], PDO::PARAM_STR);
-            $insert_prep->bindParam(9 , $ap_hash, PDO::PARAM_STR);
-            $insert_prep->bindParam(10 , $data['BTx'], PDO::PARAM_STR);
-            $insert_prep->bindParam(11 , $data['OTx'], PDO::PARAM_STR);
-            $insert_prep->bindParam(12 , $data['NT'], PDO::PARAM_STR);
-            $insert_prep->bindParam(13 , $label, PDO::PARAM_STR);
-            $insert_prep->bindParam(14 , $FA, PDO::PARAM_STR);
-            $insert_prep->bindParam(15 , $LA, PDO::PARAM_STR);
-            $insert_prep->bindParam(16 , $data['lat'], PDO::PARAM_STR);
-            $insert_prep->bindParam(17 , $data['long'], PDO::PARAM_STR);
-            $this->sql->checkError( $insert_prep->execute(), __LINE__, __FILE__);
+				$sql = "UPDATE live_aps SET sig = ?, LA = ?, lat = ?, long = ? WHERE id = ?";
+				#echo $sql."<br /><br />";
+				$date_time = $data['date']." ".$data['time'];
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $sig, PDO::PARAM_STR);
+				$prep->bindParam(2, $date_time, PDO::PARAM_STR);
+				$prep->bindParam(3, $data['lat'], 2);
+				$prep->bindParam(4, $data['long'], 2);
+				$prep->bindParam(5, $AP_id, 1);
+				$prep->execute();
+				$err = $this->sql->conn->errorCode();
+				if($err !== "00000")
+				{
+					$this->mesg = array("error"=>array("desc"=>"Error updating AP data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+					return -1;
+				}else
+				{
+					$this->mesg = "Updated AP data.";
+				}
+			}
+		}else
+		{
+			$this->mesg = "Add new AP. :]";
+			$sql = "INSERT INTO live_gps (lat, long, sats, hdp, alt, geo, kmh, mph, track, date, time, session_id)
+												   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
+			$prep->bindParam(2, $data['long'], PDO::PARAM_STR);
+			$prep->bindParam(3, $data['sats'], PDO::PARAM_INT);
+			$prep->bindParam(4, $data['hdp'], PDO::PARAM_INT);
+			$prep->bindParam(5, $data['alt'], PDO::PARAM_INT);
+			$prep->bindParam(6, $data['geo'], PDO::PARAM_INT);
+			$prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
+			$prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
+			$prep->bindParam(9, $data['track'], PDO::PARAM_STR);
+			$prep->bindParam(10, $data['date'], PDO::PARAM_STR);
+			$prep->bindParam(11, $data['time'], PDO::PARAM_STR);
+			$prep->bindParam(12, $data['session_id'], PDO::PARAM_STR);
+			$prep->execute();
 
-            $ap_id = $this->sql->conn->lastInsertID();
+			$gps_id = $this->sql->conn->lastInsertId();
 
-            $this->mesg[] = "Added AP data.";
+			$err = $this->sql->conn->errorCode();
+			if($err !== "00000")
+			{
+				$this->mesg = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+				return -1;
+			}else
+			{
+				$this->mesg = "Added GPS data.";
+			}
 
-            $sql = "INSERT INTO `live_gps` (`lat`, `long`, `sats`, `hdp`, `alt`, `geo`, `kmh`, `mph`, `track`,`timestamp`, `ap_id`) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            $prep = $this->sql->conn->prepare($sql);
-            $prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
-            $prep->bindParam(2, $data['long'], PDO::PARAM_STR);
-            $prep->bindParam(3, $data['sats'], PDO::PARAM_INT);
-            $prep->bindParam(4, $data['hdp'], PDO::PARAM_INT);
-            $prep->bindParam(5, $data['alt'], PDO::PARAM_INT);
-            $prep->bindParam(6, $data['geo'], PDO::PARAM_INT);
-            $prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
-            $prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
-            $prep->bindParam(9, $data['track'], PDO::PARAM_STR);
-            $prep->bindParam(10, $LA, PDO::PARAM_STR);
-            $prep->bindParam(11, $ap_id, PDO::PARAM_STR);
-            $prep->execute();
-            $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-
-            $gps_id = $this->sql->conn->lastInsertId();
-
-            $this->mesg[] = "Added GPS data.";
-
-            $sql_sig = "INSERT INTO `live_signals`
-						(`signal`, `rssi`, `gps_id`, `ap_id`, `timestamp`)
+			$sql_sig = "INSERT INTO live_signals
+						(signal, rssi, gps_id, ap_hash, time_stamp)
 						VALUES (?, ?, ?, ?, ?)";
+			$time_stamp = $data['date']." ".$data['time'];
+			$prep_sig = $this->sql->conn->prepare($sql_sig);
+			$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
+			$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
+			$prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
+			$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
+			$prep_sig->bindParam(5, $time_stamp, PDO::PARAM_INT);
+			$prep_sig->execute();
 
-            $prep_sig = $this->sql->conn->prepare($sql_sig);
-            $prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
-            $prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
-            $prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
-            $prep_sig->bindParam(4, $ap_id, PDO::PARAM_STR);
-            $prep_sig->bindParam(5 , $LA, PDO::PARAM_STR);
-            $this->sql->checkError( $prep_sig->execute(), __LINE__, __FILE__);
+			$err = $this->sql->conn->errorCode();
+			if($err !== "00000")
+			{
+				$this->mesg = array("error"=>array("desc"=>"Error adding Signal data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+				return -1;
+			}else
+			{
+				$this->mesg = "Added Signal data.";
+			}
+			$sig = $this->sql->conn->lastInsertId()."|".$gps_id;
+			$date_time = $data['date']." ".$data['time'];
+			$sql = "INSERT INTO  live_aps ( ssid, mac,  chan, radio, auth, encry, sectype,
+				BTx, OTx, NT, label, sig, username, FA, LA, lat, long, session_id, ap_hash)
+											VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
+			$chan = (int)$data['chan'];
+			var_dump($chan, $data['username']);
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $data['ssid'], PDO::PARAM_STR);
+			$prep->bindParam(2, $data['mac'], PDO::PARAM_STR);
+			$prep->bindParam(3, $chan, PDO::PARAM_INT);
+			$prep->bindParam(4, $data['radio'], PDO::PARAM_STR);
+			$prep->bindParam(5, $data['auth'], PDO::PARAM_STR);
+			$prep->bindParam(6, $data['encry'], PDO::PARAM_STR);
+			$prep->bindParam(7, $data['sectype'], PDO::PARAM_INT);
+			$prep->bindParam(8, $data['BTx'], PDO::PARAM_STR);
+			$prep->bindParam(9, $data['OTx'], PDO::PARAM_STR);
+			$prep->bindParam(10, $data['NT'], PDO::PARAM_STR);
+			$prep->bindParam(11, $data['label'], PDO::PARAM_STR);
+			$prep->bindParam(12, $sig, PDO::PARAM_STR);
+			$prep->bindParam(13, $data['username'], PDO::PARAM_STR);
+			$prep->bindParam(14, $date_time, PDO::PARAM_STR);
+			$prep->bindParam(15, $date_time, PDO::PARAM_STR);
+			$prep->bindParam(16, $data['lat'], PDO::PARAM_STR);
+			$prep->bindParam(17, $data['long'], PDO::PARAM_STR);
+			$prep->bindParam(18, $data['session_id'], PDO::PARAM_STR);
+			$prep->bindParam(19, $ap_hash, PDO::PARAM_STR);
+			$prep->execute();
+			$err = $this->sql->conn->errorCode();
+			if($err !== "00000")
+			{
+				$this->mesg = array("error"=>array("desc"=>"Error adding GPS data.", "details"=>var_export($this->sql->conn->errorInfo(), 1)));
+				return -1;
+			}else
+			{
+				$this->mesg = "Added AP data.";
+			}
+		}
+		return 1;
+	}
 
-            $this->mesg[] = "Added Signal data.";
+	public function Locate()
+	{
+		$listing		=   array();
+		$lists		  =   explode("-", $this->LocateList);
 
-        }
-        return 1;
-    }
+		foreach($lists as $key=>$item)
+		{
+			$t = explode("|", $item);
+			$listing[$key] = array($t[1],$t[0]);
+		}
 
-    public function Locate()
-    {
-        $listing		=   array();
-        $lists		  =   explode("-", $this->LocateList);
+		$listings = $this->subval_sort($listing, 0);
 
-        foreach($lists as $key=>$item)
-        {
-            $t = explode("|", $item);
-            $listing[$key] = array($t[1],$t[0]);
-        }
+		$pre_sat = 0;
+		$use = array();
+		foreach($listings as $macandsig)
+		{
+			if($this->sql->service == "mysql")
+				{
+					$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.GPS_Date\n"
+						. "FROM wifi_ap\n"
+						. "INNER JOIN wifi_gps ON wifi_gps.GPS_ID = wifi_ap.HighGps_ID\n"
+						. "WHERE wifi_ap.HighGps_ID IS NOT NULL AND wifi_ap.BSSID LIKE ?\n"
+						. "ORDER BY wifi_gps.NumOfSats DESC LIMIT 1";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT TOP 1 wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.GPS_Date\n"
+						. "FROM wifi_ap\n"
+						. "INNER JOIN wifi_gps ON wifi_gps.GPS_ID = wifi_ap.HighGps_ID\n"
+						. "WHERE wifi_ap.HighGps_ID IS NOT NULL AND wifi_ap.BSSID LIKE ?\n"
+						. "ORDER BY wifi_gps.NumOfSats DESC";
+				}
 
-        $listings = $this->subval_sort($listing, 0);
-
-        $pre_sat = 0;
-        $use = array();
-        foreach($listings as $macandsig)
-        {
-            $sql	=   "SELECT `signals` FROM `wifi_pointers` WHERE `mac` LIKE ? LIMIT 1";
-            $result =   $this->sql->conn->prepare($sql);
-            $result->bindParam(1, $macandsig[1]);
-            $this->sql->checkError( $result->execute(), __LINE__, __FILE__);
-
-            $array  =   $result->fetch(1);
-            if($array['signals'] == ""){continue;}
-            $sig_exp = explode("-", $array['signals']);
-            foreach($sig_exp as $exp)
-            {
-                $ids_exp = explode(",", $exp);
-                $gps_id = $ids_exp[0];
-
-                $sql = "SELECT `lat`, `long`, `sats`, `date`, `time`
-						FROM  `wifi_gps` WHERE `id` = '$gps_id' ";
-
-                $result = $this->sql->conn->query($sql);
-                if($this->sql->checkError($result, __LINE__, __FILE__))
-                {
-                    $this->mesg = array("error"=>"SQL Error, Check Logs.");
-                    return -1;
-                }
-
-                $gpsarray = $result->fetch(2);
-                if($gpsarray['long'] == "0.0000" || $gpsarray['long'] == ""){continue;}
-                break;
-            }
-            if($gpsarray['sats'] > $pre_sat)
-            {
-                $use = array(
-                    'lat'	=> $gpsarray['lat'],
-                    'long'	=> $gpsarray['long'],
-                    'date'	=> $gpsarray['date'],
-                    'time'	=> $gpsarray['time'],
-                    'sats'	=> $gpsarray['sats']
-                );
-                $pre_sat	=   $gpsarray['sats']+0;
-            }
-        }
-        $this->mesg = $use;
-        return $use;
-    }
+			$result =   $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $macandsig[1]);
+			$result->execute();
+			$this->sql->checkError();
+			$array  =   $result->fetch(1);
+			if($array['Lat'])
+			{
+				$dt = new DateTime($array['GPS_Date']);
+				$use = array(
+					'lat'	=> $array['Lat'],
+					'long'	=> $array['Lon'],
+					'date'	=> $dt->format('m-d-Y'),
+					'time'	=> $dt->format('H:i:s'),
+					'sats'	=> $array['NumOfSats']
+					);
+				$this->mesg = $use;
+				return $use;
+			}
+		}
+	}
 
     public function GetTitleIDFromSessionID()
     {
-        $sql = "SELECT `title_id` FROM `live_users` WHERE `session_id` = ?";
+        $sql = "SELECT title_id FROM live_users WHERE session_id = ?";
         $prep = $this->sql->conn->prepare($sql);
         $prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
         $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
@@ -776,7 +845,7 @@ class apiv2 extends dbcore
                 #var_dump("Completed Set");
                 $TitleID = $this->GetTitleIDFromSessionID();
                 $completed = (int)$_REQUEST['completed'];
-                $sql = "UPDATE `live_titles` SET `completed` = ? WHERE `id` = ?";
+                $sql = "UPDATE live_titles SET completed = ? WHERE id = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $completed, PDO::PARAM_INT);
                 $prep->bindParam(2, $TitleID, PDO::PARAM_INT);
@@ -785,7 +854,7 @@ class apiv2 extends dbcore
                 return 2;
             }
 
-            $sql = "SELECT `title_id` FROM `live_users` LEFT JOIN `live_titles` ON `live_users`.`session_id` = ? AND `live_titles`.`completed` = 0 WHERE `live_users`.`session_id` = ?";
+            $sql = "SELECT title_id FROM live_users LEFT JOIN live_titles ON live_users.session_id = ? AND live_titles.completed = 0 WHERE live_users.session_id = ?";
             $prep = $this->sql->conn->prepare($sql);
             $prep->bindParam(1, $_REQUEST['SessionID']);
             $prep->bindParam(2, $_REQUEST['SessionID']);
@@ -794,7 +863,7 @@ class apiv2 extends dbcore
 
             if(count($title_data) !== 1)
             {
-                $this->mesg['error'] = "Session_Expired";
+				$this->mesg = array("error" => "Session_Expired");
                 return 0;
             }
 
@@ -803,7 +872,7 @@ class apiv2 extends dbcore
             if ($this->sec->login_check)
             {
                 #var_dump("LoginCheck True");
-                $sql = "SELECT `t1`.`id`, `t1`.`username`, `t1`.`session_id`, `t1`.`title_id`, `t2`.`title`, `t2`.`notes` FROM `live_users` AS `t1` LEFT JOIN `live_titles` AS `t2` ON `t2`.`id` = `t1`.`title_id` WHERE `username` = ?";
+                $sql = "SELECT t1.id, t1.username, t1.session_id, t1.title_id, t2.title, t2.notes FROM live_users AS t1 LEFT JOIN live_titles AS t2 ON t2.id = t1.title_id WHERE username = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $this->username, PDO::PARAM_STR);
                 $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
@@ -814,7 +883,7 @@ class apiv2 extends dbcore
                     #var_dump($timestamp);
                     #var_dump("Title Update");
                     $this->sec->SessionID = $fetch['session_id'];
-                    $sql = "UPDATE `live_titles` SET `timestamp` = ? WHERE id = ?";
+                    $sql = "UPDATE live_titles SET timestamp = ? WHERE id = ?";
                     $prep = $this->sql->conn->prepare($sql);
                     $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                     $prep->bindParam(2, $title_id, PDO::PARAM_INT);
@@ -830,7 +899,7 @@ class apiv2 extends dbcore
                 $this->sec->SessionID = $_REQUEST['SessionID'];
 
                 #var_dump("Timestamp: ".$timestamp);
-                $sql = "UPDATE `live_titles` SET `timestamp` = ? WHERE `id` = ?";
+                $sql = "UPDATE live_titles SET timestamp = ? WHERE id = ?";
                 $prep = $this->sql->conn->prepare($sql);
                 $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
                 $prep->bindParam(2, $title_id, PDO::PARAM_INT);
@@ -851,7 +920,7 @@ class apiv2 extends dbcore
         }else{
             if(isset($_REQUEST['completed']))
             {
-                $this->mesg['error'] = "Completed flag was set, but no session ID to complete...";
+				$this->mesg = array("error" => "Completed flag was set, but no session ID to complete...");
                 return 0;
             }
             $this->OldAPIGenerate();
@@ -868,7 +937,7 @@ class apiv2 extends dbcore
             return 0;
         } else {
             $timestamp = date("Y-m-d H:i:s");
-            $insertTitle = "INSERT INTO `live_titles` (`title`, `notes`, `timestamp`, `completed` ) VALUES (?, ?, ?, 0)";
+            $insertTitle = "INSERT INTO live_titles (title, notes, timestamp, completed ) VALUES (?, ?, ?, 0)";
             $prep_Title = $this->sql->conn->prepare($insertTitle);
             $prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
             $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
@@ -881,7 +950,7 @@ class apiv2 extends dbcore
         $this->sec->SessionID = $this->sec->GenerateKey(64);
         #var_dump("Generated: " . $this->sec->SessionID);
 
-        $sessionInsert = "INSERT INTO `live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+        $sessionInsert = "INSERT INTO live_users (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
         $prep_user = $this->sql->conn->prepare($sessionInsert);
         $prep_user->bindParam(1, $this->sec->username, PDO::PARAM_STR);
         $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
@@ -897,7 +966,7 @@ class apiv2 extends dbcore
         $date = date("Y-m-d H:i:s");
         $this->sec->SessionID = $this->sec->GenerateKey(64);
         $note = "Live Imports Using Old API";
-        $insertTitle = "INSERT INTO `live_titles` (id, title, notes) VALUES ('', ?, ?)";
+        $insertTitle = "INSERT INTO live_titles (id, title, notes) VALUES ('', ?, ?)";
         $prep_Title = $this->sql->conn->prepare($insertTitle);
         $prep_Title->bindParam(1, $date, PDO::PARAM_STR);
         $prep_Title->bindParam(2, $note, PDO::PARAM_STR);
@@ -905,7 +974,7 @@ class apiv2 extends dbcore
         $TitleID = $this->sql->conn->lastInsertID();
         #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
 
-        $sessionInsert = "INSERT INTO `live_users` (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+        $sessionInsert = "INSERT INTO live_users (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
         $prep_user = $this->sql->conn->prepare($sessionInsert);
         $prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
         $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
@@ -947,13 +1016,13 @@ class apiv2 extends dbcore
 
     public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
     {
-        $sql2 = "SELECT * FROM `wifi_pointers` WHERE
-				`ssid` LIKE ? AND
-				`mac` LIKE ? AND
-				`radio` LIKE ? AND
-				`chan` LIKE ? AND
-				`auth` LIKE ? AND
-				`encry` LIKE ?";
+        $sql2 = "SELECT * FROM wifi_pointers WHERE
+				ssid LIKE ? AND
+				mac LIKE ? AND
+				radio LIKE ? AND
+				chan LIKE ? AND
+				auth LIKE ? AND
+				encry LIKE ?";
 
         $prep2 = $this->sql->conn->prepare($sql2);
 

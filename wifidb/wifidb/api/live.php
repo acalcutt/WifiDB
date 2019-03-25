@@ -40,8 +40,10 @@ $sig    =   (@$_REQUEST['Sig'] ? $_REQUEST['Sig'] : "0");
 $rssi    =   (@$_REQUEST['RSSI'] ? $_REQUEST['RSSI'] : "-0");
 
 // GPS Variables
-$lat    =   str_replace("0000.0000","0.0000",(@$_REQUEST['Lat'] ? html_entity_decode($_REQUEST['Lat'], ENT_QUOTES) : "0.0000"));
-$long   =   str_replace("0000.0000","0.0000",(@$_REQUEST['Long'] ? html_entity_decode($_REQUEST['Long'], ENT_QUOTES) : "0.0000"));
+$lat    =   str_replace("0000.0000","0.0000",@$_REQUEST['Lat']);
+$long   =   str_replace("0000.0000","0.0000",@$_REQUEST['Long']);
+$lat    =   ($lat ? $lat : "0.0000");
+$long   =   ($long ? $long : "0.0000");
 $sats   =   (@$_REQUEST['Sats'] ? $_REQUEST['Sats'] : 0 );
 $hdp    =   (@$_REQUEST['HDP'] ? $_REQUEST['HDP'] : 0 );
 $alt    =   (@$_REQUEST['ALT'] ? $_REQUEST['ALT'] : 0 );
@@ -57,12 +59,13 @@ if($session_id === "")
 {
     $dbcore->mesg['message'] = "Session ID is blank :/";
 } 
-echo $session_id;
+//echo $session_id;
 if($ssid == "" && $mac == "000000000000" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "" && $OTX == "" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
-	echo "no data";
-    $dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
-    $dbcore->Output();
+	//echo "no data";
+    //$dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
+    //$dbcore->Output();
+	$dbcore->Output("You have not supplied any data.. you can't be a computer... shoo, go away.");
 }
 $data = array(
     #ap data
