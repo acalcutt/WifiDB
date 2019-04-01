@@ -52,21 +52,21 @@ foreach ($contents as $line)
     switch($load)
     {
         case "admin1":
-            $sql = "INSERT INTO `geonames_admin1` (`admin1`, `name`, `asciiname`, `geonameid`)
+            $sql = "INSERT INTO geonames_admin1 (admin1, name, asciiname, geonameid)
                 VALUES ('{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}')";
             break;
         case "geonames":
-            $sql = "INSERT INTO `geonames` (`geonameid`, `name`, `asciiname`, `alternatenames`, `latitude`, `longitude`,
-    `feature_class`, `feature_code`, `country_code`, `cc2`, `admin1_code`, `admin2_code`, `admin3_code`, `admin4_code`,
-    `population`, `elevation`, `gtopo30`, `timezone`, `mod_date`)
+            $sql = "INSERT INTO geonames (geonameid, name, asciiname, alternatenames, latitude, longitude,
+    feature_class, feature_code, country_code, cc2, admin1_code, admin2_code, admin3_code, admin4_code,
+    population, elevation, gtopo30, timezone, mod_date)
     VALUES ('{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
             break;
         case "admin2":
-            $sql = "INSERT INTO `geonames_admin2` (`admin2`, `name`, `asciiname`, `geonameid`)
+            $sql = "INSERT INTO geonames_admin2 (admin2, name, asciiname, geonameid)
                 VALUES ('{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}')";
             break;
         case "countrynames":
-            $sql = "INSERT INTO `geonames_country_names` (`ISO`, `ISO3`, `ISO-Numeric`, `fips`, `Country`, `Capital`, `Area`, `Population`, `Continent`, `tld`, `CurrencyCode`, `CurrencyName`, `Phone`, `Postal Code Format`, `Postal Code Regex`, `Languages`, `geonamesid`, `neighbors`, `EquivalentFipsCode`)
+            $sql = "INSERT INTO geonames_country_names (ISO, ISO3, ISO-Numeric, fips, Country, Capital, Area, Population, Continent, tld, CurrencyCode, CurrencyName, Phone, Postal Code Format, Postal Code Regex, Languages, geonamesid, neighbors, EquivalentFipsCode)
                 VALUES ('{$row[0]}','{$row[1]}','{$row[2]}','{$row[3]}','{$row[4]}','{$row[5]}','{$row[6]}','{$row[7]}','{$row[8]}','{$row[9]}','{$row[10]}','{$row[11]}','{$row[12]}','{$row[13]}','{$row[14]}','{$row[15]}','{$row[16]}','{$row[17]}','{$row[18]}');";
             break;
     }

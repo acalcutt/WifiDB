@@ -135,7 +135,7 @@ class dbcore
 
 	function GetAPhash($id)
 	{
-		$sql = "SELECT `ap_hash` FROM `wifi_pointers` WHERE `id` = '$id'";
+		$sql = "SELECT ap_hash FROM wifi_pointers WHERE id = '$id'";
 		$result = $this->sql->conn->query($sql);
 		$ret = $result->fetch(2);
 		$hash = $ret['ap_hash'];
@@ -449,7 +449,7 @@ class dbcore
 
 	private function log_sql($message, $type, $prefix, $datetime)
 	{
-		$sql = "INSERT INTO `log` (`message`, `level`, `timestamp`, `prefix`) VALUES (?, ?, ?, ?)";
+		$sql = "INSERT INTO log (message, level, timestamp, prefix) VALUES (?, ?, ?, ?)";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $message, PDO::PARAM_STR);
 		$prep->bindParam(2, $type, PDO::PARAM_STR);
@@ -536,7 +536,7 @@ class dbcore
 		}
 		$mac = strtoupper(substr($mac, 0, 6));
 		
-		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM `manufacturers` WHERE `BSSID` = ?");
+		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
 		$result->execute();
 		$this->sql->checkError(__LINE__, __FILE__);
@@ -659,7 +659,7 @@ class dbcore
 		$filename = $exp_file[0];
 		$tared_file = $filename.".tar";
 		var_dump("tar -zcvf $tared_file $file");
-		$tared = `tar -zcvf $tared_file $file`;
+		$tared = "tar -zcvf $tared_file $file";
 		var_dump($tared);
 		return $tared_file;
 	}

@@ -63,9 +63,9 @@ if($session_id === "")
 if($ssid == "" && $mac == "000000000000" && $radio == "802.11u" && $sectype == 0 && $chan == 0 && $auth == "Open" && $encry == "None" && $BTx == "" && $OTX == "" && $NT == "Unknown" && $sig == "0" && $rssi == "-0")
 {
 	//echo "no data";
-    //$dbcore->mesg[] = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
+    //$dbcore->mesg = array("error"=>"You have not supplied any data.. you can't be a computer... shoo, go away.");
     //$dbcore->Output();
-	$dbcore->Output("You have not supplied any data.. you can't be a computer... shoo, go away.");
+	$dbcore->Output("You have not supplied any data... shoo, go away.");
 }
 $data = array(
     #ap data

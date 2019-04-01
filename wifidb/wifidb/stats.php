@@ -27,9 +27,9 @@ $usersa =  array();
 
 #Get SECTYPE and AP Counts
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `SECTYPE`, count(`AP_ID`) AS `ap_count` FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL GROUP BY `SECTYPE`";}
+	{$sql = "SELECT `SECTYPE`, count(`AP_ID`) AS `ap_count` FROM `wifi_ap` WHERE `fa` IS NOT NULL GROUP BY `SECTYPE`";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT [SECTYPE], count([AP_ID]) AS [ap_count] FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL GROUP BY [SECTYPE]";}
+	{$sql = "SELECT [SECTYPE], count([AP_ID]) AS [ap_count] FROM [wifi_ap] WHERE [fa] IS NOT NULL GROUP BY [SECTYPE]";}
 $result = $dbcore->sql->conn->query($sql);
 $count = null;
 $open = null;
@@ -83,9 +83,9 @@ $user_validgps = $appointer['ValidGPS'];
 
 #Get the latest AP
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `AP_ID`,`SSID`,`HighGps_ID` FROM `wifi_ap` WHERE `FirstHist_ID` IS NOT NULL ORDER BY `AP_ID` DESC LIMIT 1";}
+	{$sql = "SELECT `AP_ID`,`SSID`,`HighGps_ID` FROM `wifi_ap` WHERE `fa` IS NOT NULL ORDER BY `AP_ID` DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 [AP_ID],[SSID],[HighGps_ID] FROM [wifi_ap] WHERE [FirstHist_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
+	{$sql = "SELECT TOP 1 [AP_ID],[SSID],[HighGps_ID] FROM [wifi_ap] WHERE [fa] IS NOT NULL ORDER BY [AP_ID] DESC";}
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 

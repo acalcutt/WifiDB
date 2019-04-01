@@ -25,7 +25,7 @@ while($ap = $result->fetch(1))
 	if($dbcore->sql->service == "mysql")
 		{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID` ASC LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
-		{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID` ASC LIMIT 1";}
+		{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID] ASC";}
 	$resgps = $dbcore->sql->conn->prepare($sqlhp);
 	$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 	$resgps->execute();

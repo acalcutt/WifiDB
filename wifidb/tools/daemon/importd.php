@@ -170,14 +170,14 @@ if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
 }
 else
 {
-	trigger_error("Starting Import on Proc: ".$dbcore->thread_id, E_USER_NOTICE);
+	$dbcore->verbosed("Starting Import on Proc: ".$dbcore->thread_id);
+	#Job Settings
+	$job = $prepgj->fetch(2);
+	$dbcore->job_interval = $job['interval'];
+	$job_id = $job['id'];	
+	
 	if(!$dbcore->ForceDaemonRun)
 	{
-		#Job Settings
-		$job = $prepgj->fetch(2);
-		$dbcore->job_interval = $job['interval'];
-		$job_id = $job['id'];
-
 		#Set Job to Running
 		$dbcore->SetStartJob($job_id);
 	}
@@ -185,7 +185,7 @@ else
 	While(1)
 	{
 		# Safely kill script if Daemon kill flag has been set
-		if($dbcore->checkDaemonKill())
+		if($dbcore->checkDaemonKill($job_id))
 		{
 			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
 			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
@@ -193,7 +193,7 @@ else
 			echo "Daemon was told to kill itself\n";
 			exit(-7);
 		}
-		trigger_error("Attempting to get the next Import ID.", E_USER_NOTICE);
+		$dbcore->verbosed("Attempting to get the next Import ID.");
 		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
 		{
 			$NextID = $dbcore->ImportID;
@@ -258,7 +258,7 @@ else
 					case 0:
 						continue;
 					case 1:
-						trigger_error("Import function inside the daemon Completed With A Return Of : 1", E_USER_NOTICE);
+						$dbcore->verbosed("Import function inside the daemon Completed With A Return Of : 1");
 				}
 			}
 		}

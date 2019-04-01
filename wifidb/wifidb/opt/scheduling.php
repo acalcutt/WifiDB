@@ -664,13 +664,13 @@ switch($func)
 			{
 				$sql = "SELECT id, file_orig, user, notes, title, date, aps, gps, ValidGPS, size, NewAPPercent, hash \n"
 					. "FROM files \n"
-					. "WHERE completed = 1 ORDER BY date DESC";
+					. "WHERE completed = 1 ORDER BY id DESC";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [id], [file_orig], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
 					. "FROM [files] \n"
-					. "WHERE [completed] = 1 ORDER BY [date] DESC";
+					. "WHERE [completed] = 1 ORDER BY [id] DESC";
 			}
         $result = $dbcore->sql->conn->query($sql);
         $class_f = 0;
