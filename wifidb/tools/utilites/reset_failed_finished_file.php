@@ -39,6 +39,7 @@ if($File_ID)
 			{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID != ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? And [File_ID] != ?";}
+		echo "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = $AP_ID And [File_ID] != $File_ID\r\n";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 		$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -53,6 +54,7 @@ if($File_ID)
 				{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+			echo "UPDATE [wifi_ap] SET [File_ID] = $New_File_ID WHERE [AP_ID] = $AP_ID\r\n";
 			$prep = $dbcore->sql->conn->prepare($sqlu);
 			$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 			$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
