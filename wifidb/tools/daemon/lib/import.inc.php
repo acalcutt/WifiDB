@@ -1553,6 +1553,10 @@ class import extends dbcore
 					if($gps_line[0] == 0){$increment_ids = 1;}
 					if($increment_ids){$gps_line[0]++;}
 					
+					#Fix for bad track angle in old file
+					$trackangle = $gps_line[9];
+					if(!is_numeric($trackangle) || $trackangle > 360){$trackangle = 0;}
+					
 					#fix incorect formatted date/time/gps from phils old conversions
 					if (strpos($gps_line[11], '-') !== false) {
 						$gps_date = $gps_line[11];
@@ -1583,7 +1587,7 @@ class import extends dbcore
 								'geo'	=>  (float) $gps_line[6],
 								'kmh'	=>  (float) $gps_line[7],
 								'mph'	=>  (float) $gps_line[8],
-								'track'	=>  (float) $gps_line[9],
+								'track'	=>  (float) $trackangle,
 								'datetime'	=>  $datetime
 							);
 					break;
@@ -1597,8 +1601,8 @@ class import extends dbcore
 						$this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.", -1);
 						break;
 					}
-
-					$highestSignal = $this->FindHighestSig($ap_line[12]);
+					$CleanedSignal = preg_replace("/[^0-9,-]/", "", $ap_line[12]); #Fix for old file with % in signal.
+					$highestSignal = $this->FindHighestSig($CleanedSignal);
 					if($highestSignal == ""){$highestSignal = 0;}
 					$highestRSSI = $this->convert->Sig2dBm($highestSignal);
 					$apdata[] = array(
@@ -1617,7 +1621,7 @@ class import extends dbcore
 								'HighSig'   =>  $highestSignal,
 								'HighRSSI'  =>  $highestRSSI,
 								'label'	 =>  $ap_line[11],
-								'signals'   =>  $ap_line[12]
+								'signals'   =>  $CleanedSignal
 							);
 					$this->rssi_signals_flag = 0;
 					break;
@@ -1910,6 +1914,7 @@ class import extends dbcore
 							{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
 						else if($this->sql->service == "sqlsrv")
 							{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [BTX], [OTX], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
+						#echo "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [BTX], [OTX], [ap_hash], [File_ID]) VALUES ('".$aps['mac']."','".$aps['ssid']."',".$aps['chan'].",'".$aps['auth']."','".$aps['encry']."',".$aps['sectype'].",'".$aps['radio']."','".$aps['nt']."','".$aps['btx']."','".$aps['otx']."',".$ap_hash.",".$file_id.")";
 						$prep = $this->sql->conn->prepare($sql);
 						$prep->bindParam(1, $aps['mac'], PDO::PARAM_STR);
 						$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
