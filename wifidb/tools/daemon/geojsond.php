@@ -23,7 +23,8 @@ if(!file_exists($dbcore->pid_file_loc))
 {
 	mkdir($dbcore->pid_file_loc);
 }
-$dbcore->pid_file = $dbcore->pid_file_loc.'geojsond_'.$dbcore->This_is_me.'.pid';
+$pid_filename = 'geojsond_'.$dbcore->This_is_me.'_'.date("YmdHis").'.pid';
+$dbcore->pid_file = $dbcore->pid_file_loc.$pid_filename;
 
 if(!file_exists($dbcore->pid_file_loc))
 {

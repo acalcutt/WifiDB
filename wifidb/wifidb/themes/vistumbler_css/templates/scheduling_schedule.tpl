@@ -38,7 +38,7 @@ if not, write to the
 							</td>
 						</tr>
 						<tr>
-							<td  class="header" colspan="1">Local Time Zone</td>
+							<td  class="header" colspan="1">Time Zone</td>
 							<td class="light" colspan="1">
 								<form action="scheduling.php?func=timezone" method="post" enctype="multipart/form-data">
 									<SELECT NAME="timezone">  
@@ -49,6 +49,10 @@ if not, write to the
 								</form>
 							</td>
 						</tr>
+						<tr>
+							<td  class="header" colspan="1">Local Time</td>
+							<td class="light" colspan="1">{$curtime_local}</td>
+						</tr>
 					</table>
 					<br />
 					<table class="content_table">
@@ -56,20 +60,22 @@ if not, write to the
 							<th colspan="7">Daemon Schedule</th>
 						</tr>
 						<tr class="header-centered">
+							<th class="header-centered">ID</th>
 							<th class="header-centered">NODE</th>
 							<th class="header-centered">DAEMON</th>
 							<th class="header-centered">INTERVAL</th>
 							<th class="header-centered">STATUS</th>
-							<th class="header-centered">NEXT RUN(UTC)</th>
-							<th class="header-centered">NEXT RUN(Local)</th>
+							<th class="header-centered">PID</th>
+							<th class="header-centered">NEXT RUN</th>
 						</tr>
 						{foreach item=wifidb_schedule from=$wifidb_schedules}
 						<tr class="{$wifidb_schedule.color}">
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval} minutes</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.status}</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nextrun_utc}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.schedpid}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nextrun_local}</td>
 						</tr>
 						{foreachelse}
@@ -102,7 +108,7 @@ if not, write to the
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidtime}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidmem}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcmd}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.date} (UTC)</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.lastupdatetime_local}</td>
 						</tr>
 						{foreachelse}
 						<tr align="center">

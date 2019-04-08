@@ -117,7 +117,8 @@ if(!file_exists($dbcore->pid_file_loc))
 {
 	mkdir($dbcore->pid_file_loc);
 }
-$dbcore->pid_file = $dbcore->pid_file_loc.'importd_'.$dbcore->This_is_me.'.pid';
+$pid_filename = 'importd_'.$dbcore->This_is_me.'_'.date("YmdHis").'.pid';
+$dbcore->pid_file = $dbcore->pid_file_loc.$pid_filename;
 
 if(!file_exists($dbcore->pid_file_loc))
 {
@@ -145,142 +146,154 @@ PID File: [ $dbcore->pid_file ]
 PID: [ $dbcore->This_is_me ]
  Log Level is: ".$dbcore->log_level."\n";
 
-$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
-
-#Checking for Import Jobs
-$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
-
-if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `id`, `interval` FROM `schedule` WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
-else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 [id], [interval] FROM [schedule] WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
-$prepgj = $dbcore->sql->conn->prepare($sql);
-$prepgj->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
-$prepgj->bindParam(2, $dbcore->daemon_name, PDO::PARAM_STR);
-$prepgj->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-$prepgj->bindParam(4, $currentrun, PDO::PARAM_STR);
-$prepgj->execute();
-$dbcore->sql->checkError(__LINE__, __FILE__);
-
-if($prepgj->rowCount() === 0 && !$dbcore->ForceDaemonRun)
+$job_id = 0;
+$dbcore->job_interval = 15;
+if(!$dbcore->ForceDaemonRun)
 {
-	$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
-	unlink($dbcore->pid_file);
-	exit(-6);
-}
-else
-{
-	$dbcore->verbosed("Starting Import on Proc: ".$dbcore->thread_id);
-	#Job Settings
-	$job = $prepgj->fetch(2);
-	$dbcore->job_interval = $job['interval'];
-	$job_id = $job['id'];	
+	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 	
-	if(!$dbcore->ForceDaemonRun)
+	#Checking for Import Jobs
+	$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
+
+	#Claim a import schedule ID
+	if($dbcore->sql->service == "mysql")
+		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ? , `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
+	else if($dbcore->sql->service == "sqlsrv")
+		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
+	$prepus = $dbcore->sql->conn->prepare($sql);
+	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
+	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
+	$prepus->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
+	$prepus->bindParam(4, $dbcore->node_name, PDO::PARAM_STR);
+	$prepus->bindParam(5, $dbcore->daemon_name, PDO::PARAM_STR);
+	$prepus->bindParam(6, $dbcore->StatusRunning, PDO::PARAM_STR);
+	$prepus->bindParam(7, $currentrun, PDO::PARAM_STR);
+	$prepus->execute();
+
+	#Start importing claimed schedule ID, if one exists
+	$sql = "SELECT id, interval FROM schedule WHERE pid = ? And pidfile = ?";
+	$prepgj = $dbcore->sql->conn->prepare($sql);
+	$prepgj->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
+	$prepgj->bindParam(2, $pid_filename, PDO::PARAM_STR);
+	$prepgj->execute();
+	
+	if($prepgj->rowCount() === 0)
 	{
-		#Set Job to Running
-		$dbcore->SetStartJob($job_id);
+		$dbcore->verbosed("There are no jobs that need to be run... I'll go back to waiting...");
+		unlink($dbcore->pid_file);
+		exit(-6);
 	}
+	
+	$job = $prepgj->fetch(2);
+	$job_id = $job['id'];	
+	$dbcore->job_interval = $job['interval'];
+	$dbcore->verbosed("Job ID: $job_id , Interval:".$dbcore->job_interval);
+}
 
-	While(1)
+$dbcore->verbosed("Starting Import on Proc: ".$dbcore->thread_id);
+if(!$dbcore->ForceDaemonRun)
+{
+	#Set Job to Running
+	$dbcore->SetStartJob($job_id);
+}
+
+While(1)
+{
+	# Safely kill script if Daemon kill flag has been set
+	if($dbcore->checkDaemonKill($job_id))
 	{
-		# Safely kill script if Daemon kill flag has been set
-		if($dbcore->checkDaemonKill($job_id))
-		{
-			$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
-			if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
-			unlink($dbcore->pid_file);
-			echo "Daemon was told to kill itself\n";
-			exit(-7);
-		}
-		$dbcore->verbosed("Attempting to get the next Import ID.");
-		if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
-		{
-			$NextID = $dbcore->ImportID;
+		$dbcore->verbosed("The flag to kill the daemon is set. unset it to run this daemon.");
+		if(!$dbcore->ForceDaemonRun){$dbcore->SetNextJob($job_id);}
+		unlink($dbcore->pid_file);
+		echo "Daemon was told to kill itself\n";
+		exit(-7);
+	}
+	$dbcore->verbosed("Attempting to get the next Import ID.");
+	if( $dbcore->ImportID > 0 AND ( !$dbcore->daemonize AND !$dbcore->RunOnceThrough ) )
+	{
+		$NextID = $dbcore->ImportID;
 
-		}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
-			$NextID = $dbcore->GetNextImportID();
-		}
-		//var_dump($NextID);
+	}elseif($dbcore->daemonize OR $dbcore->RunOnceThrough) {
+		$NextID = $dbcore->GetNextImportID();
+	}
+	//var_dump($NextID);
 
-		if($dbcore->sql->service == "mysql")
-			{$daemon_sql = "SELECT `id`, `file`, `file_orig`, `user`, `otherusers`, `notes`, `title`, `date`, `size`, `hash`, `type`, `tmp_id` FROM `files_importing` WHERE `id` = ?";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$daemon_sql = "SELECT [id], [file], [file_orig], [user], [otherusers], [notes], [title], [date], [size], [hash], [type], [tmp_id] FROM [files_importing] WHERE [id] = ?";}
-		$result = $dbcore->sql->conn->prepare($daemon_sql);
-		$result->bindParam(1, $NextID, PDO::PARAM_INT);
-		$result->execute();
-		if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
-			$dbcore->verbosed("There was an error getting an import file");
-			$dbcore->return_message = -8;
-			break;
-		}
-		//var_dump($result->rowCount());
-		//var_dump($dbcore->RunOnceThrough);
-		if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
+	if($dbcore->sql->service == "mysql")
+		{$daemon_sql = "SELECT `id`, `file`, `file_orig`, `user`, `otherusers`, `notes`, `title`, `date`, `size`, `hash`, `type`, `tmp_id` FROM `files_importing` WHERE `id` = ?";}
+	else if($dbcore->sql->service == "sqlsrv")
+		{$daemon_sql = "SELECT [id], [file], [file_orig], [user], [otherusers], [notes], [title], [date], [size], [hash], [type], [tmp_id] FROM [files_importing] WHERE [id] = ?";}
+	$result = $dbcore->sql->conn->prepare($daemon_sql);
+	$result->bindParam(1, $NextID, PDO::PARAM_INT);
+	$result->execute();
+	if ($dbcore->sql->checkError(__LINE__, __FILE__)) {
+		$dbcore->verbosed("There was an error getting an import file");
+		$dbcore->return_message = -8;
+		break;
+	}
+	//var_dump($result->rowCount());
+	//var_dump($dbcore->RunOnceThrough);
+	if( ( ( $result->rowCount() === 0 ) AND $dbcore->RunOnceThrough))
+	{
+		$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
+		$dbcore->return_message = -9;
+		break;
+	}
+	else
+	{
+		if($dbcore->NodeSyncing)
 		{
-			$dbcore->verbosed("There are no imports waiting, go import something and funny stuff will happen.");
-			$dbcore->return_message = -9;
-			break;
+			##### make sure import/export files are in sync with remote nodes
+			#$dbcore->verbosed("Synchronizing files between nodes...", 1);
+			#$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
+			#exec($cmd);
+			#####
 		}
-		else
+
+		$file_to_Import = $result->fetch(2);
+		if(!@$file_to_Import['id'])
 		{
-			if($dbcore->NodeSyncing)
+			$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
+			if( !$dbcore->daemonize )
 			{
-				##### make sure import/export files are in sync with remote nodes
-				#$dbcore->verbosed("Synchronizing files between nodes...", 1);
-				#$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
-				#exec($cmd);
-				#####
+				$dbcore->return_message = -10;
+				break;
 			}
+		}else
+		{
+			$ImportProcessReturn = $dbcore->ImportProcess($file_to_Import);
+			#$ImportProcessReturn = 1;
+			$dbcore->return_message = (int)$file_to_Import['id'];
 
-			$file_to_Import = $result->fetch(2);
-			if(!@$file_to_Import['id'])
+			switch($ImportProcessReturn)
 			{
-				$dbcore->verbosed("Error fetching data.... Skipping row for admin to check into it.");
-				if( !$dbcore->daemonize )
-				{
-					$dbcore->return_message = -10;
+				#Error converting file for single run through, break loop.
+				case -1:
 					break;
-				}
-			}else
-			{
-				$ImportProcessReturn = $dbcore->ImportProcess($file_to_Import);
-				#$ImportProcessReturn = 1;
-				$dbcore->return_message = (int)$file_to_Import['id'];
-
-				switch($ImportProcessReturn)
-				{
-					#Error converting file for single run through, break loop.
-					case -1:
-						break;
-					#Error Converting file for daemon, continue run.
-					case 0:
-						continue;
-					case 1:
-						$dbcore->verbosed("Import function inside the daemon Completed With A Return Of : 1");
-				}
+				#Error Converting file for daemon, continue run.
+				case 0:
+					continue;
+				case 1:
+					$dbcore->verbosed("Import function inside the daemon Completed With A Return Of : 1");
 			}
 		}
-		if($dbcore->ImportID !== 0)
-		{
-			break;
-		}
-		if($dbcore->daemonize)
-		{
-			$dbcore->verbosed("We have been told to become a daemon, will sleep for the defined time period of $dbcore->DaemonSleepTime seconds.", 1);
-			sleep($dbcore->DaemonSleepTime);
-		}
 	}
-	if(!$dbcore->ForceDaemonRun)
+	if($dbcore->ImportID !== 0)
 	{
-		#Finished Job
-		$dbcore->verbosed("Finished - Id:".$job_id, 1);
-		#Set Next Run Job to Waiting
-		$dbcore->SetNextJob($job_id);
-		$dbcore->verbosed("Next Job Schedule Set for: ".$dbcore->daemon_name , 1);
+		break;
 	}
+	if($dbcore->daemonize)
+	{
+		$dbcore->verbosed("We have been told to become a daemon, will sleep for the defined time period of $dbcore->DaemonSleepTime seconds.", 1);
+		sleep($dbcore->DaemonSleepTime);
+	}
+}
+if(!$dbcore->ForceDaemonRun)
+{
+	#Finished Job
+	$dbcore->verbosed("Finished - Id:".$job_id, 1);
+	#Set Next Run Job to Waiting
+	$dbcore->SetNextJob($job_id);
+	$dbcore->verbosed("Next Job Schedule Set for: ".$dbcore->daemon_name , 1);
 }
 unlink($dbcore->pid_file);
-
 exit($dbcore->return_message);

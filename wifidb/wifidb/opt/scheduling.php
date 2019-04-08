@@ -511,7 +511,15 @@ switch($func)
         {
             $dst_opt = "";
         }
+		
+		$timezonediff = $TZone+$dst;
+		$alter_by = (($timezonediff*60)*60);
 
+		$curtime = time();
+		$altered = $curtime+$alter_by;
+		$curtime_local = date("Y-m-d h:i:s A", $altered);
+		$curtime_utc = date('Y-m-d h:i:s A', $curtime);
+		
         $refresh_opt = "";
         $val = 15;
         $max = 30720;
@@ -541,42 +549,59 @@ switch($func)
 
         $schedule_row = array();
         $n=0;
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM schedule ORDER BY nodename ASC";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [schedule] ORDER BY [nodename] ASC";}
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.interval, schedule.status, schedule.nextrun, schedule.pidfile, schedule.pid AS schedpid,\n"
+			. "daemon_pid_stats.pid, daemon_pid_stats.pidtime, daemon_pid_stats.pidmem, daemon_pid_stats.pidcmd, daemon_pid_stats.date AS pidud\n"
+			. "FROM schedule\n"
+			. "LEFT OUTER JOIN daemon_pid_stats ON daemon_pid_stats.pidfile = schedule.pidfile\n"
+			. "ORDER BY schedule.id ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
-
-            $nextrun_utc = strtotime($newArray['nextrun']);
+            $nextrun = strtotime($newArray['nextrun']);
+			$altered = $nextrun+$alter_by;
+			$nextrun_local = date("Y-m-d h:i:s A", $altered);
+			$nextrun_utc = date('Y-m-d h:i:s A', $nextrun);
             $curtime = time();
             $min_diff = round(($nextrun_utc - $curtime) / 60);
             $interval = (int)$newArray['interval'];
             $status = $newArray['status'];
             $enabled = $newArray['enabled'];
+			$schedpid = '';
+			
 
-            if($enabled==0 or $status=="Error")
+			if($status=="Running")
+			{
+				$nextrun = strtotime("+$interval minutes");
+				$altered = $nextrun+$alter_by;
+				$nextrun_local = date("Y-m-d h:i:s A", $altered);
+				$nextrun_utc = date('Y-m-d h:i:s A', $nextrun);
+				$schedpid = $newArray['schedpid'];
+				$pid = $newArray['pid'];
+				if($schedpid == $pid)
+				{
+					$lastupdatetime = strtotime($newArray['pidud']);
+					if(($curtime-$lastupdatetime) < 60) 
+						{$color = 'lime';}
+					else
+						{$color = 'orange';}
+				}
+				else
+				{
+					$color = 'orange';
+				}
+			}
+            else if($status=="Error" or $enabled==0)
             {
                 $color = 'red';
-            }
-            else
+            }			
+			else if($min_diff <= $interval and $min_diff >= 0)
             {
-                if(($min_diff <= $interval and $min_diff >= 0) or $status=="Running")
-                {
-                    $color = 'lime';
-                }
-                else
-                {
-                    $color = 'yellow';
-                }
-            }
-
-        #convert to local time
-        $timezonediff = $TZone+$dst;
-        $alter_by = (($timezonediff*60)*60);
-        $altered = $nextrun_utc+$alter_by;
-        $nextrun_local = date("Y-m-d H:i:s", $altered);
+				$color = 'lightgreen';
+			}
+			else
+			{
+				$color = 'yellow';
+			}
 
             $schedule_row[$n]['color'] = $color;
             $schedule_row[$n]['id'] = $newArray['id'];
@@ -585,8 +610,9 @@ switch($func)
             $schedule_row[$n]['enabled'] = $newArray['enabled'];
             $schedule_row[$n]['interval'] = $newArray['interval'];
             $schedule_row[$n]['status'] = $newArray['status'];
-            $schedule_row[$n]['nextrun_utc'] = $newArray['nextrun'];
+            $schedule_row[$n]['nextrun_utc'] = $nextrun_utc;
             $schedule_row[$n]['nextrun_local'] = $nextrun_local;
+			$schedule_row[$n]['schedpid'] = $schedpid;
 
             $n++;
         }
@@ -602,6 +628,9 @@ switch($func)
         {
 
             $lastupdatetime = strtotime($newArray['date']);
+			$altered = $lastupdatetime+$alter_by;
+			$lastupdatetime_local = date("Y-m-d h:i:s A", $altered);
+			$lastupdatetime_utc = date('Y-m-d h:i:s A', $lastupdatetime);
             $curtime = time();
 
             if($newArray['pid'] == 0)
@@ -624,7 +653,8 @@ switch($func)
             $pid_row[$n]['pidtime'] = $newArray['pidtime'];
             $pid_row[$n]['pidmem'] = $newArray['pidmem'];
             $pid_row[$n]['pidcmd'] = $newArray['pidcmd'];
-            $pid_row[$n]['date'] = $newArray['date'];
+			$pid_row[$n]['lastupdatetime_utc'] = $lastupdatetime_utc;
+			$pid_row[$n]['lastupdatetime_local'] = $lastupdatetime_local;
 
             $n++;
         }
@@ -653,6 +683,8 @@ switch($func)
         $dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
         $dbcore->smarty->assign('wifidb_schedules', $schedule_row);
         $dbcore->smarty->assign('wifidb_daemons', $pid_row);
+		$dbcore->smarty->assign('curtime_local', $curtime_local);
+		$dbcore->smarty->assign('curtime_utc', $curtime_utc);
 		$dbcore->smarty->assign('complete_count', $complete_count);
 		$dbcore->smarty->assign('importing_count', $importing_count);
 		$dbcore->smarty->assign('waiting_count', $waiting_count);

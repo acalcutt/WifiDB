@@ -57,7 +57,7 @@ class daemon extends wdbcli
 	/**
 	 * @return int
 	 */
-	public function CheckDaemonKill($sched_id)
+	public function CheckDaemonKill($sched_id = 0)
 	{
 		#Check if daemon kill flag has been set
 		if($this->sql->service == "mysql")

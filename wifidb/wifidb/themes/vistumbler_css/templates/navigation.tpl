@@ -15,12 +15,13 @@ You should have received a copy of the GNU General Public License along with thi
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">Export KMZ</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
-				<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support</a></div>
-				<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></div>
 				<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers">Users</a></div>
+				<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
+				<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support Forum</a></div>
 				<div class="inside_dark_header">Vistumbler Links</div>
 				<div class="inside_text_bold"><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></div>
 				<div class="inside_text_bold"><a href="https://forum.techidiots.net/forum/">Forum</a></div>

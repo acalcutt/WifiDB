@@ -23,7 +23,7 @@ if [ $daemonstate -ge 1 ]; then
 		  echo "executing processes $c"
 		  timestamp=$(date +%s)
 		  php ../daemon/importd.php -o -v > ../log/import/importd_${timestamp}.log &
-		  sleep 5s
+		  sleep 1s
 	  done
 	fi
 fi
