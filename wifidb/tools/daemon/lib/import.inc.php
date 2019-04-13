@@ -254,41 +254,6 @@ class import extends dbcore
 				}
 			}
 		}
-		
-		#Update First ID and Last ID (I plan to remove this and some point, since fa and la and now in the ap table)
-		/*
-		$sql = "SELECT Hist_ID AS fa_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date ASC, Hist_ID ASC LIMIT 1";
-		
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT Hist_ID AS fa_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date ASC, Hist_ID ASC LIMIT 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 Hist_ID AS fa_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date ASC, Hist_ID ASC";}
-		$fp = $this->sql->conn->prepare($sql);
-		$fp->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$fp->execute();
-		$fetchf = $fp->fetch(2);
-		$fa_id = $fetchf['fa_id'];
-		
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT Hist_ID AS la_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date DESC, Hist_ID DESC LIMIT 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 Hist_ID AS la_id FROM wifi_hist WHERE AP_ID = ? And Hist_date IS NOT NULL ORDER BY Hist_Date DESC, Hist_ID DESC";}
-		$lp = $this->sql->conn->prepare($sql);
-		$lp->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$lp->execute();
-		$fetchl = $lp->fetch(2);
-		$la_id = $fetchl['la_id'];
-
-		if($fa_id || $la_id)
-		{
-			$sql = "UPDATE wifi_ap SET 	FirstHist_ID = ? , LastHist_ID = ? WHERE AP_ID = ?";
-			$uflidp = $this->sql->conn->prepare($sql);
-			$uflidp->bindParam(1, $fa_id, PDO::PARAM_INT);
-			$uflidp->bindParam(2, $la_id, PDO::PARAM_INT);
-			$uflidp->bindParam(3, $ap_id, PDO::PARAM_INT);
-			$uflidp->execute();
-		}
-		*/
 
 		$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
@@ -316,27 +281,55 @@ class import extends dbcore
 			}
 		}
 		
+		#Update First Active, Last Active, High RSSI, High Signal and point count
+		$retry = true;
+		while ($retry)
+		{
+			try {
+				$sql = "SELECT Min(hist_date) AS fa, Max(hist_date) AS la, Max(rssi) AS high_rssi, Count(hist_date) AS points FROM cell_hist WHERE cell_id = ? GROUP BY cell_id";
+				$hpp = $this->sql->conn->prepare($sql);
+				$hpp->bindParam(1, $cell_id, PDO::PARAM_INT);
+				$hpp->execute();
+				$retry = false;
+			}
+			catch (Exception $e) {
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+			}
+		}
+		$fetchhp = $hpp->fetch(2);
+		if($fetchhp['fa'] || $fetchhp['la'] || $fetchhp['high_rssi'] || $fetchhp['points'])
+		{
+			$retry = true;
+			while ($retry)
+			{
+				try {
+					$sql = "UPDATE cell_id SET fa = ? , la = ? , high_rssi = ? , points = ? WHERE cell_id = ?";
+					$uhpp = $this->sql->conn->prepare($sql);
+					$uhpp->bindParam(1, $fetchhp['fa'], PDO::PARAM_STR);
+					$uhpp->bindParam(2, $fetchhp['la'], PDO::PARAM_STR);
+					$uhpp->bindParam(3, $fetchhp['high_rssi'], PDO::PARAM_INT);
+					$uhpp->bindParam(4, $fetchhp['points'], PDO::PARAM_INT);
+					$uhpp->bindParam(5, $cell_id, PDO::PARAM_INT);
+					$uhpp->execute();
+					$retry = false;
+				}
+				catch (Exception $e) {
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				}
+			}
+		}
+		
 		$retry = true;
 		while ($retry)
 		{
 			try {
 				if($this->sql->service == "mysql")
 				{
-					$sql = "SELECT\n"
-						. "(SELECT cell_hist_id FROM cell_hist WHERE cell_id = cid.cell_id And hist_date IS NOT NULL ORDER BY hist_date ASC, cell_hist_id ASC LIMIT 1) As fa_id,\n"
-						. "(SELECT cell_hist_id FROM cell_hist WHERE cell_id = cid.cell_id And hist_date IS NOT NULL ORDER BY hist_date DESC, cell_hist_id ASC LIMIT 1) As la_id,\n"
-						. "(SELECT cell_hist_id FROM cell_hist WHERE cell_id = cid.cell_id And lat IS NOT NULL ORDER BY rssi DESC, hist_date DESC, hist_date DESC, accuracy ASC LIMIT 1) As highgps_id\n"
-						. "FROM cell_id As cid\n"
-						. "WHERE cid.cell_id = ?";
+					$sql = "SELECT cell_hist_id FROM cell_hist WHERE cell_id = ? And lat IS NOT NULL ORDER BY rssi DESC, hist_date DESC, accuracy ASC LIMIT 1";
 				}
 				else if($this->sql->service == "sqlsrv")
 				{
-					$sql = "SELECT \n"
-						. "(SELECT TOP 1 [cell_hist_id] FROM [cell_hist] WHERE [cell_id] = [cid].[cell_id] And [hist_date] IS NOT NULL ORDER BY [hist_date] ASC, [cell_hist_id] ASC) As [fa_id],\n"
-						. "(SELECT TOP 1 [cell_hist_id] FROM [cell_hist] WHERE [cell_id] = [cid].[cell_id] And [hist_date] IS NOT NULL ORDER BY [hist_date] DESC, [cell_hist_id] ASC) As [la_id],\n"
-						. "(SELECT TOP 1 [cell_hist_id] FROM [cell_hist] WHERE [cell_id] = [cid].[cell_id] And [lat] IS NOT NULL ORDER BY [rssi] DESC, [hist_date] DESC, [hist_date] DESC, [accuracy] ASC) As [highgps_id]\n"				
-						. "FROM [cell_id] As [cid]\n"
-						. "WHERE [cid].[cell_id] = ?";
+					$sql = "SELECT TOP 1 [cell_hist_id] FROM [cell_hist] WHERE [cell_id] = ? And [lat] IS NOT NULL ORDER BY [rssi] DESC, [hist_date] DESC, [accuracy] ASC";
 				}
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
@@ -348,49 +341,26 @@ class import extends dbcore
 			}
 		}
 		$fetchgps = $resgps->fetch(2);
-		$fa_id = $fetchgps['fa_id'];
-		$la_id = $fetchgps['la_id'];
-		$highgps_id = $fetchgps['highgps_id'];
-
-		#Update AP IDs
-		$retry = true;
-		while ($retry)
+		if($fetchgps['cell_hist_id'])
 		{
-			try {
-				if($this->sql->service == "mysql")
-					{$sql = "UPDATE cell_id SET fa_id = ? , la_id = ? , highgps_id = ? WHERE cell_id = ?";}
-				else if($this->sql->service == "sqlsrv")
-					{$sql = "UPDATE [cell_id] SET [fa_id] = ? , [la_id] = ? , [highgps_id] = ? WHERE [cell_id] = ?";}
-				$prep = $this->sql->conn->prepare($sql);
-				$prep->bindParam(1, $fa_id, PDO::PARAM_INT);
-				$prep->bindParam(2, $la_id, PDO::PARAM_INT);
-				$prep->bindParam(3, $highgps_id, PDO::PARAM_INT);
-				$prep->bindParam(4, $cell_id, PDO::PARAM_INT);
-				$prep->execute();
-				$retry = false;
-			}
-			catch (Exception $e) {
-				$retry = $this->sql->isPDOException($this->sql->conn, $e);
-			}
-		}
-
-		$retry = true;
-		while ($retry)
-		{
-			try {
-				$text = "";
-				if($this->sql->service == "mysql")
-					{$sql = "UPDATE files_importing SET tot = ? WHERE id = ?";}
-				else if($this->sql->service == "sqlsrv")
-					{$sql = "UPDATE [files_importing] SET [tot] = ? WHERE [id] = ?";}
-				$prep = $this->sql->conn->prepare($sql);
-				$prep->bindParam(1, $text, PDO::PARAM_STR);
-				$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-				$prep->execute();
-				$retry = false;
-			}
-			catch (Exception $e) {
-				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+			#Update cell ids
+			$retry = true;
+			while ($retry)
+			{
+				try {
+					if($this->sql->service == "mysql")
+						{$sql = "UPDATE cell_id SET highgps_id = ? WHERE cell_id = ?";}
+					else if($this->sql->service == "sqlsrv")
+						{$sql = "UPDATE [cell_id] SET [highgps_id] = ? WHERE [cell_id] = ?";}
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(1, $fetchgps['cell_hist_id'], PDO::PARAM_INT);
+					$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
+					$prep->execute();
+					$retry = false;
+				}
+				catch (Exception $e) {
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				}
 			}
 		}
 
@@ -935,6 +905,7 @@ class import extends dbcore
 					}
 				}
 				
+				echo "$fBSSID $fSSID $fAuthMode $fchannel $fType\r\n";
 				if($fType == "WIFI")
 				{
 					if(!$this->validateMacAddress($fBSSID)){continue;}
@@ -979,8 +950,7 @@ class import extends dbcore
 					{
 						try {
 							if($this->sql->service == "mysql")
-							if($this->sql->service == "mysql")
-								{$sql = "SELECT AP_ID, FLAGS FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
+								{$sql = "SELECT `AP_ID`, `FLAGS` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";}
 							else if($this->sql->service == "sqlsrv")
 								{$sql = "SELECT TOP 1 [AP_ID], [FLAGS] FROM [wifi_ap] WHERE [ap_hash] = ?";}
 							$res = $this->sql->conn->prepare($sql);
@@ -1100,7 +1070,7 @@ class import extends dbcore
 				}
 				else
 				{
-					echo $fBSSID.' '.$fSSID.' '.$fAuthMode.' '.$fchannel.' '.$fType;
+					
 					$cell_hash = md5($fBSSID.$fSSID.$fAuthMode.$fchannel.$fType);
 					$cell_id = 0;
 

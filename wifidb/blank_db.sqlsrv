@@ -1,6 +1,6 @@
 USE [prod_wifi]
 GO
-/****** Object:  Table [dbo].[annunc]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[annunc]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -23,7 +23,7 @@ CREATE TABLE [dbo].[annunc](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[boundaries]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[boundaries]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -38,7 +38,7 @@ CREATE TABLE [dbo].[boundaries](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[cell_carriers]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[cell_carriers]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -59,7 +59,7 @@ CREATE TABLE [dbo].[cell_carriers](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[cell_hist]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[cell_hist]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -80,7 +80,7 @@ CREATE TABLE [dbo].[cell_hist](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[cell_id]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[cell_id]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -94,8 +94,10 @@ CREATE TABLE [dbo].[cell_id](
 	[chan] [int] NOT NULL,
 	[type] [nvarchar](255) NOT NULL,
 	[highgps_id] [bigint] NULL,
-	[fa_id] [bigint] NULL,
-	[la_id] [bigint] NULL,
+	[high_rssi] [int] NULL,
+	[fa] [datetime2](3) NULL,
+	[la] [datetime2](3) NULL,
+	[points] [bigint] NULL,
 	[cell_hash] [nvarchar](255) NOT NULL,
  CONSTRAINT [PK_cell_id_cell_id] PRIMARY KEY CLUSTERED 
 (
@@ -103,7 +105,7 @@ CREATE TABLE [dbo].[cell_id](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[daemon_pid_stats]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[daemon_pid_stats]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -123,7 +125,7 @@ CREATE TABLE [dbo].[daemon_pid_stats](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[DB_stats]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[DB_stats]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -173,7 +175,7 @@ CREATE TABLE [dbo].[DB_stats](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[files]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -204,7 +206,7 @@ CREATE TABLE [dbo].[files](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files_bad]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[files_bad]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -236,7 +238,7 @@ CREATE TABLE [dbo].[files_bad](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files_importing]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[files_importing]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -269,7 +271,7 @@ CREATE TABLE [dbo].[files_importing](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files_tmp]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[files_tmp]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -298,7 +300,7 @@ CREATE TABLE [dbo].[files_tmp](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[geonames]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -330,7 +332,7 @@ CREATE TABLE [dbo].[geonames](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames_admin1]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[geonames_admin1]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -351,7 +353,7 @@ CREATE TABLE [dbo].[geonames_admin1](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames_admin2]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[geonames_admin2]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -372,7 +374,7 @@ CREATE TABLE [dbo].[geonames_admin2](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames_country_names]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[geonames_country_names]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -400,7 +402,7 @@ CREATE TABLE [dbo].[geonames_country_names](
 	[EquivalentFipsCode] [nvarchar](255) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_aps]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[live_aps]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -432,7 +434,7 @@ CREATE TABLE [dbo].[live_aps](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_gps]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[live_gps]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -457,7 +459,7 @@ CREATE TABLE [dbo].[live_gps](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_signals]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[live_signals]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -471,7 +473,7 @@ CREATE TABLE [dbo].[live_signals](
 	[time_stamp] [datetime2](0) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_titles]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[live_titles]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -484,7 +486,7 @@ CREATE TABLE [dbo].[live_titles](
 	[session_id] [nvarchar](255) NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_users]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[live_users]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -501,7 +503,7 @@ CREATE TABLE [dbo].[live_users](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[log]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[log]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -518,7 +520,7 @@ CREATE TABLE [dbo].[log](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[manufacturers]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[manufacturers]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -538,7 +540,7 @@ CREATE TABLE [dbo].[manufacturers](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[schedule]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[schedule]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -551,13 +553,16 @@ CREATE TABLE [dbo].[schedule](
 	[interval] [int] NOT NULL,
 	[status] [nvarchar](255) NOT NULL,
 	[nextrun] [datetime] NOT NULL,
+	[pid] [int] NULL,
+	[pidfile] [nvarchar](255) NULL,
+	[logfile] [nvarchar](255) NULL,
  CONSTRAINT [PK_schedule_id] PRIMARY KEY CLUSTERED 
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[settings]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[settings]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -575,7 +580,7 @@ CREATE TABLE [dbo].[settings](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[share_waypoints]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[share_waypoints]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -603,7 +608,7 @@ CREATE TABLE [dbo].[share_waypoints](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_imports]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[user_imports]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -628,7 +633,7 @@ CREATE TABLE [dbo].[user_imports](
 	[GPSBOX_WEST] [nvarchar](255) NULL
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_info]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[user_info]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -664,7 +669,7 @@ CREATE TABLE [dbo].[user_info](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_login_hashes]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[user_login_hashes]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -676,7 +681,7 @@ CREATE TABLE [dbo].[user_login_hashes](
 	[utime] [int] NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_stats]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[user_stats]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -691,7 +696,7 @@ CREATE TABLE [dbo].[user_stats](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_validate]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[user_validate]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -707,7 +712,7 @@ CREATE TABLE [dbo].[user_validate](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_waypoints]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[user_waypoints]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -736,7 +741,7 @@ CREATE TABLE [dbo].[user_waypoints](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[wifi_ap]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[wifi_ap]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -755,8 +760,6 @@ CREATE TABLE [dbo].[wifi_ap](
 	[OTX] [varchar](100) NULL,
 	[FLAGS] [varchar](255) NULL,
 	[HighGps_ID] [bigint] NULL,
-	[FirstHist_ID] [bigint] NULL,
-	[LastHist_ID] [bigint] NULL,
 	[File_ID] [bigint] NULL,
 	[high_sig] [int] NULL,
 	[high_rssi] [int] NULL,
@@ -773,7 +776,7 @@ CREATE TABLE [dbo].[wifi_ap](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[wifi_gps]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[wifi_gps]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -799,7 +802,7 @@ CREATE TABLE [dbo].[wifi_gps](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[wifi_hist]    Script Date: 3/17/2019 12:32:39 AM ******/
+/****** Object:  Table [dbo].[wifi_hist]    Script Date: 4/13/2019 11:03:32 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -848,10 +851,6 @@ GO
 ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__file_id__3B0BC30C]  DEFAULT (NULL) FOR [file_id]
 GO
 ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__highgps__3BFFE745]  DEFAULT (NULL) FOR [highgps_id]
-GO
-ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__fa_id__3CF40B7E]  DEFAULT (NULL) FOR [fa_id]
-GO
-ALTER TABLE [dbo].[cell_id] ADD  CONSTRAINT [DF__cell_id__la_id__3DE82FB7]  DEFAULT (NULL) FOR [la_id]
 GO
 ALTER TABLE [dbo].[daemon_pid_stats] ADD  DEFAULT (getdate()) FOR [date]
 GO
