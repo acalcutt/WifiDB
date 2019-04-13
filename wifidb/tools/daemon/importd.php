@@ -112,6 +112,15 @@ if(@$arguments['o'])
 	$dbcore->RunOnceThrough = 0;
 }
 
+if(@$arguments['logfile'])
+{
+	$logfile = $arguments['logfile'];
+}
+else
+{
+	$logfile = "";
+}
+
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
 {
@@ -157,17 +166,18 @@ if(!$dbcore->ForceDaemonRun)
 
 	#Claim a import schedule ID
 	if($dbcore->sql->service == "mysql")
-		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ? , `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
+		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
-		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
+		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
 	$prepus = $dbcore->sql->conn->prepare($sql);
 	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
-	$prepus->bindParam(3, $dbcore->StatusRunning, PDO::PARAM_STR);
-	$prepus->bindParam(4, $dbcore->node_name, PDO::PARAM_STR);
-	$prepus->bindParam(5, $dbcore->daemon_name, PDO::PARAM_STR);
-	$prepus->bindParam(6, $dbcore->StatusRunning, PDO::PARAM_STR);
-	$prepus->bindParam(7, $currentrun, PDO::PARAM_STR);
+	$prepus->bindParam(3, $logfile, PDO::PARAM_STR);
+	$prepus->bindParam(4, $dbcore->StatusRunning, PDO::PARAM_STR);
+	$prepus->bindParam(5, $dbcore->node_name, PDO::PARAM_STR);
+	$prepus->bindParam(6, $dbcore->daemon_name, PDO::PARAM_STR);
+	$prepus->bindParam(7, $dbcore->StatusRunning, PDO::PARAM_STR);
+	$prepus->bindParam(8, $currentrun, PDO::PARAM_STR);
 	$prepus->execute();
 
 	#Start importing claimed schedule ID, if one exists
