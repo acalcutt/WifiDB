@@ -1799,8 +1799,10 @@ CREATE TABLE `cell_id` (
   `chan` int(10) NOT NULL,
   `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `highgps_id` bigint(20) DEFAULT NULL,
-  `fa_id` bigint(20) DEFAULT NULL,
-  `la_id` bigint(20) DEFAULT NULL,
+  `high_rssi` int(11) DEFAULT NULL,
+  `points` bigint(20) DEFAULT NULL,
+  `fa` datetime(3) DEFAULT NULL,
+  `la` datetime(3) DEFAULT NULL,
   `cell_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -2188,7 +2190,10 @@ CREATE TABLE `schedule` (
   `enabled` tinyint(1) NOT NULL,
   `interval` int(11) NOT NULL,
   `status` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00'
+  `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `pid` int(11) DEFAULT NULL,
+  `pidfile` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `logfile` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -2389,8 +2394,6 @@ CREATE TABLE `wifi_ap` (
   `OTX` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `FLAGS` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `HighGps_ID` bigint(20) DEFAULT NULL,
-  `FirstHist_ID` bigint(20) DEFAULT NULL,
-  `LastHist_ID` bigint(20) DEFAULT NULL,
   `File_ID` bigint(20) DEFAULT NULL,
   `high_sig` int(11) DEFAULT NULL,
   `high_rssi` int(11) DEFAULT NULL,
@@ -2681,8 +2684,6 @@ ALTER TABLE `user_waypoints`
 ALTER TABLE `wifi_ap`
   ADD PRIMARY KEY (`AP_ID`),
   ADD KEY `HighGps_ID` (`HighGps_ID`),
-  ADD KEY `FirstHist_ID` (`FirstHist_ID`),
-  ADD KEY `LastHist_ID` (`LastHist_ID`),
   ADD KEY `ap_hash` (`ap_hash`),
   ADD KEY `File_ID` (`File_ID`),
   ADD KEY `BSSID` (`BSSID`),
@@ -2939,9 +2940,7 @@ ALTER TABLE `live_signals`
 --
 ALTER TABLE `wifi_ap`
   ADD CONSTRAINT `wifi_ap_ibfk_1` FOREIGN KEY (`File_ID`) REFERENCES `files` (`id`),
-  ADD CONSTRAINT `wifi_ap_ibfk_2` FOREIGN KEY (`HighGps_ID`) REFERENCES `wifi_gps` (`GPS_ID`),
-  ADD CONSTRAINT `wifi_ap_ibfk_3` FOREIGN KEY (`FirstHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`),
-  ADD CONSTRAINT `wifi_ap_ibfk_4` FOREIGN KEY (`LastHist_ID`) REFERENCES `wifi_hist` (`Hist_ID`);
+  ADD CONSTRAINT `wifi_ap_ibfk_2` FOREIGN KEY (`HighGps_ID`) REFERENCES `wifi_gps` (`GPS_ID`);
 
 --
 -- Constraints for table `wifi_gps`
