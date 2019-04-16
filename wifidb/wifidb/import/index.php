@@ -61,7 +61,7 @@ switch($func)
 		$user = (empty($_POST['user'])) ? "Unknown" : $_POST['user'];
 		$otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
 		$type = (empty($_POST['type'])) ? "" : $_POST['type'];
-		$sql = "SELECT `username` FROM `wifi`.`user_info` WHERE `username` LIKE ?";
+		$sql = "SELECT username FROM user_info WHERE username LIKE ?";
 		$stmt = $dbcore->sql->conn->prepare($sql);
 		$stmt->bindParam(1, $user, PDO::PARAM_STR);
 		$stmt->execute();
@@ -207,5 +207,27 @@ switch($func)
 		}
 		break;
 }
+
+#Get Complete Count
+$sql = "SELECT Count(id) AS imp_count FROM files";
+$prep = $dbcore->sql->conn->query($sql);
+$prepf = $prep->fetch(1);
+$complete_count = $prepf[0];
+
+#Get Importing Count
+$sql = "SELECT Count(id) AS imp_count FROM files_importing";
+$prep = $dbcore->sql->conn->query($sql);
+$prepf = $prep->fetch(1);
+$importing_count = $prepf[0];
+
+#Get Waiting Count
+$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
+$prep = $dbcore->sql->conn->query($sql);
+$prepf = $prep->fetch(1);
+$waiting_count = $prepf[0];
+		
 $dbcore->smarty->assign('mesg', $mesg);
+$dbcore->smarty->assign('complete_count', $complete_count);
+$dbcore->smarty->assign('importing_count', $importing_count);
+$dbcore->smarty->assign('waiting_count', $waiting_count);
 $dbcore->smarty->display('import_index.tpl');
