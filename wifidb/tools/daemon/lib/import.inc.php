@@ -63,6 +63,56 @@ class import extends dbcore
 		return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $mac) == 1);
 	}
 	
+	private function InsertAp($BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS, $File_ID)
+	{
+		$ap_hash = md5($SSID.$BSSID.$CHAN.$SECTYPE.$AUTH.$ENCR);
+		
+		$retry = true;
+		while ($retry)
+		{
+			try 
+			{
+				if($this->sql->service == "sqlsrv")
+				{					
+					$sql = "MERGE INTO wifi_ap\n"
+						. "	USING (SELECT :hash AS ap_hash) AS newap\n"
+						. "		ON wifi_ap.ap_hash = newap.ap_hash\n"
+						. "	WHEN MATCHED THEN\n"
+						. "		UPDATE SET wifi_ap.ModDate = getdate()\n"
+						. "	WHEN NOT MATCHED THEN\n"
+						. "		INSERT (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, FLAGS, ap_hash, File_ID)\n"
+						. "		VALUES (:BSSID, :SSID, :CHAN, :AUTH, :ENCR, :SECTYPE, :RADTYPE, :NETTYPE, :BTX, :OTX, :FLAGS, :ap_hash, :File_ID)\n"
+						. 'OUTPUT INSERTED.AP_ID, $action, INSERTED.RADTYPE, INSERTED.FLAGS;';
+						
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':hash', $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(':BSSID', $BSSID, PDO::PARAM_STR);
+					$prep->bindParam(':SSID', $SSID, PDO::PARAM_STR);
+					$prep->bindParam(':CHAN', $CHAN, PDO::PARAM_INT);
+					$prep->bindParam(':AUTH', $AUTH, PDO::PARAM_STR);		
+					$prep->bindParam(':ENCR', $ENCR, PDO::PARAM_STR);
+					$prep->bindParam(':SECTYPE', $SECTYPE, PDO::PARAM_INT);
+					$prep->bindParam(':RADTYPE', $RADTYPE, PDO::PARAM_STR);
+					$prep->bindParam(':NETTYPE', $NETTYPE, PDO::PARAM_STR);
+					$prep->bindParam(':BTX', $BTX, PDO::PARAM_STR);
+					$prep->bindParam(':OTX', $OTX, PDO::PARAM_STR);
+					$prep->bindParam(':FLAGS', $FLAGS, PDO::PARAM_STR);
+					$prep->bindParam(':ap_hash', $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(':File_ID', $File_ID, PDO::PARAM_INT);
+					$prep->execute();
+					$return = $prep->fetch(2);
+				}
+				$retry = false;
+			}
+			catch (Exception $e) 
+			{
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				$return = 0;
+			}
+		}
+		return $return;
+	}
+	
 	private function UpdateFileValidGPS($file_id)
 	{
 		$retry = true;
@@ -426,36 +476,29 @@ class import extends dbcore
 				}
 			}
 			
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					if($this->sql->service == "mysql")
-						{$sql = "SELECT AP_ID, FLAGS FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "SELECT TOP 1 [AP_ID], [FLAGS] FROM [wifi_ap] WHERE [ap_hash] = ?";}
-					$res = $this->sql->conn->prepare($sql);
-					$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
-					$res->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
-			$fetch = $res->fetch(2);
+			$ap_id = 0;
 			$new = 0;
-			$ap_id = "";
-			if($fetch['AP_ID'])
+			
+			$addresult = $this->InsertAp($fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities, $file_id);
+			if($addresult)
 			{
-				$ap_id	= $fetch['AP_ID'];
-				$ap_FLAGS	= $fetch['FLAGS'];
-				if($ap_FLAGS == "" && $fCapabilities != "")
+				$ap_id = $addresult['AP_ID'];
+				$ap_action = $addresult['$action'];
+				$ap_FLAGS = $addresult['FLAGS'];
+				if($ap_action == "INSERT")
+				{
+					$imported_aps[] = $ap_id.":0";
+					$new = 1;
+					$NewAPs++;
+					$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
+				}
+				if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
 				{
 					$retry = true;
 					while ($retry)
 					{
-						try {
+						try 
+						{
 							if($this->sql->service == "mysql")
 								{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
 							else if($this->sql->service == "sqlsrv")
@@ -466,50 +509,15 @@ class import extends dbcore
 							$prepu->execute();
 							$retry = false;
 						}
-						catch (Exception $e) {
+						catch (Exception $e) 
+						{
 							$retry = $this->sql->isPDOException($this->sql->conn, $e);
 						}
 					}
 				}
 			}
-			else
-			{
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						if($this->sql->service == "mysql")
-							{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, FLAGS, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [FLAGS], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-								
-						$prep = $this->sql->conn->prepare($sql);
-						#var_dump($aps);
-						$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
-						$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-						$prep->bindParam(3, $chan, PDO::PARAM_INT);
-						$prep->bindParam(4, $authen, PDO::PARAM_STR);		
-						$prep->bindParam(5, $encry, PDO::PARAM_STR);
-						$prep->bindParam(6, $sectype, PDO::PARAM_INT);
-						$prep->bindParam(7, $radio, PDO::PARAM_STR);
-						$prep->bindParam(8, $nt, PDO::PARAM_STR);
-						$prep->bindParam(9, $fCapabilities, PDO::PARAM_STR);
-						$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
-						$prep->bindParam(11, $file_id, PDO::PARAM_INT);
-						$prep->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-				$ap_id = $this->sql->conn->lastInsertId();
-				$imported_aps[] = $ap_id.":0";
-				$new = 1;
-				$NewAPs++;
-				$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);			
-			}
-			if($ap_id == ""){continue;}
+
+			if($ap_id == 0){continue;}
 			$ap_count++;
 
 			$retry = true;
@@ -641,37 +649,29 @@ class import extends dbcore
 					$retry = $this->sql->isPDOException($this->sql->conn, $e);
 				}
 			}
-
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					if($this->sql->service == "mysql")
-						{$sql = "SELECT AP_ID, FLAGS FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "SELECT TOP 1 [AP_ID], [FLAGS] FROM [wifi_ap] WHERE [ap_hash] = ?";}
-					$res = $this->sql->conn->prepare($sql);
-					$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
-					$res->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
-			$fetch = $res->fetch(2);
+			
+			$ap_id = 0;
 			$new = 0;
-			$ap_id = "";
-			if($fetch['AP_ID'])
+			$addresult = $this->InsertAp($fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities, $file_id);
+			if($addresult)
 			{
-				$ap_id	= $fetch['AP_ID'];
-				$ap_FLAGS	= $fetch['FLAGS'];
-				if($ap_FLAGS == "" && $fCapabilities != "")
+				$ap_id = $addresult['AP_ID'];
+				$ap_action = $addresult['$action'];
+				$ap_FLAGS = $addresult['FLAGS'];
+				if($ap_action == "INSERT")
+				{
+					$imported_aps[] = $ap_id.":0";
+					$new = 1;
+					$NewAPs++;
+					$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
+				}
+				if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
 				{
 					$retry = true;
 					while ($retry)
 					{
-						try {
+						try 
+						{
 							if($this->sql->service == "mysql")
 								{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
 							else if($this->sql->service == "sqlsrv")
@@ -682,49 +682,15 @@ class import extends dbcore
 							$prepu->execute();
 							$retry = false;
 						}
-						catch (Exception $e) {
+						catch (Exception $e) 
+						{
 							$retry = $this->sql->isPDOException($this->sql->conn, $e);
 						}
 					}
 				}
 			}
-			else
-			{
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						if($this->sql->service == "mysql")
-							{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, FLAGS, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [FLAGS], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}		
-						$prep = $this->sql->conn->prepare($sql);
-						#var_dump($aps);
-						$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
-						$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-						$prep->bindParam(3, $chan, PDO::PARAM_INT);
-						$prep->bindParam(4, $authen, PDO::PARAM_STR);		
-						$prep->bindParam(5, $encry, PDO::PARAM_STR);
-						$prep->bindParam(6, $sectype, PDO::PARAM_INT);
-						$prep->bindParam(7, $radio, PDO::PARAM_STR);
-						$prep->bindParam(8, $nt, PDO::PARAM_STR);
-						$prep->bindParam(9, $fCapabilities, PDO::PARAM_STR);
-						$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
-						$prep->bindParam(11, $file_id, PDO::PARAM_INT);
-						$prep->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-				$ap_id = $this->sql->conn->lastInsertId();
-				$imported_aps[] = $ap_id.":0";
-				$new = 1;
-				$NewAPs++;
-				$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);			
-			}
-			if($ap_id == ""){continue;}
+
+			if($ap_id == 0){continue;}
 			$ap_count++;
 				
 			$sql1 = "SELECT * FROM wifispot WHERE fk_wifi = '$fid'";
@@ -852,7 +818,6 @@ class import extends dbcore
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);
 		$imported_aps = array();
-		$newhashes = array();
 		$hdata = array();
 		$chdata = array();
 		$NewAPs = 0;
@@ -869,7 +834,7 @@ class import extends dbcore
 			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}			
 			$fBSSID = strtoupper(@$apinfo[0]);
 			$fSSID = @$apinfo[1];
-			$fAuthMode = @$apinfo[2];
+			$fCapabilities = @$apinfo[2];
 			$fDate = @$apinfo[3];
 			$fchannel = @$apinfo[4];
 			$fRSSI = @$apinfo[5];
@@ -905,14 +870,14 @@ class import extends dbcore
 					}
 				}
 				
-				echo "$fBSSID $fSSID $fAuthMode $fchannel $fType\r\n";
+				echo "$fBSSID $fSSID $fCapabilities $fchannel $fType\r\n";
 				if($fType == "WIFI")
 				{
 					if(!$this->validateMacAddress($fBSSID)){continue;}
 					
 					if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
 					$fSignal = $this->convert->dBm2Sig($fRSSI);
-					list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fAuthMode);
+					list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
 					list($chan, $radio) = $this->convert->findFreq($fchannel);
 					
 					$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
@@ -944,93 +909,49 @@ class import extends dbcore
 					
 					if($gps_id == ""){continue;}
 					$gps_count++;
-					
-					$retry = true;
-					while ($retry)
+
+					$ap_id = 0;
+					$new = 0;
+					$addresult = $this->InsertAp($fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities, $file_id);
+					if($addresult)
 					{
-						try {
-							if($this->sql->service == "mysql")
-								{$sql = "SELECT `AP_ID`, `FLAGS` FROM `wifi_ap` WHERE `ap_hash` = ? LIMIT 1";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "SELECT TOP 1 [AP_ID], [FLAGS] FROM [wifi_ap] WHERE [ap_hash] = ?";}
-							$res = $this->sql->conn->prepare($sql);
-							$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
-							$res->execute();
-							$retry = false;
+						$ap_id = $addresult['AP_ID'];
+						$ap_action = $addresult['$action'];
+						$ap_FLAGS = $addresult['FLAGS'];
+						if($ap_action == "INSERT")
+						{
+							$imported_aps[] = $ap_id.":0";
+							$new = 1;
+							$NewAPs++;
+							$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
 						}
-						catch (Exception $e) {
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-					$fetch = $res->fetch(2);
-					$ap_id = "";
-					if($fetch['AP_ID'])
-					{
-						$ap_id	= $fetch['AP_ID'];
-						$ap_FLAGS	= $fetch['FLAGS'];
-						if($ap_FLAGS == "" && $fAuthMode != "")
+						if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
 						{
 							$retry = true;
 							while ($retry)
 							{
-								try {
+								try 
+								{
 									if($this->sql->service == "mysql")
 										{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
 									else if($this->sql->service == "sqlsrv")
 										{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
 									$prepu = $this->sql->conn->prepare($sql);
-									$prepu->bindParam(1, $fAuthMode, PDO::PARAM_STR);
+									$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
 									$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
 									$prepu->execute();
 									$retry = false;
 								}
-								catch (Exception $e) {
+								catch (Exception $e) 
+								{
 									$retry = $this->sql->isPDOException($this->sql->conn, $e);
 								}
 							}
 						}
 					}
-					else
-					{
-						$retry = true;
-						while ($retry)
-						{
-							try {
-								if($this->sql->service == "mysql")
-									{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, FLAGS, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-								else if($this->sql->service == "sqlsrv")
-									{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [FLAGS], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-								$prep = $this->sql->conn->prepare($sql);
-								#var_dump($aps);
-								$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
-								$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-								$prep->bindParam(3, $chan, PDO::PARAM_INT);
-								$prep->bindParam(4, $authen, PDO::PARAM_STR);		
-								$prep->bindParam(5, $encry, PDO::PARAM_STR);
-								$prep->bindParam(6, $sectype, PDO::PARAM_INT);
-								$prep->bindParam(7, $radio, PDO::PARAM_STR);
-								$prep->bindParam(8, $nt, PDO::PARAM_STR);
-								$prep->bindParam(9, $fAuthMode, PDO::PARAM_STR);
-								$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
-								$prep->bindParam(11, $file_id, PDO::PARAM_INT);
-								$prep->execute();
-								$retry = false;
-							}
-							catch (Exception $e) {
-								$retry = $this->sql->isPDOException($this->sql->conn, $e);
-							}
-						}
-						$ap_id = $this->sql->conn->lastInsertId();
-						$imported_aps[] = $ap_id.":0";
-						$NewAPs++;
-						$newhashes[$ap_hash] = 1;
-						$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
-						#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");					
-					}
 					
-					if($ap_id == ""){continue;}
+					if($ap_id == 0){continue;}
 					$ap_count++;
-					if(isset($newhashes[$ap_hash]) && $newhashes[$ap_hash] == 1){$new = 1;}else{$new = 0;}
 
 					$retry = true;
 					while ($retry)
@@ -1071,7 +992,7 @@ class import extends dbcore
 				else
 				{
 					
-					$cell_hash = md5($fBSSID.$fSSID.$fAuthMode.$fchannel.$fType);
+					$cell_hash = md5($fBSSID.$fSSID.$fCapabilities.$fchannel.$fType);
 					$cell_id = 0;
 
 					$retry = true;
@@ -1110,7 +1031,7 @@ class import extends dbcore
 								$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 								$prep->bindParam(2, $fBSSID, PDO::PARAM_STR);
 								$prep->bindParam(3, $fSSID, PDO::PARAM_STR);
-								$prep->bindParam(4, $fAuthMode, PDO::PARAM_STR);
+								$prep->bindParam(4, $fCapabilities, PDO::PARAM_STR);
 								$prep->bindParam(5, $fchannel, PDO::PARAM_INT);		
 								$prep->bindParam(6, $fType, PDO::PARAM_STR);
 								$prep->bindParam(7, $cell_hash, PDO::PARAM_STR);
@@ -1239,7 +1160,7 @@ class import extends dbcore
 			$fBSSID = strtoupper($apinfo[0]);
 			if(!$this->validateMacAddress($fBSSID)){continue;}
 			$fSSID = $apinfo[1];
-			$fAuthMode = $apinfo[2];
+			$fCapabilities = $apinfo[2];
 			$fchannel = $apinfo[3];
 			$ffrequency = $apinfo[4];
 			$fDate1 = $apinfo[5];
@@ -1251,7 +1172,7 @@ class import extends dbcore
 			$fSignal = 0;
 			$fRSSI = -99;
 			
-			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fAuthMode);
+			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
 			list($chan, $radio) = $this->convert->findFreq($ffrequency);
 			
 			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
@@ -1306,91 +1227,47 @@ class import extends dbcore
 				if($gps_id == ""){continue;}
 				$gps_count++;
 				
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						if($this->sql->service == "mysql")
-							{$sql = "SELECT AP_ID, FLAGS FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "SELECT TOP 1 [AP_ID], [FLAGS] FROM [wifi_ap] WHERE [ap_hash] = ?";}
-						$res = $this->sql->conn->prepare($sql);
-						$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
-						$res->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-				$fetch = $res->fetch(2);
+				$ap_id = 0;
 				$new = 0;
-				$ap_id = "";
-				if($fetch['AP_ID'])
+				$addresult = $this->InsertAp($fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities, $file_id);
+				if($addresult)
 				{
-					$ap_id	= $fetch['AP_ID'];
-					$ap_FLAGS	= $fetch['FLAGS'];
-					if($ap_FLAGS == "" && $fAuthMode != "")
+					$ap_id = $addresult['AP_ID'];
+					$ap_action = $addresult['$action'];
+					$ap_FLAGS = $addresult['FLAGS'];
+					if($ap_action == "INSERT")
+					{
+						$imported_aps[] = $ap_id.":0";
+						$new = 1;
+						$NewAPs++;
+						$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
+					}
+					if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
 					{
 						$retry = true;
 						while ($retry)
 						{
-							try {
+							try 
+							{
 								if($this->sql->service == "mysql")
 									{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
 								else if($this->sql->service == "sqlsrv")
 									{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
 								$prepu = $this->sql->conn->prepare($sql);
-								$prepu->bindParam(1, $fAuthMode, PDO::PARAM_STR);
+								$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
 								$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
 								$prepu->execute();
 								$retry = false;
 							}
-							catch (Exception $e) {
+							catch (Exception $e) 
+							{
 								$retry = $this->sql->isPDOException($this->sql->conn, $e);
 							}
 						}
 					}
 				}
-				else
-				{
-					$retry = true;
-					while ($retry)
-					{
-						try {
-							if($this->sql->service == "mysql")
-								{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, FLAGS, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [FLAGS], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?)";}
-							$prep = $this->sql->conn->prepare($sql);
-							#var_dump($aps);
-							$prep->bindParam(1, $fBSSID, PDO::PARAM_STR);
-							$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-							$prep->bindParam(3, $chan, PDO::PARAM_INT);
-							$prep->bindParam(4, $authen, PDO::PARAM_STR);		
-							$prep->bindParam(5, $encry, PDO::PARAM_STR);
-							$prep->bindParam(6, $sectype, PDO::PARAM_INT);
-							$prep->bindParam(7, $radio, PDO::PARAM_STR);
-							$prep->bindParam(8, $nt, PDO::PARAM_STR);
-							$prep->bindParam(9, $fAuthMode, PDO::PARAM_STR);
-							$prep->bindParam(10, $ap_hash, PDO::PARAM_STR);
-							$prep->bindParam(11, $file_id, PDO::PARAM_INT);
-							$prep->execute();
-							$retry = false;
-						}
-						catch (Exception $e) {
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-					$ap_id = $this->sql->conn->lastInsertId();
-					$imported_aps[] = $ap_id.":0";
-					$new = 1;
-					$NewAPs++;
-					$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
-					#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");					
-				}
 				
-				if($ap_id == ""){continue;}
+				if($ap_id == 0){continue;}
 				$ap_count++;
 				
 				$retry = true;
@@ -1822,33 +1699,19 @@ class import extends dbcore
 			ENCRY: {$encry}| APHASH:".$ap_hash, 1);
 			#//$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
 			
-			$retry = true;
-			while ($retry)
-			{
-				try 
-				{
-					if($this->sql->service == "mysql")
-						{$sql = "SELECT AP_ID, RADTYPE FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "SELECT TOP 1 [AP_ID], [RADTYPE] FROM [wifi_ap] WHERE [ap_hash] = ?";}
-					$res = $this->sql->conn->prepare($sql);
-					$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
-					$res->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
-
-			$fetch = $res->fetch(2);
 			$new = 0;
-			$ap_id = 0;
-			if($fetch['AP_ID'])
+			$ap_id = 0;			
+			$addresult = $this->InsertAp($aps['mac'], $aps['ssid'], $aps['chan'], $aps['auth'], $aps['encry'], $aps['sectype'], $aps['radio'], $aps['nt'], $aps['btx'], $aps['otx'], '', $file_id);
+			if($addresult)
 			{
-				$ap_id	= $fetch['AP_ID'];
-				#The Vistumbler radio type is more accurate. Use this files radio type if it is different from whats in the db.
-				$ap_RADTYPE	= $fetch['RADTYPE'];
+				$ap_id = $addresult['AP_ID'];
+				$ap_action = $addresult['$action'];
+				$ap_RADTYPE = $addresult['RADTYPE'];
+				if($ap_action == "INSERT")
+				{
+					$new = 1;
+					$NewAPs++;
+				}
 				if($aps['radio'] != $ap_RADTYPE && $aps['radio'] != "")
 				{
 					$retry = true;
@@ -1866,49 +1729,14 @@ class import extends dbcore
 							$prepu->execute();
 							$retry = false;
 						}
-						catch (Exception $e) {
+						catch (Exception $e) 
+						{
 							$retry = $this->sql->isPDOException($this->sql->conn, $e);
 						}
 					}
 				}
 			}
-			else
-			{
-				$new = 1;
-				$retry = true;
-				while ($retry)
-				{
-					try 
-					{
-						if($this->sql->service == "mysql")
-							{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [BTX], [OTX], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
-						#echo "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [BTX], [OTX], [ap_hash], [File_ID]) VALUES ('".$aps['mac']."','".$aps['ssid']."',".$aps['chan'].",'".$aps['auth']."','".$aps['encry']."',".$aps['sectype'].",'".$aps['radio']."','".$aps['nt']."','".$aps['btx']."','".$aps['otx']."',".$ap_hash.",".$file_id.")";
-						$prep = $this->sql->conn->prepare($sql);
-						$prep->bindParam(1, $aps['mac'], PDO::PARAM_STR);
-						$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
-						$prep->bindParam(3, $aps['chan'], PDO::PARAM_INT);
-						$prep->bindParam(4, $aps['auth'], PDO::PARAM_STR);
-						$prep->bindParam(5, $aps['encry'], PDO::PARAM_STR);
-						$prep->bindParam(6, $aps['sectype'], PDO::PARAM_INT);
-						$prep->bindParam(7, $aps['radio'], PDO::PARAM_STR);
-						$prep->bindParam(8, $aps['nt'], PDO::PARAM_STR);
-						$prep->bindParam(9, $aps['btx'], PDO::PARAM_STR);
-						$prep->bindParam(10, $aps['otx'], PDO::PARAM_STR);
-						$prep->bindParam(11, $ap_hash, PDO::PARAM_STR);
-						$prep->bindParam(12, $file_id, PDO::PARAM_INT);
-						$prep->execute();
-						$NewAPs++;
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-				$ap_id = $this->sql->conn->lastInsertId();
-			}
-
+			
 			$HighRSSIwGPS = -99;
 			//Import Wifi Signals
 			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
