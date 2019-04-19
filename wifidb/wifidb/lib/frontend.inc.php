@@ -603,16 +603,16 @@ class frontend extends dbcore
 		#Total APs
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT COUNT(DISTINCT `AP_ID`)\n"
-					. "FROM `wifi_hist`\n"
-					. "INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
+				$sql = "SELECT COUNT(`AP_ID`)\n"
+					. "FROM `wifi_ap`\n"
+					. "INNER JOIN `files` ON `files`.`id` = `wifi_ap`.`File_ID`\n"
 					. "WHERE `files`.`user` LIKE ?";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT COUNT(DISTINCT [AP_ID])\n"
-					. "FROM [wifi_hist]\n"
-					. "INNER JOIN [files] ON [files].[id] = [wifi_hist].[File_ID]\n"
+				$sql = "SELECT COUNT([AP_ID])\n"
+					. "FROM [wifi_ap]\n"
+					. "INNER JOIN [files] ON [files].[id] = [wifi_ap].[File_ID]\n"
 					. "WHERE [files].[user] LIKE ?";
 			}
 		$result = $this->sql->conn->prepare($sql);

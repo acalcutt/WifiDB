@@ -25,7 +25,7 @@ if not, write to the
 						<tbody>
 							<tr class="header">
 								<th class="header">ID</th>
-								<th class="header">Total APs</th>
+								<th class="header">New APs</th>
 								<th class="header">First Import</th>
 								<th class="header">Last Import</th>
 							</tr>

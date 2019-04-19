@@ -95,7 +95,7 @@ if not, write to the
 							<th class="header-centered">NODE</th>
 							<th class="header-centered">PID FILE</th>
 							<th class="header-centered">PID</th>
-							<th class="header-centered">TIME</th>
+							<th class="header-centered">CPU</th>
 							<th class="header-centered">MEM</th>
 							<th class="header-centered">CMD</th>
 							<th class="header-centered">UPDATED</th>
@@ -105,7 +105,7 @@ if not, write to the
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.nodename}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidfile}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pid}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidtime}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcpu}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidmem}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcmd}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.lastupdatetime_local}</td>
