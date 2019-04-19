@@ -3,7 +3,7 @@
 error_reporting(E_ALL);
 /*
 importd.php, WiFiDB Import Daemon
-Copyright (C) 2015 Andrew Calcutt, Phil Ferland.
+Copyright (C) 2019 Andrew Calcutt, Phil Ferland.
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -16,7 +16,7 @@ if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to c
 if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon.config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$lastedit			=	"2015-06-08";
+$lastedit			=	"2019-04-14";
 $dbcore->daemon_name	=	"Import";
 
 $arguments = $dbcore->parseArgs($argv);
@@ -33,6 +33,7 @@ if(@$arguments['h'])
   -l		(null)			Show License Information.
   -h		(null)			Show this screen.
   --version	(null)			Version Info.
+  --logfile=filename.log	Specify the log file name so it can be written to the schedule db
 
 * = Not working yet.
 ";
@@ -53,7 +54,7 @@ if(@$arguments['l'])
 Codename: ".$dbcore->ver_array['codename']."
 {$dbcore->daemon_name} Daemon {$dbcore->daemon_version}, {$lastedit}, GPLv2 Random Intervals
 Daemon Class Last Edit: {$dbcore->ver_array['Daemon']["last_edit"]}
-Copyright (C) 2015 Andrew Calcutt, Phil Ferland
+Copyright (C) 2019 Andrew Calcutt, Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -62,64 +63,13 @@ You should have received a copy of the GNU General Public License along with thi
 	exit(-3);
 }
 
-if(@$arguments['v'])
-{
-	$dbcore->verbose = 1;
-}
-else
-{
-	$dbcore->verbose = 0;
-}
-
-if(@$arguments['i'])
-{
-	$dbcore->ImportID = (int)$arguments['i'];
-}
-else
-{
-	$dbcore->ImportID = 0;
-}
-
-if(@$arguments['f'])
-{
-	$dbcore->ForceDaemonRun = 1;
-}else
-{
-	$dbcore->ForceDaemonRun = 0;
-}
-
-if(@$arguments['t'])
-{
-	$dbcore->thread_id = (int)$arguments['t'];
-}else
-{
-	$dbcore->thread_id = 1;
-}
-
-if(@$arguments['d'])
-{
-	$dbcore->daemonize = 1;
-}else
-{
-	$dbcore->daemonize = 0;
-}
-
-if(@$arguments['o'])
-{
-	$dbcore->RunOnceThrough = 1;
-}else
-{
-	$dbcore->RunOnceThrough = 0;
-}
-
-if(@$arguments['logfile'])
-{
-	$logfile = $arguments['logfile'];
-}
-else
-{
-	$logfile = "";
-}
+if(@$arguments['v']){$dbcore->verbose = 1;}else{$dbcore->verbose = 0;}
+if(@$arguments['i']){$dbcore->ImportID = (int)$arguments['i'];}else{$dbcore->ImportID = 0;}
+if(@$arguments['f']){$dbcore->ForceDaemonRun = 1;}else{$dbcore->ForceDaemonRun = 0;}
+if(@$arguments['t']){$dbcore->thread_id = (int)$arguments['t'];}else{$dbcore->thread_id = 1;}
+if(@$arguments['d']){$dbcore->daemonize = 1;}else{$dbcore->daemonize = 0;}
+if(@$arguments['o']){$dbcore->RunOnceThrough = 1;}else{$dbcore->RunOnceThrough = 0;}
+if(@$arguments['logfile']){$dbcore->LogFile = $arguments['logfile'];}else{$dbcore->LogFile = "";}
 
 //Now we need to write the PID file so that the init.d file can control it.
 if(!file_exists($dbcore->pid_file_loc))
@@ -172,7 +122,7 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus = $dbcore->sql->conn->prepare($sql);
 	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
-	$prepus->bindParam(3, $logfile, PDO::PARAM_STR);
+	$prepus->bindParam(3, $dbcore->LogFile, PDO::PARAM_STR);
 	$prepus->bindParam(4, $dbcore->StatusRunning, PDO::PARAM_STR);
 	$prepus->bindParam(5, $dbcore->node_name, PDO::PARAM_STR);
 	$prepus->bindParam(6, $dbcore->daemon_name, PDO::PARAM_STR);

@@ -54,6 +54,7 @@ while(1)
 		$stats_imp_exp = $dbcore->getdaemonstats($pidfile);
 
 		$pid = $stats_imp_exp["pid"];
+		$cpu = $stats_imp_exp["cpu"];
 		$time = $stats_imp_exp["time"];
 		$mem = $stats_imp_exp["mem"];
 		$cmd = $stats_imp_exp["cmd"];
@@ -80,11 +81,11 @@ while(1)
 		$daemon_array = $result->fetch(2);
 		if($daemon_array['id'])
 		{
-			$sql = "UPDATE daemon_pid_stats SET pid = '$pid', pidtime = '$time', pidmem = '$mem', pidcmd = '$cmd' , date = '$timestamp' where nodename = '$node_name' AND pidfile = '$pidfile'";
+			$sql = "UPDATE daemon_pid_stats SET pid = '$pid', pidtime = '$time', pidcpu = '$cpu', pidmem = '$mem', pidcmd = '$cmd' , date = '$timestamp' where nodename = '$node_name' AND pidfile = '$pidfile'";
 			$result_update = $dbcore->sql->conn->query($sql);
 		}else
 		{
-			$sql = "INSERT INTO daemon_pid_stats (nodename, pidfile, pid, pidtime, pidmem, pidcmd, date) VALUES ('$node_name', '$pidfile', '$pid', '$time', '$mem', '$cmd', '$timestamp')";
+			$sql = "INSERT INTO daemon_pid_stats (nodename, pidfile, pid, pidtime, pidcpu, pidmem, pidcmd, date) VALUES ('$node_name', '$pidfile', '$pid', '$time', '$cpu', '$mem', '$cmd', '$timestamp')";
 			$result_update = $dbcore->sql->conn->query($sql);
 		}
 	}

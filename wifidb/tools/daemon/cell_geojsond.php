@@ -8,20 +8,32 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $Import_Map_Data = "";
 
-$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type,\n"
-    . "c_fa.hist_date AS fa,\n"
-    . "c_la.hist_date AS la,\n"
-    . "c_gps.lat AS lat,\n"
-    . "c_gps.lon AS lon,\n"
-    . "c_gps.rssi AS rssi,\n"
-    . "c_file.user AS user\n"
-    . "FROM cell_id\n"
-    . "INNER JOIN cell_hist AS c_fa ON c_fa.cell_hist_id = cell_id.fa_id\n"
-    . "INNER JOIN cell_hist AS c_la ON c_la.cell_hist_id = cell_id.la_id\n"
-    . "INNER JOIN cell_hist AS c_gps ON c_gps.cell_hist_id = cell_id.highgps_id\n"
-    . "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
-    . "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' \n"
-    . "ORDER BY cell_id.cell_id ASC LIMIT ?,?";
+if($dbcore->sql->service == "mysql")
+	{
+		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points,\n"
+			. "c_gps.lat AS lat,\n"
+			. "c_gps.lon AS lon,\n"
+			. "c_gps.rssi AS rssi,\n"
+			. "c_file.user AS user\n"
+			. "FROM cell_id\n"
+			. "INNER JOIN cell_hist AS c_gps ON c_gps.cell_hist_id = cell_id.highgps_id\n"
+			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
+			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' \n"
+			. "ORDER BY cell_id.cell_id ASC LIMIT ?,?";
+	}
+else if($dbcore->sql->service == "sqlsrv")
+	{
+		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points,\n"
+			. "c_gps.lat AS lat,\n"
+			. "c_gps.lon AS lon,\n"
+			. "c_gps.rssi AS rssi,\n"
+			. "c_file.[user] AS [user]\n"
+			. "FROM cell_id\n"
+			. "INNER JOIN cell_hist AS c_gps ON c_gps.cell_hist_id = cell_id.highgps_id\n"
+			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
+			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' \n"
+			. "ORDER BY cell_id.cell_id ASC LIMIT ?,?";
+	}
 
 for ($i = 0; TRUE; $i++) {
 	error_log("Processing pass $i");
@@ -34,13 +46,6 @@ for ($i = 0; TRUE; $i++) {
 	$appointer = $prep->fetchAll();
 	foreach($appointer as $ap)
 	{
-		#Get number of AP points
-		$sqlp = "SELECT count(hist_date) AS points FROM cell_hist WHERE cell_id = ?";
-		$prep2 = $dbcore->sql->conn->prepare($sqlp);
-		$prep2->bindParam(1, $ap['cell_id'], PDO::PARAM_INT);
-		$prep2->execute();
-		$prep2_fetch = $prep2->fetch(2);
-		
 		$split = explode('_', $ap['mac']);
 		$MCCMNC = $split[0];
 		$MCC = substr($MCCMNC, 0, 3);
@@ -72,7 +77,7 @@ for ($i = 0; TRUE; $i++) {
 		"fa" => $ap['fa'],
 		"la" => $ap['la'],
 		"user" => $ap['user'],
-		"points" => $prep2_fetch['points']
+		"points" => $ap['points']
 		);
 		if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
 		$Import_Map_Data .=$dbcore->createGeoJSON->CreateCellFeature($ap_info, 1);

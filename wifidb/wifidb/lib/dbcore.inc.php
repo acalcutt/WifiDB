@@ -202,7 +202,7 @@ class dbcore
 	{
 		if($daemon_pid == NULL ) # Test to see if a PID file was passed, if not fail.
 		{
-			$ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
+			$ret = array('OS'=>'-','pid'=>'0','time'=>'0:00','cpu'=>'0%','mem'=>'0%','cmd'=>'No PID File supplied','color'=>'red', 'errc'=>-4);
 			return $ret;
 		}
 		$WFDBD_PID = $this->pid_file_loc.$daemon_pid; // /var/run/dbstatsd.pid | C:\wifidb\tools\daemon\run\imp_expd.pid
@@ -213,40 +213,25 @@ class dbcore
 			if(file_exists($WFDBD_PID)) #Check and see if the PID File exists
 			{
 				$pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
-		#	echo $pid_open[0]."<br>";
-				exec('ps vp '.$pid_open[0] , $output, $sta); #execute PS for the PID given.
+				exec('ps -p '.$pid_open[0].' -o "%p|" -o %mem -o "|%C|%x|%a"' , $output); #execute PS for the PID given.
 				if(isset($output[1])) #if there was data returned from PS lets parse it.
 				{
-					$start = trim($output[1], " ");
-					preg_match_all("/(\d+?)(\.)(\d+?)/", $start, $mat); #we try and parse for the memory useage.
-					$mem = $mat[0][0];
-
-					preg_match_all("/(php.*)/", $start, $mat); #parse for the CMD path of the daemon
-					$CMD = $mat[0][0];
-
-					preg_match_all("/(\d+)(\:)(\d+)/", $start, $mat); # get the uptime of the daemon.
-					$time = $mat[0][0];
-
-					//$patterns[1] = '/  /';
-					//$patterns[2] = '/ /';
-					//$ps_stats = preg_replace($patterns , "|" , $start); #a second way of parsing the data.
-					//$ps_Sta_exp = explode("|", $ps_stats);
-
-					//$returns = array(  # lets now throw all this
-					//	$mem,$CMD,$time,$ps_Sta_exp # into one array
-					//);
-					//var_dump($returns);
-
-					$ret = array('OS'=>'Linux','pid'=>$pid_open[0],'time'=>$time,'mem'=>$mem.'%','cmd'=>$CMD,'color'=>'green','errc'=>-5);
+					$pieces = explode("|", $output[1]);
+					$pid = trim($pieces[0]);
+					$mem = trim($pieces[1]);
+					$cpu = trim($pieces[2]);
+					$time = trim($pieces[3]);
+					$cmd = trim($pieces[4]);
+					$ret = array('OS'=>'Linux','pid'=>$pid,'time'=>$time,'cpu'=>$cpu.'%','mem'=>$mem.'%','cmd'=>$cmd,'color'=>'green','errc'=>-5);
 					return $ret; # and return it
 				}else
 				{
-					$ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
+					$ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','cpu'=>'0%','mem'=>'0%','cmd'=>'There was no data in the PS return.','color'=>'red','errc'=>-5);
 					return $ret; # There was no data in the PS return.
 				}
 			}else
 			{
-				$ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
+				$ret = array('OS'=>'Linux','pid'=>'0','time'=>'0:00','cpu'=>'0%','mem'=>'0%','cmd'=>'PID File could not be found.','color'=>'red','errc'=>-6);
 				return $ret; # PID File could not be found.
 			}
 		}elseif( $os[0] == 'W')
@@ -262,12 +247,12 @@ class dbcore
 					return $ps_stats;
 				}else
 				{
-					$ret = array('Windows'=>'Linux','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'no data returned from tasklist','color'=>'red','errc'=>-3);
+					$ret = array('Windows'=>'Linux','pid'=>'0','time'=>'0:00','cpu'=>'0%','mem'=>'0%','cmd'=>'no data returned from tasklist','color'=>'red','errc'=>-3);
 					return $ret; #no data returned from tasklist
 				}
 			}else
 			{
-				$ret = array('OS'=>'Windows','pid'=>'0','time'=>'0:00','mem'=>'0%','cmd'=>'PID File did not exsist','color'=>'red','errc'=>-2);
+				$ret = array('OS'=>'Windows','pid'=>'0','time'=>'0:00','cpu'=>'0%','mem'=>'0%','cmd'=>'PID File did not exsist','color'=>'red','errc'=>-2);
 				return $ret; #PID File did not exsist
 			}
 		}else

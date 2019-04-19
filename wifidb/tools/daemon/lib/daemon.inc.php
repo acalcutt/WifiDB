@@ -31,6 +31,7 @@ class daemon extends wdbcli
 		$this->StatusRunning			=	$daemon_config['status_running'];
 		$this->node_name 				=	$daemon_config['wifidb_nodename'];
 		$this->NumberOfThreads			=	$daemon_config['NumberOfThreads'];
+		$this->LogFile					=	"";
 		$this->daemon_name				=	"";
 		$this->job_interval				=	0;
 		$this->ForceDaemonRun			=	0;
