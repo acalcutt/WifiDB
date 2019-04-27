@@ -42,7 +42,6 @@ class daemon extends wdbcli
 		$this->DaemonSleepTime			=	$daemon_config['time_interval_to_check'];
 		$this->DeleteDeadPids			=	$daemon_config['DeleteDeadPids'];
 		$this->return_message			=	"";
-		$this->convert_extentions		=	array('csv','vsz');
 
 		$this->daemon_version			=	"3.0";
 		$this->ver_array['Daemon']		=	array(
@@ -101,7 +100,29 @@ class daemon extends wdbcli
 			}
 		}
 	}
-
+	
+	function CheckFileImported($source)
+	{
+		$file_hash1 = hash_file('md5', $source);
+		
+		if($this->sql->service == "mysql")
+			{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
+		$prep = $this->sql->conn->prepare($sql_check);
+		$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
+		$prep->execute();
+		$ids = $prep->fetch(1);
+		$hash_count = $ids[0];
+		if($hash_count == 0)
+		{
+			return 0;
+		}
+		else
+		{
+			return 1;
+		}
+	}
 
 	function cleanBadImport($import_ids, $file_id = 0, $file_importing_id = 0, $error_msg = "")
 	{
@@ -342,18 +363,17 @@ class daemon extends wdbcli
 				//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
 				Throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.");
 			}
-
-			//check to see if this file has already been imported into the DB
-			if($this->sql->service == "mysql")
-				{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
-			$prep = $this->sql->conn->prepare($sql_check);
-			$prep->bindParam(1, $file_hash, PDO::PARAM_STR);
-			$prep->execute();
-			$ids = $prep->fetch(1);
-			$hash_count = $ids[0];
-			if($hash_count == 0)
+			
+			if($this->CheckFileImported($source))
+			{
+				trigger_error("File already imported. $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
+				//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($importing_id)","Warning", $this->This_is_me);
+				//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($importing_id)");
+				//unlink($source);
+				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($importing_id)");
+				$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);
+			}
+			else
 			{
 				if($this->sql->service == "mysql")
 					{
@@ -398,112 +418,49 @@ class daemon extends wdbcli
 				
 				if($file_type == "vistumbler" || $file_type == "")
 				{
-					if($file_ext == 'mdb')
+					if($file_ext == 'csv')
+					{
+						$this->verbosed("Importing CSV. ".$source, 1);
+						$tmp = $this->import->import_vistumblercsv($source, $file_row,  $importing_id);
+					}
+					elseif($file_ext == 'mdb')
 					{
 						$this->verbosed("Importing MDB. ".$source, 1);
 						$tmp = $this->import->import_vistumblermdb($source, $file_row,  $importing_id);
 					}
-					else
+					elseif($file_ext == 'vsz')
 					{
-						if(in_array($file_ext, $this->convert_extentions))
+						$this->verbosed("Extracting VSZ. ".$source, 1);
+						$path_parts = pathinfo($source);
+						$detination_vs1 = $path_parts['dirname']."/extract/".$path_parts['filename'].".VS1";
+
+						$VSZ = new ZipArchive();
+						if ($VSZ->open($source) === TRUE) {
+							if($fileData = $VSZ->getFromName('data.vs1')) {
+								file_put_contents($detination_vs1, $fileData);
+							}
+						}
+						
+						if (file_exists($detination_vs1)) 
 						{
-							$this->verbosed("This file needs to be converted to VS1 first. Please wait while the computer does the work for you.", 1);
-							if($this->sql->service == "mysql")
-								{$update_tmp = "UPDATE files_importing SET tot = '@#@# CONVERTING TO VS1 @#@#', converted = '1', prev_ext = ? WHERE id = ?";}
-							else if($this->sql->service == "sqlsrv")
-								{$update_tmp = "UPDATE [files_importing] SET [tot] = '@#@# CONVERTING TO VS1 @#@#', [converted] = '1', [prev_ext] = ? WHERE [id] = ?";}
-							$prep = $this->sql->conn->prepare($update_tmp);
-							$prep->bindParam(1, $file_ext, PDO::PARAM_STR);
-							$prep->bindParam(2, $importing_id, PDO::PARAM_INT);
-							$prep->execute();
-							$err = $this->sql->conn->errorCode();
-							if($err[0] != "00000")
+							if($this->CheckFileImported($detination_vs1))
 							{
-								$this->verbosed("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.", -1);
-								//$this->logd("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-								throw new ErrorException("Failed to set the Import flag for this file. If running with more than one Import Daemon you may have problems.".var_export($this->sql->conn->errorInfo(),1));
-							}
-							$ret_file_name = $this->convert->main($source);
-							if($ret_file_name === -1)
-							{
-								$this->verbosed("Error Converting File. $source, Skipping to next file.");
-								if( !$this->daemonize )
-								{
-									$this->return_message = "ErrorConvertingFile:$source";
-									return -1;
-								}else
-								{
-									return 0;
-								}
-
-							}
-
-							$parts = pathinfo($ret_file_name);
-							$dest_name = $parts['basename'];
-							$file_hash1 = hash_file('md5', $ret_file_name);
-							$file_size1 = filesize($ret_file_name);
-							$file_size1 = $this->format_size($file_size1);
-							
-							//check to see if this file has already been imported into the DB
-							if($this->sql->service == "mysql")
-								{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
-							$prep = $this->sql->conn->prepare($sql_check);
-							$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
-							$prep->execute();
-							$ids = $prep->fetch(1);
-							$hash_count = $ids[0];
-							if($hash_count == 0)
-							{
-								if($this->sql->service == "mysql")
-									{$update = "UPDATE files_importing SET file = ?, hash = ?, size = ? WHERE id = ?";}
-								else if($this->sql->service == "sqlsrv")
-									{$update = "UPDATE [files_importing] SET [file] = ?, [hash] = ?, [size] = ? WHERE [id] = ?";}
-								$prep = $this->sql->conn->prepare($update);
-								$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
-								$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
-								$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-								$prep->bindParam(4, $importing_id, PDO::PARAM_INT);
-								$prep->execute();
-								
-								if($this->sql->service == "mysql")
-									{$update = "UPDATE files SET file = ?, hash = ?, size = ? WHERE id = ?";}
-								else if($this->sql->service == "sqlsrv")
-									{$update = "UPDATE [files] SET [file] = ?, [hash] = ?, [size] = ? WHERE [id] = ?";}
-								$prep = $this->sql->conn->prepare($update);
-								$prep->bindParam(1, $dest_name, PDO::PARAM_STR);
-								$prep->bindParam(2, $file_hash1, PDO::PARAM_STR);
-								$prep->bindParam(3, $file_size1, PDO::PARAM_STR);
-								$prep->bindParam(4, $file_row, PDO::PARAM_INT);
-								$prep->execute();
-								$err = $this->sql->conn->errorCode();
-								if($err[0] == "00000")
-								{
-									$this->verbosed("Conversion completed. ".$source." -> ".$ret_file_name, 1);
-									//$this->logd("Conversion completed. ".$source." -> ".$ret_file_name, $this->This_is_me);
-									$source = $ret_file_name;
-									$file_name = $dest_name;
-									$file_hash = $file_hash1;
-									$file_size = $file_size1;
-								}else
-								{
-									$this->verbosed("Conversion completed, but the update of the table with the new info failed.", -1);
-									//$this->logd("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1), "Error", $this->This_is_me);
-									throw new ErrorException("Conversion completed, but the update of the table with the new info failed.".$file_src[0].".".$file_src[1]." -> ".$source.var_export($this->sql->conn->errorInfo(),1));
-								}
+								$tmp = array(-1, "Extracted VS1 has already been imported. ".$detination_vs1);
 							}
 							else
 							{
-								trigger_error("File already imported. $ret_file_name Thread ID: ".$this->thread_id, E_USER_NOTICE);
-								//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$ret_file_name ($importing_id)","Warning", $this->This_is_me);
-								//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$ret_file_name ($importing_id)");
-								//unlink($ret_file_name);
-								$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$ret_file_name ($importing_id)");
-								$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);	
-								return 0;
+								$this->verbosed("Importing Extracted VSZ. ".$detination_vs1, 1);
+								$tmp = $this->import->import_vs1($detination_vs1, $file_row,  $importing_id);								
 							}
+							unlink($detination_vs1);
 						}
+						else
+						{
+							$tmp = array(-1, "Extracted VS1 Does not exists. ".$detination_vs1);
+						}
+					}
+					else
+					{
 						$this->verbosed("Importing VS1. ".$source, 1);
 						$tmp = $this->import->import_vs1($source, $file_row,  $importing_id);
 					}
@@ -527,8 +484,46 @@ class daemon extends wdbcli
 				}
 				elseif ($file_type == "wiglewificsv")
 				{
-					$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
-					$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
+					if($file_ext == "gz")
+					{
+						$this->verbosed("Extracting GZ. ".$source, 1);
+						$path_parts = pathinfo($source);
+						$detination_csv = $path_parts['dirname']."/extract/".$path_parts['filename'].".CSV";
+
+						$file = gzopen($source, 'rb');
+						$out_file = fopen($detination_csv, 'wb'); 
+
+						while (!gzeof($file)) 
+						{
+							fwrite($out_file, gzread($file, 4096));
+						}
+
+						fclose($out_file);
+						gzclose($file);
+						
+						if (file_exists($detination_csv)) 
+						{
+							if($this->CheckFileImported($detination_csv))
+							{
+								$tmp = array(-1, "Extracted CSV has already been imported. ".$detination_csv);
+							}
+							else
+							{
+								$this->verbosed("Importing Extracted CSV. ".$detination_csv, 1);
+								$tmp = $this->import->import_wiglewificsv($detination_csv, $file_row,  $importing_id);							
+							}
+							unlink($detination_csv);
+						}
+						else
+						{
+							$tmp = array(-1, "Extracted CSV Does not exists. ".$detination_csv);
+						}
+					}
+					else
+					{
+						$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
+						$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
+					}
 				}
 				elseif ($file_type == "swardriving")
 				{
@@ -596,15 +591,6 @@ class daemon extends wdbcli
 					}
 					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];
 				}
-			}
-			else
-			{
-				trigger_error("File already imported. $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
-				//$this->logd("File has already been successfully imported into the Database, skipping.\r\n\t\t\t$source ($importing_id)","Warning", $this->This_is_me);
-				//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($importing_id)");
-				//unlink($source);
-				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($importing_id)");
-				$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);
 			}
 		}
 		else

@@ -150,6 +150,63 @@ class import extends dbcore
 		return $return;
 	}
 	
+	private function InsertHist($File_ID, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $fDate)
+	{
+		$retry = true;
+		while ($retry)
+		{
+			try 
+			{
+				if($this->sql->service == "mysql")
+					{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
+				$preps = $this->sql->conn->prepare($sql);
+				$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
+				$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
+				$preps->bindParam(3, $File_ID, PDO::PARAM_INT);
+				$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
+				$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
+				$preps->bindParam(6, $new, PDO::PARAM_INT);
+				$preps->bindParam(7, $fDate, PDO::PARAM_STR);
+				$preps->execute();
+				$return = $this->sql->conn->lastInsertId();
+				$retry = false;
+			}
+			catch (Exception $e)
+			{
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				$return = 0;
+			}
+		}
+		return $return;
+	}
+	
+	private function UpdateImportingStatus($file_importing_id, $calc, $fSSID)
+	{
+		$retry = true;
+		while ($retry)
+		{
+			try 
+			{
+				if($this->sql->service == "mysql")
+					{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $calc, PDO::PARAM_STR);
+				$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
+				$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
+				$prep->execute();
+				$retry = false;
+			}
+			catch (Exception $e) 
+			{
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+			}
+		}
+	}
+	
 	private function UpdateFileValidGPS($file_id)
 	{
 		$retry = true;
@@ -229,23 +286,8 @@ class import extends dbcore
 		$high_gps_rssi = $fetchgai['high_gps_rssi'];
 
 		#Update Import Status
-		$retry = true;
-		while ($retry)
-		{
-			try {
-				$text = "$msg (UHP)";
-				$sql = "UPDATE files_importing SET ap = ?, tot = ? WHERE id = ?";
-				$prep = $this->sql->conn->prepare($sql);
-				$prep->bindParam(1, $ssid, PDO::PARAM_STR);
-				$prep->bindParam(2, $text, PDO::PARAM_STR);
-				$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-				$prep->execute();
-				$retry = false;
-			}
-			catch (Exception $e) {
-				$retry = $this->sql->isPDOException($this->sql->conn, $e);
-			}
-		}
+		$text = "$msg (UHP)";
+		$this->UpdateImportingStatus($file_importing_id, $text, $ssid);
 
 		#Update First Active, Last Active, High RSSI, High Signal and point count
 		$retry = true;
@@ -492,26 +534,8 @@ class import extends dbcore
 			
 			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
 			
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					$calc = "Line: ".($key+1)." / ".$File_lcount;
-					if($this->sql->service == "mysql")
-						{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
-					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $calc, PDO::PARAM_STR);
-					$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-					$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
 			
 			$ap_id = 0;
 			$new = 0;
@@ -561,30 +585,7 @@ class import extends dbcore
 			if($gps_id == 0){continue;}
 			$gps_count++;
 			
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					if($this->sql->service == "mysql")
-						{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-					$preps = $this->sql->conn->prepare($sql);
-					$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
-					$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
-					$preps->bindParam(3, $file_id, PDO::PARAM_INT);
-					$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
-					$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
-					$preps->bindParam(6, $new, PDO::PARAM_INT);
-					$preps->bindParam(7, $fDate, PDO::PARAM_STR);
-					$preps->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
-			$hist_id = $this->sql->conn->lastInsertId();
+			$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $fDate);
 			if($hist_id == ""){continue;}
 			
 			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
@@ -644,27 +645,9 @@ class import extends dbcore
 			list($chan, $radio) = $this->convert->findFreq($fFrequency);
 			
 			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
-
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					$calc = "Line: ".($key+1)." / ".$File_lcount;
-					if($this->sql->service == "mysql")
-						{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
-					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $calc, PDO::PARAM_STR);
-					$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-					$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
+			
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
 			
 			$ap_id = 0;
 			$new = 0;
@@ -726,30 +709,7 @@ class import extends dbcore
 				if($gps_id == 0){continue;}
 				$gps_count++;
 				
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						if($this->sql->service == "mysql")
-							{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}	
-						$preps = $this->sql->conn->prepare($sql);
-						$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
-						$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
-						$preps->bindParam(3, $file_id, PDO::PARAM_INT);
-						$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
-						$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
-						$preps->bindParam(6, $new, PDO::PARAM_INT);
-						$preps->bindParam(7, $fDate, PDO::PARAM_STR);
-						$preps->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-				$hist_id = $this->sql->conn->lastInsertId();
+				$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $fDate);
 				if($hist_id == ""){continue;}
 				
 				$harr = @$hdata[$ap_id];
@@ -786,6 +746,167 @@ class import extends dbcore
 				'imported'=> $imported,
 				'date'=>$date,
 				'aps'=>$ap_count,
+				'gps'=>$gps_count,
+				'newaps'=>$NewAPs
+			);
+		return $ret;
+	}
+	
+	public function import_vistumblercsv($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+
+		# Open the file and dump its contents into an array. probably should re think this part...
+		$file_contents = @file_get_contents($source);
+		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
+		$file_contents = str_replace("\xEF\xBB\xBF",'',$file_contents);// Remove Byte Order Mark
+		if($file_contents === "")
+		{
+			return array(-1, "File was empty, or error opening file.");
+		}
+		$File_return	 = explode("\n", $file_contents);
+		$File_lcount = count($File_return);
+
+		# Now lets loop through the file and see what we have.
+		$this->verbosed("Compiling data from file to array:", 3);
+		$imported_aps = array();
+		$hdata = array();
+		$NewAPs = 0;
+		$gps_count = 0;
+		foreach($File_return as $key => $file_line)
+		{
+
+			$line = str_getcsv ($file_line);
+			if($line[1] == "BSSID" && $line[2] == "MANUFACTURER" && $line[3] == "SIGNAL" && $line[4] == "High Signal"){continue;} #tis the header, skip it..
+			$line_count = count($line);
+			if($line_count < 26){echo "CSV file with less than 26 fields\r\n";break;}
+
+			if ($line[7]==='Open' && $line[8]==='None'){$sectype="1";}
+			if ($line[7]==='Open' && $line[8]==='WEP'){$sectype="2";}
+			if ($line[8] !== 'None' && $line[8] !== 'WEP'){$sectype="3";}
+			
+			$ssid = @$line[0];
+			$mac = @$line[1];
+			$man = @$line[2];
+			$sig = @$line[3];
+			$RSSI = @$line[5];
+			$auth = @$line[7];
+			$encr = @$line[8];
+			$sectype = @$sectype;
+			$radio = @$line[9];
+			$chan = @$line[10];
+			$btx = @$line[11];
+			$otx = @$line[12];
+			$nt = @$line[13];
+			$label = @$line[14];
+			$lat = $this->convert->all2dm(number_format(@$line[15], 7));
+			$lon = $this->convert->all2dm(number_format(@$line[16], 7));
+			$sats = @$line[17];
+			$hdp = @$line[18];
+			$alt = @$line[19];
+			$geo = @$line[20];
+			$kmh = @$line[21];
+			$mph = @$line[22];
+			$track = @$line[23];
+			$date = @$line[24];
+			$time = @$line[25];
+			$datetime = $date." ".$time;
+			
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $ssid);
+
+			$gps_id = $this->InsertGps($file_id, null, $lat, $lon, $sats, $hdp, $alt, $geo, $kmh, $mph, $track, null, $datetime);
+			if($gps_id == ""){continue;}
+			$gps_count++;
+				
+			$ap_id = 0;
+			$new = 0;
+			$addresult = $this->InsertAp($file_id, $mac, $ssid, $chan, $auth, $encr, $sectype, $radio, $nt, $btx, $otx, null);
+			if($addresult)
+			{
+				$ap_id = $addresult['AP_ID'];
+				$ap_action = $addresult['$action'];
+				$ap_RADTYPE = $addresult['RADTYPE'];
+				if($ap_action == "INSERT")
+				{
+					$imported_aps[] = $ap_id.":0";
+					$new = 1;
+					$NewAPs++;
+				}
+				if($radio != $ap_RADTYPE && $radio != "")
+				{
+					$retry = true;
+					while ($retry)
+					{
+						try 
+						{
+							if($this->sql->service == "mysql")
+								{$sql = "UPDATE wifi_ap SET RADTYPE = ? WHERE AP_ID = ?";}
+							else if($this->sql->service == "sqlsrv")
+								{$sql = "UPDATE [wifi_ap] SET [RADTYPE] = ? WHERE [AP_ID] = ?";}
+							$prepu = $this->sql->conn->prepare($sql);
+							$prepu->bindParam(1, $aps['radio'], PDO::PARAM_STR);
+							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+							$prepu->execute();
+							$retry = false;
+						}
+						catch (Exception $e) 
+						{
+							$retry = $this->sql->isPDOException($this->sql->conn, $e);
+						}
+					}
+				}
+			}
+			
+			if($ap_id == 0){continue;}
+			
+			$harr = @$hdata[$ap_id];
+			$HighRSSI = @$harr['HighRSSI'];
+			$HighRSSIwGPS = @$harr['HighRSSIwGPS'];
+			$First_New = @$harr['First_New'];
+			if($First_New){$new=$First_New;}
+			if($RSSI == ""){$RSSI == -99;}
+			if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
+			if($RSSI > $HighRSSI){$HighRSSI = $RSSI;}
+			if($lat != "" && $lon != "" && $lat != "0.0000" && $lon != "0.0000" && $RSSI > $HighRSSIwGPS){$HighRSSIwGPS = $RSSI;}
+			$hdata[$ap_id] = array(
+				'ap_id'	=>  $ap_id,
+				'HighRSSI'	=>  $HighRSSI,
+				'HighRSSIwGPS'	=>  $HighRSSIwGPS,
+				'First_New'	=>  $First_New
+			);
+			
+			$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $sig, $RSSI, $new, $datetime);
+			if($hist_id == ""){continue;}
+
+		}
+		
+		#Update AP High Points
+		$h_lcount = count($hdata);
+		$h_ccount = 0;
+		foreach ($hdata as $key => $ap)
+		{
+			$h_ccount++;
+			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
+			$ap_id = $ap['ap_id'];
+			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
+		}
+		
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		#Finish off Import and give credit to the user.
+		$imported = implode("-", $imported_aps);
+		$date = date("Y-m-d H:i:s");
+		
+		$ret = array(
+				'imported'=> $imported,
+				'date'=>$date,
+				'aps'=>$h_lcount,
 				'gps'=>$gps_count,
 				'newaps'=>$NewAPs
 			);
@@ -844,26 +965,8 @@ class import extends dbcore
 			{
 				$GpsDate = date("Y-m-d H:i:s", $timestamp);
 				
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						$calc = "Line: ".($key+1)." / ".$File_lcount;
-						if($this->sql->service == "mysql")
-							{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
-						$prep = $this->sql->conn->prepare($sql);
-						$prep->bindParam(1, $calc, PDO::PARAM_STR);
-						$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-						$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-						$prep->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
+				$calc = "Line: ".($key+1)." / ".$File_lcount;
+				$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
 				
 				echo "$fBSSID $fSSID $fCapabilities $fchannel $fType\r\n";
 				if($fType == "WIFI")
@@ -924,31 +1027,7 @@ class import extends dbcore
 					if($ap_id == 0){continue;}
 					$ap_count++;
 
-					$retry = true;
-					while ($retry)
-					{
-						try {
-							if($this->sql->service == "mysql")
-								{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-							$preps = $this->sql->conn->prepare($sql);
-							$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
-							$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
-							$preps->bindParam(3, $file_id, PDO::PARAM_INT);
-							$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
-							$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
-							$preps->bindParam(6, $new, PDO::PARAM_INT);
-							$preps->bindParam(7, $GpsDate, PDO::PARAM_STR);
-							$preps->execute();
-							$retry = false;
-						}
-						catch (Exception $e) {
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-					
-					$hist_id = $this->sql->conn->lastInsertId();
+					$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $GpsDate);
 					if($hist_id == ""){continue;}
 					
 					$harr = @$hdata[$ap_id];
@@ -1148,26 +1227,8 @@ class import extends dbcore
 			
 			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
 			
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					$calc = "Line: ".($key+1)." / ".$File_lcount;
-					if($this->sql->service == "mysql")
-						{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
-					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $calc, PDO::PARAM_STR);
-					$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
-					$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
 			
 			if (($timestamp = strtotime($fDate)) !== false) {
 				$GpsDate = date("Y-m-d H:i:s", $timestamp);
@@ -1219,30 +1280,7 @@ class import extends dbcore
 				if($ap_id == 0){continue;}
 				$ap_count++;
 				
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						if($this->sql->service == "mysql")
-							{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-						$preps = $this->sql->conn->prepare($sql);
-						$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
-						$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
-						$preps->bindParam(3, $file_id, PDO::PARAM_INT);
-						$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
-						$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
-						$preps->bindParam(6, $new, PDO::PARAM_INT);
-						$preps->bindParam(7, $GpsDate, PDO::PARAM_STR);
-						$preps->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-				$hist_id = $this->sql->conn->lastInsertId();
+				$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $GpsDate);
 				if($hist_id == ""){continue;}
 				
 				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
@@ -1609,26 +1647,9 @@ class import extends dbcore
 		{
 			$ap_num = $key + 1;
 			$retry = true;
-			while ($retry)
-			{
-				try 
-				{
-					$calc = "AP: ".($ap_num)." / ".$ap_count;
-					if($this->sql->service == "mysql")
-						{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
-					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $calc, PDO::PARAM_STR);
-					$prep->bindParam(2, $aps['ssid'], PDO::PARAM_STR);
-					$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
+			
+			$calc = "AP: ".($ap_num)." / ".$ap_count;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $aps['ssid']);
 
 			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['auth'].$aps['encry']);
 
@@ -1691,25 +1712,8 @@ class import extends dbcore
 			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
 			$SigArrSize = count($ap_sig_exp);
 			
-			$retry = true;
-			while ($retry)
-			{
-				try {
-					$calc = "AP: ".($ap_num)." / ".$ap_count." (".$SigArrSize." Points)";
-					if($this->sql->service == "mysql")
-						{$sql = "UPDATE files_importing SET tot = ? WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "UPDATE [files_importing] SET [tot] = ? WHERE [id] = ?";}
-					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $calc, PDO::PARAM_STR);
-					$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					$retry = false;
-				}
-				catch (Exception $e) {
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-				}
-			}
+			$calc = "AP: ".($ap_num)." / ".$ap_count." (".$SigArrSize." Points)";
+			$this->UpdateImportingStatus($file_importing_id, $calc, $ssid);
 
 			#Go through points and import them
 			$this->verbosed("Starting Import of Wifi Signal ( ".$SigArrSize." Signal Points )... ", 1);
@@ -1864,25 +1868,8 @@ class import extends dbcore
 				$og_track = (float) $GPS_Arr[9];
 				$og_datetime = $GPS_Arr[10]." ".$GPS_Arr[11];
 				
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						$calc = "GPS: ".($key+1)." / ".$gps_lcount;
-						if($this->sql->service == "mysql")
-							{$sql = "UPDATE files_importing SET tot = ?, ap = 'Importing GPS Data' WHERE id = ?";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = 'Importing GPS Data' WHERE [id] = ?";}
-						$prep = $this->sql->conn->prepare($sql);
-						$prep->bindParam(1, $calc, PDO::PARAM_STR);
-						$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-						$prep->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
+				$calc = "GPS: ".($key+1)." / ".$gps_lcount;
+				$this->UpdateImportingStatus($file_importing_id, $calc, 'Importing GPS Data');
 				
 				$new_gps_id = $this->InsertGps($file_id, $og_id, $og_lat, $og_lon, $og_sats, $og_hdp, $og_alt, $og_geo, $og_kmh, $og_mph, $og_track, null, $og_datetime);
 				$gdata[$og_id] = array(
@@ -1920,26 +1907,8 @@ class import extends dbcore
 				$oa_otx = $AP_Arr[12];
 				$ap_hash = md5($oa_ssid.$oa_mac.$oa_chan.$oa_sectype.$oa_auth.$oa_encry);
 				
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						$calc = "AP: ".($key+1)." / ".$ap_lcount;
-						if($this->sql->service == "mysql")
-							{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
-						$prep = $this->sql->conn->prepare($sql);
-						$prep->bindParam(1, $calc, PDO::PARAM_STR);
-						$prep->bindParam(2, $oa_ssid, PDO::PARAM_STR);
-						$prep->bindParam(3, $file_importing_id, PDO::PARAM_INT);
-						$prep->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
+				$calc = "AP: ".($key+1)." / ".$ap_lcount;
+				$this->UpdateImportingStatus($file_importing_id, $calc, $oa_ssid);
 				
 				$retry = true;
 				while ($retry)
@@ -2065,25 +2034,8 @@ class import extends dbcore
 				$new_ap_id = $ap_id_arr['new_ap_id'];
 				$new = $ap_id_arr['new'];
 
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						$calc = "HIST: ".($key+1)." / ".$hist_lcount;
-						if($this->sql->service == "mysql")
-							{$sql = "UPDATE files_importing SET tot = ?, ap = 'Importing HIST Data' WHERE id = ?";}
-						else if($this->sql->service == "sqlsrv")
-							{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = 'Importing HIST Data' WHERE [id] = ?";}
-						$prep = $this->sql->conn->prepare($sql);
-						$prep->bindParam(1, $calc, PDO::PARAM_STR);
-						$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-						$prep->execute();
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
+				$calc = "HIST: ".($key+1)." / ".$hist_lcount;
+				$this->UpdateImportingStatus($file_importing_id, $calc, 'Importing HIST Data');
 				
 				if($gps_id_arr != "" && $new_ap_id != "")
 				{
@@ -2096,29 +2048,7 @@ class import extends dbcore
 						'HighRSSIwGPS'	=>  $HighRSSIwGPS
 					);
 					
-					$retry = true;
-					while ($retry)
-					{
-						try {
-							if($this->sql->service == "mysql")
-								{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}	
-							$preps = $this->sql->conn->prepare($sql);
-							$preps->bindParam(1, $new_ap_id, PDO::PARAM_INT);
-							$preps->bindParam(2, $new_gps_id, PDO::PARAM_INT);
-							$preps->bindParam(3, $file_id, PDO::PARAM_INT);
-							$preps->bindParam(4, $oh_sig, PDO::PARAM_INT);
-							$preps->bindParam(5, $oh_rssi, PDO::PARAM_INT);
-							$preps->bindParam(6, $new, PDO::PARAM_INT);
-							$preps->bindParam(7, $oh_datetime, PDO::PARAM_STR);
-							$preps->execute();
-							$retry = false;
-						}
-						catch (Exception $e) {
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
+					$this->InsertHist($file_id, $new_ap_id, $new_gps_id, $oh_sig, $oh_rssi, $new, $oh_datetime);
 				}
 			}
 		}
