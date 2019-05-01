@@ -549,7 +549,7 @@ switch($func)
 
 		$schedule_row = array();
 		$n=0;
-		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.interval, schedule.status, schedule.nextrun, schedule.pidfile, schedule.pid AS schedpid,\n"
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.interval, schedule.status, schedule.nextrun, schedule.logfile, schedule.pidfile, schedule.pid AS schedpid,\n"
 			. "daemon_pid_stats.pid, daemon_pid_stats.pidtime, daemon_pid_stats.pidcpu, daemon_pid_stats.pidmem, daemon_pid_stats.pidcmd, daemon_pid_stats.date AS pidud\n"
 			. "FROM schedule\n"
 			. "LEFT OUTER JOIN daemon_pid_stats ON daemon_pid_stats.pidfile = schedule.pidfile\n"
@@ -562,7 +562,7 @@ switch($func)
 			$nextrun_local = date("Y-m-d h:i:s A", $altered);
 			$nextrun_utc = date('Y-m-d h:i:s A', $nextrun);
 			$curtime = time();
-			$min_diff = round(($nextrun_utc - $curtime) / 60);
+			$lastupdatetime = strtotime($newArray['pidud']);
 			$interval = (int)$newArray['interval'];
 			$status = $newArray['status'];
 			$enabled = $newArray['enabled'];
@@ -577,9 +577,9 @@ switch($func)
 				$nextrun_utc = date('Y-m-d h:i:s A', $nextrun);
 				$schedpid = $newArray['schedpid'];
 				$pid = $newArray['pid'];
+				$logfile = $newArray['logfile'];
 				if($schedpid == $pid)
 				{
-					$lastupdatetime = strtotime($newArray['pidud']);
 					if(($curtime-$lastupdatetime) < 60) 
 						{$color = 'lime';}
 					else
@@ -589,12 +589,13 @@ switch($func)
 				{
 					$color = 'orange';
 				}
+				if($logfile){$schedpid .= " (".$logfile.")";}
 			}
 			else if($status=="Error" or $enabled==0)
 			{
 				$color = 'red';
 			}			
-			else if($min_diff <= $interval and $min_diff >= 0)
+			else if(($curtime-$lastupdatetime) < 60)
 			{
 				$color = 'lightgreen';
 			}
