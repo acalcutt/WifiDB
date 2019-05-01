@@ -103,25 +103,32 @@ class daemon extends wdbcli
 	
 	function CheckFileImported($source)
 	{
-		$file_hash1 = hash_file('md5', $source);
-		
-		if($this->sql->service == "mysql")
-			{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
-		$prep = $this->sql->conn->prepare($sql_check);
-		$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
-		$prep->execute();
-		$ids = $prep->fetch(1);
-		$hash_count = $ids[0];
-		if($hash_count == 0)
+		$retry = true;
+		while ($retry)
 		{
-			return 0;
+			try 
+			{
+				$file_hash1 = hash_file('md5', $source);
+				
+				if($this->sql->service == "mysql")
+					{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
+				$prep = $this->sql->conn->prepare($sql_check);
+				$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
+				$prep->execute();
+				$ids = $prep->fetch(1);
+				$hash_count = $ids[0];
+				if($hash_count == 0){$return = 0;}else{$return = 1;}
+				$retry = false;
+			}
+			catch (Exception $e)
+			{
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				$return = -1;
+			}
 		}
-		else
-		{
-			return 1;
-		}
+		return $return;
 	}
 
 	function cleanBadImport($import_ids, $file_id = 0, $file_importing_id = 0, $error_msg = "")
