@@ -834,6 +834,7 @@ class import extends dbcore
 				'lat'	=>  $lat,
 				'lon'	=>  $lon,
 				'sats'	=>  $sats,
+				'acc'	=>  null,
 				'hdp'	=>  $hdp,
 				'alt'	=>  $alt,
 				'geo'	=>  $geo,
@@ -1166,6 +1167,92 @@ class import extends dbcore
 			$fAltitudeMeters = @$apinfo[8];
 			$fAccuracy = @$apinfo[9];
 			$fType = @$apinfo[10];
+
+			$gps_hash = md5($fLat.$fLon.$fAltitudeMeters.$fAccuracy.$fDate);
+			$garr = @$gdata[$gps_hash];
+			$fgid = @$garr['id'];
+			if(!$fgid){$gid++;$fgid=$gid;}
+			$gdata[$gps_hash] = array(
+				'id'	=>  $fgid,
+				'lat'	=>  $fLat,
+				'lon'	=>  $fLon,
+				'sats'	=>  null,
+				'acc'	=>  $fAccuracy,
+				'hdp'	=>  null,
+				'alt'	=>  $fAltitudeMeters,
+				'geo'	=>  null,
+				'kmh'	=>  null,
+				'mph'	=>  null,
+				'track'	=>  null,
+				'datetime'	=>  $fDate
+			);
+			
+			if(substr($fDate, 0, 4) == "1969"){continue;}//Continue on bad date
+			if (($timestamp = strtotime($fDate)) !== false) 
+			{
+				$GpsDate = date("Y-m-d H:i:s", $timestamp);
+				
+				$calc = "Line: ".($key+1)." / ".$File_lcount;
+				$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
+				
+				echo "$fBSSID $fSSID $fCapabilities $fchannel $fType\r\n";
+				if($fType == "WIFI")
+				{
+					if(!$this->validateMacAddress($fBSSID)){continue;}
+					
+					if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
+					$fSignal = $this->convert->dBm2Sig($fRSSI);
+					list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
+					list($chan, $radio) = $this->convert->findFreq($fchannel);
+
+					$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+					$aarr = @$apdata[$ap_hash];
+					$fsigs = @$aarr['signals'];
+					if($fsigs){$fsigs .= "\\";}
+					$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+					$apdata[$ap_hash] = array(
+						'ap_hash'   => $ap_hash,
+						'ssid'	  =>  $fSSID,
+						'bssid'	   =>  $fBSSID,
+						'manuf'	 =>  $this->findManuf($fBSSID),
+						'auth'	  =>  $authen,
+						'encry'	 =>  $encry,
+						'sectype'   =>  $sectype,
+						'flags'   =>  $fCapabilities,
+						'radio'	 =>  $radio,
+						'chan'	  =>  $chan,
+						'btx'	   =>  null,
+						'otx'	   =>  null,
+						'nt'		=>  $nt,
+						'label'	 =>  $label,
+						'signals'   =>  $fsigs
+					);
+				}
+				else
+				{
+					
+					$cell_hash = md5($fBSSID.$fSSID.$fCapabilities.$fchannel.$fType);
+					$carr = @$celldata[$cell_hash];
+					$fsigs = @$carr['signals'];
+					if($fsigs){$fsigs .= "\\";}
+					$fsigs .= $fgid.",".$fRSSI;
+					$apdata[$ap_hash] = array(
+						'ap_hash'   => $ap_hash,
+						'ssid'	  =>  $fSSID,
+						'bssid'	   =>  $fBSSID,
+						'flags'   =>  $fCapabilities,
+						'chan'	  =>  $fchannel,
+						'type'	   =>  $fType,
+						'signals'   =>  $fsigs
+					);
+					
+			
+			
+			
+			
+			
+			
+			
 
 			if(substr($fDate, 0, 4) == "1969"){continue;}//Continue on bad date
 			if (($timestamp = strtotime($fDate)) !== false) 
