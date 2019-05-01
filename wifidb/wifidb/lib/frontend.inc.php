@@ -599,8 +599,28 @@ class frontend extends dbcore
 	function UsersLists($username = "", $sort = "id", $ord = "DESC")
 	{
 		if($username == ""){return 0;}
-
+		
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT COUNT(`id`) AS `ApCount` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT COUNT([id]) AS [ApCount] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
+		$globeprep = $this->sql->conn->prepare($sql);
+		$globeprep->bindParam(1, $username, PDO::PARAM_STR);
+		$globeprep->execute();
+		$globeprepfetch = $globeprep->fetch(2);
+		if($globeprepfetch['ApCount'] !== "0"){$user_validgps = 1;}else{$user_validgps = 0;}
+		
 		#Total APs
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT SUM(`aps`]) As `aps`, SUM(`gps`) As `gps`, Min(`date`) As `fa`, Max(`date`) As `la`, AVG(`NewAPPercent`) As `NewAPPercent` FROM `files` WHERE `user` like ? GROUP BY `user`";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT SUM([aps]) As [aps], SUM([gps]) As [gps], Min([date]) As [fa], Max([date]) As [la], AVG([NewAPPercent]) As [NewAPPercent] FROM [files] WHERE [user] like ? GROUP BY [user]";}
+		$result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $username, PDO::PARAM_STR);
+		$result->execute();
+		$user_counts = $result->fetch(2);
+
+		#New APs
 		if($this->sql->service == "mysql")
 			{
 				$sql = "SELECT COUNT(`AP_ID`)\n"
@@ -619,27 +639,7 @@ class frontend extends dbcore
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
 		$rows = $result->fetch(1);
-		$total = $rows[0];
-
-		#Get First Active AP
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT id, user, date FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` ASC LIMIT 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [id], [user], [date] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [date] ASC";}
-		$prep2 = $this->sql->conn->prepare($sql);
-		$prep2->bindParam(1, $username, PDO::PARAM_STR);
-		$prep2->execute();
-		$user_first = $prep2->fetch(2);
-
-		#Get Last Active AP
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT `id`, `date` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `date` DESC LIMIT 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [id], [date] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [date] DESC";}
-		$prep1 = $this->sql->conn->prepare($sql);
-		$prep1->bindParam(1, $username, PDO::PARAM_STR);
-		$prep1->execute();
-		$user_last = $prep1->fetch(2);
+		$new_aps = $rows[0];
 
 		#Get All Imports for User
 		if($this->sql->service == "mysql")
@@ -678,11 +678,14 @@ class frontend extends dbcore
 										   );
 		}
 		$this->user_all_imports_data = array();
-		$this->user_all_imports_data['user_id'] = $user_first['id'];
-		$this->user_all_imports_data['user'] = $user_first['user'];
-		$this->user_all_imports_data['first_import_date'] = $user_first['date'];
-		$this->user_all_imports_data['newest_date'] = $user_last['date'];
-		$this->user_all_imports_data['total_aps'] = $total;
+		$this->user_all_imports_data['user'] = $username;
+		$this->user_all_imports_data['first_import_date'] = $user_counts['fa'];
+		$this->user_all_imports_data['newest_date'] = $user_counts['la'];
+		$this->user_all_imports_data['new_aps'] = $new_aps;
+		$this->user_all_imports_data['total_aps'] = $user_counts['aps'];
+		$this->user_all_imports_data['total_gps'] = $user_counts['gps'];
+		$this->user_all_imports_data['NewAPPercent'] = $user_counts['NewAPPercent'];
+		$this->user_all_imports_data['validgps'] = $user_validgps;
 
 		$this->user_all_imports_data['other_imports'] = $other_imports_array;
 		return 1;
