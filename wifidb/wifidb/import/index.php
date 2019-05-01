@@ -118,6 +118,10 @@ switch($func)
 					$ext_fail = 0;
 					$task = "import";
 				break;
+				case "gz":
+					$ext_fail = 0;
+					$task = "import";
+				break;
 				default:
 					$ext_fail = 1;
 					$task = "";
@@ -209,7 +213,7 @@ switch($func)
 }
 
 #Get Complete Count
-$sql = "SELECT Count(id) AS imp_count FROM files";
+$sql = "SELECT Count(id) AS imp_count FROM files WHERE completed = 1";
 $prep = $dbcore->sql->conn->query($sql);
 $prepf = $prep->fetch(1);
 $complete_count = $prepf[0];
