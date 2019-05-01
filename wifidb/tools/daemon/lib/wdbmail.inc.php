@@ -72,6 +72,33 @@ class wdbmail
 		$this->mail->DKIM_identity 		= $this->DKIM_identity;		//The identity you're signing as - usually your From address
 		$this->mail->DKIM_copyHeaderFields = $this->DKIM_copyHeaderFields;//Suppress listing signed header fields in signature, defaults to true for debugging purpose
 		$this->mail->addCustomHeader("List-Unsubscribe",$this->ListUnsubscribe);
+		
+		$this->signup_smtp_debug		= $config['signup_smtp_debug'];
+		$this->signup_smtp_host			= $config['signup_smtp_host'];
+		$this->signup_smtp_port			= $config['signup_smtp_port'];
+		$this->signup_smtp_user			= $config['signup_smtp_user'];
+		$this->signup_smtp_pass			= $config['signup_smtp_pass'];
+		$this->signup_smtp_from			= $config['signup_smtp_from'];
+		$this->signup_smtp_replyto		= $config['signup_smtp_replyto'];		
+		$this->signup_smtp_secure		= $config['signup_smtp_secure'];
+		$this->signup_smtp_auth			= $config['signup_smtp_auth'];
+		$this->signup_smtp_authtype		= $config['signup_smtp_authtype'];
+		$this->signup_smtp_options		= $config['signup_smtp_options'];
+		
+		$this->signupmail 					= new PHPMailer();
+		$this->signupmail->isSMTP();										// Set mailer to use SMTP			
+		$this->signupmail->XMailer 			= $this->XMailer;			//What to put in the X-Mailer header. An empty string for PHPMailer default, whitespace for none, or a string to use.		
+		$this->signupmail->SMTPDebug 			= $this->signup_smtp_debug;		// Enable verbose debug output 0:disable 2:verbose
+		$this->signupmail->Host 				= $this->signup_smtp_host;			// Specify main and backup SMTP servers
+		$this->signupmail->Port 				= $this->signup_smtp_port;			// Specify smtp port
+		$this->signupmail->Username 			= $this->signup_smtp_user;			// SMTP username
+		$this->signupmail->Password 			= $this->signup_smtp_pass;			// SMTP password		
+		$this->signupmail->SetFrom($this->signup_smtp_from);						// SMTP from
+		$this->signupmail->AddReplyTo($this->signup_smtp_replyto);				// SMTP reply to
+		$this->signupmail->SMTPSecure 		= $this->signup_smtp_secure;		// Enable TLS encryption, ssl also accepted		
+		$this->signupmail->SMTPAuth 			= $this->signup_smtp_auth;			// Enable SMTP authentication
+		$this->signupmail->AuthType 			= $this->signup_smtp_authtype;		// Auth type, tls or ssl
+		$this->signupmail->SMTPOptions 		= $this->signup_smtp_options;
     }
     
     function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
@@ -80,12 +107,12 @@ class wdbmail
         ##########################
         $validatecode = $this->GenerateKey(12);
         ##########################
-        if(!$this->mail->from($this->wifidb_from))
+        if(!$this->signupmail->from($this->wifidb_from))
         {die("Failed to add From address\r\n");}
-        if(!$this->mail->addto($Useremail))
+        if(!$this->signupmail->addto($Useremail))
         {die("Failed to add To address\r\n");}
 
-        if(!$this->mail->subject("WiFiDB User Password Reset"))
+        if(!$this->signupmail->subject("WiFiDB User Password Reset"))
         {die("Failed to add subject\r\n");}
 
         $contents = "
@@ -98,13 +125,13 @@ Go here to reset it to one you choose:
 
 -WiFiDB Service";
 
-        if(!$this->mail->text($contents))
+        if(!$this->signupmail->text($contents))
         {die("Failed to add message\r\n");}
 
-        $smtp_conn = $this->mail->connect($this->smtp, 465, $sender, $sender_pass, 'tls', 10);
+        $smtp_conn = $this->signupmail->connect($this->smtp, 465, $sender, $sender_pass, 'tls', 10);
         if ($smtp_conn)
         {
-            if($this->mail->send($smtp_conn))
+            if($this->signupmail->send($smtp_conn))
             {
                 $password = md5($validatecode.$seed);
                 $update = "UPDATE user_info SET password = '$password' WHERE username = '$username'";
@@ -126,7 +153,7 @@ Go here to reset it to one you choose:
         {
             echo "<font color='red'><h2>Failed to connect to SMTP Host.</h2></font>";
         }
-        $this->mail->disconnect();
+        $this->signupmail->disconnect();
     }
     #===============================================#
     #   Filtering of Mail to User privileged type    #
@@ -262,37 +289,75 @@ Go here to reset it to one you choose:
 	
 		try 
 		{
-			$this->mail->addAddress($to);     // Add a recipient
-			$this->mail->Subject = $subject;
-			$this->mail->Body    = $contents;
-			$this->mail->send();
+			$this->signupmail->addAddress($to);     // Add a recipient
+			$this->signupmail->Subject = $subject;
+			$this->signupmail->Body    = $contents;
+			$this->signupmail->send();
 		} 
 		catch (Exception $e) 
 		{
-			echo 'Validation email could not be sent. Mailer Error: ', $this->mail->ErrorInfo;
+			echo 'Validation email could not be sent. Mailer Error: ', $this->signupmail->ErrorInfo;
 			return 0;
 		}
-
-		$insert = "INSERT INTO user_validate (username, code, date) VALUES ('$username', '$validate_code', '$date')";
-		#echo $insert;
-		if($this->sql->conn->query($insert))
+		
+		if($this->sql->service == "mysql")
 		{
-			$return =1;
-			#echo "Message sent and inserted into DB.";
-		}
-		else
-		{
-			$insert = "UPDATE user_validate SET code = '$validate_code', date = '$date' WHERE username LIKE '$username'";
+			$insert = "INSERT INTO user_validate (username, code, date) VALUES ('$username', '$validate_code', '$date')";
+			#echo $insert;
 			if($this->sql->conn->query($insert))
 			{
 				$return =1;
-			#	echo "Message sent and Updated to newest data.";
-			}else
+				#echo "Message sent and inserted into DB.";
+			}
+			else
 			{
-				$return = 0;
-				echo "Message sent, but insert into table failed.";
+				$insert = "UPDATE user_validate SET code = '$validate_code', date = '$date' WHERE username LIKE '$username'";
+				if($this->sql->conn->query($insert))
+				{
+					$return =1;
+				#	echo "Message sent and Updated to newest data.";
+				}else
+				{
+					$return = 0;
+					echo "Message sent, but insert into table failed.";
+				}
 			}
 		}
+		else if($this->sql->service == "sqlsrv")
+		{			
+			$retry = true;
+			while ($retry)
+			{
+				try 
+				{
+					$sql = "MERGE INTO user_validate WITH (HOLDLOCK)\n"
+						. "	USING (SELECT :susername AS susername) AS newvald\n"
+						. "		ON user_validate.username = newvald.susername\n"
+						. "	WHEN MATCHED THEN\n"
+						. "		UPDATE SET user_validate.date = getdate(), user_validate.code = :ucode\n"
+						. "	WHEN NOT MATCHED THEN\n"
+						. "		INSERT ([username], [code], [date])\n"
+						. "		VALUES (:username, :code, getdate())\n"
+						. 'OUTPUT INSERTED.id;';
+						
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':susername', $username, PDO::PARAM_STR);
+					$prep->bindParam(':ucode', $validate_code, PDO::PARAM_STR);
+					$prep->bindParam(':username', $username, PDO::PARAM_STR);
+					$prep->bindParam(':code', $validate_code, PDO::PARAM_STR);
+					$prep->execute();
+					$return = $prep->fetch(2);
+					$retry = false;
+				}
+				catch (Exception $e) 
+				{
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					$return = 0;
+				}
+			}
+		}
+
+
 
         return $return;
     }
