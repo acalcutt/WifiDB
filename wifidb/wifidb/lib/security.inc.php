@@ -138,45 +138,77 @@ class security
         if($username == "")
         {
             $this->mesg[] = "Username is empty.";
-            return -1;
+            return 0;
         }
         if($password == "")
         {
             $this->mesg[] = "Password is empty.";
-            return -1;
+            return 0;
         }
         if($email == "local@localhost.local")
         {
             $this->mesg[] = "Email is empty.";
-            return -1;
+            return 0;
         }
-        $salt               = $this->GenerateKey(29);
-        $password_hashed    = crypt($password, '$2a$07$'.$salt.'$');
-        $uid                = implode(str_split($this->GenerateKey(25), 5), "-");
-        $join_date          = date($this->datetime_format);
-        $api_key            = $this->GenerateKey(64);
-
-        #now lets start creating the users info
-        $sql = "INSERT INTO user_info (username, password, uid, validated, 
-                                        locked, permissions, email, join_date, apikey) 
-                                        VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
-
-        $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam(1, $username, PDO::PARAM_STR);
-        $prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
-        $prep->bindParam(3, $uid, PDO::PARAM_STR);
-        $prep->bindParam(4, $this->email_validation, PDO::PARAM_STR);
-        $prep->bindParam(5, $email, PDO::PARAM_STR);
-        $prep->bindParam(6, $join_date, PDO::PARAM_STR);
-        $prep->bindParam(7, $api_key, PDO::PARAM_STR);
-        $this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
 		
+		#Check if username already exists
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT username FROM user_info WHERE username LIKE ? LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [username] FROM user_info WHERE [username] LIKE ?";}
+        $result = $this->sql->conn->prepare($sql);
+        $result->bindParam(1, $username, PDO::PARAM_STR);
+		$result->execute();
+        $newArray = $result->fetch(2);
+        if(@$newArray['username'])
+        {
+			$this->logd("User creation failed! A user with this username already exists.", "error");
+			$this->mesg['message'] = "User creation failed! A user with this username already exists.";
+			return 0;
+        }
+		
+		#Check if the email address already exists
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT email FROM user_info WHERE email LIKE ? LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [email] FROM user_info WHERE [email] LIKE ?";}
+        $result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $email, PDO::PARAM_STR);
+		$result->execute();
+        $newArray = $result->fetch(2);
+        if(@$newArray['email'])
+        {
+			$this->logd("User creation failed! A user with this email already exists.", "error");
+			$this->mesg['message'] = "User creation failed! A user with this email already exists.";
+			return 0;
+        }
 
-        $this->logd("User created! $username : $email : $join_date", "Info");
-        #var_dump(get_defined_vars());
-        $this->mesg['message'] = "User created! | $username : $join_date";
-        #var_dump($this->mesg['message']);
-        return 1;
+		#Create the user account
+		$salt               = $this->GenerateKey(29);
+		$password_hashed    = crypt($password, '$2a$07$'.$salt.'$');
+		$uid                = implode(str_split($this->GenerateKey(25), 5), "-");
+		$join_date          = date($this->datetime_format);
+		$api_key            = $this->GenerateKey(64);
+
+		$sql = "INSERT INTO user_info (username, password, uid, validated, 
+										locked, permissions, email, join_date, apikey) 
+										VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
+
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $username, PDO::PARAM_STR);
+		$prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
+		$prep->bindParam(3, $uid, PDO::PARAM_STR);
+		$prep->bindParam(4, $this->email_validation, PDO::PARAM_STR);
+		$prep->bindParam(5, $email, PDO::PARAM_STR);
+		$prep->bindParam(6, $join_date, PDO::PARAM_STR);
+		$prep->bindParam(7, $api_key, PDO::PARAM_STR);
+		$prep->execute();
+
+		$this->logd("User created! $username : $email : $join_date", "Info");
+		#var_dump(get_defined_vars());
+		$this->mesg['message'] = "User created! | $username : $join_date";
+		#var_dump($this->mesg['message']);
+		return 1;
     }
 
     function GenerateKey($len = 16)
