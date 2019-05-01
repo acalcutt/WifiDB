@@ -75,8 +75,8 @@ class import extends dbcore
 				try 
 				{
 					$sql = "MERGE INTO wifi_ap WITH (HOLDLOCK)\n"
-						. "	USING (SELECT :hash AS ap_hash) AS newap\n"
-						. "		ON wifi_ap.ap_hash = newap.ap_hash\n"
+						. "	USING (SELECT :s_bssid AS BSSID, :s_ssid AS SSID, :s_chan AS CHAN, :s_sectype AS SECTYPE, :s_auth AS AUTH, :s_encr AS ENCR) AS newap (BSSID, SSID, CHAN, SECTYPE, AUTH, ENCR)\n"
+						. "		ON wifi_ap.BSSID = newap.BSSID AND wifi_ap.SSID = newap.SSID AND wifi_ap.CHAN = newap.CHAN AND wifi_ap.SECTYPE = newap.SECTYPE AND wifi_ap.AUTH = newap.AUTH AND wifi_ap.ENCR = newap.ENCR\n"
 						. "	WHEN MATCHED THEN\n"
 						. "		UPDATE SET wifi_ap.ModDate = getdate()\n"
 						. "	WHEN NOT MATCHED THEN\n"
@@ -85,7 +85,12 @@ class import extends dbcore
 						. 'OUTPUT INSERTED.AP_ID, $action, INSERTED.RADTYPE, INSERTED.FLAGS;';
 						
 					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(':hash', $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(':s_bssid', $BSSID, PDO::PARAM_STR);
+					$prep->bindParam(':s_ssid', $SSID, PDO::PARAM_STR);
+					$prep->bindParam(':s_chan', $CHAN, PDO::PARAM_INT);
+					$prep->bindParam(':s_sectype', $SECTYPE, PDO::PARAM_INT);
+					$prep->bindParam(':s_auth', $AUTH, PDO::PARAM_STR);
+					$prep->bindParam(':s_encr', $ENCR, PDO::PARAM_STR);
 					$prep->bindParam(':BSSID', $BSSID, PDO::PARAM_STR);
 					$prep->bindParam(':SSID', $SSID, PDO::PARAM_STR);
 					$prep->bindParam(':CHAN', $CHAN, PDO::PARAM_INT);
@@ -1610,6 +1615,10 @@ class import extends dbcore
 					}
 					$datetime = $gps_date." ".$gps_time;
 					
+					#Fix for speeds that are way to high to be correct
+					$kmh = (float) $gps_line[7];if($kmh > 1900){$kmh = 0;};
+					$mph = (float) $gps_line[8];if($mph > 1200){$mph = 0;};
+
 					list($s1,$s2,$s3) = explode("-",$gps_date);
 					if (strlen($s1) == 2){$gps_date = $s3.'-'.$s1.'-'.$s2;}
 					$gdata[$gps_line[0]] = array(
@@ -1621,8 +1630,8 @@ class import extends dbcore
 								'hdp'	=>  (float) $gps_line[4],
 								'alt'	=>  (float) $gps_line[5],
 								'geo'	=>  (float) $gps_line[6],
-								'kmh'	=>  (float) $gps_line[7],
-								'mph'	=>  (float) $gps_line[8],
+								'kmh'	=>  $kmh,
+								'mph'	=>  $mph,
 								'track'	=>  (float) $trackangle,
 								'datetime'	=>  $datetime
 							);
