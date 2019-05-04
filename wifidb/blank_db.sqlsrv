@@ -1,6 +1,6 @@
 USE [prod_wifi]
 GO
-/****** Object:  Table [dbo].[annunc]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[annunc]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -23,7 +23,7 @@ CREATE TABLE [dbo].[annunc](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[boundaries]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[boundaries]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -38,7 +38,7 @@ CREATE TABLE [dbo].[boundaries](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[cell_carriers]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[cell_carriers]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -59,7 +59,7 @@ CREATE TABLE [dbo].[cell_carriers](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[cell_hist]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[cell_hist]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -70,10 +70,6 @@ CREATE TABLE [dbo].[cell_hist](
 	[file_id] [bigint] NULL,
 	[gps_id] [bigint] NULL,
 	[rssi] [int] NULL,
-	[lat] [decimal](9, 4) NULL,
-	[lon] [decimal](9, 4) NULL,
-	[alt] [decimal](7, 2) NULL,
-	[accuracy] [decimal](10, 2) NULL,
 	[hist_date] [datetime2](3) NULL,
 	[new] [smallint] NULL,
  CONSTRAINT [PK_cell_hist_cell_hist_id] PRIMARY KEY CLUSTERED 
@@ -82,7 +78,7 @@ CREATE TABLE [dbo].[cell_hist](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[cell_id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[cell_id]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -97,6 +93,7 @@ CREATE TABLE [dbo].[cell_id](
 	[type] [nvarchar](255) NOT NULL,
 	[highgps_id] [bigint] NULL,
 	[high_rssi] [int] NULL,
+	[high_gps_rssi] [int] NULL,
 	[fa] [datetime2](3) NULL,
 	[la] [datetime2](3) NULL,
 	[points] [bigint] NULL,
@@ -108,7 +105,7 @@ CREATE TABLE [dbo].[cell_id](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[daemon_pid_stats]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[daemon_pid_stats]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -129,7 +126,7 @@ CREATE TABLE [dbo].[daemon_pid_stats](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[DB_stats]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[DB_stats]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -179,7 +176,7 @@ CREATE TABLE [dbo].[DB_stats](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[files]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -214,7 +211,7 @@ CREATE TABLE [dbo].[files](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files_bad]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[files_bad]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -246,7 +243,7 @@ CREATE TABLE [dbo].[files_bad](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files_importing]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[files_importing]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -279,7 +276,7 @@ CREATE TABLE [dbo].[files_importing](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[files_tmp]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[files_tmp]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -308,7 +305,7 @@ CREATE TABLE [dbo].[files_tmp](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[geonames]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -340,7 +337,7 @@ CREATE TABLE [dbo].[geonames](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames_admin1]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[geonames_admin1]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -361,7 +358,7 @@ CREATE TABLE [dbo].[geonames_admin1](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames_admin2]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[geonames_admin2]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -382,7 +379,7 @@ CREATE TABLE [dbo].[geonames_admin2](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[geonames_country_names]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[geonames_country_names]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -410,7 +407,7 @@ CREATE TABLE [dbo].[geonames_country_names](
 	[EquivalentFipsCode] [nvarchar](255) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_aps]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[live_aps]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -442,7 +439,7 @@ CREATE TABLE [dbo].[live_aps](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_gps]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[live_gps]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -467,7 +464,7 @@ CREATE TABLE [dbo].[live_gps](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_signals]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[live_signals]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -481,7 +478,7 @@ CREATE TABLE [dbo].[live_signals](
 	[time_stamp] [datetime2](0) NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_titles]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[live_titles]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -494,7 +491,7 @@ CREATE TABLE [dbo].[live_titles](
 	[session_id] [nvarchar](255) NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[live_users]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[live_users]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -511,7 +508,7 @@ CREATE TABLE [dbo].[live_users](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[log]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[log]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -528,7 +525,7 @@ CREATE TABLE [dbo].[log](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[manufacturers]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[manufacturers]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -548,7 +545,7 @@ CREATE TABLE [dbo].[manufacturers](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[schedule]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[schedule]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -570,7 +567,7 @@ CREATE TABLE [dbo].[schedule](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[settings]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[settings]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -588,7 +585,7 @@ CREATE TABLE [dbo].[settings](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[share_waypoints]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[share_waypoints]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -616,7 +613,7 @@ CREATE TABLE [dbo].[share_waypoints](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_info]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[user_info]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -652,7 +649,7 @@ CREATE TABLE [dbo].[user_info](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_login_hashes]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[user_login_hashes]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -664,7 +661,7 @@ CREATE TABLE [dbo].[user_login_hashes](
 	[utime] [int] NOT NULL
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_stats]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[user_stats]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -679,7 +676,7 @@ CREATE TABLE [dbo].[user_stats](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_validate]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[user_validate]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -695,7 +692,7 @@ CREATE TABLE [dbo].[user_validate](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[user_waypoints]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[user_waypoints]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -724,7 +721,7 @@ CREATE TABLE [dbo].[user_waypoints](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[wifi_ap]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[wifi_ap]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -759,7 +756,7 @@ CREATE TABLE [dbo].[wifi_ap](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[wifi_gps]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[wifi_gps]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -785,7 +782,7 @@ CREATE TABLE [dbo].[wifi_gps](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Table [dbo].[wifi_hist]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Table [dbo].[wifi_hist]    Script Date: 5/4/2019 5:23:50 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -805,37 +802,37 @@ CREATE TABLE [dbo].[wifi_hist](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[annunc]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[boundaries]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[DB_stats]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_aps]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_aps]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_aps] ON [dbo].[files]
 (
 	[aps] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_completed]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_completed]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_completed] ON [dbo].[files]
 (
 	[completed] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_date]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_date]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_date] ON [dbo].[files]
 (
 	[date] ASC
@@ -843,7 +840,7 @@ CREATE NONCLUSTERED INDEX [IX_date] ON [dbo].[files]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_file]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_file]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_file] ON [dbo].[files]
 (
 	[file] ASC
@@ -851,13 +848,13 @@ CREATE NONCLUSTERED INDEX [IX_file] ON [dbo].[files]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_file_orig]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_file_orig]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_file_orig] ON [dbo].[files]
 (
 	[file_orig] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_gps]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_gps]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_gps] ON [dbo].[files]
 (
 	[gps] ASC
@@ -865,13 +862,13 @@ CREATE NONCLUSTERED INDEX [IX_gps] ON [dbo].[files]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_user]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_user]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_user] ON [dbo].[files]
 (
 	[user] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_ValidGPS]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_ValidGPS]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_ValidGPS] ON [dbo].[files]
 (
 	[ValidGPS] ASC
@@ -879,7 +876,7 @@ CREATE NONCLUSTERED INDEX [IX_ValidGPS] ON [dbo].[files]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [admin1_code]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [admin1_code]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [admin1_code] ON [dbo].[geonames]
 (
 	[admin1_code] ASC
@@ -887,7 +884,7 @@ CREATE NONCLUSTERED INDEX [admin1_code] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [admin2_code]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [admin2_code]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [admin2_code] ON [dbo].[geonames]
 (
 	[admin2_code] ASC
@@ -895,7 +892,7 @@ CREATE NONCLUSTERED INDEX [admin2_code] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [admin3_code]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [admin3_code]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [admin3_code] ON [dbo].[geonames]
 (
 	[admin3_code] ASC
@@ -903,7 +900,7 @@ CREATE NONCLUSTERED INDEX [admin3_code] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [admin4_code]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [admin4_code]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [admin4_code] ON [dbo].[geonames]
 (
 	[admin4_code] ASC
@@ -911,7 +908,7 @@ CREATE NONCLUSTERED INDEX [admin4_code] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [alternatenames]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [alternatenames]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [alternatenames] ON [dbo].[geonames]
 (
 	[alternatenames] ASC
@@ -919,7 +916,7 @@ CREATE NONCLUSTERED INDEX [alternatenames] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [asciiname]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [asciiname]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [asciiname] ON [dbo].[geonames]
 (
 	[asciiname] ASC
@@ -927,7 +924,7 @@ CREATE NONCLUSTERED INDEX [asciiname] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [country_code]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [country_code]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [country_code] ON [dbo].[geonames]
 (
 	[country_code] ASC
@@ -935,7 +932,7 @@ CREATE NONCLUSTERED INDEX [country_code] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [elevation]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [elevation]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [elevation] ON [dbo].[geonames]
 (
 	[elevation] ASC
@@ -943,7 +940,7 @@ CREATE NONCLUSTERED INDEX [elevation] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [feature_class]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [feature_class]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [feature_class] ON [dbo].[geonames]
 (
 	[feature_class] ASC
@@ -951,13 +948,13 @@ CREATE NONCLUSTERED INDEX [feature_class] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [feature_code]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [feature_code]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [feature_code] ON [dbo].[geonames]
 (
 	[feature_code] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[geonames]
 (
 	[id] ASC
@@ -965,7 +962,7 @@ CREATE NONCLUSTERED INDEX [id] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [latitude]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [latitude]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [latitude] ON [dbo].[geonames]
 (
 	[latitude] ASC
@@ -973,7 +970,7 @@ CREATE NONCLUSTERED INDEX [latitude] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [longitude]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [longitude]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [longitude] ON [dbo].[geonames]
 (
 	[longitude] ASC
@@ -981,7 +978,7 @@ CREATE NONCLUSTERED INDEX [longitude] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [name]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [name]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [name] ON [dbo].[geonames]
 (
 	[name] ASC
@@ -989,7 +986,7 @@ CREATE NONCLUSTERED INDEX [name] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [population]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [population]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [population] ON [dbo].[geonames]
 (
 	[population] ASC
@@ -997,31 +994,31 @@ CREATE NONCLUSTERED INDEX [population] ON [dbo].[geonames]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [timezone]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [timezone]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [timezone] ON [dbo].[geonames]
 (
 	[timezone] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [geonamesid]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [geonamesid]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [geonamesid] ON [dbo].[geonames_country_names]
 (
 	[geonamesid] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[geonames_country_names]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[live_aps]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[live_gps]
 (
 	[id] ASC
@@ -1029,7 +1026,7 @@ CREATE NONCLUSTERED INDEX [id] ON [dbo].[live_gps]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [ap_hash]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [ap_hash]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [ap_hash] ON [dbo].[live_signals]
 (
 	[ap_hash] ASC,
@@ -1038,37 +1035,37 @@ CREATE NONCLUSTERED INDEX [ap_hash] ON [dbo].[live_signals]
 	[time_stamp] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [FK_ap_hash_gps]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [FK_ap_hash_gps]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [FK_ap_hash_gps] ON [dbo].[live_signals]
 (
 	[gps_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[live_signals]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[live_titles]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[user_info]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[user_login_hashes]
 (
 	[id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [id]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [id]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [id] ON [dbo].[user_validate]
 (
 	[id] ASC
@@ -1076,7 +1073,7 @@ CREATE NONCLUSTERED INDEX [id] ON [dbo].[user_validate]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_MSREC1]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_MSREC1]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_MSREC1] ON [dbo].[wifi_ap]
 (
 	[CHAN] ASC,
@@ -1105,14 +1102,14 @@ INCLUDE ( 	[BSSID],
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_MSREC3]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_MSREC3]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_MSREC3] ON [dbo].[wifi_ap]
 (
 	[HighGps_ID] ASC
 )
 INCLUDE ( 	[BSSID]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_MSREC4]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_MSREC4]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_MSREC4] ON [dbo].[wifi_ap]
 (
 	[fa] ASC
@@ -1121,7 +1118,7 @@ INCLUDE ( 	[SECTYPE]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_wifi_ap_ap_hash]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_ap_hash]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_ap_hash] ON [dbo].[wifi_ap]
 (
 	[ap_hash] ASC
@@ -1129,43 +1126,43 @@ CREATE NONCLUSTERED INDEX [IX_wifi_ap_ap_hash] ON [dbo].[wifi_ap]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_wifi_ap_bssid]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_bssid]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_bssid] ON [dbo].[wifi_ap]
 (
 	[BSSID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_chan]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_chan]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_chan] ON [dbo].[wifi_ap]
 (
 	[CHAN] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_fa]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_fa]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_fa] ON [dbo].[wifi_ap]
 (
 	[fa] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_HighGps_ID]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_HighGps_ID]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_HighGps_ID] ON [dbo].[wifi_ap]
 (
 	[HighGps_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_la]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_la]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_la] ON [dbo].[wifi_ap]
 (
 	[la] DESC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_mod_date]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_mod_date]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_mod_date] ON [dbo].[wifi_ap]
 (
 	[ModDate] DESC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_points]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_points]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_points] ON [dbo].[wifi_ap]
 (
 	[points] DESC
@@ -1173,13 +1170,13 @@ CREATE NONCLUSTERED INDEX [IX_wifi_ap_points] ON [dbo].[wifi_ap]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_wifi_ap_radtype]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_radtype]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_radtype] ON [dbo].[wifi_ap]
 (
 	[RADTYPE] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_wifi_ap_sectype]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_sectype]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_sectype] ON [dbo].[wifi_ap]
 (
 	[SECTYPE] ASC
@@ -1187,25 +1184,25 @@ CREATE NONCLUSTERED INDEX [IX_wifi_ap_sectype] ON [dbo].[wifi_ap]
 GO
 SET ANSI_PADDING ON
 GO
-/****** Object:  Index [IX_wifi_ap_ssid]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_wifi_ap_ssid]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_wifi_ap_ssid] ON [dbo].[wifi_ap]
 (
 	[SSID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [File_GPS_ID]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [File_GPS_ID]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [File_GPS_ID] ON [dbo].[wifi_gps]
 (
 	[File_GPS_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [File_ID]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [File_ID]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [File_ID] ON [dbo].[wifi_gps]
 (
 	[File_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_MSREC2]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_MSREC2]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_MSREC2] ON [dbo].[wifi_gps]
 (
 	[File_ID] ASC,
@@ -1215,31 +1212,31 @@ INCLUDE ( 	[Lat],
 	[Lon],
 	[GPS_Date]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [AP_ID]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [AP_ID]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [AP_ID] ON [dbo].[wifi_hist]
 (
 	[AP_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [File_ID]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [File_ID]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [File_ID] ON [dbo].[wifi_hist]
 (
 	[File_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [GPS_ID]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [GPS_ID]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [GPS_ID] ON [dbo].[wifi_hist]
 (
 	[GPS_ID] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [Hist_Date]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [Hist_Date]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [Hist_Date] ON [dbo].[wifi_hist]
 (
 	[Hist_Date] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [IX_MSREC3]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [IX_MSREC3]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [IX_MSREC3] ON [dbo].[wifi_hist]
 (
 	[AP_ID] ASC,
@@ -1249,19 +1246,19 @@ INCLUDE ( 	[GPS_ID],
 	[Sig],
 	[RSSI]) WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [New]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [New]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [New] ON [dbo].[wifi_hist]
 (
 	[New] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [RSSI]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [RSSI]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [RSSI] ON [dbo].[wifi_hist]
 (
 	[RSSI] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 GO
-/****** Object:  Index [Sig]    Script Date: 5/4/2019 12:22:21 PM ******/
+/****** Object:  Index [Sig]    Script Date: 5/4/2019 5:23:50 PM ******/
 CREATE NONCLUSTERED INDEX [Sig] ON [dbo].[wifi_hist]
 (
 	[Sig] ASC
