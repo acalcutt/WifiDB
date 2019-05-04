@@ -75,9 +75,9 @@ class SQL
 	{
 		if (isset($pdo) && $this->isDeadlock($pdo, $e)) 
 		{
-			echo "Deadlock!\r\n";
+			//echo "Deadlock!\r\n";
 			sleep(rand (1, 5));
-			echo "Retry!\r\n";
+			//echo "Retry!\r\n";
 			$retry = true;
 		}
 		else 
