@@ -1,15 +1,29 @@
 #!/bin/bash
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
-
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison:/opt/mssql-tools/bin/
 cd ${0%/*}
-if ps -ef | grep -v grep | grep exportd.php ; then
-	echo Export Daemon Already Running! Exiting!
-else
-	echo Starting Export Daemon...
-		timestamp=$(date +%s)
-        php ../daemon/exportd.php -o -v > ../log/export/exportd_${timestamp}.log &
-fi
 
+ROW=$(sqlcmd -S [server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM settings WHERE node_name = 'prod' AND daemon_state = 1")
+daemonstate=`echo $ROW | sed 's/[\._-]//g' | sed 's/ //g'`
+
+echo "Daemon State: $daemonstate"
+if [ $daemonstate -ge 1 ]; then
+	DATE_WITH_TIME=`date -u "+%Y-%m-%d %H:%M:%S"`
+	ROW=$(sqlcmd -S [server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM schedule WHERE daemon = 'Export' AND status <> 'Running' AND enabled = 1")
+	runcount=`echo $ROW | sed 's/[\._-]//g' | sed 's/ //g'`
+
+	echo "[$DATE_WITH_TIME] $runcount processes needed."
+	if [ $runcount -ge 1 ]; then
+
+	  for (( c=1; c<=$runcount; c++ ))
+	  do
+		  echo "executing processes $c"
+		  timestamp=$(date +%s)
+		  logfile=exportd_${timestamp}_${c}.log
+		  php ../daemon/exportd.php -o -v --logfile="${logfile}" > ../log/export/${logfile} &
+		  sleep 1s
+	  done
+	fi
+fi
 echo "Cleaning up old logs..."
 find ../log/export/ -mtime +1 -type f -delete
 

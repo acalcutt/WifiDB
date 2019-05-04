@@ -2,22 +2,18 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison:/opt/mssql-tools/bin/
 cd ${0%/*}
 
-ROW=$(sqlcmd -S [sql_server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM settings WHERE node_name = 'prod' AND daemon_state = 1")
+ROW=$(sqlcmd -S [server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM settings WHERE node_name = 'prod' AND daemon_state = 1")
 daemonstate=`echo $ROW | sed 's/[\._-]//g' | sed 's/ //g'`
 
 echo "Daemon State: $daemonstate"
 if [ $daemonstate -ge 1 ]; then
 	DATE_WITH_TIME=`date -u "+%Y-%m-%d %H:%M:%S"`
-	ROW=$(sqlcmd -S [sql_server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM schedule WHERE status <> 'Running' AND enabled = 1 And nextrun <= '$DATE_WITH_TIME'")
+	ROW=$(sqlcmd -S [server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM schedule WHERE daemon = 'Import' AND status <> 'Running' AND enabled = 1 And nextrun <= '$DATE_WITH_TIME'")
 	runcount=`echo $ROW | sed 's/[\._-]//g' | sed 's/ //g'`
 
-	#maxcount=20
-	#count=$(find /run/wifidb/ -name 'importd*'|wc -l)
-	#runcount=$(($maxcount - $count)) 
 	echo "[$DATE_WITH_TIME] $runcount processes needed."
 	if [ $runcount -ge 1 ]; then
-	  #echo "$runcount of $maxcount processes needed..."
-	  
+
 	  for (( c=1; c<=$runcount; c++ ))
 	  do
 		  echo "executing processes $c"
