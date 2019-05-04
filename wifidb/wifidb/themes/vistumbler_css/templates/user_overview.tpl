@@ -20,18 +20,32 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				<div class="center">
-					<h2>Imports for: {$wifidb_user_details.user}</h2>
+					<h2>Imports for: {$wifidb_user_details.user}
+					{if $wifidb_user_details.validgps eq 1}
+						<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$wifidb_user_details.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+						<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_user_all&user={$wifidb_user_details.user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+						<a href="{$wifidb_host_url}api/export.php?func=exp_user_netlink&user={$wifidb_user_details.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+					{else}
+						<img width="20px" src="{$themeurl}img/globe_off.png">
+						<img width="20px" src="{$themeurl}img/json_off.png">
+						<img width="20px" src="{$themeurl}img/kmz_off.png">
+					{/if}
+					</h2>
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
-								<th class="header">ID</th>
 								<th class="header">New APs</th>
+								<th class="header">APs Total</th>
+								<th class="header">Points Total</th>
+								<th class="header">Efficiency</th>
 								<th class="header">First Import</th>
 								<th class="header">Last Import</th>
 							</tr>
 							<tr class="light">
-								<td class="light">{$wifidb_user_details.user_id}</td>
-								<td class="light"><a href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.user}">{$wifidb_user_details.total_aps}</a></td>
+								<td class="light">{$wifidb_user_details.new_aps|number_format:0}</td>
+								<td class="light"><a href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.user}">{$wifidb_user_details.total_aps|number_format:0}</a></td>
+								<td class="light">{$wifidb_user_details.total_gps|number_format:0}</td>
+								<td class="light">{$wifidb_user_details.NewAPPercent}%</td>
 								<td class="light">{$wifidb_user_details.first_import_date}</td>
 								<td class="light">{$wifidb_user_details.newest_date}</td>
 							</tr>
@@ -77,14 +91,14 @@ if not, write to the
 									</div>
 								</th>
 								<th class="header">
-									<div>Total AP</div>
+									<div>APs</div>
 									<div>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=aps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=aps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
-									<div>Total GPS</div>
+									<div>Points</div>
 									<div>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=gps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=gps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
@@ -122,8 +136,8 @@ if not, write to the
 								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.file}</a></td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.title}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.notes}</td>
-								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.aps}</td>
-								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.gps}</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.aps|number_format:0}</td>
+								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.gps|number_format:0}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.efficiency}%</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.date}</td>
 							</tr>
