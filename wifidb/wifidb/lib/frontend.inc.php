@@ -217,7 +217,7 @@ class frontend extends dbcore
 			
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT `wifi_hist`.`File_ID`, `files`.`title`, `files`.`notes`, `files`.`user`, `files`.`date`, `files`.`ValidGPS`, `wifi_hist`.`New`, COUNT(`wifi_hist`.`Hist_Date`) As `points`\n"
+				$sql = "SELECT `wifi_hist`.`File_ID`, `files`.`title`, `files`.`file_orig`, `files`.`notes`, `files`.`user`, `files`.`date`, `files`.`ValidGPS`, `wifi_hist`.`New`, COUNT(`wifi_hist`.`Hist_Date`) As `points`\n"
 					. "FROM `wifi_hist`\n"
 					. "INNER JOIN `files` ON `wifi_hist`.`File_ID` = `files`.`id`\n"
 					. "WHERE `wifi_hist`.`AP_ID` = ?\n"
@@ -226,11 +226,11 @@ class frontend extends dbcore
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wifi_hist].[File_ID], [files].[title], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New], COUNT([wifi_hist].[Hist_Date]) As [points]\n"
+				$sql = "SELECT [wifi_hist].[File_ID], [files].[title], [files].[file_orig], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New], COUNT([wifi_hist].[Hist_Date]) As [points]\n"
 					. "FROM [wifi_hist]\n"
 					. "INNER JOIN [files] ON [wifi_hist].[File_ID] = [files].[id]\n"
 					. "WHERE [wifi_hist].[AP_ID] = ?\n"
-					. "GROUP BY [wifi_hist].[File_ID], [files].[title], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New]\n"
+					. "GROUP BY [wifi_hist].[File_ID], [files].[title], [files].[file_orig], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New]\n"
 					. "ORDER BY [files].[date] DESC";
 			}
 		$prep2 = $this->sql->conn->prepare($sql);
@@ -297,6 +297,7 @@ class frontend extends dbcore
 			$list[]= array(
 				'class'=>$class,
 				'id'=>$field['File_ID'],
+				'file'=>$field['file_orig'],
 				'nu'=>$field['New'],
 				'date'=>$field['date'],
 				'points'=>$field['points'],

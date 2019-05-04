@@ -127,6 +127,7 @@ if not, write to the
 								<th class="header">ID</th>
 								<th class="header">GPS</th>
 								<th class="header">User</th>
+								<th class="header">File</th>
 								<th class="header">Title</th>
 								<th class="header">Notes</th>
 								<th class="header">Date</th>
@@ -150,6 +151,7 @@ if not, write to the
 								{/if}
 								</td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user}">{$wifidb_assoc.user}</a></td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.file}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title}</a></td>
 								<td class="light">{$wifidb_assoc.notes}</td>
 								<td class="light">{$wifidb_assoc.date}</td>
