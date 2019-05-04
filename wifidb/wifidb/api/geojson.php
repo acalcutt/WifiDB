@@ -182,8 +182,7 @@ switch($func)
 		
 		
 		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user, $from, $limit);
-		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserGeoJSON['latlongarray']);
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($UserGeoJSON['data'], $labeled);
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($UserGeoJSON['data']);
 		$file_name = $title.".geojson";
 		break;
 		
