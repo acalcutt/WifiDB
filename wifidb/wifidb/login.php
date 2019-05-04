@@ -164,7 +164,7 @@ switch($func)
 						$subject = "Vistumbler WifiDB - New User Confirmation";
                         if($dbcore->wdbmail->mail_validation('validate_user', $email, $username, $msg, $subject))
                         {
-							$message = "<font color='Green'><h2>User Created! You should be getting a Confirmation email soon. Please click on the email link to confirm your account.</h2></font>";
+							$message = "<font color='Green'><h2>User Created! You should be getting a Confirmation email soon. If you do not get the email, please check your spam or junk folder (microsoft likes to put our emails there)</h2></font>";
                         }else
                         {
 							$message = "<font color='Yellow'><h2>Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
@@ -179,7 +179,7 @@ switch($func)
 
                 case 0:
                     #Failed to create a user for some reason, tell them why.
-                    $dbcore->smarty->assign('message', $message);
+                    $dbcore->smarty->assign('message', "<font color='Red'><h2>$message</h2></font>");
                     $dbcore->smarty->display('create_user.tpl');
                 break;
                 default:
@@ -269,7 +269,7 @@ switch($func)
 			$subject = "Vistumbler WifiDB - Account Confirmation";
 			if($dbcore->wdbmail->mail_validation('validate_user', $db_email, $username, $msg, $subject))
 			{
-				$message = "<font color='Green'><h2>Confirmation has been re-sent! You should be getting a Confirmation email soon. Please click on the email link to confirm your account.</h2></font>";
+				$message = "<font color='Green'><h2>Confirmation has been re-sent! You should be getting a Confirmation email soon. If you do not get the email, please check your spam or junk folder (microsoft likes to put our emails there)</h2></font>";
 			}else
 			{
 				$message = "<font color='Yellow'><h2>Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.</h2></font>";
@@ -320,7 +320,7 @@ switch($func)
 				$subject = "Vistumbler WifiDB - Password Reset Confirmation";
 				if($dbcore->wdbmail->mail_validation('reset_password_validated', $email, $username, $msg, $subject))
 				{
-					$message = "<font color='Green'><h2>Password reset requested! You should be getting a Confirmation email soon, click on the email link to confirm your account.</h2></font>";
+					$message = "<font color='Green'><h2>Password reset requested! You should be getting a Confirmation email soon. If you do not get the email, please check your spam or junk folder (microsoft likes to put our emails there)</h2></font>";
 				}else
 				{
 					$message = "Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.";
