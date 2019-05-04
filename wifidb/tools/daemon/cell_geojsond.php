@@ -10,29 +10,27 @@ $Import_Map_Data = "";
 
 if($dbcore->sql->service == "mysql")
 	{
-		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points,\n"
+		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,\n"
 			. "c_gps.lat AS lat,\n"
 			. "c_gps.lon AS lon,\n"
-			. "c_gps.rssi AS rssi,\n"
 			. "c_file.user AS user\n"
 			. "FROM cell_id\n"
-			. "INNER JOIN cell_hist AS c_gps ON c_gps.cell_hist_id = cell_id.highgps_id\n"
+			. "INNER JOIN wifi_gps AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id\n"
 			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
-			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' \n"
+			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL\n"
 			. "ORDER BY cell_id.cell_id ASC LIMIT ?,?";
 	}
 else if($dbcore->sql->service == "sqlsrv")
 	{
-		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points,\n"
+		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,\n"
 			. "c_gps.lat AS lat,\n"
 			. "c_gps.lon AS lon,\n"
-			. "c_gps.rssi AS rssi,\n"
 			. "c_file.[user] AS [user]\n"
 			. "FROM cell_id\n"
-			. "INNER JOIN cell_hist AS c_gps ON c_gps.cell_hist_id = cell_id.highgps_id\n"
+			. "INNER JOIN wifi_gps AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id\n"
 			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
-			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' \n"
-			. "ORDER BY cell_id.cell_id ASC LIMIT ?,?";
+			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL\n"
+			. "ORDER BY cell_id.cell_id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 	}
 
 for ($i = 0; TRUE; $i++) {
@@ -53,7 +51,7 @@ for ($i = 0; TRUE; $i++) {
 		$LAC = $split[1];
 		$CELLID = $split[2];
 		
-		$sqlp = "SELECT network, country FROM `cell_carriers` WHERE mcc = ? AND mnc = ?";
+		$sqlp = "SELECT network, country FROM cell_carriers WHERE mcc = ? AND mnc = ?";
 		$prep3 = $dbcore->sql->conn->prepare($sqlp);
 		$prep3->bindParam(1, $MCC, PDO::PARAM_INT);
 		$prep3->bindParam(2, $MNC, PDO::PARAM_INT);
