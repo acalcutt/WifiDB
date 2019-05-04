@@ -105,15 +105,12 @@ $dbcore->job_interval = 15;
 if(!$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
-	
-	#Checking for Import Jobs
-	$currentrun = date("Y-m-d G:i:s"); # Use PHP for Date/Time since it is already set to UTC and MySQL may not be set to UTC.
 
 	#Claim a import schedule ID
 	if($dbcore->sql->service == "mysql")
-		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
+		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `enabled` = 1 LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
-		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
+		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [enabled] = 1";}
 	$prepus = $dbcore->sql->conn->prepare($sql);
 	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -122,7 +119,6 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus->bindParam(5, $dbcore->node_name, PDO::PARAM_STR);
 	$prepus->bindParam(6, $dbcore->daemon_name, PDO::PARAM_STR);
 	$prepus->bindParam(7, $dbcore->StatusRunning, PDO::PARAM_STR);
-	$prepus->bindParam(8, $currentrun, PDO::PARAM_STR);
 	$prepus->execute();
 
 	#Start importing claimed schedule ID, if one exists
@@ -170,17 +166,11 @@ While(1)
 	$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 	#Find How Many APs have GPS now
-	if($dbcore->sql->service == "mysql")
-		{$sql = "SELECT `AP_ID`, `SSID`, `ap_hash` FROM `wifi_ap` WHERE `HighGPS_ID` IS NOT NULL";}
-	else if($dbcore->sql->service == "sqlsrv")
-		{$sql = "SELECT [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGPS_ID] IS NOT NULL";}
+	$sql = "SELECT Count(AP_ID) As ap_count FROM wifi_ap WHERE HighGPS_ID IS NOT NULL";
 	$result = $dbcore->sql->conn->query($sql);
-	if($dbcore->sql->checkError(__LINE__, __FILE__))
-	{
-		$dbcore->verbosed("There was an error running the SQL");
-		throw new ErrorException("There was an error running the SQL".var_export($dbcore->sql->conn->errorInfo(), 1));
-	}
-	$apswithgps_now = $result->rowCount();
+	$result->execute();
+	$ap_countarray = $result->fetch(2);
+	$apswithgps_now = $ap_countarray['ap_count'];
 	$dbcore->verbosed("APs with GPS on Current Run: ".$apswithgps_now);
 
 	#If current gps count is higher than last gps count, run the kml export daemon
