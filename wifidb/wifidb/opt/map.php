@@ -99,21 +99,61 @@ switch($func)
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		if ($from == ""){$from = 0;}
 		
-		if($limit == "" || $clat == "")
+		if($clat == "")
 		{
-			if ($limit == ""){$limit = 250000;}
-			$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user);
-			$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserGeoJSON['latlongarray']);	
-			$ApCount = $UserGeoJSON['count'];
-			$clat = $Center_LatLon['lat'];
-			$clon = $Center_LatLon['long'];
-			if($ApCount > $limit)
+			if($dbcore->sql->service == "mysql")
+				{
+					$sql = "SELECT TOP 1 `Lat`, `Lon`\n"
+						. "FROM `wifi_gps`\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT TOP (1) `id` FROM `files` WHERE `ValidGPS` = 1 AND `user` LIKE ? ORDER BY `date` DESC) And `Lat` != '0.0000'\n"
+						. "ORDER BY `GPS_Date` DESC";
+				}
+			else if($dbcore->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT TOP 1 Lat, Lon\n"
+						. "FROM wifi_gps\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT TOP (1) id FROM files WHERE ValidGPS = 1 AND [user] LIKE ? ORDER BY date DESC) And Lat != '0.0000'\n"
+						. "ORDER BY GPS_Date DESC";
+				}
+			$result = $dbcore->sql->conn->prepare($sql);
+			$result->bindParam(1, $user, PDO::PARAM_STR);
+			$result->execute();
+			$newArray = $result->fetch(2);
+			$clat = $dbcore->convert->dm2dd($newArray['Lat']);
+			$clon = $dbcore->convert->dm2dd($newArray['Lon']);
+		}
+
+		if($limit == "")
+		{
+			if ($limit == ""){$limit = 100000;}
+			if($dbcore->sql->service == "mysql")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
+				}
+			else if($dbcore->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
+				}
+			$result = $dbcore->sql->conn->prepare($sql);
+			$result->bindParam(1, $user, PDO::PARAM_STR);
+			$result->execute();
+			$newArray = $result->fetch(2);
+			$ap_count = $newArray['ap_count'];
+			if($ap_count > $limit)
 			{
-				$ldivs = ceil($ApCount / $limit);
+				$ldivs = ceil($ap_count / $limit);
 				$dbcore->smarty->assign('labeled', $labeled);
 				$dbcore->smarty->assign('user', $user);
 				$dbcore->smarty->assign('limit', $limit);
-				$dbcore->smarty->assign('count', $ApCount);
+				$dbcore->smarty->assign('count', $ap_count);
 				$dbcore->smarty->assign('ldivs', $ldivs);
 				$dbcore->smarty->assign('clat', $clat);
 				$dbcore->smarty->assign('clon', $clon);
@@ -126,7 +166,7 @@ switch($func)
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$centerpoint =  "[".$clon.",".$clat."]";
-		$zoom = 9;
+		$zoom = 5;
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
