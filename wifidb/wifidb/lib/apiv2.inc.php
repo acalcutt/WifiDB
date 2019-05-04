@@ -398,14 +398,13 @@ class apiv2 extends dbcore
 		else if($this->sql->service == "sqlsrv")
 			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
 		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
+		$tmp_prep->execute();
 		if($this->sql->service == "mysql")
 			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
 			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
 		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
-
-        $this->sql->checkError($tmp_prep->execute(), __LINE__, __FILE__);
-        $this->sql->checkError($files_prep->execute(), __LINE__, __FILE__);
+		$files_prep->execute();
 
         $tmp_ret = $tmp_prep->fetch(2);
         $files_ret = $files_prep->fetch(2);
@@ -482,7 +481,6 @@ class apiv2 extends dbcore
 				$result->bindValue(9, $hash, PDO::PARAM_STR);
 				$result->bindValue(10, $type, PDO::PARAM_STR);
 				$result->execute();
-				$this->sql->checkError($result->execute(), __LINE__, __FILE__);
 				$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
 				$this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
 				$this->mesg['import']["filehash"] = $hash;
