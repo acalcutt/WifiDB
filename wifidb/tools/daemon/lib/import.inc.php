@@ -1,22 +1,11 @@
 <?PHP
 /*
 import.inc.php, holds the WiFiDB Importing functions.
-Copyright (C) 2011 Phil Ferland
+Copyright (C) 2019 Andrew Calcutt, 2015 Phil Ferland
 
-This program is free software; you can redistribute it and/or modify it under the terms
-of the GNU General Public License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-ou should have received a copy of the GNU General Public License along with this program;
-if not, write to the
-
-   Free Software Foundation, Inc.,
-   59 Temple Place, Suite 330,
-   Boston, MA 02111-1307 USA
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 
 class import extends dbcore
@@ -55,12 +44,421 @@ class import extends dbcore
 	}
 
 	/**
-	 * @param string $mac
+	 * @param string $bssid
 	 * @return bool
 	 */
-	private function validateMacAddress($mac = "")
+	private function validateMacAddress($bssid = "")
 	{
-		return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $mac) == 1);
+		return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $bssid) == 1);
+	}
+	
+	private function ImportCellData($file_id, $file_importing_id, $cell_arr)
+	{
+		$cell_count = count($cell_arr);
+		$this->verbosed("Importing Cell/BT Data [$cell_count]:", 2);
+		$calc = "$cell_count Cells/BTs";
+		$this->UpdateImportingStatus($file_importing_id, 'Importing CELL/BT Data', $calc);
+		
+		$NewCells = 0;
+		$Cell_Num = 0;
+		$Cell_Hists = 0;
+		foreach($cell_arr as $key=>$cells)
+		{
+			$Cell_Num++;
+			$cell_id = 0;
+			$new = 0;
+			if($this->sql->service == "sqlsrv")
+			{			
+				$retry = true;
+				while ($retry)
+				{
+					try 
+					{
+						
+						$sql = "MERGE INTO cell_id WITH (HOLDLOCK)\n"
+							. "	USING (SELECT :s_mac AS mac, :s_ssid AS ssid, :s_authmode AS authmode, :s_chan AS chan, :s_type AS type) AS newcell (mac, ssid, authmode, chan, type)\n"
+							. "		ON cell_id.mac = newcell.mac AND cell_id.ssid = newcell.ssid AND cell_id.authmode = newcell.authmode AND cell_id.chan = newcell.chan AND cell_id.type = newcell.type\n"
+							. "	WHEN MATCHED THEN\n"
+							. "		UPDATE SET cell_id.ModDate = getdate()\n"
+							. "	WHEN NOT MATCHED THEN\n"
+							. "		INSERT (file_id, mac, ssid, authmode, chan, type, cell_hash)\n"
+							. "		VALUES (:file_id, :mac, :ssid, :authmode, :chan, :type, :cell_hash)\n"
+							. 'OUTPUT INSERTED.cell_id, $action;';
+							
+						$prep = $this->sql->conn->prepare($sql);
+						$prep->bindParam(':s_mac', $cells['bssid']);
+						$prep->bindParam(':s_ssid', $cells['ssid']);
+						$prep->bindParam(':s_authmode', $cells['flags']);
+						$prep->bindParam(':s_chan', $cells['chan']);
+						$prep->bindParam(':s_type', $cells['type']);
+						$prep->bindParam(':file_id', $file_id);
+						$prep->bindParam(':mac', $cells['bssid']);
+						$prep->bindParam(':ssid', $cells['ssid']);
+						$prep->bindParam(':authmode', $cells['flags']);
+						$prep->bindParam(':chan', $cells['chan']);		
+						$prep->bindParam(':type', $cells['type']);
+						$prep->bindParam(':cell_hash', $cells['cell_hash']);
+						
+						$prep->execute();
+						$addresult = $prep->fetch(2);
+						$cell_id = $addresult['cell_id'];
+						$ap_action = $addresult['$action'];
+						if($ap_action == "INSERT")
+						{
+							$new = 1;
+							$NewCells++;
+						}
+						$retry = false;
+					}
+					catch (Exception $e) 
+					{
+						$retry = $this->sql->isPDOException($this->sql->conn, $e);
+						$cell_id = 0;
+					}
+				}
+			}
+			
+			if($cell_id != 0)
+			{
+				$cell_sig_exp = explode("\\", $cells['signals']);
+				$SigArrSize = count($cell_sig_exp);
+				$calc = "CELL/BT: ".($Cell_Num)." / ".$cell_count." (".$SigArrSize." Points)";
+				$this->UpdateImportingStatus($file_importing_id, $calc, $cells['ssid']);
+
+				#Go through points and import them
+				$this->verbosed("Starting Import of Cell Signals ( ".$SigArrSize." Signal Points )... ", 1);
+				
+				#Prepared statement - insert ap signal history
+				if($this->sql->service == "mysql")
+					{$sql = "INSERT INTO cell_hist (cell_id, gps_id, file_id, rssi, new, hist_date) VALUES ";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql = "INSERT INTO [cell_hist] ([cell_id], [gps_id], [file_id], [rssi], [new], [hist_date]) VALUES ";}		
+
+				$HighRSSIwGPS = -1000;
+				$Insert_Size = 0;
+				$Insert_Limit = 1; //SQL Server supports a maximum of 2100 parameters. 2100 / 6 parameters = 350
+				$SigCount = 0;
+				$ValArray = array();
+				foreach($cell_sig_exp as $key2=>$sig_gps_id)
+				{
+					$SigCount++;
+					$Cell_Hists++;
+					#Format the date
+					$sig_gps_exp = explode(",", $sig_gps_id);
+					$file_gps_id = $sig_gps_exp[0];
+					if($file_gps_id != "")
+					{
+						
+						$rssi = @$sig_gps_exp[1];
+
+						if($this->sql->service == "mysql")
+							{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
+						else if($this->sql->service == "sqlsrv")
+							{$GID_SQL = "SELECT TOP 1 [GPS_ID], [GPS_Date], [Lat], [Lon] FROM [wifi_gps] WHERE [File_ID] = ? AND [File_GPS_ID] = ?";}
+						$gidprep = $this->sql->conn->prepare($GID_SQL);
+						$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
+						$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
+						$gidprep->execute();
+						$fetchgidprep = $gidprep->fetch(2);
+						$gps_id = $fetchgidprep['GPS_ID'];
+						$datetime = $fetchgidprep['GPS_Date'];
+						$gps_lat = $fetchgidprep['Lat'];
+						$gps_lon = $fetchgidprep['Lat'];
+						if($gps_id != "")
+						{
+							if($gps_lat == ""){$gps_lat = "0.0000";}
+							if($gps_lon == ""){$gps_lon = "0.0000";}
+							if($gps_lat != "0.0000" && $gps_lon != "0.0000" && $rssi > $HighRSSIwGPS){$HighRSSIwGPS = $rssi;}
+
+							$Insert_Size++;
+							$ValArray[] = array((int) $cell_id, (int) $gps_id, (int) $file_id, $rssi, $new, $datetime);
+						}
+					}
+					if($SigArrSize === $SigCount || $Insert_Size >= $Insert_Limit)
+					{
+						if($Insert_Size)
+						{
+							$paramArray = array();
+							$sqlArray = array();
+							foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
+							{
+								$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
+								foreach($row as $element)
+								{
+									$paramArray[] = $element;
+								}
+							}
+
+							$retry = true;
+							while ($retry)
+							{
+								try {
+									$sql_prep = $sql.implode(',', $sqlArray);
+									echo $sql_prep."\r\n";
+									var_dump($paramArray);
+									$stmt = $this->sql->conn->prepare($sql_prep);
+									$stmt->execute($paramArray);
+									echo "Insert Size: $Insert_Size - $SigCount / $SigArrSize \r\n";
+									$retry = false;
+								}
+								catch (Exception $e) {
+									$retry = $this->sql->isPDOException($this->sql->conn, $e);
+								}
+							}
+							
+							$Insert_Size = 0;
+							$ValArray = array();
+						}
+					}
+				}
+				$calc = "CELL/BT: ".($Cell_Num)." / ".$cell_count;
+				$this->UpdateCellHighPoints($file_importing_id, $cell_id, $calc);
+			}
+		}
+		$ret = array(
+			'cells'=>$Cell_Num,
+			'cells_hist'=>$Cell_Hists,
+			'newcells'=>$NewCells
+		);
+		return $ret;
+	}
+	
+	private function ImportApData($file_id, $file_importing_id, $gps_arr, $ap_arr, $override_radio = 0, $override_flags = 0)
+	{
+		$gps_count = count($gps_arr);
+		$ap_count = count($ap_arr);
+		
+		$this->verbosed("Importing GPS data [$gps_count Points]", 2);
+		$calc = $gps_count." GPS Points";
+		$this->UpdateImportingStatus($file_importing_id, 'Importing GPS Data', $calc);
+
+		if($this->sql->service == "mysql")
+			{$sql = "INSERT INTO `wifi_gps` (`File_ID`, `File_GPS_ID`, `Lat`, `Lon`, `NumOfSats`, `AccuracyMeters`, `HorDilPitch`, `Alt`, `Geo`, `KPH`, `MPH`, `TrackAngle`, `GPS_Date`) VALUES ";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "INSERT INTO [wifi_gps] ([File_ID], [File_GPS_ID], [Lat], [Lon], [NumOfSats], [AccuracyMeters], [HorDilPitch], [Alt], [Geo], [KPH], [MPH], [TrackAngle], [GPS_Date]) VALUES ";}
+
+		$Insert_Size = 0;
+		$Insert_Limit = 150; //SQL Server supports a maximum of 2100 parameters. 2100 / 14 parameters = 150
+		$lcount = 0;
+		$ValArray = array();
+		foreach($gps_arr as $key=>$gps)
+		{
+			$lcount++;
+			$Insert_Size++;
+			$ValArray[] = array($file_id, $gps['id'], $gps['lat'], $gps['lon'], $gps['sats'], $gps['acc'], $gps['hdp'], $gps['alt'], $gps['geo'], $gps['kmh'], $gps['mph'], $gps['track'], $gps['datetime']);
+			
+			if($lcount === $gps_count || $Insert_Size >= $Insert_Limit)
+			{
+				$paramArray = array();
+				$sqlArray = array();
+				foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
+				{
+					$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
+					foreach($row as $element)
+					{
+						$paramArray[] = $element;
+					}
+				}
+
+				$retry = true;
+				while ($retry)
+				{
+					try {
+						$sql_prep = $sql.implode(',', $sqlArray);
+						//echo $sql_prep."\r\n";
+						//var_dump($paramArray);
+						$stmt = $this->sql->conn->prepare($sql_prep);
+						$stmt->execute($paramArray);
+						echo "Insert GPS Size: $Insert_Size - $lcount / $gps_count \r\n";
+						$retry = false;
+					}
+					catch (Exception $e) {
+						$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					}
+				}
+
+				$Insert_Size = 0;
+				$ValArray = array();
+			}
+		}
+		$this->verbosed("Importing AP Data [$ap_count]:", 2);
+		$calc = $ap_count." APs";
+		$this->UpdateImportingStatus($file_importing_id, 'Importing AP Data', $calc);
+		$NewAPs = 0;
+		$AP_Num = 0;
+		foreach($ap_arr as $key=>$aps)
+		{
+			$AP_Num++;
+			$retry = true;
+			$new = 0;
+			$ap_id = 0;			
+			$addresult = $this->InsertAp($file_id, $aps['bssid'], $aps['ssid'], $aps['chan'], $aps['auth'], $aps['encry'], $aps['sectype'], $aps['radio'], $aps['nt'], $aps['btx'], $aps['otx'], $aps['flags']);
+			if($addresult)
+			{
+				$ap_id = $addresult['AP_ID'];
+				$ap_action = $addresult['$action'];
+				$ap_RADTYPE = $addresult['RADTYPE'];
+				$ap_FLAGS = $addresult['FLAGS'];
+				if($ap_action == "INSERT")
+				{
+					$new = 1;
+					$NewAPs++;
+				}
+				if($override_radio == 1 && $aps['radio'] != $ap_RADTYPE && $aps['radio'] != "")
+				{
+					$retry = true;
+					while ($retry)
+					{
+						try 
+						{
+							if($this->sql->service == "mysql")
+								{$sql = "UPDATE wifi_ap SET RADTYPE = ? WHERE AP_ID = ?";}
+							else if($this->sql->service == "sqlsrv")
+								{$sql = "UPDATE [wifi_ap] SET [RADTYPE] = ? WHERE [AP_ID] = ?";}
+							$prepu = $this->sql->conn->prepare($sql);
+							$prepu->bindParam(1, $aps['radio'], PDO::PARAM_STR);
+							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+							$prepu->execute();
+							$retry = false;
+						}
+						catch (Exception $e) 
+						{
+							$retry = $this->sql->isPDOException($this->sql->conn, $e);
+						}
+					}
+				}
+				if($override_flags == 1 && $aps['flags'] != $ap_FLAGS && $aps['flags'] != "")
+				{
+					$retry = true;
+					while ($retry)
+					{
+						try 
+						{
+							if($this->sql->service == "mysql")
+								{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
+							else if($this->sql->service == "sqlsrv")
+								{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
+							$prepu = $this->sql->conn->prepare($sql);
+							$prepu->bindParam(1, $aps['FLAGS'], PDO::PARAM_STR);
+							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
+							$prepu->execute();
+							$retry = false;
+						}
+						catch (Exception $e) 
+						{
+							$retry = $this->sql->isPDOException($this->sql->conn, $e);
+						}
+					}
+				}
+			}
+			
+			$HighRSSIwGPS = -99;
+			//Import Wifi Signals
+			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
+			$SigArrSize = count($ap_sig_exp);
+			$calc = "AP: ".($AP_Num)." / ".$ap_count." (".$SigArrSize." Points)";
+			$this->UpdateImportingStatus($file_importing_id, $calc, $aps['ssid']);
+
+			#Go through points and import them
+			$this->verbosed("Starting Import of Wifi Signal ( ".$SigArrSize." Signal Points )... ", 1);
+			
+			#Prepared statement - insert ap signal history
+			if($this->sql->service == "mysql")
+				{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES ";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES ";}		
+
+			$Insert_Size = 0;
+			$Insert_Limit = 250; //SQL Server supports a maximum of 2100 parameters. 2100 / 8 parameters = 262.5
+			$SigCount = 0;
+			$ValArray = array();
+			foreach($ap_sig_exp as $key2=>$sig_gps_id)
+			{
+				$SigCount++;
+				#Format the date
+				$sig_gps_exp = explode(",", $sig_gps_id);
+				$file_gps_id = $sig_gps_exp[0];
+				if($file_gps_id != "")
+				{
+					$signal = @$sig_gps_exp[1];
+					$rssi = @$sig_gps_exp[2];
+					if($signal == ""){$signal = 0;}
+					if($this->rssi_signals_flag)
+						{if(!is_numeric(@$sig_gps_exp[2])){$rssi = $this->convert->Sig2dBm($signal);}}#fix for old incorrectly formatted file}
+					else
+						{$rssi = $this->convert->Sig2dBm($signal);}
+					if($rssi == ""){$rssi = -99;}
+
+					if($this->sql->service == "mysql")
+						{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
+					else if($this->sql->service == "sqlsrv")
+						{$GID_SQL = "SELECT TOP 1 [GPS_ID], [GPS_Date], [Lat], [Lon] FROM [wifi_gps] WHERE [File_ID] = ? AND [File_GPS_ID] = ?";}
+					$gidprep = $this->sql->conn->prepare($GID_SQL);
+					$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
+					$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
+					$gidprep->execute();
+					$fetchgidprep = $gidprep->fetch(2);
+					$gps_id = $fetchgidprep['GPS_ID'];
+					$datetime = $fetchgidprep['GPS_Date'];
+					$gps_lat = $fetchgidprep['Lat'];
+					$gps_lon = $fetchgidprep['Lat'];
+					if($gps_id != "")
+					{
+						if($gps_lat == ""){$gps_lat = "0.0000";}
+						if($gps_lon == ""){$gps_lon = "0.0000";}
+						if($gps_lat != "0.0000" && $gps_lon != "0.0000" && $rssi > $HighRSSIwGPS){$HighRSSIwGPS = $rssi;}
+
+						$Insert_Size++;
+						$ValArray[] = array($ap_id, $gps_id, $file_id, $signal, $rssi, $new, $datetime);
+					}
+				}
+				if($SigArrSize === $SigCount || $Insert_Size >= $Insert_Limit)
+				{
+					if($Insert_Size)
+					{
+						$paramArray = array();
+						$sqlArray = array();
+						foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
+						{
+							$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
+							foreach($row as $element)
+							{
+								$paramArray[] = $element;
+							}
+						}
+
+						$retry = true;
+						while ($retry)
+						{
+							try {
+								$sql_prep = $sql.implode(',', $sqlArray);
+								//echo $sql_prep."\r\n";
+								//var_dump($paramArray);
+								$stmt = $this->sql->conn->prepare($sql_prep);
+								$stmt->execute($paramArray);
+								echo "Insert Size: $Insert_Size - $SigCount / $SigArrSize \r\n";
+								$retry = false;
+							}
+							catch (Exception $e) {
+								$retry = $this->sql->isPDOException($this->sql->conn, $e);
+							}
+						}
+						
+						$Insert_Size = 0;
+						$ValArray = array();
+					}
+				}
+			}
+			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
+			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
+		}
+		
+		$ret = array(
+			'aps'=>$ap_count,
+			'gps'=>$gps_count,
+			'newaps'=>$NewAPs
+		);
+		return $ret;
 	}
 	
 	private function InsertAp($File_ID, $BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS)
@@ -346,7 +744,7 @@ class import extends dbcore
 								. "FROM wifi_hist\n"
 								. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
 								. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
-								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_hist.Hist_ID ASC\n"
+								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, wifi_hist.Hist_ID ASC\n"
 								. "LIMIT 1";
 						}
 					else if($this->sql->service == "sqlsrv")
@@ -355,7 +753,7 @@ class import extends dbcore
 								. "FROM wifi_hist\n"
 								. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
 								. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
-								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_hist.Hist_ID ASC";
+								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, wifi_hist.Hist_ID ASC";
 						}
 					$hgp = $this->sql->conn->prepare($sql);
 					$hgp->bindParam(1, $ap_id, PDO::PARAM_INT);
@@ -459,11 +857,19 @@ class import extends dbcore
 			try {
 				if($this->sql->service == "mysql")
 				{
-					$sql = "SELECT cell_hist_id FROM cell_hist WHERE cell_id = ? And lat IS NOT NULL ORDER BY rssi DESC, hist_date DESC, accuracy ASC LIMIT 1";
+					$sql = "SELECT cell_hist.gps_id, cell_hist.rssi\n"
+						. "FROM cell_hist\n"
+						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.GPS_ID\n"
+						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
+						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, cell_hist.cell_hist_id ASC LIMIT 1";
 				}
 				else if($this->sql->service == "sqlsrv")
 				{
-					$sql = "SELECT TOP 1 [cell_hist_id] FROM [cell_hist] WHERE [cell_id] = ? And [lat] IS NOT NULL ORDER BY [rssi] DESC, [hist_date] DESC, [accuracy] ASC";
+					$sql = "SELECT TOP 1 cell_hist.gps_id, cell_hist.rssi\n"
+						. "FROM cell_hist\n"
+						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.GPS_ID\n"
+						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
+						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, cell_hist.cell_hist_id ASC";
 				}
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
@@ -475,7 +881,7 @@ class import extends dbcore
 			}
 		}
 		$fetchgps = $resgps->fetch(2);
-		if($fetchgps['cell_hist_id'])
+		if($fetchgps['gps_id'])
 		{
 			#Update cell ids
 			$retry = true;
@@ -483,12 +889,13 @@ class import extends dbcore
 			{
 				try {
 					if($this->sql->service == "mysql")
-						{$sql = "UPDATE cell_id SET highgps_id = ? WHERE cell_id = ?";}
+						{$sql = "UPDATE cell_id SET highgps_id = ?, high_gps_rssi = ? WHERE cell_id = ?";}
 					else if($this->sql->service == "sqlsrv")
-						{$sql = "UPDATE [cell_id] SET [highgps_id] = ? WHERE [cell_id] = ?";}
+						{$sql = "UPDATE [cell_id] SET [highgps_id] = ?, [high_gps_rssi] = ? WHERE [cell_id] = ?";}
 					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(1, $fetchgps['cell_hist_id'], PDO::PARAM_INT);
-					$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
+					$prep->bindParam(1, $fetchgps['gps_id'], PDO::PARAM_INT);
+					$prep->bindParam(2, $fetchgps['rssi'], PDO::PARAM_INT);
+					$prep->bindParam(3, $cell_id, PDO::PARAM_INT);
 					$prep->execute();
 					$retry = false;
 				}
@@ -515,10 +922,11 @@ class import extends dbcore
 		$APQuery = $dbh->query("SELECT * FROM networks");
 		$all_aps = $APQuery->fetchAll();
 		$File_lcount = count($all_aps);
-		$imported_aps = array();
-		$NewAPs = 0;
-		$ap_count = 0;
-		$gps_count = 0;
+		$gdata = array();
+		$apdata = array();
+		$gid = 0;
+		$calc = "$File_lcount Lines";
+		$this->UpdateImportingStatus($file_importing_id, 'Processing', $calc);
 		foreach ($all_aps as $key => $ap)
 		{
 			$fBSSID = strtoupper($ap['bssid']);
@@ -533,84 +941,66 @@ class import extends dbcore
 			$fLon = $this->convert->all2dm(number_format($ap['lon'], 7));
 			$fAlt = $ap['alt'];
 			$fDate = date("Y-m-d H:i:s", substr($ap['timestamp'], 0, -3));
-			
+
 			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
 			list($chan, $radio) = $this->convert->findFreq($fFrequency);
 			
+			$gps_hash = md5($fLat.$fLon.$fAlt.$fDate);
+			$garr = @$gdata[$gps_hash];
+			$fgid = @$garr['id'];
+			if(!$fgid){$gid++;$fgid=$gid;}
+			$gdata[$gps_hash] = array(
+				'id'	=>  $fgid,
+				'lat'	=>  $fLat,
+				'lon'	=>  $fLon,
+				'sats'	=>  null,
+				'acc'	=>  null,
+				'hdp'	=>  null,
+				'alt'	=>  $fAlt,
+				'geo'	=>  null,
+				'kmh'	=>  null,
+				'mph'	=>  null,
+				'track'	=>  null,
+				'datetime'	=>  $fDate
+			);
+			
 			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
-			
-			$calc = "Line: ".($key+1)." / ".$File_lcount;
-			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
-			
-			$ap_id = 0;
-			$new = 0;
-			
-			$addresult = $this->InsertAp($file_id, $fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities);
-			if($addresult)
-			{
-				$ap_id = $addresult['AP_ID'];
-				$ap_action = $addresult['$action'];
-				$ap_FLAGS = $addresult['FLAGS'];
-				if($ap_action == "INSERT")
-				{
-					$imported_aps[] = $ap_id.":0";
-					$new = 1;
-					$NewAPs++;
-					$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
-				}
-				if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
-				{
-					$retry = true;
-					while ($retry)
-					{
-						try 
-						{
-							if($this->sql->service == "mysql")
-								{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
-							$prepu = $this->sql->conn->prepare($sql);
-							$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
-							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
-							$prepu->execute();
-							$retry = false;
-						}
-						catch (Exception $e) 
-						{
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-				}
-			}
-
-			if($ap_id == 0){continue;}
-			$ap_count++;
-			
-			$gps_id = $this->InsertGps($file_id, null, $fLat, $fLon, null, null, $fAlt, null, null, null, null, null, $fDate);
-			if($gps_id == 0){continue;}
-			$gps_count++;
-			
-			$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $fDate);
-			if($hist_id == ""){continue;}
-			
-			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $fRSSIwGPS, $calc);
+			$aarr = @$apdata[$ap_hash];
+			$fsigs = @$aarr['signals'];
+			if($fsigs){$fsigs .= "\\";}
+			$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+			$apdata[$ap_hash] = array(
+				'ap_hash'   => $ap_hash,
+				'ssid'	  =>  $fSSID,
+				'bssid'	   =>  $fBSSID,
+				'manuf'	 =>  $this->findManuf($fBSSID),
+				'auth'	  =>  $authen,
+				'encry'	 =>  $encry,
+				'sectype'   =>  $sectype,
+				'flags'   =>  $fCapabilities,
+				'radio'	 =>  $radio,
+				'chan'	  =>  $chan,
+				'btx'	   =>  null,
+				'otx'	   =>  null,
+				'nt'		=>  $nt,
+				'signals'   =>  $fsigs
+			);
 		}
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 0, 1);
+		
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
 		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
-		
 		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
-				'aps'=>$ap_count,
-				'gps'=>$gps_count,
-				'newaps'=>$NewAPs
-			);
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
+				'cells'=>0,
+				'cells_hist'=>0,
+				'newcells'=>0
+		);
 		return $ret;
 	}
 	
@@ -632,13 +1022,14 @@ class import extends dbcore
 		}
 		$all_aps = $APQuery->fetchAll(2);
 		$File_lcount = count($all_aps);
-		$imported_aps = array();
-		$hdata = array();
-		$NewAPs = 0;
-		$ap_count = 0;
-		$gps_count = 0;
+		$gdata = array();
+		$apdata = array();
+		$gid = 0;
 		foreach($all_aps as $key => $ap)
 		{
+			$calc = "Line: ".($key+1)." / ".$File_lcount;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);			
+			
 			$fid = $ap['_id'];
 			$fBSSID = strtoupper($ap['bssid']);
 			if(!$this->validateMacAddress($fBSSID)){continue;}
@@ -648,55 +1039,7 @@ class import extends dbcore
 
 			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
 			list($chan, $radio) = $this->convert->findFreq($fFrequency);
-			
-			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
-			
-			$calc = "Line: ".($key+1)." / ".$File_lcount;
-			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
-			
-			$ap_id = 0;
-			$new = 0;
-			$addresult = $this->InsertAp($file_id, $fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities);
-			if($addresult)
-			{
-				$ap_id = $addresult['AP_ID'];
-				$ap_action = $addresult['$action'];
-				$ap_FLAGS = $addresult['FLAGS'];
-				if($ap_action == "INSERT")
-				{
-					$imported_aps[] = $ap_id.":0";
-					$new = 1;
-					$NewAPs++;
-					$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
-				}
-				if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
-				{
-					$retry = true;
-					while ($retry)
-					{
-						try 
-						{
-							if($this->sql->service == "mysql")
-								{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
-							$prepu = $this->sql->conn->prepare($sql);
-							$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
-							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
-							$prepu->execute();
-							$retry = false;
-						}
-						catch (Exception $e) 
-						{
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-				}
-			}
 
-			if($ap_id == 0){continue;}
-			$ap_count++;
-				
 			$sql1 = "SELECT * FROM wifispot WHERE fk_wifi = '$fid'";
 			$gps_query = $dbh->query($sql1);
 			$gps_fetch = $gps_query->fetchAll(2);
@@ -709,54 +1052,321 @@ class import extends dbcore
 				$fLon = $this->convert->all2dm(number_format($point['lon'], 7));
 				$fAlt = $point['alt'];
 				$fDate = date("Y-m-d H:i:s", substr($point['timestamp'], 0, -3));
+
+				$gps_hash = md5($fLat.$fLon.$fAlt.$fDate);
+				$garr = @$gdata[$gps_hash];
+				$fgid = @$garr['id'];
+				if(!$fgid){$gid++;$fgid=$gid;}
+				$gdata[$gps_hash] = array(
+					'id'	=>  $fgid,
+					'lat'	=>  $fLat,
+					'lon'	=>  $fLon,
+					'sats'	=>  null,
+					'acc'	=>  null,
+					'hdp'	=>  null,
+					'alt'	=>  $fAlt,
+					'geo'	=>  null,
+					'kmh'	=>  null,
+					'mph'	=>  null,
+					'track'	=>  null,
+					'datetime'	=>  $fDate
+				);
 				
-				$gps_id = $this->InsertGps($file_id, null, $fLat, $fLon, null, null, $fAlt, null, null, null, null, null, $fDate);
-				if($gps_id == 0){continue;}
-				$gps_count++;
-				
-				$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $fDate);
-				if($hist_id == ""){continue;}
-				
-				$harr = @$hdata[$ap_id];
-				$HighRSSIwGPS = @$harr['HighRSSIwGPS'];
-				if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
-				if($fLat != "" && $fLon != "" && $fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > $HighRSSIwGPS){$HighRSSIwGPS = $fRSSI;}
-				$hdata[$ap_id] = array(
-					'ap_id'	=>  $ap_id,
-					'HighRSSIwGPS'	=>  $HighRSSIwGPS,
+				$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+				$aarr = @$apdata[$ap_hash];
+				$fsigs = @$aarr['signals'];
+				if($fsigs){$fsigs .= "\\";}
+				$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+				$apdata[$ap_hash] = array(
+					'ap_hash'   => $ap_hash,
+					'ssid'	  =>  $fSSID,
+					'bssid'	   =>  $fBSSID,
+					'manuf'	 =>  $this->findManuf($fBSSID),
+					'auth'	  =>  $authen,
+					'encry'	 =>  $encry,
+					'sectype'   =>  $sectype,
+					'flags'   =>  $fCapabilities,
+					'radio'	 =>  $radio,
+					'chan'	  =>  $chan,
+					'btx'	   =>  null,
+					'otx'	   =>  null,
+					'nt'		=>  $nt,
+					'signals'   =>  $fsigs
 				);
 			}
 		}
 		
-		#Update AP High Points
-		$h_lcount = count($hdata);
-		$h_ccount = 0;
-		foreach ($hdata as $key => $ap)
-		{
-			$h_ccount++;
-			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
-			$ap_id = $ap['ap_id'];
-			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
-		}
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 0, 1);
 		
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
 		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
-		
 		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
-				'aps'=>$ap_count,
-				'gps'=>$gps_count,
-				'newaps'=>$NewAPs
-			);
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
+				'cells'=>0,
+				'cells_hist'=>0,
+				'newcells'=>0
+		);
 		return $ret;
 	}
-	
+
+	public function import_swardriving($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+
+		# Open the file and dump its contents into an array. probably should re think this part...
+		$file_contents = @file_get_contents($source);
+		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
+		$file_contents = str_replace("\xEF\xBB\xBF",'',$file_contents);// Remove Byte Order Mark
+		if($file_contents === "")
+		{
+			return array(-1, "File was empty, or error opening file.");
+		}
+		$File_return	 = explode("\n", $file_contents);
+		$File_lcount = count($File_return);
+
+		# Now lets loop through the file and see what we have.
+		$this->verbosed("Compiling data from file to array:", 3);
+		$calc = "$File_lcount Lines";
+		$this->UpdateImportingStatus($file_importing_id, 'Processing', $calc);
+		$gdata = array();
+		$apdata = array();
+		$gid = 0;
+		foreach($File_return as $key => $file_line)
+		{	
+			# Read CSV
+			$apinfo = str_getcsv ($file_line);
+			
+			$fBSSID = strtoupper($apinfo[0]);
+			if(!$this->validateMacAddress($fBSSID)){continue;}
+			$fSSID = $apinfo[1];
+			$fCapabilities = $apinfo[2];
+			$fchannel = $apinfo[3];
+			$ffrequency = $apinfo[4];
+			$fDate1 = $apinfo[5];
+			$fDate2 = $apinfo[6];
+			$fLat = $this->convert->all2dm(number_format($apinfo[7],7));
+			$fLon = $this->convert->all2dm(number_format($apinfo[8],7));
+			$fAltitudeMeters = $apinfo[9];
+			$fDate = $fDate1.','.$fDate2;
+			$fSignal = 0;
+			$fRSSI = -99;
+			
+			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
+			list($chan, $radio) = $this->convert->findFreq($ffrequency);
+			
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+			
+			if (($timestamp = strtotime($fDate)) !== false) {
+				$GpsDate = date("Y-m-d H:i:s", $timestamp);
+				
+				$gps_hash = md5($fLat.$fLon.$fAltitudeMeters.$GpsDate);
+				$garr = @$gdata[$gps_hash];
+				$fgid = @$garr['id'];
+				if(!$fgid){$gid++;$fgid=$gid;}
+				$gdata[$gps_hash] = array(
+					'id'	=>  $fgid,
+					'lat'	=>  $fLat,
+					'lon'	=>  $fLon,
+					'sats'	=>  null,
+					'acc'	=>  null,
+					'hdp'	=>  null,
+					'alt'	=>  $fAltitudeMeters,
+					'geo'	=>  null,
+					'kmh'	=>  null,
+					'mph'	=>  null,
+					'track'	=>  null,
+					'datetime'	=>  $GpsDate
+				);
+				
+				$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+				$aarr = @$apdata[$ap_hash];
+				$fsigs = @$aarr['signals'];
+				if($fsigs){$fsigs .= "\\";}
+				$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+				$apdata[$ap_hash] = array(
+					'ap_hash'   => $ap_hash,
+					'ssid'	  =>  $fSSID,
+					'bssid'	   =>  $fBSSID,
+					'manuf'	 =>  $this->findManuf($fBSSID),
+					'auth'	  =>  $authen,
+					'encry'	 =>  $encry,
+					'sectype'   =>  $sectype,
+					'flags'   =>  $fCapabilities,
+					'radio'	 =>  $radio,
+					'chan'	  =>  $chan,
+					'btx'	   =>  null,
+					'otx'	   =>  null,
+					'nt'		=>  $nt,
+					'signals'   =>  $fsigs
+				);	
+			}
+		}
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 0, 1);
+		
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		$ret = array(
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
+				'cells'=>0,
+				'cells_hist'=>0,
+				'newcells'=>0
+		);
+		return $ret;
+	}
+
+	public function import_wiglewificsv($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+
+		# Open the file and dump its contents into an array. probably should re think this part...
+		$file_contents = @file_get_contents($source);
+		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
+		$file_contents = str_replace("\xEF\xBB\xBF",'',$file_contents);// Remove Byte Order Mark
+		if($file_contents === "")
+		{
+			return array(-1, "File was empty, or error opening file.");
+		}
+		$File_return	 = explode("\n", $file_contents);
+		$File_lcount = count($File_return);
+
+		# Now lets loop through the file and see what we have.
+		$this->verbosed("Compiling data from file to array:", 3);
+		$calc = "$File_lcount Lines";
+		$this->UpdateImportingStatus($file_importing_id, 'Processing', $calc);
+		$gdata = array();
+		$apdata = array();
+		$cdata = array();
+		$gid = 0;
+		$NewCellIds = 0;
+		$cell_count = 0;
+		$cell_hist_count = 0;		
+		
+		foreach($File_return as $key => $file_line)
+		{
+			$apinfo = str_getcsv ($file_line);
+			if(strpos($apinfo[0], 'WigleWifi') !== false && strpos($apinfo[1], 'appRelease') !== false){continue;}
+			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}			
+			$fBSSID = strtoupper(@$apinfo[0]);
+			$fSSID = @$apinfo[1];
+			$fCapabilities = @$apinfo[2];
+			$fDate = @$apinfo[3];
+			$fchannel = @$apinfo[4];
+			$fRSSI = @$apinfo[5];
+			$fLat = $this->convert->all2dm(number_format(@$apinfo[6],7));
+			$fLon = $this->convert->all2dm(number_format(@$apinfo[7],7));
+			$fAltitudeMeters = @$apinfo[8];
+			$fAccuracy = @$apinfo[9];
+			$fType = @$apinfo[10];
+
+			if(substr($fDate, 0, 4) == "1969"){continue;}//Continue on bad date
+			if (($timestamp = strtotime($fDate)) !== false) 
+			{
+				$GpsDate = date("Y-m-d H:i:s", $timestamp);
+				$gps_hash = md5($fLat.$fLon.$fAltitudeMeters.$fAccuracy.$fDate);
+				$garr = @$gdata[$gps_hash];
+				$fgid = @$garr['id'];
+				if(!$fgid){$gid++;$fgid=$gid;}
+				$gdata[$gps_hash] = array(
+					'id'	=>  $fgid,
+					'lat'	=>  $fLat,
+					'lon'	=>  $fLon,
+					'sats'	=>  null,
+					'acc'	=>  $fAccuracy,
+					'hdp'	=>  null,
+					'alt'	=>  $fAltitudeMeters,
+					'geo'	=>  null,
+					'kmh'	=>  null,
+					'mph'	=>  null,
+					'track'	=>  null,
+					'datetime'	=>  $fDate
+				);
+
+				if($fType == "WIFI")
+				{
+					if(!$this->validateMacAddress($fBSSID)){continue;}
+					
+					if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
+					$fSignal = $this->convert->dBm2Sig($fRSSI);
+					list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
+					list($chan, $radio) = $this->convert->findFreq($fchannel);
+
+					$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+					$aarr = @$apdata[$ap_hash];
+					$fsigs = @$aarr['signals'];
+					if($fsigs){$fsigs .= "\\";}
+					$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+					$apdata[$ap_hash] = array(
+						'ap_hash'   => $ap_hash,
+						'ssid'	  =>  $fSSID,
+						'bssid'	   =>  $fBSSID,
+						'manuf'	 =>  $this->findManuf($fBSSID),
+						'auth'	  =>  $authen,
+						'encry'	 =>  $encry,
+						'sectype'   =>  $sectype,
+						'flags'   =>  $fCapabilities,
+						'radio'	 =>  $radio,
+						'chan'	  =>  $chan,
+						'btx'	   =>  null,
+						'otx'	   =>  null,
+						'nt'		=>  $nt,
+						'signals'   =>  $fsigs
+					);
+				}
+				else
+				{
+					$cell_hash = md5($fBSSID.$fSSID.$fCapabilities.$fchannel.$fType);
+					$carr = @$cdata[$cell_hash];
+					$fsigs = @$carr['signals'];
+					if($fsigs){$fsigs .= "\\";}
+					$fsigs .= $fgid.",".$fRSSI;
+					$cdata[$cell_hash] = array(
+						'cell_hash'   => $cell_hash,
+						'ssid'	  =>  $fSSID,
+						'bssid'	   =>  $fBSSID,
+						'flags'   =>  $fCapabilities,
+						'chan'	  =>  $fchannel,
+						'type'	 =>  $fType,
+						'signals'   =>  $fsigs
+					);
+				}
+
+			}
+		}	
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 0, 1);
+		$Cell_Import = $this->ImportCellData($file_id, $file_importing_id, $cdata);
+
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		$ret = array(
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
+				'cells'=>$Cell_Import['cells'],
+				'cells_hist'=>$Cell_Import['cells_hist'],
+				'newcells'=>$Cell_Import['newcells']
+		);
+		return $ret;
+	}
+		
 	public function import_vistumblercsv($source="", $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
@@ -777,10 +1387,8 @@ class import extends dbcore
 
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);
-		$imported_aps = array();
-		$hdata = array();
-		$NewAPs = 0;
-		$gps_count = 0;
+		$gdata = array();
+		$apdata = array();
 		$gid = 0;
 		foreach($File_return as $key => $file_line)
 		{
@@ -788,14 +1396,13 @@ class import extends dbcore
 			if($line[1] == "BSSID" && $line[2] == "MANUFACTURER" && $line[3] == "SIGNAL" && $line[4] == "High Signal"){continue;} #tis the header, skip it..
 			$line_count = count($line);
 			if($line_count != 26){echo "csv line does not have 26 fields\r\n";continue;}else{echo "$line_count lines\r\n";}
-			
 
 			if ($line[7]==='Open' && $line[8]==='None'){$sectype="1";}
 			if ($line[7]==='Open' && $line[8]==='WEP'){$sectype="2";}
 			if ($line[8] !== 'None' && $line[8] !== 'WEP'){$sectype="3";}
 
 			$ssid = @$line[0];
-			$mac = @$line[1];
+			$bssid = @$line[1];
 			$sig = @$line[3];
 			$RSSI = @$line[5];
 			$auth = @$line[7];
@@ -844,7 +1451,7 @@ class import extends dbcore
 				'datetime'	=>  $datetime
 			);
 
-			$ap_hash = md5($ssid.$mac.$chan.$sectype.$auth.$encr);
+			$ap_hash = md5($ssid.$bssid.$chan.$sectype.$auth.$encr);
 			$aarr = @$apdata[$ap_hash];
 			$fsigs = @$aarr['signals'];
 			if($fsigs){$fsigs .= "\\";}
@@ -852,754 +1459,36 @@ class import extends dbcore
 			$apdata[$ap_hash] = array(
 				'ap_hash'   => $ap_hash,
 				'ssid'	  =>  $ssid,
-				'mac'	   =>  $mac,
-				'manuf'	 =>  $this->findManuf($mac),
+				'bssid'	   =>  $bssid,
+				'manuf'	 =>  $this->findManuf($bssid),
 				'auth'	  =>  $auth,
 				'encry'	 =>  $encr,
 				'sectype'   =>  $sectype,
+				'flags'   =>  null,
 				'radio'	 =>  $radio,
 				'chan'	  =>  $chan,
 				'btx'	   =>  $btx,
 				'otx'	   =>  $otx,
 				'nt'		=>  $nt,
-				'label'	 =>  $label,
 				'signals'   =>  $fsigs
 			);
 		}
 		
-		if(count($apdata) === 0)
-		{
-			$this->verbosed("File did not have an valid AP data, dropping file.", -1);
-			//$this->logd("File did not have an valid AP data, dropping file.", "Warning");
-			return array(-1, "File does not have any valid AP data.");
-		}
-		if(count($gdata) === 0)
-		{
-			$this->verbosed("File did not have an valid GPS data, dropping file.", -1);
-			//$this->logd("File did not have an valid GPS data, dropping file.", "Warning");
-			return array(-1, "File does not have any valid GPS data.");
-		}
-
-		$vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);
-		$ap_count = count($vs1data['apdata']);
-		$gps_count = count($vs1data['gpsdata']);
-		
-		$this->verbosed("Importing GPS data [$gps_count]", 2);
-		$calc = $gps_count." GPS Points";
-		$this->UpdateImportingStatus($file_importing_id, 'Importing GPS Data', $calc);
-
-		if($this->sql->service == "mysql")
-			{$sql = "INSERT INTO `wifi_gps` (`File_ID`, `File_GPS_ID`, `Lat`, `Lon`, `NumOfSats`, `HorDilPitch`, `Alt`, `Geo`, `KPH`, `MPH`, `TrackAngle`, `GPS_Date`) VALUES ";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "INSERT INTO [wifi_gps] ([File_ID], [File_GPS_ID], [Lat], [Lon], [NumOfSats], [HorDilPitch], [Alt], [Geo], [KPH], [MPH], [TrackAngle], [GPS_Date]) VALUES ";}
-
-		$Insert_Size = 0;
-		$Insert_Limit = 150; //SQL Server supports a maximum of 2100 parameters. 2100 / 12 parameters = 175
-		$lcount = 0;
-		$ValArray = array();
-		foreach($vs1data['gpsdata'] as $key=>$gps)
-		{
-			$lcount++;
-			$Insert_Size++;
-			$ValArray[] = array($file_id, $gps['id'], $gps['lat'], $gps['lon'], $gps['sats'], $gps['hdp'], $gps['alt'], $gps['geo'], $gps['kmh'], $gps['mph'], $gps['track'], $gps['datetime']);
-			
-			if($lcount === $gps_count || $Insert_Size >= $Insert_Limit)
-			{
-				$paramArray = array();
-				$sqlArray = array();
-				foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
-				{
-					$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
-					foreach($row as $element)
-					{
-						$paramArray[] = $element;
-					}
-				}
-
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						$sql_prep = $sql.implode(',', $sqlArray);
-						//echo $sql_prep."\r\n";
-						//var_dump($paramArray);
-						$stmt = $this->sql->conn->prepare($sql_prep);
-						$stmt->execute($paramArray);
-						echo "Insert GPS Size: $Insert_Size - $lcount / $gps_count \r\n";
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-
-				$Insert_Size = 0;
-				$ValArray = array();
-			}
-		}
-		$this->verbosed("Importing AP Data [$ap_count]:", 2);
-		$calc = $ap_count." APs";
-		$this->UpdateImportingStatus($file_importing_id, 'Importing AP Data', $calc);
-		$imported_aps = array();
-		$NewAPs = 0;
-		$APs = 0;
-		foreach($vs1data['apdata'] as $key=>$aps)
-		{
-			$APs++;
-			$retry = true;
-
-			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['auth'].$aps['encry']);
-
-			if(strlen($aps['ssid']) < 7){$pad_ssid = 20;}else{$pad_ssid = strlen($aps['ssid']);}
-			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
-			if(strlen($aps['radio']) < 7){$pad_radio = 20;}else{$pad_radio = strlen($aps['radio']);}
-			if(strlen($aps['encry']) < 7){$pad_encr = 20;}else{$pad_encr = strlen($aps['encry']);}
-			$ssid = str_pad($aps['ssid'], $pad_ssid);
-			$chan = str_pad($aps['chan'], $pad_chan);
-			$radio = str_pad($aps['radio'], $pad_radio);
-			$encry = str_pad($aps['encry'], $pad_encr);
-			$this->verbosed("------------------------
-			File AP/Total: {$APs}/{$ap_count}
-			SSID:  {$ssid} | MAC: {$aps['mac']}
-			CHAN:  {$chan} | SECTYPE: {$aps['sectype']}
-			RADIO: {$radio}| AUTH: {$aps['auth']}
-			ENCRY: {$encry}| APHASH:".$ap_hash, 1);
-			#//$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
-			
-			$new = 0;
-			$ap_id = 0;			
-			$addresult = $this->InsertAp($file_id, $aps['mac'], $aps['ssid'], $aps['chan'], $aps['auth'], $aps['encry'], $aps['sectype'], $aps['radio'], $aps['nt'], $aps['btx'], $aps['otx'], '');
-			if($addresult)
-			{
-				$ap_id = $addresult['AP_ID'];
-				$ap_action = $addresult['$action'];
-				$ap_RADTYPE = $addresult['RADTYPE'];
-				if($ap_action == "INSERT")
-				{
-					$new = 1;
-					$NewAPs++;
-				}
-				if($aps['radio'] != $ap_RADTYPE && $aps['radio'] != "")
-				{
-					$retry = true;
-					while ($retry)
-					{
-						try 
-						{
-							if($this->sql->service == "mysql")
-								{$sql = "UPDATE wifi_ap SET RADTYPE = ? WHERE AP_ID = ?";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "UPDATE [wifi_ap] SET [RADTYPE] = ? WHERE [AP_ID] = ?";}
-							$prepu = $this->sql->conn->prepare($sql);
-							$prepu->bindParam(1, $aps['radio'], PDO::PARAM_STR);
-							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
-							$prepu->execute();
-							$retry = false;
-						}
-						catch (Exception $e) 
-						{
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-				}
-			}
-			
-			$HighRSSIwGPS = -99;
-			//Import Wifi Signals
-			$ap_sig_exp = explode("\\", $aps['signals']);
-			$SigArrSize = count($ap_sig_exp);
-			$calc = "AP: ".($APs)." / ".$ap_count." (".$SigArrSize." Points)";
-			$this->UpdateImportingStatus($file_importing_id, $calc, $ssid);
-
-			#Go through points and import them
-			$this->verbosed("Starting Import of Wifi Signal ( ".$SigArrSize." Signal Points )... ", 1);
-			
-			#Prepared statement - insert ap signal history
-			if($this->sql->service == "mysql")
-				{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES ";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES ";}		
-
-			$Insert_Size = 0;
-			$Insert_Limit = 250; //SQL Server supports a maximum of 2100 parameters. 2100 / 7 parameters = 300
-			$SigCount = 0;
-			$ValArray = array();
-			foreach($ap_sig_exp as $key2=>$sig_gps_id)
-			{
-				$SigCount++;
-				#Format the date
-				$sig_gps_exp = explode(",", $sig_gps_id);
-				$file_gps_id = $sig_gps_exp[0];
-				if($file_gps_id != "")
-				{
-					$signal = @$sig_gps_exp[1];
-					$rssi = @$sig_gps_exp[2];
-					if($signal == ""){$signal = 0;}
-					if($this->rssi_signals_flag)
-						{if(!is_numeric(@$sig_gps_exp[2])){$rssi = $this->convert->Sig2dBm($signal);}}#fix for old incorrectly formatted file}
-					else
-						{$rssi = $this->convert->Sig2dBm($signal);}
-					if($rssi == ""){$rssi = -99;}
-
-					if($this->sql->service == "mysql")
-						{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
-					else if($this->sql->service == "sqlsrv")
-						{$GID_SQL = "SELECT TOP 1 [GPS_ID], [GPS_Date], [Lat], [Lon] FROM [wifi_gps] WHERE [File_ID] = ? AND [File_GPS_ID] = ?";}
-					$gidprep = $this->sql->conn->prepare($GID_SQL);
-					$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
-					$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
-					$gidprep->execute();
-					$fetchgidprep = $gidprep->fetch(2);
-					$gps_id = $fetchgidprep['GPS_ID'];
-					$datetime = $fetchgidprep['GPS_Date'];
-					$gps_lat = $fetchgidprep['Lat'];
-					$gps_lon = $fetchgidprep['Lat'];
-					if($gps_id != "")
-					{
-						if($gps_lat == ""){$gps_lat = "0.0000";}
-						if($gps_lon == ""){$gps_lon = "0.0000";}
-						if($gps_lat != "0.0000" && $gps_lon != "0.0000" && $rssi > $HighRSSIwGPS){$HighRSSIwGPS = $rssi;}
-
-						$Insert_Size++;
-						$ValArray[] = array($ap_id, $gps_id, $file_id, $signal, $rssi, $new, $datetime);
-					}
-				}
-				if($SigArrSize === $SigCount || $Insert_Size >= $Insert_Limit)
-				{
-					if($Insert_Size)
-					{
-						$paramArray = array();
-						$sqlArray = array();
-						foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
-						{
-							$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
-							foreach($row as $element)
-							{
-								$paramArray[] = $element;
-							}
-						}
-
-						$retry = true;
-						while ($retry)
-						{
-							try {
-								$sql_prep = $sql.implode(',', $sqlArray);
-								//echo $sql_prep."\r\n";
-								//var_dump($paramArray);
-								$stmt = $this->sql->conn->prepare($sql_prep);
-								$stmt->execute($paramArray);
-								echo "Insert Size: $Insert_Size - $SigCount / $SigArrSize \r\n";
-								$retry = false;
-							}
-							catch (Exception $e) {
-								$retry = $this->sql->isPDOException($this->sql->conn, $e);
-							}
-						}
-						
-						$Insert_Size = 0;
-						$ValArray = array();
-					}
-				}
-			}
-			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
-		}
-		#Find if file had Valid GPS
-		$this->UpdateFileValidGPS($file_id);
-		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
-		
-		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
-				'aps'=>$ap_count,
-				'gps'=>$gps_count,
-				'newaps'=>$NewAPs
-			);
-		return $ret;
-	}
-	
-	public function import_wiglewificsv($source="", $file_id, $file_importing_id)
-	{
-		if(!file_exists($source))
-		{
-			return array(-1, "File does not exist");
-		}
-
-		# Open the file and dump its contents into an array. probably should re think this part...
-		$file_contents = @file_get_contents($source);
-		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
-		$file_contents = str_replace("\xEF\xBB\xBF",'',$file_contents);// Remove Byte Order Mark
-		if($file_contents === "")
-		{
-			return array(-1, "File was empty, or error opening file.");
-		}
-		$File_return	 = explode("\n", $file_contents);
-		$File_lcount = count($File_return);
-
-		# Now lets loop through the file and see what we have.
-		$this->verbosed("Compiling data from file to array:", 3);
-		$imported_aps = array();
-		$hdata = array();
-		$chdata = array();
-		$NewAPs = 0;
-		$ap_count = 0;
-		$gps_count = 0;
-		$NewCellIds = 0;
-		$cell_count = 0;
-		$cell_hist_count = 0;		
-		
-		foreach($File_return as $key => $file_line)
-		{
-			$apinfo = str_getcsv ($file_line);
-			if(strpos($apinfo[0], 'WigleWifi') !== false && strpos($apinfo[1], 'appRelease') !== false){continue;}
-			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}			
-			$fBSSID = strtoupper(@$apinfo[0]);
-			$fSSID = @$apinfo[1];
-			$fCapabilities = @$apinfo[2];
-			$fDate = @$apinfo[3];
-			$fchannel = @$apinfo[4];
-			$fRSSI = @$apinfo[5];
-			$fLat = $this->convert->all2dm(number_format(@$apinfo[6],7));
-			$fLon = $this->convert->all2dm(number_format(@$apinfo[7],7));
-			$fAltitudeMeters = @$apinfo[8];
-			$fAccuracy = @$apinfo[9];
-			$fType = @$apinfo[10];
-
-			$gps_hash = md5($fLat.$fLon.$fAltitudeMeters.$fAccuracy.$fDate);
-			$garr = @$gdata[$gps_hash];
-			$fgid = @$garr['id'];
-			if(!$fgid){$gid++;$fgid=$gid;}
-			$gdata[$gps_hash] = array(
-				'id'	=>  $fgid,
-				'lat'	=>  $fLat,
-				'lon'	=>  $fLon,
-				'sats'	=>  null,
-				'acc'	=>  $fAccuracy,
-				'hdp'	=>  null,
-				'alt'	=>  $fAltitudeMeters,
-				'geo'	=>  null,
-				'kmh'	=>  null,
-				'mph'	=>  null,
-				'track'	=>  null,
-				'datetime'	=>  $fDate
-			);
-			
-			if(substr($fDate, 0, 4) == "1969"){continue;}//Continue on bad date
-			if (($timestamp = strtotime($fDate)) !== false) 
-			{
-				$GpsDate = date("Y-m-d H:i:s", $timestamp);
-				
-				$calc = "Line: ".($key+1)." / ".$File_lcount;
-				$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
-				
-				echo "$fBSSID $fSSID $fCapabilities $fchannel $fType\r\n";
-				if($fType == "WIFI")
-				{
-					if(!$this->validateMacAddress($fBSSID)){continue;}
-					
-					if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
-					$fSignal = $this->convert->dBm2Sig($fRSSI);
-					list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
-					list($chan, $radio) = $this->convert->findFreq($fchannel);
-
-					$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
-					$aarr = @$apdata[$ap_hash];
-					$fsigs = @$aarr['signals'];
-					if($fsigs){$fsigs .= "\\";}
-					$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
-					$apdata[$ap_hash] = array(
-						'ap_hash'   => $ap_hash,
-						'ssid'	  =>  $fSSID,
-						'bssid'	   =>  $fBSSID,
-						'manuf'	 =>  $this->findManuf($fBSSID),
-						'auth'	  =>  $authen,
-						'encry'	 =>  $encry,
-						'sectype'   =>  $sectype,
-						'flags'   =>  $fCapabilities,
-						'radio'	 =>  $radio,
-						'chan'	  =>  $chan,
-						'btx'	   =>  null,
-						'otx'	   =>  null,
-						'nt'		=>  $nt,
-						'label'	 =>  $label,
-						'signals'   =>  $fsigs
-					);
-				}
-				else
-				{
-					
-					$cell_hash = md5($fBSSID.$fSSID.$fCapabilities.$fchannel.$fType);
-					$carr = @$celldata[$cell_hash];
-					$fsigs = @$carr['signals'];
-					if($fsigs){$fsigs .= "\\";}
-					$fsigs .= $fgid.",".$fRSSI;
-					$apdata[$ap_hash] = array(
-						'ap_hash'   => $ap_hash,
-						'ssid'	  =>  $fSSID,
-						'bssid'	   =>  $fBSSID,
-						'flags'   =>  $fCapabilities,
-						'chan'	  =>  $fchannel,
-						'type'	   =>  $fType,
-						'signals'   =>  $fsigs
-					);
-					
-			
-			
-			
-			
-			
-			
-			
-
-			if(substr($fDate, 0, 4) == "1969"){continue;}//Continue on bad date
-			if (($timestamp = strtotime($fDate)) !== false) 
-			{
-				$GpsDate = date("Y-m-d H:i:s", $timestamp);
-				
-				$calc = "Line: ".($key+1)." / ".$File_lcount;
-				$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
-				
-				echo "$fBSSID $fSSID $fCapabilities $fchannel $fType\r\n";
-				if($fType == "WIFI")
-				{
-					if(!$this->validateMacAddress($fBSSID)){continue;}
-					
-					if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
-					$fSignal = $this->convert->dBm2Sig($fRSSI);
-					list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
-					list($chan, $radio) = $this->convert->findFreq($fchannel);
-					
-					$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
-					
-					$gps_id = $this->InsertGps($file_id, null, $fLat, $fLon, null, null, $fAltitudeMeters, null, null, null, null, $fAccuracy, $GpsDate);
-					if($gps_id == 0){continue;}
-					$gps_count++;
-
-					$ap_id = 0;
-					$new = 0;
-					$addresult = $this->InsertAp($file_id, $fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities);
-					if($addresult)
-					{
-						$ap_id = $addresult['AP_ID'];
-						$ap_action = $addresult['$action'];
-						$ap_FLAGS = $addresult['FLAGS'];
-						if($ap_action == "INSERT")
-						{
-							$imported_aps[] = $ap_id.":0";
-							$new = 1;
-							$NewAPs++;
-							$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
-						}
-						if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
-						{
-							$retry = true;
-							while ($retry)
-							{
-								try 
-								{
-									if($this->sql->service == "mysql")
-										{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
-									else if($this->sql->service == "sqlsrv")
-										{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
-									$prepu = $this->sql->conn->prepare($sql);
-									$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
-									$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
-									$prepu->execute();
-									$retry = false;
-								}
-								catch (Exception $e) 
-								{
-									$retry = $this->sql->isPDOException($this->sql->conn, $e);
-								}
-							}
-						}
-					}
-					
-					if($ap_id == 0){continue;}
-					$ap_count++;
-
-					$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $GpsDate);
-					if($hist_id == ""){continue;}
-					
-					$harr = @$hdata[$ap_id];
-					$HighRSSIwGPS = @$harr['HighRSSIwGPS'];
-					if($HighRSSIwGPS == ""){$HighRSSIwGPS == -99;}
-					if($fLat != "" && $fLon != "" && $fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > $HighRSSIwGPS){$HighRSSIwGPS = $fRSSI;}
-					$hdata[$ap_id] = array(
-						'ap_id'	=>  $ap_id,
-						'HighRSSIwGPS'	=>  $HighRSSIwGPS
-					);
-				}
-				else
-				{
-					
-					$cell_hash = md5($fBSSID.$fSSID.$fCapabilities.$fchannel.$fType);
-					$cell_id = 0;
-
-					$retry = true;
-					while ($retry)
-					{
-						try {
-							if($this->sql->service == "mysql")
-								{$sql = "SELECT cell_id FROM cell_id WHERE cell_hash = ? LIMIT 1";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "SELECT TOP 1 [cell_id] FROM [cell_id] WHERE [cell_hash] = ?";}
-							$res = $this->sql->conn->prepare($sql);
-							$res->bindParam(1, $cell_hash, PDO::PARAM_STR);
-							$res->execute();
-							$retry = false;
-						}
-						catch (Exception $e) {
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-					$fetch = $res->fetch(2);
-					if($fetch['cell_id'])
-					{
-						$cell_id	= $fetch['cell_id'];
-					}
-					else
-					{
-						$retry = true;
-						while ($retry)
-						{
-							try {
-								if($this->sql->service == "mysql")
-									{$sql = "INSERT INTO cell_id (file_id, mac, ssid, authmode, chan, type, cell_hash) VALUES (?,?,?,?,?,?,?)";}
-								else if($this->sql->service == "sqlsrv")
-									{$sql = "INSERT INTO [cell_id] ([file_id], [mac], [ssid], [authmode], [chan], [type], [cell_hash]) VALUES (?,?,?,?,?,?,?)";}
-								$prep = $this->sql->conn->prepare($sql);
-								$prep->bindParam(1, $file_id, PDO::PARAM_INT);
-								$prep->bindParam(2, $fBSSID, PDO::PARAM_STR);
-								$prep->bindParam(3, $fSSID, PDO::PARAM_STR);
-								$prep->bindParam(4, $fCapabilities, PDO::PARAM_STR);
-								$prep->bindParam(5, $fchannel, PDO::PARAM_INT);		
-								$prep->bindParam(6, $fType, PDO::PARAM_STR);
-								$prep->bindParam(7, $cell_hash, PDO::PARAM_STR);
-								$prep->execute();
-								$retry = false;
-							}
-							catch (Exception $e) {
-								$retry = $this->sql->isPDOException($this->sql->conn, $e);
-							}
-						}
-						$cell_id = $this->sql->conn->lastInsertId();
-						$NewCellIds++;
-						$this->verbosed("Inserted Cell ID {".$cell_id."}.", 2);
-						#//$this->logd("Inserted APs pointer. {".$this->sql->conn->lastInsertId()."}");
-					}
-					
-					if($cell_id == 0){continue;}
-					$cell_count++;
-					
-					$retry = true;
-					while ($retry)
-					{
-						try {
-							if($this->sql->service == "mysql")
-								{$sql = "INSERT INTO cell_hist (cell_id, file_id, rssi, lat, lon, alt, accuracy, hist_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "INSERT INTO [cell_hist] ([cell_id], file_id, [rssi], [lat], [lon], [alt], [accuracy], [hist_date]) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";}	
-							$prep = $this->sql->conn->prepare($sql);
-							$prep->bindParam(1,$cell_id, PDO::PARAM_INT);
-							$prep->bindParam(2,$file_id, PDO::PARAM_INT);
-							$prep->bindParam(3,$fRSSI, PDO::PARAM_INT);
-							$prep->bindParam(4,$fLat, PDO::PARAM_STR);
-							$prep->bindParam(5,$fLon, PDO::PARAM_STR);
-							$prep->bindParam(6,$fAltitudeMeters, PDO::PARAM_STR);
-							$prep->bindParam(7,$fAccuracy,PDO::PARAM_STR);
-							$prep->bindParam(8,$GpsDate,PDO::PARAM_STR);
-							$prep->execute();
-							$retry = false;
-						}
-						catch (Exception $e) {
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-					$cell_hist_id = $this->sql->conn->lastInsertId();
-					if($cell_hist_id !== 0){$cell_hist_count++;}
-					
-					$chdata[$cell_id] = array(
-						'cell_id'	=>  $cell_id
-					);
-				}
-			}
-		}
-		#Update AP High Points
-		$h_lcount = count($hdata);
-		$h_ccount = 0;
-		foreach ($hdata as $key => $ap)
-		{
-			$h_ccount++;
-			$calc = "AP: ".($h_ccount)." / ".$h_lcount;
-			$ap_id = $ap['ap_id'];
-			$HighRSSIwGPS = $ap['HighRSSIwGPS'];
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
-		}
-		
-		#Update Cell/BT High Points
-		$ch_lcount = count($chdata);
-		$ch_ccount = 0;
-		foreach ($chdata as $key => $cell)
-		{
-			$ch_ccount++;
-			$calc = "CELL/BT: ".($ch_ccount)." / ".$ch_lcount;
-			$cell_id = $cell['cell_id'];
-			$this->UpdateCellHighPoints($file_importing_id, $cell_id, $calc);
-		}
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 1, 0);
 		
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
 		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
-		
 		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
-				'aps'=>$ap_count,
-				'gps'=>$gps_count,
-				'newaps'=>$NewAPs,
-				'cells'=>$cell_count,
-				'cells_hist'=>$cell_hist_count,
-				'newcells'=>$NewCellIds
-			);
-		return $ret;
-	}
-	
-	public function import_swardriving($source="", $file_id, $file_importing_id)
-	{
-		if(!file_exists($source))
-		{
-			return array(-1, "File does not exist");
-		}
-
-		# Open the file and dump its contents into an array. probably should re think this part...
-		$file_contents = @file_get_contents($source);
-		$file_contents = mb_convert_encoding($file_contents, 'UTF-8', mb_detect_encoding($file_contents, 'UTF-8, ISO-8859-1', true));
-		$file_contents = str_replace("\xEF\xBB\xBF",'',$file_contents);// Remove Byte Order Mark
-		if($file_contents === "")
-		{
-			return array(-1, "File was empty, or error opening file.");
-		}
-		$File_return	 = explode("\n", $file_contents);
-		$File_lcount = count($File_return);
-
-		# Now lets loop through the file and see what we have.
-		$this->verbosed("Compiling data from file to array:", 3);
-		$imported_aps = array();
-		$NewAPs = 0;
-		$ap_count = 0;
-		$gps_count = 0;
-		
-		foreach($File_return as $key => $file_line)
-		{	
-			# Read CSV
-			$apinfo = str_getcsv ($file_line);
-			
-			$fBSSID = strtoupper($apinfo[0]);
-			if(!$this->validateMacAddress($fBSSID)){continue;}
-			$fSSID = $apinfo[1];
-			$fCapabilities = $apinfo[2];
-			$fchannel = $apinfo[3];
-			$ffrequency = $apinfo[4];
-			$fDate1 = $apinfo[5];
-			$fDate2 = $apinfo[6];
-			$fLat = $this->convert->all2dm(number_format($apinfo[7],7));
-			$fLon = $this->convert->all2dm(number_format($apinfo[8],7));
-			$fAltitudeMeters = $apinfo[9];
-			$fDate = $fDate1.','.$fDate2;
-			$fSignal = 0;
-			$fRSSI = -99;
-			
-			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
-			list($chan, $radio) = $this->convert->findFreq($ffrequency);
-			
-			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
-			
-			$calc = "Line: ".($key+1)." / ".$File_lcount;
-			$this->UpdateImportingStatus($file_importing_id, $calc, $fSSID);
-			
-			if (($timestamp = strtotime($fDate)) !== false) {
-				$GpsDate = date("Y-m-d H:i:s", $timestamp);
-				
-				$gps_id = $this->InsertGps($file_id, null, $fLat, $fLon, null, null, $fAltitudeMeters, null, null, null, null, null, $GpsDate);
-				if($gps_id == ""){continue;}
-				$gps_count++;
-				
-				$ap_id = 0;
-				$new = 0;
-				$addresult = $this->InsertAp($file_id, $fBSSID, $fSSID, $chan, $authen, $encry, $sectype, $radio, $nt, '', '', $fCapabilities);
-				if($addresult)
-				{
-					$ap_id = $addresult['AP_ID'];
-					$ap_action = $addresult['$action'];
-					$ap_FLAGS = $addresult['FLAGS'];
-					if($ap_action == "INSERT")
-					{
-						$imported_aps[] = $ap_id.":0";
-						$new = 1;
-						$NewAPs++;
-						$this->verbosed("Inserted APs Pointer {".$ap_id."}.", 2);
-					}
-					if($fCapabilities != $ap_FLAGS && $fCapabilities != "")
-					{
-						$retry = true;
-						while ($retry)
-						{
-							try 
-							{
-								if($this->sql->service == "mysql")
-									{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
-								else if($this->sql->service == "sqlsrv")
-									{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
-								$prepu = $this->sql->conn->prepare($sql);
-								$prepu->bindParam(1, $fCapabilities, PDO::PARAM_STR);
-								$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
-								$prepu->execute();
-								$retry = false;
-							}
-							catch (Exception $e) 
-							{
-								$retry = $this->sql->isPDOException($this->sql->conn, $e);
-							}
-						}
-					}
-				}
-				
-				if($ap_id == 0){continue;}
-				$ap_count++;
-				
-				$hist_id = $this->InsertHist($file_id, $ap_id, $gps_id, $fSignal, $fRSSI, $new, $GpsDate);
-				if($hist_id == ""){continue;}
-				
-				#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-				if($fLat != "0.0000" && $fLon != "0.0000" && $fRSSI > -99){$fRSSIwGPS = $fRSSI;}else{$fRSSIwGPS = -99;}
-				$this->UpdateHighPoints($file_importing_id, $ap_id, $fRSSIwGPS, $calc);
-					
-			}
-		}
-		#Find if file had Valid GPS
-		$this->UpdateFileValidGPS($file_id);
-		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
-		
-		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
-				'aps'=>$ap_count,
-				'gps'=>$gps_count,
-				'newaps'=>$NewAPs,
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
 				'cells'=>0,
 				'cells_hist'=>0,
 				'newcells'=>0
-			);
+		);
 		return $ret;
 	}
 
@@ -1664,12 +1553,13 @@ class import extends dbcore
 								'lat'	=>  $this->convert->all2dm($gps_line[1]),
 								'lon'	=>  $this->convert->all2dm($gps_line[2]),
 								'sats'	=>  (int) $gps_line[3],
-								'hdp'   =>  '0',
-								'alt'   =>  '0',
-								'geo'   =>  '0',
-								'kmh'   =>  '0',
-								'mph'   =>  '0',
-								'track' =>  '0',
+								'acc'	=>  null,
+								'hdp'   =>  null,
+								'alt'   =>  null,
+								'geo'   =>  null,
+								'kmh'   =>  null,
+								'mph'   =>  null,
+								'track' =>  null,
 								'datetime'	=>  $datetime
 					);
 					break;
@@ -1714,6 +1604,7 @@ class import extends dbcore
 								'lat'	=>  $this->convert->all2dm($lat),
 								'lon'	=>  $this->convert->all2dm($lon),
 								'sats'	=>  (int) $gps_line[3],
+								'acc'	=>  null,
 								'hdp'	=>  (float) $gps_line[4],
 								'alt'	=>  (float) $gps_line[5],
 								'geo'	=>  (float) $gps_line[6],
@@ -1740,10 +1631,11 @@ class import extends dbcore
 					$apdata[] = array(
 								'ap_hash'   => "",
 								'ssid'	  =>  $ap_line[0],
-								'mac'	   =>  $ap_line[1],
+								'bssid'	   =>  $ap_line[1],
 								'auth'	  =>  $ap_line[3],
 								'encry'	 =>  $ap_line[4],
 								'sectype'   =>  (int) $ap_line[5],
+								'flags'   =>  null,
 								'radio'	 =>  $ap_line[6],
 								'manuf'	 =>  $this->findManuf($ap_line[1]),
 								'chan'	  =>  (int) $ap_line[7],
@@ -1774,11 +1666,12 @@ class import extends dbcore
 						$apdata[] = array(
 							'ap_hash'   => "",
 							'ssid'	  =>  $ap_line[0],
-							'mac'	   =>  $ap_line[1],
+							'bssid'	   =>  $ap_line[1],
 							'manuf'	 =>  $this->findManuf($ap_line[1]),
 							'auth'	  =>  $ap_line[3],
 							'encry'	 =>  $ap_line[4],
 							'sectype'   =>  (int) $ap_line[5],
+							'flags'   =>  null,
 							'radio'	 =>  $ap_line[6],
 							'chan'	  =>  (int) $ap_line[7],
 							'btx'	   =>  $ap_line[8],
@@ -1797,11 +1690,12 @@ class import extends dbcore
 						$apdata[] = array(
 							'ap_hash'   => "",
 							'ssid'	  =>  $ap_line[0],
-							'mac'	   =>  $ap_line[1],
+							'bssid'	   =>  $ap_line[1],
 							'HighSig'   =>  $ap_line[2],
 							'auth'	  =>  $ap_line[3],
 							'encry'	 =>  $ap_line[4],
 							'sectype'   =>  (int) $ap_line[5],
+							'flags'   =>  null,
 							'radio'	 =>  $ap_line[6],
 							'chan'	  =>  (int) $ap_line[7],
 							'btx'	   =>  $ap_line[8],
@@ -1820,11 +1714,12 @@ class import extends dbcore
 						$apdata[] = array(
 							'ap_hash'   => "",
 							'ssid'	  =>  $ap_line[0],
-							'mac'	   =>  $ap_line[1],
+							'bssid'	   =>  $ap_line[1],
 							'HighSig'   =>  $ap_line[2],
 							'label'	 =>  $ap_line[3],
 							'auth'	  =>  $ap_line[4],
 							'sectype'   =>  (int) $ap_line[5],
+							'flags'   =>  null,
 							'encry'	 =>  $ap_line[6],
 							'radio'	 =>  $ap_line[7],
 							'chan'	  =>  (int) $ap_line[8],
@@ -1848,280 +1743,21 @@ class import extends dbcore
 					break;
 			}
 		}
-		if(count($apdata) === 0)
-		{
-			$this->verbosed("File did not have an valid AP data, dropping file.", -1);
-			//$this->logd("File did not have an valid AP data, dropping file.", "Warning");
-			return array(-1, "File does not have any valid AP data.");
-		}
-		if(count($gdata) === 0)
-		{
-			$this->verbosed("File did not have an valid GPS data, dropping file.", -1);
-			//$this->logd("File did not have an valid GPS data, dropping file.", "Warning");
-			return array(-1, "File does not have any valid GPS data.");
-		}
 
-		$vs1data = array('gpsdata'=>$gdata, 'apdata'=>$apdata);
-		$ap_count = count($vs1data['apdata']);
-		$gps_count = count($vs1data['gpsdata']);
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 1, 0);
 		
-		$this->verbosed("Importing GPS data [$gps_count]", 2);		
-		
-		$retry = true;
-		while ($retry)
-		{
-			try 
-			{
-				$calc = $gps_count." GPS Points";
-				if($this->sql->service == "mysql")
-					{$sql = "UPDATE `files_importing` SET `tot` = ?, `ap` = 'Importing GPS Data' WHERE `id` = ?";}
-				else if($this->sql->service == "sqlsrv")
-					{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = 'Importing GPS Data' WHERE [id] = ?";}
-				$prep = $this->sql->conn->prepare($sql);
-				$prep->bindParam(1, $calc, PDO::PARAM_STR);
-				$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
-				$prep->execute();
-				$retry = false;
-			}
-			catch (Exception $e) {
-				$retry = $this->sql->isPDOException($this->sql->conn, $e);
-			}
-		}
-		
-		if($this->sql->service == "mysql")
-			{$sql = "INSERT INTO `wifi_gps` (`File_ID`, `File_GPS_ID`, `Lat`, `Lon`, `NumOfSats`, `HorDilPitch`, `Alt`, `Geo`, `KPH`, `MPH`, `TrackAngle`, `GPS_Date`) VALUES ";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "INSERT INTO [wifi_gps] ([File_ID], [File_GPS_ID], [Lat], [Lon], [NumOfSats], [HorDilPitch], [Alt], [Geo], [KPH], [MPH], [TrackAngle], [GPS_Date]) VALUES ";}
-
-		$Insert_Size = 0;
-		$Insert_Limit = 150; //SQL Server supports a maximum of 2100 parameters. 2100 / 12 parameters = 175
-		$lcount = 0;
-		$ValArray = array();
-		foreach($vs1data['gpsdata'] as $key=>$gps)
-		{
-			$lcount++;
-			$Insert_Size++;
-			$ValArray[] = array($file_id, $gps['id'], $gps['lat'], $gps['lon'], $gps['sats'], $gps['hdp'], $gps['alt'], $gps['geo'], $gps['kmh'], $gps['mph'], $gps['track'], $gps['datetime']);
-			
-			if($lcount === $gps_count || $Insert_Size >= $Insert_Limit)
-			{
-				$paramArray = array();
-				$sqlArray = array();
-				foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
-				{
-					$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
-					foreach($row as $element)
-					{
-						$paramArray[] = $element;
-					}
-				}
-
-				$retry = true;
-				while ($retry)
-				{
-					try {
-						$sql_prep = $sql.implode(',', $sqlArray);
-						//echo $sql_prep."\r\n";
-						//var_dump($paramArray);
-						$stmt = $this->sql->conn->prepare($sql_prep);
-						$stmt->execute($paramArray);
-						echo "Insert GPS Size: $Insert_Size - $lcount / $gps_count \r\n";
-						$retry = false;
-					}
-					catch (Exception $e) {
-						$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					}
-				}
-
-				$Insert_Size = 0;
-				$ValArray = array();
-			}
-		}
-
-		$this->verbosed("Importing AP Data [$ap_count]:", 2);
-		$imported_aps = array();
-		$NewAPs = 0;
-		foreach($vs1data['apdata'] as $key=>$aps)
-		{
-			$ap_num = $key + 1;
-			$retry = true;
-			
-			$calc = "AP: ".($ap_num)." / ".$ap_count;
-			$this->UpdateImportingStatus($file_importing_id, $calc, $aps['ssid']);
-
-			if(strlen($aps['ssid']) < 7){$pad_ssid = 20;}else{$pad_ssid = strlen($aps['ssid']);}
-			if(strlen($aps['chan']) < 7){$pad_chan = 20;}else{$pad_chan = strlen($aps['chan']);}
-			if(strlen($aps['radio']) < 7){$pad_radio = 20;}else{$pad_radio = strlen($aps['radio']);}
-			if(strlen($aps['encry']) < 7){$pad_encr = 20;}else{$pad_encr = strlen($aps['encry']);}
-			$ssid = str_pad($aps['ssid'], $pad_ssid);
-			$chan = str_pad($aps['chan'], $pad_chan);
-			$radio = str_pad($aps['radio'], $pad_radio);
-			$encry = str_pad($aps['encry'], $pad_encr);
-			$ap_hash = md5($aps['ssid'].$aps['mac'].$aps['chan'].$aps['sectype'].$aps['auth'].$aps['encry']);
-			$this->verbosed("------------------------
-			File AP/Total: {$ap_num}/{$ap_count}
-			SSID:  {$ssid} | MAC: {$aps['mac']}
-			CHAN:  {$chan} | SECTYPE: {$aps['sectype']}
-			RADIO: {$radio}| AUTH: {$aps['auth']}
-			ENCRY: {$encry}| APHASH:".$ap_hash, 1);
-			#//$this->logd("Starting Import of AP ({$ap_hash}), {$aps['ssid']} ");
-			
-			$new = 0;
-			$ap_id = 0;			
-			$addresult = $this->InsertAp($file_id, $aps['mac'], $aps['ssid'], $aps['chan'], $aps['auth'], $aps['encry'], $aps['sectype'], $aps['radio'], $aps['nt'], $aps['btx'], $aps['otx'], '');
-			if($addresult)
-			{
-				$ap_id = $addresult['AP_ID'];
-				$ap_action = $addresult['$action'];
-				$ap_RADTYPE = $addresult['RADTYPE'];
-				if($ap_action == "INSERT")
-				{
-					$new = 1;
-					$NewAPs++;
-				}
-				if($aps['radio'] != $ap_RADTYPE && $aps['radio'] != "")
-				{
-					$retry = true;
-					while ($retry)
-					{
-						try 
-						{
-							if($this->sql->service == "mysql")
-								{$sql = "UPDATE wifi_ap SET RADTYPE = ? WHERE AP_ID = ?";}
-							else if($this->sql->service == "sqlsrv")
-								{$sql = "UPDATE [wifi_ap] SET [RADTYPE] = ? WHERE [AP_ID] = ?";}
-							$prepu = $this->sql->conn->prepare($sql);
-							$prepu->bindParam(1, $aps['radio'], PDO::PARAM_STR);
-							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
-							$prepu->execute();
-							$retry = false;
-						}
-						catch (Exception $e) 
-						{
-							$retry = $this->sql->isPDOException($this->sql->conn, $e);
-						}
-					}
-				}
-			}
-			
-			$HighRSSIwGPS = -99;
-			//Import Wifi Signals
-			if($this->rssi_signals_flag){$ap_sig_exp = explode("\\", $aps['signals']);}else{$ap_sig_exp = explode("-", $aps['signals']);}
-			$SigArrSize = count($ap_sig_exp);
-			
-			$calc = "AP: ".($ap_num)." / ".$ap_count." (".$SigArrSize." Points)";
-			$this->UpdateImportingStatus($file_importing_id, $calc, $ssid);
-
-			#Go through points and import them
-			$this->verbosed("Starting Import of Wifi Signal ( ".$SigArrSize." Signal Points )... ", 1);
-			
-			#Prepared statement - insert ap signal history
-			if($this->sql->service == "mysql")
-				{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES ";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES ";}		
-
-			$Insert_Size = 0;
-			$Insert_Limit = 250; //SQL Server supports a maximum of 2100 parameters. 2100 / 7 parameters = 300
-			$SigCount = 0;
-			$ValArray = array();
-			foreach($ap_sig_exp as $key2=>$sig_gps_id)
-			{
-				$SigCount++;
-				#Format the date
-				$sig_gps_exp = explode(",", $sig_gps_id);
-				$file_gps_id = $sig_gps_exp[0];
-				if($file_gps_id != "")
-				{
-					$signal = @$sig_gps_exp[1];
-					$rssi = @$sig_gps_exp[2];
-					if($signal == ""){$signal = 0;}
-					if($this->rssi_signals_flag)
-						{if(!is_numeric(@$sig_gps_exp[2])){$rssi = $this->convert->Sig2dBm($signal);}}#fix for old incorrectly formatted file}
-					else
-						{$rssi = $this->convert->Sig2dBm($signal);}
-					if($rssi == ""){$rssi = -99;}
-
-					if($this->sql->service == "mysql")
-						{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
-					else if($this->sql->service == "sqlsrv")
-						{$GID_SQL = "SELECT TOP 1 [GPS_ID], [GPS_Date], [Lat], [Lon] FROM [wifi_gps] WHERE [File_ID] = ? AND [File_GPS_ID] = ?";}
-					$gidprep = $this->sql->conn->prepare($GID_SQL);
-					$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
-					$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
-					$gidprep->execute();
-					$fetchgidprep = $gidprep->fetch(2);
-					$gps_id = $fetchgidprep['GPS_ID'];
-					$datetime = $fetchgidprep['GPS_Date'];
-					$gps_lat = $fetchgidprep['Lat'];
-					$gps_lon = $fetchgidprep['Lat'];
-					if($gps_id != "")
-					{
-						if($gps_lat == ""){$gps_lat = "0.0000";}
-						if($gps_lon == ""){$gps_lon = "0.0000";}
-						if($gps_lat != "0.0000" && $gps_lon != "0.0000" && $rssi > $HighRSSIwGPS){$HighRSSIwGPS = $rssi;}
-
-						$Insert_Size++;
-						$ValArray[] = array($ap_id, $gps_id, $file_id, $signal, $rssi, $new, $datetime);
-					}
-				}
-				if($SigArrSize === $SigCount || $Insert_Size >= $Insert_Limit)
-				{
-					if($Insert_Size)
-					{
-						$paramArray = array();
-						$sqlArray = array();
-						foreach($ValArray as $row)// $sqlArray will look like: ["(?,?,?)", "(?,?,?)", ... ]. $paramArray will basically be a flattened version of $sig_values.
-						{
-							$sqlArray[] = '(' . implode(',', array_fill(0, count($row), '?')) . ')';
-							foreach($row as $element)
-							{
-								$paramArray[] = $element;
-							}
-						}
-
-						$retry = true;
-						while ($retry)
-						{
-							try {
-								$sql_prep = $sql.implode(',', $sqlArray);
-								//echo $sql_prep."\r\n";
-								//var_dump($paramArray);
-								$stmt = $this->sql->conn->prepare($sql_prep);
-								$stmt->execute($paramArray);
-								echo "Insert Size: $Insert_Size - $SigCount / $SigArrSize \r\n";
-								$retry = false;
-							}
-							catch (Exception $e) {
-								$retry = $this->sql->isPDOException($this->sql->conn, $e);
-							}
-						}
-						
-						$Insert_Size = 0;
-						$ValArray = array();
-					}
-				}
-			}
-			#Update High GPS, First Seen, Last Seen, High Sig, High RSSI
-			$this->UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS, $calc);
-		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
-		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
+
 
 		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
-				'aps'=>$ap_count,
-				'gps'=>$gps_count,
-				'newaps'=>$NewAPs,
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
 				'cells'=>0,
 				'cells_hist'=>0,
 				'newcells'=>0
-			);
+		);
 		return $ret;
 	}
 	
@@ -2135,7 +1771,6 @@ class import extends dbcore
 		$apdata = array();
 		$gdata = array();
 		$hdata = array();
-		$imported_aps = array();
 		$NewAPs = 0;
 		$ap_count = 0;
 		$gps_count = 0;
@@ -2288,7 +1923,6 @@ class import extends dbcore
 					}
 					$ap_id = $this->sql->conn->lastInsertId();
 					$new = 1;	
-					$imported_aps[] = $ap_id.":0";
 					$this->verbosed("Inserted APs Pointer {".$this->sql->conn->lastInsertId()."}.", 2);
 					$NewAPs++;
 				}
@@ -2362,21 +1996,15 @@ class import extends dbcore
 		}
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
-		
-		#Finish off Import and give credit to the user.
-		$imported = implode("-", $imported_aps);
-		$date = date("Y-m-d H:i:s");
 
 		$ret = array(
-				'imported'=> $imported,
-				'date'=>$date,
 				'aps'=>$ap_count,
 				'gps'=>$gps_count,
 				'newaps'=>$NewAPs,
 				'cells'=>0,
 				'cells_hist'=>0,
 				'newcells'=>0
-			);
+		);
 		return $ret;
 	}	
 	

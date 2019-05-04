@@ -131,20 +131,8 @@ class daemon extends wdbcli
 		return $return;
 	}
 
-	function cleanBadImport($import_ids, $file_id = 0, $file_importing_id = 0, $error_msg = "")
+	function cleanBadImport($file_id = 0, $file_importing_id = 0, $error_msg = "")
 	{
-		if ($import_ids !== 0)
-		{
-			if (is_array($import_ids)) {
-				foreach ($import_ids as $import_id) {
-					$this->RemoveUserImport($import_id);
-				}
-			} elseif ($import_ids === 0) {
-			} else {
-				$this->RemoveUserImport($import_ids);
-			}
-		}
-
 		if($this->sql->service == "mysql")
 			{$sql = "INSERT INTO files_bad (file,file_orig,user,notes,title,size,date,hash,converted,prev_ext,type,error_msg) SELECT file,file_orig,user,notes,title,size,date,hash,converted,prev_ext,type,? FROM files_importing WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
@@ -281,60 +269,6 @@ class daemon extends wdbcli
 		
 	}
 
-	/**
-	 * @param string $user
-	 * @param string $notes
-	 * @param string $title
-	 * @param string $hash
-	 * @param integer $file_row
-	 * @return array
-	 * @throws ErrorException
-	 */
-	function GenerateUserImportIDs($user = "", $notes = "", $title = "", $hash = "", $file_row = 0)
-	{
-		if($file_row === 0)
-		{
-			throw new ErrorException("GenerateUserImportIDs was passed a blank file_row, this is a fatal exception.");
-		}
-
-		if($user === "")
-		{
-			throw new ErrorException("GenerateUserImportIDs was passed a blank username, this is a fatal exception.");
-		}
-		$multi_user = explode("|", $user);
-		$rows = array();
-		$n = 0;
-		# Now lets insert some preliminary data into the User Import table as a place holder for the finished product.
-		if($this->sql->service == "mysql")
-			{$sql = "INSERT INTO user_imports (username, notes, title, hash, file_id) VALUES (?, ?, ?, ?, ?)";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "INSERT INTO [user_imports] ([username], [notes] , [title], [hash], [file_id]) VALUES (?, ?, ?, ?, ?)";}
-		$prep = $this->sql->conn->prepare($sql);
-		foreach($multi_user as $muser)
-		{
-			if ($muser === ""){continue;}
-			$prep->bindParam(1, $muser, PDO::PARAM_STR);
-			$prep->bindParam(2, $notes, PDO::PARAM_STR);
-			$prep->bindParam(3, $title, PDO::PARAM_STR);
-			$prep->bindParam(4, $hash, PDO::PARAM_STR);
-			$prep->bindParam(5, $file_row, PDO::PARAM_INT);
-			$prep->execute();
-
-			if($this->sql->checkError())
-			{
-				//$this->logd("Failed to insert Preliminary user information into the Imports table. :(", "Error");
-				$this->verbosed("Failed to insert Preliminary user information into the Imports table. :(\r\n".var_export($this->sql->conn->errorInfo(), 1), -1);
-				Throw new ErrorException;
-			}
-			$n++;
-			$rows[$n] = $this->sql->conn->lastInsertId();
-			//$this->logd("User ($muser) import row: ".$this->sql->conn->lastInsertId());
-			$this->verbosed("User ($muser) import row: ".$this->sql->conn->lastInsertId());
-		}
-		return $rows;
-	}
-
-
 	function ImportProcess($file_to_Import = array())
 	{
 		$importing_id = $file_to_Import['id'];
@@ -420,8 +354,6 @@ class daemon extends wdbcli
 					$message = "File has started importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name\r\nFileID: $file_row\r\nImport ID: $importing_id\r\nImport Information: ".$this->URL_PATH."opt/scheduling.php \r\n";
 					$this->wdbmail->mail_users($message, $subject, "schedule");
 				}
-
-				$import_ids = $this->GenerateUserImportIDs($file_user, $file_notes, $file_title, $file_hash, $file_row);
 				
 				if($file_type == "vistumbler" || $file_type == "")
 				{
@@ -548,7 +480,7 @@ class daemon extends wdbcli
 					//$this->logd("Skipping Import \nReason: $tmp[1]\n".$file_name,"Error", $this->This_is_me);
 					$this->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
-					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
+					$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
 				}
 				elseif($tmp['aps'] == 0 && $tmp['gps'] == 0 && $tmp['cells'] == 0 && $tmp['cells_hist'] == 0)
 				{
@@ -556,7 +488,7 @@ class daemon extends wdbcli
 					//$this->logd("Skipping Import \nReason: Import did not have any aps, gps, cells, or cell hist\n".$file_name,"Error", $this->This_is_me);
 					$this->verbosed("Skipping Import \nReason: Import did not have any aps, gps, cells, or cell hist\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
-					$this->cleanBadImport($import_ids, $file_row, $importing_id, "Import Error! Reason: Import did not have any aps, gps, cells, or cell hist |=| $source", $this->thread_id);
+					$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: Import did not have any aps, gps, cells, or cell hist |=| $source", $this->thread_id);
 				}
 				else
 				{
@@ -721,27 +653,6 @@ class daemon extends wdbcli
 			{$sql = "SELECT count([id]) FROM [files_tmp]";}
 		$result = $this->sql->conn->query($sql);
 		$fetch = $result->fetch();
-	}
-
-	public function  RemoveUserImport($import_ID = 0)
-	{
-		if($this->sql->service == "mysql")
-			{$sql = "DELETE FROM user_imports WHERE id = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "DELETE FROM [user_imports] WHERE [id] = ?";}
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $import_ID, PDO::PARAM_STR);
-		$prep->execute();
-		if($this->sql->checkError())
-		{
-			$this->verbosed("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1), -1);
-			//$this->logd("Failed to remove bad file from the user import table.".var_export($this->sql->conn->errorInfo(),1));
-			throw new ErrorException("Failed to remove bad file from the user import table.");
-		}else
-		{
-			$this->verbosed("Cleaned file from the User Import table.");
-		}
-		return 1;
 	}
 
 #END DAEMON CLASS
