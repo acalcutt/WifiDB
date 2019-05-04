@@ -465,45 +465,57 @@ class export extends dbcore
 		$Import_Map_Data = "";
 		$latlon_array = array();
 		$apcount = 0;
-		
-		if($this->sql->service == "mysql")
+		$retry = true;
+		while ($retry)
+		{
+			try 
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wf.user AS user\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE \n"
-					. "    wap.HighGps_ID IS NOT NULL And\n"
-					. "    wap.BSSID != '00:00:00:00:00:00' And\n"
-					. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND user LIKE ?)\n"
-					. "ORDER BY wap.ModDate DESC";
-					if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+				if($this->sql->service == "mysql")
+					{
+						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+							. "wGPS.Lat As Lat,\n"
+							. "wGPS.Lon As Lon,\n"
+							. "wf.user AS user\n"
+							. "FROM wifi_ap AS wap\n"
+							. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+							. "WHERE \n"
+							. "    wap.HighGps_ID IS NOT NULL And\n"
+							. "    wap.BSSID != '00:00:00:00:00:00' And\n"
+							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND user LIKE ?)\n"
+							. "ORDER BY wap.ModDate DESC";
+							if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+					}
+				else if($this->sql->service == "sqlsrv")
+					{
+						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+							. "wGPS.Lat As Lat,\n"
+							. "wGPS.Lon As Lon,\n"
+							. "wf.[user] AS [user]\n"
+							. "FROM wifi_ap AS wap\n"
+							. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+							. "WHERE \n"
+							. "    wap.HighGps_ID IS NOT NULL And\n"
+							. "    wap.BSSID != '00:00:00:00:00:00' And\n"
+							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)\n"
+							. "ORDER BY wap.ModDate DESC";
+						if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+						if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+					}
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $user, PDO::PARAM_STR);
+				$prep->execute();
+				$apcount = $prep->rowCount();
+				$appointer = $prep->fetchAll();
+				$retry = false;
 			}
-		else if($this->sql->service == "sqlsrv")
+			catch (Exception $e) 
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wf.[user] AS [user]\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE \n"
-					. "    wap.HighGps_ID IS NOT NULL And\n"
-					. "    wap.BSSID != '00:00:00:00:00:00' And\n"
-					. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)\n"
-					. "ORDER BY wap.ModDate DESC";
-				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
-				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				$cell_id = 0;
 			}
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $user, PDO::PARAM_STR);
-		$prep->execute();
-		$apcount = $prep->rowCount();
-		$appointer = $prep->fetchAll();
+		}
 		foreach($appointer as $apinfo)
 		{
 			#Get AP GeoJSON
