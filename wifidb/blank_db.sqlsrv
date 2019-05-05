@@ -1650,7 +1650,7 @@ SET IDENTITY_INSERT [dbo].[schedule] ON
 GO
 INSERT [dbo].[schedule] ([id], [nodename], [daemon], [enabled], [interval], [status], [nextrun], [pid], [pidfile], [logfile]) VALUES (1, N'prod', N'Import', 1, 10, N'Waiting', CAST(N'2019-05-04T22:51:06.000' AS DateTime), NULL, NULL, NULL)
 GO
-INSERT [dbo].[schedule] ([id], [nodename], [daemon], [enabled], [interval], [status], [nextrun], [pid], [pidfile], [logfile]) VALUES (50, N'prod', N'Export', 0, 1440, N'Waiting', CAST(N'2019-05-04T16:07:06.000' AS DateTime), NULL, NULL, NULL)
+INSERT [dbo].[schedule] ([id], [nodename], [daemon], [enabled], [interval], [status], [nextrun], [pid], [pidfile], [logfile]) VALUES (50, N'prod', N'Export', 1, 1440, N'Waiting', CAST(N'2019-05-04T16:07:06.000' AS DateTime), NULL, NULL, NULL)
 GO
 SET IDENTITY_INSERT [dbo].[schedule] OFF
 GO
