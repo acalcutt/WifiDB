@@ -23,7 +23,7 @@ if not, write to the
 				<div class="center">
 					<h2><a href="{$wifidb_host_url}import/">Import File</a> | <b>Files Importing ({$importing_count})</b> | <a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a> ({$waiting_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></h2>
 					<table class="content_table">
-						<tr class="subheading">
+						<tr class="header-centered">
 							<th colspan="6" align="center">Files being imported</th>
 						</tr>
 						{foreach item=wifidb_imp from=$wifidb_importing name=importing}
