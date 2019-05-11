@@ -354,6 +354,18 @@ table.asscotable {
 	border: 1px inset black;
 }
 
+.orange {
+	text-align: center;
+	background-color: orange;
+	border: 1px inset black;
+}
+
+.lightgreen {
+	text-align: center;
+	background-color: lightgreen;
+	border: 1px inset black;
+}
+
 .content_table {
     margin: 0 auto;
 	width:100%;

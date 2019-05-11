@@ -192,6 +192,18 @@ a.links {
 	border: 1px inset black;
 }
 
+.orange {
+	text-align: center;
+	background-color: orange;
+	border: 1px inset black;
+}
+
+.lightgreen {
+	text-align: center;
+	background-color: lightgreen;
+	border: 1px inset black;
+}
+
 .content-centered {
 	text-align: center;
 	background-color: #6388C7;
