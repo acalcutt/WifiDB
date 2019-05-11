@@ -16,10 +16,9 @@ switch($func)
 			{
 				$dbcore->Output("Imports are disabled because the database is being rebuilt. Please stay in your seat until the ride has come to a complete stop.");
 			}
-			$title = (empty($_REQUEST['title'])) ? "Untitled" : $_REQUEST['title'];
-			$notes = (empty($_REQUEST['notes'])) ? "No Notes" : $_REQUEST['notes'];
-
 			$date = date($dbcore->datetime_format);
+			$title = (empty($_REQUEST['title'])) ? $date : $_REQUEST['title'];
+			$notes = (empty($_REQUEST['notes'])) ? "No Notes" : $_REQUEST['notes'];
 			$otherusers = (empty($_REQUEST['otherusers'])) ? "" : $_REQUEST['otherusers'];
 
             if(!@$_FILES['file']['tmp_name']){ $dbcore->mesg = array("error"=> "No upload file found :("); $dbcore->Output();}
