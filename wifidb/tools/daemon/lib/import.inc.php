@@ -527,19 +527,19 @@ class import extends dbcore
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "INSERT INTO [wifi_gps] ([File_ID], [File_GPS_ID], [Lat], [Lon], [NumOfSats], [HorDilPitch], [Alt], [Geo], [KPH], [MPH], [TrackAngle], [AccuracyMeters], [GPS_Date]) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				$prep = $this->sql->conn->prepare($sql);
-				$prep->bindParam(1,$File_ID, PDO::PARAM_INT);
-				$prep->bindParam(2,$g_id, PDO::PARAM_INT);
-				$prep->bindParam(3,$g_lat, PDO::PARAM_STR);
-				$prep->bindParam(4,$g_lon, PDO::PARAM_STR);
-				$prep->bindParam(5,$g_sats,PDO::PARAM_INT);
-				$prep->bindParam(6,$g_hdp,PDO::PARAM_STR);
-				$prep->bindParam(7,$g_alt,PDO::PARAM_STR);
-				$prep->bindParam(8,$g_geo,PDO::PARAM_STR);
-				$prep->bindParam(9,$g_kmh,PDO::PARAM_STR);
-				$prep->bindParam(10,$g_mph,PDO::PARAM_STR);
-				$prep->bindParam(11,$g_track,PDO::PARAM_STR);
-				$prep->bindParam(12,$g_AccuracyMeters, PDO::PARAM_STR);
-				$prep->bindParam(13,$g_datetime,PDO::PARAM_STR);
+				$prep->bindParam(1,$File_ID);
+				$prep->bindParam(2,$g_id);
+				$prep->bindParam(3,$g_lat);
+				$prep->bindParam(4,$g_lon);
+				$prep->bindParam(5,$g_sats);
+				$prep->bindParam(6,$g_hdp);
+				$prep->bindParam(7,$g_alt);
+				$prep->bindParam(8,$g_geo);
+				$prep->bindParam(9,$g_kmh);
+				$prep->bindParam(10,$g_mph);
+				$prep->bindParam(11,$g_track);
+				$prep->bindParam(12,$g_AccuracyMeters);
+				$prep->bindParam(13,$g_datetime);
 				$prep->execute();
 				$return = $this->sql->conn->lastInsertId();
 				$retry = false;
@@ -565,13 +565,13 @@ class import extends dbcore
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
 				$preps = $this->sql->conn->prepare($sql);
-				$preps->bindParam(1, $ap_id, PDO::PARAM_INT);
-				$preps->bindParam(2, $gps_id, PDO::PARAM_INT);
-				$preps->bindParam(3, $File_ID, PDO::PARAM_INT);
-				$preps->bindParam(4, $fSignal, PDO::PARAM_INT);
-				$preps->bindParam(5, $fRSSI, PDO::PARAM_INT);
-				$preps->bindParam(6, $new, PDO::PARAM_INT);
-				$preps->bindParam(7, $fDate, PDO::PARAM_STR);
+				$preps->bindParam(1, $ap_id);
+				$preps->bindParam(2, $gps_id);
+				$preps->bindParam(3, $File_ID);
+				$preps->bindParam(4, $fSignal);
+				$preps->bindParam(5, $fRSSI);
+				$preps->bindParam(6, $new);
+				$preps->bindParam(7, $fDate);
 				$preps->execute();
 				$return = $this->sql->conn->lastInsertId();
 				$retry = false;
@@ -973,7 +973,6 @@ class import extends dbcore
 				'ap_hash'   => $ap_hash,
 				'ssid'	  =>  $fSSID,
 				'bssid'	   =>  $fBSSID,
-				'manuf'	 =>  $this->findManuf($fBSSID),
 				'auth'	  =>  $authen,
 				'encry'	 =>  $encry,
 				'sectype'   =>  $sectype,
@@ -1081,7 +1080,6 @@ class import extends dbcore
 					'ap_hash'   => $ap_hash,
 					'ssid'	  =>  $fSSID,
 					'bssid'	   =>  $fBSSID,
-					'manuf'	 =>  $this->findManuf($fBSSID),
 					'auth'	  =>  $authen,
 					'encry'	 =>  $encry,
 					'sectype'   =>  $sectype,
@@ -1195,7 +1193,6 @@ class import extends dbcore
 					'ap_hash'   => $ap_hash,
 					'ssid'	  =>  $fSSID,
 					'bssid'	   =>  $fBSSID,
-					'manuf'	 =>  $this->findManuf($fBSSID),
 					'auth'	  =>  $authen,
 					'encry'	 =>  $encry,
 					'sectype'   =>  $sectype,
@@ -1315,7 +1312,6 @@ class import extends dbcore
 						'ap_hash'   => $ap_hash,
 						'ssid'	  =>  $fSSID,
 						'bssid'	   =>  $fBSSID,
-						'manuf'	 =>  $this->findManuf($fBSSID),
 						'auth'	  =>  $authen,
 						'encry'	 =>  $encry,
 						'sectype'   =>  $sectype,
@@ -1460,7 +1456,6 @@ class import extends dbcore
 				'ap_hash'   => $ap_hash,
 				'ssid'	  =>  $ssid,
 				'bssid'	   =>  $bssid,
-				'manuf'	 =>  $this->findManuf($bssid),
 				'auth'	  =>  $auth,
 				'encry'	 =>  $encr,
 				'sectype'   =>  $sectype,
@@ -1637,7 +1632,6 @@ class import extends dbcore
 								'sectype'   =>  (int) $ap_line[5],
 								'flags'   =>  null,
 								'radio'	 =>  $ap_line[6],
-								'manuf'	 =>  $this->findManuf($ap_line[1]),
 								'chan'	  =>  (int) $ap_line[7],
 								'btx'	   =>  $ap_line[8],
 								'otx'	   =>  $ap_line[9],
@@ -1667,7 +1661,6 @@ class import extends dbcore
 							'ap_hash'   => "",
 							'ssid'	  =>  $ap_line[0],
 							'bssid'	   =>  $ap_line[1],
-							'manuf'	 =>  $this->findManuf($ap_line[1]),
 							'auth'	  =>  $ap_line[3],
 							'encry'	 =>  $ap_line[4],
 							'sectype'   =>  (int) $ap_line[5],
@@ -1700,7 +1693,6 @@ class import extends dbcore
 							'chan'	  =>  (int) $ap_line[7],
 							'btx'	   =>  $ap_line[8],
 							'otx'	   =>  $ap_line[9],
-							'manuf'	 =>  $this->findManuf($ap_line[1]),
 							'label'	 =>  $ap_line[11],
 							'nt'		=>  $ap_line[12],
 							'HighRSSI'  =>  $highestRSSI,
@@ -1724,7 +1716,6 @@ class import extends dbcore
 							'radio'	 =>  $ap_line[7],
 							'chan'	  =>  (int) $ap_line[8],
 							'otx'	   =>  $ap_line[9],
-							'manuf'	 =>  $this->findManuf($ap_line[1]),
 							'HighRSSI'  =>  $ap_line[11],
 							'btx'	   =>  $ap_line[12],
 							'nt'		=>  $ap_line[13],
