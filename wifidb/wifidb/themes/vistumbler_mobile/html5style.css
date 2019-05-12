@@ -30,7 +30,7 @@ th, td {
 
 .bodywrap{
 	width:100%;
-    min-width:600px;
+    min-width:350px;
 	display: table
 }
 
@@ -40,7 +40,7 @@ th, td {
 	background: #6388C7;
 	border-radius: 10px;
 	padding: 10px; 
-	min-width: 700px;
+	min-width: 350px;
 	word-wrap: break-word;
 }
 
@@ -50,7 +50,7 @@ th, td {
 	background: #6388C7;
 	border-radius: 10px;
 	padding: 10px; 
-	min-width: 700px;
+	min-width: 350px;
 	word-wrap: break-word;
 }
 
@@ -369,7 +369,7 @@ ul.CTAs a {
 /* ---------------------------------------------------
     MEDIAQUERIES
 ----------------------------------------------------- */
-@media (max-width: 768px), only screen and (-webkit-min-device-pixel-ratio: 2), only screen and (min--moz-device-pixel-ratio: 2), only screen and ( -o-min-device-pixel-ratio: 2/1), only screen and ( min-device-pixel-ratio: 2), only screen and ( min-resolution: 192dpi), only screen and ( min-resolution: 2dppx) {
+@media (max-width: 800px), only screen and (-webkit-min-device-pixel-ratio: 2), only screen and (min--moz-device-pixel-ratio: 2), only screen and ( -o-min-device-pixel-ratio: 2/1), only screen and ( min-device-pixel-ratio: 2), only screen and ( min-resolution: 192dpi), only screen and ( min-resolution: 2dppx) {
     #sidebar {
         margin-left: -250px;
         transform: rotateY(90deg);
@@ -384,7 +384,7 @@ ul.CTAs a {
 		background: #6388C7;
 		border-radius: 10px;
 		padding: 10px; 
-		min-width: 600px;
+		min-width: 350px;
 		word-wrap: break-word;
 	}
 
@@ -394,7 +394,7 @@ ul.CTAs a {
 		background: #6388C7;
 		border-radius: 10px;
 		padding: 10px; 
-		min-width: 600px;
+		min-width: 350px;
 		word-wrap: break-word;
 	}
 	.foot{
@@ -424,4 +424,11 @@ ul.CTAs a {
         transform: rotate(-45deg) translate(1px, -1px);
     }
 
+}
+
+@media only screen and (-webkit-min-device-pixel-ratio: 2), only screen and (min--moz-device-pixel-ratio: 2), only screen and ( -o-min-device-pixel-ratio: 2/1), only screen and ( min-device-pixel-ratio: 2), only screen and ( min-resolution: 192dpi), only screen and ( min-resolution: 2dppx) {
+	body {
+		background: #145285;
+		font-size: 130%;
+	}
 }
