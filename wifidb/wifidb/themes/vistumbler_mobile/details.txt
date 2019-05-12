@@ -1,0 +1,9 @@
+Author: Andrew Calcutt
+Website: www.vistumbler.net
+Version: 3.0.0
+Date Created: 2018-12-12
+Details:
+3.0.0 - CSS-ized the vistumbler theme
+2.0.0 - Smarty-ized the theme
+1.1.0 - Added Login header and mysticache contents.
+1.0.1 - This is a theme based off of Andrews website.
