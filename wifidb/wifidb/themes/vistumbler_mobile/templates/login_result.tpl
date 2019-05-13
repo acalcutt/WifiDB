@@ -1,10 +1,6 @@
 {include file="header.tpl"}
 			<div class="main">
-				<button type="button" id="sidebarCollapse" class="navbar-btn">
-					<span></span>
-					<span></span>
-					<span></span>
-				</button>
+				{include file="topmenu.tpl"}
 				<table align="center">
 					<tbody>
 						<tr>

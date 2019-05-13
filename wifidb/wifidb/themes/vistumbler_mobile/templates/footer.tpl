@@ -19,18 +19,5 @@
 			</div>
 		</div>
 	</div>
-	<!-- Start Collapsible Menu -->
-	<script src="{$themeurl}	lib/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            $('#sidebarCollapse').on('click', function () {
-                $('#sidebar').toggleClass('active');
-				$('.main').toggleClass('active');
-				$('.foot').toggleClass('active');
-                $(this).toggleClass('active');
-            });
-        });
-    </script>
-	<!-- End Collapsible Menu -->
 </body>
 </html>

@@ -19,13 +19,9 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<button type="button" id="sidebarCollapse" class="navbar-btn">
-					<span></span>
-					<span></span>
-					<span></span>
-				</button>
+				{include file="topmenu.tpl"}
 				<div class="center">
-					<h2><a href="{$wifidb_host_url}import/">Import File</a> | <a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a> ({$importing_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a> ({$waiting_count}) | <b>Files Completed ({$complete_count})</b> | <a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></h2>
+					<h3><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a> ({$importing_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a> ({$waiting_count}) | <b>Files Completed ({$complete_count})</b></h3>
 					<table class="content_table">
 						<tr>
 							<td>

@@ -1,9 +1,10 @@
 Author: Andrew Calcutt
 Website: www.vistumbler.net
-Version: 3.0.0
-Date Created: 2018-12-12
+Version: 3.1.0
+Date Created: 2019-03-12
 Details:
-3.0.0 - CSS-ized the vistumbler theme
-2.0.0 - Smarty-ized the theme
+3.1.0 - Added ability to hide the left side menu and autohide on mobile.
+3.0.0 - CSS-ized the vistumbler theme.
+2.0.0 - Smarty-ized the theme.
 1.1.0 - Added Login header and mysticache contents.
 1.0.1 - This is a theme based off of Andrews website.

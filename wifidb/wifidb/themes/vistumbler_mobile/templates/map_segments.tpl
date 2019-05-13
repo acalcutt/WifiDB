@@ -20,11 +20,7 @@ if not, write to the
 
 {include file="header.tpl"}
 			<div class="main">
-				<button type="button" id="sidebarCollapse" class="navbar-btn">
-					<span></span>
-					<span></span>
-					<span></span>
-				</button>
+				{include file="topmenu.tpl"}
 				{$user} has {$count} APs, which is greater than the {$limit} AP map limit. Please pick a smaller segment bellow.<br/><br/>
 				The segments are ordered by ModDate, with the last modified APs first.<br/><br/>
 				{for $multiplier=1 to $ldivs}

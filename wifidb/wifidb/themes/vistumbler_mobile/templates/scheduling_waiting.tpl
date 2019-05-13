@@ -19,14 +19,10 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<button type="button" id="sidebarCollapse" class="navbar-btn">
-					<span></span>
-					<span></span>
-					<span></span>
-				</button>
+				{include file="topmenu.tpl"}
 				<meta http-equiv="refresh" content="15">
 				<div class="center">
-					<h2><a href="{$wifidb_host_url}import/">Import File</a> | <a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a> ({$importing_count}) | <b>Files Waiting ({$waiting_count})</b> | <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></h2>
+					<h3><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a> ({$importing_count}) | <b>Files Waiting ({$waiting_count})</b> | <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count})</h3>
 					<table class="content_table"> 
 						<tr class="header-centered">
 							<th colspan="6" align="center">Files waiting for import</th>

@@ -19,11 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
-				<button type="button" id="sidebarCollapse" class="navbar-btn">
-					<span></span>
-					<span></span>
-					<span></span>
-				</button>
+				{include file="topmenu.tpl"}
 {include file="user_cp_header.tpl"}
 				<form method="post" action="?func=update_user_pref">
 					<table class="content_table">

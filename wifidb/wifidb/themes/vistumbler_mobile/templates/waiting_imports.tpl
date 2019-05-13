@@ -19,11 +19,7 @@ if not, write to the
 -->
 {include file="vistumbler_header.tpl"}
 			<div class="main">
-				<button type="button" id="sidebarCollapse" class="navbar-btn">
-					<span></span>
-					<span></span>
-					<span></span>
-				</button>
+				{include file="topmenu.tpl"}
 				<meta http-equiv="refresh" content="15">
 				<table border="1" width="90%">
 					<tbody>
