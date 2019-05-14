@@ -80,6 +80,11 @@ if not, write to the
 									<td>There are no Imports yet, go get some...</td>
 								</tr>
 								{/foreach}
+								<tr class="sub_head">
+									<td colspan="12" align="center">
+									 {$pages_together}
+									</td>
+								</tr>
 							</td>
 						</tr>
 					</table>

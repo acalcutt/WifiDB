@@ -70,6 +70,11 @@ if not, write to the
 							</td>
 						</tr>
 						{/foreach}
+						<tr class="sub_head">
+							<td colspan="12" align="center">
+							 {$pages_together}
+							</td>
+						</tr>
 					</table>
 				</div>
 			</div>
