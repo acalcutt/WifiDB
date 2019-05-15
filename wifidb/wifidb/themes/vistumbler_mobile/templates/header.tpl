@@ -9,7 +9,7 @@
 </head>
 <body {$redirect_html|default:""} {$OnLoad|default:""}>
 	<!-- Start Collapsible Menu Scripts-->
-	<script src="{$themeurl}	lib/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
+	<script src="{$themeurl}lib/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
     <script type="text/javascript">
         $(document).ready(function () {
             $('.bt-menu-trigger').on('click', function () {

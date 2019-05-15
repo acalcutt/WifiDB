@@ -22,7 +22,7 @@ if not, write to the
 				{include file="topmenu.tpl"}
 				<meta http-equiv="refresh" content="15">
 				<div class="center">
-					<h3><b>Files Importing ({$importing_count})</b> | <a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a> ({$waiting_count}) | <a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count})</h3>
+					<h3><span class="nowrap"><b>Files Importing ({$importing_count})</b></span> | <span class="nowrap"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a> ({$waiting_count})</span> | <span class="nowrap"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a> ({$complete_count})</span></h3>
 					<table class="content_table">
 						<tr class="header-centered">
 							<th colspan="6" align="center">Files being imported</th>

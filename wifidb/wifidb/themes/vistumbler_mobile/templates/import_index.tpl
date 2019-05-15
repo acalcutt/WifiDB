@@ -41,7 +41,7 @@ if not, write to the
 									Title of Import:
 								</td>
 								<td class="light">
-									<a name="title"></a><input type="TEXT" name="title" size="28" style="width: 2.42in; height: 0.25in"/>
+									<a name="title"></a><input type="TEXT" name="title" size="30" style="width: 350px; height: 25px"/>
 								</td>
 							</tr>
 							<tr height="40">
@@ -49,7 +49,7 @@ if not, write to the
 									File location:
 								</td>
 								<td class="light">
-									<a name="file"></a><input type="FILE" name="file" size="56" style="width: 5.41in; height: 0.25in"/>
+									<a name="file"></a><input type="FILE" name="file" size="56" style="width: 350px; height: 25px"/>
 								</td>
 							</tr>
 							<tr height="40">
@@ -58,7 +58,7 @@ if not, write to the
 								</td>
 								<td class="light">
 										<a name="user"></a>
-										<input type="TEXT" name="user" value="{$wifidb_login_user|default:""}" size="28" style="width: 2.42in; height: 0.25in">
+										<input type="TEXT" name="user" value="{$wifidb_login_user|default:""}" size="30" style="width: 350px; height: 25px">
 								</td>
 							</tr>
 							<tr>
@@ -68,7 +68,7 @@ if not, write to the
 										<font size=1>(Separate by a pipe "|" )</font>
 								</td>
 								<td class="light">
-									<a name="otherusers"></a><input type="text" name="otherusers" size="56" style="width: 5.41in; height: 0.25in"/>
+									<a name="otherusers"></a><input type="text" name="otherusers" size="30" style="width: 350px; height: 25px"/>
 								</td>
 							</tr>
 							<tr>
@@ -76,7 +76,7 @@ if not, write to the
 									Notes:
 								</td>
 								<td class="light">
-										<textarea name="notes" rows="4" cols="50" style="width: 4.42in; height: 1.01in"></textarea><br>
+										<textarea name="notes" rows="4" cols="50" style="width: 350px; height: 100px"></textarea><br>
 								</td>
 							</tr>
 							<tr>
