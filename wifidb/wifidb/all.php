@@ -24,7 +24,7 @@ if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
-if(!is_numeric($inc)){$inc = 500;}
+if(!is_numeric($inc)){$inc = 250;}
 
 
 #Get count of APs for pageation
