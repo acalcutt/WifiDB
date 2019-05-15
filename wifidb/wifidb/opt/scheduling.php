@@ -24,6 +24,17 @@ include('../lib/init.inc.php');
 
 $func = strtolower(filter_input(INPUT_GET, 'func', FILTER_SANITIZE_ENCODED));
 
+$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+$from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+$inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+$sorts=array("date","id");
+if(!in_array($sort, $sorts)){$sort = "date";}
+$ords=array("ASC","DESC");
+if(!in_array($ord, $ords)){$ord = "DESC";}
+if(!is_numeric($from)){$from = 0;}
+if(!is_numeric($inc)){$inc = 250;}
+
 $TZone= (@$_COOKIE['wifidb_client_timezone'] ? @$_COOKIE['wifidb_client_timezone'] : $dbcore->default_timezone);
 $dst = (@$_COOKIE['wifidb_client_dst']!='' ? @$_COOKIE['wifidb_client_dst'] : $dbcore->default_dst);
 $refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $dbcore->default_refresh);
@@ -698,13 +709,13 @@ switch($func)
 			{
 				$sql = "SELECT id, file_orig, user, notes, title, date, aps, gps, ValidGPS, size, NewAPPercent, hash \n"
 					. "FROM files \n"
-					. "WHERE completed = 1 ORDER BY id DESC";
+					. "WHERE completed = 1 ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [id], [file_orig], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
 					. "FROM [files] \n"
-					. "WHERE [completed] = 1 ORDER BY [id] DESC";
+					. "WHERE [completed] = 1 ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";
 			}
 		$result = $dbcore->sql->conn->query($sql);
 		$class_f = 0;
@@ -747,6 +758,8 @@ switch($func)
 		$prepf = $prep->fetch(1);
 		$waiting_count = $prepf[0];
 		
+		$dbcore->GeneratePages($complete_count, $from, $inc, $sort, $ord, 'done&');
+		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 		$dbcore->smarty->assign('wifidb_page_label', "Files Imported Page");
 		$dbcore->smarty->assign("wifidb_done_all_array", $files_all);
 		$dbcore->smarty->assign('complete_count', $complete_count);
@@ -759,9 +772,9 @@ switch($func)
 		$waiting_row = array();
 		$n=0;
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM files_tmp ORDER BY date ASC";}
+			{$sql = "SELECT * FROM files_tmp ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";}
 		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_tmp] ORDER BY [date] ASC";}
+			{$sql = "SELECT * FROM [files_tmp] ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
@@ -797,6 +810,8 @@ switch($func)
 		$prepf = $prep->fetch(1);
 		$waiting_count = $prepf[0];
 
+		$dbcore->GeneratePages($waiting_count, $from, $inc, $sort, $ord, 'waiting&');
+		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 		$dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Files waiting for import)');
 		$dbcore->smarty->assign('wifidb_waiting', $waiting_row);
 		$dbcore->smarty->assign('complete_count', $complete_count);
@@ -809,9 +824,9 @@ switch($func)
 		$importing_row = array();
 		$n=0;
 		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM files_importing ORDER BY date ASC";}
+			{$sql = "SELECT * FROM files_importing ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";;}
 		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_importing] ORDER BY [date] ASC";}
+			{$sql = "SELECT * FROM [files_importing] ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
@@ -865,6 +880,8 @@ switch($func)
 		$prepf = $prep->fetch(1);
 		$waiting_count = $prepf[0];
 		
+		$dbcore->GeneratePages($importing_count	, $from, $inc, $sort, $ord);
+		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 		$dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Files being imported)');
 		$dbcore->smarty->assign('wifidb_importing', $importing_row);
 		$dbcore->smarty->assign('complete_count', $complete_count);

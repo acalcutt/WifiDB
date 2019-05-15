@@ -836,7 +836,7 @@ class frontend extends dbcore
 		{
 			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}
-		
+		if(!$total_rows){$pages_together = "";}
 		$this->pages_together = $pages_together;
 		return 1;
 	}
