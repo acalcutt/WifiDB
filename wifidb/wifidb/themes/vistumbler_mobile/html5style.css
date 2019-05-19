@@ -406,6 +406,27 @@ ul.CTAs a {
 	transform: translateY(0.35em) translateX(-0.65em) rotate(45deg) scaleX(0.6);
 }
 
+.wrapper {
+  margin-left: auto;
+  padding: 8px 16px;
+  border: none;
+  background: #d0dce7;
+  color: #000000;
+  border-radius: 2px;
+  list-style-type: none;
+}
+.form-row {
+display: flex;
+justify-content: flex-end;
+padding: .5em;
+}
+.form-row > label {
+padding: .5em 1em .5em 0;
+flex: 1;
+}
+.form-row > input {
+flex: 1;
+}
 
 /* ---------------------------------------------------
     MEDIAQUERIES
@@ -469,6 +490,18 @@ ul.CTAs a {
 
 @media only screen and (-webkit-min-device-pixel-ratio: 2), only screen and (min--moz-device-pixel-ratio: 2), only screen and ( -o-min-device-pixel-ratio: 2/1), only screen and ( min-device-pixel-ratio: 2), only screen and ( min-resolution: 192dpi), only screen and ( min-resolution: 2dppx) {
 	body {
+		font-size: 130%;
+	}
+	
+	button {
+		font-size: 130%;
+	}
+	
+	input[type=file] {
+		font-size: 130%;
+	}
+	
+	input[type=text] {
 		font-size: 130%;
 	}
 	

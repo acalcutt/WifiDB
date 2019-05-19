@@ -33,71 +33,27 @@ if not, write to the
 					<a href="https://github.com/raffaeleragni/android-wardrive4/releases" target="_blank">Wardrive DB/DB3</a><br><br>
 					Username is optional, but it helps keep track of who has imported what Access Points<br><br>
 				</div>
-					<form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">				
-						<table class="content_table-centered">
-							<tbody>
-							<tr height="40">
-								<td class="header">
-									Title of Import:
-								</td>
-								<td class="light">
-									<a name="title"></a><input type="TEXT" name="title" size="30" style="width: 350px; height: 25px"/>
-								</td>
-							</tr>
-							<tr height="40">
-								<td class="header">
-									File location:
-								</td>
-								<td class="light">
-									<a name="file"></a><input type="FILE" name="file" size="56" style="width: 350px; height: 25px"/>
-								</td>
-							</tr>
-							<tr height="40">
-								<td class="header">
-									Username:
-								</td>
-								<td class="light">
-										<a name="user"></a>
-										<input type="TEXT" name="user" value="{$wifidb_login_user|default:""}" size="30" style="width: 350px; height: 25px">
-								</td>
-							</tr>
-							<tr>
-							<tr height="40">
-								<td class="header">
-									Other Users:<br/>
-										<font size=1>(Separate by a pipe "|" )</font>
-								</td>
-								<td class="light">
-									<a name="otherusers"></a><input type="text" name="otherusers" size="30" style="width: 350px; height: 25px"/>
-								</td>
-							</tr>
-							<tr>
-								<td class="header">
-									Notes:
-								</td>
-								<td class="light">
-										<textarea name="notes" rows="4" cols="50" style="width: 350px; height: 100px"></textarea><br>
-								</td>
-							</tr>
-							<tr>
-								<td class="header">
-									Import Type:
-								</td>
-								<td class="light">
-										  <input type="radio" name="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br>
-										  <input type="radio" name="type" value="wardrive">Wardrive DB/DB3<br>
-										  <input type="radio" name="type" value="wiglewificsv">WigleWifi CSV<br>
-										  <input type="radio" name="type" value="swardriving">SWardriving CSV<br>
-								</td>
-							</tr>
-							<tr class="light">
-								<td class="light-centered" colspan = "2">
-										{$import_button}
-									
-								</td>
-							</tr>
-						</tbody>
-						</table>
-					</form>
+				<div style="text-align: center;">
+					<div style="display: inline-block; text-align: left;">
+						<form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">
+							<ul class="wrapper">
+								<li class="form-row><label for="title">Title of Import:</label><br /><input type="text" name="title" id="title"></li>
+								<li class="form-row><label for="file">File:</label><br /><input type="FILE" name="file" id="file"></li>
+								<li class="form-row><label for="user">Username:</label><br /><input type="text" name="user" id="user"></li>
+								<li class="form-row><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><br /><input type="text" name="otherusers" id="otherusers"></li>
+								<li class="form-row><label for="type">Import Type:</label><br />
+									<input type="radio" name="type" id="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br />
+									<input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3<br />
+									<input type="radio" name="type" id="type" value="wiglewificsv">WigleWifi CSV<br />
+									<input type="radio" name="type" id="type" value="swardriving">SWardriving CSV<br />
+								</li>
+								<li>
+									<br />
+									<button type="submit">Submit</button>
+								</li>
+							</ul>
+						</form>
+					</div>
+				</div>
 			</div>
 {include file="footer.tpl"}
