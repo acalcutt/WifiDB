@@ -71,15 +71,15 @@ while ( $array = $pre_page_list->fetch(2) )
 	
 	$wifidb_aps_all[$n]['class'] = $color;
 	$wifidb_aps_all[$n]['id'] = $array['AP_ID'];
-	$wifidb_aps_all[$n]['mac'] = $array['BSSID'];
-	$wifidb_aps_all[$n]['ssid'] = $dbcore->formatSSID($array['SSID']);
-	$wifidb_aps_all[$n]['chan'] = $array['CHAN'];
-	$wifidb_aps_all[$n]['auth'] = $array['AUTH'];
-	$wifidb_aps_all[$n]['encry'] = $array['ENCR'];
-	$wifidb_aps_all[$n]['radio'] = $array['RADTYPE'];
-	$wifidb_aps_all[$n]['nt'] = $array['NETTYPE'];
-	$wifidb_aps_all[$n]['fa'] = $array['fa'];
-	$wifidb_aps_all[$n]['la'] = $array['la'];
+	$wifidb_aps_all[$n]['mac'] = htmlspecialchars($array['BSSID'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['ssid'] = htmlspecialchars($dbcore->formatSSID($array['SSID']), ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['chan'] = htmlspecialchars($array['CHAN'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['auth'] = htmlspecialchars($array['AUTH'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['encry'] = htmlspecialchars($array['ENCR'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['radio'] = htmlspecialchars($array['RADTYPE'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['nt'] = htmlspecialchars($array['NETTYPE'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['fa'] = htmlspecialchars($array['fa'], ENT_QUOTES, 'UTF-8');
+	$wifidb_aps_all[$n]['la'] = htmlspecialchars($array['la'], ENT_QUOTES, 'UTF-8');
 	$wifidb_aps_all[$n]['points'] = $array['points'];
 	if($array['Lat'] == "" || $array['Lat'] == "0.0000"){$wifidb_aps_all[$n]['ValidGPS'] = 0;}else{$wifidb_aps_all[$n]['ValidGPS'] = 1;}
 

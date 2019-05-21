@@ -191,22 +191,22 @@ class frontend extends dbcore
 
 		$ap_data = array(
 			'id'=>$newArray['AP_ID'],
-			'radio'=>$newArray['RADTYPE'],
-			'manuf'=>$this->findManuf($newArray['BSSID']),
-			'mac'=>$newArray['BSSID'],
-			'ssid'=>$this->formatSSID($newArray['SSID']),
-			'chan'=>$newArray['CHAN'],
-			'encry'=>$newArray['ENCR'],
-			'auth'=>$newArray['AUTH'],
-			'btx'=>$newArray["BTX"],
-			'otx'=>$newArray["OTX"],
-			'flags'=>$newArray["FLAGS"],
-			'nt'=>$newArray["NETTYPE"],
-			'lat'=>$newArray["Lat"],
-			'lon'=>$newArray["Lon"],
-			'user'=>$newArray["user"],
-			'fa'=>$newArray["fa"],
-			'la'=>$newArray["la"],
+			'radio'=>htmlspecialchars($newArray['RADTYPE'], ENT_QUOTES, 'UTF-8'),
+			'manuf'=>htmlspecialchars($this->findManuf($newArray['BSSID']), ENT_QUOTES, 'UTF-8'),
+			'mac'=>htmlspecialchars($newArray['BSSID'], ENT_QUOTES, 'UTF-8'),
+			'ssid'=>htmlspecialchars($this->formatSSID($newArray['SSID']), ENT_QUOTES, 'UTF-8'),
+			'chan'=>htmlspecialchars($newArray['CHAN'], ENT_QUOTES, 'UTF-8'),
+			'encry'=>htmlspecialchars($newArray['ENCR'], ENT_QUOTES, 'UTF-8'),
+			'auth'=>htmlspecialchars($newArray['AUTH'], ENT_QUOTES, 'UTF-8'),
+			'btx'=>htmlspecialchars($newArray["BTX"], ENT_QUOTES, 'UTF-8'),
+			'otx'=>htmlspecialchars($newArray["OTX"], ENT_QUOTES, 'UTF-8'),
+			'flags'=>htmlspecialchars($newArray["FLAGS"], ENT_QUOTES, 'UTF-8'),
+			'nt'=>htmlspecialchars($newArray["NETTYPE"], ENT_QUOTES, 'UTF-8'),
+			'lat'=>htmlspecialchars($newArray["Lat"], ENT_QUOTES, 'UTF-8'),
+			'lon'=>htmlspecialchars($newArray["Lon"], ENT_QUOTES, 'UTF-8'),
+			'user'=>htmlspecialchars($newArray["user"], ENT_QUOTES, 'UTF-8'),
+			'fa'=>htmlspecialchars($newArray["fa"], ENT_QUOTES, 'UTF-8'),
+			'la'=>htmlspecialchars($newArray["la"], ENT_QUOTES, 'UTF-8'),
 			'points'=>$newArray["points"],
 			'validgps'=>$validgps
 		);
@@ -441,12 +441,12 @@ class frontend extends dbcore
 				$all_users_files[]= array(
 					'class'=>$class2,
 					'id'=>$user_array['id'],
-					'file'=>$user_array['file_orig'],
-					'title' => $user_array['title'],
-					'notes' => $user_array['notes'],
+					'file'=>htmlspecialchars($user_array['file_orig'], ENT_QUOTES, 'UTF-8'),
+					'title' => htmlspecialchars($user_array['title'], ENT_QUOTES, 'UTF-8'),
+					'notes' => htmlspecialchars($user_array['notes'], ENT_QUOTES, 'UTF-8'),
 					'aps'   => $user_array['aps'],
 					'NewAPPercent' => $user_array['NewAPPercent']."%",
-					'date'  => $user_array['date'],
+					'date'  => htmlspecialchars($user_array['date'], ENT_QUOTES, 'UTF-8'),
 					'validgps'=>$user_array['ValidGPS']
 				);
 			}
@@ -461,7 +461,7 @@ class frontend extends dbcore
 			$this->all_users_data[]= array(
 				'rowid'=>$rowid,
 				'class'=>$class,
-				'user'=>$user,
+				'user'=>htmlspecialchars($user, ENT_QUOTES, 'UTF-8'),
 				'validgps'=>$user_validgps,
 				'imports' => $imports,
 				'files' => $all_users_files,
@@ -574,17 +574,17 @@ class frontend extends dbcore
 						"id" => $array['AP_ID'],
 						"class" => $style,
 						"validgps" => $validgps,
-						"ssid" => $this->formatSSID($array['SSID']),
-						"mac" => $array['BSSID'],
-						"radio" => $array['RADTYPE'],
-						"auth" => $array['AUTH'],
-						"encry" => $array['ENCR'],
-						"chan" => $array['CHAN'],
-						"fa"   => $array['fa'],
-						"la"   => $array['la'],
+						"ssid" => htmlspecialchars($this->formatSSID($array['SSID']), ENT_QUOTES, 'UTF-8'),
+						"mac" => htmlspecialchars($array['BSSID'], ENT_QUOTES, 'UTF-8'),
+						"radio" => htmlspecialchars($array['RADTYPE'], ENT_QUOTES, 'UTF-8'),
+						"auth" => htmlspecialchars($array['AUTH'], ENT_QUOTES, 'UTF-8'),
+						"encry" => htmlspecialchars($array['ENCR'], ENT_QUOTES, 'UTF-8'),
+						"chan" => htmlspecialchars($array['CHAN'], ENT_QUOTES, 'UTF-8'),
+						"fa"   => htmlspecialchars($array['fa'], ENT_QUOTES, 'UTF-8'),
+						"la"   => htmlspecialchars($array['la'], ENT_QUOTES, 'UTF-8'),
 						"points"   => $array['points'],
-						"lat"   => $array['Lat'],
-						"lon"   => $array['Long']
+						"lat"   => htmlspecialchars($array['Lat'], ENT_QUOTES, 'UTF-8'),
+						"lon"   => htmlspecialchars($array['Long'], ENT_QUOTES, 'UTF-8')
 						);
 		}
 		$prep['allaps'] = $apprep;
@@ -669,19 +669,19 @@ class frontend extends dbcore
 											'class' => $style,
 											'validgps' => $imports['ValidGPS'],
 											'id' => $imports['id'],
-											'file' => $imports['file_orig'],
-											'title' => $imports['title'],
-											'notes' => $imports['notes'],
+											'file' => htmlspecialchars($imports['file_orig'], ENT_QUOTES, 'UTF-8'),
+											'title' => htmlspecialchars($imports['title'], ENT_QUOTES, 'UTF-8'),
+											'notes' => htmlspecialchars($imports['notes'], ENT_QUOTES, 'UTF-8'),
 											'aps' => $imports['aps'],
 											'gps' => $imports['gps'],
 											'efficiency'=>$imports['NewAPPercent'],
-											'date' => $imports['date']
+											'date' => htmlspecialchars($imports['date'], ENT_QUOTES, 'UTF-8')
 										   );
 		}
 		$this->user_all_imports_data = array();
-		$this->user_all_imports_data['user'] = $username;
-		$this->user_all_imports_data['first_import_date'] = $user_counts['fa'];
-		$this->user_all_imports_data['newest_date'] = $user_counts['la'];
+		$this->user_all_imports_data['user'] = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
+		$this->user_all_imports_data['first_import_date'] = htmlspecialchars($user_counts['fa'], ENT_QUOTES, 'UTF-8');
+		$this->user_all_imports_data['newest_date'] = htmlspecialchars($user_counts['la'], ENT_QUOTES, 'UTF-8');
 		$this->user_all_imports_data['new_aps'] = $new_aps;
 		$this->user_all_imports_data['total_aps'] = $user_counts['aps'];
 		$this->user_all_imports_data['total_gps'] = $user_counts['gps'];
@@ -711,15 +711,15 @@ class frontend extends dbcore
 		$all_aps_array = array();
 		$all_aps_array['allaps'] = array();
 		$all_aps_array['id'] = $user_array['id'];
-		$all_aps_array['file'] = $user_array['file_orig'];
-		$all_aps_array['user'] = $user_array['user'];
-		$all_aps_array['notes'] = $user_array['notes'];
-		$all_aps_array['title'] = $user_array['title'];
-		$all_aps_array['aps'] = $user_array['aps'];
-		$all_aps_array['gps'] = $user_array['gps'];
-		$all_aps_array['size'] = $user_array['size'];
-		$all_aps_array['hash'] = $user_array['hash'];
-		$all_aps_array['date'] = $user_array['date'];
+		$all_aps_array['file'] = htmlspecialchars($user_array['file_orig'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['user'] = htmlspecialchars($user_array['user'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['notes'] = htmlspecialchars($user_array['notes'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['title'] = htmlspecialchars($user_array['title'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['aps'] = htmlspecialchars($user_array['aps'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['gps'] = htmlspecialchars($user_array['gps'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['size'] = htmlspecialchars($user_array['size'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['hash'] = htmlspecialchars($user_array['hash'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['date'] = htmlspecialchars($user_array['date'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
 		$all_aps_array['validgps'] = $user_array['ValidGPS'];
 		
@@ -755,18 +755,18 @@ class frontend extends dbcore
 					'id' => $array['AP_ID'],
 					'class' => $style,
 					'un' => $update_or_new,
-					'ssid' => $this->formatSSID($array['SSID']),
-					'mac' => $array['BSSID'],
-					'chan' => $array['CHAN'],
-					'radio' => $array['RADTYPE'],
-					'auth' => $array['AUTH'],
-					'encry' => $array['ENCR'],
-					'fa' => $array['fa'],
-					'la' => $array['la'],
+					'ssid' => htmlspecialchars($this->formatSSID($array['SSID']), ENT_QUOTES, 'UTF-8'),
+					'mac' => htmlspecialchars($array['BSSID'], ENT_QUOTES, 'UTF-8'),
+					'chan' => htmlspecialchars($array['CHAN'], ENT_QUOTES, 'UTF-8'),
+					'radio' => htmlspecialchars($array['RADTYPE'], ENT_QUOTES, 'UTF-8'),
+					'auth' => htmlspecialchars($array['AUTH'], ENT_QUOTES, 'UTF-8'),
+					'encry' => htmlspecialchars($array['ENCR'], ENT_QUOTES, 'UTF-8'),
+					'fa' => htmlspecialchars($array['fa'], ENT_QUOTES, 'UTF-8'),
+					'la' => htmlspecialchars($array['la'], ENT_QUOTES, 'UTF-8'),
 					'list_points' => $array['list_points'],
 					'points' => $array['points'],
-					'lat' => $array['Lat'],
-					'lon' => $array['Lon'],
+					'lat' => htmlspecialchars($array['Lat'], ENT_QUOTES, 'UTF-8'),
+					'lon' => htmlspecialchars($array['Lon'], ENT_QUOTES, 'UTF-8'),
 					'validgps' => $validgps
 			);
 		}

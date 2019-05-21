@@ -64,9 +64,9 @@ else if($dbcore->sql->service == "sqlsrv")
 $result = $dbcore->sql->conn->query($sql);
 $lastuser = $result->fetch(2);
 $lastid = $lastuser['id'];
-$lastusername =  $lastuser['user'];
-$lasttitle = $lastuser['title'];
-$lastdate = $lastuser['date'];
+$lastusername =  htmlspecialchars($lastuser['user'], ENT_QUOTES, 'UTF-8');
+$lasttitle = htmlspecialchars($lastuser['title'], ENT_QUOTES, 'UTF-8');
+$lastdate = htmlspecialchars($lastuser['date'], ENT_QUOTES, 'UTF-8');
 $list_validgps = $lastuser['ValidGPS'];
 if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
 
@@ -90,7 +90,7 @@ $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
 $lastap_id = $lastap_array['AP_ID'];
-$lastap_ssid = $dbcore->formatSSID($lastap_array['SSID']);
+$lastap_ssid = htmlspecialchars($dbcore->formatSSID($lastap_array['SSID']), ENT_QUOTES, 'UTF-8');
 if($lastap_array['HighGps_ID'] == ""){$ap_validgps = 0;}else{$ap_validgps = 1;}
 
 
