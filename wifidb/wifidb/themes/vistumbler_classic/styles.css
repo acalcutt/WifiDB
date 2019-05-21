@@ -402,3 +402,17 @@ table.asscotable {
 	font-weight: bold;
 	border: 1px inset black;
 }
+
+.wrapper {
+  margin-left: auto;
+  padding: 8px 16px;
+  border: none;
+  background: #d0dce7;
+  color: #000000;
+  border-radius: 2px;
+  list-style-type: none;
+}
+.form-row {
+display: flex;
+justify-content: flex-end;
+}

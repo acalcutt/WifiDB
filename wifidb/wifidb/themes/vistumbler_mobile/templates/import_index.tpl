@@ -41,6 +41,7 @@ if not, write to the
 								<li class="form-row><label for="file">File:</label><br /><input type="FILE" name="file" id="file"></li>
 								<li class="form-row><label for="user">Username:</label><br /><input type="text" name="user" id="user"></li>
 								<li class="form-row><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><br /><input type="text" name="otherusers" id="otherusers"></li>
+								<li class="form-row><label for="notes">Notes:</label><br /><textarea name="notes" id="notes" rows="4" cols="30"></textarea></li>
 								<li class="form-row><label for="type">Import Type:</label><br />
 									<input type="radio" name="type" id="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br />
 									<input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3<br />
@@ -49,7 +50,11 @@ if not, write to the
 								</li>
 								<li>
 									<br />
-									<button type="submit">Submit</button>
+									{if $allowimports eq 1}
+										<button type="submit">Submit</button>
+									{else}
+										Importing is currently disabled.
+									{/if}
 								</li>
 							</ul>
 						</form>

@@ -69,7 +69,7 @@ if not, write to the
 									{/if}
 								{/if}
 							</div>
-							<div id='map' style='float:left; width: 100%; height:75vh;'></div>
+							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
 							<div id='basemap'>
 								<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
 								<label for='WDB_OSM'>Open Street Map</label>
