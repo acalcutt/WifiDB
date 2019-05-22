@@ -245,6 +245,14 @@ class import extends dbcore
 		{
 			$lcount++;
 			$Insert_Size++;
+			
+			#blank out bad values
+			if(!is_numeric($gps['track']) || $gps['track'] > 360){$gps['track'] = 0;}
+			if($gps['kmh'] > 1900){$gps['kmh'] = 0;}
+			if($gps['mph'] > 1200){$gps['mph'] = 0;}
+			if($gps['lat'] < -90000 || $gps['lat'] > 90000){$gps['lat'] = '0.0000';}
+			if($gps['lon'] < -180000 || $gps['lon'] > 180000){$gps['lon'] = '0.0000';}
+					
 			$ValArray[] = array($file_id, $gps['id'], $gps['lat'], $gps['lon'], $gps['sats'], $gps['acc'], $gps['hdp'], $gps['alt'], $gps['geo'], $gps['kmh'], $gps['mph'], $gps['track'], $gps['datetime']);
 			
 			if($lcount === $gps_count || $Insert_Size >= $Insert_Limit)
@@ -288,6 +296,9 @@ class import extends dbcore
 		$AP_Num = 0;
 		foreach($ap_arr as $key=>$aps)
 		{
+			#fix bad values
+			if(!$this->validateMacAddress($aps['bssid'])){$aps['bssid'] = '00:00:00:00:00:00';}
+			
 			$AP_Num++;
 			$retry = true;
 			$new = 0;
@@ -1566,10 +1577,6 @@ class import extends dbcore
 					if($gps_line[0] == 0){$increment_ids = 1;}
 					if($increment_ids){$gps_line[0]++;}
 					
-					#Fix for bad track angle in old file
-					$trackangle = $gps_line[9];
-					if(!is_numeric($trackangle) || $trackangle > 360){$trackangle = 0;}
-					
 					#fix incorect formatted date/time/gps from phils old conversions
 					if (strpos($gps_line[11], '-') !== false) {
 						$gps_date = $gps_line[11];
@@ -1586,10 +1593,6 @@ class import extends dbcore
 						$lon = $gps_line[2];
 					}
 					$datetime = $gps_date." ".$gps_time;
-					
-					#Fix for speeds that are way to high to be correct
-					$kmh = (float) $gps_line[7];if($kmh > 1900){$kmh = 0;};
-					$mph = (float) $gps_line[8];if($mph > 1200){$mph = 0;};
 
 					list($s1,$s2,$s3) = explode("-",$gps_date);
 					if (strlen($s1) == 2){$gps_date = $s3.'-'.$s1.'-'.$s2;}
@@ -1603,9 +1606,9 @@ class import extends dbcore
 								'hdp'	=>  (float) $gps_line[4],
 								'alt'	=>  (float) $gps_line[5],
 								'geo'	=>  (float) $gps_line[6],
-								'kmh'	=>  $kmh,
-								'mph'	=>  $mph,
-								'track'	=>  (float) $trackangle,
+								'kmh'	=>  (float) $gps_line[7],
+								'mph'	=>  (float) $gps_line[8],
+								'track'	=>  (float) $gps_line[9],
 								'datetime'	=>  $datetime
 							);
 					break;
@@ -1613,12 +1616,6 @@ class import extends dbcore
 					#echo "---------------------13 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the old VS1 format.
 					$ap_line = $file_line_exp;
-					if(!$this->validateMacAddress($ap_line[1]))
-					{
-						#trigger_error("Bad MACADDRESS...", E_USER_NOTICE);
-						$this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.", -1);
-						break;
-					}
 					$CleanedSignal = preg_replace("/[^0-9,-]/", "", $ap_line[12]); #Fix for old file with % in signal.
 					$highestSignal = $this->FindHighestSig($CleanedSignal);
 					if($highestSignal == ""){$highestSignal = 0;}
@@ -1647,13 +1644,6 @@ class import extends dbcore
 					#echo "---------------------15 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the new VS1 format.
 					$ap_line = $file_line_exp;
-					if(!$this->validateMacAddress($ap_line[1]))
-					{
-						$this->verbosed("MAC Address for the AP SSID of {$ap_line[0]} was not valid, dropping AP.");
-						break;
-					}
-					
-					
 					if(is_numeric($ap_line[10]))#Check if line 10 id HighSig or Manufacturer
 					{
 						#Detailed Export Version 4.0, Current vistumbler format (correctly formatted)
