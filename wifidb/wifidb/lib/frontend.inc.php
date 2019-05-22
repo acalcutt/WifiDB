@@ -172,15 +172,15 @@ class frontend extends dbcore
 					$list_geonames[]= array(
 						'class'=>$class,
 						'id'=>$GeonamesArray['id'],
-						'asciiname'=>$GeonamesArray['asciiname'],
-						'country_code'=>$GeonamesArray['country_code'],
-						'timezone'=>$GeonamesArray['timezone'],
-						'miles'=>$GeonamesArray['miles'],
-						'kilometers'=>$GeonamesArray['kilometers'],
-						'latitude'=>$this->convert->all2dm(number_format($GeonamesArray['latitude'],7)),
-						'longitude'=>$this->convert->all2dm(number_format($GeonamesArray['longitude'],7)),
-						'admin1name'=>$Admin1Array['name'],
-						'admin2name'=>$Admin2Array['name']
+						'asciiname'=>htmlspecialchars($GeonamesArray['asciiname'], ENT_QUOTES, 'UTF-8'),
+						'country_code'=>htmlspecialchars($GeonamesArray['country_code'], ENT_QUOTES, 'UTF-8'),
+						'timezone'=>htmlspecialchars($GeonamesArray['timezone'], ENT_QUOTES, 'UTF-8'),
+						'miles'=>htmlspecialchars($GeonamesArray['miles'], ENT_QUOTES, 'UTF-8'),
+						'kilometers'=>htmlspecialchars($GeonamesArray['kilometers'], ENT_QUOTES, 'UTF-8'),
+						'latitude'=>htmlspecialchars($this->convert->all2dm(number_format($GeonamesArray['latitude'],7)), ENT_QUOTES, 'UTF-8'),
+						'longitude'=>htmlspecialchars($this->convert->all2dm(number_format($GeonamesArray['longitude'],7)), ENT_QUOTES, 'UTF-8'),
+						'admin1name'=>htmlspecialchars($Admin1Array['name'], ENT_QUOTES, 'UTF-8'),
+						'admin2name'=>htmlspecialchars($Admin2Array['name'], ENT_QUOTES, 'UTF-8')
 					);
 				}
 			}
@@ -283,27 +283,27 @@ class frontend extends dbcore
 				$sigarr[]= array(
 					'class'=>$class2,
 					'id'=>$signals['AP_ID'],
-					'Sig'=>$signals['Sig'],
-					'RSSI'=>$signals['RSSI'],
-					'Lat'=>$signals['Lat'],
-					'Lon'=>$signals['Lon'],
-					'Alt'=>$signals['Alt'],
-					'NumOfSats'=>$signals['NumOfSats'],
-					'AccuracyMeters'=>$signals['AccuracyMeters'],
-					'GPS_Date'=>$signals['GPS_Date']
+					'Sig'=>htmlspecialchars($signals['Sig'], ENT_QUOTES, 'UTF-8'),
+					'RSSI'=>htmlspecialchars($signals['RSSI'], ENT_QUOTES, 'UTF-8'),
+					'Lat'=>htmlspecialchars($signals['Lat'], ENT_QUOTES, 'UTF-8'),
+					'Lon'=>htmlspecialchars($signals['Lon'], ENT_QUOTES, 'UTF-8'),
+					'Alt'=>htmlspecialchars($signals['Alt'], ENT_QUOTES, 'UTF-8'),
+					'NumOfSats'=>htmlspecialchars($signals['NumOfSats'], ENT_QUOTES, 'UTF-8'),
+					'AccuracyMeters'=>htmlspecialchars($signals['AccuracyMeters'], ENT_QUOTES, 'UTF-8'),
+					'GPS_Date'=>htmlspecialchars($signals['GPS_Date'], ENT_QUOTES, 'UTF-8')
 				);				
 			}
 
 			$list[]= array(
 				'class'=>$class,
 				'id'=>$field['File_ID'],
-				'file'=>$field['file_orig'],
-				'nu'=>$field['New'],
-				'date'=>$field['date'],
+				'file'=>htmlspecialchars($field['file_orig'], ENT_QUOTES, 'UTF-8'),
+				'nu'=>htmlspecialchars($field['New'], ENT_QUOTES, 'UTF-8'),
+				'date'=>htmlspecialchars($field['date'], ENT_QUOTES, 'UTF-8'),
 				'points'=>$field['points'],
-				'user'=>$field['user'],
-				'title'=>$field['title'],
-				'notes'=>$field['notes'],
+				'user'=>htmlspecialchars($field['user'], ENT_QUOTES, 'UTF-8'),
+				'title'=>htmlspecialchars($field['title'], ENT_QUOTES, 'UTF-8'),
+				'notes'=>htmlspecialchars($field['notes'], ENT_QUOTES, 'UTF-8'),
 				'signals'=>$sigarr,
 				'validgps'=>$field['ValidGPS']
 			);
@@ -747,7 +747,6 @@ class frontend extends dbcore
 			else
 				{$style="light";$flip=1;}
 			
-			if($array['BSSID']  == "00:00:00:00:00:00"){continue;}
 			if($array['Lat']  == "0.0000" || $array['Lat']  == ""){$validgps = 0;}else{$validgps = 1;}
 			if($array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
 			

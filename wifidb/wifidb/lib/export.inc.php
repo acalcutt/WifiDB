@@ -344,14 +344,14 @@ class export extends dbcore
 				$sql = "SELECT wifi_ap.AP_ID\n"
 					. "FROM wifi_ap\n"
 					. "LEFT JOIN files ON files.id = wifi_ap.File_ID\n"
-					. "WHERE files.user LIKE ? And wifi_ap.BSSID != '00:00:00:00:00:00' And wifi_ap.HighGps_ID IS NOT NULL";
+					. "WHERE files.user LIKE ? And wifi_ap.HighGps_ID IS NOT NULL";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [wifi_ap].[AP_ID]\n"
 					. "FROM [wifi_ap]\n"
 					. "LEFT JOIN [files] ON [files].[id] = [wifi_ap].[File_ID]\n"
-					. "WHERE [files].[user] LIKE ? And [wifi_ap].[BSSID] != '00:00:00:00:00:00' And [wifi_ap].[HighGps_ID] IS NOT NULL";
+					. "WHERE [files].[user] LIKE ? And [wifi_ap].[HighGps_ID] IS NOT NULL";
 			}
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
@@ -397,7 +397,7 @@ class export extends dbcore
 						. "FROM wifi_ap AS wap\n"
 						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 						. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
-						. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL And wap.BSSID != '00:00:00:00:00:00'";
+						. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
@@ -409,7 +409,7 @@ class export extends dbcore
 						. "FROM [wifi_ap] AS [wap]\n"
 						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 						. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
-						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
+						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL";
 				}
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
@@ -481,7 +481,6 @@ class export extends dbcore
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
 							. "    wap.HighGps_ID IS NOT NULL And\n"
-							. "    wap.BSSID != '00:00:00:00:00:00' And\n"
 							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND user LIKE ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 							if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
@@ -497,7 +496,6 @@ class export extends dbcore
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
 							. "    wap.HighGps_ID IS NOT NULL And\n"
-							. "    wap.BSSID != '00:00:00:00:00:00' And\n"
 							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 						if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
@@ -584,7 +582,7 @@ class export extends dbcore
 						. "FROM wifi_ap AS wap\n"
 						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 						. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-						. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL And wap.BSSID != '00:00:00:00:00:00'";
+						. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
@@ -596,7 +594,7 @@ class export extends dbcore
 						. "FROM [wifi_ap] AS [wap]\n"
 						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 						. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
-						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
+						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL";
 				}
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
@@ -834,7 +832,7 @@ class export extends dbcore
 					. "FROM wifi_ap AS wap\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
-					. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL And wap.BSSID != '00:00:00:00:00:00'";
+					. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
@@ -846,7 +844,7 @@ class export extends dbcore
 					. "FROM [wifi_ap] AS [wap]\n"
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
-					. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL And [wap].[BSSID] != '00:00:00:00:00:00'";
+					. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL";
 			}
 		$prep = $this->sql->conn->execute($sql);
 		$aparray_all = $prep->fetchAll(2);
@@ -1384,7 +1382,6 @@ class export extends dbcore
 				$sql_count = "SELECT COUNT(AP_ID) As ApCount\n"
 					. "FROM wifi_ap\n"
 					. "WHERE\n"
-					. "BSSID != '00:00:00:00:00:00' AND\n"
 					. "fa IS NOT NULL AND\n"
 					. "SSID LIKE ? AND\n"
 					. "BSSID LIKE ? AND\n"
@@ -1399,7 +1396,6 @@ class export extends dbcore
 				$sql_count = "SELECT COUNT([AP_ID]) As [ApCount]\n"
 					. "FROM [wifi_ap]\n"
 					. "WHERE\n"
-					. "[BSSID] != '00:00:00:00:00:00' AND\n"
 					. "[fa] IS NOT NULL AND\n"
 					. "[SSID] LIKE ? AND\n"
 					. "[BSSID] LIKE ? AND\n"
@@ -1432,7 +1428,6 @@ class export extends dbcore
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 					. "WHERE\n"
-					. "BSSID != '00:00:00:00:00:00' AND\n"
 					. "fa IS NOT NULL AND\n"
 					. "wap.SSID LIKE ? AND\n"
 					. "wap.BSSID LIKE ? AND\n"
@@ -1457,7 +1452,6 @@ class export extends dbcore
 					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
 					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
 					. "WHERE\n"
-					. "[BSSID] != '00:00:00:00:00:00' AND\n"
 					. "[fa] IS NOT NULL AND\n"
 					. "[wap].[SSID] LIKE ? AND\n"
 					. "[wap].[BSSID] LIKE ? AND\n"
