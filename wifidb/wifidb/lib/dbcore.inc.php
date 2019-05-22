@@ -524,16 +524,9 @@ class dbcore
 		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");
 		$result->bindParam(1, $mac, PDO::PARAM_STR);
 		$result->execute();
-		$this->sql->checkError(__LINE__, __FILE__);
-		if($result->rowCount() > 0)
-		{
-			$fetch = $result->fetch(2);
-			$manuf = $fetch['Manufacturer'];
-		}
-		else
-		{
-			$manuf = "Unknown Manufacturer";
-		}
+		$fetch = $result->fetch(2);
+		$manuf = @$fetch['Manufacturer'];
+		if(!$manuf){$manuf = "Unknown Manufacturer";}
 		return $manuf;
 	}
 	
