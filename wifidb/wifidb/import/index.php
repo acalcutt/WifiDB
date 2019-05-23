@@ -31,12 +31,12 @@ $type = "schedule";
 $subject = "New WiFiDB Import waiting...";
 $mesg = "";
 
-if($dbcore->rebuild === 0)
+if($dbcore->rebuild === 1 || @$dbcore->username == 'admin')
 {
-	$import_button = '<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit" STYLE="width: 0.71in; height: 0.36in"></P>';
+	$allowimports = 0;
 }else
 {
-	$import_button = "The database is in rebuild mode, please wait...";
+	$allowimports = 1;
 }
 if(@$dbcore->username == 'admin')
 {
@@ -51,156 +51,158 @@ $dbcore->smarty->assign('import_button', $import_button);
 switch($func)
 {
 	case 'import': //Import file that has been uploaded
-		if($_FILES['file']['tmp_name'] === "")
-		{
-			$mesg .= "Failure... File not supplied. Try one of the <a href=\"https://github.com/acalcutt/Vistumbler/wiki\" >supported file types.</a>";
-			break;
-		}
-		$title = (empty($_POST['title'])) ? "Untitled" : $_POST['title'];
+	
+		$date = date("Y-m-d H:i:s");
+		$title = (empty($_POST['title'])) ? $date : $_POST['title'];
 		$notes = (empty($_POST['notes'])) ? "No Notes" : $_POST['notes'];
 		$user = (empty($_POST['user'])) ? "Unknown" : $_POST['user'];
 		$otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
 		$type = (empty($_POST['type'])) ? "" : $_POST['type'];
+		
 		$sql = "SELECT username FROM user_info WHERE username LIKE ?";
 		$stmt = $dbcore->sql->conn->prepare($sql);
 		$stmt->bindParam(1, $user, PDO::PARAM_STR);
 		$stmt->execute();
-		if($dbcore->sql->checkError() !== 0)
-		{
-			$mesg = "Failure to select users from table.";
-			break;
-		}
 		$array = $stmt->fetch(2);
 		if($array['username'] == $dbcore->sec->username and $dbcore->login_check)
 		{
 			$mesg .= "<h2>You need to be logged in to import to a user that has a login.<br> Go <a class='links' href='".$GLOBALS['hosturl']."login.php?return=/import/'>login</a> and then import again.</h2>";
-		}else
+		}
+		else
 		{
-			$tmp = $_FILES['file']['tmp_name'];
-			$rand = rand(00000000, 99999999);
-			$filename_orig = $_FILES['file']['name'];
-			$filename = $rand.'_'.str_replace( " ", "_", $_FILES['file']['name']);
-			$ext = pathinfo($filename, PATHINFO_EXTENSION);
-			$uploadfolder = getcwd().'/up/';
-			$uploadfile = $uploadfolder.$filename;
-
-			switch(strtolower($ext))
+			$total_files = count($_FILES['upload']['name']);
+			if($total_files)
 			{
-				case "vs1":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "txt":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "vsz":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "vscz":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "csv":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "db3":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "db":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "mdb":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				case "gz":
-					$ext_fail = 0;
-					$task = "import";
-				break;
-				default:
-					$ext_fail = 1;
-					$task = "";
-				break;
-			}
+				for( $i=0 ; $i < $total_files ; $i++ ) 
+				{
+					$rand = rand(00000000, 99999999);
+					$tmp = $_FILES['upload']['tmp_name'][$i];
+					$filename_orig = $_FILES['upload']['name'][$i];
+					$filename = $rand.'_'.str_replace( " ", "_", $filename_orig);
+					$ext = pathinfo($filename, PATHINFO_EXTENSION);
+					$uploadfolder = getcwd().'/up/';
+					$uploadfile = $uploadfolder.$filename;
 
-			switch($task)
-			{
-				case "import":
-					if (!copy($tmp, $uploadfile))
+					switch(strtolower($ext))
 					{
-						$mesg .= 'Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.<BR>';
-						$message = "Failure to Move file to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.\r\nUser: $user\r\nTitle: $title\r\nFile: /import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
-						#$dbcore->mail->mail_admins($message, $subject, $type);
+						case "vs1":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "txt":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "vsz":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "vscz":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "csv":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "db3":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "db":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "mdb":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						case "gz":
+							$ext_fail = 0;
+							$task = "import";
+						break;
+						default:
+							$ext_fail = 1;
+							$task = "";
+						break;
 					}
-					else
+
+					switch($task)
 					{
-						chmod($uploadfile, 0600);
-						$hash = hash_file('md5', $uploadfile);
-						$filesize = filesize($uploadfile);
+						case "import":
+							if (!copy($tmp, $uploadfile))
+							{
+								$mesg .= 'Failure to Move '.$filename_orig.' to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.<BR>';
+								$message .= "Failure to Move $filename_orig to Upload Dir ('.$uploadfolder.'), check the folder permissions if you are using Linux.\r\nUser: $user\r\nTitle: $title\r\nFile: /import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
+								#$dbcore->mail->mail_admins($message, $subject, $type);
+							}
+							else
+							{
+								chmod($uploadfile, 0600);
+								$hash = hash_file('md5', $uploadfile);
+								$filesize = filesize($uploadfile);
 
-						$size = $dbcore->format_size($filesize);
-						$mesg .= "<h1>Title: ".$title."</h1>";
-						$mesg .= "<h1>Imported By: ".$user."<BR></h1>";
-						if($otherusers)
-						{
-							$mesg .= "<h3>With help from: ".$otherusers."<BR></h3>";
-						}
-						//lets try a scheduled import table that has a cron job
-						//that runs and imports all of them at once into the DB
-						//in order that they where uploaded
-						$date = date("Y-m-d H:i:s");
-						if($dbcore->sql->service == "mysql")
-							{$sql = "INSERT INTO `files_tmp`(`file`, `file_orig`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-						else if($dbcore->sql->service == "sqlsrv")
-							{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+								$size = $dbcore->format_size($filesize);
+								$mesg .= "<h1>Title: ".$title."</h1>";
+								$mesg .= "<h1>Imported By: ".$user."<BR></h1>";
+								if($otherusers)
+								{
+									$mesg .= "<h3>With help from: ".$otherusers."<BR></h3>";
+								}
+								//lets try a scheduled import table that has a cron job
+								//that runs and imports all of them at once into the DB
+								//in order that they where uploaded
+								
+								if($dbcore->sql->service == "mysql")
+									{$sql = "INSERT INTO `files_tmp`(`file`, `file_orig`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+								else if($dbcore->sql->service == "sqlsrv")
+									{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
-						$result = $dbcore->sql->conn->prepare( $sql );
-						$result->bindValue(1, $filename, PDO::PARAM_STR);
-						$result->bindValue(2, $filename_orig, PDO::PARAM_STR);
-						$result->bindValue(3, $date, PDO::PARAM_STR);
-						$result->bindValue(4, $user, PDO::PARAM_STR);
-						$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-						$result->bindValue(6, $notes, PDO::PARAM_STR);
-						$result->bindValue(7, $title, PDO::PARAM_STR);
-						$result->bindValue(8, $size, PDO::PARAM_STR);
-						$result->bindValue(9, $hash, PDO::PARAM_STR);
-						$result->bindValue(10, $type, PDO::PARAM_STR);
-						$result->execute();
-						if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
-						{
-							$mesg .= "<h2>File has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
-							$message = "File has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
-							#if($dbcore->mail_users($message, $subject, $type))
-							#{
-								#echo "mailed";
-							#}else
-							#{
-								#echo "Failed to Mail";
-							#}
-						}elseif($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() == 0)
-						{
-							$mesg .= "<h2>File has already been inserted</h2>";
-						}else
-						{
-							$mesg .= "<h2>There was an error inserting file for scheduled import.</h2>".var_export($dbcore->sql->conn->errorInfo());
-							$message = "New Import Failed!\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->PATH."/import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
+								$result = $dbcore->sql->conn->prepare( $sql );
+								$result->bindValue(1, $filename, PDO::PARAM_STR);
+								$result->bindValue(2, $filename_orig, PDO::PARAM_STR);
+								$result->bindValue(3, $date, PDO::PARAM_STR);
+								$result->bindValue(4, $user, PDO::PARAM_STR);
+								$result->bindValue(5, $otherusers, PDO::PARAM_STR);
+								$result->bindValue(6, $notes, PDO::PARAM_STR);
+								$result->bindValue(7, $title, PDO::PARAM_STR);
+								$result->bindValue(8, $size, PDO::PARAM_STR);
+								$result->bindValue(9, $hash, PDO::PARAM_STR);
+								$result->bindValue(10, $type, PDO::PARAM_STR);
+								$result->execute();
+								if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
+								{
+									$mesg .= "<h2>File ($filename_orig) has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
+									$message .= "File ($filename_orig) has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
+								}
+								else if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() == 0)
+								{
+									$mesg .= "<h2>File ($filename_orig) has already been inserted</h2>";
+								}
+								else
+								{
+									$mesg .= "<h2>There was an error inserting file for scheduled import.</h2>".var_export($dbcore->sql->conn->errorInfo());
+									$message .= "New Import Failed!\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->PATH."/import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
+									#$dbcore->mail_admins($message, $subject, $type);
+								}
+							}
+						break;
+	
+						default:
+							$mesg .= "Failure.... File ($filename_orig) is not supported. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
+							$message .= "Unsupported file type was attempted to be uploaded... ($filename_orig)\r\n\r\n";
 							#$dbcore->mail_admins($message, $subject, $type);
-						}
+						break;
 					}
-				break;
-
-				default:
-					$mesg .= "Failure.... File is not supported. Try one of the <a href=\"https://github.com/RIEI/Vistumbler/wiki\" >supported file types.</a>";
-					$message = "Unsupported file type was attempted to be uploaded... $upfilename\r\n\r\n";
-					#$dbcore->mail_admins($message, $subject, $type);
+				}
+			}
+			else
+			{
+				$mesg .= "Failure... File not supplied for . Try one of the <a href=\"https://github.com/acalcutt/Vistumbler/wiki\" >supported file types.</a>";
 				break;
 			}
 		}
+
 		break;
 	#----------------------
 	default: //index page that has form to upload file
@@ -231,6 +233,7 @@ $prepf = $prep->fetch(1);
 $waiting_count = $prepf[0];
 		
 $dbcore->smarty->assign('mesg', $mesg);
+$dbcore->smarty->assign('allowimports', $allowimports);
 $dbcore->smarty->assign('complete_count', $complete_count);
 $dbcore->smarty->assign('importing_count', $importing_count);
 $dbcore->smarty->assign('waiting_count', $waiting_count);
