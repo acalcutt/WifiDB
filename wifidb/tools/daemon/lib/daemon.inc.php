@@ -312,7 +312,7 @@ class daemon extends wdbcli
 				//$this->verbosed("File has already been successfully imported into the Database. Skipping and deleting source file.\r\n\t\t\t$source ($importing_id)");
 				//unlink($source);
 				$this->verbosed("File has already been successfully imported into the Database. Skipping source file.\r\n\t\t\t$source ($importing_id)");
-				$this->cleanBadImport(0, 0, $importing_id, 'Already Imported', $this->thread_id);
+				$this->cleanBadImport(0, $importing_id, 'Already Imported');
 			}
 			else
 			{
@@ -480,7 +480,7 @@ class daemon extends wdbcli
 					//$this->logd("Skipping Import \nReason: $tmp[1]\n".$file_name,"Error", $this->This_is_me);
 					$this->verbosed("Skipping Import \nReason: $tmp[1]\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
-					$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source", $this->thread_id);
+					$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: $tmp[1] |=| $source");
 				}
 				elseif($tmp['aps'] == 0 && $tmp['gps'] == 0 && $tmp['cells'] == 0 && $tmp['cells_hist'] == 0)
 				{
@@ -488,7 +488,7 @@ class daemon extends wdbcli
 					//$this->logd("Skipping Import \nReason: Import did not have any aps, gps, cells, or cell hist\n".$file_name,"Error", $this->This_is_me);
 					$this->verbosed("Skipping Import \nReason: Import did not have any aps, gps, cells, or cell hist\n".$file_name, -1);
 					//remove files_tmp row and user_imports row
-					$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: Import did not have any aps, gps, cells, or cell hist |=| $source", $this->thread_id);
+					$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: Import did not have any aps, gps, cells, or cell hist |=| $source");
 				}
 				else
 				{
@@ -538,7 +538,7 @@ class daemon extends wdbcli
 			//$this->logd("File is empty or not valid. $source ($importing_id)","Warning", $this->This_is_me);
 			$this->verbosed("File is empty. Skipping and deleting from files_importing. $source ($importing_id |-| $file_hash)\n");
 			//unlink($source);
-			$this->cleanBadImport(0, 0, $importing_id, 'Empty or not valid', $this->thread_id);
+			$this->cleanBadImport(0, $importing_id, 'Empty or not valid');
 		}
 		return 1;
 	}
