@@ -519,14 +519,14 @@ class dbcore
 		{
 			$mac = str_replace(":", "", $mac);
 		}
-		$mac = strtoupper(substr($mac, 0, 6));
+		$manuf_mac = strtoupper(substr($mac, 0, 6));
 		
 		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");
-		$result->bindParam(1, $mac, PDO::PARAM_STR);
+		$result->bindParam(1, $manuf_mac, PDO::PARAM_STR);
 		$result->execute();
 		$fetch = $result->fetch(2);
 		$manuf = @$fetch['Manufacturer'];
-		if(!$manuf){$manuf = "Unknown Manufacturer";}
+		if(!$manuf || $mac === '000000000000'){$manuf = "Unknown Manufacturer";}
 		return $manuf;
 	}
 	
