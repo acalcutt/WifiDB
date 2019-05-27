@@ -6,6 +6,10 @@
 	{$wifidb_meta_header|default:""}
 	{$redirect_func|default:""}
 	<link rel="stylesheet" href="{$themeurl}html5style.css" />
+	<link rel="stylesheet" href="{$themeurl}lib/sceditor/minified/themes/default.min.css" id="theme-style" />
+	<script src="{$themeurl}lib/sceditor/minified/sceditor.min.js"></script>
+	<script src="{$themeurl}lib/sceditor/minified/icons/monocons.js"></script>
+	<script src="{$themeurl}lib/sceditor/minified/formats/bbcode.js"></script>
 </head>
 <body {$redirect_html|default:""} {$OnLoad|default:""}>
 	<!-- Start Collapsible Menu Scripts-->
