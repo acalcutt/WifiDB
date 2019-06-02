@@ -22,9 +22,34 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "EXPORT");
 
 include('../lib/init.inc.php');
-$id = $_GET['id'];
+$id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+$from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+$inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 
-$results = $dbcore->APFetch($id);
+#security for order by, desc, to, from injections or incorrect values
+$sorts=array("File_ID","date","points");
+if(!in_array($sort, $sorts)){$sort = "File_ID";}
+$ords=array("ASC","DESC");
+if(!in_array($ord, $ords)){$ord = "DESC";}
+if(!is_numeric($from)){$from = 0;}
+if(!is_numeric($inc)){$inc = 50;}
+
+
+#Get count of files with this ap_id for pageation
+if($dbcore->sql->service == "mysql")
+	{$sql = "Select Count(distinct `File_ID`) FROM wifi_hist WHERE `AP_ID` = ?";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "Select Count(distinct [File_ID]) FROM wifi_hist WHERE [AP_ID] = ?";}
+$sqlprep = $dbcore->sql->conn->prepare($sql);
+$sqlprep->bindParam(1, $id, PDO::PARAM_INT);
+$sqlprep->execute();
+$total_rows = $sqlprep->fetchColumn();
+
+$results = $dbcore->APFetch($id, $sort, $ord, $from, $inc);
+$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
+$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 $dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
 $dbcore->smarty->assign('wifidb_assoc_lists', $results[1]);
 $dbcore->smarty->assign('wifidb_ap', $results[2]);

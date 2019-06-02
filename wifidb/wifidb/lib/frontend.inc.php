@@ -57,8 +57,9 @@ class frontend extends dbcore
 			$this->smarty->assign("redirect_func", "");
 			$this->smarty->assign("redirect_html", "");
 			$this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
-			$this->smarty->assign('wifidb_login_html', $this->sec->LoginHtml);
 			$this->smarty->assign('wifidb_login_user', $this->sec->LoginUser);
+			$this->smarty->assign('wifidb_login_logged_in', $this->sec->login_check);
+			$this->smarty->assign('wifidb_message_unread_count', $this->GetMessageCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
 			#$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
 			$this->htmlheader();
@@ -78,8 +79,26 @@ class frontend extends dbcore
 													"UserLists"	  =>  "1.0"
 												);
 	}
+	
+	function GetMessageCount($username="")
+	{
+		$message_count = 0;
+		if($username)
+		{
+			#Get Unread Message Count
+			$sql = "SELECT COUNT(pm.id) AS unread_count FROM pm\n"
+				. "INNER JOIN user_info ON user_info.id = pm.user2\n"
+				. "WHERE user2read = 0 And user2del = 0 And user_info.username LIKE ?";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $username);
+			$result->execute();
+			$array = $result->fetch(2);
+			$message_count = $array['unread_count'];
+		}
+		return $message_count;
+	}
 
-	function APFetch($id = "")
+	function APFetch($id = "", $sort = "File_ID", $ord = "DESC", $from = 0, $inc = 250)
 	{
 		if($this->sql->service == "mysql")
 			{
@@ -104,7 +123,7 @@ class frontend extends dbcore
 					. "WHERE [wap].[AP_ID] = ?";
 			}
 		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->bindParam(1, $id);
 		$prep->execute();
 		$newArray = $prep->fetch(2);
 
@@ -155,7 +174,7 @@ class frontend extends dbcore
 					else if($this->sql->service == "sqlsrv")
 						{$sql = "SELECT [name] FROM [geonames_admin1] WHERE [admin1] = ?";}
 					$prep_geonames = $this->sql->conn->prepare($sql);
-					$prep_geonames->bindParam(1, $admin1, PDO::PARAM_STR);
+					$prep_geonames->bindParam(1, $admin1);
 					$prep_geonames->execute();
 					$Admin1Array = $prep_geonames->fetch(2);
 
@@ -165,7 +184,7 @@ class frontend extends dbcore
 					else if($this->sql->service == "sqlsrv")
 						{$sql = "SELECT [name] FROM [geonames_admin2] WHERE [admin2] = ?";}
 					$prep_geonames = $this->sql->conn->prepare($sql);
-					$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
+					$prep_geonames->bindParam(1, $admin2);
 					$prep_geonames->execute();
 					$Admin2Array = $prep_geonames->fetch(2);
 					
@@ -222,7 +241,7 @@ class frontend extends dbcore
 					. "INNER JOIN `files` ON `wifi_hist`.`File_ID` = `files`.`id`\n"
 					. "WHERE `wifi_hist`.`AP_ID` = ?\n"
 					. "GROUP BY `wifi_hist`.`File_ID`, `wifi_hist`.`New`\n"
-					. "ORDER BY `files`.`date` DESC";
+					. "ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
@@ -231,10 +250,11 @@ class frontend extends dbcore
 					. "INNER JOIN [files] ON [wifi_hist].[File_ID] = [files].[id]\n"
 					. "WHERE [wifi_hist].[AP_ID] = ?\n"
 					. "GROUP BY [wifi_hist].[File_ID], [files].[title], [files].[file_orig], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New]\n"
-					. "ORDER BY [files].[date] DESC";
+					. "ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS\n"	
+					. "FETCH NEXT {$inc} ROWS ONLY";
 			}
 		$prep2 = $this->sql->conn->prepare($sql);
-		$prep2->bindParam(1, $id, PDO::PARAM_INT);
+		$prep2->bindParam(1, $id);
 		$prep2->execute();
 		if($this->sql->checkError() !== 0)
 		{
@@ -270,8 +290,8 @@ class frontend extends dbcore
 						. "ORDER BY [wifi_hist].[Hist_Date] ASC";
 				}
 			$prep1 = $this->sql->conn->prepare($sql);
-			$prep1->bindParam(1, $id, PDO::PARAM_STR);
-			$prep1->bindParam(2, $file_id, PDO::PARAM_STR);
+			$prep1->bindParam(1, $id);
+			$prep1->bindParam(2, $file_id);
 			$prep1->execute();
 			while ($signals = $prep1->fetch(1))
 			{
@@ -775,7 +795,7 @@ class frontend extends dbcore
 	}
 
 
-	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="", $view="")
+	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="", $view="", $id="")
 	{
 		if($ssid=="" && $mac=="" && $chan=="" && $radio=="" && $auth=="" && $encry=="")
 		{
@@ -786,6 +806,7 @@ class frontend extends dbcore
 		}
 		
 		if($view==""){$viewparam="";}else{$viewparam="&view={$view}";}
+		if($id==""){$idparam="";}else{$idparam="&id={$id}";}
 		
 
 		$function_and_username = "";
@@ -803,10 +824,10 @@ class frontend extends dbcore
 		$mid_page = (($from + $inc)/$inc);
 		if($no_search)
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}{$idparam}\">First</a>&#93 &#45; \r\n";
 		}else
 		{
-			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">First</a>&#93 &#45; \r\n";
+			$pages_together = "Pages: &lt;&#45;&#45;  &#91<a class=\"links\" href=\"?{$function_and_username}from=0&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}{$idparam}\">First</a>&#93 &#45; \r\n";
 		}
 		for($I=($mid_page - 5); $I<=($mid_page + 5); $I++)
 		{
@@ -820,20 +841,20 @@ class frontend extends dbcore
 			{
 				if($no_search)
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}{$idparam}\">{$I}</a> &#45; \r\n";
 				}else
 				{
-					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">{$I}</a> &#45; \r\n";
+					$pages_together .= " <a class=\"links\" href=\"?{$function_and_username}from={$cal_from}&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}{$idparam}\">{$I}</a> &#45; \r\n";
 				}
 			}
 		}
 		if($pages==1){$cal_from = 0;}else{$cal_from = (($pages-1)*$inc);}
 		if($no_search)
 		{
-			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}&ssid={$ssid}&mac={$mac}&chan={$chan}&radio={$radio}&auth={$auth}&encry={$encry}{$viewparam}{$idparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}else
 		{
-			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
+			$pages_together .= " &#91<a class=\"links\" href=\"?{$function_and_username}from=".$cal_from."&inc={$inc}&sort={$sort}&ord={$ord}{$viewparam}{$idparam}\">Last</a>&#93 &#45;&#45;&gt; \r\n";
 		}
 		if(!$total_rows){$pages_together = "";}
 		$this->pages_together = $pages_together;

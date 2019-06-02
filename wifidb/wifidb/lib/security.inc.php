@@ -437,7 +437,6 @@ class security
         if(!@isset($_COOKIE[$cookie_name]))
         {
             $this->LoginLabel = "";
-			$this->LoginHtml = "";
 			$this->LoginUser = "";
 			$this->LoginUri = '?return='.urlencode($return_url);
             $this->login_val = "No Cookie";
@@ -449,7 +448,6 @@ class security
         {
             # Username Fail.
             $this->LoginLabel = "";
-			$this->LoginHtml = "";
 			$this->LoginUser = "";
 			$this->LoginUri = '?return='.urlencode($return_url);
             $this->login_val = "u_fail";
@@ -470,7 +468,6 @@ class security
         {
             $this->check_privs();
             $this->LoginLabel = "Logout";
-            $this->LoginHtml = '<a class="links" href="'.$this->HOSTURL.$this->root.'/cp/">'.$logon['username'].'</a>';
 			$this->LoginUser = $logon['username'];
             $this->LoginUri = '?func=logout&return='.urlencode($return_url);
             $this->login_val = $logon['username'];
@@ -479,7 +476,6 @@ class security
             return 1;
         }
         $this->LoginLabel = "";
-		$this->LoginHtml = "";
 		$this->LoginUser = "";
 		$this->LoginUri = '?return='.urlencode($return_url);
         $this->login_val = "Bad Cookie Password";
