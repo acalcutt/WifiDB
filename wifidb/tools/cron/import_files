@@ -1,14 +1,21 @@
 #!/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison:/opt/mssql-tools/bin/
+
+SQL_SVR="[server]"
+SQL_DB="[database]"
+SQL_USER="[user]"
+SQL_PASS="[password]"
+WIFIDB_INSTANCE="[node]"
+
 cd ${0%/*}
 
-ROW=$(sqlcmd -S [server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM settings WHERE node_name = 'prod' AND daemon_state = 1")
+ROW=$(sqlcmd -S $SQL_SVR -U $SQL_USER -P $SQL_PASS -d $SQL_DB -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM settings WHERE node_name = '$WIFIDB_INSTANCE' AND daemon_state = 1")
 daemonstate=`echo $ROW | sed 's/[\._-]//g' | sed 's/ //g'`
 
 echo "Daemon State: $daemonstate"
 if [ $daemonstate -ge 1 ]; then
 	DATE_WITH_TIME=`date -u "+%Y-%m-%d %H:%M:%S"`
-	ROW=$(sqlcmd -S [server] -U [user] -P [password] -d [database] -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM schedule WHERE daemon = 'Import' AND status <> 'Running' AND enabled = 1 And nextrun <= '$DATE_WITH_TIME'")
+	ROW=$(sqlcmd -S $SQL_SVR -U $SQL_USER -P $SQL_PASS -d $SQL_DB -Q "SET NOCOUNT ON; SELECT COUNT(1) FROM schedule WHERE daemon = 'Import' AND status <> 'Running' AND enabled = 1 And nextrun <= '$DATE_WITH_TIME'")
 	runcount=`echo $ROW | sed 's/[\._-]//g' | sed 's/ //g'`
 
 	echo "[$DATE_WITH_TIME] $runcount processes needed."
