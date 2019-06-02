@@ -20,8 +20,7 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 {include file="topmenu.tpl"}		
-{include file="user_cp_header.tpl"}
-				<a href="{$wifidb_host_url}cp/index.php?func=sendmsg" target="_blank">Send Message</a> 
+				{if $func eq 'inbox'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=inbox">Received</a>{if $func eq 'inbox'}</b>{/if} | {if $func eq 'outbox'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=outbox">Sent</a>{if $func eq 'outbox'}</b>{/if} | <a href="{$wifidb_host_url}cp/messages.php?func=sendmsg">Send Message</a> 
 				<table class="content_table"">
 					<tr class="header">
 						<td class="header">
@@ -36,14 +35,17 @@ if not, write to the
 						<td class="header">
 							<div>Timestamp</div>
 						</td>
+						<td class="header">
+							<div>Action</div>
+						</td>
 					</tr>
 					{foreach name=outer item=message from=$inbox_messages}
 					<tr class="{$message.class}">
 						<td class="{$message.class}">
 						{if $message.read eq 1}
-							<a href="{$wifidb_host_url}cp/index.php?func=replymsg&id={$message.id}" target="_blank">{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}</a> 
+							<a href="{$wifidb_host_url}cp/messages.php?func=replymsg&id={$message.id}">{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}</a> 
 						{else}
-							<a href="{$wifidb_host_url}cp/index.php?func=replymsg&id={$message.id}" target="_blank"><b>{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}</b></a> 
+							<a href="{$wifidb_host_url}cp/messages.php?func=replymsg&id={$message.id}"><b>{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}</b></a> 
 						{/if}
 						</td>
 						<td class="{$message.class}">
@@ -62,6 +64,11 @@ if not, write to the
 						</td>						
 						<td class="{$message.class}">
 							{$message.stimestamp}
+						</td>
+						<td class="{$message.class}">
+							<a href="{$wifidb_host_url}cp/messages.php?func=mark-read&id={$message.id}" title="Mark Read"><img width="20px" src="{$themeurl}img/mark-read.png"></a>
+							<a href="{$wifidb_host_url}cp/messages.php?func=mark-unread&id={$message.id}" title="Mark Un-Read"><img width="20px" src="{$themeurl}img/mark-unread.png"></a>
+							<a href="{$wifidb_host_url}cp/messages.php?func=delmsg&id={$message.id}" title="Delete Message"><img width="20px" src="{$themeurl}img/delete.png"></a>
 						</td>
 					</tr>
 					{foreachelse}

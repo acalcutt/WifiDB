@@ -20,7 +20,7 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 {include file="topmenu.tpl"}		
-{include file="user_cp_header.tpl"}
+				<a href="{$wifidb_host_url}cp/messages.php?func=inbox">Received</a> | <a href="{$wifidb_host_url}cp/messages.php?func=outbox">Sent</a> | <a href="{$wifidb_host_url}cp/messages.php?func=sendmsg">Send Message</a> 
 				<br />
 				<table class="content_table"">
 					<tr class="header">
@@ -71,9 +71,10 @@ if not, write to the
 						readOnly: true,
 						toolbar: '',
 						resizeMaxHeight: -1,
-						style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css'
+						style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css',
+						emoticonsRoot: '{$themeurl}img/'
 					});
 				</script>
-				<a href="{$wifidb_host_url}cp/index.php?func=sendmsg&thread_id={$message.thread_id|escape:'url'}&to={$message.uid1|escape:'url'}&title={$message.title|escape:'url'}" target="_blank">Reply</a> 
+				<a href="{$wifidb_host_url}cp/messages.php?func=sendmsg&thread_id={$message.thread_id|escape:'url'}&to={$message.uid1|escape:'url'}&title={$message.title|escape:'url'}" target="_blank">Reply</a> 
 			</div>
 {include file="footer.tpl"}

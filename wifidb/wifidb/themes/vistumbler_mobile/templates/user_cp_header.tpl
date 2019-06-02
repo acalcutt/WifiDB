@@ -26,8 +26,6 @@ if not, write to the
 							<a href="?func=profile">Profile</a> 
 							|
 							<a href="?func=pref">Email Preferences</a>
-							|
-							<a href="?func=inbox">Inbox</a>
 						</td>
 					</tr>
 				</table>

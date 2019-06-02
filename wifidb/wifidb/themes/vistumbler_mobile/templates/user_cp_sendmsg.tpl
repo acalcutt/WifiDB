@@ -20,10 +20,10 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 {include file="topmenu.tpl"}
-{include file="user_cp_header.tpl"}
+				{if $func eq 'inbox'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=inbox">Received</a>{if $func eq 'inbox'}</b>{/if} | {if $func eq 'outbox'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=outbox">Sent</a>{if $func eq 'outbox'}</b>{/if} | {if $func eq 'sendmsg'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=sendmsg">Send Message</a>{if $func eq 'sendmsg'}</b>{/if} 
 				<div style="text-align: center;">
 					<div style="display: inline-block; text-align: left;">
-						<form action="{$wifidb_host_url}cp/index.php?func=sendmsg_submit" method="post" enctype="multipart/form-data">
+						<form action="{$wifidb_host_url}cp/messages.php?func=sendmsg_submit" method="post" enctype="multipart/form-data">
 							<ul class="wrapper">
 								<li class="form-row>
 									<label for="from_user">From</label><br />
@@ -33,6 +33,7 @@ if not, write to the
 								<li class="form-row>
 									<label for="to_id">To</label><br />
 									<select id="to_id" name="to_id">
+										<option value="">{$fromuser.username}</option>
 									{foreach $fromusers as $fromuser} 
 										<option value="{$fromuser.id}"{if $fromuser.id eq $to} selected{/if}>{$fromuser.username}</option>
 									{/foreach}
@@ -59,7 +60,8 @@ if not, write to the
 								icons: 'monocons',
 								autoUpdate: true,
 								autoExpand: true,
-								style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css'
+								style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css',
+								emoticonsRoot: '{$themeurl}img/'
 							});
 						</script>
 					</div>

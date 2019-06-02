@@ -47,8 +47,7 @@ if not, write to the
 							<img width="20px" src="{$themeurl}img/kmz_off.png">
 						{/if}
 					</h1>
-					<table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
-					<table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
+					<table align="center" width="50%" border="1" cellpadding="4" cellspacing="0">
 						<tbody>
 							<tr><td class="header" width="112">MAC Address</td><td class="light" width="439">{$wifidb_ap.mac}</td></tr>
 							<tr><td class="header" width="112">Manufacture</td><td class="light" width="439">{$wifidb_ap.manuf}</td></tr>
@@ -119,7 +118,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr>
-								<td class="subheading" colspan="9">Associated Lists</td>
+								<td class="subheading" colspan="10">Associated Lists</td>
 							</tr>
 						</tbody>
 						{foreach name=outer item=wifidb_assoc from=$wifidb_assoc_lists}
@@ -194,9 +193,14 @@ if not, write to the
 						{/if}
 						{foreachelse}
 						<tr class="light-centered">
-							<td colspan="9"> There are no GPS Points for this AP :/</td>
+							<td colspan="9"> There are no files associated this AP :/</td>
 						</tr>    
 						{/foreach}
+						<tr class="sub_head">
+							<td colspan="12" align="center">
+							 {$pages_together}
+							</td>
+						</tr>
 					</table>
 				</div>
 			</div>
