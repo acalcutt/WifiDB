@@ -19,33 +19,36 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
+				<div class="center">
 {include file="user_cp_header.tpl"}
-				<form method="post" action="?func=update_user_pref">
-					<table class="content_table">
-						<tr>
-							<th width="30%" class="header">New Users</th>
-							<td align="center" class="dark"><input name="new_users" type="checkbox" {$user_cp_profile.new_users}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">New KMZ Export</th>
-							<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td></td>
-						</tr>						
-						<tr>
-							<th width="30%" class="header">Import Started</th>
-							<td align="center" class="dark"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td></td>
-						</tr>
-						<tr>
-							<th width="30%" class="header">Import Finished</th>
-							<td align="center" class="light"><input name="imports" type="checkbox" {$user_cp_profile.imports}></td></td>
-						</tr>
-						<tr class="light-centered">
-							<td colspan="2">
-									<input type="hidden" name="username" value="{$user_cp_profile.username}">
-									<input type="hidden" name="user_id" value="{$user_cp_profile.id}">
-									<input type="submit" value="Update Me!">
-							</td>
-						</tr>
-					</table>
-				</form>
+					<form method="post" action="?func=update_user_pref">
+						<table class="content_table">
+							<tr>
+								<th width="30%" class="header">New Users</th>
+								<td align="center" class="dark"><input name="new_users" type="checkbox" {$user_cp_profile.new_users}></td>
+							</tr>
+							<tr>
+								<th width="30%" class="header">New KMZ Export</th>
+								<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td>
+							</tr>						
+							<tr>
+								<th width="30%" class="header">Import Started</th>
+								<td align="center" class="dark"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td>
+							</tr>
+							<tr>
+								<th width="30%" class="header">Import Finished</th>
+								<td align="center" class="light"><input name="imports" type="checkbox" {$user_cp_profile.imports}></td>
+							</tr>
+							<tr class="light-centered">
+								<td colspan="2">
+										<input type="hidden" name="username" value="{$user_cp_profile.username}">
+										<input type="hidden" name="user_id" value="{$user_cp_profile.id}">
+										<input type="submit" value="Update Me!">
+								</td>
+							</tr>
+						</table>
+					</form>
+{include file="user_cp_footer.tpl"}
+				</div>
 			</div>
 {include file="footer.tpl"}

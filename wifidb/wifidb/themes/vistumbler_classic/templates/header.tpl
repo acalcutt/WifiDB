@@ -2,6 +2,10 @@
 <html>
     <head>
         <link rel="stylesheet" href="{$themeurl}styles.css" />
+		<link rel="stylesheet" href="{$themeurl}lib/sceditor/minified/themes/default.min.css" id="theme-style" />
+		<script src="{$themeurl}lib/sceditor/minified/sceditor.min.js"></script>
+		<script src="{$themeurl}lib/sceditor/minified/icons/monocons.js"></script>
+		<script src="{$themeurl}lib/sceditor/minified/formats/bbcode.js"></script>
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
         {$wifidb_meta_header}
         {$redirect_func}
@@ -87,7 +91,7 @@
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
-                                {$wifidb_login_html|default:""}
+                                {if $wifidb_login_logged_in == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a>{/if}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
                                 <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>

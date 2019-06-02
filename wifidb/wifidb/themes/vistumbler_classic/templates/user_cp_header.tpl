@@ -23,9 +23,9 @@ if not, write to the
 	</tr>
 	<tr>
 		<td class="dark">
-			<a href="?func=profile"><span class="dark">Profile</span></a> 
-			<span class="dark"> | </span>
-			<a href="?func=pref"><span class="dark">Email Preferences</span></a>
+			<a href="?func=profile"><span>Profile</span></a> 
+			<span> | </span>
+			<a href="?func=pref"><span>Email Preferences</span></a>
 		</td>
 	</tr>
 	<tr>
