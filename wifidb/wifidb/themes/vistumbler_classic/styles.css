@@ -181,14 +181,11 @@ a:visited {
 	background-color: #477DA9;
 }
 
-a.links {
-	font-weight: bold; 
-	color: #123;
-}
 a.upgrade {
 	font-weight: bold; 
 	color: #0F0;
 }
+
 a.email {
 	font-weight: bold; 
 	color: #128;
