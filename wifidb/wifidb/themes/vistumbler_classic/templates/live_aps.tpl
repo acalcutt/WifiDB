@@ -113,7 +113,13 @@ if not, write to the
 							</tr>
 							{foreach name=outer item=wifidb_live_aps from=$wifidb_all_live_aps}
 							<tr class="{$wifidb_live_aps.class}">
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.globe_html}</td>
+								<td class="{$wifidb_live_aps.class}" width="75px">
+								{if $wifidb_live_aps.validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_live_ap&labeled=0&id={$wifidb_live_aps.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+								{else}
+									<img width="20px" src="{$themeurl}img/globe_off.png">
+								{/if}
+								</td>
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.ssid}</td>
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.mac}</td>
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.auth}</td>

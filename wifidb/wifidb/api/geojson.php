@@ -87,6 +87,48 @@ switch($func)
 		}
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 	break;
+	
+	case "exp_live_ap":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$Import_Map_Data = "";
+		
+		$sql = "SELECT id, ssid, mac, auth, encry, sectype, radio, chan, sig, username, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, long\n"
+					. "FROM live_aps\n"
+					. "WHERE lat <> '0.0000' AND id = ?";
+
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			#Get AP GeoJSON
+			$ap_info = array(
+			"live_id" => $ap['id'],
+			"new_ap" => $new_icons,
+			"named" => $named,
+			"mac" => $ap['mac'],
+			"ssid" => $ap['ssid'],
+			"chan" => $ap['chan'],
+			"radio" => $ap['radio'],
+			"NT" => $ap['NT'],
+			"sectype" => $ap['sectype'],
+			"auth" => $ap['auth'],
+			"encry" => $ap['encry'],
+			"BTx" => $ap['BTx'],
+			"OTx" => $ap['OTx'],
+			"FA" => $ap['FA'],
+			"LA" => $ap['LA'],
+			"lat" => $dbcore->convert->dm2dd($ap['lat']),
+			"lon" => $dbcore->convert->dm2dd($ap['long']),
+			"manuf"=>$dbcore->findManuf($ap['mac']),
+			"user" => $ap['username']
+			);
+			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+		}
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+	break;
 
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);

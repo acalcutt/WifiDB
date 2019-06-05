@@ -97,12 +97,10 @@ switch($func)
 			
 			if($ap['lat'] == "0.0000")
 			{
-				$globe = "off";
-				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_off.png\">";
+				$validgps = 0;
 			}else
 			{
-				$globe = "on";
-				$globe_html = "<img width=\"20px\" src=\"".$dbcore->URL_PATH."/img/globe_on.png\">";
+				$validgps = 1;
 			}
 			
 			
@@ -122,8 +120,7 @@ switch($func)
 			$liveaps[] = array(
 						"id" => $ap['id'],
 						"class" => $color,
-						"globe" => $globe,
-						"globe_html" => $globe_html,
+						"validgps" => $validgps,
 						"ssid" => $ssid,
 						"mac" => $ap['mac'],
 						"radio" => $ap['radio'],

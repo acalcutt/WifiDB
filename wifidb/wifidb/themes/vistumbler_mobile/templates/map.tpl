@@ -283,27 +283,31 @@ if not, write to the
 										return;
 									}
 									var feature = features[0];
-
+									
+									var text = '<ul>';
+									if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
+									if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+									if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
+									if (feature.properties.mac) text += '<li>MAC: <b>' + feature.properties.mac + '</b></li>';
+									if (feature.properties.manuf) text += '<li>MANUFACTURER: <b>' + feature.properties.manuf + '</b></li>';
+									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
+									if (feature.properties.NT) text += '<li>NETWORK TYPE: <b>' + feature.properties.NT + '</b></li>';
+									if (feature.properties.encry) text += '<li>ENCRYPTION: <b>' + feature.properties.encry + '</b></li>';
+									if (feature.properties.radio) text += '<li>RADIO TYPE: <b>' + feature.properties.radio + '</b></li>';
+									if (feature.properties.BTx) text += '<li>BASIC TX: <b>' + feature.properties.BTx + '</b></li>';
+									if (feature.properties.OTx) text += '<li>OTHER TX: <b>' + feature.properties.OTx + '</b></li>';
+									if (feature.properties.lat) text += '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>';
+									if (feature.properties.lon) text += '<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>';
+									if (feature.properties.alt) text += '<li>ALTITUDE: <b>' + feature.properties.alt + '</b></li>';
+									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
+									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.FA + '</b></li>';
+									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.LA + '</b></li>';
+									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									text += '</ul>';
+									
 									var popup = new mapboxgl.Popup()
 										.setLngLat(map.unproject(e.point))
-										.setHTML('<ul>' +
-											'<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>' +
-											'<li>MAC: <b>' + feature.properties.mac + '</b></li>' +
-											'<li>MANUFACTURER: <b>' + feature.properties.manuf + '</b></li>' +
-											'<li>CHAN: <b>' + feature.properties.chan + '</b></li>' +
-											'<li>NETWORK TYPE: <b>' + feature.properties.NT + '</b></li>' +
-											'<li>ENCRYPTION: <b>' + feature.properties.encry + '</b></li>' +
-											'<li>RADIO TYPE: <b>' + feature.properties.radio + '</b></li>' +
-											'<li>BASIC TX: <b>' + feature.properties.BTx + '</b></li>' +
-											'<li>OTHER TX: <b>' + feature.properties.OTx + '</b></li>' +
-											'<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>' +
-											'<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>' +
-											'<li>ALTITUDE: <b>' + feature.properties.alt + '</b></li>' +
-											'<li>POINTS: <b>' + feature.properties.points + '</b></li>' +
-											'<li>First Active: <b>' + feature.properties.FA + '</b></li>' +
-											'<li>Last Active: <b>' + feature.properties.LA + '</b></li>' +
-											'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>' +
-											'</ul>')
+										.setHTML(text)
 										.addTo(map);
 								});
 								
@@ -315,25 +319,27 @@ if not, write to the
 										return;
 									}
 									var feature = features[0];
+									
+									var text = '<ul>';
+									if (feature.properties.id) text += '<li>ID: <b>' + feature.properties.id + '</b></li>';
+									if (feature.properties.name) text += '<li>NAME: <b>' + feature.properties.name + '</b></li>';
+									if (feature.properties.mac) text += '<li>MAC: <b>' + feature.properties.mac + '</b></li>';
+									if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+									if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
+									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
+									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
+									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+									if (feature.properties.lat) text += '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>';
+									if (feature.properties.lon) text += '<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>';
+									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
+									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
+									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									text += '</ul>';
 
 									var popup = new mapboxgl.Popup()
 										.setLngLat(map.unproject(e.point))
-										.setHTML('<ul>' +
-											'<li>ID: <b>' + feature.properties.id + '</b></li>' +
-											'<li>NAME: <b>' + feature.properties.name + '</b></li>' +
-											'<li>MAC: <b>' + feature.properties.mac + '</b></li>' +
-											'<li>SSID: <b>' + feature.properties.ssid + '</b></li>' +
-											'<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>' +
-											'<li>CHAN: <b>' + feature.properties.chan + '</b></li>' +
-											'<li>TYPE: <b>' + feature.properties.type + '</b></li>' +
-											'<li>RSSI: <b>' + feature.properties.rssi + '</b></li>' +
-											'<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>' +
-											'<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>' +
-											'<li>POINTS: <b>' + feature.properties.points + '</b></li>' +
-											'<li>First Active: <b>' + feature.properties.fa + '</b></li>' +
-											'<li>Last Active: <b>' + feature.properties.la + '</b></li>' +
-											'<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>' +
-											'</ul>')
+										.setHTML(text)
 										.addTo(map);
 								});
 

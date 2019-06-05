@@ -58,6 +58,7 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/live.php">Live APs</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers">Users</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
 								<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support Forum</a></div>
