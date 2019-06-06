@@ -73,26 +73,34 @@ echo "Going through the import/up folder for the source files...\r\n";
 $file_a = array();
 $dh = opendir($vs1dir) or die("couldn't open directory");
 $ii = 0;
+$new = 0;
 $bad_ext = 0;
 while (!(($file = readdir($dh)) == false))
 {
     $ii++;
     if($file == '.'){continue;}
 	if($file == '..'){continue;}
+	$source = "$vs1dir/$file";
 
-    if ((is_file("$vs1dir/$file")))
+    if(is_file($source))
     {
         $fileext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
         if ($fileext=='vs1' or $fileext=="txt" or $fileext=="vsz" or $fileext=="vscz" or $fileext=="csv" or $fileext=="db3" or $fileext=="db" or $fileext=="mdb")
         {
-        	$ret = $dbcore->insert_file($file, @$file_names);
-            if($ret)
-            {
-                $file_a[] = $file; //if Filename is valid, throw it into an array for later use
-            }else
-            {
-                #$dbcore->verbosed("No good... Blehk.\r\n");
-            }
+			$imptd = $dbcore->CheckFileImported($source);
+			if($imptd  != 1)
+			{
+				$new++;
+				echo "---------- $new - $imptd - $source\r\n";
+				$ret = $dbcore->insert_file($file, @$file_names);
+				if($ret)
+				{
+					$file_a[] = $file; //if Filename is valid, throw it into an array for later use
+				}else
+				{
+					#$dbcore->verbosed("No good... Blehk.\r\n");
+				}
+			}
         }else
         {
         	$bad_ext++;
