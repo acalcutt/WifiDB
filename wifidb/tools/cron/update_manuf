@@ -1,0 +1,17 @@
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
+
+cd ${0%/*}
+if ps -ef | grep -v grep | grep manufupd.php ; then
+	echo ManufUpd Daemon Already Running! Exiting!
+else
+	echo Starting ManufUpd Daemon...
+		timestamp=$(date +%s)
+        php ../daemon/manufupd.php -o -v > ../log/manufupd/manufupd${timestamp}.log &
+fi
+
+echo "Cleaning up old logs..."
+find ../log/manufupd/ -mtime +1 -type f -delete
+
+echo "Done. Exiting."
+exit 0
