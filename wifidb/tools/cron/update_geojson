@@ -3,11 +3,11 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
 
 cd ${0%/*}
 if ps -ef | grep -v grep | grep geojson.php ; then
-	echo geojson.php Already Running! Exiting!
+	echo GeoJSON Daemon Already Running! Exiting!
 else
-	echo Starting geojson.php...
+	echo Starting GeoJSON Daemon...
 		timestamp=$(date +%s)
-        php ../utilites/geojson.php -o -v > ../log/geojson/geojson${timestamp}.log &
+        php ../daemon/geojsond.php -o -v > ../log/geojson/geojsond_${timestamp}.log &
 fi
 
 echo "Cleaning up old logs..."
