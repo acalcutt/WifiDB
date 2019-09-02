@@ -47,6 +47,7 @@ if not, write to the
 									<input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3<br />
 									<input type="radio" name="type" id="type" value="wiglewificsv">WigleWifi CSV<br />
 									<input type="radio" name="type" id="type" value="swardriving">SWardriving CSV<br />
+									<input type="radio" name="type" id="type" value="kismet">Kismet netxml<br />
 								</li>
 								<li>
 									<br />

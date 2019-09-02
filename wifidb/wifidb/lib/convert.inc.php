@@ -145,44 +145,36 @@ class convert extends dbcore
 	 */
 	public function findCapabilities($Found_Capabilities = "")
 	{
-		If(stristr($Found_Capabilities, "WPA2-PSK-CCMP") Or stristr($Found_Capabilities, "WPA2-PSK-TKIP+CCMP"))
+		If(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "CCMP") And stristr($Found_Capabilities, "EAP"))
+		{	$Found_AUTH = "WPA2-Enterprise";
+			$Found_ENCR = "CCMP";
+			$Found_SecType = 3;
+		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "CCMP") And stristr($Found_Capabilities, "EAP"))
+		{	$Found_AUTH = "WPA-Enterprise";
+			$Found_ENCR = "CCMP";
+			$Found_SecType = 3;
+		}ElseIf(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "CCMP"))
 		{	$Found_AUTH = "WPA2-Personal";
 			$Found_ENCR = "CCMP";
 			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA-PSK-CCMP") Or stristr($Found_Capabilities, "WPA-PSK-TKIP+CCMP"))
+		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "CCMP"))
 		{	$Found_AUTH = "WPA-Personal";
 			$Found_ENCR = "CCMP";
 			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2-EAP-CCMP") Or stristr($Found_Capabilities, "WPA2-EAP-TKIP+CCMP"))
+		}ElseIf(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "TKIP") And stristr($Found_Capabilities, "EAP"))
 		{	$Found_AUTH = "WPA2-Enterprise";
-			$Found_ENCR = "CCMP";
+			$Found_ENCR = "TKIP";
 			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2-EAP") And stristr($Found_Capabilities, "EAP-CCMP"))
-		{	$Found_AUTH = "WPA2-Enterprise";
-			$Found_ENCR = "CCMP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA-EAP-CCMP") Or stristr($Found_Capabilities, "WPA-EAP-TKIP+CCMP"))
+		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "TKIP") And stristr($Found_Capabilities, "EAP"))
 		{	$Found_AUTH = "WPA-Enterprise";
-			$Found_ENCR = "CCMP";
+			$Found_ENCR = "TKIP";
 			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA-EAP") And stristr($Found_Capabilities, "EAP-CCMP"))
-		{	$Found_AUTH = "WPA-Enterprise";
-			$Found_ENCR = "CCMP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2-PSK-TKIP"))
+		}ElseIf(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "TKIP"))
 		{	$Found_AUTH = "WPA2-Personal";
 			$Found_ENCR = "TKIP";
 			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA-PSK-TKIP"))
+		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "TKIP"))
 		{	$Found_AUTH = "WPA-Personal";
-			$Found_ENCR = "TKIP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2-EAP-TKIP"))
-		{	$Found_AUTH = "WPA2-Enterprise";
-			$Found_ENCR = "TKIP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA-EAP-TKIP"))
-		{	$Found_AUTH = "WPA-Enterprise";
 			$Found_ENCR = "TKIP";
 			$Found_SecType = 3;
 		}ElseIf(stristr($Found_Capabilities, "WEP"))

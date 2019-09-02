@@ -121,6 +121,10 @@ switch($func)
 							$ext_fail = 0;
 							$task = "import";
 						break;
+						case "netxml":
+							$ext_fail = 0;
+							$task = "import";
+						break;
 						default:
 							$ext_fail = 1;
 							$task = "";

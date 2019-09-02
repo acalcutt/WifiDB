@@ -421,6 +421,18 @@ class daemon extends wdbcli
 						$tmp = array(-1, "Unknown File Type");
 					}
 				}
+				elseif ($file_type == "kismet")
+				{
+					if($file_ext == "netxml")
+					{
+						$this->verbosed("Importing Kismet netxml. ".$source, 1);
+						$tmp = $this->import->import_kismetnetxml($source, $file_row,  $importing_id);
+					}
+					else
+					{
+						$tmp = array(-1, "Unknown File Type");
+					}
+				}
 				elseif ($file_type == "wiglewificsv")
 				{
 					if($file_ext == "gz")

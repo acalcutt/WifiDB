@@ -350,7 +350,7 @@ class import extends dbcore
 							else if($this->sql->service == "sqlsrv")
 								{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
 							$prepu = $this->sql->conn->prepare($sql);
-							$prepu->bindParam(1, $aps['FLAGS'], PDO::PARAM_STR);
+							$prepu->bindParam(1, $aps['flags'], PDO::PARAM_STR);
 							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
 							$prepu->execute();
 							$retry = false;
@@ -1234,6 +1234,252 @@ class import extends dbcore
 		);
 		return $ret;
 	}
+	
+	public function import_kismetnetxml($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+
+		$f=fopen($source,"r");
+		# parse the file
+		$aps=$this->netxml($f);
+		
+		$gdata = array();
+		$apdata = array();
+		$gid = 0;		
+		foreach($aps as $key => $f_ap)
+		{
+			$fBSSID = strtoupper($f_ap['mac']);
+			$fSSID = $f_ap['ssid'];
+			$fCapabilities = $f_ap['flaglist'];
+			$fDate = $f_ap['first'];
+			$fchannel = $f_ap['channel'];
+			$fRSSI = $f_ap['sig_dbm'];
+			$fBTX = $f_ap['max-rate'];
+			$fLat = $this->convert->all2dm(number_format(@$f_ap['lat'],7));
+			$fLon = $this->convert->all2dm(number_format(@$f_ap['lon'],7));
+			$fAltitudeMeters = $f_ap['alt'];;
+
+
+			$gps_hash = md5($fLat.$fLon.$fAltitudeMeters.$fDate);
+			$garr = @$gdata[$gps_hash];
+			$fgid = @$garr['id'];
+			if(!$fgid){$gid++;$fgid=$gid;}
+			$gdata[$gps_hash] = array(
+				'id'	=>  $fgid,
+				'lat'	=>  $fLat,
+				'lon'	=>  $fLon,
+				'sats'	=>  null,
+				'acc'	=>  null,
+				'hdp'	=>  null,
+				'alt'	=>  $fAltitudeMeters,
+				'geo'	=>  null,
+				'kmh'	=>  null,
+				'mph'	=>  null,
+				'track'	=>  null,
+				'datetime'	=>  $fDate
+			);
+
+			if(!$this->validateMacAddress($fBSSID)){continue;}
+			
+			if($fRSSI == 0){$fRSSI = -99;}//Fix for 0 RSSI causing bad sig calculation
+			$fSignal = $this->convert->dBm2Sig($fRSSI);
+			list($authen, $encry, $sectype, $nt) = $this->convert->findCapabilities($fCapabilities);
+			list($chan, $radio) = $this->convert->findFreq($fchannel);
+
+			$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+			$aarr = @$apdata[$ap_hash];
+			$fsigs = @$aarr['signals'];
+			if($fsigs){$fsigs .= "\\";}
+			$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+			$apdata[$ap_hash] = array(
+				'ap_hash'   => $ap_hash,
+				'ssid'	  =>  $fSSID,
+				'bssid'	   =>  $fBSSID,
+				'auth'	  =>  $authen,
+				'encry'	 =>  $encry,
+				'sectype'   =>  $sectype,
+				'flags'   =>  $fCapabilities,
+				'radio'	 =>  $radio,
+				'chan'	  =>  $chan,
+				'btx'	   =>  $fBTX,
+				'otx'	   =>  null,
+				'nt'		=>  $nt,
+				'signals'   =>  $fsigs
+			);
+		}	
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 0, 1);
+
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		$ret = array(
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
+		);
+		return $ret;
+	}
+		
+		
+	function netxml($fp)
+	{
+		$xml_parser = xml_parser_create();
+		global $netxml_aps,$parent,$ap;
+		$parent=array();
+		$netxml_aps=array();
+		xml_parser_set_option($xml_parser, XML_OPTION_CASE_FOLDING, true);
+		xml_set_element_handler($xml_parser, Array(&$this, 'netxml_startElement'), Array(&$this, 'netxml_endElement'));
+		xml_set_character_data_handler($xml_parser, Array(&$this, 'netxml_characterData'));
+		
+		while ($data = fread($fp, 4096)) 
+		{
+			if (!xml_parse($xml_parser, $data, feof($fp))) 
+			{
+				die(sprintf("XML error: %s at line %d",
+						xml_error_string(xml_get_error_code($xml_parser)),
+						xml_get_current_line_number($xml_parser)));
+			}
+		}
+		
+		xml_parser_free($xml_parser);
+		fclose($fp);
+
+		return $netxml_aps;
+	}
+
+	function netxml_startElement($parser, $name, $attrs) 
+	{
+		#echo "<$name>";
+		global $parent,$ap;
+		$parent[2]=@$parent[1];
+		$parent[1]=@$parent[0];
+		$parent[0]=$name;
+
+		if($name=="WIRELESS-NETWORK" and ($attrs['TYPE']=="infrastructure" or $attrs['TYPE']=="ad-hoc"))
+		{
+			$ap=array();
+			$ap['type'] = $attrs['TYPE'];
+			
+			$ap['ssid']="";
+			$ap['mac']="";
+			$ap['channel']=0;
+			$ap['max-rate']=0;
+			$ap['first']= date( 'Y-m-d H:i:s', strtotime($attrs['FIRST-TIME']));
+			$ap['last']= date( 'Y-m-d H:i:s', strtotime($attrs['LAST-TIME']));
+			$ap['crypts']=array();
+			$ap['flags']=array();
+			if($attrs['TYPE'] == "infrastructure"){$ap['flags'][]="ESS";}
+		}
+	}
+
+	function netxml_endElement($parser, $name) 
+	{
+		#echo "</$name>";
+		global $parent,$ap,$netxml_aps;
+		$parent[0]=$parent[1];
+		$parent[1]=$parent[2];
+		$parent[2]="";
+
+		if($name=="WIRELESS-NETWORK" and is_array($ap))
+		{
+			if (strcasecmp (@$ap['wps'] , "CONFIGURED") == 0){if(!in_array("WPS",$ap['flags'])){$ap['flags'][]="WPS";}}
+			
+			if(count($ap['crypts'])>0){
+				foreach($ap['crypts'] as $crypt)
+					if(strcasecmp ($crypt , "WPA") == 0){
+						foreach($ap['wpas'] as $wpa)
+						{
+							$authstr = "";
+							foreach($ap['auths'] as $auth)
+							{	
+								$auth = str_replace ("AES-CCM","CCMP",$auth);
+								if($authstr){$authstr .= "-";}
+								$authstr .= $auth;
+							}
+							if($authstr){	
+								$flags = $wpa."-".$authstr;
+							}else{
+								$flags = $wpa;
+							}
+							
+							if(!in_array($flags,@$ap['flags'])){$ap['flags'][]=$flags;}
+						}
+					}elseif(strcasecmp ($crypt , "None") != 0){
+						if(!in_array($crypt,@$ap['flags'])){$ap['flags'][]=$crypt;}
+					}
+
+			}
+
+			$flaglist = "";
+			$ap['flags'] = array_reverse($ap['flags']);
+			if(count($ap['flags'])>0){
+				foreach($ap['flags'] as $flag)
+				{
+					$flaglist .= "[".$flag."]";
+				}
+			}
+			$ap['flaglist'] = $flaglist;
+
+			unset($ap['crypts']);
+			unset($ap['wpas']);
+			unset($ap['auths']);
+			unset($ap['flags']);
+			$netxml_aps[]=$ap;
+			#print_r($ap);
+			$ap="";
+		}
+	}
+
+	function netxml_characterData($parser, $data) 
+	{
+		//echo $data;
+		global $parent,$ap;
+		$data=trim($data);
+		if($data!="" and !in_array("WIRELESS-CLIENT",$parent) and is_array($ap))
+		{
+			if($parent[0]=="ESSID"){
+				$ap['ssid']=$data;
+			}elseif($parent[0]=="BSSID"){
+				$ap['mac']=$data;
+			}elseif($parent[0]=="CHANNEL"){
+				$ap['channel']=$data;
+			}elseif($parent[0]=="WPS"){
+				$ap['wps']=$data;
+			}elseif($parent[0]=="MAX-RATE"){
+				$ap['max-rate']=(float)$data;
+			}elseif($parent[0]=="ENCRYPTION"){
+				if (strpos($data, '+') !== false) {
+					$el = explode('+',$data);
+					$ap['crypts'][]=$el[0];
+					$ap['auths'][]=$el[1];
+				}else{
+					$ap['crypts'][]=$data;
+				}
+			}elseif($parent[0]=="WPA-VERSION"){
+				$wpas = explode('+',$data);
+				foreach($wpas as $key) {    
+					$ap['wpas'][]=$key;
+				}
+			}elseif($parent[1]=="GPS-INFO")
+			{
+				if($parent[0]=="PEAK-LAT")
+					$ap['lat']=$data;
+				elseif($parent[0]=="PEAK-LON")
+					$ap['lon']=$data;
+				elseif($parent[0]=="PEAK-ALT")
+					$ap['alt']=$data;
+			}elseif($parent[1]=="SNR-INFO")
+			{
+				if($parent[0]=="MAX_SIGNAL_DBM")
+					$ap['sig_dbm']=$data;
+			}
+		}
+	}
 
 	public function import_wiglewificsv($source="", $file_id, $file_importing_id)
 	{
@@ -1263,7 +1509,7 @@ class import extends dbcore
 		$gid = 0;
 		$NewCellIds = 0;
 		$cell_count = 0;
-		$cell_hist_count = 0;		
+		$cell_hist_count = 0;
 		
 		foreach($File_return as $key => $file_line)
 		{
