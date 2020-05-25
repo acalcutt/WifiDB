@@ -82,6 +82,7 @@ class createGeoJSON
 														'type': 'circle',
 														'source': '".$source."',
 														'source-layer': '".$source_layer."',
+														'minzoom': 0,
 														'layout': {
 															 'visibility': '".$visibility."'
 														},
