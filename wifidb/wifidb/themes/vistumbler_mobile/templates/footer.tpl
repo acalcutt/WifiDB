@@ -14,6 +14,12 @@
 					<script>
 					(adsbygoogle = window.adsbygoogle || []).push({});
 					</script>
+					<script type="text/javascript">
+						if(vidonate) {
+						//Show donate images instead
+							document.write('<a class="img" href = "http://donate.vistumbler.net/"><img src="{$themeurl}img/support_wdb_wide.png" alt="Donate to WifiDB"></a><a class="img" href = "http://donate.vistumbler.net/"><img src="{$themeurl}img/support_vi_wide.png" alt="Donate to Vistumbler"></a>');
+						}
+					</script>
 				</div>
 				<!-- End ads -->
 			</div>

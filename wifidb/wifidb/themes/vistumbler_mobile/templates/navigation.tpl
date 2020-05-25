@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/userstats.php?func=allusers">Users</a></li>
 						<li><a href="{$wifidb_host_url}themes/">Themes</a></li>
 						<li><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support Forum</a></li>
-						<div class="inside_dark_header">Vistumbler Links</div>
+						<li class="inside_dark_header">Vistumbler Links</li>
 						<li><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></li>
 						<li><a href="https://forum.techidiots.net/forum/">Forum</a></li>
 						<li><a href="https://live.wifidb.net/wifidb/">WiFiDB</a></li>
@@ -34,12 +34,34 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="http://www.vistumbler.net/downloads.html">Downloads</a></li>
 						<li><a href="http://www.vistumbler.net/verhist.html">Version History</a></li>
 						<li><a href="http://www.vistumbler.net/donate.htm">Donate</a></li>
-						<div class="inside_dark_header">Other Projects</div>
+						<li class="inside_dark_header">Other Projects</li>
 						<li><a href="http://www.wifidb.net">WifiDB Home</a></li>
 						<li><a href="http://uns.techidiots.net/">UNS Home</a></li>
 						<li><a href="http://mysticache.techidiots.net">Mysticache Home</a></li>
 						<li><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></li>
 						<li><a href="http://www.techidiots.net/">TechIdiots.net</a></li>
+						<li class="inside_dark_header">Ads</li>
 					</ul>
+					<div>
+					<div class="inside_text_center">
+						<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+						<!-- Vistumbler - Responsive Right -->
+						<ins class="adsbygoogle"
+							 style="display:block"
+							 data-ad-client="ca-pub-4275640341473005"
+							 data-ad-slot="2546768734"
+							 data-ad-format="auto"
+							 data-full-width-responsive="true"></ins>
+						<script>
+							 (adsbygoogle = window.adsbygoogle || []).push({});
+						</script>
+						<script type="text/javascript">
+							if(vidonate) {
+							//Show donate images instead
+								document.write('<a class="img" href = "http://donate.vistumbler.net/"><img src="{$themeurl}img/support_wdb_tall.png" alt="Donate to WifiDB"></a>');
+							}
+						</script>
+					</div>
+
 				</nav>
 			</div>

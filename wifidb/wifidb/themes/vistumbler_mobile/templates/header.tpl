@@ -12,6 +12,12 @@
 	<script src="{$themeurl}lib/sceditor/minified/formats/bbcode.js"></script>
 </head>
 <body {$redirect_html|default:""} {$OnLoad|default:""}>
+	<script type="text/javascript">
+	<!--
+	    var vidonate = true;
+	//-->
+	</script>
+	<script type="text/javascript" src="{$themeurl}lib/adframe.js"></script>
 	<!-- Start Collapsible Menu Scripts-->
 	<script src="{$themeurl}lib/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
     <script type="text/javascript">
