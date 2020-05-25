@@ -455,6 +455,10 @@ class apiv2 extends dbcore
 				$task = "import";
 				$type = "wardrive";
 			break;
+			case "netxml":
+				$task = "import";
+				$type = "kismet";
+			break;
 			default:
 				$task = "";
 				$type = "";

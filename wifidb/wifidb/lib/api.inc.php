@@ -268,6 +268,9 @@ class api extends dbcore
 				$task = "import";
 				$type = "wardrive";
 			break;
+			case "netxml":
+				$task = "import";
+				$type = "kismet";
 			default:
 				$task = "";
 				$type = "";
