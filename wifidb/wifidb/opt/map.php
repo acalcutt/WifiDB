@@ -35,7 +35,7 @@ switch($func)
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$centerpoint =  "[-95.712891, 37.090240]";
-		$zoom =  3.5;
+		$zoom =  3;
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"visible");
 		$cell_layer_name = "'cell_networks'";
 		
