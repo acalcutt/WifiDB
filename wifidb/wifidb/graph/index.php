@@ -30,8 +30,9 @@ include('../lib/init.inc.php');
 $func=$_REQUEST['func'];
 $row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
 $id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-
-$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"
+	
+if($dbcore->sql->service == "mysql")
+	{$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"
 	. "whFA.Hist_Date As FA,\n"
 	. "whLA.Hist_Date As LA,\n"
 	. "wGPS.Lat As Lat,\n"
@@ -42,7 +43,18 @@ $sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap
 	. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
 	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 	. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-	. "WHERE wap.AP_ID = ?";
+	. "WHERE wap.AP_ID = ?";}
+else if($dbcore->sql->service == "sqlsrv")
+	{$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"
+	. "wap.fa As FA,\n"
+	. "wap.la As LA,\n"
+	. "wGPS.Lat As Lat,\n"
+	. "wGPS.Lon As Lon,\n"
+	. "wf.[user] As [user]\n"
+	. "FROM wifi_ap AS wap\n"
+	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+	. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+	. "WHERE wap.AP_ID = ?";}
 $result = $dbcore->sql->conn->prepare($sql);
 $result->bindParam(1, $id, PDO::PARAM_INT);
 $result->execute();
@@ -54,7 +66,7 @@ $pointer = $result->fetch(2);
 
 switch ($func) {
 	case "graph_list_ap":
-		$sql = "SELECT * FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` = ? ORDER BY `Hist_Date` ASC";
+		$sql = "SELECT * FROM wifi_hist WHERE AP_ID = ? AND File_ID = ? ORDER BY Hist_Date ASC";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->bindParam(2, $row, PDO::PARAM_INT);
@@ -63,7 +75,7 @@ switch ($func) {
 		$sig_size = $result->rowCount();
 		break;
 	default:
-		$sql = "SELECT * FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `Hist_Date` ASC";
+		$sql = "SELECT * FROM wifi_hist WHERE AP_ID = ? ORDER BY Hist_Date ASC";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
