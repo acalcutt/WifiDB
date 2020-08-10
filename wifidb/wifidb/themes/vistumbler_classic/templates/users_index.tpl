@@ -19,34 +19,83 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
+				{include file="topmenu.tpl"}
 				<div class="center">
-					<script language="JavaScript">
-					// Row Hide function.
-					// by tcadieux
-					function expandcontract(tbodyid,ClickIcon)
-					{
-						if (document.getElementById(ClickIcon).innerHTML == "+")
-						{
-							document.getElementById(tbodyid).style.display = "";
-							document.getElementById(ClickIcon).innerHTML = "-";
-						}else{
-							document.getElementById(tbodyid).style.display = "none";
-							document.getElementById(ClickIcon).innerHTML = "+";
-						}
-					}
-					</script>
-					<h1>Stats For: All Users</h1>
+					<h1>User List</h1>
+{$pages_together}
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
-								<th class="header" width="75px">Show/Hide</th>
-								<th class="header" width="75px">GPS</th>
-								<th class="header">Username</th>
-								<th class="header">Imports</th> 
+								<th class="header" width="75px">
+									<div>#</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								<th class="header" width="75px">
+									<div>GPS</div>
+									<div>
+										<a href="?func=allusers&sort=ValidGPS&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ValidGPS' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=ValidGPS&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ValidGPS' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Username</div>
+									<div>
+										<a href="?func=allusers&sort=user&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'user' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=user&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'user' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Imports</div>
+									<div>
+										<a href="?func=allusers&sort=FileCount&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'FileCount' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=FileCount&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'FileCount' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>First Import</div>
+									<div>
+										<a href="?func=allusers&sort=FirstImport&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'FirstImport' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=FirstImport&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'FirstImport' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Last Import</div>
+									<div>
+										<a href="?func=allusers&sort=LastImport&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'LastImport' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=LastImport&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'LastImport' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>APs Total</div>
+									<div>
+										<a href="?func=allusers&sort=ApCount&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ApCount' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=ApCount&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ApCount' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Points Total</div>
+									<div>
+										<a href="?func=allusers&sort=GpsCount&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'GpsCount' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=GpsCount&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'GpsCount' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
+									<div>Efficiency</div>
+									<div>
+										<a href="?func=allusers&sort=NewAPPercent&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allusers&sort=NewAPPercent&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								{if $wifidb_login_logged_in == 1}
+								<th class="header" width="75px">
+									<div>User Actions</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								{/if}
 							</tr>
 							{foreach name=outer item=wifidb_users from=$wifidb_imports_all}
 							<tr class="{$wifidb_users.class}">
-								<td class="{$wifidb_users.class}" onclick="expandcontract('Row{$wifidb_users.rowid}','ClickIcon{$wifidb_users.rowid}')" id="ClickIcon{$wifidb_users.rowid}" style="cursor: pointer; cursor: hand;">+</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.rowid}</td>
 								<td class="{$wifidb_users.class}">
 								{if $wifidb_users.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$wifidb_users.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
@@ -59,51 +108,20 @@ if not, write to the
 								{/if}
 								</td>
 								<td class="{$wifidb_users.class}"><a class="links" href="?func=alluserlists&user={$wifidb_users.user}">{$wifidb_users.user}</a></td>
-								<td class="{$wifidb_users.class}">{$wifidb_users.imports}</td>
-							</tr>
-							<tr>
-								<td colspan='4'>
-									<table class="content_table">
-										<tbody id="Row{$wifidb_users.rowid}" style="display:none">
-										<tr class="header">
-											<th class="header" width="100px">GPS</th>
-											<th class="header">ID</th>
-											<th class="header">File</th>
-											<th class="header">Title</th>
-											<th class="header">Number of APs</th>
-											<th class="header">AP Efficiency</th>
-											<th class="header">Imported On</th>
-										</tr>
-										{foreach name=outer item=wifidb_import from=$wifidb_users.files}
-										<tr class="{$wifidb_import.class}">
-											<td class="{$wifidb_import.class}">
-											{if $wifidb_import.validgps eq 1}
-												<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_import.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-												<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_import.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-												<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_import.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-											{else}
-												<img width="20px" src="{$themeurl}img/globe_off.png">
-												<img width="20px" src="{$themeurl}img/json_off.png">
-												<img width="20px" src="{$themeurl}img/kmz_off.png">
-											{/if}
-											</td>
-											<td class="{$wifidb_import.class}"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.id}</a></td>
-											<td class="{$wifidb_import.class}"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.file}</a></td>
-											<td class="{$wifidb_import.class}"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.title}</a></td>
-											<td class="{$wifidb_import.class}">{$wifidb_import.aps}</td>
-											<td class="{$wifidb_import.class}">{$wifidb_import.NewAPPercent}</td>
-											<td class="{$wifidb_import.class}">{$wifidb_import.date}</td>
-										</tr>
-										{/foreach}
-										</tbody>
-									</table>
-								</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.filecount|number_format:0}</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.firstimport}</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.lastimport}</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.apcount|number_format:0}</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.gpscount|number_format:0}</td>
+								<td class="{$wifidb_users.class}">{$wifidb_users.newappercent}%</td>
+								{if $wifidb_login_logged_in == 1}<td class="{$wifidb_users.class}">{if $wifidb_users.regid}<a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_users.regid}"><img  title="Message [{$wifidb_users.user}]" width="20px" src="{$themeurl}img/send-message.png"></a>{/if}</td>{/if}
 							</tr>
 							{foreachelse}
 								There are no Imports, go find some of them wifis, I hear they have yummy packets.
 							{/foreach}
 						</tbody>
 					</table>
+{$pages_together}
 				</div>			
 			</div>
 {include file="footer.tpl"}

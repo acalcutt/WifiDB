@@ -19,6 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
+				{include file="topmenu.tpl"}
 				<div class="center">
 					<h2>Showing the last {$intervalt} of Live APs.</h2>
 					<table class="content_table">

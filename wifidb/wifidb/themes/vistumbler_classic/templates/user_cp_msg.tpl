@@ -18,13 +18,15 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
+			<div class="main">
+				{include file="topmenu.tpl"}
 {include file="user_cp_header.tpl"}
-<table  BORDER=0 CELLPADDING=0 CELLSPACING=0 style="width: 100%">
-	<tr>
-		<td colspan="6" class="light">
-			{$user_cp_profile.message}
-		</td>
-	</tr>
-</table>
-{include file="user_cp_footer.tpl"}
+				<table class="content_table">
+					<tr>
+						<td class="light-centered">
+							{$user_cp_profile.message}
+						</td>
+					</tr>
+				</table>
+			</div>
 {include file="footer.tpl"}

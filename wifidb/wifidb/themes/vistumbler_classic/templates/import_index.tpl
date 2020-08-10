@@ -19,6 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
+				{include file="topmenu.tpl"}
 				<div class="center">
 					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span>
 					<h2>{$mesg}</h2>
@@ -46,6 +47,7 @@ if not, write to the
 									<input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3<br />
 									<input type="radio" name="type" id="type" value="wiglewificsv">WigleWifi CSV<br />
 									<input type="radio" name="type" id="type" value="swardriving">SWardriving CSV<br />
+									<input type="radio" name="type" id="type" value="kismet">Kismet netxml<br />
 								</li>
 								<li>
 									<br />
