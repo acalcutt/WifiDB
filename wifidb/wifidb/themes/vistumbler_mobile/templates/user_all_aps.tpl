@@ -125,7 +125,7 @@ if not, write to the
 								{if $wifidb_users_aps.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_users_aps.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$wifidb_users_aps.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$wifidb_users_aps.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_users_aps.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">

@@ -35,6 +35,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
+								<th class="header">Files</th>
 								<th class="header">New APs</th>
 								<th class="header">APs Total</th>
 								<th class="header">Points Total</th>
@@ -43,6 +44,7 @@ if not, write to the
 								<th class="header">Last Import</th>
 							</tr>
 							<tr class="light">
+								<td class="light">{$wifidb_user_details.total_files|number_format:0}</td>
 								<td class="light">{$wifidb_user_details.new_aps|number_format:0}</td>
 								<td class="light"><a href="{$wifidb_host_url}opt/userstats.php?func=allap&amp;user={$wifidb_user_details.user}">{$wifidb_user_details.total_aps|number_format:0}</a></td>
 								<td class="light">{$wifidb_user_details.total_gps|number_format:0}</td>
@@ -145,6 +147,7 @@ if not, write to the
 							{/foreach}
 						</tbody>
 					</table>
+{$pages_together}
 				</div>
 			</div>
 {include file="footer.tpl"}

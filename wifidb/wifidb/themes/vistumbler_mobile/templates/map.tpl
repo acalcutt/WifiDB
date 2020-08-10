@@ -74,12 +74,8 @@ if not, write to the
 							<div id='basemap'>
 								<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
 								<label for='WDB_OSM'>Open Street Map</label>
-								<input id='WDB_ESRI' type='radio' name='rtoggle' value='WDB_ESRI'>
-								<label for='WDB_ESRI'>ESRI World Imagery</label>
-								<input id='WDB_ESRIOSM' type='radio' name='rtoggle' value='WDB_ESRIOSM'>
-								<label for='WDB_ESRIOSM'>World Imagery + Open Street Map</label>
-								<input id='WDB_POSITRON' type='radio' name='rtoggle' value='WDB_POSITRON'>
-								<label for='WDB_POSITRON'>Positron</label>
+								<input id='WDB_NE' type='radio' name='rtoggle' value='WDB_NE'>
+								<label for='WDB_NE'>Natural Earth</label>
 							</div>
 							<div>
 								<button id="latest" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>

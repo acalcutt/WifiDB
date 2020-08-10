@@ -12,7 +12,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<div class="inside_dark_header">WiFiDB Links</div>
 						<li><a href="{$wifidb_host_url}">Home</a></li>
 						<li><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></li>
-						<li><a href="{$wifidb_host_url}all.php">List APs</a></li>
+						<li><a href="{$wifidb_host_url}all.php?sort=AP_ID&ord=DESC&from=0&inc=100">List APs</a></li>
 						<li><a href="{$wifidb_host_url}import/">Import File</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></li>
@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}stats.php">Stats</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></li>
 						<li><a href="{$wifidb_host_url}opt/live.php">Live APs</a></li>
-						<li><a href="{$wifidb_host_url}opt/userstats.php?func=allusers">Users</a></li>
+						<li><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=user&ord=ASC&from=0&inc=100">Users</a></li>
 						<li><a href="{$wifidb_host_url}themes/">Themes</a></li>
 						<li><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support Forum</a></li>
 						<li class="inside_dark_header">Vistumbler Links</li>

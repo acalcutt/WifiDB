@@ -12,14 +12,19 @@ define("SWITCH_EXTRAS", "");
 
 require '../lib/init.inc.php';
 
+$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
 $user = filter_input(INPUT_GET, 'user', FILTER_SANITIZE_STRING);
 $sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 $ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 $row = filter_input(INPUT_GET, 'row', FILTER_SANITIZE_NUMBER_INT);
-$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
+$from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+$inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+
 
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}
+if(!is_numeric($from)){$from = 0;}
+if(!is_numeric($inc)){$inc = 100;}
 
 if($user)
 {
@@ -33,8 +38,15 @@ else
 switch($func)
 {
 		case "allusers":
-			$dbcore->AllUsers();
+			$sorts=array("user","FileCount","ValidGPS","ApCount","GpsCount","NewAPPercent","FirstImport","LastImport");
+			if(!in_array($sort, $sorts)){$sort = "user";}
+			$dbcore->AllUsers($sort, $ord, $from, $inc);
 			$dbcore->smarty->assign('wifidb_imports_all' , $dbcore->all_users_data);
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
+			$dbcore->smarty->assign('sort' , $sort);
+			$dbcore->smarty->assign('ord' , $ord);
+			$dbcore->smarty->assign('from' , $from);
+			$dbcore->smarty->assign('inc' , $inc);
 			$dbcore->smarty->display('users_index.tpl');
 			break;
 		#-------------
@@ -42,8 +54,9 @@ switch($func)
 			$sorts=array("id","file_orig","title","notes","aps","gps","NewAPPercent","date");
 			if(!in_array($sort, $sorts)){$sort = "id";}
 			
-			$dbcore->UsersLists($user, $sort, $ord);
+			$dbcore->UsersLists($user, $sort, $ord, $from, $inc);
 			$dbcore->smarty->assign('wifidb_user_details', $dbcore->user_all_imports_data);
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 			$dbcore->smarty->assign('sort' , $sort);
 			$dbcore->smarty->assign('ord' , $ord);
 			$dbcore->smarty->display('user_overview.tpl');
@@ -65,7 +78,7 @@ switch($func)
 			$sorts=array("AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","fa","la","points");
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 			
-			$dbcore->AllUsersAPs($user, $sort, $ord);
+			$dbcore->AllUsersAPs($user, $sort, $ord, $from, $inc);
 			$dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->all_users_aps);
 			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 			$dbcore->smarty->assign('sort' , $sort);

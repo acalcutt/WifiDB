@@ -408,104 +408,98 @@ class frontend extends dbcore
 	#===================================#
 	#   Grab the stats for All Users	#
 	#===================================#
-	Public function AllUsers()
+	Public function AllUsers($sort = "user", $ord = "ASC", $from = 0, $inc = 250)
 	{
+		#Total Users
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT COUNT(DISTINCT `user`)\n"
+					. "FROM `files`\n"
+					. "WHERE `completed` = 1";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT COUNT(DISTINCT [user])\n"
+					. "FROM [files]\n"
+					. "WHERE [completed] = 1";
+			}
+		$result = $this->sql->conn->prepare($sql);
+		$result->execute();
+		$fcount = $result->fetch(1);
+		$total_files = $fcount[0];
+		
 		$this->all_users_data = array();
 		$flip = 0;
-		$rowid = 0;
-
+		$rowid = $from;
+		
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT DISTINCT(`user`) FROM `files` WHERE completed = 1 ORDER BY `user` ASC";}
+			{
+				$sql = "SELECT `user`, Count(`id`) As `FileCount`, MAX(`ValidGPS`) As `ValidGPS`, SUM(`aps`) As `ApCount`, SUM(`gps`) As `GpsCount`,AVG(`NewAPPercent`) As `NewAPPercent`,MIN(`date`) As `FirstImport`,MAX(`date`) As `LastImport`\n"
+					. "FROM `files`\n"
+					. "WHERE `completed` = 1\n"
+					. "GROUP BY `user`\n"
+					. "ORDER BY `$sort` $ord LIMIT $from, $inc";
+			}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 ORDER BY [user] ASC";}
+			{
+				$sql = "SELECT [user], Count([id]) As [FileCount], MAX([ValidGPS]) As [ValidGPS], SUM([aps]) As [ApCount], SUM([gps]) As [GpsCount],AVG([NewAPPercent]) As [NewAPPercent],MIN([date]) As [FirstImport],MAX([date]) As [LastImport]\n"
+					. "FROM [files]\n"
+					. "WHERE [completed] = 1\n"
+					. "GROUP BY [user]\n"
+					. "ORDER BY [$sort] $ord\n"
+					. "OFFSET $from ROWS\n"
+					. "FETCH NEXT $inc ROWS ONLY";
+			}
 		$result = $this->sql->conn->query($sql);
 		$result->execute();
 		while($userfetch = $result->fetch(2))
-		{			
-			$user = $userfetch['user'];
-			
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT COUNT(`id`) AS `ApCount` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT COUNT([id]) AS [ApCount] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
-			$globeprep = $this->sql->conn->prepare($sql);
-			$globeprep->bindParam(1, $user, PDO::PARAM_STR);
-			$globeprep->execute();
-			$globeprepfetch = $globeprep->fetch(2);
-			if($globeprepfetch['ApCount'] !== "0"){$user_validgps = 1;}else{$user_validgps = 0;}
-	
-			$all_users_files = array();
-			$flip2 = 0;
-
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT `id`, `file_orig`, `user`, `aps`, `gps`, `NewAPPercent`, `notes`, `date`, `title`, `ValidGPS` FROM `files` WHERE completed = 1 AND `user`= ? ORDER BY `date` DESC";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [file_orig], [user], [aps], [gps], [NewAPPercent], [notes], [date], [title], [ValidGPS] FROM [files] WHERE [completed] = 1 AND [user]= ? ORDER BY [date] DESC";}
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user , PDO::PARAM_STR);
-			$prep->execute();
-			$imports = 0;
-			while ($user_array = $prep->fetch(2))
-			{
-				$imports++;
-				if($flip2)
-					{$class2 = "dark";$flip2=0;}
-				else
-					{$class2="light";$flip2=1;}
-				
-				$user_array['notes'] = str_replace(array('\n','\r','\n\r'), "", $user_array['notes']);
-				if ($user_array['notes'] == ""){ $user_array['notes']="No Notes, hmm..";}
-				if ($user_array['title'] === "" or $user_array['title'] === " "){ $user_array['title']="UNTITLED";}
-				if ($user_array['date'] === ""){ $user_array['date']="No date, hmm..";}
-
-				$all_users_files[]= array(
-					'class'=>$class2,
-					'id'=>$user_array['id'],
-					'file'=>htmlspecialchars($user_array['file_orig'], ENT_QUOTES, 'UTF-8'),
-					'title' => htmlspecialchars($user_array['title'], ENT_QUOTES, 'UTF-8'),
-					'notes' => htmlspecialchars($user_array['notes'], ENT_QUOTES, 'UTF-8'),
-					'aps'   => $user_array['aps'],
-					'NewAPPercent' => $user_array['NewAPPercent']."%",
-					'date'  => htmlspecialchars($user_array['date'], ENT_QUOTES, 'UTF-8'),
-					'validgps'=>$user_array['ValidGPS']
-				);
-			}
-			
+		{
+			if($flip){$class = "dark";$flip=0;}else{$class="light";$flip=1;}
 			$rowid++;
 			
-			if($flip)
-				{$class = "dark";$flip=0;}
-			else
-				{$class="light";$flip=1;}
+			#Check If Registered User
+			if($this->sql->service == "mysql")
+				{
+					$sql = "SELECT `id`\n"
+						. "FROM `user_info`\n"
+						. "WHERE `username` like ? And `validated` = 0";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT [id]\n"
+						. "FROM [user_info]\n"
+						. "WHERE [username] like ? And [validated] = 0";
+				}
+			$vres = $this->sql->conn->prepare($sql);
+			$vres->bindParam(1, $userfetch['user']);
+			$vres->execute();
+			$vfetch = $vres->fetch(1);
+			$regid = $vfetch[0];
 			
-			$this->all_users_data[]= array(
-				'rowid'=>$rowid,
-				'class'=>$class,
-				'user'=>htmlspecialchars($user, ENT_QUOTES, 'UTF-8'),
-				'validgps'=>$user_validgps,
-				'imports' => $imports,
-				'files' => $all_users_files,
+			$this->all_users_data[] = array(
+				"class" => $class,			
+				"rowid" => $rowid,
+				"regid" => $regid,
+				"user" => htmlspecialchars($userfetch['user'], ENT_QUOTES, 'UTF-8'),
+				"filecount" => $userfetch['FileCount'],
+				"validgps" => $userfetch['ValidGPS'],
+				"apcount" => $userfetch['ApCount'],
+				"gpscount" => $userfetch['GpsCount'],
+				"firstimport" => $userfetch['FirstImport'],
+				"lastimport" => $userfetch['LastImport'],
+				"newappercent" => $userfetch['NewAPPercent']
 			);
 		}
+		$this->GeneratePages($total_files, $from, $inc, $sort, $ord, 'allusers&');
 		return 1;
 	}
 
 	#=======================================#
 	#   Grab All the AP's for a given user  #
 	#=======================================#
-	function AllUsersAPs($user = "", $sort = "AP_ID", $ord = "DESC")
+	function AllUsersAPs($user = "", $sort = "AP_ID", $ord = "DESC", $from = 0, $inc = 250)
 	{
 		if($user == ""){return 0;}
-
-		$args = array(
-			'to' => FILTER_SANITIZE_NUMBER_INT,
-			'from' => FILTER_SANITIZE_NUMBER_INT
-		);
-
-		$inputs = filter_input_array(INPUT_GET, $args);
-
-		if($inputs['from'] == ''){$inputs['from'] = 0;}
-		if($inputs['to'] == ''){$inputs['to'] = 100;}
 
 		$prep = array();
 		$apprep = array();
@@ -562,7 +556,7 @@ class frontend extends dbcore
 					. "FROM wifi_ap AS wap\n"
 					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-					. "WHERE f.user LIKE ? And f.completed = 1 ORDER BY `$sort` $ord LIMIT {$inputs['from']}, {$inputs['to']}";	
+					. "WHERE f.user LIKE ? And f.completed = 1 ORDER BY `$sort` $ord LIMIT $from, $inc";	
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
@@ -574,8 +568,8 @@ class frontend extends dbcore
 					. "LEFT JOIN [files] AS [f] ON [f].[id] = [wap].[File_ID]\n"
 					. "WHERE [f].[user] LIKE ? And [f].[completed] = 1\n"
 					. "ORDER BY [$sort] $ord\n"
-					. "OFFSET {$inputs['from']} ROWS\n"
-					. "FETCH NEXT {$inputs['to']} ROWS ONLY";
+					. "OFFSET $from ROWS\n"
+					. "FETCH NEXT $inc ROWS ONLY";
 			}			
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
@@ -610,14 +604,14 @@ class frontend extends dbcore
 		$prep['allaps'] = $apprep;
 		$prep['efficiency'] = ($prep['new_aps']/$prep['total_aps'])*100;
 		$this->all_users_aps = $prep;
-		$this->GeneratePages($prep['total_aps'], $inputs['from'], $inputs['to'], $sort, $ord, 'allap', $user);
+		$this->GeneratePages($prep['total_aps'], $from, $inc, $sort, $ord, 'allap', $user);
 		return 1;
 	}
 
 	#===================================#
 	#   Grab all user Import lists	  #
 	#===================================#
-	function UsersLists($username = "", $sort = "id", $ord = "DESC")
+	function UsersLists($username = "", $sort = "id", $ord = "DESC", $from = 0, $inc = 100)
 	{
 		if($username == ""){return 0;}
 		
@@ -661,12 +655,31 @@ class frontend extends dbcore
 		$result->execute();
 		$rows = $result->fetch(1);
 		$new_aps = $rows[0];
+		
+		#Total Files
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT COUNT(`id`)\n"
+					. "FROM `files`\n"
+					. "WHERE `user` LIKE ? And `date` != '' And `completed` = 1";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT COUNT([id])\n"
+					. "FROM [files]\n"
+					. "WHERE [user] LIKE ? And [date] != '' And [completed] = 1";
+			}
+		$result = $this->sql->conn->prepare($sql);
+		$result->bindParam(1, $username, PDO::PARAM_STR);
+		$result->execute();
+		$fcount = $result->fetch(1);
+		$total_files = $fcount[0];
 
 		#Get All Imports for User
 		if($this->sql->service == "mysql")
-			{$sql1 = "SELECT `id`, `file_orig`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `$sort` $ord";}
+			{$sql1 = "SELECT `id`, `file_orig`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `$sort` $ord LIMIT $from, $inc";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql1 = "SELECT [id], [file_orig], [title], [notes], [date], [aps], [gps], [ValidGPS], [NewAPPercent] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [$sort] $ord";}
+			{$sql1 = "SELECT [id], [file_orig], [title], [notes], [date], [aps], [gps], [ValidGPS], [NewAPPercent] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [$sort] $ord OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$other_imports = $this->sql->conn->prepare($sql1);
 		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
 		//$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
@@ -705,10 +718,13 @@ class frontend extends dbcore
 		$this->user_all_imports_data['new_aps'] = $new_aps;
 		$this->user_all_imports_data['total_aps'] = $user_counts['aps'];
 		$this->user_all_imports_data['total_gps'] = $user_counts['gps'];
+		$this->user_all_imports_data['total_files'] = $total_files;
 		$this->user_all_imports_data['NewAPPercent'] = $user_counts['NewAPPercent'];
 		$this->user_all_imports_data['validgps'] = $user_validgps;
 
 		$this->user_all_imports_data['other_imports'] = $other_imports_array;
+		
+		$this->GeneratePages($total_files, $from, $inc, $sort, $ord, 'alluserlists', $username);
 		return 1;
 	}
 
