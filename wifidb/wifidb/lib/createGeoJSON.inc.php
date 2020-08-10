@@ -36,7 +36,7 @@ class createGeoJSON
 
 	public function createGeoJSONstructure($alldata)
 	{
-		$GeoJSON_DATA = '{"type":"FeatureCollection","features":['.$alldata.']}';
+		$GeoJSON_DATA = '{"type":"FeatureCollection","features":['.$alldata."\n".']}';
 		Return $GeoJSON_DATA;
 	}
 
@@ -46,13 +46,13 @@ class createGeoJSON
 		if($tc == 0){
 			$tippecanoe = '';
 		}else{
-			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":3},';
+			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';
 		}		
 		
 		$ap_info_array['mac'] = json_encode($ap_info_array['mac']);
 		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
 		$ap_info_array['authmode'] = json_encode($ap_info_array['authmode']);
-		$tmp = '{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","name":"'.$ap_info_array['name'].'","mac":'.$ap_info_array['mac'].',"ssid":'.$ap_info_array['ssid'].',"authmode":'.$ap_info_array['authmode'].',"chan":'.$ap_info_array['chan'].',"type":"'.$ap_info_array['type'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","rssi":"'.$ap_info_array['rssi'].'","fa":"'.$ap_info_array['fa'].'","la":"'.$ap_info_array['la'].'","user":"'.$ap_info_array['user'].'","points":"'.$ap_info_array['points'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","name":"'.$ap_info_array['name'].'","mac":'.$ap_info_array['mac'].',"ssid":'.$ap_info_array['ssid'].',"authmode":'.$ap_info_array['authmode'].',"chan":'.$ap_info_array['chan'].',"type":"'.$ap_info_array['type'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","rssi":"'.$ap_info_array['rssi'].'","fa":"'.$ap_info_array['fa'].'","la":"'.$ap_info_array['la'].'","user":"'.$ap_info_array['user'].'","points":"'.$ap_info_array['points'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
@@ -63,12 +63,25 @@ class createGeoJSON
 		if($tc == 0){
 			$tippecanoe = '';
 		}else{
-			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":3},';
-		}		
+			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';
+		}
+
+		$id = '';
+		if(isset($ap_info_array['id']))
+		{
+			$id = '"id":"'.$ap_info_array['id'].'"';
+		}
+
+		if(isset($ap_info_array['live_id']))
+		{
+			if($id){$id .= ',';};
+			$id .= '"live_id":"'.$ap_info_array['live_id'].'"';
+		}
 		
 		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
 		$ap_info_array['user'] = json_encode($ap_info_array['user']);
-		$tmp = '{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","live_id":"'.$ap_info_array['live_id'].'","user":'.$ap_info_array['user'].',"ssid":'.$ap_info_array['ssid'].',"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":"'.$ap_info_array['manuf'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+		$ap_info_array['manuf'] = json_encode($ap_info_array['manuf']);
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.',"user":'.$ap_info_array['user'].',"ssid":'.$ap_info_array['ssid'].',"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":'.$ap_info_array['manuf'].'},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
@@ -82,7 +95,6 @@ class createGeoJSON
 														'type': 'circle',
 														'source': '".$source."',
 														'source-layer': '".$source_layer."',
-														'minzoom': 0,
 														'layout': {
 															 'visibility': '".$visibility."'
 														},
