@@ -41,5 +41,6 @@
 				<a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>
 			</div>
 		</div>
-		<div class='bodywrap'>
+	</div>
+	<div class='bodywrap'>
 {include file="navigation.tpl"}
