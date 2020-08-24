@@ -88,7 +88,13 @@ if not, write to the
 								</th>
 								{if $wifidb_login_logged_in == 1}
 								<th class="header" width="75px">
-									<div>User Actions</div>
+									<div>Actions</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								{/if}
+								{if $wifidb_login_priv_name == "Administrator"}
+								<th class="header" width="75px">
+									<div>Admin</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
 								</th>
 								{/if}
@@ -115,6 +121,7 @@ if not, write to the
 								<td class="{$wifidb_users.class}">{$wifidb_users.gpscount|number_format:0}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.newappercent}%</td>
 								{if $wifidb_login_logged_in == 1}<td class="{$wifidb_users.class}">{if $wifidb_users.regid}<a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_users.regid}"><img  title="Message [{$wifidb_users.user}]" width="20px" src="{$themeurl}img/send-message.png"></a>{/if}</td>{/if}
+								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
 							</tr>
 							{foreachelse}
 								There are no Imports, go find some of them wifis, I hear they have yummy packets.

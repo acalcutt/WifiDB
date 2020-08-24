@@ -58,6 +58,8 @@ class frontend extends dbcore
 			$this->smarty->assign("redirect_html", "");
 			$this->smarty->assign('wifidb_login_label', $this->sec->LoginLabel);
 			$this->smarty->assign('wifidb_login_user', $this->sec->LoginUser);
+			$this->smarty->assign('wifidb_login_privs', $this->sec->privs);
+			$this->smarty->assign('wifidb_login_priv_name', $this->sec->priv_name);
 			$this->smarty->assign('wifidb_login_logged_in', $this->sec->login_check);
 			$this->smarty->assign('wifidb_message_unread_count', $this->GetMessageCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
@@ -675,6 +677,25 @@ class frontend extends dbcore
 		$fcount = $result->fetch(1);
 		$total_files = $fcount[0];
 
+		#Check If Registered User
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT `id`\n"
+					. "FROM `user_info`\n"
+					. "WHERE `username` like ? And `validated` = 0";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [id]\n"
+					. "FROM [user_info]\n"
+					. "WHERE [username] like ? And [validated] = 0";
+			}
+		$vres = $this->sql->conn->prepare($sql);
+		$vres->bindParam(1, $username);
+		$vres->execute();
+		$vfetch = $vres->fetch(1);
+		$regid = $vfetch[0];
+
 		#Get All Imports for User
 		if($this->sql->service == "mysql")
 			{$sql1 = "SELECT `id`, `file_orig`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `$sort` $ord LIMIT $from, $inc";}
@@ -713,6 +734,7 @@ class frontend extends dbcore
 		}
 		$this->user_all_imports_data = array();
 		$this->user_all_imports_data['user'] = htmlspecialchars($username, ENT_QUOTES, 'UTF-8');
+		$this->user_all_imports_data['regid'] = $regid;
 		$this->user_all_imports_data['first_import_date'] = htmlspecialchars($user_counts['fa'], ENT_QUOTES, 'UTF-8');
 		$this->user_all_imports_data['newest_date'] = htmlspecialchars($user_counts['la'], ENT_QUOTES, 'UTF-8');
 		$this->user_all_imports_data['new_aps'] = $new_aps;

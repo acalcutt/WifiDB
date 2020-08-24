@@ -104,12 +104,9 @@ class security
         if($result['hash'] == $cookie_pass_seed)
         {
             $this->privs = (int)$newArray['permissions'];
-            #var_dump($this->privs);
             if($this->privs >= 1000)
                 {$this->priv_name = "Administrator";}
             elseif($this->privs >= 100)
-                {$this->priv_name = "Developer";}
-            elseif($this->privs >= 10)
                 {$this->priv_name = "Moderator";}
             else
                 {$this->priv_name = "User";}
