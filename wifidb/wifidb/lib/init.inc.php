@@ -118,7 +118,7 @@ unset($sql);
 
 if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
-    if ((!@isset($_COOKIE['wifidb_client_check']) || !@$_COOKIE['wifidb_client_timezone'])) {
+    if ((!@isset($_COOKIE['wifidb_client_check']) || !@isset($_COOKIE['wifidb_client_timezone']))) {
         create_base_cookies($config['hosturl'] . $config['root']);
         exit();
     }
