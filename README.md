@@ -13,13 +13,13 @@ Vistumbler WiFiDB -> Read-me
 		
 Requirements:  
 * PHP 7.2 or later  
-	 GD2 (included with PHP now)  
-	 ZipArchive class  
-	 SQLiteDatabase class  
-	 bcmath class  
- Microsoft SQL 2019 or Later (needed for UTF8 Support)  
- Apache 2.4 or later  
- A Web-browser (doh!)  
+	* GD2 (included with PHP now)  
+	* ZipArchive class  
+	* SQLiteDatabase class  
+	* bcmath class  
+* Microsoft SQL 2019 or Later (needed for UTF8 Support)  
+* Apache 2.4 or later  
+* A Web-browser (doh!)  
 
   Summary:
 		WiFiDB is a PHP, and MSSQL based set of scripts that is intended to manage 
