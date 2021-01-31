@@ -11,7 +11,8 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 	This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 	You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA, Or go here:  http://www.gnu.org/licenses/gpl-2.0.txt
 		
-#Requirements:  
+..Requirements
+  --------------
 * PHP 7.2 or later  
 	* GD2 (included with PHP now)  
 	* ZipArchive class  
@@ -21,7 +22,8 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 * Apache 2.4 or later  
 * A Web-browser (doh!)  
 
-#Installation:  
+..Installation
+  --------------
 	NOTE: If you are using Linux, you must chown & chgrp the wifidb folder, to the user 
 	that you have apache or what ever HTTP server you are using (This is so that 
 	the installer can create the config file, and to generate the graph images 
