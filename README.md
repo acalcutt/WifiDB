@@ -27,25 +27,24 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 	NOTE: If you are using Linux, you must chown & chgrp the wifidb folder, to the user 
 	that you have apache or what ever HTTP server you are using 
 	
-	1.) Set up a debian instance with apache and php
-	2.) Set up a Microsoft SQL Instance (The free sql developer version, windows or linux, will work fine)
-	3.) Create tools directory (ex. /opt/wdbtools/)
-	3.) Copy the /wifidb/tools folder from gitbub into the tools directory created in step 1
-	5.) Copy the /wifidb/wifidb folder from github into your website root directory
-	6.) Create a blank mssql database(ex. wifi) and import the 'blank_db.sqlsrv' file into it.
-	7.) Create a mssql user that has access to the database created in step 4
-	8.) Update your daemon config file, [tools]/daemon.config.inc.php
-	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php
+	1.) Set up a debian instance with apache and php  
+	2.) Set up a Microsoft SQL Instance (The free sql developer version, windows or linux, will work fine)  
+	3.) Create tools directory (ex. /opt/wdbtools/)  
+	4.) Copy the /wifidb/tools folder from gitbub into the tools directory created in the previous step  
+	5.) Copy the /wifidb/wifidb folder from github into your website root directory  
+	6.) Create a blank mssql database(ex. wifi) and import the 'blank_db.sqlsrv' file into it.  
+	7.) Create a mssql user that has access to the database created in the previous step  
+	8.) Update your daemon config file, [tools]/daemon.config.inc.php  
+	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php  
 	
-  To Import Manually:
-	cd [tools]/daemon
-	php importd.php -o -v
+  To Import Manually:  
+	cd [tools]/daemon  
+	php importd.php -o -v  
 
-  To Import by Cron Job:
-	Schedule the .sh files in [tools]/cron
-		
-		
-  Change Log:
-		/[WiFiDB Path]/ver.php
-  Support:
-		Go to the Vistumber WifiDB section of these forums http://forum.techidiots.net/forum/
+  To Import by Cron Job:  
+	Schedule the .sh files in [tools]/cron  
+
+  Change Log:  
+		/[WiFiDB Path]/ver.php  
+  Support:  
+		Go to the Vistumber WifiDB section of these forums http://forum.techidiots.net/forum/  
