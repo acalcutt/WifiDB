@@ -24,7 +24,9 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 
   Installation
   --------------
-
+	NOTE: If you are using Linux, you must chown & chgrp the wifidb folder, to the user 
+	that you have apache or what ever HTTP server you are using 
+	
 	1.) Set up a debian instance with apache and php
 	2.) Set up a Microsoft SQL Instance (The free sql developer version, windows or linux, will work fine)
 	3.) Create tools directory (ex. /opt/wdbtools/)
