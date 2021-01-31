@@ -12,15 +12,15 @@ Vistumbler WiFiDB -> Read-me
 	You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA, Or go here:  http://www.gnu.org/licenses/gpl-2.0.txt
 		
   Requirements:
-		PHP 7.2 or later
-			GD2 (included with PHP now)
-			ZipArchive class
-			SQLiteDatabase class
-			bcmath class
-		Microsoft SQL 2019 or Later (needed for UTF8 Support)
-		Apache 2.4 or later
-		A Web-browser (doh!)
-		
+    PHP 7.2 or later
+      GD2 (included with PHP now)
+      ZipArchive class
+      SQLiteDatabase class
+      bcmath class
+    Microsoft SQL 2019 or Later (needed for UTF8 Support)
+    Apache 2.4 or later
+    A Web-browser (doh!)
+
   Summary:
 		WiFiDB is a PHP, and MSSQL based set of scripts that is intended to manage 
 		Wireless Access points found with the Vistumber Wireless scanning software  
