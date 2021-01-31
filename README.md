@@ -32,7 +32,7 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 	3.) Create tools directory (ex. /opt/wdbtools/)  
 	4.) Copy the /wifidb/tools folder from gitbub into the tools directory created in the previous step  
 	5.) Copy the /wifidb/wifidb folder from github into your website root directory  
-	6.) Create a blank mssql database(ex. wifi) and import the 'blank_db.sqlsrv' file into it.  
+	6.) Create a blank mssql database(ex. wifi) and import the 'blank_db.sqlsrv' file into it.  (Note: Replace all instances of 'prod_wifi' in blank_db.sqlsrv with what you named your database)
 	7.) Create a mssql user that has access to the database created in the previous step  
 	8.) Update your daemon config file, [tools]/daemon.config.inc.php  
 	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php  
