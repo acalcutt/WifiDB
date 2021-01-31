@@ -1,7 +1,7 @@
 Vistumbler WiFiDB -> Read-me
 ===================
 
-  A set of PHP-scripts to manage a MySQL based Wireless Database over the web.
+  A set of PHP-scripts to manage a MSSQL based Wireless Database over the web.
 
   Project Phase: Beta
   --------------
@@ -17,12 +17,12 @@ Vistumbler WiFiDB -> Read-me
 			ZipArchive class
 			SQLiteDatabase class
 			bcmath class
-		MariaDB 10.3 or later
+		Microsoft SQL 2019 or Later (needed for UTF8 Support)
 		Apache 2.4 or later
 		A Web-browser (doh!)
 		
   Summary:
-		WiFiDB is a PHP, and MySQL based set of scripts that is intended to manage 
+		WiFiDB is a PHP, and MSSQL based set of scripts that is intended to manage 
 		Wireless Access points found with the Vistumber Wireless scanning software  
 
 		
@@ -32,13 +32,22 @@ Vistumbler WiFiDB -> Read-me
 		the installer can create the config file, and to generate the graph images 
 		and export KML files)
 		
-		1.) Create tools directory (ex. /opt/wdbtools/)
-		2.) Copy the /wifidb/tools folder into the tools directory created in step 1
-		3.) Copy the /wifidb/wifidb folder into your website root directory
-		4.) Create a blank mysql database(ex. wifi) and import the 'blank_db.sql' file.
-		5.) Create a mysql user that has access to the database created in step 4
-		4.) Update your daemon config file, [tools]/daemon.config.inc.php
-		5.) Update your website config file, [webroot]wifidb/lib/config.inc.php
+		1.) Set up a debian instance with apache and php
+		2.) Set up a Microsoft SQL Instance (The free sql developer version, windows or linux, will work fine)
+		3.) Create tools directory (ex. /opt/wdbtools/)
+		3.) Copy the /wifidb/tools folder from gitbub into the tools directory created in step 1
+		5.) Copy the /wifidb/wifidb folder from github into your website root directory
+		6.) Create a blank mssql database(ex. wifi) and import the 'blank_db.sqlsrv' file into it.
+		7.) Create a mssql user that has access to the database created in step 4
+		8.) Update your daemon config file, [tools]/daemon.config.inc.php
+		9.) Update your website config file, [webroot]wifidb/lib/config.inc.php
+		
+  To Import Manually:
+	cd [tools]/daemon
+	php importd.php -o -v
+
+  To Import by Cron Job:
+	Schedule the .sh files in [tools]/cron
 		
 		
   Change Log:

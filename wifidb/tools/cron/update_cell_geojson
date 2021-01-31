@@ -1,0 +1,17 @@
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
+
+cd ${0%/*}
+if ps -ef | grep -v grep | grep cell_geojsond.php ; then
+	echo Cell GeoJSON Daemon Already Running! Exiting!
+else
+	echo Starting Cell GeoJSON Daemon...
+		timestamp=$(date +%s)
+        php ../daemon/cell_geojsond.php -o -v > ../log/cell_geojson/cell_geojsond_${timestamp}.log &
+fi
+
+echo "Cleaning up old logs..."
+find ../log/cell_geojson/ -mtime +1 -type f -delete
+
+echo "Done. Exiting."
+exit 0
