@@ -267,7 +267,17 @@ if not, write to the
 								map.addControl(fs)
 								fs._fullscreenButton.classList.add('needsclick');
 								//Add Navigation Control
-								map.addControl(new mapboxgl.NavigationControl());
+								map.addControl(new mapboxgl.NavigationControl({
+								  visualizePitch: true,
+								  showZoom: true,
+								  showCompass: true
+								}));
+								//Scale Bar
+								var scale = new mapboxgl.ScaleControl({
+									maxWidth: 80,
+									unit: 'imperial'
+								});
+								map.addControl(scale);
 								//Ad Inspect
 								map.addControl(new MapboxInspect());
 								//WifiDB Information Popup
