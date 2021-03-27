@@ -69,19 +69,49 @@ class createGeoJSON
 		$id = '';
 		if(isset($ap_info_array['id']))
 		{
-			$id = '"id":"'.$ap_info_array['id'].'"';
+			$id = '"id":"'.$ap_info_array['id'].'",';
 		}
 
+		$live_id = '';
 		if(isset($ap_info_array['live_id']))
 		{
-			if($id){$id .= ',';};
-			$id .= '"live_id":"'.$ap_info_array['live_id'].'"';
+			$live_id .= '"live_id":"'.$ap_info_array['live_id'].'",';
+		}
+
+		$user = '';
+		if(isset($ap_info_array['user']))
+		{
+			$user .= '"user":'.json_encode($ap_info_array['user']).',';
+		}
+
+
+		$sig = '';
+		if(isset($ap_info_array['signal']))
+		{
+			$sig .= '"signal":'.json_encode($ap_info_array['signal']).',';
+		}
+
+		$rssi = '';
+		if(isset($ap_info_array['rssi']))
+		{
+			$rssi .= '"rssi":'.json_encode($ap_info_array['rssi']).',';
+		}
+
+		$hist_date = '';
+		if(isset($ap_info_array['hist_date']))
+		{
+			$hist_date .= '"hist_date":'.json_encode($ap_info_array['hist_date']).',';
+		}
+		
+		$hist_file_id = '';
+		if(isset($ap_info_array['hist_file_id']))
+		{
+			$hist_file_id .= '"hist_file_id":'.json_encode($ap_info_array['hist_file_id']).',';
 		}
 		
 		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
-		$ap_info_array['user'] = json_encode($ap_info_array['user']);
 		$ap_info_array['manuf'] = json_encode($ap_info_array['manuf']);
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.',"user":'.$ap_info_array['user'].',"ssid":'.$ap_info_array['ssid'].',"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":'.$ap_info_array['manuf'].'},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$user.$sig.$rssi.$hist_date.$hist_file_id.'"ssid":'.$ap_info_array['ssid'].',"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":'.$ap_info_array['manuf'].'},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}

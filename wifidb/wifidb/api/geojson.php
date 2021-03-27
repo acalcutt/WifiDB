@@ -193,6 +193,97 @@ switch($func)
 		}
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
 	break;
+
+	case "exp_ap_sig":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
+		$Import_Map_Data = "";
+		
+		if($dbcore->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM `wifi_ap` AS wap\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE `wap`.`HighGps_ID` IS NOT NULL And `wGPS`.`Lat` != '0.0000' AND `wap`.`AP_ID` = ?";
+			}
+		else if($dbcore->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
+					. "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[AP_ID] = ?";
+			}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID\n"
+				. "FROM wifi_hist AS wh\n"
+				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
+			if($list_id)
+			{
+				$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";
+			}
+			else
+			{
+				$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";
+			}
+			$sql .= "ORDER BY wh.Hist_Date ASC";
+			$prep2 = $dbcore->sql->conn->prepare($sql);
+			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
+			if($list_id){$prep2->bindParam(2, $list_id, PDO::PARAM_INT);}
+			$prep2->execute();
+			$histpointer = $prep2->fetchAll();
+			foreach($histpointer as $hist)
+			{
+				#Get AP GeoJSON
+				$ap_info = array(
+				"id" => $ap['AP_ID'],
+				"new_ap" => $new_icons,
+				"named" => $named,
+				"mac" => $ap['BSSID'],
+				"ssid" => $ap['SSID'],
+				"chan" => $ap['CHAN'],
+				"radio" => $ap['RADTYPE'],
+				"NT" => $ap['NETTYPE'],
+				"sectype" => $ap['SECTYPE'],
+				"auth" => $ap['AUTH'],
+				"encry" => $ap['ENCR'],
+				"BTx" => $ap['BTX'],
+				"OTx" => $ap['OTX'],
+				"FA" => $ap['fa'],
+				"LA" => $ap['la'],
+				"points" => $ap['points'],
+				"lat" => $dbcore->convert->dm2dd($hist['Lat']),
+				"lon" => $dbcore->convert->dm2dd($hist['Lon']),
+				"alt" => $ap['Alt'],
+				"manuf"=>$dbcore->findManuf($ap['BSSID']),
+				"user" => $ap['user'],
+				"signal" => $hist['Sig'],
+				"rssi" => $hist['RSSI'],
+				"hist_date" => $hist['Hist_Date'],
+				"hist_file_id" => $hist['File_ID']
+				);
+				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
+				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
+			}
+		}
+		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+	break;
+
+
 	
 	case "exp_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
