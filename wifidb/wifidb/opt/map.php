@@ -27,15 +27,29 @@ include('../lib/init.inc.php');
 
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels on map. by default labels are not shown.
 if((int)@$_REQUEST['channels'] === 1){$channels = 1;}else{$channels = 0;}#Show AP labels on map. by default labels are not shown.
+if((int)@$_REQUEST['signal'] === 1){$signal = 1;}else{$signal = 0;}#Show AP signals on map. by default labels are not shown.
+if((int)@$_REQUEST['rssi'] === 1){$rssi = 1;}else{$rssi = 0;}#Show AP rssi on map. by default labels are not shown.
+
+$latitude = filter_input(INPUT_GET, 'latitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+$longitude = filter_input(INPUT_GET, 'longitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+$zoom = filter_input(INPUT_GET, 'zoom', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+$bearing = filter_input(INPUT_GET, 'bearing', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+$pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+
 $func=$_REQUEST['func'];
+$dbcore->smarty->assign('func', $func);
 switch($func)
 {
 	case "wifidbmap":
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[-95.712891, 37.090240]";
-		$zoom =  2;
+		if (empty($latitude)){$latitude = 37.090240;}
+		if (empty($longitude)){$longitude = -95.009766;}
+		if (empty($zoom)){$zoom = 2;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}
+		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"visible");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -83,6 +97,8 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('wifidbmap', 1);
@@ -91,15 +107,12 @@ switch($func)
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "user_all":
-		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));	
-		$clat	=   filter_input(INPUT_GET, 'clat', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-		$clon   =	filter_input(INPUT_GET, 'clon', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-		if ($from == ""){$from = 0;}
-		
-		if($clat == "")
+		if ($from == ""){$from = 0;}		
+		if($latitude == "")
 		{
 			if($dbcore->sql->service == "mysql")
 				{
@@ -121,9 +134,13 @@ switch($func)
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
 			$newArray = $result->fetch(2);
-			$clat = $dbcore->convert->dm2dd($newArray['Lat']);
-			$clon = $dbcore->convert->dm2dd($newArray['Lon']);
+			$latitude = $dbcore->convert->dm2dd($newArray['Lat']);
+			$longitude = $dbcore->convert->dm2dd($newArray['Lon']);
 		}
+		if (empty($zoom)){$zoom = 5;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}
+		$centerpoint =  "[".$longitude.",".$latitude."]";
 
 		if($limit == "")
 		{
@@ -155,8 +172,8 @@ switch($func)
 				$dbcore->smarty->assign('limit', $limit);
 				$dbcore->smarty->assign('count', $ap_count);
 				$dbcore->smarty->assign('ldivs', $ldivs);
-				$dbcore->smarty->assign('clat', $clat);
-				$dbcore->smarty->assign('clon', $clon);
+				$dbcore->smarty->assign('clat', $latitude);
+				$dbcore->smarty->assign('clon', $longitude);
 				$dbcore->smarty->display('map_segments.tpl');
 				break;
 			}
@@ -165,8 +182,6 @@ switch($func)
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$clon.",".$clat."]";
-		$zoom = 5;
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -213,6 +228,8 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('list', 1);
@@ -235,12 +252,18 @@ switch($func)
 		$fetch = $prep->fetch();
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 		$ListGeoJSON = $dbcore->export->UserListGeoJSON($id, 0);
+		
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);		
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
+		if (empty($latitude)){$latitude = $Center_LatLon['lat'];}
+		if (empty($longitude)){$longitude = $Center_LatLon['long'];}
+		if (empty($zoom)){$zoom = 9;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}	
+		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$zoom = 9;
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
@@ -291,6 +314,8 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('list', 1);
@@ -326,8 +351,14 @@ switch($func)
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['Lon']).",".$dbcore->convert->dm2dd($latlng['Lat'])."]";
-		$zoom = 12;
+		
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['Lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['Lon']);}
+		if (empty($zoom)){$zoom = 12;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}	
+		$centerpoint =  "[".$longitude.",".$latitude."]";
+
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -364,8 +395,9 @@ switch($func)
 		if ($labeled) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ll['source_name'],"","label","{ssid}","Open Sans Regular",11,"none");}		
 		if ($channels) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ll['source_name'],"","channel","{chan}","Open Sans Regular",11,"none");;}
 		
-		$ml = $dbcore->createGeoJSON->CreateApGeoJsonLayer($id, $labeled);
+		$ml = $dbcore->createGeoJSON->CreateApGeoJsonLayer($id);
 		$layer_source_all .= $ml['layer_source'];
+		if ($labeled) {$layer_source .= $this->CreateLabelLayer($ml['source_name']);}
 		$layer_name = "'".$ml['layer_name']."','".$dl['layer_name']."','WifiDB_weekly','WifiDB_monthly','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
@@ -374,6 +406,8 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('list', 0);
@@ -406,13 +440,15 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$latlng = $prep->fetch();
 
-
-
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['Lon']).",".$dbcore->convert->dm2dd($latlng['Lat'])."]";
-		$zoom = 12;
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['Lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['Lon']);}
+		if (empty($zoom)){$zoom = 11;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}	
+		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -422,35 +458,17 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#00802b","#cc7a00","#b30000",2.25,1,0.5,"none");
-		if ($labeled) {
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_Legacy","label","{ssid}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year","label","{ssid}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year","label","{ssid}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year","label","{ssid}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_monthly","label","{ssid}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_weekly","label","{ssid}","Open Sans Regular",11,"none");
-		}
-		if ($channels) {
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_Legacy","channel","{chan}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_2to3year","channel","{chan}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB","WifiDB_1to2year","channel","{chan}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_0to1year","channel","{chan}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_monthly","channel","{chan}","Open Sans Regular",11,"none");
-			$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer("WifiDB_newest","WifiDB_weekly","channel","{chan}","Open Sans Regular",11,"none");
-		}		
-		
+
 		$dl = $dbcore->createGeoJSON->CreateDailyGeoJsonLayer("#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		if ($labeled) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['source_name'],"","label","{ssid}","Open Sans Regular",11,"none");}		
-		if ($channels) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($dl['source_name'],"","label","{chan}","Open Sans Regular",11,"none");;}
 		$layer_source_all .= $dl['layer_source'];
 
 		$ll = $dbcore->createGeoJSON->CreateLatestGeoJsonLayer("#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $ll['layer_source'];
-		if ($labeled) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ll['source_name'],"","label","{ssid}","Open Sans Regular",11,"none");}		
-		if ($channels) {$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ll['source_name'],"","channel","{chan}","Open Sans Regular",11,"none");;}
-		
-		$ml = $dbcore->createGeoJSON->CreateApSigGeoJsonLayer($id, $list_id, $labeled);
+
+		$ml = $dbcore->createGeoJSON->CreateApSigGeoJsonLayer($id, $list_id);
 		$layer_source_all .= $ml['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ml['source_name'],"","signal","{signal}","Open Sans Regular",11,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ml['source_name'],"","rssi","{rssi}","Open Sans Regular",11,"none");
 		$layer_name = "'".$ml['layer_name']."','".$dl['layer_name']."','WifiDB_weekly','WifiDB_monthly','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
@@ -459,11 +477,16 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('channels', $channels);
+		$dbcore->smarty->assign('signal', $signal);
+		$dbcore->smarty->assign('rssi', $rssi);
 		$dbcore->smarty->assign('list', 0);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
+		$dbcore->smarty->assign('list_id', $list_id);
+		$dbcore->smarty->assign('signal_source_name', $ml['source_name']);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
@@ -477,13 +500,16 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$latlng = $prep->fetch();
 
-
-
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$dbcore->convert->dm2dd($latlng['long']).",".$dbcore->convert->dm2dd($latlng['lat'])."]";
-		$zoom = 12;
+
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['long']);}
+		if (empty($zoom)){$zoom = 12;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}	
+		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -530,6 +556,8 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('list', 0);
@@ -576,8 +604,12 @@ switch($func)
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
 		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		$centerpoint =  "[".$Center_LatLon['long'].",".$Center_LatLon['lat']."]";
-		$zoom = 9;
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($Center_LatLon['lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($Center_LatLon['long']);}
+		if (empty($zoom)){$zoom = 9;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}
+		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -627,6 +659,8 @@ switch($func)
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('search', 1);

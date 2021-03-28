@@ -425,7 +425,7 @@ class createGeoJSON
 		return $ret_data;
 	}
 	
-	public function CreateApGeoJsonLayer($id, $labeled=0, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	public function CreateApGeoJsonLayer($id, $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		$layer_sname = "ap-".$id;
 		$layer_lname = "apl-".$id;
@@ -458,11 +458,11 @@ class createGeoJSON
 															'circle-blur': ".$blur."
 														}
 													});";
-		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
 		"layer_name" => $layer_lname,
+		"source_name" => $layer_sname,
 		);
 		
 		return $ret_data;
@@ -503,11 +503,11 @@ class createGeoJSON
 															'circle-blur': ".$blur."
 														}
 													});";
-		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
 		"layer_name" => $layer_lname,
+		"source_name" => $layer_sname,
 		);
 		
 		return $ret_data;

@@ -24,7 +24,7 @@ if not, write to the
 					<tr>
 						<td align="left">
 							<div>
-								{if $list eq 1}
+								{if $func eq "user_list"}
 									{if $labeled eq 1}
 										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=0">[View Un-Labeled]</a>
 									{else}
@@ -35,7 +35,7 @@ if not, write to the
 									{else}
 										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=1">[View Channels]</a>
 									{/if}
-								{elseif $wifidbmap eq 1}
+								{elseif $func eq "wifidbmap"}
 									{if $labeled eq 1}
 										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">[View Un-Labeled]</a>
 									{else}
@@ -46,7 +46,7 @@ if not, write to the
 									{else}
 										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=1">[View Channels]</a>
 									{/if}
-								{elseif $search eq 1}
+								{elseif $func eq "exp_search"}
 									{if $labeled eq 1}
 										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=0">[View Un-Labeled]</a>
 									{else}
@@ -57,7 +57,10 @@ if not, write to the
 									{else}
 										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=1">[View Channels]</a>
 									{/if}
-								{else}
+								{elseif $func eq "exp_ap_sig"}
+									<a id="toggle_signal_link" onclick="toggle_signal()" href="#">[Show Signals]</a>
+									<a id="toggle_rssi_link" onclick="toggle_rssi()" href="#">[Show RSSI]</a>
+								{elseif $func eq "exp_ap"}
 									{if $labeled eq 1}
 										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=0">[View Un-Labeled]</a>
 									{else}
@@ -107,6 +110,8 @@ if not, write to the
 								style: '{$style}',
 								center: {$centerpoint},
 								zoom: {$zoom},
+								pitch: {$pitch},
+								bearing: {$bearing},
 							});
 
 							function GoToLatest() {
@@ -147,6 +152,54 @@ if not, write to the
 									FollowLatest = true;
 									el.firstChild.data = "Un-Follow Latest AP"
 								}
+							}
+
+							var ShowSignal = false;
+							function toggle_signal() {
+								const url = new URL(window.location.href);
+								if (ShowSignal) {
+									map.setLayoutProperty('{$signal_source_name}' + '-signal', 'visibility', 'none');
+									var el = document.getElementById("toggle_signal_link");
+									el.innerHTML = "Show Signal"
+									ShowSignal = false;
+									url.searchParams.set('signal', 0);
+								} else {
+									map.setLayoutProperty('{$signal_source_name}' + '-signal', 'visibility', 'visible');
+									var el = document.getElementById("toggle_signal_link");
+									el.innerHTML = "Hide Signal"
+									
+									map.setLayoutProperty('{$signal_source_name}' + '-rssi', 'visibility', 'none');
+									var el = document.getElementById("toggle_rssi_link");
+									el.innerHTML = "Show RSSI"
+									ShowSignal = true;
+									url.searchParams.set('signal', 1);
+									url.searchParams.delete('rssi');
+								}
+								window.history.replaceState(null, null, url); // or pushState
+							}
+
+							var ShowRSSI = false;
+							function toggle_rssi() {
+								const url = new URL(window.location.href);
+								if (ShowRSSI) {
+									map.setLayoutProperty('{$signal_source_name}' + '-rssi', 'visibility', 'none');
+									var el = document.getElementById("toggle_rssi_link");
+									el.innerHTML = "Show RSSI"
+									ShowRSSI = false;
+									url.searchParams.set('rssi', 0);
+								} else {
+									map.setLayoutProperty('{$signal_source_name}' + '-rssi', 'visibility', 'visible');
+									var el = document.getElementById("toggle_rssi_link");
+									el.innerHTML = "Hide RSSI"
+									
+									map.setLayoutProperty('{$signal_source_name}' + '-signal', 'visibility', 'none');
+									var el = document.getElementById("toggle_signal_link");
+									el.innerHTML = "Show Signal"
+									ShowRSSI = true;
+									url.searchParams.set('rssi', 1);
+									url.searchParams.delete('signal');
+								}
+								window.history.replaceState(null, null, url); // or pushState
 							}
 							
 							// --- Start Map Style Selection ---
@@ -254,8 +307,27 @@ if not, write to the
 							});
 							// --- End Address Search Box Functions ---
 
+							// Listen for every move event by the user
+							const displayCenter = () => {
+								const center = map.getCenter();
+								const latitude = center.lat.toFixed(6);
+								const longitude = center.lng.toFixed(6);
+								const bearing = map.getBearing().toFixed(0);
+								const pitch = map.getPitch().toFixed(0);
+								const zoom = map.getZoom().toFixed(2);
+								const url = new URL(window.location.href);
+								url.searchParams.set('latitude', latitude);
+								url.searchParams.set('longitude', longitude);
+								url.searchParams.set('bearing', bearing);
+								url.searchParams.set('pitch', pitch);
+								url.searchParams.set('zoom', zoom);
+								window.history.replaceState(null, null, url); // or pushState
+							};
+
 							function init() {
 {$layer_source_all}
+{if $signal eq 1}toggle_signal();{/if}
+{if $rssi eq 1}toggle_rssi();{/if}
 							};
 
 							map.once('style.load', function(e) {
@@ -286,6 +358,7 @@ if not, write to the
 								map.addControl(new MapboxInspect());
 								//WifiDB Information Popup
 								map.on('click', function(e) {
+
 									var features = map.queryRenderedFeatures(e.point, {
 										layers: [{$layer_name}]
 									});
@@ -386,6 +459,7 @@ if not, write to the
 								};
 								waiting();
 							});
+							map.on('move', displayCenter);
 							</script>
 						</td>
 					</tr>
