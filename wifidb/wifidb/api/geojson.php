@@ -229,18 +229,40 @@ switch($func)
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
-			$sql = "SELECT TOP 50000 wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID\n"
-				. "FROM wifi_hist AS wh\n"
-				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
-			if($list_id)
+			
+			if($dbcore->sql->service == "mysql")
 			{
-				$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";
+				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.user\n"
+					. "FROM wifi_hist AS wh\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
+				if($list_id)
+				{
+					$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";
+				}
+				else
+				{
+					$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";
+				}
+				$sql .= "ORDER BY wh.Hist_Date ASC\n"
+					. "LIMIT 50000";
 			}
-			else
+			else if($dbcore->sql->service == "sqlsrv")
 			{
-				$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";
+				$sql = "SELECT TOP (50000) wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.[user]\n"
+					. "FROM wifi_hist AS wh\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
+				if($list_id)
+				{
+					$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";
+				}
+				else
+				{
+					$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";
+				}
+				$sql .= "ORDER BY wh.Hist_Date ASC";
 			}
-			$sql .= "ORDER BY wh.Hist_Date ASC";
 			$prep2 = $dbcore->sql->conn->prepare($sql);
 			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
 			if($list_id){$prep2->bindParam(2, $list_id, PDO::PARAM_INT);}
@@ -256,21 +278,13 @@ switch($func)
 				"mac" => $ap['BSSID'],
 				"ssid" => $ap['SSID'],
 				"chan" => $ap['CHAN'],
-				"radio" => $ap['RADTYPE'],
-				"NT" => $ap['NETTYPE'],
 				"sectype" => $ap['SECTYPE'],
 				"auth" => $ap['AUTH'],
 				"encry" => $ap['ENCR'],
-				"BTx" => $ap['BTX'],
-				"OTx" => $ap['OTX'],
-				"FA" => $ap['fa'],
-				"LA" => $ap['la'],
-				"points" => $ap['points'],
 				"lat" => $dbcore->convert->dm2dd($hist['Lat']),
 				"lon" => $dbcore->convert->dm2dd($hist['Lon']),
 				"alt" => $ap['Alt'],
-				"manuf"=>$dbcore->findManuf($ap['BSSID']),
-				"user" => $ap['user'],
+				"user" => $hist['user'],
 				"signal" => $hist['Sig'],
 				"rssi" => $hist['RSSI'],
 				"hist_date" => $hist['Hist_Date'],

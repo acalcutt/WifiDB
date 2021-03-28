@@ -36,6 +36,11 @@ $zoom = filter_input(INPUT_GET, 'zoom', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLA
 $bearing = filter_input(INPUT_GET, 'bearing', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
+$style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
+$styles = array("WDB_OSM","WDB_DARK_MATTER","WDB_BASIC","WDB_ELEV");
+if(!in_array($style, $styles)){$style = "WDB_OSM";}
+$style = "https://omt.wifidb.net/styles/".$style."/style.json";
+
 $func=$_REQUEST['func'];
 $dbcore->smarty->assign('func', $func);
 switch($func)
@@ -43,7 +48,6 @@ switch($func)
 	case "wifidbmap":
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		if (empty($latitude)){$latitude = 37.090240;}
 		if (empty($longitude)){$longitude = -95.009766;}
 		if (empty($zoom)){$zoom = 2;}
@@ -144,7 +148,7 @@ switch($func)
 
 		if($limit == "")
 		{
-			if ($limit == ""){$limit = 100000;}
+			if ($limit == ""){$limit = 50000;}
 			if($dbcore->sql->service == "mysql")
 				{
 					$sql = "SELECT Count(AP_ID) As ap_count\n"
@@ -181,7 +185,6 @@ switch($func)
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -257,7 +260,6 @@ switch($func)
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		if (empty($latitude)){$latitude = $Center_LatLon['lat'];}
 		if (empty($longitude)){$longitude = $Center_LatLon['long'];}
 		if (empty($zoom)){$zoom = 9;}
@@ -328,14 +330,14 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		if($dbcore->sql->service == "mysql")
 			{
-				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
+				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_ap`.`ssid`\n"
 					. "FROM `wifi_ap`\n"
 					. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
 					. "WHERE `wifi_ap`.`AP_ID` = ?";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wifi_gps].[Lat], [wifi_gps].[Lon]\n"
+				$sql = "SELECT [wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_ap].[ssid]\n"
 					. "FROM [wifi_ap]\n"
 					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
 					. "WHERE [wifi_ap].[AP_ID] = ?";
@@ -344,16 +346,15 @@ switch($func)
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
-		$latlng = $prep->fetch();
+		$apinfo = $prep->fetch();
 
 
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		
-		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['Lat']);}
-		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['Lon']);}
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
 		if (empty($zoom)){$zoom = 12;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}	
@@ -413,6 +414,7 @@ switch($func)
 		$dbcore->smarty->assign('list', 0);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
+		$dbcore->smarty->assign('ssid', $apinfo['SSID']);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
@@ -422,14 +424,14 @@ switch($func)
 		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
 		if($dbcore->sql->service == "mysql")
 			{
-				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`\n"
+				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_ap`.`SSID`\n"
 					. "FROM `wifi_ap`\n"
 					. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
 					. "WHERE `wifi_ap`.`AP_ID` = ?";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wifi_gps].[Lat], [wifi_gps].[Lon]\n"
+				$sql = "SELECT [wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_ap].[SSID]\n"
 					. "FROM [wifi_ap]\n"
 					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
 					. "WHERE [wifi_ap].[AP_ID] = ?";
@@ -438,13 +440,12 @@ switch($func)
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
-		$latlng = $prep->fetch();
+		$apinfo = $prep->fetch();
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
-		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['Lat']);}
-		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['Lon']);}
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
 		if (empty($zoom)){$zoom = 11;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}	
@@ -485,6 +486,7 @@ switch($func)
 		$dbcore->smarty->assign('list', 0);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
+		$dbcore->smarty->assign('ssid', dbcore::formatSSID($apinfo['SSID']));
 		$dbcore->smarty->assign('list_id', $list_id);
 		$dbcore->smarty->assign('signal_source_name', $ml['source_name']);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -502,7 +504,6 @@ switch($func)
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['long']);}
@@ -603,7 +604,6 @@ switch($func)
 
 		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
 		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
-		$style = "https://omt.wifidb.net/styles/WDB_OSM/style.json";
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($Center_LatLon['lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($Center_LatLon['long']);}
 		if (empty($zoom)){$zoom = 9;}

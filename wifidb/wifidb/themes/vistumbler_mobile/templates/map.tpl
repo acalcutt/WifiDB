@@ -23,58 +23,7 @@ if not, write to the
 				<table style="width: 100%" cellpadding="0" cellspacing="0">
 					<tr>
 						<td align="left">
-							<div>
-								{if $func eq "user_list"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=1">[View Channels]</a>
-									{/if}
-								{elseif $func eq "wifidbmap"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=1">[View Channels]</a>
-									{/if}
-								{elseif $func eq "exp_search"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=1">[View Channels]</a>
-									{/if}
-								{elseif $func eq "exp_ap_sig"}
-									<a id="toggle_signal_link" onclick="toggle_signal()" href="#">[Show Signals]</a>
-									<a id="toggle_rssi_link" onclick="toggle_rssi()" href="#">[Show RSSI]</a>
-								{elseif $func eq "exp_ap"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&channels=1">[View Channels]</a>
-									{/if}
-								{/if}
-							</div>
-							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
-							<div id='basemap'>
+							<div style='text-align: center;' id='basemap'>
 								<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
 								<label for='WDB_OSM'>WDB Light</label>
 								<input id='WDB_DARK_MATTER' type='radio' name='rtoggle' value='WDB_DARK_MATTER'>
@@ -84,25 +33,83 @@ if not, write to the
 								<input id='WDB_ELEV' type='radio' name='rtoggle' value='WDB_ELEV'>
 								<label for='WDB_DARK_MATTER'>WDB JAXA Test</label>
 							</div>
+							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
 							<div>
-								<button id="latest" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
-								<button id="daily" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
-								<button id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
-								<button id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
-								<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
-								<br/>
-								<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
-								<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
-								<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
-								<button id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Netwotks</button>
+								<div style='text-align: center;'>
+									{if $func eq "user_list"}
+										{if $labeled eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=1">[View Labeled]</a>
+										{/if}
+										{if $channels eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=1">[View Channels]</a>
+										{/if}
+									{elseif $func eq "wifidbmap"}
+										{if $labeled eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=1">[View Labeled]</a>
+										{/if}
+										{if $channels eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=1">[View Channels]</a>
+										{/if}
+									{elseif $func eq "exp_search"}
+										{if $labeled eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=1">[View Labeled]</a>
+										{/if}
+										{if $channels eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=1">[View Channels]</a>
+										{/if}
+									{elseif $func eq "exp_ap_sig"}
+										Signal History for <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (ID:{$id})<br>
+										<a id="toggle_signal_link" onclick="toggle_signal()" href="#">[Show Signals]</a>
+										<a id="toggle_rssi_link" onclick="toggle_rssi()" href="#">[Show RSSI]</a>
+										
+									{elseif $func eq "exp_ap"}
+										{if $labeled eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=1">[View Labeled]</a>
+										{/if}
+										{if $channels eq 1}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&channels=0">[View Un-Labeled]</a>
+										{else}
+											<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&channels=1">[View Channels]</a>
+										{/if}
+									{/if}
+{if $func ne "exp_ap_sig"}
+									<div>
+										<button id="latest" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+										<button id="daily" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
+										<button id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
+										<button id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
+										<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
+										<br/>
+										<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
+										<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
+										<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
+										<button id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Netwotks</button>
+									</div>
+									<div>
+										<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
+										<button id="searchadr" onClick="searchadr()">Search</button>
+									</div>
+									<div>
+										<button id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest AP</button>
+									</div>
+{/if}
+								</div>
 							</div>
-							<div>
-								<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
-								<button id="searchadr" onClick="searchadr()">Search</button>
-							</div>
-							<div>
-								<button id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest AP</button>
-							</div>
+
 							<script>
 
 							var map = new mapboxgl.Map({
@@ -209,6 +216,9 @@ if not, write to the
 							function switchLayer(layer) {
 								var layerId = layer.target.id;
 								map.setStyle('https://omt.wifidb.net/styles/' + layerId + '/style.json');
+								const url = new URL(window.location.href);
+								url.searchParams.set('style', layerId);
+								window.history.replaceState(null, null, url); // or pushState
 							}
 
 							for (var i = 0; i < inputs.length; i++) {
@@ -273,7 +283,8 @@ if not, write to the
 
 							}
 							// --- End Year Visibility Functions ---
-							
+
+{if $func ne "exp_ap_sig"}
 							// --- Start Address Search Box Functions ---
 							function searchadr()
 							{
@@ -306,7 +317,7 @@ if not, write to the
 							  }
 							});
 							// --- End Address Search Box Functions ---
-
+{/if}
 							// Listen for every move event by the user
 							const displayCenter = function () {
 								const center = map.getCenter();
@@ -368,28 +379,27 @@ if not, write to the
 									var feature = features[0];
 									
 									var text = '<ul>';
-									if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
+									if (feature.properties.id) text += '<li>SSID: <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
 									if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
 									if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
-									if (feature.properties.mac) text += '<li>MAC: <b>' + feature.properties.mac + '</b></li>';
-									if (feature.properties.manuf) text += '<li>MANUFACTURER: <b>' + feature.properties.manuf + '</b></li>';
-									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
-									if (feature.properties.NT) text += '<li>NETWORK TYPE: <b>' + feature.properties.NT + '</b></li>';
-									if (feature.properties.encry) text += '<li>ENCRYPTION: <b>' + feature.properties.encry + '</b></li>';
-									if (feature.properties.radio) text += '<li>RADIO TYPE: <b>' + feature.properties.radio + '</b></li>';
-									if (feature.properties.BTx) text += '<li>BASIC TX: <b>' + feature.properties.BTx + '</b></li>';
-									if (feature.properties.OTx) text += '<li>OTHER TX: <b>' + feature.properties.OTx + '</b></li>';
-									if (feature.properties.lat) text += '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>';
-									if (feature.properties.lon) text += '<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>';
-									if (feature.properties.alt) text += '<li>ALTITUDE: <b>' + feature.properties.alt + '</b></li>';
-									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
-									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.FA + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.LA + '</b></li>';
-									if (feature.properties.hist_date) text += '<li>Point Date: <b>' + feature.properties.hist_date + '</b></li>';
-									if (feature.properties.signal) text += '<li>Point Signal: <b>' + feature.properties.signal + '</b></li>';
-									if (feature.properties.rssi) text += '<li>Point RSSI: <b>' + feature.properties.rssi + '</b></li>';
-									if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
-									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
+									if (feature.properties.points) text  += '<li>Points: <a target="_blank" href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+									if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
+									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+									if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
+									if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
+									if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
+									if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
+									if (feature.properties.NT) text += '<li>Network Type: <b>' + feature.properties.NT + '</b></li>';
+									if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
+									if (feature.properties.FA) text += '<li>First: <b>' + feature.properties.FA + '</b></li>';
+									if (feature.properties.LA) text += '<li>Last: <b>' + feature.properties.LA + '</b></li>';
+									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
+									if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
+									if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
+									if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + '</b></li>';
+									if (feature.properties.hist_file_id) text += '<li>File ID: <a target="_blank" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
+									if (feature.properties.user) text += '<li>Username: <a target="_blank" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 									
 									var popup = new mapboxgl.Popup()
@@ -421,7 +431,7 @@ if not, write to the
 									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
 									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
 									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
-									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									if (feature.properties.user) text += '<li>Username: <a target="_blank" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 
 									var popup = new mapboxgl.Popup()
@@ -440,6 +450,7 @@ if not, write to the
 							});
 							map.on('style.load', function () {
 								// Reset toggle buttons since the layers reset on style change
+{if $func ne "exp_ap_sig"}
 								var toggleButtonIds = ['WifiDB_weekly','WifiDB_monthly','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy','cell_networks'];
 								for(var index in toggleButtonIds) {
 									var clicked_id = toggleButtonIds[index];
@@ -449,6 +460,7 @@ if not, write to the
 									var btext = btext.replace("Hide", "");
 									el.firstChild.data = "{if $default_hidden eq 1}Show{else}Hide{/if}" + btext;
 								}
+{/if}
 								// Reload dynamic layers since they are lost on style change
 								const waiting = function () {
 									if (!map.isStyleLoaded()) {

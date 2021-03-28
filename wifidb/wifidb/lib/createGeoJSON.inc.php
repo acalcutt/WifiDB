@@ -75,43 +75,48 @@ class createGeoJSON
 		$live_id = '';
 		if(isset($ap_info_array['live_id']))
 		{
-			$live_id .= '"live_id":"'.json_encode($ap_info_array['live_id'], JSON_NUMERIC_CHECK).'",';
+			$live_id = '"live_id":"'.json_encode($ap_info_array['live_id'], JSON_NUMERIC_CHECK).'",';
 		}
 
 		$user = '';
 		if(isset($ap_info_array['user']))
 		{
-			$user .= '"user":'.json_encode($ap_info_array['user']).',';
+			$user = '"user":'.json_encode($ap_info_array['user']).',';
 		}
 
 
 		$sig = '';
 		if(isset($ap_info_array['signal']))
 		{
-			$sig .= '"signal":'.json_encode($ap_info_array['signal'], JSON_NUMERIC_CHECK).',';
+			$sig = '"signal":'.json_encode($ap_info_array['signal'], JSON_NUMERIC_CHECK).',';
 		}
 
 		$rssi = '';
 		if(isset($ap_info_array['rssi']))
 		{
-			$rssi .= '"rssi":'.json_encode($ap_info_array['rssi'], JSON_NUMERIC_CHECK).',';
+			$rssi = '"rssi":'.json_encode($ap_info_array['rssi'], JSON_NUMERIC_CHECK).',';
+		}
+
+		$manuf = '';
+		if(isset($ap_info_array['manuf']))
+		{
+			$manuf = '"manuf":'.json_encode($ap_info_array['manuf']).',';
 		}
 
 		$hist_date = '';
 		if(isset($ap_info_array['hist_date']))
 		{
-			$hist_date .= '"hist_date":'.json_encode($ap_info_array['hist_date']).',';
+			$hist_date = '"hist_date":'.json_encode($ap_info_array['hist_date']).',';
 		}
 		
 		$hist_file_id = '';
 		if(isset($ap_info_array['hist_file_id']))
 		{
-			$hist_file_id .= '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';
+			$hist_file_id = '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';
 		}
-		
-		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
-		$ap_info_array['manuf'] = json_encode($ap_info_array['manuf']);
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$user.$sig.$rssi.$hist_date.$hist_file_id.'"ssid":'.$ap_info_array['ssid'].',"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'","manuf":'.$ap_info_array['manuf'].'},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+
+		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid'])).',';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$ssid.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.'"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
