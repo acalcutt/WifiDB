@@ -229,7 +229,7 @@ switch($func)
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
-			$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID\n"
+			$sql = "SELECT TOP 50000 wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID\n"
 				. "FROM wifi_hist AS wh\n"
 				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
 			if($list_id)
