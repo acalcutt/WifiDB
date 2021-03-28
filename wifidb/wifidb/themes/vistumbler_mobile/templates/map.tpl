@@ -308,7 +308,7 @@ if not, write to the
 							// --- End Address Search Box Functions ---
 
 							// Listen for every move event by the user
-							const displayCenter = () => {
+							const displayCenter = function () {
 								const center = map.getCenter();
 								const latitude = center.lat.toFixed(6);
 								const longitude = center.lng.toFixed(6);
