@@ -39,10 +39,12 @@ if not, write to the
 					<h1>{$wifidb_ap.ssid}
 						{if $wifidb_ap.validgps eq 1}
 							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_ap.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 							<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$wifidb_ap.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 							<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_ap.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 						{else}
 							<img width="20px" src="{$themeurl}img/globe_off.png">
+							<img width="20px" src="{$themeurl}img/sigmap_off.png">
 							<img width="20px" src="{$themeurl}img/json_off.png">
 							<img width="20px" src="{$themeurl}img/kmz_off.png">
 						{/if}
@@ -142,10 +144,12 @@ if not, write to the
 								<td class="light" align="center">
 								{if $wifidb_assoc.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_assoc.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}&list_id={$wifidb_assoc.id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_assoc.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
 									<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_assoc.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
+									<img width="20px" src="{$themeurl}img/sigmap_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
 								{/if}

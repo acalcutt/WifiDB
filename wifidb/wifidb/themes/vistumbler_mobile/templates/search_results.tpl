@@ -80,16 +80,23 @@ if not, write to the
 								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=LA&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
 								Last Active
 							</td>
+							<td class="header">
+								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=points&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=points&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
+								Points
+							</td>
 						</tr>
 						{foreach item=result from=$results_all}
 						<tr class="{$result.class}">
 							<td class="{$result.class}">
 							{if $result.validgps eq 1}
 								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$result.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$result.id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$result.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
 								<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$result.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 							{else}
 								<img width="20px" src="{$themeurl}img/globe_off.png">
+								<img width="20px" src="{$themeurl}img/sigmap_off.png">
 								<img width="20px" src="{$themeurl}img/json_off.png">
 								<img width="20px" src="{$themeurl}img/kmz_off.png">
 							{/if}
@@ -103,6 +110,7 @@ if not, write to the
 							<td class="{$result.class}">{$result.encry}</td>
 							<td class="{$result.class}">{$result.FA}</td>
 							<td class="{$result.class}">{$result.LA}</td>
+							<td class="{$result.class}">{$result.points}</td>
 						</tr>
 						{foreachelse}
 						<tr align="center">

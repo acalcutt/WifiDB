@@ -69,13 +69,13 @@ class createGeoJSON
 		$id = '';
 		if(isset($ap_info_array['id']))
 		{
-			$id = '"id":"'.$ap_info_array['id'].'",';
+			$id = '"id":"'.json_encode($ap_info_array['id'], JSON_NUMERIC_CHECK).'",';
 		}
 
 		$live_id = '';
 		if(isset($ap_info_array['live_id']))
 		{
-			$live_id .= '"live_id":"'.$ap_info_array['live_id'].'",';
+			$live_id .= '"live_id":"'.json_encode($ap_info_array['live_id'], JSON_NUMERIC_CHECK).'",';
 		}
 
 		$user = '';
@@ -88,13 +88,13 @@ class createGeoJSON
 		$sig = '';
 		if(isset($ap_info_array['signal']))
 		{
-			$sig .= '"signal":'.json_encode($ap_info_array['signal']).',';
+			$sig .= '"signal":'.json_encode($ap_info_array['signal'], JSON_NUMERIC_CHECK).',';
 		}
 
 		$rssi = '';
 		if(isset($ap_info_array['rssi']))
 		{
-			$rssi .= '"rssi":'.json_encode($ap_info_array['rssi']).',';
+			$rssi .= '"rssi":'.json_encode($ap_info_array['rssi'], JSON_NUMERIC_CHECK).',';
 		}
 
 		$hist_date = '';
@@ -106,7 +106,7 @@ class createGeoJSON
 		$hist_file_id = '';
 		if(isset($ap_info_array['hist_file_id']))
 		{
-			$hist_file_id .= '"hist_file_id":'.json_encode($ap_info_array['hist_file_id']).',';
+			$hist_file_id .= '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';
 		}
 		
 		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
@@ -451,6 +451,51 @@ class createGeoJSON
 																	[1, '".$open_color."'],
 																	[2, '".$wep_color."'],
 																	[3, '".$sec_color."']
+																]
+															},
+															'circle-radius': ".$radius.",
+															'circle-opacity': ".$opacity.",
+															'circle-blur': ".$blur."
+														}
+													});";
+		if ($labeled) {$layer_source .= $this->CreateLabelLayer($layer_sname);}
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
+	}
+
+	public function CreateApSigGeoJsonLayer($id, $list_id, $labeled=0, $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	{
+		$layer_sname = "apsig-".$id;
+		$layer_lname = "apsigl-".$id;
+		$layer_source = "
+													map.addSource('".$layer_sname."', {
+														type: 'geojson',
+														data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$id."&list_id=".$list_id."',
+														buffer: 0,
+													});
+
+													map.addLayer({
+														'id': '".$layer_lname."',
+														'type': 'circle',
+														'source': '".$layer_sname."',
+														'layout': {
+															'visibility': '".$visibility."'
+														},
+														'paint': {
+															'circle-color': {
+																'property': 'signal',
+																'stops': [
+																	[16, '#E42F00'],
+																	[30, '#FF0000'],
+																	[48, '#FF9200'],
+																	[64, '#FFEC00'],
+																	[80, '#80FF00'],
+																	[100, '#0D7600']
 																]
 															},
 															'circle-radius': ".$radius.",

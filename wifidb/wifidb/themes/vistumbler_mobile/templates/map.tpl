@@ -73,9 +73,13 @@ if not, write to the
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
 							<div id='basemap'>
 								<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
-								<label for='WDB_OSM'>Open Street Map</label>
-								<input id='WDB_NE' type='radio' name='rtoggle' value='WDB_NE'>
-								<label for='WDB_NE'>Natural Earth</label>
+								<label for='WDB_OSM'>WDB Light</label>
+								<input id='WDB_DARK_MATTER' type='radio' name='rtoggle' value='WDB_DARK_MATTER'>
+								<label for='WDB_DARK_MATTER'>WDB Dark</label>
+								<input id='WDB_BASIC' type='radio' name='rtoggle' value='WDB_BASIC'>
+								<label for='WDB_BASIC'>WDB Basic</label>
+								<input id='WDB_ELEV' type='radio' name='rtoggle' value='WDB_ELEV'>
+								<label for='WDB_DARK_MATTER'>WDB JAXA Test</label>
 							</div>
 							<div>
 								<button id="latest" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
@@ -308,6 +312,10 @@ if not, write to the
 									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
 									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.FA + '</b></li>';
 									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.LA + '</b></li>';
+									if (feature.properties.hist_date) text += '<li>Point Date: <b>' + feature.properties.hist_date + '</b></li>';
+									if (feature.properties.signal) text += '<li>Point Signal: <b>' + feature.properties.signal + '</b></li>';
+									if (feature.properties.rssi) text += '<li>Point RSSI: <b>' + feature.properties.rssi + '</b></li>';
+									if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
 									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 									
