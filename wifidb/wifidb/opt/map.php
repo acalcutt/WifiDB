@@ -39,15 +39,15 @@ $pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_F
 $style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
 $styles = array("WDB_OSM","WDB_DARK_MATTER","WDB_BASIC","WDB_ELEV");
 if(!in_array($style, $styles)){$style = "WDB_OSM";}
-$style = "https://omt.wifidb.net/styles/".$style."/style.json";
+$style = $dbcore->tileserver_gl_url."styles/".$style."/style.json";
 
 $func=$_REQUEST['func'];
 $dbcore->smarty->assign('func', $func);
 switch($func)
 {
 	case "wifidbmap":
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		if (empty($latitude)){$latitude = 37.090240;}
 		if (empty($longitude)){$longitude = -95.009766;}
 		if (empty($zoom)){$zoom = 2;}
@@ -183,8 +183,8 @@ switch($func)
 			}
 		}		
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		$layer_source_all = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$cell_layer_name = "'cell_networks'";
 		
@@ -258,8 +258,8 @@ switch($func)
 		
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);		
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		if (empty($latitude)){$latitude = $Center_LatLon['lat'];}
 		if (empty($longitude)){$longitude = $Center_LatLon['long'];}
 		if (empty($zoom)){$zoom = 9;}
@@ -350,8 +350,8 @@ switch($func)
 
 
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
@@ -442,8 +442,8 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$apinfo = $prep->fetch();
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
 		if (empty($zoom)){$zoom = 11;}
@@ -502,8 +502,8 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$latlng = $prep->fetch();
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($latlng['lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($latlng['long']);}
@@ -602,8 +602,8 @@ switch($func)
 		}
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($latlon_array);
 
-		$wifidb_meta_header = '<script src="https://omt.wifidb.net/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl.css" />';
-		$wifidb_meta_header .= '<script src="https://omt.wifidb.net/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="https://omt.wifidb.net/mapbox-gl-inspect.css" />';
+		$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
+		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($Center_LatLon['lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($Center_LatLon['long']);}
 		if (empty($zoom)){$zoom = 9;}

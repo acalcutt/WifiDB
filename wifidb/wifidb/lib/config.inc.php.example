@@ -29,7 +29,8 @@ $config = array
     'smarty_path'           =>   '/usr/share/php/smarty/libs/',
     'timezn'                =>   'UTC',
     'root'                  =>   'wifidb',
-    'hosturl'               =>   'http://wifidb.foo.lan',
+    'hosturl'               =>   'http://wifidb.foo.lan/',
+    'tileserver_gl_url'     =>   'https://omt.foo.lan/',
     'dim'                   =>   DIRECTORY_SEPARATOR,
     'timetilldead'          =>   2,
     'config_fails'          =>   3,
@@ -108,22 +109,26 @@ $config = array
     'sep'                   =>   '-',
 
     #---------------- SQL Info ----------------#
-    #MS SQL SERVER
-    #'srvc'                  =>   'sqlsrv',
-    #'host'                  =>   'localhost',
-    #'db'                      =>   'wifi',
-    #'db_user'               =>   'wdbuser',
-    #'db_pwd'                =>   'supersecretpw',
-    
-    #MySQL Server
-    'srvc'                  =>   'mysql',
-    'host'                  =>   'localhost',
-    'db'                      =>   'wifi',
-    'db_user'               =>   'wdbuser',
-    'db_pwd'                =>   'supersecretpw',
     'charset'               =>   'utf8mb4',
     'collate'               =>   'utf8mb4_unicode_ci',
     'engine'                =>   'innodb',
+
+    #MS SQL SERVER
+    'srvc'                  =>   'sqlsrv',
+    'driver'                =>   'sqlsrv',
+    'port'                	=>   1433,
+    'host'                  =>   'localhost',
+    'db'                  	=>   'wifi',
+    'db_user'               =>   'wdbuser',
+    'db_pwd'                =>   'supersecretpw',
+    
+    #MySQL Server
+    #'srvc'                  =>   'mysql',
+    #'host'                  =>   'localhost',
+    #'db'                  	=>   'wifi',
+    #'db_user'               =>   'wdbuser',
+    #'db_pwd'                =>   'supersecretpw',
+
 
     #---------------- Export Info ----------------#
     'open_loc'              =>   'http://vistumbler.sourceforge.net/images/program-images/open.png',

@@ -51,6 +51,7 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_meta_header', $this->meta->header);
 			$this->smarty->assign('wifidb_theme', $this->theme);
 			$this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
+			$this->smarty->assign('tileserver_gl_url', $this->tileserver_gl_url);
 
 			$this->smarty->assign('critical_error_message', '');
 

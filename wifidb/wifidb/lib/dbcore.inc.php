@@ -57,6 +57,7 @@ class dbcore
 		$this->HOSTURL				  = $config['hosturl'];
 		$this->root					 = $config['root'];
 		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';
+		$this->tileserver_gl_url	= $config['tileserver_gl_url'];
 		$this->PATH					 = $config['wifidb_install'];
 		$this->gpx_out				  = $this->PATH.$config['gpx_out'];
 		$this->gpx_htmlpath			 = $this->URL_PATH.$config['gpx_out'];

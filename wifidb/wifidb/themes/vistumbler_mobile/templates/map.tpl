@@ -215,7 +215,7 @@ if not, write to the
 
 							function switchLayer(layer) {
 								var layerId = layer.target.id;
-								map.setStyle('https://omt.wifidb.net/styles/' + layerId + '/style.json');
+								map.setStyle('{$tileserver_gl_url}/styles/' + layerId + '/style.json');
 								const url = new URL(window.location.href);
 								url.searchParams.set('style', layerId);
 								window.history.replaceState(null, null, url); // or pushState
