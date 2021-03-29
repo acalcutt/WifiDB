@@ -470,6 +470,8 @@ switch($func)
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ml['source_name'],"","signal","{signal}","Open Sans Regular",11,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ml['source_name'],"","rssi","{rssi}","Open Sans Regular",11,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($ml['source_name'],"","hist_date","{hist_date}","Open Sans Regular",10,"none");
+
 		$layer_name = "'".$ml['layer_name']."','".$dl['layer_name']."','WifiDB_weekly','WifiDB_monthly','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy'";	
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
