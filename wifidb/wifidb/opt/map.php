@@ -27,8 +27,6 @@ include('../lib/init.inc.php');
 
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels on map. by default labels are not shown.
 if((int)@$_REQUEST['channels'] === 1){$channels = 1;}else{$channels = 0;}#Show AP labels on map. by default labels are not shown.
-if((int)@$_REQUEST['signal'] === 1){$signal = 1;}else{$signal = 0;}#Show AP signals on map. by default labels are not shown.
-if((int)@$_REQUEST['rssi'] === 1){$rssi = 1;}else{$rssi = 0;}#Show AP rssi on map. by default labels are not shown.
 
 $latitude = filter_input(INPUT_GET, 'latitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $longitude = filter_input(INPUT_GET, 'longitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -421,6 +419,10 @@ switch($func)
 	case "exp_ap_sig":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
+		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_labels = array("none","signal","rssi","hist_date");
+		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
+		
 		if($dbcore->sql->service == "mysql")
 			{
 				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_ap`.`SSID`\n"
@@ -435,8 +437,36 @@ switch($func)
 					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
 					. "WHERE [wifi_ap].[AP_ID] = ?";
 			}
+			
+			
+		if($dbcore->sql->service == "mysql")
+		{
+			$sql = "SELECT wGPS.Lat, wGPS.Lon, wap.SSID\n"
+				. "FROM wifi_hist AS wh\n"
+				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+				. "LEFT OUTER JOIN wifi_ap AS wap ON wh.AP_ID = wap.AP_ID\n";
+			if($list_id)
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+			else
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+			$sql .= "ORDER BY wh.Hist_Date ASC\n"
+				. "LIMIT 1";
+		}
+		else if($dbcore->sql->service == "sqlsrv")
+		{
+			$sql = "SELECT wGPS.Lat, wGPS.Lon, wap.SSID\n"
+				. "FROM wifi_hist AS wh\n"
+				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+				. "LEFT OUTER JOIN wifi_ap AS wap ON wh.AP_ID = wap.AP_ID\n";
+			if($list_id)
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+			else
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+			$sql .= "ORDER BY wh.Hist_Date ASC";
+		}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		if($list_id){$prep->bindParam(2, $list_id, PDO::PARAM_INT);}
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$apinfo = $prep->fetch();
@@ -445,7 +475,7 @@ switch($func)
 		$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
-		if (empty($zoom)){$zoom = 11;}
+		if (empty($zoom)){$zoom = 14;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
@@ -477,13 +507,12 @@ switch($func)
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('cell_layer_name', $cell_layer_name);
 		$dbcore->smarty->assign('style', $style);
+		$dbcore->smarty->assign('sig_label', $sig_label);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
 		$dbcore->smarty->assign('zoom', $zoom);
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('signal', $signal);
-		$dbcore->smarty->assign('rssi', $rssi);
 		$dbcore->smarty->assign('list', 0);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);

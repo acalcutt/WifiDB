@@ -77,13 +77,13 @@ if not, write to the
 								{elseif $func eq "exp_ap_sig"}
 								<div id='siglabel'>
 									Point 	Label: 
-									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_sig_label()">
+									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_sig_label()"{if $sig_label eq "none"} checked='checked'{/if}>
 									<label for='lnone'>None</label>
-									<input id='lsignal' type='radio' name='sltoggle' value='signal' onclick="toggle_sig_label()">
+									<input id='lsignal' type='radio' name='sltoggle' value='signal' onclick="toggle_sig_label()"{if $sig_label eq "signal"} checked='checked'{/if}>
 									<label for='lsignal'>Signal</label>
-									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_sig_label()">
+									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_sig_label()"{if $sig_label eq "rssi"} checked='checked'{/if}>
 									<label for='lrssi'>RSSI</label>
-									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_sig_label()">
+									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_sig_label()"{if $sig_label eq "hist_date"} checked='checked'{/if}>
 									<label for='ldate'>Date</label>
 								</div>
 									
@@ -257,10 +257,9 @@ if not, write to the
 								for (var i = 0, length = radios.length; i < length; i++) {
 									if (radios[i].checked) {
 										map.setLayoutProperty('{$signal_source_name}' + '-' + radios[i].value, 'visibility', 'visible');
-										url.searchParams.set(radios[i].value, 1);
+										url.searchParams.set("sig_label", radios[i].value);
 									} else {
 										map.setLayoutProperty('{$signal_source_name}' + '-' + radios[i].value, 'visibility', 'none');
-										url.searchParams.delete(radios[i].value);
 									}
 								}
 								
