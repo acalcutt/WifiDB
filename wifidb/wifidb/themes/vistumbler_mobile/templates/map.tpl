@@ -32,13 +32,13 @@ if not, write to the
 							<div>
 								<div id='basemap'>
 									Map Style:
-									<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM' checked='checked'>
+									<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM'{if $style eq "WDB_OSM"} checked='checked'{/if}>
 									<label for='WDB_OSM'>WDB Light</label>
-									<input id='WDB_DARK_MATTER' type='radio' name='rtoggle' value='WDB_DARK_MATTER'>
+									<input id='WDB_DARK_MATTER' type='radio' name='rtoggle' value='WDB_DARK_MATTER'{if $style eq "WDB_DARK_MATTER"} checked='checked'{/if}>
 									<label for='WDB_DARK_MATTER'>WDB Dark</label>
-									<input id='WDB_BASIC' type='radio' name='rtoggle' value='WDB_BASIC'>
+									<input id='WDB_BASIC' type='radio' name='rtoggle' value='WDB_BASIC'{if $style eq "WDB_BASIC"} checked='checked'{/if}>
 									<label for='WDB_BASIC'>WDB Basic</label>
-									<input id='WDB_ELEV' type='radio' name='rtoggle' value='WDB_ELEV'>
+									<input id='WDB_ELEV' type='radio' name='rtoggle' value='WDB_ELEV'{if $style eq "WDB_ELEV"} checked='checked'{/if}>
 									<label for='WDB_DARK_MATTER'>WDB JAXA Test</label>
 								</div>
 								{if $func eq "user_list"}
@@ -127,7 +127,7 @@ if not, write to the
 
 							var map = new mapboxgl.Map({
 								container: 'map',
-								style: '{$style}',
+								style: '{$tileserver_gl_url}/styles/{$style}/style.json',
 								center: {$centerpoint},
 								zoom: {$zoom},
 								pitch: {$pitch},

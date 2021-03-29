@@ -39,7 +39,6 @@ $pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_F
 $style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
 $styles = array("WDB_OSM","WDB_DARK_MATTER","WDB_BASIC","WDB_ELEV");
 if(!in_array($style, $styles)){$style = "WDB_OSM";}
-$style = $dbcore->tileserver_gl_url."styles/".$style."/style.json";
 
 $func=$_REQUEST['func'];
 $dbcore->smarty->assign('func', $func);
