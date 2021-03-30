@@ -41,68 +41,37 @@ if not, write to the
 									<input id='WDB_ELEV' type='radio' name='rtoggle' value='WDB_ELEV'{if $style eq "WDB_ELEV"} checked='checked'{/if}>
 									<label for='WDB_DARK_MATTER'>WDB JAXA Test</label>
 								</div>
-								{if $func eq "user_list"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&channels=1">[View Channels]</a>
-									{/if}
-								{elseif $func eq "wifidbmap"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&channels=1">[View Channels]</a>
-									{/if}
-								{elseif $func eq "exp_search"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}&channels=1">[View Channels]</a>
-									{/if}
-								{elseif $func eq "exp_ap_sig"}
+{if $func eq "exp_ap_sig"}
 								<div id='siglabel'>
 									Point 	Label: 
-									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_sig_label()"{if $sig_label eq "none"} checked='checked'{/if}>
+									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
 									<label for='lnone'>None</label>
-									<input id='lsignal' type='radio' name='sltoggle' value='signal' onclick="toggle_sig_label()"{if $sig_label eq "signal"} checked='checked'{/if}>
+									<input id='lsignal' type='radio' name='sltoggle' value='signal' onclick="toggle_label()"{if $sig_label eq "signal"} checked='checked'{/if}>
 									<label for='lsignal'>Signal</label>
-									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_sig_label()"{if $sig_label eq "rssi"} checked='checked'{/if}>
+									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_label()"{if $sig_label eq "rssi"} checked='checked'{/if}>
 									<label for='lrssi'>RSSI</label>
-									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_sig_label()"{if $sig_label eq "hist_date"} checked='checked'{/if}>
+									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_label()"{if $sig_label eq "hist_date"} checked='checked'{/if}>
 									<label for='ldate'>Date</label>
 								</div>
-									
-								{elseif $func eq "exp_ap"}
-									{if $labeled eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&labeled=1">[View Labeled]</a>
-									{/if}
-									{if $channels eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&channels=0">[View Un-Labeled]</a>
-									{else}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$id}&channels=1">[View Channels]</a>
-									{/if}
-								{/if}
-{if $func ne "exp_ap_sig"}
+{else}
+								<div id='siglabel'>
+									Point 	Label: 
+									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
+									<label for='lnone'>None</label>
+									<input id='lssid' type='radio' name='sltoggle' value='ssid' onclick="toggle_label()"{if $sig_label eq "ssid"} checked='checked'{/if}>
+									<label for='lssid'>SSID</label>
+									<input id='lchan' type='radio' name='sltoggle' value='chan' onclick="toggle_label()"{if $sig_label eq "chan"} checked='checked'{/if}>
+									<label for='lchan'>Channel</label>
+									<input id='lfa' type='radio' name='sltoggle' value='FA' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
+									<label for='lfa'>First Active</label>
+									<input id='lla' type='radio' name='sltoggle' value='LA' onclick="toggle_label()"{if $sig_label eq "LA"} checked='checked'{/if}>
+									<label for='lla'>Last Active</label>
+									<input id='lp' type='radio' name='sltoggle' value='points' onclick="toggle_label()"{if $sig_label eq "points"} checked='checked'{/if}>
+									<label for='lp'>Points</label>
+								</div>
 								<div>
-									<button id="latest" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
-									<button id="daily" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
+									<button id="latests" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+									<button id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
 									<button id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
 									<button id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
 									<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
@@ -194,6 +163,7 @@ if not, write to the
 							// --- Start Year Visibility Functions ---
 							function toggle_layer_button(clicked_id)
 							{
+								var radios = document.getElementsByName('sltoggle');
 								var el = document.getElementById(clicked_id);
 								var btext = el.firstChild.data;
 								var btext = btext.replace("Show", "");
@@ -202,23 +172,25 @@ if not, write to the
 								var visibility = map.getLayoutProperty(clicked_id, 'visibility');
 								if (visibility === 'visible') {	
 									map.setLayoutProperty(clicked_id, 'visibility', 'none');
-{if $labeled eq 1 }
-									map.setLayoutProperty(clicked_id + '-label', 'visibility', 'none');
-{/if}
-{if $channels eq 1 }
-									map.setLayoutProperty(clicked_id + '-channel', 'visibility', 'none');
-{/if}
+									for (var i = 0, length = radios.length; i < length; i++) {
+										if (radios[i].checked) {
+											if (radios[i].value !== 'none') {
+												map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'none');
+											}
+										}
+									}
 									this.className = '';
 									el.firstChild.data = "Show" + btext;
 								} else {
 									this.className = 'active';
 									map.setLayoutProperty(clicked_id, 'visibility', 'visible');
-{if $labeled eq 1}
-									map.setLayoutProperty(clicked_id + '-label', 'visibility', 'visible');
-{/if}
-{if $channels eq 1}
-									map.setLayoutProperty(clicked_id + '-channel', 'visibility', 'visible');
-{/if}
+									for (var i = 0, length = radios.length; i < length; i++) {
+										if (radios[i].checked) {
+											if (radios[i].value !== 'none') {
+												map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'visible');
+											}
+										}
+									}
 									el.firstChild.data = "Hide" + btext;
 								}
 
@@ -227,6 +199,7 @@ if not, write to the
 							function toggle_latest_layer_button(clicked_id)
 							{
 								var el = document.getElementById(clicked_id);
+								var radios = document.getElementsByName('sltoggle');
 								var btext = el.firstChild.data;
 								var btext = btext.replace("Show", "");
 								var btext = btext.replace("Hide", "");
@@ -234,38 +207,59 @@ if not, write to the
 								var visibility = map.getLayoutProperty(clicked_id, 'visibility');
 								if (visibility === 'visible') {	
 									map.setLayoutProperty(clicked_id, 'visibility', 'none');
-									map.setLayoutProperty(clicked_id + 's-label', 'visibility', 'none');
-									map.setLayoutProperty(clicked_id + 's-channel', 'visibility', 'none');
+									for (var i = 0, length = radios.length; i < length; i++) {
+										if (radios[i].checked) {
+											if (radios[i].value !== 'none') {
+												map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'none');
+											}
+										}
+									}
 									this.className = '';
 									el.firstChild.data = "Show" + btext;
 								} else {
 									this.className = 'active';
 									map.setLayoutProperty(clicked_id, 'visibility', 'visible');
-									map.setLayoutProperty(clicked_id + 's-label', 'visibility', 'visible');
-									map.setLayoutProperty(clicked_id + 's-channel', 'visibility', 'visible');
+									for (var i = 0, length = radios.length; i < length; i++) {
+										if (radios[i].checked) {
+											if (radios[i].value !== 'none') {
+												map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'visible');
+											}
+										}
+									}
 									el.firstChild.data = "Hide" + btext;
 								}
 
 							}
 							// --- End Year Visibility Functions ---
 
-{if $func eq "exp_ap_sig"}
-							function toggle_sig_label() {
+							function toggle_label() {
 								const url = new URL(window.location.href);
 								var radios = document.getElementsByName('sltoggle');
-
+								var layers = [{$layer_name}]
 								for (var i = 0, length = radios.length; i < length; i++) {
-									if (radios[i].checked) {
-										map.setLayoutProperty('{$signal_source_name}' + '-' + radios[i].value, 'visibility', 'visible');
-										url.searchParams.set("sig_label", radios[i].value);
-									} else {
-										map.setLayoutProperty('{$signal_source_name}' + '-' + radios[i].value, 'visibility', 'none');
+									if (typeof radios[i] !== 'undefined') {
+										if (radios[i].checked) {
+											if (radios[i].value !== 'none') {
+												for (var j = 0, length2 = layers.length; j < length2; j++) {
+													var layer_visibility = map.getLayoutProperty(layers[j], 'visibility');
+													if (layer_visibility === 'visible') {	
+														map.setLayoutProperty(layers[j] + '-' + radios[i].value, 'visibility', 'visible');
+													}
+												}
+											}
+											url.searchParams.set("sig_label", radios[i].value);
+										} else {
+											if (radios[i].value !== 'none') {
+												for (var j = 0, length2 = layers.length; j < length2; j++) {
+													map.setLayoutProperty(layers[j] + '-' + radios[i].value, 'visibility', 'none');
+												}
+											}
+										}
 									}
 								}
 								
 								window.history.replaceState(null, null, url);
 							}
-{/if}
 							// --- Start Address Search Box Functions ---
 							function searchadr()
 							{
@@ -318,7 +312,7 @@ if not, write to the
 
 							function init() {
 {$layer_source_all}
-{if $func eq "exp_ap_sig"}toggle_sig_label();{/if}
+toggle_label()
 							};
 
 							map.once('style.load', function(e) {
