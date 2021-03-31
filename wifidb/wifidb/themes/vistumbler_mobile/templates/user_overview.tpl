@@ -66,7 +66,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="subheading">
-								<th class="subheading" colspan="9">Imported Files</th>
+								<th class="subheading" {if $wifidb_login_priv_name == "Administrator"}colspan="10"{else}colspan="9"{/if}>Imported Files</th>
 							</tr>
 							<tr class="header">
 								<th class="header" width="75px">

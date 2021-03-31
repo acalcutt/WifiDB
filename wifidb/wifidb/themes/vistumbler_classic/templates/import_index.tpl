@@ -31,6 +31,7 @@ if not, write to the
 					<a href="https://play.google.com/store/apps/details?id=net.wigle.wigleandroid" target="_blank">WigleWifi CSV</a>,
 					<a href="https://play.google.com/store/apps/details?id=com.Buckynet.Wifi.Scanner.Wireless.SWardriving&hl=en_US" target="_blank">SWardriving CSV</a>, and 
 					<a href="https://github.com/raffaeleragni/android-wardrive4/releases" target="_blank">Wardrive DB/DB3</a><br><br>
+					For Bulk Imports, We support the <a href="https://github.com/acalcutt/WiFiDBClient/releases/" target="_blank">WifiDB Uploader</a><br><br>
 					Username is optional, but it helps keep track of who has imported what Access Points<br><br>
 				</div>
 				<div style="text-align: center;">

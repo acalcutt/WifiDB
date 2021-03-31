@@ -42,6 +42,12 @@ if not, write to the
 								<th class="header">Efficiency</th>
 								<th class="header">First Import</th>
 								<th class="header">Last Import</th>
+								{if $wifidb_login_logged_in == 1 and $wifidb_user_details.regid}
+								<th class="header">Actions</th>
+								{/if}
+								{if $wifidb_login_priv_name == "Administrator"}
+								<th class="header">Admin</th>
+								{/if}
 							</tr>
 							<tr class="light">
 								<td class="light">{$wifidb_user_details.total_files|number_format:0}</td>
@@ -51,6 +57,8 @@ if not, write to the
 								<td class="light">{$wifidb_user_details.NewAPPercent}%</td>
 								<td class="light">{$wifidb_user_details.first_import_date}</td>
 								<td class="light">{$wifidb_user_details.newest_date}</td>
+								{if $wifidb_login_logged_in == 1 and $wifidb_user_details.regid}<td class="light"><a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_user_details.regid}"><img  title="Message [{$wifidb_user_details.user}]" width="20px" src="{$themeurl}img/send-message.png"></a></td>{/if}
+								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
 							</tr>
 						</tbody>
 					</table>
@@ -58,7 +66,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="subheading">
-								<th class="subheading" colspan="9">Imported Files</th>
+								<th class="subheading" {if $wifidb_login_priv_name == "Administrator"}colspan="10"{else}colspan="9"{/if}>Imported Files</th>
 							</tr>
 							<tr class="header">
 								<th class="header" width="75px">
@@ -121,6 +129,12 @@ if not, write to the
 										<a href="?func=alluserlists&user={$wifidb_user_details.user}&sort=date&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
+								{if $wifidb_login_priv_name == "Administrator"}
+								<th class="header" width="150px">
+									<div>Admin</div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+								</th>
+								{/if}
 							</tr>
 							{foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
 							<tr class="{$wifidb_user_prev.class}">
@@ -143,6 +157,7 @@ if not, write to the
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.gps|number_format:0}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.efficiency}%</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.date}</td>
+								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
 							</tr>
 							{/foreach}
 						</tbody>
