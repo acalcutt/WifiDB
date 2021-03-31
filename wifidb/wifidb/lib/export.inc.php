@@ -202,31 +202,16 @@ class export extends dbcore
 		$KML_data = "";
 		$export_ssid="";
 
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wGPS.Alt As Alt,\n"
-					. "wf.user As user\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
-					. "WHERE wap.AP_ID = ?";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
-					. "[wGPS].[Lat] As [Lat],\n"
-					. "[wGPS].[Lon] As [Lon],\n"
-					. "[wGPS].[Alt] As [Alt],\n"
-					. "[wf].[user] As [user]\n"
-					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
-					. "WHERE [wap].[AP_ID] = ?";
-			}
-				
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n";
+		if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
+		else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
+		$sql .= "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
+			. "WHERE wap.AP_ID = ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -251,6 +236,8 @@ class export extends dbcore
 			"FA" => $ap['fa'],
 			"LA" => $ap['la'],
 			"points" => $ap['points'],
+			"high_gps_sig" => $ap['high_gps_sig'],
+			"high_gps_rssi" => $ap['high_gps_rssi'],
 			"lat" => $this->convert->dm2dd($ap['Lat']),
 			"lon" => $this->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
@@ -386,31 +373,17 @@ class export extends dbcore
 		{
 			$apid = $array['AP_ID'];
 
-				
-			if($this->sql->service == "mysql")
-				{
-					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-						. "wGPS.Lat As Lat,\n"
-						. "wGPS.Lon As Lon,\n"
-						. "wGPS.Alt As Alt,\n"
-						. "wf.user As user\n"
-						. "FROM wifi_ap AS wap\n"
-						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-						. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
-						. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
-						. "[wGPS].[Lat] As [Lat],\n"
-						. "[wGPS].[Lon] As [Lon],\n"
-						. "[wGPS].[Alt] As [Alt],\n"
-						. "[wf].[user] As [user]\n"
-						. "FROM [wifi_ap] AS [wap]\n"
-						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-						. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
-						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL";
-				}
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n";
+			if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
+			else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
+			$sql .= "FROM wifi_ap AS wap\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
+				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
+
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
@@ -435,6 +408,8 @@ class export extends dbcore
 				"FA" => $ap['fa'],
 				"LA" => $ap['la'],
 				"points" => $ap['points'],
+				"high_gps_sig" => $ap['high_gps_sig'],
+				"high_gps_rssi" => $ap['high_gps_rssi'],
 				"lat" => $this->convert->dm2dd($ap['Lat']),
 				"lon" => $this->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
@@ -472,7 +447,7 @@ class export extends dbcore
 			{
 				if($this->sql->service == "mysql")
 					{
-						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 							. "wGPS.Lat As Lat,\n"
 							. "wGPS.Lon As Lon,\n"
 							. "wf.user AS user\n"
@@ -487,7 +462,7 @@ class export extends dbcore
 					}
 				else if($this->sql->service == "sqlsrv")
 					{
-						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 							. "wGPS.Lat As Lat,\n"
 							. "wGPS.Lon As Lon,\n"
 							. "wf.[user] AS [user]\n"
@@ -534,6 +509,8 @@ class export extends dbcore
 			"FA" => $apinfo['fa'],
 			"LA" => $apinfo['la'],
 			"points" => $apinfo['points'],
+			"high_gps_sig" => $apinfo['high_gps_sig'],
+			"high_gps_rssi" => $apinfo['high_gps_rssi'],
 			"lat" => $this->convert->dm2dd($apinfo['Lat']),
 			"lon" => $this->convert->dm2dd($apinfo['Lon']),
 			"alt" => $apinfo['Alt'],
@@ -572,30 +549,17 @@ class export extends dbcore
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
-			if($this->sql->service == "mysql")
-				{
-					$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-						. "wGPS.Lat As Lat,\n"
-						. "wGPS.Lon As Lon,\n"
-						. "wGPS.Alt As Alt,\n"
-						. "wf.user As user\n"
-						. "FROM wifi_ap AS wap\n"
-						. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-						. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-						. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
-						. "[wGPS].[Lat] As [Lat],\n"
-						. "[wGPS].[Lon] As [Lon],\n"
-						. "[wGPS].[Alt] As [Alt],\n"
-						. "[wf].[user] As [user]\n"
-						. "FROM [wifi_ap] AS [wap]\n"
-						. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-						. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
-						. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL";
-				}
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n";
+			if($this->sql->service == "mysql"){$sql .= "wf.user AS user\n";}
+			else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] AS [user]\n";}
+			$sql .= "FROM wifi_ap AS wap\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
+				
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
@@ -619,6 +583,8 @@ class export extends dbcore
 				"FA" => $ap['fa'],
 				"LA" => $ap['la'],
 				"points" => $ap['points'],
+				"high_gps_sig" => $ap['high_gps_sig'],
+				"high_gps_rssi" => $ap['high_gps_rssi'],
 				"lat" => $this->convert->dm2dd($ap['Lat']),
 				"lon" => $this->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
@@ -1419,7 +1385,7 @@ class export extends dbcore
 		
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 					. "wGPS.Lat As Lat,\n"
 					. "wGPS.Lon As Lon,\n"
 					. "wGPS.Alt As Alt,\n"
@@ -1443,7 +1409,7 @@ class export extends dbcore
 		else if($this->sql->service == "sqlsrv")
 			{
 
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points], [wap].[high_gps_sig], [wap].[high_gps_rssi],\n"
 					. "[wGPS].[Lat] As [Lat],\n"
 					. "[wGPS].[Lon] As [Lon],\n"
 					. "[wGPS].[Alt] As [Alt],\n"
@@ -1505,6 +1471,8 @@ class export extends dbcore
 			$results_all[$i]['FA']=$newArray['fa'];
 			$results_all[$i]['LA']=$newArray['la'];
 			$results_all[$i]['points']=$newArray['points'];
+			$results_all[$i]['high_gps_sig']=$newArray['high_gps_sig'];
+			$results_all[$i]['high_gps_rssi']=$newArray['high_gps_rssi'];
 			$results_all[$i]['Lat']=$newArray['Lat'];
 			$results_all[$i]['Lon']=$newArray['Lon'];
 			$results_all[$i]['Alt']=$newArray['Alt'];

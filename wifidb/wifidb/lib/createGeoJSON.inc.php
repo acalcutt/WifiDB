@@ -1,7 +1,7 @@
 <?php
 /*
 createGeoJSON.inc.php, class to create GeoJSON/GeoJSON files
-Copyright (C) 2015 Phil Ferland
+Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -38,45 +38,6 @@ class createGeoJSON
 	{
 		$GeoJSON_DATA = '{"type":"FeatureCollection","features":['.$alldata."\n".']}';
 		Return $GeoJSON_DATA;
-	}
-
-	public function CreateCellFeature($ap_info_array, $tc = 0)
-	{
-		
-		if($tc == 0){
-			$tippecanoe = '';
-		}else{
-			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';
-		}		
-		
-		$ap_info_array['mac'] = json_encode($ap_info_array['mac']);
-		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
-		$ap_info_array['authmode'] = json_encode($ap_info_array['authmode']);
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","name":"'.$ap_info_array['name'].'","mac":'.$ap_info_array['mac'].',"ssid":'.$ap_info_array['ssid'].',"authmode":'.$ap_info_array['authmode'].',"chan":'.$ap_info_array['chan'].',"type":"'.$ap_info_array['type'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","rssi":"'.$ap_info_array['rssi'].'","fa":"'.$ap_info_array['fa'].'","la":"'.$ap_info_array['la'].'","user":"'.$ap_info_array['user'].'","points":"'.$ap_info_array['points'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
-
-		return $tmp;
-	}
-
-	public function CreateCellLayer($source, $source_layer = "", $cell_color = "#885FCD", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
-	{
-
-		$layer_source = "
-													map.addLayer({
-														'id': '".$source_layer."',
-														'type': 'circle',
-														'source': '".$source."',
-														'source-layer': '".$source_layer."',
-														'layout': {
-															 'visibility': '".$visibility."'
-														},
-														'paint': {
-															'circle-color': '".$cell_color."',
-															'circle-radius': ".$radius.",
-															'circle-opacity': ".$opacity.",
-															'circle-blur': ".$blur."
-														}
-													});";
-		return $layer_source;
 	}
 	
 	public function CreateApFeature($ap_info_array, $tc = 0)
@@ -119,6 +80,18 @@ class createGeoJSON
 			$rssi = '"rssi":'.json_encode($ap_info_array['rssi'], JSON_NUMERIC_CHECK).',';
 		}
 
+		$high_gps_sig = '';
+		if(isset($ap_info_array['high_gps_sig']))
+		{
+			$high_gps_sig = '"high_gps_sig":'.json_encode($ap_info_array['high_gps_sig'], JSON_NUMERIC_CHECK).',';
+		}
+
+		$high_gps_rssi = '';
+		if(isset($ap_info_array['high_gps_rssi']))
+		{
+			$high_gps_rssi = '"high_gps_rssi":'.json_encode($ap_info_array['high_gps_rssi'], JSON_NUMERIC_CHECK).',';
+		}
+
 		$manuf = '';
 		if(isset($ap_info_array['manuf']))
 		{
@@ -138,55 +111,71 @@ class createGeoJSON
 		}
 
 		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid'])).',';
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$ssid.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.'"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$ssid.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$high_gps_sig.$high_gps_rssi.'"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
 
 		return $tmp;
 	}
 
 	public function CreateApLabelLayer($source, $source_layer = "", $font = "Open Sans Regular", $size = 10, $visibility = "none")
 	{
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);	
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);	
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{FA}",$font,$size,$visibility);	
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"LA","{LA}",$font,$size,$visibility);	
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"points","{points}",$font,$size,$visibility);	
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{FA}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"LA","{LA}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"points","{points}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_sig","{high_gps_sig}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_rssi","{high_gps_rssi}",$font,$size,$visibility);
 		
 		return $layer_source;
 	}
 	
 	public function CreateLabelLayer($source, $source_layer = "", $type = "label", $field = "{ssid}", $font = "Open Sans Regular", $size = 10, $visibility = "none")
 	{
-		if ($source_layer) {
-			$layer_source = "
-													map.addLayer({
-														'id': '".$source_layer."-".$type."',
-														'source-layer': '".$source_layer."',";
-		}else{
-			$layer_source = "
-													map.addLayer({
-														'id': '".$source."-".$type."',";
+		if ($source_layer) {$layer_source = "\n
+		map.addLayer({
+			'id': '".$source_layer."-".$type."',
+			'source-layer': '".$source_layer."',";
+		}else{$layer_source = "
+		map.addLayer({
+			'id': '".$source."-".$type."',";
 		}
 
-		$layer_source .= "
-														'source': '".$source."',
-														'type': 'symbol',
-														'layout': {
-															'text-field': '".$field."',
-															'text-font': ['".$font."'],
-															'text-size': ".$size.",
-															'visibility': '".$visibility."'
-														},
-														'paint': {
-															'text-halo-blur': 1,
-															'text-color': '#000000',
-															'text-halo-width': 2,
-															'text-halo-color': '#FFFFFF'
-														  }
-													});";
+		$layer_source .= "\n
+		'source': '".$source."',
+		'type': 'symbol',
+		'layout': {
+			'text-field': '".$field."',
+			'text-font': ['".$font."'],
+			'text-size': ".$size.",
+			'visibility': '".$visibility."'
+		},
+		'paint': {
+			'text-halo-blur': 1,
+			'text-color': '#000000',
+			'text-halo-width': 2,
+			'text-halo-color': '#FFFFFF'
+		  }
+	});";
 		
 		return $layer_source;
 	}
 
+	public function CreateCellFeature($ap_info_array, $tc = 0)
+	{
+		
+		if($tc == 0){
+			$tippecanoe = '';
+		}else{
+			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';
+		}		
+		
+		$ap_info_array['mac'] = json_encode($ap_info_array['mac']);
+		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
+		$ap_info_array['authmode'] = json_encode($ap_info_array['authmode']);
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","name":"'.$ap_info_array['name'].'","mac":'.$ap_info_array['mac'].',"ssid":'.$ap_info_array['ssid'].',"authmode":'.$ap_info_array['authmode'].',"chan":'.$ap_info_array['chan'].',"type":"'.$ap_info_array['type'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","rssi":"'.$ap_info_array['rssi'].'","fa":"'.$ap_info_array['fa'].'","la":"'.$ap_info_array['la'].'","user":"'.$ap_info_array['user'].'","points":"'.$ap_info_array['points'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+
+		return $tmp;
+	}
 	public function CreateLatestGeoJsonSource()
 	{
 		$layer_name = 'latests';
@@ -241,24 +230,6 @@ class createGeoJSON
 		return $ret_data;
 	}
 
-	public function CreateApSignalGeoJsonSource($ap_id, $list_id=0)
-	{
-		$layer_name = "aps_".$ap_id."-".$list_id;
-		$layer_source = "\n
-		map.addSource('".$layer_name."', {
-			type: 'geojson',
-			data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$ap_id."&list_id=".$list_id."',
-			buffer: 0,
-		});";
-
-		$ret_data = array(
-		"layer_source" => $layer_source,
-		"layer_name" => $layer_name,
-		);
-		
-		return $ret_data;
-	}
-
 	public function CreateUserAllGeoJsonSource($user, $from = NULL, $limit = NULL)
 	{
 		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user;
@@ -281,7 +252,7 @@ class createGeoJSON
 	public function CreateListGeoJsonSource($id)
 	{
 		$layer_name = "list-".$id;
-		$layer_source = "
+		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
 			data: '".$this->URL_BASE."api/geojson.php?func=exp_list&id=".$id."&all=1',
@@ -299,7 +270,7 @@ class createGeoJSON
 	public function CreateLiveApGeoJsonSource($id)
 	{
 		$layer_name = "ap-".$id;
-		$layer_source = "
+		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
 			data: '".$this->URL_BASE."api/geojson.php?func=exp_live_ap&id=".$id."',
@@ -317,7 +288,7 @@ class createGeoJSON
 	public function CreateSearchGeoJsonSource($search_str)
 	{
 		$layer_name = 'slist-'.uniqid();
-		$layer_source = "
+		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
 			data: '".$this->URL_BASE."api/geojson.php?func=exp_search".$search_str."',
@@ -331,7 +302,25 @@ class createGeoJSON
 		
 		return $ret_data;
 	}
-	
+
+	public function CreateApSignalGeoJsonSource($ap_id, $list_id=0)
+	{
+		$layer_name = "aps_".$ap_id."-".$list_id;
+		$layer_source = "\n
+		map.addSource('".$layer_name."', {
+			type: 'geojson',
+			data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$ap_id."&list_id=".$list_id."',
+			buffer: 0,
+		});";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_name,
+		);
+		
+		return $ret_data;
+	}
+
 	public function CreateApLayer($data_source, $data_source_layer = "", $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a",$base_radius = 2, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		if($data_source_layer){$layer_lname = $data_source_layer;}else{$layer_lname = $data_source;};
@@ -348,9 +337,9 @@ class createGeoJSON
 				'circle-radius': {
 					'base': ".$base_radius.",
 					'stops': [
-					[1, 1],
-					[5, 2],
-					[10, 3],
+					[1, 1.5],
+					[4, 2],
+					[12, 2],
 					[20, 20]
 					]
 				},
@@ -379,7 +368,7 @@ class createGeoJSON
 	public function CreateApSigLayer($data_source, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		$layer_lname = $data_source;
-		$layer_source = "
+		$layer_source = "\n
 		map.addLayer({
 			'id': '".$layer_lname."',
 			'type': 'circle',
@@ -419,5 +408,27 @@ class createGeoJSON
 		);
 		
 		return $ret_data;
+	}
+
+	public function CreateCellLayer($source, $source_layer = "", $cell_color = "#885FCD", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	{
+
+		$layer_source = "\n
+		map.addLayer({
+			'id': '".$source_layer."',
+			'type': 'circle',
+			'source': '".$source."',
+			'source-layer': '".$source_layer."',
+			'layout': {
+				 'visibility': '".$visibility."'
+			},
+			'paint': {
+				'circle-color': '".$cell_color."',
+				'circle-radius': ".$radius.",
+				'circle-opacity': ".$opacity.",
+				'circle-blur': ".$blur."
+			}
+		});";
+		return $layer_source;
 	}
 }

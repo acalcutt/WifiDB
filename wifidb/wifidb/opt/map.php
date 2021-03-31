@@ -3,7 +3,7 @@ error_reporting(1);
 @ini_set('display_errors', 1);
 /*
 fetch.php, fetches a single AP's details.
-Copyright (C) 2018 Andrew Calcutt
+Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -28,9 +28,6 @@ include('../lib/init.inc.php');
 $wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
 $wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
 
-if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels on map. by default labels are not shown.
-if((int)@$_REQUEST['channels'] === 1){$channels = 1;}else{$channels = 0;}#Show AP labels on map. by default labels are not shown.
-
 $latitude = filter_input(INPUT_GET, 'latitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $longitude = filter_input(INPUT_GET, 'longitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $zoom = filter_input(INPUT_GET, 'zoom', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -47,7 +44,7 @@ switch($func)
 {
 	case "wifidbmap":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
-		$sig_labels = array("none","ssid","chan","FA","LA","points");
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		if (empty($latitude)){$latitude = 37.090240;}
@@ -88,7 +85,9 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name']);
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"visible");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
+
 
 		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
 
@@ -108,7 +107,7 @@ switch($func)
 		break;
 	case "user_all":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
-		$sig_labels = array("none","ssid","chan","FA","LA","points");
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
@@ -172,7 +171,6 @@ switch($func)
 			if($ap_count > $limit)
 			{
 				$ldivs = ceil($ap_count / $limit);
-				$dbcore->smarty->assign('labeled', $labeled);
 				$dbcore->smarty->assign('user', $user);
 				$dbcore->smarty->assign('limit', $limit);
 				$dbcore->smarty->assign('count', $ap_count);
@@ -217,6 +215,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$uags = $dbcore->createGeoJSON->CreateUserAllGeoJsonSource($user, $from, $limit);
@@ -236,8 +235,6 @@ switch($func)
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
-		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('default_hidden', 1);	
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -246,7 +243,7 @@ switch($func)
 		break;
 	case "user_list":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
-		$sig_labels = array("none","ssid","chan","FA","LA","points");
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
@@ -304,6 +301,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 		
 		$mlgs = $dbcore->createGeoJSON->CreateListGeoJsonSource($id);
@@ -323,8 +321,6 @@ switch($func)
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
-		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -332,7 +328,7 @@ switch($func)
 		break;
 	case "exp_ap":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
-		$sig_labels = array("none","ssid","chan","FA","LA","points");
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
@@ -396,6 +392,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$ags = $dbcore->createGeoJSON->CreateApGeoJsonSource($id);
@@ -415,8 +412,6 @@ switch($func)
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
-		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('ssid', $apinfo['SSID']);
@@ -474,11 +469,11 @@ switch($func)
 		$ml = $dbcore->createGeoJSON->CreateApSigLayer($asgs['layer_name']);
 		$layer_source_all .= $asgs['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($asgs['layer_name'],"","signal","{signal}","Open Sans Regular",11,"none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($asgs['layer_name'],"","rssi","{rssi}","Open Sans Regular",11,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($asgs['layer_name'],"","signal","{signal}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($asgs['layer_name'],"","rssi","{rssi}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($asgs['layer_name'],"","hist_date","{hist_date}","Open Sans Regular",10,"none");
 
-		$layer_name = "'".$ml['layer_name']."'";
+		$layer_name = "'".$asgs['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -488,7 +483,6 @@ switch($func)
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
-		$dbcore->smarty->assign('labeled', $labeled);
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('ssid', dbcore::formatSSID($apinfo['SSID']));
 		$dbcore->smarty->assign('list_id', $list_id);
@@ -499,7 +493,7 @@ switch($func)
 		
 	case "exp_live_ap":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
-		$sig_labels = array("none","ssid","chan","FA","LA","points");
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
@@ -549,6 +543,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lags = $dbcore->createGeoJSON->CreateLiveApGeoJsonSource($id);
@@ -568,8 +563,6 @@ switch($func)
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
-		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -578,7 +571,7 @@ switch($func)
 		
 	case "exp_search":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
-		$sig_labels = array("none","ssid","chan","FA","LA","points");
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		define("SWITCH_EXTRAS", "export");
@@ -653,6 +646,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lsgs = $dbcore->createGeoJSON->CreateSearchGeoJsonSource($export_url);
@@ -672,8 +666,6 @@ switch($func)
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
-		$dbcore->smarty->assign('labeled', $labeled);
-		$dbcore->smarty->assign('channels', $channels);
 		$dbcore->smarty->assign('search', 1);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('export_url', $export_url);

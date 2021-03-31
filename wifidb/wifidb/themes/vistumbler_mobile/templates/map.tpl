@@ -1,6 +1,6 @@
 <!--
 
-Copyright (C) 2018 Andrew Calcutt
+Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -68,6 +68,10 @@ if not, write to the
 									<label for='lla'>Last Active</label>
 									<input id='lp' type='radio' name='sltoggle' value='points' onclick="toggle_label()"{if $sig_label eq "points"} checked='checked'{/if}>
 									<label for='lp'>Points</label>
+									<input id='hs' type='radio' name='sltoggle' value='high_gps_sig' onclick="toggle_label()"{if $sig_label eq "high_gps_sig"} checked='checked'{/if}>
+									<label for='hs'>High Signal</label>
+									<input id='hr' type='radio' name='sltoggle' value='high_gps_rssi' onclick="toggle_label()"{if $sig_label eq "high_gps_rssi"} checked='checked'{/if}>
+									<label for='hr'>High RSSI</label>
 								</div>
 								<div>
 									<button id="latests" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
@@ -214,6 +218,7 @@ if not, write to the
 											}
 										}
 									}
+									map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'none');
 									this.className = '';
 									el.firstChild.data = "Show" + btext;
 								} else {
@@ -226,6 +231,7 @@ if not, write to the
 											}
 										}
 									}
+									map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'visible');
 									el.firstChild.data = "Hide" + btext;
 								}
 
@@ -368,6 +374,8 @@ toggle_label()
 									if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
 									if (feature.properties.FA) text += '<li>First: <b>' + feature.properties.FA + '</b></li>';
 									if (feature.properties.LA) text += '<li>Last: <b>' + feature.properties.LA + '</b></li>';
+									if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
+									if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
 									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
 									if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
 									if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
