@@ -293,8 +293,9 @@ switch($func)
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
-		if ($from == ""){$from = NULL;}
-		if ($limit == ""){$limit = NULL;}
+		if(is_numeric($from) && is_numeric($limit)){$title .= '-'.$from.'-'.$limit;}
+		if(!is_numeric($from)){$from = 0;}
+		if(!is_numeric($limit)){$limit = 50000;}
 		
 		
 		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user, $from, $limit);
