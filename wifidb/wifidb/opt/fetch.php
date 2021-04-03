@@ -38,10 +38,8 @@ if(!is_numeric($inc)){$inc = 50;}
 
 
 #Get count of files with this ap_id for pageation
-if($dbcore->sql->service == "mysql")
-	{$sql = "Select Count(distinct `File_ID`) FROM wifi_hist WHERE `AP_ID` = ?";}
-else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "Select Count(distinct [File_ID]) FROM wifi_hist WHERE [AP_ID] = ?";}
+
+$sql = "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
 $sqlprep = $dbcore->sql->conn->prepare($sql);
 $sqlprep->bindParam(1, $id, PDO::PARAM_INT);
 $sqlprep->execute();
