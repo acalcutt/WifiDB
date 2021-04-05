@@ -85,7 +85,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name']);
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"visible");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"visible");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 
@@ -215,7 +215,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$uags = $dbcore->createGeoJSON->CreateUserAllGeoJsonSource($user, $from, $limit);
@@ -301,7 +301,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 		
 		$mlgs = $dbcore->createGeoJSON->CreateListGeoJsonSource($id);
@@ -392,7 +392,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$ags = $dbcore->createGeoJSON->CreateApGeoJsonSource($id);
@@ -543,7 +543,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lags = $dbcore->createGeoJSON->CreateLiveApGeoJsonSource($id);
@@ -646,7 +646,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lsgs = $dbcore->createGeoJSON->CreateSearchGeoJsonSource($export_url);

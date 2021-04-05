@@ -43,82 +43,44 @@ class createGeoJSON
 	public function CreateApFeature($ap_info_array, $tc = 0)
 	{
 		
-		if($tc == 0){
-			$tippecanoe = '';
-		}else{
-			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';
-		}
+		if($tc == 0){$tippecanoe = '';}else{$tippecanoe = '"tippecanoe":{"maxzoom":14,"minzoom":0},';}
 
-		$id = '';
-		if(isset($ap_info_array['id']))
-		{
-			$id = '"id":"'.json_encode($ap_info_array['id'], JSON_NUMERIC_CHECK).'",';
-		}
+		if(isset($ap_info_array['id'])){$id = '"id":"'.json_encode($ap_info_array['id'], JSON_NUMERIC_CHECK).'",';}else{$id = '';}
+		if(isset($ap_info_array['live_id'])){$live_id = '"live_id":"'.json_encode($ap_info_array['live_id'], JSON_NUMERIC_CHECK).'",';}else{$live_id = '';}
+		if(isset($ap_info_array['user'])){$user = '"user":'.json_encode($ap_info_array['user']).',';}else{$user = '';}
+		if(isset($ap_info_array['signal'])){$sig = '"signal":'.json_encode($ap_info_array['signal'], JSON_NUMERIC_CHECK).',';}else{$sig = '';}
+		if(isset($ap_info_array['rssi'])){$rssi = '"rssi":'.json_encode($ap_info_array['rssi'], JSON_NUMERIC_CHECK).',';}else{$rssi = '';}
+		if(isset($ap_info_array['high_gps_sig'])){$high_gps_sig = '"high_gps_sig":'.json_encode($ap_info_array['high_gps_sig'], JSON_NUMERIC_CHECK).',';}else{$high_gps_sig = '';}
+		if(isset($ap_info_array['high_gps_rssi'])){$high_gps_rssi = '"high_gps_rssi":'.json_encode($ap_info_array['high_gps_rssi'], JSON_NUMERIC_CHECK).',';}else{$high_gps_rssi = '';}
+		if(isset($ap_info_array['manuf'])){$manuf = '"manuf":'.json_encode($ap_info_array['manuf']).',';}else{$manuf = '';}
+		if(isset($ap_info_array['hist_date'])){$hist_date = '"hist_date":'.json_encode($ap_info_array['hist_date']).',';}else{$hist_date = '';}
+		if(isset($ap_info_array['hist_file_id'])){$hist_file_id = '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';}else{$hist_file_id = '';}
+		if(isset($ap_info_array['mac'])){$mac = '"mac":'.json_encode($ap_info_array['mac']).',';}else{$mac = '';}
+		if(isset($ap_info_array['sectype'])){$sectype = '"sectype":'.json_encode($ap_info_array['sectype'], JSON_NUMERIC_CHECK).',';}else{$sectype = '';}
+		if(isset($ap_info_array['NT'])){$NT = '"NT":'.json_encode($ap_info_array['NT']).',';}else{$NT = '';}
+		if(isset($ap_info_array['radio'])){$radio = '"radio":'.json_encode($ap_info_array['radio']).',';}else{$radio = '';}
+		if(isset($ap_info_array['chan'])){$chan = '"chan":'.json_encode($ap_info_array['chan']).',';}else{$chan = '';}
+		if(isset($ap_info_array['auth'])){$auth = '"auth":'.json_encode($ap_info_array['auth']).',';}else{$auth = '';}
+		if(isset($ap_info_array['encry'])){$encry = '"encry":'.json_encode($ap_info_array['encry']).',';}else{$encry = '';}
+		if(isset($ap_info_array['BTx'])){$BTx = '"BTx":'.json_encode($ap_info_array['BTx']).',';}else{$BTx = '';}
+		if(isset($ap_info_array['OTx'])){$OTx = '"OTx":'.json_encode($ap_info_array['OTx']).',';}else{$OTx = '';}
+		if(isset($ap_info_array['points'])){$points = '"points":'.json_encode($ap_info_array['points']).',';}else{$points = '';}
+		if(isset($ap_info_array['FA'])){$FA = '"FA":'.json_encode($ap_info_array['FA']).',';}else{$FA = '';}
+		if(isset($ap_info_array['LA'])){$LA = '"LA":'.json_encode($ap_info_array['LA']).',';}else{$LA = '';}
+		if(isset($ap_info_array['lat'])){$lat = '"lat":'.json_encode($ap_info_array['lat']).',';}else{$lat = '';}
+		if(isset($ap_info_array['lon'])){$lon = '"lon":'.json_encode($ap_info_array['lon']).',';}else{$lon = '';}
+		if(isset($ap_info_array['alt'])){$alt = '"alt":'.json_encode($ap_info_array['alt']).',';}else{$alt = '';}
 
-		$live_id = '';
-		if(isset($ap_info_array['live_id']))
-		{
-			$live_id = '"live_id":"'.json_encode($ap_info_array['live_id'], JSON_NUMERIC_CHECK).'",';
-		}
-
-		$user = '';
-		if(isset($ap_info_array['user']))
-		{
-			$user = '"user":'.json_encode($ap_info_array['user']).',';
-		}
-
-
-		$sig = '';
-		if(isset($ap_info_array['signal']))
-		{
-			$sig = '"signal":'.json_encode($ap_info_array['signal'], JSON_NUMERIC_CHECK).',';
-		}
-
-		$rssi = '';
-		if(isset($ap_info_array['rssi']))
-		{
-			$rssi = '"rssi":'.json_encode($ap_info_array['rssi'], JSON_NUMERIC_CHECK).',';
-		}
-
-		$high_gps_sig = '';
-		if(isset($ap_info_array['high_gps_sig']))
-		{
-			$high_gps_sig = '"high_gps_sig":'.json_encode($ap_info_array['high_gps_sig'], JSON_NUMERIC_CHECK).',';
-		}
-
-		$high_gps_rssi = '';
-		if(isset($ap_info_array['high_gps_rssi']))
-		{
-			$high_gps_rssi = '"high_gps_rssi":'.json_encode($ap_info_array['high_gps_rssi'], JSON_NUMERIC_CHECK).',';
-		}
-
-		$manuf = '';
-		if(isset($ap_info_array['manuf']))
-		{
-			$manuf = '"manuf":'.json_encode($ap_info_array['manuf']).',';
-		}
-
-		$hist_date = '';
-		if(isset($ap_info_array['hist_date']))
-		{
-			$hist_date = '"hist_date":'.json_encode($ap_info_array['hist_date']).',';
-		}
-		
-		$hist_file_id = '';
-		if(isset($ap_info_array['hist_file_id']))
-		{
-			$hist_file_id = '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';
-		}
-
-		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid'])).',';
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$ssid.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$high_gps_sig.$high_gps_rssi.'"mac":"'.$ap_info_array['mac'].'","sectype":'.$ap_info_array['sectype'].',"NT":"'.$ap_info_array['NT'].'","radio":"'.$ap_info_array['radio'].'","chan":"'.$ap_info_array['chan'].'","auth":"'.$ap_info_array['auth'].'","encry":"'.$ap_info_array['encry'].'","BTx":"'.$ap_info_array['BTx'].'","OTx":"'.$ap_info_array['OTx'].'","points":"'.$ap_info_array['points'].'","FA":"'.$ap_info_array['FA'].'","LA":"'.$ap_info_array['LA'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","alt":"'.$ap_info_array['alt'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
+		$name = '"name":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$name.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
 
 		return $tmp;
 	}
 
 	public function CreateApLabelLayer($source, $source_layer = "", $font = "Open Sans Regular", $size = 10, $visibility = "none")
 	{
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"name","{name}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"mac","{mac}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{FA}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"LA","{LA}",$font,$size,$visibility);

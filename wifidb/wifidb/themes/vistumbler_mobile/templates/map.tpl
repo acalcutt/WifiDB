@@ -31,7 +31,7 @@ if not, write to the
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
 							<div>
 								<div id='basemap'>
-									Map Style:
+									<b>Map Style: </b>
 									<input id='WDB_OSM' type='radio' name='rtoggle' value='WDB_OSM'{if $style eq "WDB_OSM"} checked='checked'{/if}>
 									<label for='WDB_OSM'>WDB Light</label>
 									<input id='WDB_DARK_MATTER' type='radio' name='rtoggle' value='WDB_DARK_MATTER'{if $style eq "WDB_DARK_MATTER"} checked='checked'{/if}>
@@ -55,11 +55,13 @@ if not, write to the
 								</div>
 {else}
 								<div id='siglabel'>
-									Point 	Label: 
+									<b>Point Label: </b>
 									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
 									<label for='lnone'>None</label>
-									<input id='lssid' type='radio' name='sltoggle' value='ssid' onclick="toggle_label()"{if $sig_label eq "ssid"} checked='checked'{/if}>
+									<input id='lssid' type='radio' name='sltoggle' value='name' onclick="toggle_label()"{if $sig_label eq "ssid"} checked='checked'{/if}>
 									<label for='lssid'>SSID</label>
+									<input id='lmac' type='radio' name='sltoggle' value='mac' onclick="toggle_label()"{if $sig_label eq "mac"} checked='checked'{/if}>
+									<label for='lmac'>Mac</label>
 									<input id='lchan' type='radio' name='sltoggle' value='chan' onclick="toggle_label()"{if $sig_label eq "chan"} checked='checked'{/if}>
 									<label for='lchan'>Channel</label>
 									<input id='lfa' type='radio' name='sltoggle' value='FA' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
@@ -359,8 +361,8 @@ toggle_label()
 									var feature = features[0];
 									
 									var text = '<ul>';
-									if (feature.properties.id) text += '<li>SSID: <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
-									if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+									if (feature.properties.id) text += '<li>SSID: <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.name + '</b></a></li>';
+									if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.name + '</b></li>';
 									if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
 									if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
 									if (feature.properties.points) text  += '<li>Points: <a target="_blank" href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
