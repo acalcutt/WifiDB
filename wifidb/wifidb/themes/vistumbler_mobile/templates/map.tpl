@@ -58,7 +58,7 @@ if not, write to the
 									<b>Point Label: </b>
 									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
 									<label for='lnone'>None</label>
-									<input id='lssid' type='radio' name='sltoggle' value='name' onclick="toggle_label()"{if $sig_label eq "ssid"} checked='checked'{/if}>
+									<input id='lssid' type='radio' name='sltoggle' value='ssid' onclick="toggle_label()"{if $sig_label eq "ssid"} checked='checked'{/if}>
 									<label for='lssid'>SSID</label>
 									<input id='lmac' type='radio' name='sltoggle' value='mac' onclick="toggle_label()"{if $sig_label eq "mac"} checked='checked'{/if}>
 									<label for='lmac'>Mac</label>
