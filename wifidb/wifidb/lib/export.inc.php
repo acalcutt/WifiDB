@@ -323,6 +323,74 @@ class export extends dbcore
 		return $KML_data;
 	}
 
+	public function ApArray($id, $named=0, $new_ap=0)
+	{
+		$Import_Map_Data = "";
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n";
+		if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
+		else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
+		$sql .= "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
+
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			$apcount++;
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $ap['AP_ID'],
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $ap['BSSID'],
+			"ssid" => $ap['SSID'],
+			"chan" => $ap['CHAN'],
+			"radio" => $ap['RADTYPE'],
+			"NT" => $ap['NETTYPE'],
+			"sectype" => $ap['SECTYPE'],
+			"auth" => $ap['AUTH'],
+			"encry" => $ap['ENCR'],
+			"BTx" => $ap['BTX'],
+			"OTx" => $ap['OTX'],
+			"FA" => $ap['fa'],
+			"LA" => $ap['la'],
+			"points" => $ap['points'],
+			"high_gps_sig" => $ap['high_gps_sig'],
+			"high_gps_rssi" => $ap['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"lon" => $this->convert->dm2dd($ap['Lon']),
+			"alt" => $ap['Alt'],
+			"manuf"=>$this->findManuf($ap['BSSID']),
+			"user" => $ap['user']
+			);
+			$ap_array[] = $ap_info;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"long" => $this->convert->dm2dd($apinfo['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+		}
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
 	public function UserListArray($file_id, $named=0, $new_ap=0, $only_new=0)
 	{
 

@@ -309,44 +309,11 @@ switch($func)
 
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			list($ap_kml, $export_ssid) = $dbcore->export->ExportSingleAp($id, $labeled, $new_icons);
-			if($ap_kml)
-			{
-				#Get the AP Signal History
-				$KML_Signal_data = "";
-				
-				# -Get Unique Files with this AP_ID-
-				if($dbcore->sql->service == "mysql")
-					{$sql = "SELECT DISTINCT(`File_ID`) FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID`";}
-				else if($dbcore->sql->service == "sqlsrv")
-					{$sql = "SELECT DISTINCT([File_ID]) FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID]";}
-				$prep_file_id = $dbcore->sql->conn->prepare($sql);
-				$prep_file_id->bindParam(1, $id, PDO::PARAM_INT);
-				$prep_file_id->execute();
-				$fetch_file_id = $prep_file_id->fetchAll();
-				foreach($fetch_file_id as $file_id)
-				{
-					#Get List Title 
-					if($dbcore->sql->service == "mysql")
-						{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
-					else if($dbcore->sql->service == "sqlsrv")
-						{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
-					$prep_title = $dbcore->sql->conn->prepare($sql);
-					$prep_title->bindParam(1, $file_id['File_ID'], PDO::PARAM_INT);
-					$prep_title->execute();
-					$fetch_title = $prep_title->fetch(2);
-					$ap_list_title = $fetch_title['title'];
-					
-					#Get List AP Signal History
-					$ap_signal = $dbcore->export->ExportSignal3dSingleListAp($file_id['File_ID'], $id, 0);
-					if($ap_signal){$KML_Signal_data .= $dbcore->createKML->createFolder($file_id['File_ID']."-".$ap_list_title."-".$ResultAP['ssid'], $ap_signal, 1);}
-				}			
-				if($KML_Signal_data == ""){$KML_Signal_data .= $dbcore->createKML->createFolder("No Signal History", $KML_Signal_data, 0);}
-				$ap_kml .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 0);
-			}
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id."-".$export_ssid);
-			$results = $dbcore->createKML->createKMLstructure($title, $ap_kml);
-			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
+			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
+			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $AP_PlaceMarks);
+			
+			if($labeled){$file_name = "ap_id_".$id."_Labeled.kmz";}else{$file_name = "ap_id_".$id.".kmz";}
 			break;
 			
 		case "exp_list_ap_signal":

@@ -134,55 +134,10 @@ switch($func)
 
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$Import_Map_Data = "";
-		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n";
-		if($dbcore->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
-		$sql .= "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
-
-		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $id, PDO::PARAM_INT);
-		$prep->execute();
-		$appointer = $prep->fetchAll();
-		foreach($appointer as $ap)
-		{
-			#Get AP GeoJSON
-			$ap_info = array(
-			"id" => $ap['AP_ID'],
-			"new_ap" => $new_icons,
-			"named" => $named,
-			"mac" => $ap['BSSID'],
-			"ssid" => $ap['SSID'],
-			"chan" => $ap['CHAN'],
-			"radio" => $ap['RADTYPE'],
-			"NT" => $ap['NETTYPE'],
-			"sectype" => $ap['SECTYPE'],
-			"auth" => $ap['AUTH'],
-			"encry" => $ap['ENCR'],
-			"BTx" => $ap['BTX'],
-			"OTx" => $ap['OTX'],
-			"FA" => $ap['fa'],
-			"LA" => $ap['la'],
-			"points" => $ap['points'],
-			"high_gps_sig" => $ap['high_gps_sig'],
-			"high_gps_rssi" => $ap['high_gps_rssi'],
-			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
-			"alt" => $ap['Alt'],
-			"manuf"=>$dbcore->findManuf($ap['BSSID']),
-			"user" => $ap['user']
-			);
-			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
-		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+		$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ApArray['latlongarray']);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($ApArray['data']);
+		if($labeled){$file_name = "ap_id_".$id."_Labeled.geojson";}else{$file_name = "ap_id_".$id.".geojson";}
 	break;
 
 	case "exp_ap_sig":
