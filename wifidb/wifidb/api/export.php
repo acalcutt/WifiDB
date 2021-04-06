@@ -72,16 +72,56 @@ switch($func)
 			$results = $dbcore->createKML->createKMLstructure("Latest AP Network Link", $Newest_FT.$Newest_Labeled_FT.$Newest.$Newest_Labeled);
 			if($labeled){$file_name = "Latest_Labeled_NetworkLink.kmz";}else{$file_name = "Latest_NetworkLink.kmz";}
 			break;
-			
+
 		case "exp_user_netlink":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;user='.$user.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $user, 1, 0, "onInterval", 86400);
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-			$title = $user."'s Network Link";
+			$title = $user."'s Network Link";			
+			$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+			if ($limit == ""){$limit = 50000;}
+			if($dbcore->sql->service == "mysql")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
+				}
+			else if($dbcore->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
+				}
+			$result = $dbcore->sql->conn->prepare($sql);
+			$result->bindParam(1, $user, PDO::PARAM_STR);
+			$result->execute();
+			$newArray = $result->fetch(2);
+			$ap_count = $newArray['ap_count'];
+			$visible = 1;
+			if($ap_count > $limit)
+			{
+				$ldivs = ceil($ap_count / $limit);
+				
+
+				
+				for ($lc = 1; $lc <= $ldivs; $lc++) {
+					$mincount = ($lc - 1) * $limit;
+					$maxcount = $lc * $limit;
+					$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;from='.$mincount.'&#x26;limit='.$maxcount.'&#x26;user='.$user.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $user.' ( '.$mincount.' - '.$maxcount.' )', $visible, 0, "onInterval", 86400);
+					$visible = 0;
+				}
+			}
+			else
+			{
+				$results = $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_user_all&#x26;user='.$user.'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $user, 1, $visible, "onInterval", 86400);
+			}
+
 			$results = $dbcore->createKML->createKMLstructure($title , $results);
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			if($labeled){$file_name = $user_fn."NetworkLink_Labeled.kmz";}else{$file_name = $user_fn."_NetworkLink.kmz";}
 			break;
+
 			
 		case "exp_ap_netlink":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
@@ -221,65 +261,29 @@ switch($func)
 
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
-			$prep = $dbcore->sql->conn->prepare($sql);
-			$prep->bindParam(1, $user, PDO::PARAM_STR);
-			$prep->execute();
-			$fetch_imports = $prep->fetchAll();
-			$results="";
-			$list_count = 0;
-			foreach($fetch_imports as $import)
-			{
-				#Calculate region box
-				$box_latlon = array();
-				if($dbcore->sql->service == "mysql")
-					{
-						$sql = "SELECT `wifi_gps`.`Lat` AS `Lat`, `wifi_gps`.`Lon` AS `Lon`\n"
-							. "FROM `wifi_hist`\n"
-							. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_id` = `wifi_gps`.`GPS_id`\n"
-							. "WHERE `wifi_hist`.`file_id` = ? And `wifi_gps`.`Lat` != '0.0000'";
-					}
-				else if($dbcore->sql->service == "sqlsrv")
-					{
-						$sql = "SELECT [wifi_gps].[Lat] AS [Lat], [wifi_gps].[Lon] AS [Lon]\n"
-							. "FROM [wifi_hist]\n"
-							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
-							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
-					}
-				$result = $dbcore->sql->conn->prepare($sql);
-				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
-				$result->execute();
-				while($latlon_fetch = $result->fetch(2))
-				{
-					# -Add gps to region array-
-					$latlon_info = array(
-					"lat" => $dbcore->convert->dm2dd($latlon_fetch['Lat']),
-					"long" => $dbcore->convert->dm2dd($latlon_fetch['Lon'])
-					);
-					$box_latlon[] = $latlon_info;
-				}
-
-				#Create Region Box
-				$final_box = $dbcore->export->FindBox($box_latlon);
-				$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());					
-				
-				#valid results found, add network link and exit check
-				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/export.php?func=exp_list&#x26;id='.$import['id'].'&#x26;labeled='.$labeled.'&#x26;all='.$all.'&#x26;new_icons='.$new_icons.'&#x26;debug='.$debug, $import['id'].'_'.$import['title'], 1, 0, "onChange", 86400, 0, $KML_region);
-
-				#Increment number of lists
-				++$list_count;
-			}
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+			if(is_numeric($from) && is_numeric($limit)){$title .= '-'.$from.'-'.$limit;}
+			if(!is_numeric($from)){$from = 0;}
+			if(!is_numeric($limit)){$limit = 50000;}
 			
-			if($results == ""){$results .= $dbcore->createKML->createFolder("No User Exports with GPS", $results, 0);}
+			$UserAllArray = $dbcore->export->UserAllArray($user, $from, $limit, $labeled);
+			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($UserAllArray['data']);
+			$final_box = $dbcore->export->FindBox($UserAllArray['latlongarray']);
+			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());	
+			$results = $KML_region.$AP_PlaceMarks;
 			
-			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $import['user']);
-			$results = $dbcore->createKML->createKMLstructure("$user_fn AP's ( $list_count Files)", $results);
-			if($labeled){$file_name = $user_fn."_Labeled.kmz";}else{$file_name = $user_fn.".kmz";}
+			$mincount = intval($from);
+			$maxcount = intval($from) + intval($UserAllArray['count']);
+			
+			
+			$clab = " ( ".$mincount."-".$maxcount." )";
+			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $results);
+			if($labeled){$file_name = $user_fn."_".$mincount."-".$maxcount."_Labeled.kmz";}else{$file_name = $user_fn."_".$mincount."-".$maxcount.".kmz";}
 			break;
-			
+
 		case "exp_list":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			if($dbcore->sql->service == "mysql")
@@ -292,29 +296,15 @@ switch($func)
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$fetch = $prep->fetch();
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-			
-			if($all){$only_new = 0;}else{$only_new = 1;}
-			$results = "";
-			$KML_Box = "";
-			$ListKML = $dbcore->export->UserList($id, $labeled, $only_new, $new_icons);
-			if($ListKML['data'] !== "")
-			{
-				$final_box = $dbcore->export->FindBox($ListKML['box']);
-				$KML_Region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());
-				$results = $dbcore->createKML->createFolder($title, $KML_Region.$ListKML['data'], 0);
-				If($debug)
-				{
-					$KML_Box = $dbcore->createKML->minLodPixels($final_box, 0);
-					$results .= $dbcore->createKML->createFolder("minLodPixels Box", $KML_Box, 0, 0, 0);
-				}
-			}
-			else
-			{
-				$results = $dbcore->createKML->createFolder("No APs with GPS", $results, 0);
-				$results .= $dbcore->createKML->createFolder($title, $results, 0);
-			}
-			$results = $dbcore->createKML->createKMLstructure($title, $results);
+
+			$UserListArray = $dbcore->export->UserListArray($id, $labeled, $new_icons);
+			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($UserListArray['data']);
+			$final_box = $dbcore->export->FindBox($UserListArray['latlongarray']);
+			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());	
+			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $KML_region.$AP_PlaceMarks);
+
 			if($labeled){$file_name = $id."-".$title."_Labeled.kmz";}else{$file_name = $id."-".$title.".kmz";}
+			
 			break;
 
 		case "exp_ap":

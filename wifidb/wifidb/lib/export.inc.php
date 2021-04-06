@@ -50,10 +50,8 @@ class export extends dbcore
 			"ExportSingleAP"		=>  "1.0",
 			"ExportCurrentAP"	=>  "1.0",
 			"ExportApSignal3d"	=>  "1.0",	
-			"UserAll"		=>  "3.0",			
-			"UserList"		=>  "3.0",
-			"UserAllGeoJSON"		=>  "1.0",
-			"UserListGeoJSON"		=>  "1.0",
+			"UserAllArray"		=>  "1.0",
+			"UserListArray"		=>  "1.0",
 			"FindBox"	=>  "1.0",
 			"distance"	=>  "2.0",
 			"get_point"	=>  "2.0",
@@ -134,12 +132,13 @@ class export extends dbcore
 				$id = $import['id'];
 				$this->verbosed($username." - ".$import['date']." - ".$id." - ".$import['title']);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
-				$ListKML = $this->UserList($id, $this->named, $only_new, $new_icons);
-				if($ListKML['data'] !== "")
+				$UserListArray = $this->export->UserListArray($id, $this->named, $new_icons, $only_new);
+				$AP_PlaceMarks = $this->createKML->CreateApFeatureCollection($UserListArray['data']);
+				if($AP_PlaceMarks)
 				{
-					$final_box = $this->FindBox($ListKML['box']);
+					$final_box = $this->FindBox($UserListArray['latlongarray']);
 					$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
-					$list_results = $KML_region.$ListKML['data'];
+					$list_results = $KML_region.$AP_PlaceMarks;
 
 					#Create List KML Structure
 					$list_results = $this->createKML->createFolder($title, $list_results, 0);
@@ -323,77 +322,44 @@ class export extends dbcore
 		}
 		return $KML_data;
 	}
-	
-	public function UserAll($user)
-	{
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wifi_ap.AP_ID\n"
-					. "FROM wifi_ap\n"
-					. "LEFT JOIN files ON files.id = wifi_ap.File_ID\n"
-					. "WHERE files.user LIKE ? And wifi_ap.HighGps_ID IS NOT NULL";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [wifi_ap].[AP_ID]\n"
-					. "FROM [wifi_ap]\n"
-					. "LEFT JOIN [files] ON [files].[id] = [wifi_ap].[File_ID]\n"
-					. "WHERE [files].[user] LIKE ? And [wifi_ap].[HighGps_ID] IS NOT NULL";
-			}
-		$result1 = $this->sql->conn->prepare($sql);
-		$result1->bindParam(1, $user, PDO::PARAM_STR);
-		$result1->execute();
-		$KML_data="";
-		while($array = $result1->fetch(2))
-		{
-			list($KML_AP_data, $export_ssid) = $this->ExportSingleAp($array['AP_ID'], $this->named);
-			if($KML_AP_data){$KML_data .= $KML_AP_data;}
-		}
-		return $KML_data;
-	}
 
-	public function UserList($file_id, $named=0, $only_new=0, $new_icons=0)
+	public function UserListArray($file_id, $named=0, $new_ap=0, $only_new=0)
 	{
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT DISTINCT(AP_ID) From wifi_hist WHERE File_ID = ?";
-				if($only_new == 1){$sql .= " And New = 1";}
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";
-				if($only_new == 1){$sql .= " And [New] = 1";}
-			}
+
+		$sql = "SELECT DISTINCT(AP_ID) From wifi_hist WHERE File_ID = ?";
+		if($only_new == 1){$sql .= " And New = 1";}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
-		$Import_KML_Data="";
-		$box_latlon = array();
+		$Import_Map_Data="";
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
 		while ( $array = $prep_AP_IDS->fetch(2) )
 		{
 			$apid = $array['AP_ID'];
-
 			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 				. "wGPS.Lat As Lat,\n"
 				. "wGPS.Lon As Lon,\n"
 				. "wGPS.Alt As Alt,\n";
-			if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-			else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
+			if($this->sql->service == "mysql"){$sql .= "wf.user AS user\n";}
+			else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] AS [user]\n";}
 			$sql .= "FROM wifi_ap AS wap\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
+				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
-
+				
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
 			$result->execute();
 			$appointer = $result->fetchAll();
 			foreach($appointer as $ap)
 			{
-				$export_ssid=$ap['SSID'];
+				$apcount++;
+				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
-				"new_ap" => $new_icons,
+				"new_ap" => $new_ap,
 				"named" => $named,
 				"mac" => $ap['BSSID'],
 				"ssid" => $ap['SSID'],
@@ -414,31 +380,32 @@ class export extends dbcore
 				"lon" => $this->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
 				"manuf"=>$this->findManuf($ap['BSSID']),
-				"user" => $ap['user']
+				"user" => $ap['user'],
 				);
-
-				$Import_KML_Data .=$this->createKML->CreateApPlacemark($ap_info);
+				$ap_array[] = $ap_info;
 				
 				$latlon_info = array(
 				"lat" => $this->convert->dm2dd($ap['Lat']),
-				"long" => $this->convert->dm2dd($ap['Lon'])
+				"long" => $this->convert->dm2dd($ap['Lon']),
 				);
-				$box_latlon[] = $latlon_info;
+				$latlon_array[] = $latlon_info;
 			}
 		}
 
 		$ret_data = array(
-		"data" => $Import_KML_Data,
-		"box" => $box_latlon,
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
 		);
 		
 		return $ret_data;
 	}
 
-	public function UserAllGeoJSON($user, $from = NULL, $inc = NULL)
+	public function UserAllArray($user, $from = NULL, $inc = NULL, $named=0, $new_ap=0)
 	{
 		$Import_Map_Data = "";
 		$latlon_array = array();
+		$ap_array = array();
 		$apcount = 0;
 		$retry = true;
 		while ($retry)
@@ -479,7 +446,6 @@ class export extends dbcore
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $user, PDO::PARAM_STR);
 				$prep->execute();
-				$apcount = $prep->rowCount();
 				$appointer = $prep->fetchAll();
 				$retry = false;
 			}
@@ -491,10 +457,11 @@ class export extends dbcore
 		}
 		foreach($appointer as $apinfo)
 		{
+			$apcount++;
 			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $apinfo['AP_ID'],
-			"new_ap" => $new_icons,
+			"new_ap" => $new_ap,
 			"named" => $named,
 			"mac" => $apinfo['BSSID'],
 			"ssid" => $apinfo['SSID'],
@@ -517,8 +484,7 @@ class export extends dbcore
 			"manuf"=>$this->findManuf($apinfo['BSSID']),
 			"user" => $apinfo['user']
 			);
-			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-			$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
+			$ap_array[] = $ap_info;
 			
 			$latlon_info = array(
 			"lat" => $this->convert->dm2dd($apinfo['Lat']),
@@ -528,83 +494,8 @@ class export extends dbcore
 		}
 		$ret_data = array(
 			"count" => $apcount,
-			"data" => $Import_Map_Data,
+			"data" => $ap_array,
 			"latlongarray" => $latlon_array,
-		);
-		
-		return $ret_data;
-	}
-
-	public function UserListGeoJSON($file_id, $new_icons=0)
-	{
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT DISTINCT(AP_ID) From wifi_hist WHERE File_ID = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT DISTINCT([AP_ID]) From [wifi_hist] WHERE [File_ID] = ?";}
-		$prep_AP_IDS = $this->sql->conn->prepare($sql);
-		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
-		$prep_AP_IDS->execute();
-		$Import_Map_Data="";
-		$latlon_array = array();
-		while ( $array = $prep_AP_IDS->fetch(2) )
-		{
-			$apid = $array['AP_ID'];
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n";
-			if($this->sql->service == "mysql"){$sql .= "wf.user AS user\n";}
-			else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] AS [user]\n";}
-			$sql .= "FROM wifi_ap AS wap\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
-				
-			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $apid, PDO::PARAM_INT);
-			$result->execute();
-			$appointer = $result->fetchAll();
-			foreach($appointer as $ap)
-			{
-				#Get AP GeoJSON
-				$ap_info = array(
-				"id" => $ap['AP_ID'],
-				"new_ap" => $new_icons,
-				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
-				"chan" => $ap['CHAN'],
-				"radio" => $ap['RADTYPE'],
-				"NT" => $ap['NETTYPE'],
-				"sectype" => $ap['SECTYPE'],
-				"auth" => $ap['AUTH'],
-				"encry" => $ap['ENCR'],
-				"BTx" => $ap['BTX'],
-				"OTx" => $ap['OTX'],
-				"FA" => $ap['fa'],
-				"LA" => $ap['la'],
-				"points" => $ap['points'],
-				"high_gps_sig" => $ap['high_gps_sig'],
-				"high_gps_rssi" => $ap['high_gps_rssi'],
-				"lat" => $this->convert->dm2dd($ap['Lat']),
-				"lon" => $this->convert->dm2dd($ap['Lon']),
-				"alt" => $ap['Alt'],
-				"manuf"=>$this->findManuf($ap['BSSID']),
-				"user" => $ap['user'],
-				);
-				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-				$Import_Map_Data .=$this->createGeoJSON->CreateApFeature($ap_info);
-				
-				$latlon_info = array(
-				"lat" => $this->convert->dm2dd($ap['Lat']),
-				"long" => $this->convert->dm2dd($ap['Lon']),
-				);
-				$latlon_array[] = $latlon_info;
-			}
-		}
-
-		$ret_data = array(
-		"data" => $Import_Map_Data,
-		"latlongarray" => $latlon_array,
 		);
 		
 		return $ret_data;

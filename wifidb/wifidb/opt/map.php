@@ -257,9 +257,9 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-		$ListGeoJSON = $dbcore->export->UserListGeoJSON($id, 0);
+		$UserListArray = $dbcore->export->UserListArray($id, 0);
 		
-		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);		
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserListArray['latlongarray']);		
 
 		if (empty($latitude)){$latitude = $Center_LatLon['lat'];}
 		if (empty($longitude)){$longitude = $Center_LatLon['long'];}

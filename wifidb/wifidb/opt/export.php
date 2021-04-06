@@ -25,40 +25,54 @@ $func=$_GET['func'];
 switch($func)
 {
 		#--------------------------
-		case "exp_user_all_kml":
+		case "user_all":
+			define("SWITCH_SCREEN", "HTML");
 			define("SWITCH_EXTRAS", "export");
 			include('../lib/init.inc.php');
-			$dbcore->smarty->assign('wifidb_page_label', 'Export All User APs');
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			
-			$KML_data = $dbcore->export->UserAll($user);
-			if($KML_data == "")
+			if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}#output json instead of creating a download
+			$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			if ($from == ""){$from = 0;}	
+			if ($limit == ""){$limit = 25000;}
+			if($dbcore->sql->service == "mysql")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
+				}
+			else if($dbcore->sql->service == "sqlsrv")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
+				}
+			$result = $dbcore->sql->conn->prepare($sql);
+			$result->bindParam(1, $user, PDO::PARAM_STR);
+			$result->execute();
+			$newArray = $result->fetch(2);
+			$ap_count = $newArray['ap_count'];
+			if($ap_count > $limit)
 			{
-				$results = array("mesg" => 'This export has no APs with gps. No KMZ file has been exported');
+				$ldivs = ceil($ap_count / $limit);
+				$dbcore->smarty->assign('user', $user);
+				$dbcore->smarty->assign('limit', $limit);
+				$dbcore->smarty->assign('count', $ap_count);
+				$dbcore->smarty->assign('ldivs', $ldivs);
+				$dbcore->smarty->assign('xml', $xml);
+				$dbcore->smarty->display('kmz_segments.tpl');
+				break;
 			}
 			else
 			{
-				$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-				$kmz_filename = $dbcore->kml_out.$user_fn.".kmz";
-				#$this->verbosed("Writing KMZ for ".$user_fn." : ".$kmz_filename);
-				$KML_data = $dbcore->createKML->createKMLstructure($user_fn, $KML_data);
-				$dbcore->Zip->addFile($KML_data, 'doc.kml');
-				$dbcore->Zip->setZipFile($kmz_filename);
-				$dbcore->Zip->getZipFile();
-				
-				if (file_exists($kmz_filename)) 
-				{
-					$results = array("mesg" => 'File is ready: <a href="'.$dbcore->kml_htmlpath.$user_fn.'.kmz">'.$user_fn.'.kmz</a>');
-				}
-				else
-				{
-					$results = array("mesg" => 'Error: No kmz file... what am I supposed to do with that? :/');
-				}
+				$url = $dbcore->URL_PATH.'api/export.php?xml='.$xml.'&func=exp_user_all&user='.$user;
+				header('Location: ' . $url);
 			}
 
-			$dbcore->smarty->assign('results', $results);
-			$dbcore->smarty->display('export_results.tpl');
 			break;
+
 		#--------------------------
 		case "exp_user_list":
 			define("SWITCH_EXTRAS", "export");

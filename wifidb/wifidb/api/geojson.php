@@ -264,10 +264,8 @@ switch($func)
 			}
 		}
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
-	break;
+		break;
 
-
-	
 	case "exp_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		if($dbcore->sql->service == "mysql")
@@ -280,10 +278,10 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-		
-		$ListGeoJSON = $dbcore->export->UserListGeoJSON($id, $new_icons);
-		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ListGeoJSON['latlongarray']);
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($ListGeoJSON['data'], $labeled);
+
+		$UserListArray = $dbcore->export->UserListArray($id, $labeled, $new_icons);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserListArray['latlongarray']);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserListArray['data']);
 		$file_name = $id."-".$title.".geojson";
 		
 		break;
@@ -297,9 +295,8 @@ switch($func)
 		if(!is_numeric($from)){$from = 0;}
 		if(!is_numeric($limit)){$limit = 50000;}
 		
-		
-		$UserGeoJSON = $dbcore->export->UserAllGeoJSON($user, $from, $limit);
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($UserGeoJSON['data']);
+		$UserAllList = $dbcore->export->UserAllArray($user, $from, $limit);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserAllList['data']);
 		$file_name = $title.".geojson";
 		break;
 		
@@ -337,8 +334,8 @@ switch($func)
 		foreach($fetch_imports as $import)
 		{
 			if($AllListGeoJSON !== ''){$AllListGeoJSON .=',';};
-			$ListGeoJSON = $dbcore->export->UserListGeoJSON($import['id'], $new_icons);
-			$AllListGeoJSON .= $ListGeoJSON['data'];
+			$UserListArray = $dbcore->export->UserListArray($id, $labeled, $new_icons);
+			$AllListGeoJSON .= $dbcore->createGeoJSON->CreateApFeatureCollection($UserListArray['data']);
 		}
 		
 		$results = $dbcore->createGeoJSON->createGeoJSONstructure($AllListGeoJSON, $labeled);

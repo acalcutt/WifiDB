@@ -61,57 +61,63 @@ class createKML
 		</Style>';
 		$this->openstyle = '
 		<Style id="openStyle">
-			<IconStyle>
-				<scale>0.4</scale>
-				<Icon>
-					<href>'.$this->open_path.'</href>
-				</Icon>
-			</IconStyle>
+		<IconStyle>
+			<scale>.75</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/grn-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
 		</Style>';
 		$this->wepstyle = '
 		<Style id="wepStyle">
-			<IconStyle>
-				<scale>0.4</scale>
-				<Icon>
-					<href>'.$this->wep_path.'</href>
-				</Icon>
-			</IconStyle>
+		<IconStyle>
+			<scale>.75</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/orange-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
 		</Style>';
 		$this->securestyle = '
 		<Style id="secureStyle">
-			<IconStyle>
-				<scale>0.4</scale>
-				<Icon>
-					<href>'.$this->secure_path.'</href>
-				</Icon>
-			</IconStyle>
+		<IconStyle>
+			<scale>.75</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/red-blank.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
 		</Style>';
 		$this->openstyledead = '
 		<Style id="openStyleDead">
-			<IconStyle>
-				<scale>0.4</scale>
-				<Icon>
-					<href>'.$this->open_path_dead.'</href>
-				</Icon>
-			</IconStyle>
+		<IconStyle>
+			<scale>.75</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/grn-circle.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
 		</Style>';
 		$this->wepstyledead = '
 		<Style id="wepStyleDead">
-			<IconStyle>
-				<scale>0.4</scale>
-				<Icon>
-					<href>'.$this->wep_path_dead.'</href>
-				</Icon>
-			</IconStyle>
+		<IconStyle>
+			<scale>.75</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/orange-circle.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
 		</Style>';
 		$this->securestyledead = '
 		<Style id="secureStyleDead">
-			<IconStyle>
-				<scale>0.4</scale>
-				<Icon>
-					<href>'.$this->secure_path_dead.'</href>
-				</Icon>
-			</IconStyle>
+		<IconStyle>
+			<scale>.75</scale>
+			<Icon>
+				<href>http://maps.google.com/mapfiles/kml/paddle/red-circle.png</href>
+			</Icon>
+			<hotSpot x="32" y="1" xunits="pixels" yunits="pixels"/>
+		</IconStyle>
 		</Style>';
 		$this->tracklinestyle = '
 		<Style id="Location">
@@ -289,6 +295,78 @@ class createKML
 		return $tmp;
 	}
 
+	public function CreateApFeature($ap_info_array)
+	{
+		switch($ap_info_array['sectype'])
+		{
+			case 1:
+				$sec_type_label = "open";
+				break;
+			case 2:
+				$sec_type_label = "wep";
+				break;
+			case 3;
+				$sec_type_label = "secure";
+				break;
+			default:
+				$sec_type_label = "open";
+				break;
+		}
+		
+		if($ap_info_array['new_ap']){$icon_style = $sec_type_label."Style";}else{$icon_style = $sec_type_label."StyleDead";}
+		
+		$ssid = dbcore::formatSSID($this->stripInvalidXml($ap_info_array['ssid']));
+		if(isset($ap_info_array['named']) && $ap_info_array['named'] == 1){$named = '<name>'.$ssid.'</name>';}else{$named = '';}
+		if(isset($ap_info_array['id'])){$id = '<b>SSID: </b><a href="'.$this->URL_BASE.'opt/fetch.php?id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$ssid.'</a><br />'."\n";}else{$id = '';}
+		if(isset($ap_info_array['live_id'])){$live_id_ssid = '<b>SSID: </b>'.$this->stripInvalidXml($ap_info_array['ssid']).'<br />'."\n";}else{$live_id_ssid = '';}
+		if(isset($ap_info_array['live_id'])){$live_id = '<b>Live ID: </b>'.$this->stripInvalidXml($ap_info_array['live_id']).'<br />'."\n";}else{$live_id = '';}
+		if(isset($ap_info_array['mac'])){$mac = '<b>Mac: </b>'.$this->stripInvalidXml($ap_info_array['mac']).'<br />'."\n";}else{$mac = '';}
+		if(isset($ap_info_array['chan'])){$chan = '<b>Channel: </b>'.$this->stripInvalidXml($ap_info_array['chan']).'<br />'."\n";}else{$chan = '';}
+		if(isset($ap_info_array['auth'])){$auth = '<b>Authentication: </b>'.$this->stripInvalidXml($ap_info_array['auth']).'<br />'."\n";}else{$auth = '';}
+		if(isset($ap_info_array['encry'])){$encry = '<b>Encryption: </b>'.$this->stripInvalidXml($ap_info_array['encry']).'<br />'."\n";}else{$encry = '';}
+		if(isset($ap_info_array['signal'])){$sig = '<b>Signal: </b>'.$this->stripInvalidXml($ap_info_array['signal']).'<br />'."\n";}else{$sig = '';}
+		if(isset($ap_info_array['rssi'])){$rssi = '<b>RSSI: </b>'.$this->stripInvalidXml($ap_info_array['rssi']).'<br />'."\n";}else{$rssi = '';}
+		if(isset($ap_info_array['high_gps_sig'])){$high_gps_sig = '<b>High GPS Signal: </b>'.$this->stripInvalidXml($ap_info_array['high_gps_sig']).'<br />'."\n";}else{$high_gps_sig = '';}
+		if(isset($ap_info_array['high_gps_rssi'])){$high_gps_rssi = '<b>High GPS RSSI: </b>'.$this->stripInvalidXml($ap_info_array['high_gps_rssi']).'<br />'."\n";}else{$high_gps_rssi = '';}
+		if(isset($ap_info_array['manuf'])){$manuf = '<b>Manufacturer: </b>'.$this->stripInvalidXml($ap_info_array['manuf']).'<br />'."\n";}else{$manuf = '';}
+		if(isset($ap_info_array['sectype'])){$sectype = '<b>SecType: </b>'.$this->stripInvalidXml($ap_info_array['sectype']).'<br />'."\n";}else{$sectype = '';}
+		if(isset($ap_info_array['NT'])){$NT = '<b>Network Type: </b>'.$this->stripInvalidXml($ap_info_array['NT']).'<br />'."\n";}else{$NT = '';}
+		if(isset($ap_info_array['radio'])){$radio = '<b>Radio Type: </b>'.$this->stripInvalidXml($ap_info_array['radio']).'<br />'."\n";}else{$radio = '';}
+		if(isset($ap_info_array['BTx'])){$BTx = '<b>BTx: </b>'.$this->stripInvalidXml($ap_info_array['BTx']).'<br />'."\n";}else{$BTx = '';}
+		if(isset($ap_info_array['OTx'])){$OTx = '<b>OTx: </b>'.$this->stripInvalidXml($ap_info_array['OTx']).'<br />'."\n";}else{$OTx = '';}
+		if(isset($ap_info_array['points'])){$points = '<b>Points: </b><a href="'.$this->URL_BASE.'api/export.php?func=exp_list_ap_signal&id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$this->stripInvalidXml($ap_info_array['points']).'</a><br />'."\n";}else{$points = '';}
+		if(isset($ap_info_array['FA'])){$FA = '<b>First Active: </b>'.$this->stripInvalidXml($ap_info_array['FA']).'<br />'."\n";}else{$FA = '';}
+		if(isset($ap_info_array['LA'])){$LA = '<b>Last Active: </b>'.$this->stripInvalidXml($ap_info_array['LA']).'<br />'."\n";}else{$LA = '';}
+		if(isset($ap_info_array['hist_date'])){$hist_date = '<b>Hist Date: </b>'.$this->stripInvalidXml($ap_info_array['hist_date']).'<br />'."\n";}else{$hist_date = '';}
+		if(isset($ap_info_array['lat'])){$lat = '<b>Latitude: </b>'.$this->stripInvalidXml($ap_info_array['lat']).'<br />'."\n";}else{$lat = '';}
+		if(isset($ap_info_array['lon'])){$lon = '<b>Longitude: </b>'.$this->stripInvalidXml($ap_info_array['lon']).'<br />'."\n";}else{$lon = '';}
+		if(isset($ap_info_array['alt'])){$alt = '<b>Altitude: </b>'.$this->stripInvalidXml($ap_info_array['alt']).'<br />'."\n";}else{$alt = '';}
+		if(isset($ap_info_array['hist_file_id'])){$hist_file_id = '<b>File ID: </b><a href="'.$this->URL_BASE.'opt/userstats.php?func=useraplist&row='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank"">'.$this->stripInvalidXml($ap_info_array['id']).'</a><br />'."\n";}else{$hist_file_id = '';}
+		if(isset($ap_info_array['user'])){$user = '<b>User: </b>'.$this->stripInvalidXml($ap_info_array['user']).'<br />'."\n";}else{$user = '';}
+
+		$tmp = "\n<Placemark id=\"".$ssid."_".$ap_info_array['mac']."_Placemark\">$named
+			<styleUrl>".$icon_style."</styleUrl>
+			<description>
+				<![CDATA[
+".$id.$live_id_ssid.$live_id.$mac.$chan.$auth.$encry.$signal.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$user."				]]>
+			</description>
+			<Point id=\"".$ssid."_".$ap_info_array['mac']."_signal_gps\">
+				<coordinates>".$ap_info_array['lon'].",".$ap_info_array['lat'].",".$ap_info_array['alt']."</coordinates>
+			</Point>
+		</Placemark>";
+		return $tmp;
+	}
+
+	public function CreateApFeatureCollection($ap_feature_array)
+	{
+		$layer_source = '';
+		foreach($ap_feature_array as $ap_feature)
+		{
+			$layer_source .=$this->CreateApFeature($ap_feature);
+		}
+		return $layer_source;
+	}
+
 	public function CreateApPlacemark($ap_info_array)
 	{
 		switch($ap_info_array['sectype'])
@@ -306,6 +384,7 @@ class createKML
 				$sec_type_label = "open";
 				break;
 		}
+
 		$ap_ssid = dbcore::formatSSID($this->stripInvalidXml($ap_info_array['ssid']));
 		if($ap_info_array['named'])
 		{	

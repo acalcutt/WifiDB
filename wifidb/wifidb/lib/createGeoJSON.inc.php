@@ -77,6 +77,19 @@ class createGeoJSON
 		return $tmp;
 	}
 
+	public function CreateApFeatureCollection($ap_feature_array, $tc = 0)
+	{
+		$layer_source = '';
+		foreach($ap_feature_array as $ap_feature)
+		{
+			if($layer_source !== ''){$layer_source .=',';};
+			$layer_source .=$this->CreateApFeature($ap_feature, $tc);
+		}
+		
+		$layer_source = '{"type":"FeatureCollection","features":['.$layer_source."\n".']}';
+		return $layer_source;
+	}
+
 	public function CreateApLabelLayer($source, $source_layer = "", $font = "Open Sans Regular", $size = 10, $visibility = "none")
 	{
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"name","{name}",$font,$size,$visibility);
