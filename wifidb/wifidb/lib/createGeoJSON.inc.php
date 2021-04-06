@@ -45,6 +45,7 @@ class createGeoJSON
 		
 		if($tc == 0){$tippecanoe = '';}else{$tippecanoe = '"tippecanoe":{"maxzoom":14,"minzoom":0},';}
 
+		if(isset($ap_info_array['named']) && $ap_info_array['named'] == 1){$name = '"name":'.json_encode(dbcore::formatSSID($ap_info_array['ssid'])).',';}else{$name = '';}
 		if(isset($ap_info_array['id'])){$id = '"id":"'.json_encode($ap_info_array['id'], JSON_NUMERIC_CHECK).'",';}else{$id = '';}
 		if(isset($ap_info_array['live_id'])){$live_id = '"live_id":"'.json_encode($ap_info_array['live_id'], JSON_NUMERIC_CHECK).'",';}else{$live_id = '';}
 		if(isset($ap_info_array['user'])){$user = '"user":'.json_encode($ap_info_array['user']).',';}else{$user = '';}
@@ -70,9 +71,9 @@ class createGeoJSON
 		if(isset($ap_info_array['lat'])){$lat = '"lat":'.json_encode($ap_info_array['lat']).',';}else{$lat = '';}
 		if(isset($ap_info_array['lon'])){$lon = '"lon":'.json_encode($ap_info_array['lon']).',';}else{$lon = '';}
 		if(isset($ap_info_array['alt'])){$alt = '"alt":'.json_encode($ap_info_array['alt']).',';}else{$alt = '';}
+		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
 
-		$name = '"name":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$name.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
 
 		return $tmp;
 	}
@@ -92,7 +93,7 @@ class createGeoJSON
 
 	public function CreateApLabelLayer($source, $source_layer = "", $font = "Open Sans Regular", $size = 10, $visibility = "none")
 	{
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"name","{name}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"mac","{mac}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{FA}",$font,$size,$visibility);
