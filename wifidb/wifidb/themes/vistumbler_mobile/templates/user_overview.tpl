@@ -24,7 +24,7 @@ if not, write to the
 					<h2>Imports for: {$wifidb_user_details.user}
 					{if $wifidb_user_details.validgps eq 1}
 						<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$wifidb_user_details.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-						<a href="{$wifidb_host_url}opt/geojson.php?json=1&func=user_all&user={$wifidb_user_details.user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+						<a href="{$wifidb_host_url}opt/geojson.php?json=1&labeled=1&func=user_all&user={$wifidb_user_details.user}&labeled=1" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 						<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$wifidb_user_details.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 					{else}
 						<img width="20px" src="{$themeurl}img/globe_off.png">

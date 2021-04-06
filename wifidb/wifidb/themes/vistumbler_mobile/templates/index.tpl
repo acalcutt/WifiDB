@@ -40,8 +40,8 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a>
 								{if $user_validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$new_import_user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_user_all&user={$new_import_user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_user_netlink&user={$new_import_user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?json=1&labeled=1&func=user_all&user={$new_import_user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$new_import_user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">

@@ -32,6 +32,7 @@ switch($func)
 	case "user_all":
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		if((int)@$_REQUEST['json'] === 1){$json = 1;}else{$json = 0;}#output json instead of creating a download
+		if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
@@ -66,12 +67,13 @@ switch($func)
 				$dbcore->smarty->assign('count', $ap_count);
 				$dbcore->smarty->assign('ldivs', $ldivs);
 				$dbcore->smarty->assign('json', $json);
+				$dbcore->smarty->assign('labeled', $labeled);
 				$dbcore->smarty->display('geojson_segments.tpl');
 				break;
 			}
 		}
 		
-		$url = $dbcore->URL_PATH.'api/geojson.php?json='.$json.'&func=exp_user_all&user='.$user;
+		$url = $dbcore->URL_PATH.'api/geojson.php?json='.$json.'&func=exp_user_all&user='.$user.'&labeled='.$labeled;
 		header('Location: ' . $url);
 
 		break;

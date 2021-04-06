@@ -250,7 +250,7 @@ switch($func)
 		if(!is_numeric($from)){$from = 0;}
 		if(!is_numeric($limit)){$limit = 50000;}
 		
-		$UserAllList = $dbcore->export->UserAllArray($user, $from, $limit);
+		$UserAllList = $dbcore->export->UserAllArray($user, $from, $limit, $labeled);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserAllList['data']);
 		$file_name = $title.".geojson";
 		break;

@@ -24,7 +24,7 @@ if not, write to the
 				{$user} has {$count} APs, which is greater than the {$limit} AP geojson limit. Please pick a smaller segment bellow.<br/><br/>
 				The segments are ordered by ModDate, with the last modified APs first.<br/><br/>
 				{for $multiplier=1 to $ldivs}
-					<a class="links" href="{$wifidb_host_url}api/geojson.php?&json={$json}&func=exp_user_all&user={$user}&from={($multiplier-1)*$limit}&limit={$limit}">{$user} Geojson {$multiplier}</a><br/>
+					<a class="links" href="{$wifidb_host_url}api/geojson.php?&json={$json}?&labeled={$labeled}&func=exp_user_all&user={$user}&from={($multiplier-1)*$limit}&limit={$limit}">{$user} Geojson {$multiplier}</a><br/>
 				{/for}
 				<br/>
 			</div>
