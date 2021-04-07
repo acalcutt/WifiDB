@@ -253,9 +253,9 @@ switch($func)
 			break;
 			
 		case "exp_latest":
-			$results = $dbcore->export->ExportCurrentAP($labeled, $new_icons);
-			#if($results==""){$results = $dbcore->createKML->createFolder("No Access Points Found", "", 0, 0);}
-			if($labeled){$results = $dbcore->createKML->createKMLstructure("Newest AP Labeled", $results);}else{$results = $dbcore->createKML->createKMLstructure("Newest AP", $results);}
+			$ExportCurrentApArray = $dbcore->export->ExportCurrentApArray($labeled, $new_icons);
+			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ExportCurrentApArray['data']);
+			if($labeled){$results = $dbcore->createKML->createKMLstructure("Newest AP Labeled", $AP_PlaceMarks);}else{$results = $dbcore->createKML->createKMLstructure("Newest AP", $AP_PlaceMarks);}
 			if($labeled){$file_name = "Latest_Labeled.kmz";}else{$file_name = "Latest.kmz";}
 			break;
 
@@ -311,7 +311,7 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
-			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $AP_PlaceMarks);
+			$results = $dbcore->createKML->createKMLstructure("exp_ap_".$id, $AP_PlaceMarks);
 			
 			if($labeled){$file_name = "ap_id_".$id."_Labeled.kmz";}else{$file_name = "ap_id_".$id.".kmz";}
 			break;

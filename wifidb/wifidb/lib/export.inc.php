@@ -63,266 +63,6 @@ class export extends dbcore
 		);
 	}
 
-
-	/*
-	 * Export to Google KML File
-	 */
-	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0, $symlink_name = "")
-	{
-		$this->verbosed("Compiling Data for ".$type." Export. Labeled:".$this->named);
-
-		if($type == "full")
-		{
-			if($this->sql->service == "mysql")
-				{
-					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY user ASC";
-					$user_list_query = "SELECT id, user, title, date FROM files WHERE user LIKE ? And completed = 1 And ValidGPS = 1";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [completed] = 1 And [ValidGPS] = 1";
-				}
-		}
-		elseif($type == "daily")
-		{
-			#Get the last full export id
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT last_export_file FROM settings WHERE id = 1";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT [last_export_file] FROM [settings] WHERE [id] = 1";}
-			$id_query = $this->sql->conn->query($sql);
-			$id_fetch = $id_query->fetch(2);
-			$last_export_file = $id_fetch['last_export_file'];
-			
-			#Create Queries
-			if($this->sql->service == "mysql")
-				{
-					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY user ASC";
-					$user_list_query = "SELECT id, user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And user LIKE ? AND id > '$last_export_file'";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [id] > '$last_export_file' ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [user] LIKE ? AND [id] > '$last_export_file'";
-				}
-		}	
-		$this->verbosed($user_query);
-		$this->verbosed($user_list_query);
-		$ZipC = clone $this->Zip;
-		
-		#Get list of users and go through them
-		$results="";
-		$lists = 0;
-		$prep_user = $this->sql->conn->query($user_query);
-		$fetch_user = $prep_user->fetchAll();
-		$prep_user_list = $this->sql->conn->prepare($user_list_query);
-		foreach($fetch_user as $user)
-		{
-			#Get users lists and go through them
-			$user_results = "";
-			$user_files = 0;
-			$username = $user['user'];
-			$this->verbosed("---------------------".$username."---------------------");
-			$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
-			$prep_user_list->execute();
-			$fetch_imports = $prep_user_list->fetchAll();
-			foreach($fetch_imports as $import)
-			{
-				$id = $import['id'];
-				$this->verbosed($username." - ".$import['date']." - ".$id." - ".$import['title']);
-				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
-				$UserListArray = $this->export->UserListArray($id, $this->named, $new_icons, $only_new);
-				$AP_PlaceMarks = $this->createKML->CreateApFeatureCollection($UserListArray['data']);
-				if($AP_PlaceMarks)
-				{
-					$final_box = $this->FindBox($UserListArray['latlongarray']);
-					$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
-					$list_results = $KML_region.$AP_PlaceMarks;
-
-					#Create List KML Structure
-					$list_results = $this->createKML->createFolder($title, $list_results, 0);
-					$list_results = $this->createKML->createKMLstructure($title, $list_results);
-
-					#Add list kml into final kmz
-					if($this->named){$list_kml_name = $username."_".$title."_label.kml";}else{$list_kml_name = $username."_".$title.".kml";}
-					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
-					unset($list_results);
-					
-					#Create Network Link to this kml for the final doc.kml
-					$Netlink_region = $this->createKML->PlotRegionBox($final_box, uniqid());
-					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $Netlink_region);
-
-					#Increment variables (duh)
-					++$user_files;
-					++$lists;
-				}
-			}
-			#If this user had results, create a folder with their data
-			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
-			unset($user_results);
-		}
-		#Create the final KMZ
-		if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 1);}
-		#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
-		#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
-		
-		$results = $this->createKML->createFolder($type." Database Export", $results, 1);
-		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
-		
-		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
-		$ZipC->addFile($results, 'doc.kml');
-		$ZipC->setZipFile($kmz_filepath);
-		$ZipC->getZipFile();
-		if (file_exists($kmz_filepath)) 
-		{
-			$this->verbosed("KMZ created at ".$kmz_filepath);
-			chmod($kmz_filepath, 0664);
-			if($symlink_name != "")
-			{
-				$link = $this->daemon_out.basename($symlink_name);
-				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
-				unlink($link);
-				symlink($kmz_filepath, $link);
-				chmod($link, 0664);
-			}
-			
-			Return true;
-		}
-		else
-		{
-			$this->verbosed("KMZ file does not exist :/ ");
-			Return false;
-		}
-	}
-	
-	public function ExportSingleAp($id, $named=0, $new_icons=0)
-	{
-		$KML_data = "";
-		$export_ssid="";
-
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n";
-		if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-		else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
-		$sql .= "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
-			. "WHERE wap.AP_ID = ?";
-		$result = $this->sql->conn->prepare($sql);
-		$result->bindParam(1, $id, PDO::PARAM_INT);
-		$result->execute();
-		$appointer = $result->fetchAll();
-		foreach($appointer as $ap)
-		{
-			$export_ssid=$ap['SSID'];
-			$ap_info = array(
-			"id" => $ap['AP_ID'],
-			"new_ap" => $new_icons,
-			"named" => $named,
-			"mac" => $ap['BSSID'],
-			"ssid" => $ap['SSID'],
-			"chan" => $ap['CHAN'],
-			"radio" => $ap['RADTYPE'],
-			"NT" => $ap['NETTYPE'],
-			"sectype" => $ap['SECTYPE'],
-			"auth" => $ap['AUTH'],
-			"encry" => $ap['ENCR'],
-			"BTx" => $ap['BTX'],
-			"OTx" => $ap['OTX'],
-			"FA" => $ap['fa'],
-			"LA" => $ap['la'],
-			"points" => $ap['points'],
-			"high_gps_sig" => $ap['high_gps_sig'],
-			"high_gps_rssi" => $ap['high_gps_rssi'],
-			"lat" => $this->convert->dm2dd($ap['Lat']),
-			"lon" => $this->convert->dm2dd($ap['Lon']),
-			"alt" => $ap['Alt'],
-			"manuf"=>$this->findManuf($ap['BSSID']),
-			"user" => $ap['user']
-			);
-
-			$KML_data = $this->createKML->CreateApPlacemark($ap_info);
-		}
-
-		if($KML_data == ""){$KML_data = $this->createKML->createFolder("AP has no GPS", $KML_data, 0);}
-		
-		return array($KML_data, $export_ssid);
-	}
-
-	public function ExportCurrentAP($named=0, $new_icons=0)
-	{
-		$KML_data="";
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT AP_ID, SSID, ap_hash FROM wifi_ap WHERE HighGps_ID IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGps_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
-		$result = $this->sql->conn->query($sql);
-		$result->execute();
-		$ap_array = $result->fetch(2);
-		if($ap_array['AP_ID'])
-		{
-			$id = (int)$ap_array['AP_ID'];
-			list($KML_AP_data, $export_ssid) = $this->ExportSingleAp($id, $named, $new_icons);
-			$KML_data = $KML_AP_data;
-		}
-		Return $KML_data;
-	}
-	
-	public function ExportSignal3dSingleListAp($file_id, $ap_id, $visible = 0)
-	{
-		$KML_data = "";
-		#Get Import Name
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT title, date FROM files WHERE id = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
-		$prep_title = $this->sql->conn->prepare($sql);
-		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prep_title->execute();
-		$fetch_title = $prep_title->fetch(2);
-		$ap_list_title = $fetch_title['title'];
-		$ap_list_date = $fetch_title['date'];
-		
-		#Get AP Signal History for this file	
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT\n"
-					. "wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.Hist_Date,\n"
-					. "wifi_gps.Lat, wifi_gps.Lon, wifi_gps.NumOfSats, wifi_gps.HorDilPitch, wifi_gps.Alt, \n"
-					. "wifi_gps.Geo, wifi_gps.KPH, wifi_gps.MPH, wifi_gps.TrackAngle, wifi_gps.GPS_Date\n"
-					. "FROM wifi_hist\n"
-					. "LEFT JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
-					. "WHERE wifi_hist.AP_ID = ? AND wifi_hist.File_ID = ? AND wifi_gps.Lat != '0.0000'\n"
-					. "ORDER BY wifi_gps.GPS_Date ASC";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT\n"
-					. "[wifi_hist].[Sig], [wifi_hist].[RSSI], [wifi_hist].[Hist_Date],\n"
-					. "[wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_gps].[NumOfSats], [wifi_gps].[HorDilPitch], [wifi_gps].[Alt], \n"
-					. "[wifi_gps].[Geo], [wifi_gps].[KPH], [wifi_gps].[MPH], [wifi_gps].[TrackAngle], [wifi_gps].[GPS_Date]\n"
-					. "FROM [wifi_hist]\n"
-					. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
-					. "WHERE [wifi_hist].[AP_ID] = ? AND [wifi_hist].[File_ID] = ? AND [wifi_gps].[Lat] != '0.0000'\n"
-					. "ORDER BY [wifi_gps].[GPS_Date] ASC";
-			}
-		$ap_query = $this->sql->conn->prepare($sql);
-		$ap_query->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$ap_query->bindParam(2, $file_id, PDO::PARAM_INT);
-		$ap_query->execute();
-		$sig_gps_data = $ap_query->fetchAll(2);
-		if(count($sig_gps_data) > 0)
-		{
-			#Plot AP 3D Signal
-			$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
-			$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
-		}
-		return $KML_data;
-	}
-
 	public function ApArray($id, $named=0, $new_ap=0)
 	{
 		$Import_Map_Data = "";
@@ -389,6 +129,35 @@ class export extends dbcore
 		);
 		
 		return $ret_data;
+	}
+
+	public function ExportCurrentApArray($named=0, $new_icons=0)
+	{
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT AP_ID, SSID, ap_hash FROM wifi_ap WHERE HighGps_ID IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [AP_ID], [SSID], [ap_hash] FROM [wifi_ap] WHERE [HighGps_ID] IS NOT NULL ORDER BY [AP_ID] DESC";}
+		$result = $this->sql->conn->query($sql);
+		$result->execute();
+		$ap_array = $result->fetch(2);
+		if($ap_array['AP_ID'])
+		{
+			$ApArray = $this->ApArray($ap_array['AP_ID'], $named, $new_icons);
+			$apcount = $ApArray['count'];
+			$ap_array = $ApArray['data'];
+			$latlon_array = $ApArray['latlon_array'];
+		}
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array
+		);
+		
+		Return $ret_data;
 	}
 
 	public function UserListArray($file_id, $named=0, $new_ap=0, $only_new=0)
@@ -567,6 +336,439 @@ class export extends dbcore
 		);
 		
 		return $ret_data;
+	}
+
+	public function DateArray($start_date, $end_date, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
+	{
+		$start_date = (empty($start_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($start_date));
+		$end_date = (empty($end_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($end_date));
+		$start_date =  "$start_date 00:00:00";
+		$end_date =  "$end_date 23:59:59";
+		
+		#Get lists from the date specified
+		$date_search = $date."%";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.user\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE AP_ID IN\n"
+					. "    (SELECT DISTINCT(wh.AP_ID)\n"
+					. "		FROM wifi_hist AS wh\n"
+					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
+					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
+					. "		WHERE (wf.completed = 1) AND (wf.date BETWEEN ? AND ?)\n"
+					. "    )\n";
+				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
+				$sql .= "ORDER BY la DESC";
+				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.[Alt], wf.[user]\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE AP_ID IN\n"
+					. "    (SELECT DISTINCT(wh.AP_ID)\n"
+					. "		FROM wifi_hist AS wh\n"
+					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
+					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
+					. "		WHERE (wf.completed = 1) AND (wf.[date] >= ? AND wf.[date] <= ?)\n"
+					. "    )\n";
+				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
+				$sql .= "ORDER BY la DESC";
+				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+			}
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $start_date, PDO::PARAM_STR);
+		$prep->bindParam(2, $end_date, PDO::PARAM_STR);
+		$prep->execute();
+		$fetch_aps = $prep->fetchAll();
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		foreach($fetch_aps as $apinfo)
+		{
+			$apcount++;
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $apinfo['AP_ID'],
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $apinfo['BSSID'],
+			"ssid" => $apinfo['SSID'],
+			"chan" => $apinfo['CHAN'],
+			"radio" => $apinfo['RADTYPE'],
+			"NT" => $apinfo['NETTYPE'],
+			"sectype" => $apinfo['SECTYPE'],
+			"auth" => $apinfo['AUTH'],
+			"encry" => $apinfo['ENCR'],
+			"BTx" => $apinfo['BTX'],
+			"OTx" => $apinfo['OTX'],
+			"FA" => $apinfo['fa'],
+			"LA" => $apinfo['la'],
+			"points" => $apinfo['points'],
+			"high_sig" => $apinfo['high_sig'],
+			"high_rssi" => $apinfo['high_rssi'],
+			"high_gps_sig" => $apinfo['high_gps_sig'],
+			"high_gps_rssi" => $apinfo['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"lon" => $this->convert->dm2dd($apinfo['Lon']),
+			"alt" => $apinfo['Alt'],
+			"manuf"=>$this->findManuf($apinfo['BSSID']),
+			"user" => $apinfo['user'],
+			"first_file_id" => $apinfo['File_ID']
+			);
+			$ap_array[] = $ap_info;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"long" => $this->convert->dm2dd($apinfo['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+		}
+		
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlon_array" => $latlon_array
+		);
+		
+		return $ret_data;
+	}
+
+	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
+	{
+		$ssid = "%".$ssid."%";
+		$mac = "%".$mac."%";
+		$radio = "%".$radio."%";
+		$chan = "%".$chan."%";
+		$auth = "%".$auth."%";
+		$encry = "%".$encry."%";
+		
+
+		$sql_count = "SELECT COUNT(AP_ID) As ApCount\n"
+			. "FROM wifi_ap\n"
+			. "WHERE\n"
+			. "fa IS NOT NULL AND\n"
+			. "SSID LIKE ? AND\n"
+			. "BSSID LIKE ? AND\n"
+			. "RADTYPE LIKE ? AND\n"
+			. "CHAN LIKE ? AND\n"
+			. "AUTH LIKE ? AND\n"
+			. "ENCR LIKE ? \n";
+		if($sectype){$sql_count .= "AND SECTYPE =  ?";}
+		$prep1 = $this->sql->conn->prepare($sql_count);
+		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
+		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
+		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
+		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
+		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
+		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
+		if($sectype){$prep1->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$prep1->execute();
+		$AP_ID_Count = $prep1->fetch(2);
+		$total_rows = $AP_ID_Count['ApCount'];
+		
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE\n"
+					. "fa IS NOT NULL AND\n"
+					. "wap.SSID LIKE ? AND\n"
+					. "wap.BSSID LIKE ? AND\n"
+					. "wap.RADTYPE LIKE ? AND\n"
+					. "wap.CHAN LIKE ? AND\n"
+					. "wap.AUTH LIKE ? AND\n"
+					. "wap.ENCR LIKE ?\n";
+				if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
+				if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
+				$sql .= " ORDER BY $sort $ord ";		
+				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points], [wap].[high_gps_sig], [wap].[high_gps_rssi],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
+					. "WHERE\n"
+					. "[fa] IS NOT NULL AND\n"
+					. "[wap].[SSID] LIKE ? AND\n"
+					. "[wap].[BSSID] LIKE ? AND\n"
+					. "[wap].[RADTYPE] LIKE ? AND\n"
+					. "[wap].[CHAN] LIKE ? AND\n"
+					. "[wap].[AUTH] LIKE ? AND\n"
+					. "[wap].[ENCR] LIKE ?\n";
+				if($valid_gps){$sql .=" AND [wap].[HighGps_ID] IS NOT NULL";}
+				if($sectype){$sql .=" AND [wap].[SECTYPE] =  ?";}
+				$sql .= " ORDER BY [$sort] $ord ";		
+				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+			}
+		$prep2 = $this->sql->conn->prepare($sql);
+		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+		if($sectype){$prep2->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$prep2->execute();
+
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		$class = "light";
+		$fetch_imports = $prep2->fetchAll();
+		foreach($fetch_imports as $newArray)
+		{
+			$apcount++;
+			if($newArray['Lat'] == "" && $newArray['Lon'] == ""){$validgps = 0;}else{$validgps = 1;}
+
+			$ap_info = array(
+			"id" => $newArray['AP_ID'],
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $newArray['BSSID'],
+			"ssid" => $this->formatSSID($newArray['SSID']),
+			"chan" => $newArray['CHAN'],
+			"radio" => $newArray['RADTYPE'],
+			"NT" => $newArray['NETTYPE'],
+			"sectype" => $newArray['SECTYPE'],
+			"auth" => $newArray['AUTH'],
+			"encry" => $newArray['ENCR'],
+			"BTx" => $newArray['BTX'],
+			"OTx" => $newArray['OTX'],
+			"FA" => $newArray['fa'],
+			"LA" => $newArray['la'],
+			"points" => $newArray['points'],
+			"high_gps_sig" => $newArray['high_gps_sig'],
+			"high_gps_rssi" => $newArray['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($newArray['Lat']),
+			"lon" => $this->convert->dm2dd($newArray['Lon']),
+			"alt" => $newArray['Alt'],
+			"manuf"=>$this->findManuf($newArray['BSSID']),
+			"user" => $newArray['user'],
+			"class" => $class,
+			"validgps" => $validgps
+			);
+
+			$ap_array[] = $ap_info;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($newArray['Lat']),
+			"long" => $this->convert->dm2dd($newArray['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+
+			if($class == "light"){$class = "dark";}else{$class = "light";}
+		}
+
+		$ret_data = array(
+			"count" => $apcount,
+			"total_rows" => $total_rows,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
+	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0, $symlink_name = "")
+	{
+		$this->verbosed("Compiling Data for ".$type." Export. Labeled:".$this->named);
+
+		if($type == "full")
+		{
+			if($this->sql->service == "mysql")
+				{
+					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY user ASC";
+					$user_list_query = "SELECT id, user, title, date FROM files WHERE user LIKE ? And completed = 1 And ValidGPS = 1";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [user] ASC";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [completed] = 1 And [ValidGPS] = 1";
+				}
+		}
+		elseif($type == "daily")
+		{
+			#Get the last full export id
+			if($this->sql->service == "mysql")
+				{$sql = "SELECT last_export_file FROM settings WHERE id = 1";}
+			else if($this->sql->service == "sqlsrv")
+				{$sql = "SELECT [last_export_file] FROM [settings] WHERE [id] = 1";}
+			$id_query = $this->sql->conn->query($sql);
+			$id_fetch = $id_query->fetch(2);
+			$last_export_file = $id_fetch['last_export_file'];
+			
+			#Create Queries
+			if($this->sql->service == "mysql")
+				{
+					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY user ASC";
+					$user_list_query = "SELECT id, user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And user LIKE ? AND id > '$last_export_file'";
+				}
+			else if($this->sql->service == "sqlsrv")
+				{
+					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [id] > '$last_export_file' ORDER BY [user] ASC";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [user] LIKE ? AND [id] > '$last_export_file'";
+				}
+		}	
+		$this->verbosed($user_query);
+		$this->verbosed($user_list_query);
+		$ZipC = clone $this->Zip;
+		
+		#Get list of users and go through them
+		$results="";
+		$lists = 0;
+		$prep_user = $this->sql->conn->query($user_query);
+		$fetch_user = $prep_user->fetchAll();
+		$prep_user_list = $this->sql->conn->prepare($user_list_query);
+		foreach($fetch_user as $user)
+		{
+			#Get users lists and go through them
+			$user_results = "";
+			$user_files = 0;
+			$username = $user['user'];
+			$this->verbosed("---------------------".$username."---------------------");
+			$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
+			$prep_user_list->execute();
+			$fetch_imports = $prep_user_list->fetchAll();
+			foreach($fetch_imports as $import)
+			{
+				$id = $import['id'];
+				$this->verbosed($username." - ".$import['date']." - ".$id." - ".$import['title']);
+				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
+				$UserListArray = $this->UserListArray($id, $this->named, $new_icons, $only_new);
+				$AP_PlaceMarks = $this->createKML->CreateApFeatureCollection($UserListArray['data']);
+				if($AP_PlaceMarks)
+				{
+					$final_box = $this->FindBox($UserListArray['latlongarray']);
+					$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+					$list_results = $KML_region.$AP_PlaceMarks;
+
+					#Create List KML Structure
+					$list_results = $this->createKML->createFolder($title, $list_results, 0);
+					$list_results = $this->createKML->createKMLstructure($title, $list_results);
+
+					#Add list kml into final kmz
+					if($this->named){$list_kml_name = $username."_".$title."_label.kml";}else{$list_kml_name = $username."_".$title.".kml";}
+					$ZipC->addFile($list_results, 'files/'.$list_kml_name);
+					unset($list_results);
+					
+					#Create Network Link to this kml for the final doc.kml
+					$Netlink_region = $this->createKML->PlotRegionBox($final_box, uniqid());
+					$user_results .= $this->createKML->createNetworkLink('files/'.$list_kml_name, $title.' ( List ID:'.$id.')' , 1, 0, "onChange", 86400, 0, $Netlink_region);
+
+					#Increment variables (duh)
+					++$user_files;
+					++$lists;
+				}
+			}
+			#If this user had results, create a folder with their data
+			if($user_results){$results .= $this->createKML->createFolder($username.' ('.$user_files.' Files)', $user_results, 0);}
+			unset($user_results);
+		}
+		#Create the final KMZ
+		if($results == ""){$results = $this->createKML->createFolder("No Exports with GPS", $results, 0);}else{$results = $this->createKML->createFolder("All Exports", $results, 1);}
+		#$regions_link = $this->createKML->createNetworkLink($this->URL_PATH.'out/daemon/boundaries.kml', "Regions to save precious CPU cycles.", 1, 0, "once", 60);
+		#$results .= $this->createKML->createFolder("WifiDB Newest AP", $regions_link, 1, 1);
+		
+		$results = $this->createKML->createFolder($type." Database Export", $results, 1);
+		$results = $this->createKML->createKMLstructure("WiFiDB ".$type." Database Export", $results);
+		
+		$this->verbosed("Writing the ".$type." KMZ File. ($lists Lists) : ".$kmz_filepath);
+		$ZipC->addFile($results, 'doc.kml');
+		$ZipC->setZipFile($kmz_filepath);
+		$ZipC->getZipFile();
+		if (file_exists($kmz_filepath)) 
+		{
+			$this->verbosed("KMZ created at ".$kmz_filepath);
+			chmod($kmz_filepath, 0664);
+			if($symlink_name != "")
+			{
+				$link = $this->daemon_out.basename($symlink_name);
+				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
+				unlink($link);
+				symlink($kmz_filepath, $link);
+				chmod($link, 0664);
+			}
+			
+			Return true;
+		}
+		else
+		{
+			$this->verbosed("KMZ file does not exist :/ ");
+			Return false;
+		}
+	}
+
+	public function ExportSignal3dSingleListAp($file_id, $ap_id, $visible = 0)
+	{
+		$KML_data = "";
+		#Get Import Name
+		if($this->sql->service == "mysql")
+			{$sql = "SELECT title, date FROM files WHERE id = ?";}
+		else if($this->sql->service == "sqlsrv")
+			{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
+		$prep_title = $this->sql->conn->prepare($sql);
+		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
+		$prep_title->execute();
+		$fetch_title = $prep_title->fetch(2);
+		$ap_list_title = $fetch_title['title'];
+		$ap_list_date = $fetch_title['date'];
+		
+		#Get AP Signal History for this file	
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT\n"
+					. "wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.Hist_Date,\n"
+					. "wifi_gps.Lat, wifi_gps.Lon, wifi_gps.NumOfSats, wifi_gps.HorDilPitch, wifi_gps.Alt, \n"
+					. "wifi_gps.Geo, wifi_gps.KPH, wifi_gps.MPH, wifi_gps.TrackAngle, wifi_gps.GPS_Date\n"
+					. "FROM wifi_hist\n"
+					. "LEFT JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
+					. "WHERE wifi_hist.AP_ID = ? AND wifi_hist.File_ID = ? AND wifi_gps.Lat != '0.0000'\n"
+					. "ORDER BY wifi_gps.GPS_Date ASC";
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT\n"
+					. "[wifi_hist].[Sig], [wifi_hist].[RSSI], [wifi_hist].[Hist_Date],\n"
+					. "[wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_gps].[NumOfSats], [wifi_gps].[HorDilPitch], [wifi_gps].[Alt], \n"
+					. "[wifi_gps].[Geo], [wifi_gps].[KPH], [wifi_gps].[MPH], [wifi_gps].[TrackAngle], [wifi_gps].[GPS_Date]\n"
+					. "FROM [wifi_hist]\n"
+					. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
+					. "WHERE [wifi_hist].[AP_ID] = ? AND [wifi_hist].[File_ID] = ? AND [wifi_gps].[Lat] != '0.0000'\n"
+					. "ORDER BY [wifi_gps].[GPS_Date] ASC";
+			}
+		$ap_query = $this->sql->conn->prepare($sql);
+		$ap_query->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$ap_query->bindParam(2, $file_id, PDO::PARAM_INT);
+		$ap_query->execute();
+		$sig_gps_data = $ap_query->fetchAll(2);
+		if(count($sig_gps_data) > 0)
+		{
+			#Plot AP 3D Signal
+			$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
+			$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
+		}
+		return $KML_data;
 	}
 
 	function FindBox($points = array())
@@ -1235,257 +1437,5 @@ class export extends dbcore
 		}
 		
 		return $kmz_filename;
-	}
-
-	public function DateArray($start_date, $end_date, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
-	{
-		$start_date = (empty($start_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($start_date));
-		$end_date = (empty($end_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($end_date));
-		$start_date =  "$start_date 00:00:00";
-		$end_date =  "$end_date 23:59:59";
-		
-		#Get lists from the date specified
-		$date_search = $date."%";
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.user\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE AP_ID IN\n"
-					. "    (SELECT DISTINCT(wh.AP_ID)\n"
-					. "		FROM wifi_hist AS wh\n"
-					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
-					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
-					. "		WHERE (wf.completed = 1) AND (wf.date BETWEEN ? AND ?)\n"
-					. "    )\n";
-				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
-				$sql .= "ORDER BY la DESC";
-				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.[Alt], wf.[user]\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE AP_ID IN\n"
-					. "    (SELECT DISTINCT(wh.AP_ID)\n"
-					. "		FROM wifi_hist AS wh\n"
-					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
-					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
-					. "		WHERE (wf.completed = 1) AND (wf.[date] >= ? AND wf.[date] <= ?)\n"
-					. "    )\n";
-				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
-				$sql .= "ORDER BY la DESC";
-				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
-				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
-			}
-		$prep = $this->sql->conn->prepare($sql);
-		$prep->bindParam(1, $start_date, PDO::PARAM_STR);
-		$prep->bindParam(2, $end_date, PDO::PARAM_STR);
-		$prep->execute();
-		$fetch_aps = $prep->fetchAll();
-		$latlon_array = array();
-		$ap_array = array();
-		$apcount = 0;
-		foreach($fetch_aps as $apinfo)
-		{
-			$apcount++;
-			#Get AP GeoJSON
-			$ap_info = array(
-			"id" => $apinfo['AP_ID'],
-			"new_ap" => $new_ap,
-			"named" => $named,
-			"mac" => $apinfo['BSSID'],
-			"ssid" => $apinfo['SSID'],
-			"chan" => $apinfo['CHAN'],
-			"radio" => $apinfo['RADTYPE'],
-			"NT" => $apinfo['NETTYPE'],
-			"sectype" => $apinfo['SECTYPE'],
-			"auth" => $apinfo['AUTH'],
-			"encry" => $apinfo['ENCR'],
-			"BTx" => $apinfo['BTX'],
-			"OTx" => $apinfo['OTX'],
-			"FA" => $apinfo['fa'],
-			"LA" => $apinfo['la'],
-			"points" => $apinfo['points'],
-			"high_sig" => $apinfo['high_sig'],
-			"high_rssi" => $apinfo['high_rssi'],
-			"high_gps_sig" => $apinfo['high_gps_sig'],
-			"high_gps_rssi" => $apinfo['high_gps_rssi'],
-			"lat" => $this->convert->dm2dd($apinfo['Lat']),
-			"lon" => $this->convert->dm2dd($apinfo['Lon']),
-			"alt" => $apinfo['Alt'],
-			"manuf"=>$this->findManuf($apinfo['BSSID']),
-			"user" => $apinfo['user'],
-			"first_file_id" => $apinfo['File_ID']
-			);
-			$ap_array[] = $ap_info;
-			
-			$latlon_info = array(
-			"lat" => $this->convert->dm2dd($apinfo['Lat']),
-			"long" => $this->convert->dm2dd($apinfo['Lon']),
-			);
-			$latlon_array[] = $latlon_info;
-		}
-		
-		$ret_data = array(
-			"count" => $apcount,
-			"data" => $ap_array,
-			"latlon_array" => $latlon_array
-		);
-		
-		return $ret_data;
-	}
-
-	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
-	{
-		$ssid = "%".$ssid."%";
-		$mac = "%".$mac."%";
-		$radio = "%".$radio."%";
-		$chan = "%".$chan."%";
-		$auth = "%".$auth."%";
-		$encry = "%".$encry."%";
-		
-
-		$sql_count = "SELECT COUNT(AP_ID) As ApCount\n"
-			. "FROM wifi_ap\n"
-			. "WHERE\n"
-			. "fa IS NOT NULL AND\n"
-			. "SSID LIKE ? AND\n"
-			. "BSSID LIKE ? AND\n"
-			. "RADTYPE LIKE ? AND\n"
-			. "CHAN LIKE ? AND\n"
-			. "AUTH LIKE ? AND\n"
-			. "ENCR LIKE ? \n";
-		if($sectype){$sql_count .= "AND SECTYPE =  ?";}
-		$prep1 = $this->sql->conn->prepare($sql_count);
-		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
-		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
-		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
-		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
-		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
-		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
-		if($sectype){$prep1->bindParam(7, $sectype, PDO::PARAM_INT);}
-		$prep1->execute();
-		$AP_ID_Count = $prep1->fetch(2);
-		$total_rows = $AP_ID_Count['ApCount'];
-		
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wGPS.Alt As Alt,\n"
-					. "wf.user As user\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE\n"
-					. "fa IS NOT NULL AND\n"
-					. "wap.SSID LIKE ? AND\n"
-					. "wap.BSSID LIKE ? AND\n"
-					. "wap.RADTYPE LIKE ? AND\n"
-					. "wap.CHAN LIKE ? AND\n"
-					. "wap.AUTH LIKE ? AND\n"
-					. "wap.ENCR LIKE ?\n";
-				if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
-				if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
-				$sql .= " ORDER BY $sort $ord ";		
-				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points], [wap].[high_gps_sig], [wap].[high_gps_rssi],\n"
-					. "[wGPS].[Lat] As [Lat],\n"
-					. "[wGPS].[Lon] As [Lon],\n"
-					. "[wGPS].[Alt] As [Alt],\n"
-					. "[wf].[user] As [user]\n"
-					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
-					. "WHERE\n"
-					. "[fa] IS NOT NULL AND\n"
-					. "[wap].[SSID] LIKE ? AND\n"
-					. "[wap].[BSSID] LIKE ? AND\n"
-					. "[wap].[RADTYPE] LIKE ? AND\n"
-					. "[wap].[CHAN] LIKE ? AND\n"
-					. "[wap].[AUTH] LIKE ? AND\n"
-					. "[wap].[ENCR] LIKE ?\n";
-				if($valid_gps){$sql .=" AND [wap].[HighGps_ID] IS NOT NULL";}
-				if($sectype){$sql .=" AND [wap].[SECTYPE] =  ?";}
-				$sql .= " ORDER BY [$sort] $ord ";		
-				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
-				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
-			}
-		$prep2 = $this->sql->conn->prepare($sql);
-		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-		if($sectype){$prep2->bindParam(7, $sectype, PDO::PARAM_INT);}
-		$prep2->execute();
-
-		$latlon_array = array();
-		$ap_array = array();
-		$apcount = 0;
-		$class = "light";
-		$fetch_imports = $prep2->fetchAll();
-		foreach($fetch_imports as $newArray)
-		{
-			$apcount++;
-			if($newArray['Lat'] == "" && $newArray['Lon'] == ""){$validgps = 0;}else{$validgps = 1;}
-
-			$ap_info = array(
-			"id" => $newArray['AP_ID'],
-			"new_ap" => $new_ap,
-			"named" => $named,
-			"mac" => $newArray['BSSID'],
-			"ssid" => $this->formatSSID($newArray['SSID']),
-			"chan" => $newArray['CHAN'],
-			"radio" => $newArray['RADTYPE'],
-			"NT" => $newArray['NETTYPE'],
-			"sectype" => $newArray['SECTYPE'],
-			"auth" => $newArray['AUTH'],
-			"encry" => $newArray['ENCR'],
-			"BTx" => $newArray['BTX'],
-			"OTx" => $newArray['OTX'],
-			"FA" => $newArray['fa'],
-			"LA" => $newArray['la'],
-			"points" => $newArray['points'],
-			"high_gps_sig" => $newArray['high_gps_sig'],
-			"high_gps_rssi" => $newArray['high_gps_rssi'],
-			"lat" => $this->convert->dm2dd($newArray['Lat']),
-			"lon" => $this->convert->dm2dd($newArray['Lon']),
-			"alt" => $newArray['Alt'],
-			"manuf"=>$this->findManuf($newArray['BSSID']),
-			"user" => $newArray['user'],
-			"class" => $class,
-			"validgps" => $validgps
-			);
-
-			$ap_array[] = $ap_info;
-			
-			$latlon_info = array(
-			"lat" => $this->convert->dm2dd($newArray['Lat']),
-			"long" => $this->convert->dm2dd($newArray['Lon']),
-			);
-			$latlon_array[] = $latlon_info;
-
-			if($class == "light"){$class = "dark";}else{$class = "light";}
-		}
-
-		$ret_data = array(
-			"count" => $apcount,
-			"total_rows" => $total_rows,
-			"data" => $ap_array,
-			"latlongarray" => $latlon_array,
-		);
-		
-		return $ret_data;
 	}
 }
