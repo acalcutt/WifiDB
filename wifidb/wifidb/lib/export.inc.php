@@ -1236,7 +1236,159 @@ class export extends dbcore
 		
 		return $kmz_filename;
 	}
-	
+
+	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
+	{
+		$ssid = "%".$ssid."%";
+		$mac = "%".$mac."%";
+		$radio = "%".$radio."%";
+		$chan = "%".$chan."%";
+		$auth = "%".$auth."%";
+		$encry = "%".$encry."%";
+		
+
+		$sql_count = "SELECT COUNT(AP_ID) As ApCount\n"
+			. "FROM wifi_ap\n"
+			. "WHERE\n"
+			. "fa IS NOT NULL AND\n"
+			. "SSID LIKE ? AND\n"
+			. "BSSID LIKE ? AND\n"
+			. "RADTYPE LIKE ? AND\n"
+			. "CHAN LIKE ? AND\n"
+			. "AUTH LIKE ? AND\n"
+			. "ENCR LIKE ? \n";
+		if($sectype){$sql_count .= "AND SECTYPE =  ?";}
+		$prep1 = $this->sql->conn->prepare($sql_count);
+		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
+		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
+		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
+		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
+		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
+		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
+		if($sectype){$prep1->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$prep1->execute();
+		$AP_ID_Count = $prep1->fetch(2);
+		$total_rows = $AP_ID_Count['ApCount'];
+		
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon,\n"
+					. "wGPS.Alt As Alt,\n"
+					. "wf.user As user\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE\n"
+					. "fa IS NOT NULL AND\n"
+					. "wap.SSID LIKE ? AND\n"
+					. "wap.BSSID LIKE ? AND\n"
+					. "wap.RADTYPE LIKE ? AND\n"
+					. "wap.CHAN LIKE ? AND\n"
+					. "wap.AUTH LIKE ? AND\n"
+					. "wap.ENCR LIKE ?\n";
+				if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
+				if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
+				$sql .= " ORDER BY $sort $ord ";		
+				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+
+				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points], [wap].[high_gps_sig], [wap].[high_gps_rssi],\n"
+					. "[wGPS].[Lat] As [Lat],\n"
+					. "[wGPS].[Lon] As [Lon],\n"
+					. "[wGPS].[Alt] As [Alt],\n"
+					. "[wf].[user] As [user]\n"
+					. "FROM [wifi_ap] AS [wap]\n"
+					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
+					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
+					. "WHERE\n"
+					. "[fa] IS NOT NULL AND\n"
+					. "[wap].[SSID] LIKE ? AND\n"
+					. "[wap].[BSSID] LIKE ? AND\n"
+					. "[wap].[RADTYPE] LIKE ? AND\n"
+					. "[wap].[CHAN] LIKE ? AND\n"
+					. "[wap].[AUTH] LIKE ? AND\n"
+					. "[wap].[ENCR] LIKE ?\n";
+				if($valid_gps){$sql .=" AND [wap].[HighGps_ID] IS NOT NULL";}
+				if($sectype){$sql .=" AND [wap].[SECTYPE] =  ?";}
+				$sql .= " ORDER BY [$sort] $ord ";		
+				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+			}
+		$prep2 = $this->sql->conn->prepare($sql);
+		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+		if($sectype){$prep2->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$prep2->execute();
+
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		$class = "light";
+		$fetch_imports = $prep2->fetchAll();
+		foreach($fetch_imports as $newArray)
+		{
+			$apcount++;
+			if($newArray['Lat'] == ""){$validgps = 0;}else{$validgps = 1;}
+
+			$ap_info = array(
+			"id" => $newArray['AP_ID'],
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $newArray['BSSID'],
+			"ssid" => $this->formatSSID($newArray['SSID']),
+			"chan" => $newArray['CHAN'],
+			"radio" => $newArray['RADTYPE'],
+			"NT" => $newArray['NETTYPE'],
+			"sectype" => $newArray['SECTYPE'],
+			"auth" => $newArray['AUTH'],
+			"encry" => $newArray['ENCR'],
+			"BTx" => $newArray['BTX'],
+			"OTx" => $newArray['OTX'],
+			"FA" => $newArray['fa'],
+			"LA" => $newArray['la'],
+			"points" => $newArray['points'],
+			"high_gps_sig" => $newArray['high_gps_sig'],
+			"high_gps_rssi" => $newArray['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($newArray['Lat']),
+			"lon" => $this->convert->dm2dd($newArray['Lon']),
+			"lat_dm" => $newArray['Lat'],
+			"lon_dm" => $newArray['Lon'],
+			"alt" => $newArray['Alt'],
+			"manuf"=>$this->findManuf($newArray['BSSID']),
+			"user" => $newArray['user'],
+			"class" => $class,
+			"validgps" => $validgps
+			);
+
+			$ap_array[] = $ap_info;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($newArray['Lat']),
+			"long" => $this->convert->dm2dd($newArray['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+
+			if($class == "light"){$class = "dark";}else{$class = "light";}
+		}
+
+		$ret_data = array(
+			"count" => $apcount,
+			"total_rows" => $total_rows,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
 	public function Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
 		$save_url = 'from='.$from.'&to='.$inc;

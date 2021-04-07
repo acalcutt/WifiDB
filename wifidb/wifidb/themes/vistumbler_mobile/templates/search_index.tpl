@@ -22,7 +22,7 @@ if not, write to the
 				{include file="topmenu.tpl"}
 				<div class="center">
 					<h2>Search for Access Points</h2>
-					<form action="{$wifidb_host_url}opt/results.php?ord=DESC&amp;sort=AP_ID&amp;from=0&amp;to=500" method="post" enctype="multipart/form-data">
+					<form action="{$wifidb_host_url}opt/results.php?ord=DESC&amp;sort=AP_ID&amp;from=0&amp;inc=500" method="post" enctype="multipart/form-data">
 						<table class="content_table-centered">
 							<thead>
 								<tr>

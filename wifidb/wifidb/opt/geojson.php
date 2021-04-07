@@ -34,12 +34,12 @@ switch($func)
 		if((int)@$_REQUEST['json'] === 1){$json = 1;}else{$json = 0;}#output json instead of creating a download
 		if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		if ($from == ""){$from = 0;}	
-		if($limit == "")
+		if($inc == "")
 		{
-			if ($limit == ""){$limit = 50000;}
+			if ($inc == ""){$inc = 50000;}
 			if($dbcore->sql->service == "mysql")
 				{
 					$sql = "SELECT Count(AP_ID) As ap_count\n"
@@ -59,11 +59,11 @@ switch($func)
 			$result->execute();
 			$newArray = $result->fetch(2);
 			$ap_count = $newArray['ap_count'];
-			if($ap_count > $limit)
+			if($ap_count > $inc)
 			{
-				$ldivs = ceil($ap_count / $limit);
+				$ldivs = ceil($ap_count / $inc);
 				$dbcore->smarty->assign('user', $user);
-				$dbcore->smarty->assign('limit', $limit);
+				$dbcore->smarty->assign('inc', $inc);
 				$dbcore->smarty->assign('count', $ap_count);
 				$dbcore->smarty->assign('ldivs', $ldivs);
 				$dbcore->smarty->assign('json', $json);

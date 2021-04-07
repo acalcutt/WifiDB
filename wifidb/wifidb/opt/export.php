@@ -31,10 +31,10 @@ switch($func)
 			include('../lib/init.inc.php');
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}#output json instead of creating a download
-			$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			if ($from == ""){$from = 0;}	
-			if ($limit == ""){$limit = 25000;}
+			if ($inc == ""){$inc = 25000;}
 			if($dbcore->sql->service == "mysql")
 				{
 					$sql = "SELECT Count(AP_ID) As ap_count\n"
@@ -54,11 +54,11 @@ switch($func)
 			$result->execute();
 			$newArray = $result->fetch(2);
 			$ap_count = $newArray['ap_count'];
-			if($ap_count > $limit)
+			if($ap_count > $inc)
 			{
-				$ldivs = ceil($ap_count / $limit);
+				$ldivs = ceil($ap_count / $inc);
 				$dbcore->smarty->assign('user', $user);
-				$dbcore->smarty->assign('limit', $limit);
+				$dbcore->smarty->assign('inc', $inc);
 				$dbcore->smarty->assign('count', $ap_count);
 				$dbcore->smarty->assign('ldivs', $ldivs);
 				$dbcore->smarty->assign('xml', $xml);

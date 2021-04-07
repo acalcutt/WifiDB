@@ -85,7 +85,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name']);
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"visible");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"visible");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 
@@ -112,7 +112,7 @@ switch($func)
 		
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$limit	=	filter_input(INPUT_GET, 'limit', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		if ($from == ""){$from = 0;}	
 		
@@ -146,9 +146,9 @@ switch($func)
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 
-		if($limit == "")
+		if($inc == "")
 		{
-			if ($limit == ""){$limit = 50000;}
+			if ($inc == ""){$inc = 50000;}
 			if($dbcore->sql->service == "mysql")
 				{
 					$sql = "SELECT Count(AP_ID) As ap_count\n"
@@ -168,11 +168,11 @@ switch($func)
 			$result->execute();
 			$newArray = $result->fetch(2);
 			$ap_count = $newArray['ap_count'];
-			if($ap_count > $limit)
+			if($ap_count > $inc)
 			{
-				$ldivs = ceil($ap_count / $limit);
+				$ldivs = ceil($ap_count / $inc);
 				$dbcore->smarty->assign('user', $user);
-				$dbcore->smarty->assign('limit', $limit);
+				$dbcore->smarty->assign('inc', $inc);
 				$dbcore->smarty->assign('count', $ap_count);
 				$dbcore->smarty->assign('ldivs', $ldivs);
 				$dbcore->smarty->assign('clat', $latitude);
@@ -215,10 +215,10 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$uags = $dbcore->createGeoJSON->CreateUserAllGeoJsonSource($user, $from, $limit);
+		$uags = $dbcore->createGeoJSON->CreateUserAllGeoJsonSource($user, $from, $inc);
 		$ml = $dbcore->createGeoJSON->CreateApLayer($uags['layer_name']);
 		$layer_source_all .= $uags['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
@@ -301,7 +301,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 		
 		$mlgs = $dbcore->createGeoJSON->CreateListGeoJsonSource($id);
@@ -392,7 +392,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$ags = $dbcore->createGeoJSON->CreateApGeoJsonSource($id);
@@ -543,7 +543,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lags = $dbcore->createGeoJSON->CreateLiveApGeoJsonSource($id);
@@ -578,7 +578,7 @@ switch($func)
 		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 
 		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
@@ -588,24 +588,16 @@ switch($func)
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-		if ($from == ""){$from = NULL;}
-		if ($inc == ""){$inc = NULL;}
+		if ($from == ""){$from = 0;}
+		if ($inc == ""){$inc = 50000;}
 		if ($ord == ""){$ord = "ASC";}
 		if ($sort == ""){$sort = "ssid";}
-		
-		list($total_rows, $results_all, $save_url, $export_url) = $dbcore->export->Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from, $inc, 1);
 
-		#Get Center GPS
-		$latlon_array = array();
-		foreach($results_all as $ap) 
-		{
-			$latlon_info = array(
-			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-			"long" => $dbcore->convert->dm2dd($ap['Lon']),
-			);
-			$latlon_array[] = $latlon_info;
-		}
-		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($latlon_array);
+		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
+		$results_all = $SearchArray['data'];
+		$total_rows = $SearchArray['total_rows'];
+		$export_url = "&ssid=$ssid&mac=$mac&radio=$radio&chan=$chan&auth=$auth&encry=$encry&sectype=$sectype";
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SearchArray['latlon_array']);
 
 		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($Center_LatLon['lat']);}
 		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($Center_LatLon['long']);}
@@ -646,7 +638,7 @@ switch($func)
 		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{name}","Open Sans Regular",10,"none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lsgs = $dbcore->createGeoJSON->CreateSearchGeoJsonSource($export_url);

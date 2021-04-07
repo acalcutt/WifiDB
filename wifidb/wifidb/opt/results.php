@@ -35,7 +35,7 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     $ord    =   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
     $sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
     $from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-    $inc    =	filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+	$inc   =	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
     
 	if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 	if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
@@ -49,14 +49,16 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
     if ($inc == ""){$inc = 100;}
     if ($ord == ""){$ord = "ASC";}
     if ($sort == ""){$sort = "ssid";}
-    $to = ($from+$inc);
-    
-    list($total_rows, $results_all, $save_url, $export_url) = $dbcore->export->Search($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $from, $inc);
-    if($total_rows === 0)
-    {
-        $dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');
-    }
+    $to = ($from+$limit);
+	
+	$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
+	$results_all = $SearchArray['data'];
+	$total_rows = $SearchArray['total_rows'];
+    $dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", $ssid, $mac, $chan, $radio, $auth, $encry);
+	
+    if($total_rows === 0){$dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');}
 	$dbcore->smarty->assign('wifidb_page_label', 'Search Results Page');
+	$dbcore->smarty->assign('page_list', $dbcore->pages_together);
 	$dbcore->smarty->assign('total_rows', $total_rows);
 	$dbcore->smarty->assign('to', $to);
 	$dbcore->smarty->assign('from', $from);
@@ -66,10 +68,7 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$dbcore->smarty->assign('chan_search', $chan);
 	$dbcore->smarty->assign('auth_search', $auth);
 	$dbcore->smarty->assign('encry_search', $encry);
-	$dbcore->smarty->assign('save_url', $save_url);
-	$dbcore->smarty->assign('export_url', $export_url);
-	$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", $ssid, $mac, $chan, $radio, $auth, $encry);
-	$dbcore->smarty->assign('page_list', $dbcore->pages_together);
+	$dbcore->smarty->assign('sectype_search', $sectype);
 	$dbcore->smarty->assign('results_all', $results_all);
 	$dbcore->smarty->display('search_results.tpl');
 }
