@@ -212,6 +212,8 @@ switch($func)
 		}else{
 			$title_date = $start_date."_".$end_date;
 		}
+		$start_date =  "$start_date 00:00:00";
+		$end_date =  "$end_date 23:59:59";
 
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
@@ -223,96 +225,44 @@ switch($func)
 		break;
 
 	case "exp_daily":
-		#Get lists from the last day and a half
-		$row_count = 1000;
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n";
-		if($dbcore->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
-		$sql .= "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n";
-		if($dbcore->sql->service == "mysql"){
-			$sql .= "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.ModDate >= DATE_SUB(NOW(),INTERVAL 1.5 DAY) ORDER BY wap.AP_ID\n"
-				. "LIMIT ?,?";
-		}
-		else if($dbcore->sql->service == "sqlsrv"){
-			$sql .= "WHERE [wap].[HighGps_ID] IS NOT NULL And [wGPS].[Lat] != '0.0000' AND [wap].[ModDate] >= dateadd(day, -1.5, getdate()) ORDER BY [wap].[AP_ID]\n"
-				. "OFFSET ? ROWS\n"
-				. "FETCH NEXT ? ROWS ONLY";
-		}
-		$Import_Map_Data = "";
-		for ($i = 0; TRUE; $i++) {
-			$offset = $i*$row_count ;
-			$prep = $dbcore->sql->conn->prepare($sql);
-			$prep->bindParam(1, $offset, PDO::PARAM_INT);
-			$prep->bindParam(2, $row_count, PDO::PARAM_INT);
-			$prep->execute();
-			$appointer = $prep->fetchAll();
-			foreach($appointer as $ap)
-			{
-				#Get AP KML
-				$ap_info = array(
-				"id" => $ap['AP_ID'],
-				"new_ap" => 1,
-				"named" => 0,
-				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
-				"chan" => $ap['CHAN'],
-				"radio" => $ap['RADTYPE'],
-				"NT" => $ap['NETTYPE'],
-				"sectype" => $ap['SECTYPE'],
-				"auth" => $ap['AUTH'],
-				"encry" => $ap['ENCR'],
-				"BTx" => $ap['BTX'],
-				"OTx" => $ap['OTX'],
-				"FA" => $ap['fa'],
-				"LA" => $ap['la'],
-				"points" => $ap['points'],
-				"high_gps_sig" => $ap['high_gps_sig'],
-				"high_gps_rssi" => $ap['high_gps_rssi'],
-				"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-				"lon" => $dbcore->convert->dm2dd($ap['Lon']),
-				"alt" => $ap['Alt'],
-				"manuf"=>$dbcore->findManuf($ap['BSSID']),
-				"user" => $ap['user']
-				);
-				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
-			}
-			$number_of_rows = $prep->rowCount();
-			if ($number_of_rows !== $row_count) {break;}
-		}	
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
-		$file_name = "Daily_Exports.geojson";
-		break;
-		
-		case "exp_search":
-			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			
-			if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
-			if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
-			if(@$_REQUEST['radio']){$radio = $_REQUEST['radio'];}else{$radio = "";}	
-			if(@$_REQUEST['chan']){$chan = $_REQUEST['chan'];}else{$chan = "";}
-			if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
-			if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
-			if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
-			
-			if ($from == ""){$from = 0;}
-			if ($inc == ""){$inc = 50000;}
-			if ($ord == ""){$ord = "ASC";}
-			if ($sort == ""){$sort = "ssid";}
-			
+		$date = new DateTime(); 
+		$end_date = $date->format('Y-m-d H:i:s');// current time
+		$date->sub(new DateInterval('PT36H'));
+		$start_date = $date->format('Y-m-d H:i:s');// 36 Hours Ago
 
-			$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
-			$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SearchArray['data']);
-			if($labeled){$file_name = "Search_".uniqid()."_Labeled.geojson";}else{$file_name = "Search_".uniqid().".geojson";}
-			break;
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+		if(!is_numeric($from)){$from = 0;}
+		if(!is_numeric($inc)){$inc = 50000;}
+		$DateList = $dbcore->export->DateArray($start_date, $end_date, $labeled, 1, $from, $inc, 1);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($DateList['data']);
+		if($labeled){$file_name = "date_list_".$title_date."_Labeled.geojson";}else{$file_name = "date_list_".$title_date.".geojson";}
+		break;
+
+	case "exp_search":
+		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+		
+		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
+		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
+		if(@$_REQUEST['radio']){$radio = $_REQUEST['radio'];}else{$radio = "";}	
+		if(@$_REQUEST['chan']){$chan = $_REQUEST['chan'];}else{$chan = "";}
+		if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
+		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
+		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
+		
+		if ($from == ""){$from = 0;}
+		if ($inc == ""){$inc = 50000;}
+		if ($ord == ""){$ord = "ASC";}
+		if ($sort == ""){$sort = "ssid";}
+		
+
+		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SearchArray['data']);
+		if($labeled){$file_name = "Search_".uniqid()."_Labeled.geojson";}else{$file_name = "Search_".uniqid().".geojson";}
+		break;
 }	
 if($json)
 {

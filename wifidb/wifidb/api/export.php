@@ -370,6 +370,8 @@ switch($func)
 			}else{
 				$title_date = $start_date."_".$end_date;
 			}
+			$start_date =  "$start_date 00:00:00";
+			$end_date =  "$end_date 23:59:59";
 
 			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);

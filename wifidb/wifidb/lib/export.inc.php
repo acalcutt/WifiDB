@@ -340,10 +340,8 @@ class export extends dbcore
 
 	public function DateArray($start_date, $end_date, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
-		$start_date = (empty($start_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($start_date));
-		$end_date = (empty($end_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($end_date));
-		$start_date =  "$start_date 00:00:00";
-		$end_date =  "$end_date 23:59:59";
+		$start_date = (empty($start_date)) ? date("Y-m-d H:i:s") : date('Y-m-d H:i:s',strtotime($start_date));
+		$end_date = (empty($end_date)) ? date("Y-m-d H:i:s") : date('Y-m-d H:i:s',strtotime($end_date));
 		
 		#Get lists from the date specified
 		$date_search = $date."%";
@@ -622,12 +620,12 @@ class export extends dbcore
 			if($this->sql->service == "mysql")
 				{
 					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY user ASC";
-					$user_list_query = "SELECT id, user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And user LIKE ? AND id > '$last_export_file'";
+					$user_list_query = "SELECT id, user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
 					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [id] > '$last_export_file' ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [user] LIKE ? AND [id] > '$last_export_file'";
+					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [user] LIKE ? AND [id] > '$last_export_file' ORDER BY [id] DESC";
 				}
 		}	
 		$this->verbosed($user_query);
@@ -662,6 +660,7 @@ class export extends dbcore
 					$final_box = $this->FindBox($UserListArray['latlongarray']);
 					$KML_region = $this->createKML->PlotRegionBox($final_box, uniqid());
 					$list_results = $KML_region.$AP_PlaceMarks;
+					$list_results = $AP_PlaceMarks;
 
 					#Create List KML Structure
 					$list_results = $this->createKML->createFolder($title, $list_results, 0);
