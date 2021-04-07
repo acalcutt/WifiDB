@@ -351,16 +351,35 @@ switch($func)
 			break;
 
 		case "exp_date":
-			$date = $_REQUEST['date'];
+			$start_date = $_REQUEST['date'];
+			$end_date = $_REQUEST['end_date'];
+			if(empty($start_date)){	
+				#Get the date of the newest import
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY date DESC LIMIT 1";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT TOP 1 [date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [date] DESC";}
+				$date_query = $dbcore->sql->conn->query($sql);
+				$date_fetch = $date_query->fetch(2);
+				$start_date = date('Y-m-d',strtotime($date_fetch['date']));
+				$end_date = date('Y-m-d',strtotime($date_fetch['date']));
+				$title_date = $start_date;
+			}elseif(empty($end_date)){
+				$end_date = $start_date;
+				$title_date = $start_date;
+			}else{
+				$title_date = $start_date."_".$end_date;
+			}
+
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+			if(!is_numeric($from)){$from = 0;}
 			if(!is_numeric($inc)){$inc = 25000;}
 			
-			$DateList = $dbcore->export->ApDateArray($date, $labeled, $inc);
+			$DateList = $dbcore->export->DateArray($start_date, $end_date, $labeled, 1, $from, $inc, 1);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($DateList['data']);
-			$final_box = $dbcore->export->FindBox($UserListArray['latlongarray']);
-			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());	
-			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $KML_region.$AP_PlaceMarks);
-			if($labeled){$file_name = "date_list_".date_format($date, 'm-d-Y')."_Labeled.kmz";}else{$file_name = "date_list_".date_format($date, 'm-d-Y').".kmz";}
+			$results = $dbcore->createKML->createKMLstructure("date_list_".$title_date, $AP_PlaceMarks);
+			if($labeled){$file_name = "date_list_".$title_date."_Labeled.kmz";}else{$file_name = "date_list_".$title_date.".kmz";}
 
 			break;
 
@@ -385,10 +404,8 @@ switch($func)
 
 			$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($SearchArray['data']);
-			$final_box = $dbcore->export->FindBox($SearchArray['latlongarray']);
-			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());
 			$name = "Search_".uniqid();
-			$results = $dbcore->createKML->createKMLstructure($name, $KML_region.$AP_PlaceMarks);
+			$results = $dbcore->createKML->createKMLstructure($name, $AP_PlaceMarks);
 			if($labeled){$file_name = $name."_Labeled.kmz";}else{$file_name = $name.uniqid().".kmz";}
 			break;
 

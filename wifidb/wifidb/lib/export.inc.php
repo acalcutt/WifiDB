@@ -1237,6 +1237,108 @@ class export extends dbcore
 		return $kmz_filename;
 	}
 
+	public function DateArray($start_date, $end_date, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
+	{
+		$start_date = (empty($start_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($start_date));
+		$end_date = (empty($end_date)) ? date("Y-m-d") : date('Y-m-d',strtotime($end_date));
+		$start_date =  "$start_date 00:00:00";
+		$end_date =  "$end_date 23:59:59";
+		
+		#Get lists from the date specified
+		$date_search = $date."%";
+		if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.user\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE AP_ID IN\n"
+					. "    (SELECT DISTINCT(wh.AP_ID)\n"
+					. "		FROM wifi_hist AS wh\n"
+					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
+					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
+					. "		WHERE (wf.completed = 1) AND (wf.date BETWEEN ? AND ?)\n"
+					. "    )\n";
+				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
+				$sql .= "ORDER BY la DESC";
+				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+			}
+		else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.[Alt], wf.[user]\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
+					. "WHERE AP_ID IN\n"
+					. "    (SELECT DISTINCT(wh.AP_ID)\n"
+					. "		FROM wifi_hist AS wh\n"
+					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
+					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
+					. "		WHERE (wf.completed = 1) AND (wf.[date] >= ? AND wf.[date] <= ?)\n"
+					. "    )\n";
+				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
+				$sql .= "ORDER BY la DESC";
+				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+			}
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $start_date, PDO::PARAM_STR);
+		$prep->bindParam(2, $end_date, PDO::PARAM_STR);
+		$prep->execute();
+		$fetch_aps = $prep->fetchAll();
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		foreach($fetch_aps as $apinfo)
+		{
+			$apcount++;
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $apinfo['AP_ID'],
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $apinfo['BSSID'],
+			"ssid" => $apinfo['SSID'],
+			"chan" => $apinfo['CHAN'],
+			"radio" => $apinfo['RADTYPE'],
+			"NT" => $apinfo['NETTYPE'],
+			"sectype" => $apinfo['SECTYPE'],
+			"auth" => $apinfo['AUTH'],
+			"encry" => $apinfo['ENCR'],
+			"BTx" => $apinfo['BTX'],
+			"OTx" => $apinfo['OTX'],
+			"FA" => $apinfo['fa'],
+			"LA" => $apinfo['la'],
+			"points" => $apinfo['points'],
+			"high_sig" => $apinfo['high_sig'],
+			"high_rssi" => $apinfo['high_rssi'],
+			"high_gps_sig" => $apinfo['high_gps_sig'],
+			"high_gps_rssi" => $apinfo['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"lon" => $this->convert->dm2dd($apinfo['Lon']),
+			"alt" => $apinfo['Alt'],
+			"manuf"=>$this->findManuf($apinfo['BSSID']),
+			"user" => $apinfo['user'],
+			"first_file_id" => $apinfo['File_ID']
+			);
+			$ap_array[] = $ap_info;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($apinfo['Lat']),
+			"long" => $this->convert->dm2dd($apinfo['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+		}
+		
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlon_array" => $latlon_array
+		);
+		
+		return $ret_data;
+	}
+
 	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
 		$ssid = "%".$ssid."%";
@@ -1336,7 +1438,7 @@ class export extends dbcore
 		foreach($fetch_imports as $newArray)
 		{
 			$apcount++;
-			if($newArray['Lat'] == ""){$validgps = 0;}else{$validgps = 1;}
+			if($newArray['Lat'] == "" && $newArray['Lon'] == ""){$validgps = 0;}else{$validgps = 1;}
 
 			$ap_info = array(
 			"id" => $newArray['AP_ID'],

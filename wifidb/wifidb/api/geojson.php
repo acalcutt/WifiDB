@@ -256,13 +256,33 @@ switch($func)
 		break;
 		
 	case "exp_date":
-		$date = $_REQUEST['date'];
+		$start_date = $_REQUEST['date'];
+		$end_date = $_REQUEST['end_date'];
+		if(empty($start_date)){	
+			#Get the date of the newest import
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY date DESC LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT TOP 1 [date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [date] DESC";}
+			$date_query = $dbcore->sql->conn->query($sql);
+			$date_fetch = $date_query->fetch(2);
+			$start_date = date('Y-m-d',strtotime($date_fetch['date']));
+			$end_date = date('Y-m-d',strtotime($date_fetch['date']));
+			$title_date = $start_date;
+		}elseif(empty($end_date)){
+			$end_date = $start_date;
+			$title_date = $start_date;
+		}else{
+			$title_date = $start_date."_".$end_date;
+		}
+
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+		if(!is_numeric($from)){$from = 0;}
 		if(!is_numeric($inc)){$inc = 50000;}
-		$DateList = $dbcore->export->ApDateArray($date, $labeled, $inc);
+		$DateList = $dbcore->export->DateArray($start_date, $end_date, $labeled, 1, $from, $inc, 1);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($DateList['data']);
-		
-		$file_name = $datelist."_".date_format($date, 'm-d-Y').".geojson";
+		if($labeled){$file_name = "date_list_".$title_date."_Labeled.geojson";}else{$file_name = "date_list_".$title_date.".geojson";}
 		break;
 
 	case "exp_daily":

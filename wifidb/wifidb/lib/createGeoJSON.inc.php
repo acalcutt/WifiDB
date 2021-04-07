@@ -56,6 +56,7 @@ class createGeoJSON
 		if(isset($ap_info_array['manuf'])){$manuf = '"manuf":'.json_encode($ap_info_array['manuf']).',';}else{$manuf = '';}
 		if(isset($ap_info_array['hist_date'])){$hist_date = '"hist_date":'.json_encode($ap_info_array['hist_date']).',';}else{$hist_date = '';}
 		if(isset($ap_info_array['hist_file_id'])){$hist_file_id = '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';}else{$hist_file_id = '';}
+		if(isset($ap_info_array['first_file_id'])){$first_file_id = '"first_file_id":'.json_encode($ap_info_array['first_file_id'], JSON_NUMERIC_CHECK).',';}else{$first_file_id = '';}
 		if(isset($ap_info_array['mac'])){$mac = '"mac":'.json_encode($ap_info_array['mac']).',';}else{$mac = '';}
 		if(isset($ap_info_array['sectype'])){$sectype = '"sectype":'.json_encode($ap_info_array['sectype'], JSON_NUMERIC_CHECK).',';}else{$sectype = '';}
 		if(isset($ap_info_array['NT'])){$NT = '"NT":'.json_encode($ap_info_array['NT']).',';}else{$NT = '';}
@@ -73,7 +74,7 @@ class createGeoJSON
 		if(isset($ap_info_array['alt'])){$alt = '"alt":'.json_encode($ap_info_array['alt']).',';}else{$alt = '';}
 		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
 
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
 
 		return $tmp;
 	}

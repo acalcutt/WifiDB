@@ -342,13 +342,14 @@ class createKML
 		if(isset($ap_info_array['lon'])){$lon = '				<b>Longitude: </b>'.$this->stripInvalidXml($ap_info_array['lon']).'<br />'."\n";}else{$lon = '';}
 		if(isset($ap_info_array['alt'])){$alt = '				<b>Altitude: </b>'.$this->stripInvalidXml($ap_info_array['alt']).'<br />'."\n";}else{$alt = '';}
 		if(isset($ap_info_array['hist_file_id'])){$hist_file_id = '				<b>File ID: </b><a href="'.$this->URL_BASE.'opt/userstats.php?func=useraplist&row='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank"">'.$this->stripInvalidXml($ap_info_array['id']).'</a><br />'."\n";}else{$hist_file_id = '';}
+		if(isset($ap_info_array['first_file_id'])){$first_file_id = '				<b>File ID: </b><a href="'.$this->URL_BASE.'opt/userstats.php?func=useraplist&row='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank"">'.$this->stripInvalidXml($ap_info_array['id']).'</a><br />'."\n";}else{$first_file_id = '';}
 		if(isset($ap_info_array['user'])){$user = '				<b>User: </b>'.$this->stripInvalidXml($ap_info_array['user']).'<br />'."\n";}else{$user = '';}
 
 		$tmp = "\n		<Placemark id=\"".$ssid."_".$ap_info_array['mac']."_Placemark\">$named
 			<styleUrl>".$icon_style."</styleUrl>
 			<description>
 				<![CDATA[
-".$id.$live_id_ssid.$live_id.$mac.$chan.$auth.$encry.$signal.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$user."				]]>
+".$id.$live_id_ssid.$live_id.$mac.$chan.$auth.$encry.$signal.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$first_file_id.$user."				]]>
 			</description>
 			<Point id=\"".$ssid."_".$ap_info_array['mac']."_gps\">
 				<coordinates>".$ap_info_array['lon'].",".$ap_info_array['lat'].",".$ap_info_array['alt']."</coordinates>
