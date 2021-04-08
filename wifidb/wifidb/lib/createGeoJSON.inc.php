@@ -43,7 +43,7 @@ class createGeoJSON
 	public function CreateApFeature($ap_info_array, $tc = 0)
 	{
 		
-		if($tc == 0){$tippecanoe = '';}else{$tippecanoe = '"tippecanoe":{"maxzoom":14,"minzoom":0},';}
+		if($tc == 0){$tippecanoe = '';}else{$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';}
 
 		if(isset($ap_info_array['named']) && $ap_info_array['named'] == 1){$name = '"name":'.json_encode(dbcore::formatSSID($ap_info_array['ssid'])).',';}else{$name = '';}
 		if(isset($ap_info_array['id'])){$id = '"id":"'.json_encode($ap_info_array['id'], JSON_NUMERIC_CHECK).'",';}else{$id = '';}
