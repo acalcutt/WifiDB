@@ -311,7 +311,46 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
-			$results = $dbcore->createKML->createKMLstructure("exp_ap_".$id, $AP_PlaceMarks);
+			$results = $AP_PlaceMarks;
+			if($AP_PlaceMarks)
+			{
+				#Get the AP Signal History
+				$KML_Signal_data = "";
+				
+				# -Get Unique Files with this AP_ID-
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT DISTINCT(`File_ID`) FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID`";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT DISTINCT([File_ID]) FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID]";}
+				$prep_file_id = $dbcore->sql->conn->prepare($sql);
+				$prep_file_id->bindParam(1, $id, PDO::PARAM_INT);
+				$prep_file_id->execute();
+				$fetch_file_id = $prep_file_id->fetchAll();
+				$list_count = 0;
+				$list_max = 250;
+				foreach($fetch_file_id as $file_id)
+				{
+					$list_count++;
+					#Get List Title 
+					if($dbcore->sql->service == "mysql")
+						{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
+					else if($dbcore->sql->service == "sqlsrv")
+						{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
+					$prep_title = $dbcore->sql->conn->prepare($sql);
+					$prep_title->bindParam(1, $file_id['File_ID'], PDO::PARAM_INT);
+					$prep_title->execute();
+					$fetch_title = $prep_title->fetch(2);
+					$ap_list_title = $fetch_title['title'];
+					
+					#Get List AP Signal History
+					$ap_signal = $dbcore->export->ExportSignal3dSingleListAp($file_id['File_ID'], $id, 0);
+					if($ap_signal){$KML_Signal_data .= $dbcore->createKML->createFolder($file_id['File_ID']."-".$ap_list_title."-".$ResultAP['ssid'], $ap_signal, 1);}
+					if($list_count > $list_max){break;}
+				}			
+				if($KML_Signal_data == ""){$KML_Signal_data .= $dbcore->createKML->createFolder("No Signal History", $KML_Signal_data, 0);}
+				$results .= $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 0);
+			}
+			$results = $dbcore->createKML->createKMLstructure("exp_ap_".$id, $results);
 			
 			if($labeled){$file_name = "ap_id_".$id."_Labeled.kmz";}else{$file_name = "ap_id_".$id.".kmz";}
 			break;
