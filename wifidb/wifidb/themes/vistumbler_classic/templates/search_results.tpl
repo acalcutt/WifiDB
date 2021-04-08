@@ -26,10 +26,10 @@ if not, write to the
 					<tbody>
 						<tr>
 							<td align="center" colspan="10">
-								<a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?{$save_url}">Save Link</a> | 
-								<a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_search{$export_url}">Map</a> | 
-								<a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_search&json=1{$export_url}">JSON</a> |								
-								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search{$export_url}">KMZ</a>
+								<a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Save Link</a> | 
+								<a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Map</a> | 
+								<a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_search&json=1&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">JSON</a> |								
+								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">KMZ</a>
 							</td>
 						</tr>
 						<tr class="header">
