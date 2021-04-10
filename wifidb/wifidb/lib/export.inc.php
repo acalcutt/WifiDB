@@ -473,7 +473,7 @@ class export extends dbcore
 			}
 			else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT TOP (50000) wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.[user]\n"
+				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.[user]\n"
 					. "FROM wifi_hist AS wh\n"
 					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
