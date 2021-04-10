@@ -309,9 +309,21 @@ switch($func)
 
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			$title = "ap_id_".$id;
 			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+			#Get SSID
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $id, PDO::PARAM_INT);
+			$prep->execute();
+			$dbcore->sql->checkError(__LINE__, __FILE__);
+			$ap_array = $prep->fetch();
+			$ssid = $dbcore->formatSSID($ap_array['SSID']);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'-'.$ssid);
+			#Create KMZ
 			if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
 			if(!is_numeric($from)){$from = 0;}
 			if(!is_numeric($inc)){$inc = 25000;}
@@ -329,7 +341,7 @@ switch($func)
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			$title = "ap_sig_".$id;
+			$title = $id."_SigHist";
 			if(is_numeric($file_id)){$title .= '_'.$file_id;}
 			if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
 			if(!is_numeric($from)){$from = 0;}

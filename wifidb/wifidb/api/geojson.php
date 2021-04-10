@@ -71,10 +71,23 @@ switch($func)
 
 	case "exp_ap":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		#Get SSID
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$dbcore->sql->checkError(__LINE__, __FILE__);
+		$ap_array = $prep->fetch();
+		$ssid = $dbcore->formatSSID($ap_array['SSID']);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'-'.$ssid);
+		#Create GeoJSON
 		$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ApArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($ApArray['data']);
-		if($labeled){$file_name = "ap_id_".$id."_Labeled.geojson";}else{$file_name = "ap_id_".$id.".geojson";}
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 	break;
 
 	case "exp_ap_sig":
@@ -82,15 +95,15 @@ switch($func)
 		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		$title = "ap_sig_".$id;
+		$title = $id."_SigHist";
 		if(is_numeric($list_id)){$title .= '_'.$list_id;}
 		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
 		if(!is_numeric($from)){$from = 0;}
 		if(!is_numeric($inc)){$inc = 50000;}
-		$SigHistArray = $dbcore->export->SigHistArray($id, $list_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0);
+		$SigHistArray = $dbcore->export->SigHistArray($id, $list_id, $from, $inc);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SigHistArray['data']);
-		if($labeled){$file_name = "ap_id_".$id."_Labeled.geojson";}else{$file_name = "ap_id_".$id.".geojson";}
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 		break;
 
 	case "exp_list":
