@@ -468,7 +468,7 @@ class createKML
 			}
 
 			
-			if(($LastSigStrengthLevel <> $SigStrengthLevel) OR (($NewTimeInt - $LastTimeInt) > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
+			if(($LastSigStrengthLevel <> $SigStrengthLevel) OR (($LastTimeInt - $NewTimeInt) > $this->SigMapTimeBeforeMarkedDead) OR $LastSigData == 0)
 			{
 				if($LastSigData == 1)
 				{
@@ -483,7 +483,7 @@ class createKML
 					<tessellate>0</tessellate>
 					<altitudeMode>relativeToGround</altitudeMode>
 					<coordinates>';
-				If($ExpString <> '' AND (($NewTimeInt - $LastTimeInt) <= $this->SigMapTimeBeforeMarkedDead)){$tmp .= $ExpString;}
+				If($ExpString <> '' AND (($LastTimeInt - $NewTimeInt) <= $this->SigMapTimeBeforeMarkedDead)){$tmp .= $ExpString;}
 			}		
 			
 			$gps_coords = $gps['lon'].",".$gps['lat'];

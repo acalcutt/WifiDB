@@ -438,7 +438,7 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0)
+	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL)
 	{
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
@@ -468,7 +468,7 @@ class export extends dbcore
 					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
 				else
 					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-				$sql .= "ORDER BY wh.Hist_Date ASC\n";
+				$sql .= "ORDER BY wh.Hist_Date DESC\n";
 				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
 			}
 			else if($this->sql->service == "sqlsrv")
@@ -481,7 +481,7 @@ class export extends dbcore
 					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
 				else
 					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-				$sql .= "ORDER BY wh.Hist_Date ASC";
+				$sql .= "ORDER BY wh.Hist_Date DESC";
 				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
 				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
 			}
@@ -497,8 +497,6 @@ class export extends dbcore
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
-				"new_ap" => $new_ap,
-				"named" => $named,
 				"mac" => $ap['BSSID'],
 				"ssid" => $ap['SSID'],
 				"chan" => $ap['CHAN'],
