@@ -21,7 +21,7 @@ if not, write to the
 class createKML
 {
 
-	public function __construct($URL_PATH, $kml_out, $daemon_out, $tilldead = 5, $convertObj)
+	public function __construct($URL_PATH, $kml_out, $daemon_out, $convertObj, $tilldead = 5)
 	{
 		$this->URL_BASE	 =   $URL_PATH;
 		$this->convert	  =   $convertObj;
@@ -433,9 +433,9 @@ class createKML
 
 		foreach($signal_array as $gps)
 		{
-			$signal = (int) $gps['Sig'];		
+			$signal = (int) $gps['signal'];		
 			$LastTimeInt = $NewTimeInt;
-			$string = str_replace("-", "/", $gps['GPS_Date']);
+			$string = str_replace("-", "/", $gps['hist_date']);
 			$NewTimeInt = strtotime($string);
 			If($LastTimeInt == -1){$LastTimeInt = $NewTimeInt;}
 			$LastSigStrengthLevel = $SigStrengthLevel;
@@ -486,16 +486,16 @@ class createKML
 				If($ExpString <> '' AND (($NewTimeInt - $LastTimeInt) <= $this->SigMapTimeBeforeMarkedDead)){$tmp .= $ExpString;}
 			}		
 			
-			$gps_coords = $this->convert->dm2dd($gps['Lon']).",".$this->convert->dm2dd($gps['Lat']);
+			$gps_coords = $gps['lon'].",".$gps['lat'];
 			if($UseRSSI == 1)
 			{
-				$ExpRSSIAlt = (100 + $gps['RSSI'])."";
+				$ExpRSSIAlt = (100 + $gps['rssi'])."";
 				$ExpString = "
 					".$gps_coords.",".$ExpRSSIAlt;
 			}else
 			{
 				$ExpString = "
-					".$gps_coords.",".$gps['Sig'];
+					".$gps_coords.",".$gps['signal'];
 			}
 			$tmp .= $ExpString;
 		}
@@ -870,7 +870,7 @@ class createKML
 		$length = strlen($value);
 		for ($i=0; $i < $length; $i++)
 		{
-			$current = ord($value{$i});
+			$current = ord($value[$i]);
 			if (($current == 0x9) ||
 				($current == 0xA) ||
 				($current == 0xD) ||

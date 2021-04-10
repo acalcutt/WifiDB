@@ -343,7 +343,8 @@ switch($func)
 					$ap_list_title = $fetch_title['title'];
 					
 					#Get List AP Signal History
-					$ap_signal = $dbcore->export->ExportSignal3dSingleListAp($file_id['File_ID'], $id, 0);
+					$SigHistArray = $dbcore->export->SigHistArray($id, $file_id['File_ID']);
+					$ap_signal = $dbcore->createKML->CreateApSignal3D($SigHistArray['data']);
 					if($ap_signal){$KML_Signal_data .= $dbcore->createKML->createFolder($file_id['File_ID']."-".$ap_list_title."-".$ResultAP['ssid'], $ap_signal, 1);}
 					if($list_count > $list_max){break;}
 				}			
@@ -358,33 +359,16 @@ switch($func)
 		case "exp_list_ap_signal":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
-			
-			#Get AP Name
-			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
-			$prep_name = $dbcore->sql->conn->prepare($sql);
-			$prep_name->bindParam(1, $id, PDO::PARAM_INT);
-			$prep_name->execute();
-			$ap_array = $prep_name->fetch(2);
-			$ssid = $dbcore->formatSSID($ap_array['SSID']);
-			
-			#Get List Title 
-			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
-			$prep_title = $dbcore->sql->conn->prepare($sql);
-			$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
-			$prep_title->execute();
-			$fetch_title = $prep_title->fetch(2);
-			$ap_list_title = $fetch_title['title'];
-			
-			#Get List AP Signal History
-			$KML_Signal_data = $dbcore->export->ExportSignal3dSingleListAp($file_id, $id, 0);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+			$title = "ap_sig_".$id;
+			if(is_numeric($file_id)){$title .= '_'.$file_id;}
+			if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
+			if(!is_numeric($from)){$from = 0;}
+			if(!is_numeric($inc)){$inc = 50000;}
+			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0);
+			$KML_Signal_data = $dbcore->createKML->CreateApSignal3D($SigHistArray['data']);
 			$results = $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $file_id."-".$ap_list_title."-".$id."-".$ssid);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;

@@ -159,7 +159,7 @@ try
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
@@ -174,7 +174,7 @@ try
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
@@ -207,7 +207,7 @@ try
 					$dbcore = new api($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
@@ -216,7 +216,7 @@ try
                     $dbcore = new apiv2($config, $SQL);
                     $dbcore->convert = new convert($config, $SQL);
                     $dbcore->Zip = new Zip;
-                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
                     $dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				break;
@@ -225,7 +225,7 @@ try
 					$dbcore = new frontend($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
+					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, 5, $dbcore->convert);
 					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;

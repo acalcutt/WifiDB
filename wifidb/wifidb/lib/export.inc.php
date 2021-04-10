@@ -438,6 +438,102 @@ class export extends dbcore
 		return $ret_data;
 	}
 
+	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0)
+	{
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n";
+		if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
+		else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
+		$sql .= "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
+
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $ap_id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			
+			if($this->sql->service == "mysql")
+			{
+				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.user\n"
+					. "FROM wifi_hist AS wh\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
+				if($file_id)
+					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+				else
+					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+				$sql .= "ORDER BY wh.Hist_Date ASC\n";
+				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+			}
+			else if($this->sql->service == "sqlsrv")
+			{
+				$sql = "SELECT TOP (50000) wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.[user]\n"
+					. "FROM wifi_hist AS wh\n"
+					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
+				if($file_id)
+					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+				else
+					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+				$sql .= "ORDER BY wh.Hist_Date ASC";
+				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
+				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+			}
+			$prep2 = $this->sql->conn->prepare($sql);
+			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
+			if($file_id){$prep2->bindParam(2, $file_id, PDO::PARAM_INT);}
+			$prep2->execute();
+			$histpointer = $prep2->fetchAll();
+			$apcount = 0;
+			foreach($histpointer as $hist)
+			{
+				$apcount++;
+				#Get AP GeoJSON
+				$ap_info = array(
+				"id" => $ap['AP_ID'],
+				"new_ap" => $new_ap,
+				"named" => $named,
+				"mac" => $ap['BSSID'],
+				"ssid" => $ap['SSID'],
+				"chan" => $ap['CHAN'],
+				"sectype" => $ap['SECTYPE'],
+				"auth" => $ap['AUTH'],
+				"encry" => $ap['ENCR'],
+				"lat" => $this->convert->dm2dd($hist['Lat']),
+				"lon" => $this->convert->dm2dd($hist['Lon']),
+				"alt" => $ap['Alt'],
+				"user" => $hist['user'],
+				"signal" => $hist['Sig'],
+				"rssi" => $hist['RSSI'],
+				"hist_date" => $hist['Hist_Date'],
+				"hist_file_id" => $hist['File_ID']
+				);
+				
+				$ap_array[] = $ap_info;
+				
+				$latlon_info = array(
+				"lat" => $this->convert->dm2dd($hist['Lat']),
+				"long" => $this->convert->dm2dd($hist['Lon']),
+				);
+				$latlon_array[] = $latlon_info;
+			}
+		}
+		
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
 	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
 		$ssid = "%".$ssid."%";
@@ -716,58 +812,6 @@ class export extends dbcore
 			$this->verbosed("KMZ file does not exist :/ ");
 			Return false;
 		}
-	}
-
-	public function ExportSignal3dSingleListAp($file_id, $ap_id, $visible = 0)
-	{
-		$KML_data = "";
-		#Get Import Name
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT title, date FROM files WHERE id = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
-		$prep_title = $this->sql->conn->prepare($sql);
-		$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
-		$prep_title->execute();
-		$fetch_title = $prep_title->fetch(2);
-		$ap_list_title = $fetch_title['title'];
-		$ap_list_date = $fetch_title['date'];
-		
-		#Get AP Signal History for this file	
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT\n"
-					. "wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.Hist_Date,\n"
-					. "wifi_gps.Lat, wifi_gps.Lon, wifi_gps.NumOfSats, wifi_gps.HorDilPitch, wifi_gps.Alt, \n"
-					. "wifi_gps.Geo, wifi_gps.KPH, wifi_gps.MPH, wifi_gps.TrackAngle, wifi_gps.GPS_Date\n"
-					. "FROM wifi_hist\n"
-					. "LEFT JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
-					. "WHERE wifi_hist.AP_ID = ? AND wifi_hist.File_ID = ? AND wifi_gps.Lat != '0.0000'\n"
-					. "ORDER BY wifi_gps.GPS_Date ASC";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT\n"
-					. "[wifi_hist].[Sig], [wifi_hist].[RSSI], [wifi_hist].[Hist_Date],\n"
-					. "[wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_gps].[NumOfSats], [wifi_gps].[HorDilPitch], [wifi_gps].[Alt], \n"
-					. "[wifi_gps].[Geo], [wifi_gps].[KPH], [wifi_gps].[MPH], [wifi_gps].[TrackAngle], [wifi_gps].[GPS_Date]\n"
-					. "FROM [wifi_hist]\n"
-					. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
-					. "WHERE [wifi_hist].[AP_ID] = ? AND [wifi_hist].[File_ID] = ? AND [wifi_gps].[Lat] != '0.0000'\n"
-					. "ORDER BY [wifi_gps].[GPS_Date] ASC";
-			}
-		$ap_query = $this->sql->conn->prepare($sql);
-		$ap_query->bindParam(1, $ap_id, PDO::PARAM_INT);
-		$ap_query->bindParam(2, $file_id, PDO::PARAM_INT);
-		$ap_query->execute();
-		$sig_gps_data = $ap_query->fetchAll(2);
-		if(count($sig_gps_data) > 0)
-		{
-			#Plot AP 3D Signal
-			$KML_signal = $this->createKML->CreateApSignal3D($sig_gps_data, 1 ,1);
-			$KML_data .= $this->createKML->createFolder($file_id.' - '.$ap_list_title.' - '.$ap_list_date, $KML_signal, 0, 0, $visible);
-		}
-		return $KML_data;
 	}
 
 	function FindBox($points = array())

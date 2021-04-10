@@ -80,82 +80,17 @@ switch($func)
 	case "exp_ap_sig":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
-		$Import_Map_Data = "";
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n";
-		if($dbcore->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
-		$sql .= "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
-
-		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $id, PDO::PARAM_INT);
-		$prep->execute();
-		$appointer = $prep->fetchAll();
-		foreach($appointer as $ap)
-		{
-			
-			if($dbcore->sql->service == "mysql")
-			{
-				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.user\n"
-					. "FROM wifi_hist AS wh\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
-					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
-				if($list_id)
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-				else
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-				$sql .= "ORDER BY wh.Hist_Date ASC\n"
-					. "LIMIT 50000";
-			}
-			else if($dbcore->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT TOP (50000) wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.[user]\n"
-					. "FROM wifi_hist AS wh\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
-					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
-				if($list_id)
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-				else
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-				$sql .= "ORDER BY wh.Hist_Date ASC";
-			}
-			$prep2 = $dbcore->sql->conn->prepare($sql);
-			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
-			if($list_id){$prep2->bindParam(2, $list_id, PDO::PARAM_INT);}
-			$prep2->execute();
-			$histpointer = $prep2->fetchAll();
-			foreach($histpointer as $hist)
-			{
-				#Get AP GeoJSON
-				$ap_info = array(
-				"id" => $ap['AP_ID'],
-				"new_ap" => $new_icons,
-				"named" => $named,
-				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
-				"chan" => $ap['CHAN'],
-				"sectype" => $ap['SECTYPE'],
-				"auth" => $ap['AUTH'],
-				"encry" => $ap['ENCR'],
-				"lat" => $dbcore->convert->dm2dd($hist['Lat']),
-				"lon" => $dbcore->convert->dm2dd($hist['Lon']),
-				"alt" => $ap['Alt'],
-				"user" => $hist['user'],
-				"signal" => $hist['Sig'],
-				"rssi" => $hist['RSSI'],
-				"hist_date" => $hist['Hist_Date'],
-				"hist_file_id" => $hist['File_ID']
-				);
-				if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-				$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info);
-			}
-		}
-		$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data, $labeled);
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+		$title = "ap_sig_".$id;
+		if(is_numeric($list_id)){$title .= '_'.$list_id;}
+		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
+		if(!is_numeric($from)){$from = 0;}
+		if(!is_numeric($inc)){$inc = 50000;}
+		$SigHistArray = $dbcore->export->SigHistArray($id, $list_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SigHistArray['latlongarray']);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SigHistArray['data']);
+		if($labeled){$file_name = "ap_id_".$id."_Labeled.geojson";}else{$file_name = "ap_id_".$id.".geojson";}
 		break;
 
 	case "exp_list":
