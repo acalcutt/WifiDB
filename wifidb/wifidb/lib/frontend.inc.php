@@ -103,28 +103,15 @@ class frontend extends dbcore
 
 	function APFetch($id = "", $sort = "File_ID", $ord = "DESC", $from = 0, $inc = 250)
 	{
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wf.user As user\n"
-					. "FROM `wifi_ap` AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE wap.AP_ID = ? LIMIT 1";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT TOP 1 [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[FLAGS], [wap].[fa], [wap].[la], [wap].[points],\n"
-					. "[wGPS].[Lat] As [Lat],\n"
-					. "[wGPS].[Lon] As [Lon],\n"
-					. "[wf].[user] As [user]\n"
-					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
-					. "WHERE [wap].[AP_ID] = ?";
-			}
+
+		$sql = "SELECT TOP 1 wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+			. "WHERE wap.AP_ID = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id);
 		$prep->execute();
@@ -226,7 +213,7 @@ class frontend extends dbcore
 			'nt'=>htmlspecialchars($newArray["NETTYPE"], ENT_QUOTES, 'UTF-8'),
 			'lat'=>htmlspecialchars($newArray["Lat"], ENT_QUOTES, 'UTF-8'),
 			'lon'=>htmlspecialchars($newArray["Lon"], ENT_QUOTES, 'UTF-8'),
-			'user'=>htmlspecialchars($newArray["user"], ENT_QUOTES, 'UTF-8'),
+			'user'=>htmlspecialchars($newArray["file_user"], ENT_QUOTES, 'UTF-8'),
 			'fa'=>htmlspecialchars($newArray["fa"], ENT_QUOTES, 'UTF-8'),
 			'la'=>htmlspecialchars($newArray["la"], ENT_QUOTES, 'UTF-8'),
 			'points'=>$newArray["points"],
@@ -236,26 +223,15 @@ class frontend extends dbcore
 		$list = array();
 		$flip = 0;
 
-			
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT `wifi_hist`.`File_ID`, `files`.`title`, `files`.`file_orig`, `files`.`notes`, `files`.`user`, `files`.`date`, `files`.`ValidGPS`, `wifi_hist`.`New`, COUNT(`wifi_hist`.`Hist_Date`) As `points`\n"
-					. "FROM `wifi_hist`\n"
-					. "INNER JOIN `files` ON `wifi_hist`.`File_ID` = `files`.`id`\n"
-					. "WHERE `wifi_hist`.`AP_ID` = ?\n"
-					. "GROUP BY `wifi_hist`.`File_ID`, `wifi_hist`.`New`\n"
-					. "ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [wifi_hist].[File_ID], [files].[title], [files].[file_orig], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New], COUNT([wifi_hist].[Hist_Date]) As [points]\n"
-					. "FROM [wifi_hist]\n"
-					. "INNER JOIN [files] ON [wifi_hist].[File_ID] = [files].[id]\n"
-					. "WHERE [wifi_hist].[AP_ID] = ?\n"
-					. "GROUP BY [wifi_hist].[File_ID], [files].[title], [files].[file_orig], [files].[notes], [files].[user], [files].[date], [files].[ValidGPS], [wifi_hist].[New]\n"
-					. "ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS\n"	
-					. "FETCH NEXT {$inc} ROWS ONLY";
-			}
+
+		$sql = "SELECT wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New, COUNT(wifi_hist.Hist_Date) As points\n"
+			. "FROM wifi_hist\n"
+			. "INNER JOIN files ON wifi_hist.File_ID = files.id\n"
+			. "WHERE wifi_hist.AP_ID = ?\n"
+			. "GROUP BY wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New\n"
+			. "ORDER BY {$sort} {$ord}\n";
+		if($this->sql->service == "mysql"){$sql .= "LIMIT {$from},{$inc}";}
+		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $id);
 		$prep2->execute();
@@ -276,22 +252,11 @@ class frontend extends dbcore
 			$flip2=0;
 			$sigarr = array();			
 
-			if($this->sql->service == "mysql")
-				{
-					$sql = "SELECT `wifi_hist`.`AP_ID`, `wifi_hist`.`Sig`, `wifi_hist`.`RSSI`, `wifi_hist`.`GPS_ID`, `wifi_hist`.`New`, `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_gps`.`Alt`, `wifi_gps`.`NumOfSats`, `wifi_gps`.`AccuracyMeters`, `wifi_gps`.`HorDilPitch`, `wifi_gps`.`TrackAngle`, `wifi_gps`.`GPS_Date`, `wifi_gps`.`MPH`, `wifi_gps`.`KPH`\n"
-						. "FROM `wifi_hist`\n"
-						. "INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID`=`wifi_gps`.`GPS_ID`\n"
-						. "WHERE `wifi_hist`.`AP_ID` = ? AND `wifi_hist`.`File_ID` = ?\n"
-						. "ORDER BY `wifi_hist`.`Hist_Date` ASC";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [wifi_hist].[AP_ID], [wifi_hist].[Sig], [wifi_hist].[RSSI], [wifi_hist].[GPS_ID], [wifi_hist].[New], [wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_gps].[Alt], [wifi_gps].[NumOfSats], [wifi_gps].[AccuracyMeters], [wifi_gps].[HorDilPitch], [wifi_gps].[TrackAngle], [wifi_gps].[GPS_Date], [wifi_gps].[MPH], [wifi_gps].[KPH]\n"
-						. "FROM [wifi_hist]\n"
-						. "INNER JOIN [wifi_gps] ON [wifi_hist].[GPS_ID]=[wifi_gps].[GPS_ID]\n"
-						. "WHERE [wifi_hist].[AP_ID] = ? AND [wifi_hist].[File_ID] = ?\n"
-						. "ORDER BY [wifi_hist].[Hist_Date] ASC";
-				}
+			$sql = "SELECT wifi_hist.AP_ID, wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.GPS_ID, wifi_hist.New, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch, wifi_gps.TrackAngle, wifi_gps.GPS_Date, wifi_gps.MPH, wifi_gps.KPH\n"
+				. "FROM wifi_hist\n"
+				. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID=wifi_gps.GPS_ID\n"
+				. "WHERE wifi_hist.AP_ID = ? AND wifi_hist.File_ID = ?\n"
+				. "ORDER BY wifi_hist.Hist_Date ASC";
 			$prep1 = $this->sql->conn->prepare($sql);
 			$prep1->bindParam(1, $id);
 			$prep1->bindParam(2, $file_id);
@@ -324,7 +289,7 @@ class frontend extends dbcore
 				'nu'=>htmlspecialchars($field['New'], ENT_QUOTES, 'UTF-8'),
 				'date'=>htmlspecialchars($field['date'], ENT_QUOTES, 'UTF-8'),
 				'points'=>$field['points'],
-				'user'=>htmlspecialchars($field['user'], ENT_QUOTES, 'UTF-8'),
+				'user'=>htmlspecialchars($field['file_user'], ENT_QUOTES, 'UTF-8'),
 				'title'=>htmlspecialchars($field['title'], ENT_QUOTES, 'UTF-8'),
 				'notes'=>htmlspecialchars($field['notes'], ENT_QUOTES, 'UTF-8'),
 				'signals'=>$sigarr,
@@ -344,14 +309,7 @@ class frontend extends dbcore
 
 	function GetAnnouncement()
 	{
-		if($this->sql->service == "mysql")
-		{
-			$sql = "SELECT `body` FROM `annunc` WHERE `set` = '1'";
-		}
-		else if($this->sql->service == "sqlsrv")
-		{
-			$sql = "SELECT [body] FROM [annunc] WHERE [set] = '1'";
-		}
+		$sql = "SELECT body FROM annunc WHERE enabled = '1'";
 		$result = $this->sql->conn->query($sql);
 		$array = $result->fetch(2);
 		if($this->sql->checkError() || $array['body'] == "")
@@ -411,48 +369,27 @@ class frontend extends dbcore
 	#===================================#
 	#   Grab the stats for All Users	#
 	#===================================#
-	Public function AllUsers($sort = "user", $ord = "ASC", $from = 0, $inc = 250)
+	Public function AllUsers($sort = "file_user", $ord = "ASC", $from = 0, $inc = 250)
 	{
 		#Total Users
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT COUNT(DISTINCT `user`)\n"
-					. "FROM `files`\n"
-					. "WHERE `completed` = 1";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT COUNT(DISTINCT [user])\n"
-					. "FROM [files]\n"
-					. "WHERE [completed] = 1";
-			}
+		$sql = "SELECT COUNT(DISTINCT file_user)\n"
+			. "FROM files\n"
+			. "WHERE completed = 1";
 		$result = $this->sql->conn->prepare($sql);
 		$result->execute();
 		$fcount = $result->fetch(1);
 		$total_files = $fcount[0];
-		
 		$this->all_users_data = array();
 		$flip = 0;
 		$rowid = $from;
 		
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT `user`, Count(`id`) As `FileCount`, MAX(`ValidGPS`) As `ValidGPS`, SUM(`aps`) As `ApCount`, SUM(`gps`) As `GpsCount`,AVG(`NewAPPercent`) As `NewAPPercent`,MIN(`date`) As `FirstImport`,MAX(`date`) As `LastImport`\n"
-					. "FROM `files`\n"
-					. "WHERE `completed` = 1\n"
-					. "GROUP BY `user`\n"
-					. "ORDER BY `$sort` $ord LIMIT $from, $inc";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [user], Count([id]) As [FileCount], MAX([ValidGPS]) As [ValidGPS], SUM([aps]) As [ApCount], SUM([gps]) As [GpsCount],AVG([NewAPPercent]) As [NewAPPercent],MIN([date]) As [FirstImport],MAX([date]) As [LastImport]\n"
-					. "FROM [files]\n"
-					. "WHERE [completed] = 1\n"
-					. "GROUP BY [user]\n"
-					. "ORDER BY [$sort] $ord\n"
-					. "OFFSET $from ROWS\n"
-					. "FETCH NEXT $inc ROWS ONLY";
-			}
+		$sql = "SELECT file_user, Count(id) As FileCount, MAX(ValidGPS) As ValidGPS, SUM(aps) As ApCount, SUM(gps) As GpsCount,AVG(NewAPPercent) As NewAPPercent,MIN(file_date) As FirstImport,MAX(file_date) As LastImport\n"
+			. "FROM files\n"
+			. "WHERE completed = 1\n"
+			. "GROUP BY file_user\n"
+			. "ORDER BY $sort $ord\n";
+		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
+		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$result = $this->sql->conn->query($sql);
 		$result->execute();
 		while($userfetch = $result->fetch(2))
@@ -461,20 +398,11 @@ class frontend extends dbcore
 			$rowid++;
 			
 			#Check If Registered User
-			if($this->sql->service == "mysql")
-				{
-					$sql = "SELECT `id`\n"
-						. "FROM `user_info`\n"
-						. "WHERE `username` like ? And `validated` = 0";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT [id]\n"
-						. "FROM [user_info]\n"
-						. "WHERE [username] like ? And [validated] = 0";
-				}
+			$sql = "SELECT id\n"
+				. "FROM user_info\n"
+				. "WHERE username like ? And validated = 0";
 			$vres = $this->sql->conn->prepare($sql);
-			$vres->bindParam(1, $userfetch['user']);
+			$vres->bindParam(1, $userfetch['file_user']);
 			$vres->execute();
 			$vfetch = $vres->fetch(1);
 			$regid = $vfetch[0];
@@ -483,7 +411,7 @@ class frontend extends dbcore
 				"class" => $class,			
 				"rowid" => $rowid,
 				"regid" => $regid,
-				"user" => htmlspecialchars($userfetch['user'], ENT_QUOTES, 'UTF-8'),
+				"user" => htmlspecialchars($userfetch['file_user'], ENT_QUOTES, 'UTF-8'),
 				"filecount" => $userfetch['FileCount'],
 				"validgps" => $userfetch['ValidGPS'],
 				"apcount" => $userfetch['ApCount'],
@@ -509,71 +437,37 @@ class frontend extends dbcore
 		$prep['allaps'] = array();
 		$prep['user'] = $user;
 
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT COUNT(DISTINCT `AP_ID`)\n"
-					. "FROM `wifi_hist`\n"
-					. "INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
-					. "WHERE `files`.`user` LIKE ?";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT COUNT(DISTINCT [AP_ID])\n"
-					. "FROM [wifi_hist]\n"
-					. "INNER JOIN [files] ON [files].[id] = [wifi_hist].[File_ID]\n"
-					. "WHERE [files].[user] LIKE ?";
-			}
+		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
+			. "FROM wifi_hist\n"
+			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
+			. "WHERE files.file_user LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
 		$rows = $result->fetch(1);
 		$prep['total_aps'] = $rows[0];
-		
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT COUNT(DISTINCT `AP_ID`)\n"
-					. "FROM `wifi_hist`\n"
-					. "INNER JOIN `files` ON `files`.`id` = `wifi_hist`.`File_ID`\n"
-					. "WHERE `files`.`user` LIKE ? And `wifi_hist`.`New` = 1";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT COUNT(DISTINCT [AP_ID])\n"
-					. "FROM [wifi_hist]\n"
-					. "INNER JOIN [files] ON [files].[id] = [wifi_hist].[File_ID]\n"
-					. "WHERE [files].[user] LIKE ? And [wifi_hist].[New] = 1";
-			}
+
+		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
+			. "FROM wifi_hist\n"
+			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
+			. "WHERE files.file_user LIKE ? And wifi_hist.New = 1";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
 		$rows = $result->fetch(1);
 		$prep['new_aps'] = $rows[0];
-
 		$flip = 0;
 
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-					. "WHERE f.user LIKE ? And f.completed = 1 ORDER BY `$sort` $ord LIMIT $from, $inc";	
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
-					. "[wGPS].[Lat] As [Lat],\n"
-					. "[wGPS].[Lon] As [Lon]\n"
-					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [f] ON [f].[id] = [wap].[File_ID]\n"
-					. "WHERE [f].[user] LIKE ? And [f].[completed] = 1\n"
-					. "ORDER BY [$sort] $ord\n"
-					. "OFFSET $from ROWS\n"
-					. "FETCH NEXT $inc ROWS ONLY";
-			}			
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon\n"
+			. "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
+			. "WHERE f.file_user LIKE ? And f.completed = 1\n"
+			. "ORDER BY $sort $ord\n";
+		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
+		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
 		$result1->execute();
@@ -618,10 +512,7 @@ class frontend extends dbcore
 	{
 		if($username == ""){return 0;}
 		
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT COUNT(`id`) AS `ApCount` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT COUNT([id]) AS [ApCount] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
+		$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user LIKE ? And ValidGPS = 1";
 		$globeprep = $this->sql->conn->prepare($sql);
 		$globeprep->bindParam(1, $username, PDO::PARAM_STR);
 		$globeprep->execute();
@@ -629,30 +520,17 @@ class frontend extends dbcore
 		if($globeprepfetch['ApCount'] !== "0"){$user_validgps = 1;}else{$user_validgps = 0;}
 		
 		#Total APs
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT SUM(`aps`]) As `aps`, SUM(`gps`) As `gps`, Min(`date`) As `fa`, Max(`date`) As `la`, AVG(`NewAPPercent`) As `NewAPPercent` FROM `files` WHERE `user` like ? GROUP BY `user`";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT SUM([aps]) As [aps], SUM([gps]) As [gps], Min([date]) As [fa], Max([date]) As [la], AVG([NewAPPercent]) As [NewAPPercent] FROM [files] WHERE [user] like ? GROUP BY [user]";}
+		$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user like ? GROUP BY file_user";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
 		$user_counts = $result->fetch(2);
 
 		#New APs
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT COUNT(`AP_ID`)\n"
-					. "FROM `wifi_ap`\n"
-					. "INNER JOIN `files` ON `files`.`id` = `wifi_ap`.`File_ID`\n"
-					. "WHERE `files`.`user` LIKE ?";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT COUNT([AP_ID])\n"
-					. "FROM [wifi_ap]\n"
-					. "INNER JOIN [files] ON [files].[id] = [wifi_ap].[File_ID]\n"
-					. "WHERE [files].[user] LIKE ?";
-			}
+		$sql = "SELECT COUNT(AP_ID)\n"
+			. "FROM wifi_ap\n"
+			. "INNER JOIN files ON files.id = wifi_ap.File_ID\n"
+			. "WHERE files.file_user LIKE ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -660,18 +538,10 @@ class frontend extends dbcore
 		$new_aps = $rows[0];
 		
 		#Total Files
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT COUNT(`id`)\n"
-					. "FROM `files`\n"
-					. "WHERE `user` LIKE ? And `date` != '' And `completed` = 1";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT COUNT([id])\n"
-					. "FROM [files]\n"
-					. "WHERE [user] LIKE ? And [date] != '' And [completed] = 1";
-			}
+
+		$sql = "SELECT COUNT(id)\n"
+			. "FROM files\n"
+			. "WHERE file_user LIKE ? And file_date != '' And completed = 1";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -698,10 +568,10 @@ class frontend extends dbcore
 		$regid = $vfetch[0];
 
 		#Get All Imports for User
-		if($this->sql->service == "mysql")
-			{$sql1 = "SELECT `id`, `file_orig`, `title`, `notes`, `date`, `aps`, `gps`, `ValidGPS`, `NewAPPercent` FROM `files` WHERE `user` LIKE ? And `date` != '' And `completed` = 1 ORDER BY `$sort` $ord LIMIT $from, $inc";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql1 = "SELECT [id], [file_orig], [title], [notes], [date], [aps], [gps], [ValidGPS], [NewAPPercent] FROM [files] WHERE [user] LIKE ? And [date] != '' And [completed] = 1 ORDER BY [$sort] $ord OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
+		$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user LIKE ? And file_date != '' And completed = 1 ORDER BY $sort $ord";
+		if($this->sql->service == "mysql"){$sql1 .= " LIMIT $from, $inc";}
+		else if($this->sql->service == "sqlsrv"){$sql1 .= " OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
+		
 		$other_imports = $this->sql->conn->prepare($sql1);
 		$other_imports->bindParam(1, $username, PDO::PARAM_STR);
 		//$other_imports->bindParam(2, $user_last['id'], PDO::PARAM_INT);
@@ -759,10 +629,7 @@ class frontend extends dbcore
 		if(!$row){return 0;}
 		
 		# Get import list information
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT `id`, `file_orig`, `user`, `aps`, `gps`, `notes`, `title`, `date`, `hash`, `converted`, `prev_ext`, `NewAPPercent`, `size`, `ValidGPS` FROM `files` WHERE `id`= ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT [id], [file_orig], [user], [aps], [gps], [notes], [title], [date], [hash], [converted], [prev_ext], [NewAPPercent], [size], [ValidGPS] FROM [files] WHERE [id]= ?";}
+		$sql = "SELECT id, file_orig, file_user, aps, gps, notes, title, file_date, hash, converted, prev_ext, NewAPPercent, size, ValidGPS FROM files WHERE id= ?";
         $result = $this->sql->conn->prepare($sql);
 		$result->execute(array($row));
 		$user_array = $result->fetch(2);
@@ -771,7 +638,7 @@ class frontend extends dbcore
 		$all_aps_array['allaps'] = array();
 		$all_aps_array['id'] = $user_array['id'];
 		$all_aps_array['file'] = htmlspecialchars($user_array['file_orig'], ENT_QUOTES, 'UTF-8');
-		$all_aps_array['user'] = htmlspecialchars($user_array['user'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['user'] = htmlspecialchars($user_array['file_user'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['notes'] = htmlspecialchars($user_array['notes'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['title'] = htmlspecialchars($user_array['title'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['aps'] = htmlspecialchars($user_array['aps'], ENT_QUOTES, 'UTF-8');
@@ -915,159 +782,5 @@ class frontend extends dbcore
 			}
 		</script>");
 		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
-	}
-
-	/*
-	 * Export Search to KML File
-	 */
-	public function search_export($array = "")
-	{
-		if($array === "")
-		{
-			return 0;
-		}
-		$no_gps = 0;
-		$total = count($array);
-		$date = date($this->datetime_format);
-		$rand = rand();
-		$temp_kml = "../tmp/save_".$date."_".$rand."_tmp.kml";
-
-		fopen($temp_kml, "w");
-		$fileappend = fopen($temp_kml, "a");
-
-		$filename = "save_".$date.'_'.$rand.'.kmz';
-		$moved = $this->PATH.'/out/kmz/lists/'.$filename;
-		$this->smarty->assign("KML_SOURCE_LOC", $this->KML_SOURCE_URL);
-		$this->smarty->assign("wifidb_ver_str", $this->ver_str);
-		$this->smarty->assign("OPEN_LOC", $this->open_loc);
-		$this->smarty->assign("WEP_LOC", $this->WEP_loc);
-		$this->smarty->assign("WPA_LOC", $this->WPA_loc);
-		$this->smarty->assign("Total_aps", $total);
-		$NN = 0;
-		foreach($array as $aps)
-		{
-			$ssids_ptb = $this->make_ssid($aps['ssid']);
-			$ssid = $ssids_ptb[0];
-			switch($aps['sectype'])
-			{
-				case 1:
-					$type = "#openStyleDead";
-					break;
-				case 2:
-					$type = "#wepStyleDead";
-					break;
-				case 3:
-					$type = "#secureStyleDead";
-					break;
-			}
-			$signal_exp = explode("-", $aps['sig']);
-			$first = explode(",", $signal_exp[0]);
-			$first_gps_id = $first[1];
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT `Gps_Date` FROM `wifi_gps` WHERE `id` = '{$first_gps_id}'";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT [Gps_Date] FROM [wifi_gps] WHERE [id] = '{$first_gps_id}'";}			
-			$result = $this->sql->conn->prep($sql);
-			$first_data = $result->fetch(1);
-			$fa = $first_data["Gps_Date"];
-
-			$sig_c = count($signal_exp);
-			$last = explode(",", $signal_exp[$sig_c-1]);
-			$last_gps_id = $last[0];
-			
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT `Gps_Date` FROM `wifi_gps` WHERE `id` = '{$last_gps_id}'";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT [Gps_Date] FROM [wifi_gps] WHERE `id` = '{$last_gps_id}'";}	
-			$result = $this->sql->conn->query($sql);
-			$last_data = $result->fetch(1);
-			$la = $last_data["Gps_Date"];
-
-			if($this->sql->service == "mysql")
-				{$sql_1 = "SELECT * FROM `wifi_gps` WHERE `Gps_ID` = ?";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql_1 = "SELECT * FROM [wifi_gps] WHERE `Gps_ID` = ?";}	
-			$result_1 = $this->sql->conn->prepare($sql_1);
-			foreach($signal_exp as $signal)
-			{
-				$sig_exp = explode(",", $signal);
-				$result_1->bindParam(1, $sig_exp[0], PDO::PARAM_STR);
-				$result_1->execute();
-				$gps = $result_1->fetch(1);
-
-				if(!preg_match('/^(\-?\d+(\.\d+)?),\s*(\-?\d+(\.\d+)?)$/', $gps['lat']) || $gps['lat'] == "0.0000")
-				{
-					$zero = 1;
-					continue;
-				}
-				$lat = $this->convert_dm_dd($gps['lat']);
-				$long = $this->convert_dm_dd($gps['long']);
-				$zero = 0;
-				$NN++;
-				break;
-			}
-			if($zero == 1)
-			{
-				$this->mesg[] = 'No GPS Data, Skipping Access Point: '.$aps['ssid'];
-				$zero = 0;
-				$no_gps++;
-				$total++;
-				continue;
-			}
-			$KML_data[] = array(
-				"id"=>$aps["id"],
-				"ssid"=>$ssid,
-				"mac"=>$aps["mac"],
-				"nt"=>$aps["nt"],
-				"radio"=>$aps["radio"],
-				"chan"=>$aps["chan"],
-				"auth"=>$aps["auth"],
-				"encry"=>$aps["encry"],
-				"sectype"=>$aps["sectype"],
-				"type"=>$type,
-				"btx"=>$aps["btx"],
-				"otx"=>$aps["otx"],
-				"fa"=>$fa,
-				"la"=>$la,
-				"lat"=>$lat,
-				"long"=>$long,
-				"alt"=>$gps["alt"],
-				"manuf"=>$this->findManuf($aps["mac"]),
-				"label"=>$aps["label"]
-			);
-		}
-		$this->smarty->assign("KML_data", $KML_data);
-		if($no_gps < $total)
-		{
-			$this->mesg[] = 'Zipping up the files into a KMZ file.';
-			$zip = new ZipArchive;
-			if ($zip->open($filename, ZipArchive::CREATE) === TRUE)
-			{
-				$zip->addFile($temp_kml, 'doc.kml');
-				$zip->close();
-				unlink($temp_kml);
-			}else
-			{
-				$this->mesg[] = 'Blown up';
-				$this->mesg[] = 'Your Google Earth KML file is not ready.';
-				return 0;
-			}
-
-			$this->mesg[] = 'Move KMZ file from its tmp home to its permanent residence';
-			if(copy($filename, $moved))
-			{
-				$this->mesg[] = 'Your Google Earth KML file is ready, you can download it from here: '.$moved;
-				return 1;
-			}else
-			{
-				$this->mesg[] = 'Your Google Earth KML file is not ready.';
-				return 0;
-			}
-			unlink($filename);
-		}else
-		{
-			$this->mesg[] = 'Your Google Earth KML file is not ready.';
-			return 0;
-		}
 	}
 }

@@ -19,10 +19,10 @@ while($array = $result->fetch(1))
 		if (trim($array['type']) == ""){$type = "vistumbler";}else{$type = trim($array['type']);}
 		$title = str_replace(array("|", "\n", "\r"), "", $title);
 		$notes = str_replace(array("|", "\n", "\r"), "", $array['notes']);
-		$user = str_replace(array("|", "\n", "\r"), "", $array['user']);
+		$user = str_replace(array("|", "\n", "\r"), "", $array['file_user']);
 		$hash = trim($array['hash']);
-		$write .= $hash."|".$type."|".$array['file_orig']."|".$array['file']."|".$user."|".$title."|".$array['date']."|".$notes."\r\n";
-		echo $array['id']."|".$hash."|".$type."|".$array['file_orig']."|".$array['file']."|".$user."|".$title."|".$array['date']."|".$notes."\r\n";
+		$write .= $hash."|".$type."|".$array['file_orig']."|".$array['file_name']."|".$user."|".$title."|".$array['file_date']."|".$notes."\r\n";
+		echo $array['id']."|".$hash."|".$type."|".$array['file_orig']."|".$array['file_name']."|".$user."|".$title."|".$array['file_date']."|".$notes."\r\n";
 		
 	}
 }

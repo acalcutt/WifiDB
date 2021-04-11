@@ -133,10 +133,7 @@ class daemon extends wdbcli
 
 	function cleanBadImport($file_id = 0, $file_importing_id = 0, $error_msg = "")
 	{
-		if($this->sql->service == "mysql")
-			{$sql = "INSERT INTO files_bad (file,file_orig,user,notes,title,size,date,hash,converted,prev_ext,type,error_msg) SELECT file,file_orig,user,notes,title,size,date,hash,converted,prev_ext,type,? FROM files_importing WHERE id = ?";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql = "INSERT INTO [files_bad] ([file],[file_orig],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],[error_msg]) SELECT [file],[file_orig],[user],[notes],[title],[size],[date],[hash],[converted],[prev_ext],[type],? FROM [files_importing] WHERE [id] = ?";}
+		$sql = "INSERT INTO files_bad (file_name, file_orig,file_user,notes,title,size,file_date,hash,converted,prev_ext,type,error_msg) SELECT file_name,file_orig,file_user,notes,title,size,file_date,hash,converted,prev_ext,type,? FROM files_importing WHERE id = ?";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
@@ -233,9 +230,9 @@ class daemon extends wdbcli
 		}
 		else if($this->sql->service == "sqlsrv")
 		{
-			$daemon_sql = "DELETE [files_tmp]\n"
-				. "OUTPUT DELETED.[id], DELETED.[file], DELETED.[file_orig], DELETED.[user], DELETED.[otherusers], DELETED.[title], DELETED.[notes], DELETED.[size], DELETED.[date], DELETED.[hash], DELETED.[type]\n"
-				. "WHERE [files_tmp].[id] IN (SELECT TOP 1 [id] FROM [files_tmp] ORDER BY [date] ASC)";
+			$daemon_sql = "DELETE files_tmp\n"
+				. "OUTPUT DELETED.id, DELETED.file_name, DELETED.file_orig, DELETED.file_user, DELETED.otherusers, DELETED.title, DELETED.notes, DELETED.size, DELETED.file_date, DELETED.hash, DELETED.type\n"
+				. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp ORDER BY file_date ASC)";
 
 			$result = $this->sql->conn->prepare($daemon_sql);
 			$result->execute();
@@ -243,16 +240,16 @@ class daemon extends wdbcli
 			$temp_imp_id_arr = $result->fetch();
 			if($temp_imp_id_arr['id'] != '')
 			{
-				$sql = "INSERT INTO [files_importing] ([file], [file_orig], [user], [otherusers], [title], [notes], [size], [date], [hash], [tmp_id], [type]) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+				$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 				$result2 = $this->sql->conn->prepare($sql);
-				$result2->bindParam(1, $temp_imp_id_arr['file'], PDO::PARAM_STR);
+				$result2->bindParam(1, $temp_imp_id_arr['file_name'], PDO::PARAM_STR);
 				$result2->bindParam(2, $temp_imp_id_arr['file_orig'], PDO::PARAM_STR);
-				$result2->bindParam(3, $temp_imp_id_arr['user'], PDO::PARAM_STR);
+				$result2->bindParam(3, $temp_imp_id_arr['file_user'], PDO::PARAM_STR);
 				$result2->bindParam(4, $temp_imp_id_arr['otherusers'], PDO::PARAM_STR);
 				$result2->bindParam(5, $temp_imp_id_arr['title'], PDO::PARAM_STR);
 				$result2->bindParam(6, $temp_imp_id_arr['notes'], PDO::PARAM_STR);
 				$result2->bindParam(7, $temp_imp_id_arr['size'], PDO::PARAM_STR);
-				$result2->bindParam(8, $temp_imp_id_arr['date'], PDO::PARAM_STR);
+				$result2->bindParam(8, $temp_imp_id_arr['file_date'], PDO::PARAM_STR);
 				$result2->bindParam(9, $temp_imp_id_arr['hash'], PDO::PARAM_STR);
 				$result2->bindParam(10, $temp_imp_id_arr['id'], PDO::PARAM_INT);
 				$result2->bindParam(11, $temp_imp_id_arr['type'], PDO::PARAM_STR);
@@ -272,13 +269,13 @@ class daemon extends wdbcli
 	function ImportProcess($file_to_Import = array())
 	{
 		$importing_id = $file_to_Import['id'];
-		$file_name = $file_to_Import['file'];
+		$file_name = $file_to_Import['file_name'];
 		$file_orig = $file_to_Import['file_orig'];
 		$file_hash = $file_to_Import['hash'];
 		$file_size = $file_to_Import['size'];
-		$file_date = $file_to_Import['date'];
+		$file_date = $file_to_Import['file_date'];
 		$file_type = $file_to_Import['type'];
-		$file_user = $file_to_Import['user'];
+		$file_user = $file_to_Import['file_user'];
 		$file_otherusers = $file_to_Import['otherusers'];
 		$file_notes = $file_to_Import['notes'];
 		$file_title = $file_to_Import['title'];	
@@ -316,18 +313,10 @@ class daemon extends wdbcli
 			}
 			else
 			{
-				if($this->sql->service == "mysql")
-					{
-						$sql_insert_file = "INSERT INTO files
-						(file, file_orig, date, size, aps, gps, hash, user, otherusers, notes, title, type, node_name)
-						VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
-					}
-				else if($this->sql->service == "sqlsrv")
-					{
-						$sql_insert_file = "INSERT INTO [files]
-						([file], [file_orig], [date], [size], [aps], [gps], [hash], [user], [otherusers], [notes], [title], [type], [node_name])
-						VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
-					}
+
+				$sql_insert_file = "INSERT INTO files
+				(file_name, file_orig, file_date, size, aps, gps, hash, file_user, otherusers, notes, title, type, node_name)
+				VALUES (?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?, ?, ?)";
 				$prep1 = $this->sql->conn->prepare($sql_insert_file);
 				$prep1->bindParam(1, $file_name, PDO::PARAM_STR);
 				$prep1->bindParam(2, $file_orig, PDO::PARAM_STR);
@@ -571,10 +560,10 @@ class daemon extends wdbcli
 		{
 			$type	=	$file_names[$hash]['type'];
 			$file_orig	=	$file_names[$hash]['file_orig'];
-			$user	=	$file_names[$hash]['user'];
+			$user	=	$file_names[$hash]['file_user'];
 			$title	=	$file_names[$hash]['title'];
 			$notes	=	$file_names[$hash]['notes'];
-			$date	=	$file_names[$hash]['date'];
+			$date	=	$file_names[$hash]['file_date'];
 			$hash_	=	$file_names[$hash]['hash'];
 			#echo "Is in filenames.txt\n";
 		}else
@@ -605,16 +594,16 @@ class daemon extends wdbcli
 						. "	USING (SELECT :s_hash AS hash) AS newcell (hash)\n"
 						. "		ON files_tmp.hash = newcell.hash\n"
 						. "	WHEN NOT MATCHED THEN\n"
-						. "		INSERT (type, [file], file_orig, [date], [user], notes, title, size, hash)\n"
-						. "		VALUES (:type, :file, :file_orig, :date, :user, :notes, :title, :size, :hash);";
+						. "		INSERT (type, file_name, file_orig, file_date, file_user, notes, title, size, hash)\n"
+						. "		VALUES (:type, :file_name, :file_orig, :file_date, :file_user, :notes, :title, :size, :hash);";
 						
 					$prep = $this->sql->conn->prepare($sql);
 					$prep->bindParam(':s_hash', $hash);
 					$prep->bindParam(':type', $type);
-					$prep->bindParam(':file', $file);
+					$prep->bindParam(':file_name', $file);
 					$prep->bindParam(':file_orig', $file_orig);
-					$prep->bindParam(':date', $date);
-					$prep->bindParam(':user', $user);		
+					$prep->bindParam(':file_date', $date);
+					$prep->bindParam(':file_user', $user);		
 					$prep->bindParam(':notes', $notes);
 					$prep->bindParam(':title', $title);
 					$prep->bindParam(':size', $size1);

@@ -129,8 +129,8 @@ while($fid = $fidl->fetch(1))
 			try 
 			{
 				$sqlhp = "INSERT INTO files_tmp\n"
-					.	 "([file], file_orig, [user], otherusers, notes, title, size, date, hash, converted, prev_ext, type)\n"
-						. "SELECT [file], file_orig, [user], otherusers, notes, title, size, date, hash, converted, prev_ext, type\n"
+					.	 "(file_name, file_orig, file_user, otherusers, notes, title, size, date, hash, converted, prev_ext, type)\n"
+						. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, date, hash, converted, prev_ext, type\n"
 						. "FROM files\n"
 						. "WHERE id = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);

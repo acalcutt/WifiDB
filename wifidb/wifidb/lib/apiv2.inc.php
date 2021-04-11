@@ -315,27 +315,27 @@ class apiv2 extends dbcore
         }
 		
 		if($this->sql->service == "mysql")
-			{$files_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ? LIMIT 1");}
+			{$files_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ?");}
+			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ?");}
 		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$imp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ? LIMIT 1");}
+			{$imp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ?");}
+			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ?");}
 		$imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ? LIMIT 1");}
+			{$tmp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ?");}
+			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ?");}
 		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$bad_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file, user, notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ? LIMIT 1");}
+			{$bad_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, [file], [user], notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ?");}
+			{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ?");}
 		$bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		$files_prep->execute();
@@ -376,13 +376,13 @@ class apiv2 extends dbcore
     {
         $user		   = $details['user'];
         $otherusers	 = $details['otherusers'];
-        $date		   = $details['date'];
+        $date		   = $details['file_date'];
         $title		  = $details['title'];
         $notes		  = $details['notes'];
         $size		   = $details['size'];
         $hash		   = $details['hash'];
         $ext			= $details['ext'];
-        $filename	   = $details['filename'];
+        $filename	   = $details['file_name'];
 		$file_orig	   = $details['file_orig'];
 
         if(substr($user, -1) == "|")
@@ -468,11 +468,7 @@ class apiv2 extends dbcore
         switch($task)
         {
             case "import":
-				if($this->sql->service == "mysql")
-					{$sql = "INSERT INTO files_tmp(file, file_orig, date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-				else if($this->sql->service == "sqlsrv")
-					{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-
+				$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 				$result = $this->sql->conn->prepare( $sql );
 				$result->bindValue(1, $filename, PDO::PARAM_STR);
 				$result->bindValue(2, $file_orig, PDO::PARAM_STR);

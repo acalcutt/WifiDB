@@ -73,10 +73,9 @@ class export extends dbcore
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n";
-		if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-		else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
-		$sql .= "FROM wifi_ap AS wap\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM wifi_ap AS wap\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
@@ -112,7 +111,7 @@ class export extends dbcore
 			"lon" => $this->convert->dm2dd($ap['Lon']),
 			"alt" => $ap['Alt'],
 			"manuf"=>$this->findManuf($ap['BSSID']),
-			"user" => $ap['user']
+			"user" => $ap['file_user']
 			);
 			$ap_array[] = $ap_info;
 			
@@ -178,10 +177,9 @@ class export extends dbcore
 			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 				. "wGPS.Lat As Lat,\n"
 				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n";
-			if($this->sql->service == "mysql"){$sql .= "wf.user AS user\n";}
-			else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] AS [user]\n";}
-			$sql .= "FROM wifi_ap AS wap\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.file_user AS file_user\n"
+				. "FROM wifi_ap AS wap\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
@@ -217,7 +215,7 @@ class export extends dbcore
 				"lon" => $this->convert->dm2dd($ap['Lon']),
 				"alt" => $ap['Alt'],
 				"manuf"=>$this->findManuf($ap['BSSID']),
-				"user" => $ap['user'],
+				"user" => $ap['file_user'],
 				);
 				$ap_array[] = $ap_info;
 				
@@ -254,13 +252,13 @@ class export extends dbcore
 						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 							. "wGPS.Lat As Lat,\n"
 							. "wGPS.Lon As Lon,\n"
-							. "wf.user AS user\n"
+							. "wf.file_user AS file_user\n"
 							. "FROM wifi_ap AS wap\n"
 							. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
 							. "    wap.HighGps_ID IS NOT NULL And\n"
-							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND user LIKE ?)\n"
+							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 							if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
 					}
@@ -269,13 +267,13 @@ class export extends dbcore
 						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 							. "wGPS.Lat As Lat,\n"
 							. "wGPS.Lon As Lon,\n"
-							. "wf.[user] AS [user]\n"
+							. "wf.file_user AS file_user\n"
 							. "FROM wifi_ap AS wap\n"
 							. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
 							. "    wap.HighGps_ID IS NOT NULL And\n"
-							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)\n"
+							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 						if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
 						if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
@@ -319,7 +317,7 @@ class export extends dbcore
 			"lon" => $this->convert->dm2dd($apinfo['Lon']),
 			"alt" => $apinfo['Alt'],
 			"manuf"=>$this->findManuf($apinfo['BSSID']),
-			"user" => $apinfo['user']
+			"user" => $apinfo['file_user']
 			);
 			$ap_array[] = $ap_info;
 			
@@ -347,7 +345,7 @@ class export extends dbcore
 		$date_search = $date."%";
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.user\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.file_user\n"
 					. "FROM wifi_ap AS wap\n"
 					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
@@ -364,7 +362,7 @@ class export extends dbcore
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.[Alt], wf.[user]\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.[Alt], wf.file_user\n"
 					. "FROM wifi_ap AS wap\n"
 					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
@@ -417,7 +415,7 @@ class export extends dbcore
 			"lon" => $this->convert->dm2dd($apinfo['Lon']),
 			"alt" => $apinfo['Alt'],
 			"manuf"=>$this->findManuf($apinfo['BSSID']),
-			"user" => $apinfo['user'],
+			"user" => $apinfo['file_user'],
 			"first_file_id" => $apinfo['File_ID']
 			);
 			$ap_array[] = $ap_info;
@@ -443,10 +441,9 @@ class export extends dbcore
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n";
-		if($this->sql->service == "mysql"){$sql .= "wf.user As user\n";}
-		else if($this->sql->service == "sqlsrv"){$sql .= "wf.[user] As [user]\n";}
-		$sql .= "FROM wifi_ap AS wap\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM wifi_ap AS wap\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
@@ -473,7 +470,7 @@ class export extends dbcore
 			}
 			else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.[user]\n"
+				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.file_user\n"
 					. "FROM wifi_hist AS wh\n"
 					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
@@ -506,7 +503,7 @@ class export extends dbcore
 				"lat" => $this->convert->dm2dd($hist['Lat']),
 				"lon" => $this->convert->dm2dd($hist['Lon']),
 				"alt" => $ap['Alt'],
-				"user" => $hist['user'],
+				"user" => $hist['file_user'],
 				"signal" => $hist['Sig'],
 				"rssi" => $hist['RSSI'],
 				"hist_date" => $hist['Hist_Date'],
@@ -565,54 +562,31 @@ class export extends dbcore
 		$AP_ID_Count = $prep1->fetch(2);
 		$total_rows = $AP_ID_Count['ApCount'];
 		
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wGPS.Alt As Alt,\n"
-					. "wf.user As user\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-					. "WHERE\n"
-					. "fa IS NOT NULL AND\n"
-					. "wap.SSID LIKE ? AND\n"
-					. "wap.BSSID LIKE ? AND\n"
-					. "wap.RADTYPE LIKE ? AND\n"
-					. "wap.CHAN LIKE ? AND\n"
-					. "wap.AUTH LIKE ? AND\n"
-					. "wap.ENCR LIKE ?\n";
-				if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
-				if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
-				$sql .= " ORDER BY $sort $ord ";		
-				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+			. "WHERE\n"
+			. "fa IS NOT NULL AND\n"
+			. "wap.SSID LIKE ? AND\n"
+			. "wap.BSSID LIKE ? AND\n"
+			. "wap.RADTYPE LIKE ? AND\n"
+			. "wap.CHAN LIKE ? AND\n"
+			. "wap.AUTH LIKE ? AND\n"
+			. "wap.ENCR LIKE ?\n";
+		if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
+		if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
+		$sql .= " ORDER BY $sort $ord ";	
+		if($this->sql->service == "mysql"){;}
+		if($from !== NULL && $inc !== NULL){
+			if($this->sql->service == "mysql"){$sql .=  " LIMIT ".$from.", ".$inc;}
+			else if($this->sql->service == "sqlsrv"){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+		}
 
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points], [wap].[high_gps_sig], [wap].[high_gps_rssi],\n"
-					. "[wGPS].[Lat] As [Lat],\n"
-					. "[wGPS].[Lon] As [Lon],\n"
-					. "[wGPS].[Alt] As [Alt],\n"
-					. "[wf].[user] As [user]\n"
-					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [wf].[id] = [wap].[File_ID]\n"
-					. "WHERE\n"
-					. "[fa] IS NOT NULL AND\n"
-					. "[wap].[SSID] LIKE ? AND\n"
-					. "[wap].[BSSID] LIKE ? AND\n"
-					. "[wap].[RADTYPE] LIKE ? AND\n"
-					. "[wap].[CHAN] LIKE ? AND\n"
-					. "[wap].[AUTH] LIKE ? AND\n"
-					. "[wap].[ENCR] LIKE ?\n";
-				if($valid_gps){$sql .=" AND [wap].[HighGps_ID] IS NOT NULL";}
-				if($sectype){$sql .=" AND [wap].[SECTYPE] =  ?";}
-				$sql .= " ORDER BY [$sort] $ord ";		
-				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
-				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
-			}
 		$prep2 = $this->sql->conn->prepare($sql);
 		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
 		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
@@ -656,7 +630,7 @@ class export extends dbcore
 			"lon" => $this->convert->dm2dd($newArray['Lon']),
 			"alt" => $newArray['Alt'],
 			"manuf"=>$this->findManuf($newArray['BSSID']),
-			"user" => $newArray['user'],
+			"user" => $newArray['file_user'],
 			"class" => $class,
 			"validgps" => $validgps
 			);
@@ -688,39 +662,19 @@ class export extends dbcore
 
 		if($type == "full")
 		{
-			if($this->sql->service == "mysql")
-				{
-					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY user ASC";
-					$user_list_query = "SELECT id, user, title, date FROM files WHERE user LIKE ? And completed = 1 And ValidGPS = 1";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [completed] = 1 And [ValidGPS] = 1";
-				}
+			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY file_user ASC";
+			$user_list_query = "SELECT id, file_user, title, date FROM files WHERE file_user LIKE ? And completed = 1 And ValidGPS = 1";
 		}
 		elseif($type == "daily")
 		{
 			#Get the last full export id
-			if($this->sql->service == "mysql")
-				{$sql = "SELECT last_export_file FROM settings WHERE id = 1";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql = "SELECT [last_export_file] FROM [settings] WHERE [id] = 1";}
+			$sql = "SELECT last_export_file FROM settings WHERE id = 1";
 			$id_query = $this->sql->conn->query($sql);
 			$id_fetch = $id_query->fetch(2);
 			$last_export_file = $id_fetch['last_export_file'];
-			
-			#Create Queries
-			if($this->sql->service == "mysql")
-				{
-					$user_query = "SELECT DISTINCT(user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY user ASC";
-					$user_list_query = "SELECT id, user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";
-				}
-			else if($this->sql->service == "sqlsrv")
-				{
-					$user_query = "SELECT DISTINCT([user]) FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [id] > '$last_export_file' ORDER BY [user] ASC";
-					$user_list_query = "SELECT [id], [user], [title], [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 And [user] LIKE ? AND [id] > '$last_export_file' ORDER BY [id] DESC";
-				}
+
+			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY file_user ASC";
+			$user_list_query = "SELECT id, file_user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And file_user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";
 		}	
 		$this->verbosed($user_query);
 		$this->verbosed($user_list_query);
@@ -737,7 +691,7 @@ class export extends dbcore
 			#Get users lists and go through them
 			$user_results = "";
 			$user_files = 0;
-			$username = $user['user'];
+			$username = $user['file_user'];
 			$this->verbosed("---------------------".$username."---------------------");
 			$prep_user_list->bindParam(1, $username, PDO::PARAM_STR);
 			$prep_user_list->execute();
@@ -990,30 +944,17 @@ class export extends dbcore
 	public function ExportGPXAll()
 	{
 		$this->verbosed("Starting GPX Export of WiFiDB.");
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wGPS.Alt As Alt,\n"
-					. "wf.user As user\n"
-					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-					. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
-					. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [wap].[AP_ID], [wap].[BSSID], [wap].[SSID], [wap].[CHAN], [wap].[AUTH], [wap].[ENCR], [wap].[SECTYPE], [wap].[RADTYPE], [wap].[NETTYPE], [wap].[BTX], [wap].[OTX], [wap].[fa], [wap].[la], [wap].[points],\n"
-					. "[wGPS].[Lat] As [Lat],\n"
-					. "[wGPS].[Lon] As [Lon],\n"
-					. "[wGPS].[Alt] As [Alt],\n"
-					. "[wf].[user] As [user]\n"
-					. "FROM [wifi_ap] AS [wap]\n"
-					. "LEFT JOIN [wifi_gps] AS [wGPS] ON [wGPS].[GPS_ID] = [wap].[HighGps_ID]\n"
-					. "LEFT JOIN [files] AS [wf] ON [wap].[File_ID] = [wf].[id]\n"
-					. "WHERE [wap].[AP_ID] = ? And [wap].[HighGps_ID] IS NOT NULL";
-			}
+
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM wifi_ap AS wap\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files AS wf ON wap.File_ID = wf.id\n"
+			. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
+
 		$prep = $this->sql->conn->execute($sql);
 		$aparray_all = $prep->fetchAll(2);
 		$this->verbosed("Pointers Table Queried.");

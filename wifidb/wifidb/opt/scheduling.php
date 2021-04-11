@@ -28,8 +28,8 @@ $sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 $ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-$sorts=array("date","id");
-if(!in_array($sort, $sorts)){$sort = "date";}
+$sorts=array("file_date","id");
+if(!in_array($sort, $sorts)){$sort = "file_date";}
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
@@ -705,18 +705,13 @@ switch($func)
 	break;
 	
 	case 'done':
-		if($dbcore->sql->service == "mysql")
-			{
-				$sql = "SELECT id, file_orig, user, notes, title, date, aps, gps, ValidGPS, size, NewAPPercent, hash \n"
-					. "FROM files \n"
-					. "WHERE completed = 1 ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";
-			}
-		else if($dbcore->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT [id], [file_orig], [user], [notes], [title], [date], [aps], [gps], [ValidGPS], [size], [NewAPPercent], [hash] \n"
-					. "FROM [files] \n"
-					. "WHERE [completed] = 1 ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";
-			}
+	
+	
+		$sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ValidGPS, size, NewAPPercent, hash \n"
+			. "FROM files\n"
+			. "WHERE completed = 1\n";
+		if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort} {$ord} LIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$result = $dbcore->sql->conn->query($sql);
 		$class_f = 0;
 		$files_all = array();
@@ -727,8 +722,8 @@ switch($func)
 									'class'=>$class,
 									'id'=>$newArray['id'],
 									'file'=>$newArray['file_orig'],
-									'date'=>$newArray['date'],
-									'user'=>$newArray["user"],
+									'date'=>$newArray['file_date'],
+									'user'=>$newArray["file_user"],
 									'notes'=>$newArray['notes'],
 									'title'=>$newArray['title'],
 									'efficiency'=>$newArray['NewAPPercent'],
@@ -771,10 +766,9 @@ switch($func)
 	case 'waiting':
 		$waiting_row = array();
 		$n=0;
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM files_tmp ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_tmp] ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_tmp\n";
+		if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort} {$ord} LIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
@@ -784,10 +778,10 @@ switch($func)
 			$waiting_row[$n]['file'] = $newArray['file_orig'];
 			$waiting_row[$n]['title'] = $newArray['title'];
 			$waiting_row[$n]['notes'] = $newArray['notes'];
-			$waiting_row[$n]['date'] = $newArray['date'];
+			$waiting_row[$n]['date'] = $newArray['file_date'];
 			$waiting_row[$n]['size'] = $newArray['size'];
 			$waiting_row[$n]['hash'] = $newArray['hash'];
-			$waiting_row[$n]['user'] = $newArray['user'];
+			$waiting_row[$n]['user'] = $newArray['file_user'];
 			$waiting_row[$n]['status'] = "Waiting for Import";
 			$n++;
 		}
@@ -823,10 +817,11 @@ switch($func)
 	default:
 		$importing_row = array();
 		$n=0;
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT * FROM files_importing ORDER BY `{$sort}` {$ord} LIMIT {$from},{$inc}";;}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT * FROM [files_importing] ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+
+		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_importing ORDER BY {$sort} {$ord}";
+		if($dbcore->sql->service == "mysql"){$sql .= " LIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= " OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
@@ -852,10 +847,10 @@ switch($func)
 			$importing_row[$n]['file'] = $newArray['file_orig'];
 			$importing_row[$n]['title'] = $newArray['title'];
 			$importing_row[$n]['notes'] = $newArray['notes'];
-			$importing_row[$n]['date'] = $newArray['date'];
+			$importing_row[$n]['date'] = $newArray['file_date'];
 			$importing_row[$n]['size'] = $newArray['size'];
 			$importing_row[$n]['hash'] = $newArray['hash'];
-			$importing_row[$n]['user'] = $newArray['user'];
+			$importing_row[$n]['user'] = $newArray['file_user'];
 			$importing_row[$n]['ap'] = $ap_text;
 			$importing_row[$n]['status'] = $status_text;
 

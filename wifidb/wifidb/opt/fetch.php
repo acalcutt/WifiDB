@@ -29,7 +29,7 @@ $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 
 #security for order by, desc, to, from injections or incorrect values
-$sorts=array("File_ID","date","points");
+$sorts=array("File_ID","file_date","points");
 if(!in_array($sort, $sorts)){$sort = "File_ID";}
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}

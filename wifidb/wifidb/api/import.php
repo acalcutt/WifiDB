@@ -49,10 +49,10 @@ switch($func)
 				'size'=>$dbcore->format_size($size),
 				'notes'=>$notes,
 				'ext'=>$ext,
-				'filename'=>$filename,
+				'file_name'=>$filename,
 				'file_orig'=>$file_orig,
 				'hash'=>$hash,
-				'date'=>$date
+				'file_date'=>$date
 			);
 
 			$dbcore->ImportVS1($details);

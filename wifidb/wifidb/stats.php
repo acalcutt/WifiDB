@@ -49,22 +49,19 @@ foreach($seclist as $secval)
 }
 
 #Count the number of users who have imported files
-if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT count(distinct `user`) AS `user_count` FROM `files` WHERE `completed` = 1";}
-else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT count(distinct [user]) AS [user_count] FROM [files] WHERE [completed] = 1";}
+$sql = "SELECT count(distinct file_user) AS user_count FROM files WHERE completed = 1";
 $result = $dbcore->sql->conn->query($sql);
 $usercount = $result->fetch(2);
 
 #Get the latest import list
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `id`, `user`, `title`, `date`, `ValidGPS` FROM `files` WHERE `completed` = 1 ORDER BY `id` DESC LIMIT 1";}
+	{$sql = "SELECT id, file_user, title, date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 [id], [user], [title], [date], [ValidGPS] FROM [files] WHERE [completed] = 1 ORDER BY [id] DESC";}
+	{$sql = "SELECT TOP 1 id, file_user, title, date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC";}
 $result = $dbcore->sql->conn->query($sql);
 $lastuser = $result->fetch(2);
 $lastid = $lastuser['id'];
-$lastusername =  htmlspecialchars($lastuser['user'], ENT_QUOTES, 'UTF-8');
+$lastusername =  htmlspecialchars($lastuser['file_user'], ENT_QUOTES, 'UTF-8');
 $lasttitle = htmlspecialchars($lastuser['title'], ENT_QUOTES, 'UTF-8');
 $lastdate = htmlspecialchars($lastuser['date'], ENT_QUOTES, 'UTF-8');
 $list_validgps = $lastuser['ValidGPS'];
@@ -72,9 +69,9 @@ if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
 
 #Find if last user has valid GPS
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `ValidGPS` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 LIMIT 1";}
+	{$sql = "SELECT ValidGPS FROM files WHERE file_user LIKE ? And ValidGPS = 1 LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 [ValidGPS] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
+	{$sql = "SELECT TOP 1 ValidGPS FROM files WHERE file_user LIKE ? And ValidGPS = 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $lastusername, PDO::PARAM_STR);
 $prep->execute();
@@ -83,9 +80,9 @@ $user_validgps = $appointer['ValidGPS'];
 
 #Get the latest AP
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `AP_ID`,`SSID`,`HighGps_ID` FROM `wifi_ap` WHERE `fa` IS NOT NULL ORDER BY `AP_ID` DESC LIMIT 1";}
+	{$sql = "SELECT AP_ID,SSID,HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 [AP_ID],[SSID],[HighGps_ID] FROM [wifi_ap] WHERE [fa] IS NOT NULL ORDER BY [AP_ID] DESC";}
+	{$sql = "SELECT TOP 1 AP_ID,SSID,HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL ORDER BY AP_ID DESC";}
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 

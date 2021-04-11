@@ -59,7 +59,7 @@ if(!is_null(@$filenames[0]))
         if($filen[0] == "#"){continue;}
         $filen_e = explode("|", $filen);
         if(count($filen_e)==1){continue;}
-        $file_names[$filen_e[0]] = array("hash" => $filen_e[0], "type" => $filen_e[1], "file"=>$filen_e[2], "file_orig"=>$filen_e[3],"user"=>$filen_e[4],"title"=>$filen_e[5],"date"=>$filen_e[6],"notes"=>$filen_e[7]);
+        $file_names[$filen_e[0]] = array("hash" => $filen_e[0], "type" => $filen_e[1], "file_name"=>$filen_e[2], "file_orig"=>$filen_e[3],"file_user"=>$filen_e[4],"title"=>$filen_e[5],"file_date"=>$filen_e[6],"notes"=>$filen_e[7]);
     }
 }else
 {

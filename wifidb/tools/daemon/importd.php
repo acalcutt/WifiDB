@@ -178,10 +178,7 @@ While(1)
 	}
 	//var_dump($NextID);
 
-	if($dbcore->sql->service == "mysql")
-		{$daemon_sql = "SELECT `id`, `file`, `file_orig`, `user`, `otherusers`, `notes`, `title`, `date`, `size`, `hash`, `type`, `tmp_id` FROM `files_importing` WHERE `id` = ?";}
-	else if($dbcore->sql->service == "sqlsrv")
-		{$daemon_sql = "SELECT [id], [file], [file_orig], [user], [otherusers], [notes], [title], [date], [size], [hash], [type], [tmp_id] FROM [files_importing] WHERE [id] = ?";}
+	$daemon_sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, file_date, size, hash, type, tmp_id FROM files_importing WHERE id = ?";
 	$result = $dbcore->sql->conn->prepare($daemon_sql);
 	$result->bindParam(1, $NextID, PDO::PARAM_INT);
 	$result->execute();

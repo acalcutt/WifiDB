@@ -203,13 +203,13 @@ class api extends dbcore
 	{
 		$user		   = $details['user'];
 		$otherusers	 = $details['otherusers'];
-		$date		   = $details['date'];
+		$date		   = $details['file_date'];
 		$title		  = $details['title'];
 		$notes		  = $details['notes'];
 		$size		   = $details['size'];
 		$hash		   = $details['hash'];
 		$ext			= $details['ext'];
-		$filename	   = $details['filename'];
+		$filename	   = $details['file_name'];
 		$file_orig	   = $details['file_orig'];
 
 		if($this->sql->service == "mysql")
@@ -283,7 +283,7 @@ class api extends dbcore
 				if($this->sql->service == "mysql")
 					{$sql = "INSERT INTO files_tmp(file, file_orig, date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				else if($this->sql->service == "sqlsrv")
-					{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
 				$result = $this->sql->conn->prepare( $sql );
 				$result->bindValue(1, $filename, PDO::PARAM_STR);
