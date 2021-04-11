@@ -579,6 +579,15 @@ switch($func)
 		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points");
+		if(!in_array($sort, $sorts)){$sort = "AP_ID";}
+		$ords=array("ASC","DESC");
+		if(!in_array($ord, $ords)){$ord = "DESC";}
+
+		if ($from == ""){$from = 0;}
+		if ($inc == ""){$inc = 50000;}
+		if ($ord == ""){$ord = "ASC";}
+		if ($sort == ""){$sort = "ssid";}		
 
 		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
@@ -587,11 +596,6 @@ switch($func)
 		if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
-
-		if ($from == ""){$from = 0;}
-		if ($inc == ""){$inc = 50000;}
-		if ($ord == ""){$ord = "ASC";}
-		if ($sort == ""){$sort = "ssid";}
 
 		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
 		$results_all = $SearchArray['data'];
