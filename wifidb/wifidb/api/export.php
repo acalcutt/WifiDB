@@ -309,6 +309,7 @@ switch($func)
 
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 			#Get SSID
@@ -329,7 +330,7 @@ switch($func)
 			if(!is_numeric($inc)){$inc = 25000;}
 			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
-			$SigHistArray = $dbcore->export->SigHistArray($id, 0, $from, $inc);
+			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
 			$ap_signal = $dbcore->createKML->CreateApSignal3D($SigHistArray['data']);
 			if($ap_signal){$KML_Signal_data = $dbcore->createKML->createFolder("Signal History", $ap_signal, 1);}else{$KML_Signal_data = "";}
 			$results = $dbcore->createKML->createKMLstructure($title, $AP_PlaceMarks.$KML_Signal_data);
