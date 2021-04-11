@@ -23,11 +23,14 @@ if not, write to the
 				<table style="width: 100%" cellpadding="0" cellspacing="0">
 					<tr>
 						<td align="left">
-							{if $func eq "exp_ap_sig"}
+{if $func eq "exp_ap_sig"}
 							<div style='text-align: center;'>
-								Signal History for <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (ID:{$id})<br>
+								Signal History for <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $list_id ne 0} - File ID:{$list_id}{/if})
+								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$id}{if $list_id ne 0}&list_id={$list_id}{/if}" title="Export AP Signals to JSON{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $list_id ne 0}&file_id={$list_id}{/if}" title="Export AP Signals to KMZ{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<br>
 							</div>
-							{/if}
+{/if}
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
 							<div>
 								<div id='basemap'>

@@ -53,8 +53,8 @@ You should have received a copy of the GNU General Public License along with thi
 								{if $ap_validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$new_ap_id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$new_ap_id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$new_ap_id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$new_ap_id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$new_ap_id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$new_ap_id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
