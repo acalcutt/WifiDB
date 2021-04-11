@@ -93,12 +93,11 @@ $data = array(
     'alt'=>$alt,
     'geo'=>$geo,
     'track'=>$track,
-    'date'=>$date,
-    'time'=>$time,
+    'hist_date'=>$date." ".$time,
     
     #user data
     #'username'=>$dbcore->username,
-	'username'=>$username,
+    'username'=>$username,
     'session_id'=>$session_id
 );
 $dbcore->InsertLiveAP($data);
