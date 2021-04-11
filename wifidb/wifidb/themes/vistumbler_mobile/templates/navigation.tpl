@@ -22,24 +22,12 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}stats.php">Stats</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></li>
 						<li><a href="{$wifidb_host_url}opt/live.php">Live APs</a></li>
-						<li><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=user&ord=ASC&from=0&inc=100">Users</a></li>
+						<li><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=file_user&ord=ASC&from=0&inc=100">Users</a></li>
 						<li><a href="{$wifidb_host_url}themes/">Themes</a></li>
-						<li><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support Forum</a></li>
-						<li class="inside_dark_header">Vistumbler Links</li>
-						<li><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></li>
-						<li><a href="https://forum.techidiots.net/forum/">Forum</a></li>
-						<li><a href="https://live.wifidb.net/wifidb/">WiFiDB</a></li>
-						<li><a href="https://github.com/acalcutt/Vistumbler/wiki">Wiki</a></li>
-						<li><a href="https://github.com/acalcutt/Vistumbler">Git Repository</a></li>
-						<li><a href="http://www.vistumbler.net/downloads.html">Downloads</a></li>
-						<li><a href="http://www.vistumbler.net/verhist.html">Version History</a></li>
-						<li><a href="http://www.vistumbler.net/donate.htm">Donate</a></li>
+						<li><a href="https://forum.techidiots.net/forum/">Support Forum</a></li>
 						<li class="inside_dark_header">Other Projects</li>
-						<li><a href="http://www.wifidb.net">WifiDB Home</a></li>
-						<li><a href="http://uns.techidiots.net/">UNS Home</a></li>
-						<li><a href="http://mysticache.techidiots.net">Mysticache Home</a></li>
-						<li><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></li>
-						<li><a href="http://www.techidiots.net/">TechIdiots.net</a></li>
+						<li><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></li>
+						<li><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></li>					
 						<li class="inside_dark_header">Ads</li>
 					</ul>
 					<div>

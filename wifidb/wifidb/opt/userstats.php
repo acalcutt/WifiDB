@@ -38,8 +38,8 @@ else
 switch($func)
 {
 		case "allusers":
-			$sorts=array("user","FileCount","ValidGPS","ApCount","GpsCount","NewAPPercent","FirstImport","LastImport");
-			if(!in_array($sort, $sorts)){$sort = "user";}
+			$sorts=array("file_user","FileCount","ValidGPS","ApCount","GpsCount","NewAPPercent","FirstImport","LastImport");
+			if(!in_array($sort, $sorts)){$sort = "file_user";}
 			$dbcore->AllUsers($sort, $ord, $from, $inc);
 			$dbcore->smarty->assign('wifidb_imports_all' , $dbcore->all_users_data);
 			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
