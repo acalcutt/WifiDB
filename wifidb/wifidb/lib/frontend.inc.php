@@ -287,7 +287,7 @@ class frontend extends dbcore
 				'id'=>$field['File_ID'],
 				'file'=>htmlspecialchars($field['file_orig'], ENT_QUOTES, 'UTF-8'),
 				'nu'=>htmlspecialchars($field['New'], ENT_QUOTES, 'UTF-8'),
-				'date'=>htmlspecialchars($field['date'], ENT_QUOTES, 'UTF-8'),
+				'date'=>htmlspecialchars($field['file_date'], ENT_QUOTES, 'UTF-8'),
 				'points'=>$field['points'],
 				'user'=>htmlspecialchars($field['file_user'], ENT_QUOTES, 'UTF-8'),
 				'title'=>htmlspecialchars($field['title'], ENT_QUOTES, 'UTF-8'),
@@ -600,7 +600,7 @@ class frontend extends dbcore
 											'aps' => $imports['aps'],
 											'gps' => $imports['gps'],
 											'efficiency'=>$imports['NewAPPercent'],
-											'date' => htmlspecialchars($imports['date'], ENT_QUOTES, 'UTF-8')
+											'date' => htmlspecialchars($imports['file_date'], ENT_QUOTES, 'UTF-8')
 										   );
 		}
 		$this->user_all_imports_data = array();
@@ -645,7 +645,7 @@ class frontend extends dbcore
 		$all_aps_array['gps'] = htmlspecialchars($user_array['gps'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['size'] = htmlspecialchars($user_array['size'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['hash'] = htmlspecialchars($user_array['hash'], ENT_QUOTES, 'UTF-8');
-		$all_aps_array['date'] = htmlspecialchars($user_array['date'], ENT_QUOTES, 'UTF-8');
+		$all_aps_array['date'] = htmlspecialchars($user_array['file_date'], ENT_QUOTES, 'UTF-8');
 		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
 		$all_aps_array['validgps'] = $user_array['ValidGPS'];
 		
