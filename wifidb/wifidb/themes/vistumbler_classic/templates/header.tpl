@@ -61,7 +61,7 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/live.php">Live APs</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=user&ord=ASC&from=0&inc=100">Users</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
-								<div class="inside_text_bold"><a class="links" href="https://forum.techidiots.net/forum/viewforum.php?f=44">Support Forum</a></div>
+								<div class="inside_text_bold"><a href="https://forum.techidiots.net/forum/">Support Forum</a></div>
 								<!--
                                 {if $login_val eq "1"}
                                 <div class="inside_text_bold"><strong>

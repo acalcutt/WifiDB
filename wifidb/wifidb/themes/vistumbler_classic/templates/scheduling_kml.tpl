@@ -19,6 +19,7 @@ if not, write to the
 -->
 {include file="header.tpl"}
 			<div class="main">
+				{include file="topmenu.tpl"}
 				<div class="center">
 					<h2>Daemon Generated KMZ</h2>
 					<br/>
@@ -109,16 +110,6 @@ if not, write to the
 						</tr>
 					</table>
 					<br/>
-					<table border="1" cellspacing="0" cellpadding="0" style="width: 100%">
-						<tr>
-							<td class="subheading">User Exports</td>
-						</tr>
-						<tr>
-							<td class="light-centered">
-								<a href='{$wifidb_host_url}opt/export.php?func=index'>Generate</a>
-							</td>
-						</tr>
-					</table>
 				</div>
 			</div>
 {include file="footer.tpl"}
