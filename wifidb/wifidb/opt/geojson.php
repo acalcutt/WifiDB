@@ -2,7 +2,6 @@
 error_reporting(1);
 @ini_set('display_errors', 1);
 /*
-fetch.php, fetches a single AP's details.
 Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -40,20 +39,11 @@ switch($func)
 		if($inc == "")
 		{
 			if ($inc == ""){$inc = 50000;}
-			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
-			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
+
+			$sql = "SELECT Count(AP_ID) As ap_count\n"
+				. "FROM wifi_ap\n"
+				. "WHERE\n"
+				. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
