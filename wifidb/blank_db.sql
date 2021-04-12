@@ -2070,7 +2070,7 @@ CREATE TABLE `live_aps` (
   `auth` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `encry` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
   `sectype` int(1) NOT NULL,
-  `radio` varchar(7) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `radio` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
   `chan` int(255) NOT NULL,
   `sig` text COLLATE utf8mb4_unicode_ci NOT NULL,
   `username` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
