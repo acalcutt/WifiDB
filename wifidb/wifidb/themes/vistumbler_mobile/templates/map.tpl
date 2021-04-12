@@ -112,6 +112,13 @@ if not, write to the
 								bearing: {$bearing},
 							});
 
+{if $default_marker}
+							// Create a default Marker, colored black
+							var marker2 = new mapboxgl.Marker({ color: 'black', scale: .5})
+							.setLngLat({$default_marker})
+							.addTo(map);
+{/if}
+
 							function GoToLatest() {
 								var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap'
 								console.log('url: ', url);

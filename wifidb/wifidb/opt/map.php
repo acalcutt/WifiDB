@@ -2,7 +2,6 @@
 error_reporting(1);
 @ini_set('display_errors', 1);
 /*
-fetch.php, fetches a single AP's details.
 Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -118,22 +117,13 @@ switch($func)
 		
 		if($latitude == "")
 		{
-			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT TOP 1 `Lat`, `Lon`\n"
-						. "FROM `wifi_gps`\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT TOP (1) `id` FROM `files` WHERE `ValidGPS` = 1 AND `user` LIKE ? ORDER BY `date` DESC) And `Lat` != '0.0000'\n"
-						. "ORDER BY `GPS_Date` DESC";
-				}
-			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT TOP 1 Lat, Lon\n"
-						. "FROM wifi_gps\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT TOP (1) id FROM files WHERE ValidGPS = 1 AND [user] LIKE ? ORDER BY date DESC) And Lat != '0.0000'\n"
-						. "ORDER BY GPS_Date DESC";
-				}
+			$sql = "SELECT Lat, Lon\n"
+				. "FROM wifi_gps\n"
+				. "WHERE\n"
+				. "	File_ID IN (SELECT TOP (1) id FROM files WHERE ValidGPS = 1 AND file_user LIKE ? ORDER BY file_date DESC) And Lat != '0.0000'\n"
+				. "ORDER BY GPS_Date DESC\n";
+			if($dbcore->sql->service == "mysql"){$sql .= "LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv"){$sql .= "OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY";}
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
@@ -149,20 +139,11 @@ switch($func)
 		if($inc == "")
 		{
 			if ($inc == ""){$inc = 50000;}
-			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
-			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
+
+			$sql = "SELECT Count(AP_ID) As ap_count\n"
+				. "FROM wifi_ap\n"
+				. "WHERE\n"
+				. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
@@ -426,44 +407,27 @@ switch($func)
 		
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
-		if($dbcore->sql->service == "mysql")
-		{
-			$sql = "SELECT wGPS.Lat, wGPS.Lon, wap.SSID\n"
-				. "FROM wifi_hist AS wh\n"
-				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
-				. "LEFT OUTER JOIN wifi_ap AS wap ON wh.AP_ID = wap.AP_ID\n";
-			if($list_id)
-				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-			else
-				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-			$sql .= "ORDER BY wh.Hist_Date ASC\n"
-				. "LIMIT 1";
-		}
-		else if($dbcore->sql->service == "sqlsrv")
-		{
-			$sql = "SELECT wGPS.Lat, wGPS.Lon, wap.SSID\n"
-				. "FROM wifi_hist AS wh\n"
-				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
-				. "LEFT OUTER JOIN wifi_ap AS wap ON wh.AP_ID = wap.AP_ID\n";
-			if($list_id)
-				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-			else
-				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-			$sql .= "ORDER BY wh.Hist_Date ASC";
-		}
-		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $id, PDO::PARAM_INT);
-		if($list_id){$prep->bindParam(2, $list_id, PDO::PARAM_INT);}
-		$prep->execute();
-		$dbcore->sql->checkError(__LINE__, __FILE__);
-		$apinfo = $prep->fetch();
 		
-		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
-		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
+		#Get Marker Centerpoint
+		$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, wifi_ap.ssid\n"
+			. "FROM wifi_ap\n"
+			. "LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID\n"
+			. "WHERE wifi_ap.AP_ID = ?";
+		$prepc = $dbcore->sql->conn->prepare($sql);
+		$prepc->bindParam(1, $id, PDO::PARAM_INT);
+		$prepc->execute();
+		$dbcore->sql->checkError(__LINE__, __FILE__);
+		$ap_center_info = $prepc->fetch();
+
+		
+
+		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($ap_center_info['Lat']);}
+		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($ap_center_info['Lon']);}
 		if (empty($zoom)){$zoom = 14;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
+		$default_marker =  "[".$longitude.",".$latitude."]";
 
 		$asgs = $dbcore->createGeoJSON->CreateApSignalGeoJsonSource($id, $list_id);
 		$ml = $dbcore->createGeoJSON->CreateApSigLayer($asgs['layer_name']);
@@ -479,12 +443,13 @@ switch($func)
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('style', $style);
 		$dbcore->smarty->assign('centerpoint', $centerpoint);
+		$dbcore->smarty->assign('default_marker', $default_marker);
 		$dbcore->smarty->assign('zoom', $zoom);
 		$dbcore->smarty->assign('pitch', $pitch);
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
 		$dbcore->smarty->assign('id', $id);
-		$dbcore->smarty->assign('ssid', dbcore::formatSSID($apinfo['SSID']));
+		$dbcore->smarty->assign('ssid', dbcore::formatSSID($ap_center_info['ssid']));
 		$dbcore->smarty->assign('list_id', $list_id);
 		$dbcore->smarty->assign('signal_source_name', $asgs['layer_name']);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
