@@ -2499,9 +2499,9 @@ ALTER TABLE `DB_stats`
 -- Indexes for table `files`
 --
 ALTER TABLE `files`
-  ADD UNIQUE KEY `file` (`file`),
+  ADD UNIQUE KEY `file_name` (`file_name`),
   ADD KEY `id` (`id`),
-  ADD KEY `user` (`user`),
+  ADD KEY `file_user` (`file_user`),
   ADD KEY `ValidGPS` (`ValidGPS`),
   ADD KEY `completed` (`completed`);
 
