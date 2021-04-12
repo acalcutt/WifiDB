@@ -1781,7 +1781,7 @@ CREATE TABLE `cell_hist` (
   `lon` decimal(9,4) NOT NULL,
   `alt` decimal(7,2) NOT NULL,
   `accuracy` decimal(10,2) NOT NULL,
-  `hist_date` datetime(3) NOT NULL
+  `hist_date` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2192,7 +2192,7 @@ CREATE TABLE `schedule` (
   `nextrun` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
   `pid` int(11) DEFAULT NULL,
   `pidfile` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `logfile` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `logfile` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
