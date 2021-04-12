@@ -2103,8 +2103,7 @@ CREATE TABLE `live_gps` (
   `kmh` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `mph` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `track` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `date` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `time` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `hist_date` datetime(3) COLLATE utf8mb4_unicode_ci NOT NULL,
   `session_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
