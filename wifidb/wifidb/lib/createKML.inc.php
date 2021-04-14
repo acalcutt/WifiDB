@@ -345,7 +345,7 @@ class createKML
 		if(isset($ap_info_array['first_file_id'])){$first_file_id = '<b>File ID: </b><a href="'.$this->URL_BASE.'opt/userstats.php?func=useraplist&row='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank"">'.$this->stripInvalidXml($ap_info_array['id']).'</a><br />'."";}else{$first_file_id = '';}
 		if(isset($ap_info_array['user'])){$user = '<b>User: </b>'.$this->stripInvalidXml($ap_info_array['user']).'<br />'."";}else{$user = '';}
 		
-		$cdata = $id.$live_id_ssid.$live_id.$mac.$chan.$auth.$encry.$signal.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$first_file_id.$user;
+		$cdata = $id.$live_id_ssid.$live_id.$mac.$chan.$auth.$encry.$sig.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$first_file_id.$user;
 		$tmp = "\n		<Placemark id=\"".$ssid."_".$ap_info_array['mac']."_Placemark\"><styleUrl>".$icon_style."</styleUrl>$named<description><![CDATA[".$cdata."]]></description><Point id=\"".$ssid."_".$ap_info_array['mac']."_gps\"><coordinates>".$ap_info_array['lon'].",".$ap_info_array['lat'].",".$ap_info_array['alt']."</coordinates></Point></Placemark>";
 		return $tmp;
 	}
