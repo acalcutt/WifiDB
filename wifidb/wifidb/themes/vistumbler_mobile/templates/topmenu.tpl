@@ -4,6 +4,11 @@
 					</div>
 					<div class="righttm">
 						<p class="center">
+							<script>
+								if(document.referrer.split('/')[2]==location.hostname){
+									document.write('<a class="links" title="Back" style="text-decoration: none;" href="#" onclick="history.go(-1)"><img src="{$themeurl}img/back.png" style="vertical-align: middle;"/><span style="vertical-align: middle; text-decoration: none;">Back</span></a>');
+								}
+							</script>
 							<span class="nowrap">
 								<a class="links" title="Home" style="text-decoration: none;" href="{$wifidb_host_url}">
 									<img src="{$themeurl}img/home.png" style="vertical-align: middle;"/>
