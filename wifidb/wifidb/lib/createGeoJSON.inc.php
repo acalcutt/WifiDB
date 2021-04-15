@@ -72,9 +72,12 @@ class createGeoJSON
 		if(isset($ap_info_array['lat'])){$lat = '"lat":'.json_encode($ap_info_array['lat']).',';}else{$lat = '';}
 		if(isset($ap_info_array['lon'])){$lon = '"lon":'.json_encode($ap_info_array['lon']).',';}else{$lon = '';}
 		if(isset($ap_info_array['alt'])){$alt = '"alt":'.json_encode($ap_info_array['alt']).',';}else{$alt = '';}
+		if(isset($ap_info_array['sats'])){$sats = '"sats":'.json_encode($ap_info_array['sats']).',';}else{$sats = '';}
+		if(isset($ap_info_array['accuracy'])){$accuracy = '"accuracy":'.json_encode($ap_info_array['accuracy']).',';}else{$accuracy = '';}
+		if(isset($ap_info_array['hdop'])){$hdop = '"hdop":'.json_encode($ap_info_array['hdop']).',';}else{$hdop = '';}
 		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
 
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$sats.$accuracy.$hdop.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
 
 		return $tmp;
 	}
@@ -280,13 +283,13 @@ class createGeoJSON
 		return $ret_data;
 	}
 
-	public function CreateApSignalGeoJsonSource($ap_id, $list_id=0)
+	public function CreateApSignalGeoJsonSource($ap_id, $list_id=0, $from=0, $inc=50000)
 	{
 		$layer_name = "aps_".$ap_id."-".$list_id;
 		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
-			data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$ap_id."&list_id=".$list_id."',
+			data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$ap_id."&list_id=".$list_id."&from=".$from."&inc=".$inc."',
 			buffer: 0,
 		});";
 

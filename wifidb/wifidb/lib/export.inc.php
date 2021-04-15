@@ -358,7 +358,7 @@ class export extends dbcore
 					. "    )\n";
 				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
 				$sql .= "ORDER BY la DESC";
-				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+				
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
@@ -371,7 +371,7 @@ class export extends dbcore
 					. "		FROM wifi_hist AS wh\n"
 					. "		INNER JOIN files AS wf ON wf.id = wh.File_ID\n"
 					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
-					. "		WHERE (wf.completed = 1) AND (wf.[date] >= ? AND wf.[date] <= ?)\n"
+					. "		WHERE (wf.completed = 1) AND (wf.file_date >= ? AND wf.file_date <= ?)\n"
 					. "    )\n";
 				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
 				$sql .= "ORDER BY la DESC";
@@ -457,7 +457,7 @@ class export extends dbcore
 			
 			if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.user\n"
+				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wGPS.Alt, wh.File_ID, wf.user\n"
 					. "FROM wifi_hist AS wh\n"
 					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
@@ -470,7 +470,7 @@ class export extends dbcore
 			}
 			else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wh.File_ID, wf.file_user\n"
+				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wGPS.Alt, wGPS.NumOfSats, wGPS.AccuracyMeters, wGPS.HorDilPitch, wh.File_ID, wf.file_user\n"
 					. "FROM wifi_hist AS wh\n"
 					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
@@ -502,7 +502,10 @@ class export extends dbcore
 				"encry" => $ap['ENCR'],
 				"lat" => $this->convert->dm2dd($hist['Lat']),
 				"lon" => $this->convert->dm2dd($hist['Lon']),
-				"alt" => $ap['Alt'],
+				"alt" => $hist['Alt'],
+				"sats" => $hist['NumOfSats'],
+				"accuracy" => $hist['AccuracyMeters'],
+				"hdop" => $hist['HorDilPitch'],
 				"user" => $hist['file_user'],
 				"signal" => $hist['Sig'],
 				"rssi" => $hist['RSSI'],
@@ -663,7 +666,7 @@ class export extends dbcore
 		if($type == "full")
 		{
 			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY file_user ASC";
-			$user_list_query = "SELECT id, file_user, title, date FROM files WHERE file_user LIKE ? And completed = 1 And ValidGPS = 1";
+			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE file_user LIKE ? And completed = 1 And ValidGPS = 1";
 		}
 		elseif($type == "daily")
 		{
@@ -674,7 +677,7 @@ class export extends dbcore
 			$last_export_file = $id_fetch['last_export_file'];
 
 			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY file_user ASC";
-			$user_list_query = "SELECT id, file_user, title, date FROM files WHERE completed = 1 And ValidGPS = 1 And file_user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";
+			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE completed = 1 And ValidGPS = 1 And file_user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";
 		}	
 		$this->verbosed($user_query);
 		$this->verbosed($user_list_query);
@@ -699,7 +702,7 @@ class export extends dbcore
 			foreach($fetch_imports as $import)
 			{
 				$id = $import['id'];
-				$this->verbosed($username." - ".$import['date']." - ".$id." - ".$import['title']);
+				$this->verbosed($username." - ".$import['file_date']." - ".$id." - ".$import['title']);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
 				$UserListArray = $this->UserListArray($id, $this->named, $new_icons, $only_new);
 				$AP_PlaceMarks = $this->createKML->CreateApFeatureCollection($UserListArray['data']);
@@ -1094,9 +1097,9 @@ class export extends dbcore
 		
 		#Get the id of the latest imported file with gps
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT id FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY date DESC LIMIT 1";}
+			{$sql = "SELECT id FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY file_date DESC LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 id FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY [date] DESC";}
+			{$sql = "SELECT TOP 1 id FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY file_date DESC";}
 		$id_query = $this->sql->conn->query($sql);
 		$id_fetch = $id_query->fetch(2);
 		$Last_File_ID = $id_fetch['id'];
