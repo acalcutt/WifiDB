@@ -227,7 +227,7 @@ class createGeoJSON
 	public function CreateUserAllGeoJsonSource($user, $from = NULL, $inc = NULL)
 	{
 		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user;
-		if($from !== NULL And $inc !== NULL){$layer_url .=  "&from=".$from."&inc=".$inc;}
+		if($from !== NULL && $inc !== NULL){$layer_url .=  "&from=".$from."&inc=".$inc;}
 		$layer_name = "uas_".$user;
 		$layer_source = "\n
 		map.addSource('".$layer_name."', {
@@ -243,13 +243,15 @@ class createGeoJSON
 		return $ret_data;
 	}
 
-	public function CreateListGeoJsonSource($id)
+	public function CreateListGeoJsonSource($id, $from = NULL, $inc = NULL)
 	{
-		$layer_name = "list-".$id;
+		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_list&id=".$id;
+		if($from !== NULL && $inc !== NULL){$layer_url .=  "&from=".$from."&inc=".$inc;}
+		$layer_name = "list_".$id;
 		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
-			data: '".$this->URL_BASE."api/geojson.php?func=exp_list&id=".$id."&all=1',
+			data: '".$layer_url."',
 			buffer: 0,
 		});";
 

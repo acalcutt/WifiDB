@@ -13,7 +13,8 @@ define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 
-if((int)@$_REQUEST['all'] === 1){$all = 1;}else{$all = 0;}#Show both old and new access points. by default only new APs are shown.
+if((int)@$_REQUEST['only_new'] === 1){$only_new = 1;}else{$only_new = 0;}#Show both old and new access points. by default only new APs are shown.
+if((int)@$_REQUEST['no_gps'] === 1){$valid_gps = 0;}else{$valid_gps = 1;}#Show both old and new access points. by default only new APs are shown.
 if((int)@$_REQUEST['new_icons'] === 1){$new_icons = 1;}else{$new_icons = 0;}#use new AP icons instead of old AP icons in kml file. by default old icons are shown.
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 if((int)@$_REQUEST['json'] === 1){$json = 1;}else{$json = 0;}#output json instead of creating a download
@@ -125,7 +126,7 @@ switch($func)
 		$fetch = $prep->fetch();
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 
-		$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons);
+		$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons, $only_new, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserListArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserListArray['data']);
 		$file_name = $id."-".$title.".geojson";

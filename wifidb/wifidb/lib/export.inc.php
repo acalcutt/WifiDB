@@ -159,11 +159,22 @@ class export extends dbcore
 		Return $ret_data;
 	}
 
-	public function UserListArray($file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0, $only_new=0)
+	public function UserListArray($file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0, $only_new=0, $valid_gps = 0)
 	{
 
-		$sql = "SELECT DISTINCT(AP_ID) From wifi_hist WHERE File_ID = ?";
-		if($only_new == 1){$sql .= " And New = 1";}
+
+		$sql = "SELECT DISTINCT(wifi_hist.AP_ID)\n"
+			. "From wifi_hist\n"
+			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.AP_ID = wap.AP_ID\n"
+			. "WHERE wifi_hist.File_ID = ?";
+		if($only_new == 1){$sql .= " AND wifi_hist.New = 1";}	
+		if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
+		$sql .= "\nORDER BY wifi_hist.AP_ID DESC";
+		if($from !== NULL && $inc !== NULL){
+			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
+			else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+		}
+		
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -182,12 +193,7 @@ class export extends dbcore
 				. "FROM wifi_ap AS wap\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL\n"
-				. "ORDER BY wap.AP_ID DESC";
-			if($from !== NULL && $inc !== NULL){
-				if($this->sql->service == "mysql"){$sql .=  " LIMIT ".$from.", ".$inc;}
-				else if($this->sql->service == "sqlsrv"){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
-			}
+				. "WHERE wap.AP_ID = ?";
 				
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
