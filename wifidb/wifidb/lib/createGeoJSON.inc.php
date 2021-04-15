@@ -224,10 +224,10 @@ class createGeoJSON
 		return $ret_data;
 	}
 
-	public function CreateUserAllGeoJsonSource($user, $from = NULL, $limit = NULL)
+	public function CreateUserAllGeoJsonSource($user, $from = NULL, $inc = NULL)
 	{
 		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user;
-		if($from !== NULL And $limit !== NULL){$layer_url .=  "&from=".$from."&limit=".$limit;}
+		if($from !== NULL And $inc !== NULL){$layer_url .=  "&from=".$from."&inc=".$inc;}
 		$layer_name = "uas_".$user;
 		$layer_source = "\n
 		map.addSource('".$layer_name."', {
