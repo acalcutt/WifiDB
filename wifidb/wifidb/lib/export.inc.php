@@ -159,7 +159,7 @@ class export extends dbcore
 		Return $ret_data;
 	}
 
-	public function UserListArray($file_id, $named=0, $new_ap=0, $only_new=0)
+	public function UserListArray($file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0, $only_new=0)
 	{
 
 		$sql = "SELECT DISTINCT(AP_ID) From wifi_hist WHERE File_ID = ?";
@@ -182,7 +182,12 @@ class export extends dbcore
 				. "FROM wifi_ap AS wap\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL";
+				. "WHERE wap.AP_ID = ? And wap.HighGps_ID IS NOT NULL\n"
+				. "ORDER BY wap.AP_ID DESC";
+			if($from !== NULL && $inc !== NULL){
+				if($this->sql->service == "mysql"){$sql .=  " LIMIT ".$from.", ".$inc;}
+				else if($this->sql->service == "sqlsrv"){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+			}
 				
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $apid, PDO::PARAM_INT);
@@ -260,7 +265,7 @@ class export extends dbcore
 							. "    wap.HighGps_ID IS NOT NULL And\n"
 							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)\n"
 							. "ORDER BY wap.ModDate DESC";
-							if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
+							if($from !== NULL && $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
 					}
 				else if($this->sql->service == "sqlsrv")
 					{
@@ -275,8 +280,7 @@ class export extends dbcore
 							. "    wap.HighGps_ID IS NOT NULL And\n"
 							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)\n"
 							. "ORDER BY wap.ModDate DESC";
-						if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
-						if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+						if($from !== NULL && $inc !== NULL){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
 					}
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $user, PDO::PARAM_STR);
@@ -584,7 +588,6 @@ class export extends dbcore
 		if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
 		if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
 		$sql .= " ORDER BY $sort $ord ";	
-		if($this->sql->service == "mysql"){;}
 		if($from !== NULL && $inc !== NULL){
 			if($this->sql->service == "mysql"){$sql .=  " LIMIT ".$from.", ".$inc;}
 			else if($this->sql->service == "sqlsrv"){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
@@ -704,7 +707,7 @@ class export extends dbcore
 				$id = $import['id'];
 				$this->verbosed($username." - ".$import['file_date']." - ".$id." - ".$import['title']);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
-				$UserListArray = $this->UserListArray($id, $this->named, $new_icons, $only_new);
+				$UserListArray = $this->UserListArray($id, NULL, NULL,$this->named, $new_icons, $only_new);
 				$AP_PlaceMarks = $this->createKML->CreateApFeatureCollection($UserListArray['data']);
 				if($AP_PlaceMarks)
 				{

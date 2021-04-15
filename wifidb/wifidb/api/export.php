@@ -286,6 +286,11 @@ switch($func)
 
 		case "exp_list":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+			if(!is_numeric($from)){$from = 0;}
+			if(!is_numeric($inc)){$inc = 50000;}
+
 			if($dbcore->sql->service == "mysql")
 				{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
@@ -297,7 +302,7 @@ switch($func)
 			$fetch = $prep->fetch();
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 
-			$UserListArray = $dbcore->export->UserListArray($id, $labeled, $new_icons);
+			$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($UserListArray['data']);
 			$final_box = $dbcore->export->FindBox($UserListArray['latlongarray']);
 			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());	

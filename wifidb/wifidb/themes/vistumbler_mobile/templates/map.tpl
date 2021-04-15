@@ -277,7 +277,7 @@ if not, write to the
 							function toggle_label() {
 								const url = new URL(window.location.href);
 								var radios = document.getElementsByName('sltoggle');
-								var layers = [{$layer_name}]
+								var layers = [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]
 								for (var i = 0, length = radios.length; i < length; i++) {
 									if (typeof radios[i] !== 'undefined') {
 										if (radios[i].checked) {
@@ -384,6 +384,42 @@ toggle_label()
 								//Ad Inspect
 								map.addControl(new MapboxInspect());
 								//WifiDB Information Popup
+{if $cell_layer_name}
+
+								map.on('click', function(e) {
+									var features = map.queryRenderedFeatures(e.point, {
+										layers: [{$cell_layer_name}]
+									});
+									if (!features.length) {
+										return;
+									}
+									var feature = features[0];
+									
+									var text = '<ul>';
+									if (feature.properties.id) text += '<li>ID: <b>' + feature.properties.id + '</b></li>';
+									if (feature.properties.name) text += '<li>NAME: <b>' + feature.properties.name + '</b></li>';
+									if (feature.properties.mac) text += '<li>MAC: <b>' + feature.properties.mac + '</b></li>';
+									if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+									if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
+									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
+									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
+									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+									if (feature.properties.lat) text += '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>';
+									if (feature.properties.lon) text += '<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>';
+									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
+									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
+									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									text += '</ul>';
+
+									var popup = new mapboxgl.Popup()
+										.setLngLat(map.unproject(e.point))
+										.setHTML(text)
+										.addTo(map);
+								});
+{/if}
+{if $layer_name}
+
 								map.on('click', function(e) {
 
 									var features = map.queryRenderedFeatures(e.point, {
@@ -428,43 +464,12 @@ toggle_label()
 										.setHTML(text)
 										.addTo(map);
 								});
-								
-								map.on('click', function(e) {
-									var features = map.queryRenderedFeatures(e.point, {
-										layers: [{$cell_layer_name}]
-									});
-									if (!features.length) {
-										return;
-									}
-									var feature = features[0];
-									
-									var text = '<ul>';
-									if (feature.properties.id) text += '<li>ID: <b>' + feature.properties.id + '</b></li>';
-									if (feature.properties.name) text += '<li>NAME: <b>' + feature.properties.name + '</b></li>';
-									if (feature.properties.mac) text += '<li>MAC: <b>' + feature.properties.mac + '</b></li>';
-									if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
-									if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
-									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
-									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
-									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-									if (feature.properties.lat) text += '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>';
-									if (feature.properties.lon) text += '<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>';
-									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
-									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
-									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
-									text += '</ul>';
-
-									var popup = new mapboxgl.Popup()
-										.setLngLat(map.unproject(e.point))
-										.setHTML(text)
-										.addTo(map);
-								});
+{/if}
 
 								// indicate that the symbols are clickableby changing the cursor style to 'pointer'.
 								map.on('mousemove', function(e) {
 									var features = map.queryRenderedFeatures(e.point, {
-										layers: [{$layer_name},{$cell_layer_name}]
+										layers: [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]
 									});
 									map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 								});

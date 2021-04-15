@@ -426,7 +426,7 @@ class api extends dbcore
 				$timecalc   = ($url_time - $wifi_time);
 				$this->mesg = "Oooo its time is newer o_0, lets go insert it ;)";
 				$sql = "INSERT INTO live_gps (lat, long, sats, hdp, alt, geo, kmh, mph, track, hist_date, session_id)
-											   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 				$prep = $this->sql->conn->prepare($sql);
 				

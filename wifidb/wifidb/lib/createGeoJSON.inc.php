@@ -21,7 +21,7 @@ if not, write to the
 class createGeoJSON
 {
 
-	public function __construct($URL_PATH, $GeoJSON_out, $daemon_out, $tilldead = 5, $convertObj)
+	public function __construct($URL_PATH, $GeoJSON_out, $daemon_out, $convertObj, $tilldead = 5)
 	{
 		$this->URL_BASE	 =   $URL_PATH;
 		$this->convert	  =   $convertObj;
@@ -105,6 +105,20 @@ class createGeoJSON
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"points","{points}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_sig","{high_gps_sig}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_rssi","{high_gps_rssi}",$font,$size,$visibility);
+		
+		return $layer_source;
+	}
+
+	public function CreateCellLabelLayer($source, $source_layer = "", $font = "Open Sans Regular", $size = 10, $visibility = "none")
+	{
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"mac","{mac}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{fa}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"LA","{la}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"points","{points}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_rssi","{rssi}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_sig","{rssi}",$font,$size,$visibility);
 		
 		return $layer_source;
 	}
@@ -389,18 +403,18 @@ class createGeoJSON
 		
 		return $ret_data;
 	}
-
-	public function CreateCellLayer($source, $source_layer = "", $cell_color = "#885FCD", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	
+	public function CreateCellLayer($data_source, $data_source_layer = "", $cell_color = "#885FCD", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
-
+		if($data_source_layer){$layer_lname = $data_source_layer;}else{$layer_lname = $data_source;};
 		$layer_source = "\n
 		map.addLayer({
-			'id': '".$source_layer."',
+			'id': '".$layer_lname."',
 			'type': 'circle',
-			'source': '".$source."',
-			'source-layer': '".$source_layer."',
-			'layout': {
-				 'visibility': '".$visibility."'
+			'source': '".$data_source."',\n";
+		if($data_source_layer){$layer_source .= "			'source-layer': '".$data_source_layer."',\n";};
+		$layer_source .= "			'layout': {
+				'visibility': '".$visibility."'
 			},
 			'paint': {
 				'circle-color': '".$cell_color."',
@@ -409,6 +423,13 @@ class createGeoJSON
 				'circle-blur': ".$blur."
 			}
 		});";
-		return $layer_source;
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
 	}
+
 }
