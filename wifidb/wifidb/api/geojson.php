@@ -19,6 +19,11 @@ if((int)@$_REQUEST['new_icons'] === 1){$new_icons = 1;}else{$new_icons = 0;}#use
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 if((int)@$_REQUEST['json'] === 1){$json = 1;}else{$json = 0;}#output json instead of creating a download
 if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra debug stuff
+$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+if(is_numeric($from) && is_numeric($inc)){$range .= $from.'-'.$inc;}else{$range = '';}
+if(!is_numeric($from)){$from = 0;}
+if(!is_numeric($inc)){$inc = 50000;}
 $func=$_REQUEST['func'];
 switch($func)
 {
@@ -83,7 +88,7 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$ap_array = $prep->fetch();
 		$ssid = $dbcore->formatSSID($ap_array['SSID']);
-		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'-'.$ssid);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'AP_'.$id.'-'.$ssid);
 		#Create GeoJSON
 		$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ApArray['latlongarray']);
@@ -93,15 +98,11 @@ switch($func)
 
 	case "exp_ap_sig":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		$title = $id."_SigHist";
-		if(is_numeric($list_id)){$title .= '_'.$list_id;}
-		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
-		$SigHistArray = $dbcore->export->SigHistArray($id, $list_id, $from, $inc);
+		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
+		$title = "SigHist_".$id;
+		if(is_numeric($file_id)){$title .= '_'.$file_id;}
+		if($range){$title .= "_".$range;}
+		$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SigHistArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -109,15 +110,11 @@ switch($func)
 
 	case "exp_cell_sig":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		$title = $id."_SigHist";
-		if(is_numeric($list_id)){$title .= '_'.$list_id;}
-		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
-		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $list_id, $from, $inc);
+		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
+		$title = "CellSigHist_".$id;
+		if(is_numeric($file_id)){$title .= '_'.$file_id;}
+		if($range){$title .= "_".$range;}
+		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellSigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellSigHistArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -125,11 +122,8 @@ switch($func)
 
 	case "exp_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
+		$title = "File_".$id;
+		
 		
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
@@ -140,27 +134,24 @@ switch($func)
 		$prep->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$fetch = $prep->fetch();
-		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+		$title .= "_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+		if($range){$title .= "_".$range;}
 
 		$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons, $only_new, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserListArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserListArray['data']);
-		$file_name = $id."-".$title.".geojson";
-		
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
+
 		break;
 		
 	case "exp_user_all":
-		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
-		
+		$user = $_REQUEST['user'];
+		$title = "User_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+		if($range){$title .= "_".$range;}
+
 		$UserAllList = $dbcore->export->UserAllArray($user, $from, $inc, $labeled);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserAllList['data']);
-		$file_name = $title.".geojson";
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 		break;
 		
 	case "exp_date":
@@ -186,10 +177,6 @@ switch($func)
 		$start_date =  "$start_date 00:00:00";
 		$end_date =  "$end_date 23:59:59";
 
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
 		$DateList = $dbcore->export->DateArray($start_date, $end_date, $labeled, 1, $from, $inc, 1);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($DateList['data']);
 		if($labeled){$file_name = "date_list_".$title_date."_Labeled.geojson";}else{$file_name = "date_list_".$title_date.".geojson";}
@@ -201,10 +188,6 @@ switch($func)
 		$date->sub(new DateInterval('PT36H'));
 		$start_date = $date->format('Y-m-d H:i:s');// 36 Hours Ago
 
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
 		$DateList = $dbcore->export->DateArray($start_date, $end_date, $labeled, 1, $from, $inc, 1);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($DateList['data']);
 		if($labeled){$file_name = "date_list_".$title_date."_Labeled.geojson";}else{$file_name = "date_list_".$title_date.".geojson";}
@@ -213,8 +196,6 @@ switch($func)
 	case "exp_search":
 		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 		
 		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
@@ -223,12 +204,11 @@ switch($func)
 		if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
-		
-		if ($from == ""){$from = 0;}
-		if ($inc == ""){$inc = 50000;}
-		if ($ord == ""){$ord = "ASC";}
-		if ($sort == ""){$sort = "ssid";}
-		
+
+		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points");
+		if(!in_array($sort, $sorts)){$sort = "AP_ID";}
+		$ords=array("ASC","DESC");
+		if(!in_array($ord, $ords)){$ord = "DESC";}
 
 		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SearchArray['data']);

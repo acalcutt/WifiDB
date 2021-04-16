@@ -64,6 +64,7 @@ class createGeoJSON
 		if(isset($ap_info_array['chan'])){$chan = '"chan":'.json_encode($ap_info_array['chan']).',';}else{$chan = '';}
 		if(isset($ap_info_array['auth'])){$auth = '"auth":'.json_encode($ap_info_array['auth']).',';}else{$auth = '';}
 		if(isset($ap_info_array['encry'])){$encry = '"encry":'.json_encode($ap_info_array['encry']).',';}else{$encry = '';}
+		if(isset($ap_info_array['type'])){$type = '"type":'.json_encode($ap_info_array['type']).',';}else{$type = '';}
 		if(isset($ap_info_array['BTx'])){$BTx = '"BTx":'.json_encode($ap_info_array['BTx']).',';}else{$BTx = '';}
 		if(isset($ap_info_array['OTx'])){$OTx = '"OTx":'.json_encode($ap_info_array['OTx']).',';}else{$OTx = '';}
 		if(isset($ap_info_array['points'])){$points = '"points":'.json_encode($ap_info_array['points']).',';}else{$points = '';}
@@ -77,7 +78,7 @@ class createGeoJSON
 		if(isset($ap_info_array['hdop'])){$hdop = '"hdop":'.json_encode($ap_info_array['hdop']).',';}else{$hdop = '';}
 		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
 
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$sats.$accuracy.$hdop.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$type.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$sats.$accuracy.$hdop.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
 
 		return $tmp;
 	}
@@ -299,13 +300,13 @@ class createGeoJSON
 		return $ret_data;
 	}
 
-	public function CreateApSignalGeoJsonSource($ap_id, $list_id=0, $from=0, $inc=50000)
+	public function CreateApSignalGeoJsonSource($ap_id, $file_id=0, $from=0, $inc=50000)
 	{
-		$layer_name = "aps_".$ap_id."-".$list_id;
+		$layer_name = "aps_".$ap_id."-".$file_id;
 		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
-			data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$ap_id."&list_id=".$list_id."&from=".$from."&inc=".$inc."',
+			data: '".$this->URL_BASE."api/geojson.php?func=exp_ap_sig&id=".$ap_id."&file_id=".$file_id."&from=".$from."&inc=".$inc."',
 			buffer: 0,
 		});";
 
@@ -317,13 +318,13 @@ class createGeoJSON
 		return $ret_data;
 	}
 
-	public function CreateCellSignalGeoJsonSource($cell_id, $list_id=0, $from=0, $inc=50000)
+	public function CreateCellSignalGeoJsonSource($cell_id, $file_id=0, $from=0, $inc=50000)
 	{
-		$layer_name = "cs_".$cell_id."-".$list_id;
+		$layer_name = "cs_".$cell_id."-".$file_id;
 		$layer_source = "\n
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
-			data: '".$this->URL_BASE."api/geojson.php?func=exp_cell_sig&id=".$cell_id."&list_id=".$list_id."&from=".$from."&inc=".$inc."',
+			data: '".$this->URL_BASE."api/geojson.php?func=exp_cell_sig&id=".$cell_id."&file_id=".$file_id."&from=".$from."&inc=".$inc."',
 			buffer: 0,
 		});";
 
@@ -401,14 +402,15 @@ class createGeoJSON
 					]
 				},
 				'circle-color': {
-					'property': 'signal',
+					'property': 'rssi',
 					'stops': [
-						[16, '#E42F00'],
-						[30, '#FF0000'],
-						[48, '#FF9200'],
-						[64, '#FFEC00'],
-						[80, '#80FF00'],
-						[100, '#0D7600']
+						[-120, '#464646'],
+						[-100, '#E42F00'],
+						[-88, '#FF0000'],
+						[-74, '#FF9200'],
+						[-64, '#FFEC00'],
+						[-52, '#80FF00'],
+						[-40, '#0D7600']
 					]
 				},
 				'circle-opacity': ".$opacity.",

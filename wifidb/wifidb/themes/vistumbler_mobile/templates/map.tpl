@@ -25,17 +25,18 @@ if not, write to the
 						<td align="left">
 {if $func eq "exp_cell_sig"}
 							<div style='text-align: center;'>
-								Signal History for <b>{$ssid}</b> (Cell ID:{$id}{if $list_id ne 0} - File ID:{$list_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_cell_sig&id={$id}{if $list_id ne 0}&list_id={$list_id}{/if}" title="Export AP Signals to JSON{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-								{if $list_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
+								Signal History for <b>{$ssid}</b> (Cell ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
 							</div>
 {elseif $func eq "exp_ap_sig"}
 							<div style='text-align: center;'>
-								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $list_id ne 0} - File ID:{$list_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$id}{if $list_id ne 0}&list_id={$list_id}{/if}" title="Export AP Signals to JSON{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $list_id ne 0}&file_id={$list_id}{/if}" title="Export AP Signals to KMZ{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-								{if $list_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
+								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
 							</div>
 {elseif $func eq "user_all"}
@@ -47,7 +48,7 @@ if not, write to the
 							</div>
 {elseif $func eq "user_list"}
 							<div style='text-align: center;'>
-								List APs for <a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}"><b>{$title}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$id}"><b>{$title}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$id}" title="Export List APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$id}" title="Export List APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								<br>
@@ -135,8 +136,8 @@ if not, write to the
 								<div>
 		{for $cdiv=1 to $ldivs}
 			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
-			{if $list_id ne 0}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}&list_id={$list_id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show AP Signals on Map for File ID {$list_id}">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{if $file_id ne 0}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}&file_id={$file_id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show AP Signals on Map for File ID {$file_id}">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
 			{else}
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show AP Signals on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
 			{/if}
@@ -156,6 +157,14 @@ if not, write to the
 		{for $cdiv=1 to $ldivs}
 			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
 									<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show List APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
+		{/for}
+								</div>
+	{elseif $func eq "exp_search"}
+								<div>
+		{for $cdiv=1 to $ldivs}
+			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_search&from={($cdiv - 1) * $inc}&inc={$inc}{$export_url}" title="Show Search APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
 			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
 		{/for}
 								</div>
@@ -500,7 +509,7 @@ toggle_label()
 									if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
 									if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
 									if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
-									if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&list_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
+									if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&file_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
 									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 									

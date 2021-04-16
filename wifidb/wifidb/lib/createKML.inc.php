@@ -324,6 +324,7 @@ class createKML
 		if(isset($ap_info_array['chan'])){$chan = '<b>Channel: </b>'.$this->stripInvalidXml($ap_info_array['chan']).'<br />'."";}else{$chan = '';}
 		if(isset($ap_info_array['auth'])){$auth = '<b>Authentication: </b>'.$this->stripInvalidXml($ap_info_array['auth']).'<br />'."";}else{$auth = '';}
 		if(isset($ap_info_array['encry'])){$encry = '<b>Encryption: </b>'.$this->stripInvalidXml($ap_info_array['encry']).'<br />'."";}else{$encry = '';}
+		if(isset($ap_info_array['type'])){$type = '<b>Type: </b>'.$this->stripInvalidXml($ap_info_array['type']).'<br />'."";}else{$type = '';}
 		if(isset($ap_info_array['signal'])){$sig = '<b>Signal: </b>'.$this->stripInvalidXml($ap_info_array['signal']).'<br />'."";}else{$sig = '';}
 		if(isset($ap_info_array['rssi'])){$rssi = '<b>RSSI: </b>'.$this->stripInvalidXml($ap_info_array['rssi']).'<br />'."";}else{$rssi = '';}
 		if(isset($ap_info_array['high_gps_sig'])){$high_gps_sig = '<b>High GPS Signal: </b>'.$this->stripInvalidXml($ap_info_array['high_gps_sig']).'<br />'."";}else{$high_gps_sig = '';}
@@ -334,7 +335,7 @@ class createKML
 		if(isset($ap_info_array['radio'])){$radio = '<b>Radio Type: </b>'.$this->stripInvalidXml($ap_info_array['radio']).'<br />'."";}else{$radio = '';}
 		if(isset($ap_info_array['BTx'])){$BTx = '<b>BTx: </b>'.$this->stripInvalidXml($ap_info_array['BTx']).'<br />'."";}else{$BTx = '';}
 		if(isset($ap_info_array['OTx'])){$OTx = '<b>OTx: </b>'.$this->stripInvalidXml($ap_info_array['OTx']).'<br />'."";}else{$OTx = '';}
-		if(isset($ap_info_array['points'])){$points = '<b>Points: </b><a href="'.$this->URL_BASE.'api/export.php?func=exp_list_ap_signal&id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$this->stripInvalidXml($ap_info_array['points']).'</a><br />'."";}else{$points = '';}
+		if(isset($ap_info_array['points'])){$points = '<b>Points: </b><a href="'.$this->URL_BASE.'api/export.php?func=exp_ap_sig&id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$this->stripInvalidXml($ap_info_array['points']).'</a><br />'."";}else{$points = '';}
 		if(isset($ap_info_array['FA'])){$FA = '<b>First Active: </b>'.$this->stripInvalidXml($ap_info_array['FA']).'<br />'."";}else{$FA = '';}
 		if(isset($ap_info_array['LA'])){$LA = '<b>Last Active: </b>'.$this->stripInvalidXml($ap_info_array['LA']).'<br />'."";}else{$LA = '';}
 		if(isset($ap_info_array['hist_date'])){$hist_date = '<b>Hist Date: </b>'.$this->stripInvalidXml($ap_info_array['hist_date']).'<br />'."";}else{$hist_date = '';}
@@ -345,7 +346,7 @@ class createKML
 		if(isset($ap_info_array['first_file_id'])){$first_file_id = '<b>File ID: </b><a href="'.$this->URL_BASE.'opt/userstats.php?func=useraplist&row='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank"">'.$this->stripInvalidXml($ap_info_array['id']).'</a><br />'."";}else{$first_file_id = '';}
 		if(isset($ap_info_array['user'])){$user = '<b>User: </b>'.$this->stripInvalidXml($ap_info_array['user']).'<br />'."";}else{$user = '';}
 		
-		$cdata = $id.$live_id_ssid.$live_id.$mac.$chan.$auth.$encry.$sig.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$first_file_id.$user;
+		$cdata = $id.$live_id_ssid.$live_id.$mac.$chan.$auth.$type.$encry.$sig.$rssi.$high_gps_sig.$high_gps_rssi.$manuf.$sectype.$NT.$radio.$BTx.$OTx.$points.$FA.$LA.$hist_date.$lat.$lon.$alt.$hist_file_id.$first_file_id.$user;
 		$tmp = "\n		<Placemark id=\"".$ssid."_".$ap_info_array['mac']."_Placemark\"><styleUrl>".$icon_style."</styleUrl>$named<description><![CDATA[".$cdata."]]></description><Point id=\"".$ssid."_".$ap_info_array['mac']."_gps\"><coordinates>".$ap_info_array['lon'].",".$ap_info_array['lat'].",".$ap_info_array['alt']."</coordinates></Point></Placemark>";
 		return $tmp;
 	}
@@ -423,7 +424,7 @@ class createKML
 		return $tmp;
 	}
 
-	public function CreateApSignal3D($signal_array = array(), $visible = 1, $UseRSSI = 1)
+	public function CreateApSignal3D($signal_array = array(), $visible = 1, $SigMin = -100, $SigMax = -30)
 	{
 		$tmp = "";
 		$NewTimeInt = -1;
@@ -433,7 +434,9 @@ class createKML
 
 		foreach($signal_array as $gps)
 		{
-			$signal = (int) $gps['signal'];		
+			$signal = (int) $gps['rssi'];
+			$sigpercent = (($signal - $SigMin) / ($SigMax - $SigMin)) * 100;
+
 			$LastTimeInt = $NewTimeInt;
 			$string = str_replace("-", "/", $gps['hist_date']);
 			$NewTimeInt = strtotime($string);
@@ -441,27 +444,27 @@ class createKML
 			$LastSigStrengthLevel = $SigStrengthLevel;
 			$LastSigData = $SigData;
 			$SigData = 1;
-			if($signal >= 0 And $signal <= 16)
+			if($sigpercent >= $SigMin And $sigpercent <= 16)
 			{
 				$SigStrengthLevel = 1;
 				$SigCat = '#SigCat1';
-			} elseif($signal >= 17 And $signal <= 32)
+			} elseif($sigpercent >= 17 And $sigpercent <= 32)
 			{
 				$SigStrengthLevel = 2;
 				$SigCat = '#SigCat2';
-			} elseif($signal >= 33 And $signal <= 48)
+			} elseif($sigpercent >= 33 And $sigpercent <= 48)
 			{
 				$SigStrengthLevel = 3;
 				$SigCat = '#SigCat3';
-			} elseif($signal >= 49 And $signal <= 64)
+			} elseif($sigpercent >= 49 And $sigpercent <= 64)
 			{
 				$SigStrengthLevel = 4;
 				$SigCat = '#SigCat4';
-			} elseif($signal >= 65 And $signal <= 80)
+			} elseif($sigpercent >= 65 And $sigpercent <= 80)
 			{
 				$SigStrengthLevel = 5;
 				$SigCat = '#SigCat5';
-			} elseif($signal >= 80 And $signal <= 100)
+			} elseif($sigpercent >= 80 And $signal <= $SigMax)
 			{
 				$SigStrengthLevel = 6;
 				$SigCat = '#SigCat6';
@@ -487,16 +490,8 @@ class createKML
 			}		
 			
 			$gps_coords = $gps['lon'].",".$gps['lat'];
-			if($UseRSSI == 1)
-			{
-				$ExpRSSIAlt = (100 + $gps['rssi'])."";
 				$ExpString = "
-					".$gps_coords.",".$ExpRSSIAlt;
-			}else
-			{
-				$ExpString = "
-					".$gps_coords.",".$gps['signal'];
-			}
+					".$gps_coords.",".$sigpercent;
 			$tmp .= $ExpString;
 		}
 		if($tmp != "")

@@ -19,6 +19,11 @@ if((int)@$_REQUEST['new_icons'] === 1){$new_icons = 1;}else{$new_icons = 0;}#use
 if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}#output xml/kml insteand of creating a kmz. by default a kmz is created.
 if((int)@$_REQUEST['debug'] === 1){$debug = 1;}else{$debug = 0;}#output extra debug stuff
+$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+if(is_numeric($from) && is_numeric($inc)){$range .= $from.'-'.$inc;}else{$range = '';}
+if(!is_numeric($from)){$from = 0;}
+if(!is_numeric($inc)){$inc = 25000;}
 $func=$_REQUEST['func'];
 switch($func)
 {
@@ -77,9 +82,7 @@ switch($func)
 		case "exp_user_netlink":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-			$title = $user."'s Network Link";			
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			if ($inc == ""){$inc = 25000;}
+			$title = $user."'s Network Link";
 			if($dbcore->sql->service == "mysql")
 				{
 					$sql = "SELECT Count(AP_ID) As ap_count\n"
@@ -262,13 +265,9 @@ switch($func)
 
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-			if(!is_numeric($from)){$from = 0;}
-			if(!is_numeric($inc)){$inc = 25000;}
-			
+			$title = "User_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
+			if($range){$title .= "_".$range;}
+
 			$UserAllArray = $dbcore->export->UserAllArray($user, $from, $inc, $labeled);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($UserAllArray['data']);
 			$final_box = $dbcore->export->FindBox($UserAllArray['latlongarray']);
@@ -278,19 +277,15 @@ switch($func)
 			$mincount = intval($from);
 			$maxcount = intval($from) + intval($UserAllArray['count']);
 			
-			
 			$clab = " ( ".$mincount."-".$maxcount." )";
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $results);
-			if($labeled){$file_name = $user_fn."_".$mincount."-".$maxcount."_Labeled.kmz";}else{$file_name = $user_fn."_".$mincount."-".$maxcount.".kmz";}
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
 
 		case "exp_list":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			if(!is_numeric($from)){$from = 0;}
-			if(!is_numeric($inc)){$inc = 50000;}
+			$title = "File_".$id;
 
 			if($dbcore->sql->service == "mysql")
 				{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
@@ -301,23 +296,23 @@ switch($func)
 			$prep->execute();
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$fetch = $prep->fetch();
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
-
+			$title .= "_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+			if($range){$title .= "_".$range;}
+		
 			$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons, $only_new, 1);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($UserListArray['data']);
 			$final_box = $dbcore->export->FindBox($UserListArray['latlongarray']);
 			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());	
 			$results = $dbcore->createKML->createKMLstructure("$user_fn".$clab, $KML_region.$AP_PlaceMarks);
 
-			if($labeled){$file_name = $id."-".$title."_Labeled.kmz";}else{$file_name = $id."-".$title.".kmz";}
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			
 			break;
 
 		case "exp_ap":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+
 			#Get SSID
 			if($dbcore->sql->service == "mysql")
 				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
@@ -329,11 +324,10 @@ switch($func)
 			$dbcore->sql->checkError(__LINE__, __FILE__);
 			$ap_array = $prep->fetch();
 			$ssid = $dbcore->formatSSID($ap_array['SSID']);
-			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'-'.$ssid);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'AP_'.$id.'-'.$ssid);
+			if($range){$title .= "_".$range;}
 			#Create KMZ
-			if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-			if(!is_numeric($from)){$from = 0;}
-			if(!is_numeric($inc)){$inc = 25000;}
+
 			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
 			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
@@ -343,18 +337,28 @@ switch($func)
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
 			
-		case "exp_list_ap_signal":
+		case "exp_ap_sig":
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			$title = $id."_SigHist";
+			$title = "SigHist_".$id;
 			if(is_numeric($file_id)){$title .= '_'.$file_id;}
-			if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
-			if(!is_numeric($from)){$from = 0;}
-			if(!is_numeric($inc)){$inc = 25000;}
+			if($range){$title .= "_".$range;}
+
 			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
 			$KML_Signal_data = $dbcore->createKML->CreateApSignal3D($SigHistArray['data']);
+			$results = $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
+			$results = $dbcore->createKML->createKMLstructure($title, $results);
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			break;
+
+		case "exp_cell_sig":
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
+			$title = "CellSigHist_".$id;
+			if(is_numeric($file_id)){$title .= '_'.$file_id;}
+			if($range){$title .= "_".$range;}
+			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc);
+			$KML_Signal_data = $dbcore->createKML->CreateApSignal3D($CellSigHistArray['data'], 1, -140, -44);
 			$results = $dbcore->createKML->createFolder("Signal History", $KML_Signal_data, 1);
 			$results = $dbcore->createKML->createKMLstructure($title, $results);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
@@ -382,11 +386,6 @@ switch($func)
 			}
 			$start_date =  "$start_date 00:00:00";
 			$end_date =  "$end_date 23:59:59";
-
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-			if(!is_numeric($from)){$from = 0;}
-			if(!is_numeric($inc)){$inc = 25000;}
 			
 			$DateList = $dbcore->export->DateArray($start_date, $end_date, $labeled, 1, $from, $inc, 1);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($DateList['data']);
@@ -398,8 +397,6 @@ switch($func)
 		case "exp_search":
 			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-			$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-			$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 			
 			if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 			if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
@@ -408,9 +405,7 @@ switch($func)
 			if(@$_REQUEST['auth']){$auth = $_REQUEST['auth'];}else{$auth = "";}
 			if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 			if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
-			
-			if ($from == ""){$from = 0;}
-			if ($inc == ""){$inc = 25000;}
+
 			if ($ord == ""){$ord = "ASC";}
 			if ($sort == ""){$sort = "ssid";}
 

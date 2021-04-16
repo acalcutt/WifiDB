@@ -39,9 +39,9 @@ You should have received a copy of the GNU General Public License along with thi
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user}" title="View User Details">{$new_import_user}</a>
 								{if $user_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$new_import_user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/geojson.php?json=1&labeled=1&func=user_all&user={$new_import_user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$new_import_user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&user={$new_import_user}&from=0&inc=50000" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?json=1&labeled=0&func=user_all&user={$new_import_user}&from=0&inc=50000" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&labeled=0&user={$new_import_user}&from=0&inc=25000" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
@@ -51,10 +51,10 @@ You should have received a copy of the GNU General Public License along with thi
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id}" title="View AP Details">{$new_ap_ssid}</a>
 								{if $ap_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$new_ap_id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$new_ap_id}&from=0&inc=50000" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$new_ap_id}&from=0&inc=50000" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$new_ap_id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&labeled=0&id={$new_ap_id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
@@ -65,9 +65,9 @@ You should have received a copy of the GNU General Public License along with thi
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id}"  title="View List Details">{$new_import_title}</a>
 								{if $list_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$new_import_id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$new_import_id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$new_import_id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$new_import_id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&labeled=0&func=exp_list&id={$new_import_id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&labeled=0&id={$new_import_id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">

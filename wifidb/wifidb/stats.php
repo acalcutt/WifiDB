@@ -55,9 +55,9 @@ $usercount = $result->fetch(2);
 
 #Get the latest import list
 if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT id, file_user, title, date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC LIMIT 1";}
+	{$sql = "SELECT id, file_user, title, file_date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT TOP 1 id, file_user, title, date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC";}
+	{$sql = "SELECT TOP 1 id, file_user, title, file_date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC";}
 $result = $dbcore->sql->conn->query($sql);
 $lastuser = $result->fetch(2);
 $lastid = $lastuser['id'];

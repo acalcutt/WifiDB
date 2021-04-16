@@ -37,6 +37,13 @@ $style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
 $styles = array("WDB_OSM","WDB_DARK_MATTER","WDB_BASIC","WDB_ELEV");
 if(!in_array($style, $styles)){$style = "WDB_OSM";}
 
+$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+if(!is_numeric($from)){$from = 0;}
+if(!is_numeric($inc)){$inc = 50000;}
+$dbcore->smarty->assign('from', $from);
+$dbcore->smarty->assign('inc', $inc);
+
 $func=$_REQUEST['func'];
 $dbcore->smarty->assign('func', $func);
 switch($func)
@@ -113,11 +120,6 @@ switch($func)
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
-		
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
 
 		#Get Point count and division count
 		$sql = "SELECT Count(AP_ID) As point_count\n"
@@ -132,7 +134,7 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get the first point in the results
-		if($latitude == "")
+		if($latitude == "" && $longitude== "")
 		{
 			$UserAllList = $dbcore->export->UserAllArray($user, $from, 1, 0);
 			$latlongarray = $UserAllList['latlongarray'];
@@ -206,8 +208,6 @@ switch($func)
 		$dbcore->smarty->assign('user', $user);
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
-		$dbcore->smarty->assign('from', $from);
-		$dbcore->smarty->assign('inc', $inc);
 		$dbcore->smarty->assign('title', $title);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
@@ -219,11 +219,6 @@ switch($func)
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
-
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
 
 		#Get Point count and division count
 		$sql = "SELECT Count(DISTINCT wifi_hist.AP_ID) AS point_count\n"
@@ -250,7 +245,7 @@ switch($func)
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 
 		#Get the first point in the results
-		if($latitude == "")
+		if($latitude == "" && $longitude== "")
 		{
 			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, 0, 0, 1);
 			$latlongarray = $UserListArray['latlongarray'];
@@ -322,8 +317,6 @@ switch($func)
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
-		$dbcore->smarty->assign('from', $from);
-		$dbcore->smarty->assign('inc', $inc);
 		$dbcore->smarty->assign('title', $title);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
@@ -428,24 +421,19 @@ switch($func)
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
-		
+		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 		#Get Point count and division count
 		$sql = "SELECT Count(wh.Hist_ID) As point_count\n"
 			. "FROM wifi_hist AS wh\n"
 			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
-		if($list_id)
+		if($file_id)
 			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
 		else
 			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
-		if($list_id){$result->bindParam(2, $list_id, PDO::PARAM_INT);}
+		if($file_id){$result->bindParam(2, $file_id, PDO::PARAM_INT);}
 		$result->execute();
 		$newArray = $result->fetch(2);
 		$point_count = $newArray['point_count'];
@@ -462,40 +450,22 @@ switch($func)
 		$dbcore->sql->checkError(__LINE__, __FILE__);
 		$ap_center_info = $prepc->fetch();
 		$default_marker =  "[".$dbcore->convert->dm2dd($ap_center_info['Lon']).",".$dbcore->convert->dm2dd($ap_center_info['Lat'])."]";
-		
-		#Get the last point in the results
-		$sql = "SELECT wGPS.Lat, wGPS.Lon\n"
-			. "FROM wifi_hist AS wh\n"
-			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
-		if($list_id)
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-		else
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-		$sql .= "ORDER BY wh.Hist_Date ASC\n";
-		if($dbcore->sql->service == "mysql"){$sql .= "LIMIT 1";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY";}
-		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $id, PDO::PARAM_INT);
-		if($list_id){$prep->bindParam(2, $list_id, PDO::PARAM_INT);}
-		$prep->execute();
-		$dbcore->sql->checkError(__LINE__, __FILE__);
-		$apinfo = $prep->fetch();
-		
-		#Set Default View
-		if($list_id){
-			if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($apinfo['Lat']);}
-			if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($apinfo['Lon']);}
-		}else{
-			if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($ap_center_info['Lat']);}
-			if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($ap_center_info['Lon']);}
+
+		#Get the first point in the results
+		if($latitude == "" && $longitude== "")
+		{
+			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, 1);
+			$latlongarray = $SigHistArray['latlongarray'];
+			$latitude = $latlongarray[0]['lat'];
+			$longitude = $latlongarray[0]['long'];
 		}
+
 		if (empty($zoom)){$zoom = 14;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
-		
 
-		$asgs = $dbcore->createGeoJSON->CreateApSignalGeoJsonSource($id, $list_id, $from, $inc);
+		$asgs = $dbcore->createGeoJSON->CreateApSignalGeoJsonSource($id, $file_id, $from, $inc);
 		$ml = $dbcore->createGeoJSON->CreateApSigLayer($asgs['layer_name']);
 		$layer_source_all .= $asgs['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
@@ -517,11 +487,9 @@ switch($func)
 		$dbcore->smarty->assign('ssid', dbcore::formatSSID($ap_center_info['SSID']));
 		$dbcore->smarty->assign('sectype', $ap_center_info['SECTYPE']);
 		$dbcore->smarty->assign('id', $id);
-		$dbcore->smarty->assign('list_id', $list_id);
+		$dbcore->smarty->assign('file_id', $file_id);
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
-		$dbcore->smarty->assign('from', $from);
-		$dbcore->smarty->assign('inc', $inc);
 		$dbcore->smarty->assign('signal_source_name', $asgs['layer_name']);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
@@ -533,24 +501,19 @@ switch($func)
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		if(!is_numeric($from)){$from = 0;}
-		if(!is_numeric($inc)){$inc = 50000;}
-		
+		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 		#Get Point count and division count
 		$sql = "SELECT Count(ch.cell_hist_id) As point_count\n"
 			. "FROM cell_hist AS ch\n"
 			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = ch.gps_id\n";
-		if($list_id)
+		if($file_id)
 			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ? And ch.file_id = ?\n";}
 		else
 			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ?\n";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
-		if($list_id){$result->bindParam(2, $list_id, PDO::PARAM_INT);}
+		if($file_id){$result->bindParam(2, $file_id, PDO::PARAM_INT);}
 		$result->execute();
 		$newArray = $result->fetch(2);
 		$point_count = $newArray['point_count'];
@@ -570,9 +533,9 @@ switch($func)
 		
 		#Get the last point in the results
 		#Get the first point in the results
-		if($latitude == "")
+		if($latitude == "" && $longitude== "")
 		{
-			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $list_id, $from, 1);
+			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, 1);
 			$latlongarray = $CellSigHistArray['latlongarray'];
 			$latitude = $latlongarray[0]['lat'];
 			$longitude = $latlongarray[0]['long'];
@@ -584,7 +547,7 @@ switch($func)
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 		
 
-		$asgs = $dbcore->createGeoJSON->CreateCellSignalGeoJsonSource($id, $list_id, $from, $inc);
+		$asgs = $dbcore->createGeoJSON->CreateCellSignalGeoJsonSource($id, $file_id, $from, $inc);
 		$ml = $dbcore->createGeoJSON->CreateCellSigLayer($asgs['layer_name']);
 		$layer_source_all .= $asgs['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
@@ -605,11 +568,9 @@ switch($func)
 		$dbcore->smarty->assign('ssid', dbcore::formatSSID($ap_center_info['ssid']));
 		$dbcore->smarty->assign('sectype', $ap_center_info['SECTYPE']);
 		$dbcore->smarty->assign('id', $id);
-		$dbcore->smarty->assign('list_id', $list_id);
+		$dbcore->smarty->assign('file_id', $file_id);
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
-		$dbcore->smarty->assign('from', $from);
-		$dbcore->smarty->assign('inc', $inc);
 		$dbcore->smarty->assign('signal_source_name', $asgs['layer_name']);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
@@ -702,17 +663,11 @@ switch($func)
 		define("SWITCH_EXTRAS", "export");
 		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
-		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+
 		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points");
 		if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 		$ords=array("ASC","DESC");
 		if(!in_array($ord, $ords)){$ord = "DESC";}
-
-		if ($from == ""){$from = 0;}
-		if ($inc == ""){$inc = 50000;}
-		if ($ord == ""){$ord = "ASC";}
-		if ($sort == ""){$sort = "ssid";}		
 
 		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}
@@ -724,16 +679,23 @@ switch($func)
 
 		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
 		$results_all = $SearchArray['data'];
-		$total_rows = $SearchArray['total_rows'];
+		$ap_count = $SearchArray['count'];
+		$point_count = $SearchArray['total_rows'];
+		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 		$export_url = "&ssid=$ssid&mac=$mac&radio=$radio&chan=$chan&auth=$auth&encry=$encry&sectype=$sectype";
-		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SearchArray['latlon_array']);
+		
 
-		if (empty($latitude)){$latitude = $dbcore->convert->dm2dd($Center_LatLon['lat']);}
-		if (empty($longitude)){$longitude = $dbcore->convert->dm2dd($Center_LatLon['long']);}
+		if($latitude == "" && $longitude== "")
+		{
+			$latlongarray = $SearchArray['latlongarray'];
+			$latitude = $latlongarray[0]['lat'];
+			$longitude = $latlongarray[0]['long'];
+		}
 		if (empty($zoom)){$zoom = 9;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";
+		
 		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
 		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
@@ -792,6 +754,8 @@ switch($func)
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('export_url', $export_url);
 		$dbcore->smarty->assign('id', $id);
+		$dbcore->smarty->assign('point_count', $point_count);
+		$dbcore->smarty->assign('ldivs', $ldivs);
 		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;

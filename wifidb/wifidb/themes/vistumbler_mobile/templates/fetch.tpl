@@ -121,8 +121,8 @@ if not, write to the
 								<td class="light">{$wifidb_assoc.nu}</td>
 								<td class="light">
 								{if $wifidb_assoc.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}&list_id={$wifidb_assoc.id}" title="Show AP Signals on Map (for this file)"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_ap.id}&amp;list_id={$wifidb_assoc.id}" title="Export AP Signals to JSON (for this file)"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}&file_id={$wifidb_assoc.id}" title="Show AP Signals on Map (for this file)"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_ap.id}&amp;file_id={$wifidb_assoc.id}" title="Export AP Signals to JSON (for this file)"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;id={$wifidb_ap.id}&amp;file_id={$wifidb_assoc.id}" title="Export AP Signals to KMZ (for this file)"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">

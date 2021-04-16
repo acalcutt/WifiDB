@@ -157,8 +157,8 @@ You should have received a copy of the GNU General Public License along with thi
 								<td class="{$wifidb_users_aps.class}">
 								{if $wifidb_users_aps.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_users_aps.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_users_aps.id}&list_id={$wifidb_all_user_aps.id}&from=0&inc=50000" title="Show AP Signals For This File on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_users_aps.id}&list_id={$wifidb_all_user_aps.id}&from=0&inc=50000" title="Export AP Signals For This File to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_users_aps.id}&file_id={$wifidb_all_user_aps.id}&from=0&inc=50000" title="Show AP Signals For This File on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_users_aps.id}&file_id={$wifidb_all_user_aps.id}&from=0&inc=50000" title="Export AP Signals For This File to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_users_aps.id}" title="Export AP to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
