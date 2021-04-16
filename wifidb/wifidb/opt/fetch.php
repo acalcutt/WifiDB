@@ -36,22 +36,26 @@ if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
 if(!is_numeric($inc)){$inc = 50;}
 
+switch($func)
+{
+	case "":
+		#Get count of files with this ap_id for pageation
 
-#Get count of files with this ap_id for pageation
+		$sql = "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
+		$sqlprep = $dbcore->sql->conn->prepare($sql);
+		$sqlprep->bindParam(1, $id, PDO::PARAM_INT);
+		$sqlprep->execute();
+		$total_rows = $sqlprep->fetchColumn();
 
-$sql = "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
-$sqlprep = $dbcore->sql->conn->prepare($sql);
-$sqlprep->bindParam(1, $id, PDO::PARAM_INT);
-$sqlprep->execute();
-$total_rows = $sqlprep->fetchColumn();
-
-$results = $dbcore->APFetch($id, $sort, $ord, $from, $inc);
-$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
-$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
-$dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
-$dbcore->smarty->assign('wifidb_assoc_lists', $results[1]);
-$dbcore->smarty->assign('wifidb_ap', $results[2]);
-$dbcore->smarty->assign('wifidb_geonames', $results[3]);
-$dbcore->smarty->display('fetch.tpl');
+		$results = $dbcore->APFetch($id, $sort, $ord, $from, $inc);
+		$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
+		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
+		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
+		$dbcore->smarty->assign('wifidb_assoc_lists', $results[1]);
+		$dbcore->smarty->assign('wifidb_ap', $results[2]);
+		$dbcore->smarty->assign('wifidb_geonames', $results[3]);
+		$dbcore->smarty->display('fetch.tpl');
+		break;
+}
 
 ?>
