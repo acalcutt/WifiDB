@@ -317,6 +317,24 @@ class createGeoJSON
 		return $ret_data;
 	}
 
+	public function CreateCellSignalGeoJsonSource($cell_id, $list_id=0, $from=0, $inc=50000)
+	{
+		$layer_name = "cs_".$cell_id."-".$list_id;
+		$layer_source = "\n
+		map.addSource('".$layer_name."', {
+			type: 'geojson',
+			data: '".$this->URL_BASE."api/geojson.php?func=exp_cell_sig&id=".$cell_id."&list_id=".$list_id."&from=".$from."&inc=".$inc."',
+			buffer: 0,
+		});";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_name,
+		);
+		
+		return $ret_data;
+	}
+
 	public function CreateApLayer($data_source, $data_source_layer = "", $open_color = "#1aff66", $wep_color = "#ffad33", $sec_color = "#ff1a1a",$base_radius = 2, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		if($data_source_layer){$layer_lname = $data_source_layer;}else{$layer_lname = $data_source;};
@@ -405,7 +423,52 @@ class createGeoJSON
 		
 		return $ret_data;
 	}
-	
+
+	public function CreateCellSigLayer($data_source, $opacity = 1, $blur = 0.5, $visibility = "visible")
+	{
+		$layer_lname = $data_source;
+		$layer_source = "\n
+		map.addLayer({
+			'id': '".$layer_lname."',
+			'type': 'circle',
+			'source': '".$data_source."',
+			'layout': {
+				'visibility': '".$visibility."'
+			},
+			'paint': {
+				'circle-radius': {
+					'base': 2,
+					'stops': [
+					[1, 1],
+					[5, 2],
+					[10, 3],
+					[20, 20]
+					]
+				},
+				'circle-color': {
+					'property': 'rssi',
+					'stops': [
+						[-140, '#E42F00'],
+						[-120, '#FF0000'],
+						[-100, '#FF9200'],
+						[-80, '#FFEC00'],
+						[-60, '#80FF00'],
+						[-44, '#0D7600']
+					]
+				},
+				'circle-opacity': ".$opacity.",
+				'circle-blur': ".$blur."
+			}
+		});";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
+	}
+
 	public function CreateCellLayer($data_source, $data_source_layer = "", $cell_color = "#885FCD", $radius = 3, $opacity = 1, $blur = 0.5, $visibility = "visible")
 	{
 		if($data_source_layer){$layer_lname = $data_source_layer;}else{$layer_lname = $data_source;};

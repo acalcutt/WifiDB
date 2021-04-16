@@ -107,6 +107,22 @@ switch($func)
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 		break;
 
+	case "exp_cell_sig":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$list_id = (int)($_REQUEST['list_id'] ? $_REQUEST['list_id']: 0);
+		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+		$title = $id."_SigHist";
+		if(is_numeric($list_id)){$title .= '_'.$list_id;}
+		if(is_numeric($from) && is_numeric($inc)){$title .= '-'.$from.'-'.$inc;}
+		if(!is_numeric($from)){$from = 0;}
+		if(!is_numeric($inc)){$inc = 50000;}
+		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $list_id, $from, $inc);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellSigHistArray['latlongarray']);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellSigHistArray['data']);
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
+		break;
+
 	case "exp_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);

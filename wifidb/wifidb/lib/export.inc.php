@@ -464,33 +464,18 @@ class export extends dbcore
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
-			
-			if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wGPS.Alt, wh.File_ID, wf.user\n"
-					. "FROM wifi_hist AS wh\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
-					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
-				if($file_id)
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-				else
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-				$sql .= "ORDER BY wh.Hist_Date DESC\n";
-				if($from !== NULL And $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
-			}
-			else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wGPS.Alt, wGPS.NumOfSats, wGPS.AccuracyMeters, wGPS.HorDilPitch, wh.File_ID, wf.file_user\n"
-					. "FROM wifi_hist AS wh\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
-					. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
-				if($file_id)
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
-				else
-					{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
-				$sql .= "ORDER BY wh.Hist_Date DESC";
-				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
-				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
+			$sql = "SELECT wh.Sig, wh.RSSI, wh.Hist_Date, wGPS.Lat, wGPS.Lon, wGPS.Alt, wGPS.NumOfSats, wGPS.AccuracyMeters, wGPS.HorDilPitch, wh.File_ID, wf.file_user\n"
+				. "FROM wifi_hist AS wh\n"
+				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n"
+				. "LEFT OUTER JOIN files AS wf ON wf.id = wh.File_ID\n";
+			if($file_id)
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+			else
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+			$sql .= "ORDER BY wh.Hist_Date DESC";
+			if($from !== NULL && $inc !== NULL){
+				if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
+				else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
 			}
 			$prep2 = $this->sql->conn->prepare($sql);
 			$prep2->bindParam(1, $ap['AP_ID'], PDO::PARAM_INT);
@@ -521,6 +506,85 @@ class export extends dbcore
 				"rssi" => $hist['RSSI'],
 				"hist_date" => $hist['Hist_Date'],
 				"hist_file_id" => $hist['File_ID']
+				);
+				
+				$ap_array[] = $ap_info;
+				
+				$latlon_info = array(
+				"lat" => $this->convert->dm2dd($hist['Lat']),
+				"long" => $this->convert->dm2dd($hist['Lon']),
+				);
+				$latlon_array[] = $latlon_info;
+			}
+		}
+		
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
+	public function CellSigHistArray($cell_id, $file_id, $from = NULL, $inc = NULL)
+	{
+
+		$sql = "SELECT cid.cell_id, cid.mac, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM cell_id AS cid\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
+			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
+			. "WHERE cid.highgps_id IS NOT NULL And wGPS.Lat != '0.0000' AND cid.cell_id = ?";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $cell_id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			$sql = "SELECT ch.rssi, ch.hist_date, wGPS.Lat, wGPS.Lon, wGPS.Alt, ch.file_id, wf.file_user\n"
+				. "FROM cell_hist AS ch\n"
+				. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = ch.gps_id\n"
+				. "LEFT OUTER JOIN files AS wf ON wf.id = ch.file_id\n";
+			if($file_id)
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ? And ch.file_id = ?\n";}
+			else
+				{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ?\n";}
+			$sql .= "ORDER BY ch.hist_date DESC";
+			if($from !== NULL && $inc !== NULL){
+				if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
+				else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+			}
+			$prep2 = $this->sql->conn->prepare($sql);
+			$prep2->bindParam(1, $ap['cell_id'], PDO::PARAM_INT);
+			if($file_id){$prep2->bindParam(2, $file_id, PDO::PARAM_INT);}
+			$prep2->execute();
+			$histpointer = $prep2->fetchAll();
+			$apcount = 0;
+			foreach($histpointer as $hist)
+			{
+				$apcount++;
+				#Get AP GeoJSON
+				$ap_info = array(
+				"id" => $ap['cell_id'],
+				"mac" => $ap['mac'],
+				"ssid" => $ap['ssid'],
+				"chan" => $ap['chan'],
+				"auth" => $ap['authmode'],
+				"type" => $ap['type'],
+				"lat" => $this->convert->dm2dd($hist['Lat']),
+				"lon" => $this->convert->dm2dd($hist['Lon']),
+				"alt" => $hist['Alt'],
+				"sats" => $hist['NumOfSats'],
+				"accuracy" => $hist['AccuracyMeters'],
+				"hdop" => $hist['HorDilPitch'],
+				"user" => $hist['file_user'],
+				"rssi" => $hist['rssi'],
+				"hist_date" => $hist['hist_date'],
+				"hist_file_id" => $hist['file_id']
 				);
 				
 				$ap_array[] = $ap_info;
