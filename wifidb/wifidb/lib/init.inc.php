@@ -140,7 +140,11 @@ function autoload_function($class) {
 	{
 		include_once $GLOBALS['config']['wifidb_install'].'lib/'.$class.'.php';
 		return 1;
-	}else
+	}elseif (strpos($class, 'Smarty_Internal_Compile_') !== false)
+	{
+		return 0;
+	}
+	else
 	{
 		throw new errorexception("Could not load class `{$class}`");
 	}
