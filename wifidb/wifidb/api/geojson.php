@@ -90,7 +90,7 @@ switch($func)
 		$ssid = $dbcore->formatSSID($ap_array['SSID']);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'AP_'.$id.'-'.$ssid);
 		#Create GeoJSON
-		$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
+		$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($ApArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($ApArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -109,7 +109,7 @@ switch($func)
 		$ssid = $dbcore->formatSSID($ap_array['ssid']);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'CID_'.$id.'-'.$ssid);
 		#Create GeoJSON
-		$CellArray = $dbcore->export->CellArray($id, $labeled, $new_icons);
+		$CellArray = $dbcore->export->CellArray($id, $labeled, $new_icons, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -121,7 +121,7 @@ switch($func)
 		$title = "SigHist_".$id;
 		if(is_numeric($file_id)){$title .= '_'.$file_id;}
 		if($range){$title .= "_".$range;}
-		$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
+		$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SigHistArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -133,7 +133,7 @@ switch($func)
 		$title = "CellSigHist_".$id;
 		if(is_numeric($file_id)){$title .= '_'.$file_id;}
 		if($range){$title .= "_".$range;}
-		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc);
+		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellSigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellSigHistArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -229,7 +229,7 @@ switch($func)
 		$ords=array("ASC","DESC");
 		if(!in_array($ord, $ords)){$ord = "DESC";}
 
-		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
+		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, $valid_gps);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SearchArray['data']);
 		if($labeled){$file_name = "Search_".uniqid()."_Labeled.geojson";}else{$file_name = "Search_".uniqid().".geojson";}
 		break;

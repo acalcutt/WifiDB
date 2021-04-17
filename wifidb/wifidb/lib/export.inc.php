@@ -63,14 +63,14 @@ class export extends dbcore
 		);
 	}
 
-	public function ApArray($id, $named=0, $new_ap=0)
+	public function ApArray($id, $named=0, $new_ap=0, $valid_gps=0)
 	{
 		$Import_Map_Data = "";
 		$latlon_array = array();
 		$ap_array = array();
 		$apcount = 0;
 		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_gps_sig, wap.high_gps_rssi, wap.high_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
 			. "wGPS.Alt As Alt,\n"
@@ -78,7 +78,8 @@ class export extends dbcore
 			. "FROM wifi_ap AS wap\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
+			. "WHERE wap.AP_ID = ?";
+		if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
 
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -86,7 +87,7 @@ class export extends dbcore
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
 		{
-			$apcount++;
+			if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
 			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $ap['AP_ID'],
@@ -102,18 +103,25 @@ class export extends dbcore
 			"encry" => $ap['ENCR'],
 			"BTx" => $ap['BTX'],
 			"OTx" => $ap['OTX'],
+			"flags" => $ap['FLAGS'],
 			"FA" => $ap['fa'],
 			"LA" => $ap['la'],
 			"points" => $ap['points'],
+			"high_sig" => $ap['high_gps_sig'],
+			"high_rssi" => $ap['high_gps_rssi'],
 			"high_gps_sig" => $ap['high_gps_sig'],
 			"high_gps_rssi" => $ap['high_gps_rssi'],
 			"lat" => $this->convert->dm2dd($ap['Lat']),
 			"lon" => $this->convert->dm2dd($ap['Lon']),
+			"lat_dm" => $ap['Lat'],
+			"lon_dm" => $ap['Lon'],
+			"validgps" => $validgps,
 			"alt" => $ap['Alt'],
 			"manuf"=>$this->findManuf($ap['BSSID']),
 			"user" => $ap['file_user']
 			);
 			$ap_array[] = $ap_info;
+			$apcount++;
 			
 			$latlon_info = array(
 			"lat" => $this->convert->dm2dd($apinfo['Lat']),
@@ -446,7 +454,7 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL)
+	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
@@ -456,7 +464,8 @@ class export extends dbcore
 			. "FROM wifi_ap AS wap\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.HighGps_ID IS NOT NULL And wGPS.Lat != '0.0000' AND wap.AP_ID = ?";
+			. "WHERE wap.AP_ID = ?";
+		if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
 
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $ap_id, PDO::PARAM_INT);
@@ -485,7 +494,7 @@ class export extends dbcore
 			$apcount = 0;
 			foreach($histpointer as $hist)
 			{
-				$apcount++;
+				if($hist['Lat'] == '' && $hist['Lon'] == ''){$validgps=0;}else{$validgps=1;}
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
@@ -497,6 +506,9 @@ class export extends dbcore
 				"encry" => $ap['ENCR'],
 				"lat" => $this->convert->dm2dd($hist['Lat']),
 				"lon" => $this->convert->dm2dd($hist['Lon']),
+				"lat_dm" => $hist['Lat'],
+				"lon_dm" => $hist['Lon'],
+				"validgps" => $validgps,
 				"alt" => $hist['Alt'],
 				"sats" => $hist['NumOfSats'],
 				"accuracy" => $hist['AccuracyMeters'],
@@ -509,6 +521,7 @@ class export extends dbcore
 				);
 				
 				$ap_array[] = $ap_info;
+				$apcount++;
 				
 				$latlon_info = array(
 				"lat" => $this->convert->dm2dd($hist['Lat']),
@@ -527,7 +540,72 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function CellSigHistArray($cell_id, $file_id, $from = NULL, $inc = NULL)
+	public function CellArray($id, $named=0, $new_ap=0, $valid_gps = 0)
+	{
+		$Import_Map_Data = "";
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+
+		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
+			. "wGPS.Lat As Lat,\n"
+			. "wGPS.Lon As Lon,\n"
+			. "wGPS.Alt As Alt,\n"
+			. "wf.file_user As file_user\n"
+			. "FROM cell_id AS cid\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
+			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
+			. "WHERE cid.cell_id = ?";
+		if($valid_gps){$sql .=" AND cid.highgps_id IS NOT NULL";}
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$appointer = $prep->fetchAll();
+		foreach($appointer as $ap)
+		{
+			if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $ap['cell_id'],
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $ap['mac'],
+			"ssid" => $ap['ssid'],
+			"chan" => $ap['chan'],
+			"auth" => $ap['authmode'],
+			"type" => $ap['type'],
+			"FA" => $ap['fa'],
+			"LA" => $ap['la'],
+			"points" => $ap['points'],
+			"high_rssi" => $ap['high_rssi'],
+			"high_gps_rssi" => $ap['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"lon" => $this->convert->dm2dd($ap['Lon']),
+			"lat_dm" => $ap['Lat'],
+			"lon_dm" => $ap['Lon'],
+			"validgps" => $validgps,
+			"alt" => $ap['Alt'],
+			"user" => $ap['file_user']
+			);
+			$ap_array[] = $ap_info;
+			$apcount++;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"long" => $this->convert->dm2dd($ap['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
+		}
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
+	public function CellSigHistArray($cell_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
 
 		$sql = "SELECT cid.cell_id, cid.mac, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
@@ -538,7 +616,8 @@ class export extends dbcore
 			. "FROM cell_id AS cid\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
-			. "WHERE cid.highgps_id IS NOT NULL And wGPS.Lat != '0.0000' AND cid.cell_id = ?";
+			. "WHERE cid.cell_id = ?";
+		if($valid_gps){$sql .=" AND cid.highgps_id IS NOT NULL";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $cell_id, PDO::PARAM_INT);
 		$prep->execute();
@@ -566,7 +645,7 @@ class export extends dbcore
 			$apcount = 0;
 			foreach($histpointer as $hist)
 			{
-				$apcount++;
+				if($hist['Lat'] == '' && $hist['Lon'] == ''){$validgps=0;}else{$validgps=1;}
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['cell_id'],
@@ -577,19 +656,22 @@ class export extends dbcore
 				"type" => $ap['type'],
 				"lat" => $this->convert->dm2dd($hist['Lat']),
 				"lon" => $this->convert->dm2dd($hist['Lon']),
+				"lat_dm" => $hist['Lat'],
+				"lon_dm" => $hist['Lon'],
+				"validgps" => $validgps,
 				"alt" => $hist['Alt'],
 				"sats" => $hist['NumOfSats'],
 				"accuracy" => $hist['AccuracyMeters'],
 				"hdop" => $hist['HorDilPitch'],
 				"user" => $hist['file_user'],
-				"signal" => $hist['rssi'],
 				"rssi" => $hist['rssi'],
 				"hist_date" => $hist['hist_date'],
 				"hist_file_id" => $hist['file_id']
 				);
 				
 				$ap_array[] = $ap_info;
-				
+				$apcount++;
+
 				$latlon_info = array(
 				"lat" => $this->convert->dm2dd($hist['Lat']),
 				"long" => $this->convert->dm2dd($hist['Lon']),
@@ -620,6 +702,7 @@ class export extends dbcore
 		$sql_count = "SELECT COUNT(AP_ID) As ApCount\n"
 			. "FROM wifi_ap\n"
 			. "WHERE\n"
+			. "BSSID <> '00:00:00:00:00:00' AND\n"
 			. "fa IS NOT NULL AND\n"
 			. "SSID LIKE ? AND\n"
 			. "BSSID LIKE ? AND\n"
@@ -627,8 +710,8 @@ class export extends dbcore
 			. "CHAN LIKE ? AND\n"
 			. "AUTH LIKE ? AND\n"
 			. "ENCR LIKE ? \n";
-		if($valid_gps){$sql_count .=" AND wap.HighGps_ID IS NOT NULL";}
-		if($sectype){$sql_count .=" AND wap.SECTYPE =  ?";}
+		if($valid_gps){$sql_count .=" AND HighGps_ID IS NOT NULL";}
+		if($sectype){$sql_count .=" AND SECTYPE =  ?";}
 		$prep1 = $this->sql->conn->prepare($sql_count);
 		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
 		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
@@ -650,6 +733,7 @@ class export extends dbcore
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 			. "WHERE\n"
+			. "BSSID <> '00:00:00:00:00:00' AND\n"
 			. "fa IS NOT NULL AND\n"
 			. "wap.SSID LIKE ? AND\n"
 			. "wap.BSSID LIKE ? AND\n"
@@ -732,6 +816,66 @@ class export extends dbcore
 		);
 		
 		return $ret_data;
+	}
+
+	function GeoNamesArray($Latdd, $Londd, $from = NULL, $inc = NULL)
+	{
+		$lat_search = bcdiv($Latdd, 1, 1);
+		$long_search = bcdiv($Londd, 1, 1);
+		$list_geonames = array();
+		
+		$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
+			. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS miles,\n"
+			. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS kilometers\n"
+			. "FROM geonames \n"
+			. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC";
+		if($from !== NULL && $inc !== NULL){
+			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
+			else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+		}
+		$geoname_res = $this->sql->conn->query($sql);
+		while ($GeonamesArray = $geoname_res->fetch(1))
+		{
+			if($GeonamesArray['id'] !== '')
+			{
+				$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
+				if($this->sql->service == "mysql")
+					{$sql = "SELECT `name` FROM `geonames_admin1` WHERE `admin1` = ?";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql = "SELECT [name] FROM [geonames_admin1] WHERE [admin1] = ?";}
+				$prep_geonames = $this->sql->conn->prepare($sql);
+				$prep_geonames->bindParam(1, $admin1);
+				$prep_geonames->execute();
+				$Admin1Array = $prep_geonames->fetch(2);
+
+				$admin2 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'].".".$GeonamesArray['admin2_code'];
+				if($this->sql->service == "mysql")
+					{$sql = "SELECT `name` FROM `geonames_admin2` WHERE `admin2` = ?";}
+				else if($this->sql->service == "sqlsrv")
+					{$sql = "SELECT [name] FROM [geonames_admin2] WHERE [admin2] = ?";}
+				$prep_geonames = $this->sql->conn->prepare($sql);
+				$prep_geonames->bindParam(1, $admin2);
+				$prep_geonames->execute();
+				$Admin2Array = $prep_geonames->fetch(2);
+				
+				$list_geonames[]= array(
+					'id'=>$GeonamesArray['id'],
+					'asciiname'=>htmlspecialchars($GeonamesArray['asciiname'], ENT_QUOTES, 'UTF-8'),
+					'country_code'=>htmlspecialchars($GeonamesArray['country_code'], ENT_QUOTES, 'UTF-8'),
+					'timezone'=>htmlspecialchars($GeonamesArray['timezone'], ENT_QUOTES, 'UTF-8'),
+					'miles'=>htmlspecialchars($GeonamesArray['miles'], ENT_QUOTES, 'UTF-8'),
+					'kilometers'=>htmlspecialchars($GeonamesArray['kilometers'], ENT_QUOTES, 'UTF-8'),
+					'lat'=>htmlspecialchars(number_format($GeonamesArray['latitude'],7), ENT_QUOTES, 'UTF-8'),
+					'lon'=>htmlspecialchars(number_format($GeonamesArray['longitude'],7), ENT_QUOTES, 'UTF-8'),
+					'lat_dm'=>htmlspecialchars($this->convert->all2dm(number_format($GeonamesArray['latitude'],7)), ENT_QUOTES, 'UTF-8'),
+					'lon_dm'=>htmlspecialchars($this->convert->all2dm(number_format($GeonamesArray['longitude'],7)), ENT_QUOTES, 'UTF-8'),
+					'admin1name'=>htmlspecialchars($Admin1Array['name'], ENT_QUOTES, 'UTF-8'),
+					'admin2name'=>htmlspecialchars($Admin2Array['name'], ENT_QUOTES, 'UTF-8')
+				);
+			}
+		}
+		
+		Return $list_geonames;
 	}
 
 	public function ExportDaemonKMZ($kmz_filepath, $type = "full", $only_new = 0, $new_icons = 0, $symlink_name = "")

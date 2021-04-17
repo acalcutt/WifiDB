@@ -38,10 +38,10 @@ if not, write to the
 					</script>
 					<h1>{$wifidb_cid.ssid}
 						{if $wifidb_cid.validgps eq 1}
-							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$wifidb_cid.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-							<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-							<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$wifidb_cid.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&id={$wifidb_cid.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+							<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+							<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 						{else}
 							<img width="20px" src="{$themeurl}img/globe_off.png">
 							<img width="20px" src="{$themeurl}img/sigmap_off.png">
@@ -55,8 +55,8 @@ if not, write to the
 							<tr><td class="header" width="112" height="26">Authmode</td><td class="light" width="439">{$wifidb_cid.auth}</td></tr>
 							<tr><td class="header" width="112">Type</td><td class="light" width="439">{$wifidb_cid.type}</td></tr>
 							<tr><td class="header" width="112">Channel #</td><td class="light" width="439">{$wifidb_cid.chan}</td></tr>
-							<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_cid.lat}</td></tr>
-							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_cid.lon}</td></tr>
+							<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_cid.lat_dm}</td></tr>
+							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_cid.lon_dm}</td></tr>
 							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_cid.FA}</td></tr>
 							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_cid.LA}</td></tr>
 							<tr><td class="header" width="112">High RSSI</td><td class="light" width="439">{$wifidb_cid.high_rssi}</td></tr>
@@ -66,10 +66,10 @@ if not, write to the
 							<tr>
 								<td class="header" width="112">Export:</td><td class="light" width="439">
 									{if $wifidb_cid.validgps eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$wifidb_cid.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-										<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-										<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$wifidb_cid.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+										<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&id={$wifidb_cid.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+										<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+										<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+										<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 									{else}
 										<img width="20px" src="{$themeurl}img/globe_off.png">
 										<img width="20px" src="{$themeurl}img/sigmap_off.png">
@@ -130,9 +130,9 @@ if not, write to the
 								<td class="light">{$wifidb_assoc.nu}</td>
 								<td class="light">
 								{if $wifidb_assoc.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_cid.id}&file_id={$wifidb_assoc.id}" title="Show AP Signals on Map (for this file)"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_cid.id}&amp;file_id={$wifidb_assoc.id}" title="Export AP Signals to JSON (for this file)"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$wifidb_cid.id}&file_id={$wifidb_assoc.id}" title="Export AP Signals to KMZ (for this file)"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id}&file_id={$wifidb_assoc.id}" title="Show AP Signals on Map (for this file)"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id}&amp;file_id={$wifidb_assoc.id}" title="Export AP Signals to JSON (for this file)"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id}&file_id={$wifidb_assoc.id}" title="Export AP Signals to KMZ (for this file)"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
@@ -155,14 +155,14 @@ if not, write to the
 							</tr>
 							{foreach item=wifidb_cid_gps from=$wifidb_assoc.signals}
 							<tr class="{cycle values="light,dark"}">
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.Sig}</td>
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.rssi}</td>
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.Lat}</td>
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.Lon}</td>
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.Alt}</td>
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.NumOfSats}</td>
-								<td class="{$wifidb_cid_gps.class}">{$wifidb_cid_gps.AccuracyMeters}</td>
-								<td class="{$wifidb_cid_gps.class}" colspan="2">{$wifidb_cid_gps.hist_date}</td>
+								<td>{$wifidb_cid_gps.Sig}</td>
+								<td>{$wifidb_cid_gps.rssi}</td>
+								<td>{$wifidb_cid_gps.Lat}</td>
+								<td>{$wifidb_cid_gps.Lon}</td>
+								<td>{$wifidb_cid_gps.Alt}</td>
+								<td>{$wifidb_cid_gps.NumOfSats}</td>
+								<td>{$wifidb_cid_gps.AccuracyMeters}</td>
+								<td colspan="2">{$wifidb_cid_gps.hist_date}</td>
 							</tr>
 							{/foreach}
 						</tbody>
@@ -208,17 +208,17 @@ if not, write to the
 									</tbody>
 									<tbody>
 										{foreach name=outer item=wifidb_gi from=$wifidb_geonames}
-										<tr class="{$wifidb_gi.class}">
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.id}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.asciiname}</td>	
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.admin1name}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.admin2name}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.country_code}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.timezone}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.latitude}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.longitude}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
+										<tr class="{cycle values="light,dark"}">
+											<td>{$wifidb_gi.id}</td>
+											<td>{$wifidb_gi.asciiname}</td>	
+											<td>{$wifidb_gi.admin1name}</td>
+											<td>{$wifidb_gi.admin2name}</td>
+											<td>{$wifidb_gi.country_code}</td>
+											<td>{$wifidb_gi.timezone}</td>
+											<td>{$wifidb_gi.lat_dm}</td>
+											<td>{$wifidb_gi.lon_dm}</td>
+											<td>{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
+											<td>{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
 										</tr>
 										{/foreach}
 									</tbody>

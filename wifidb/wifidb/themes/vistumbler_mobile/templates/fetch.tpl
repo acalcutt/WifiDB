@@ -51,22 +51,24 @@ if not, write to the
 					</h1>
 					<table align="center" width="50%" border="1" cellpadding="4" cellspacing="0">
 						<tbody>
-							<tr><td class="header" width="112">MAC Address</td><td class="light" width="439">{$wifidb_ap.mac}</td></tr>
-							<tr><td class="header" width="112">Manufacture</td><td class="light" width="439">{$wifidb_ap.manuf}</td></tr>
-							<tr><td class="header" width="112" height="26">Authentication</td><td class="light" width="439">{$wifidb_ap.auth}</td></tr>
-							<tr><td class="header" width="112">Encryption Type</td><td class="light" width="439">{$wifidb_ap.encry}</td></tr>
-							<tr><td class="header" width="112">Radio Type</td><td class="light" width="439">{$wifidb_ap.radio}</td></tr>
-							<tr><td class="header" width="112">Channel #</td><td class="light" width="439">{$wifidb_ap.chan}</td></tr>
-							<tr><td class="header" width="112">BTx</td><td class="light" width="439">{$wifidb_ap.btx}</td></tr>
-							<tr><td class="header" width="112">OTx</td><td class="light" width="439">{$wifidb_ap.otx}</td></tr>
-							<tr><td class="header" width="112">Flags</td><td class="light" width="439">{$wifidb_ap.flags}</td></tr>
-							<tr><td class="header" width="112">Network Type</td><td class="light" width="439">{$wifidb_ap.nt}</td></tr>
-							<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_ap.lat}</td></tr>
-							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_ap.lon}</td></tr>
-							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.fa}</td></tr>
-							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.la}</td></tr>
-							<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_ap.points|number_format:0}</td></tr>
-							<tr><td class="header" width="112">User</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></td></tr>
+							{if $wifidb_ap.mac}<tr><td class="header" width="112">MAC Address</td><td class="light" width="439">{$wifidb_ap.mac}</td></tr>{/if}
+							{if $wifidb_ap.manuf}<tr><td class="header" width="112">Manufacture</td><td class="light" width="439">{$wifidb_ap.manuf}</td></tr>{/if}
+							{if $wifidb_ap.auth}<tr><td class="header" width="112" height="26">Authentication</td><td class="light" width="439">{$wifidb_ap.auth}</td></tr>{/if}
+							{if $wifidb_ap.encry}<tr><td class="header" width="112">Encryption Type</td><td class="light" width="439">{$wifidb_ap.encry}</td></tr>{/if}
+							{if $wifidb_ap.radio}<tr><td class="header" width="112">Radio Type</td><td class="light" width="439">{$wifidb_ap.radio}</td></tr>{/if}
+							{if $wifidb_ap.chan}<tr><td class="header" width="112">Channel #</td><td class="light" width="439">{$wifidb_ap.chan}</td></tr>{/if}
+							{if $wifidb_ap.BTx}<tr><td class="header" width="112">BTx</td><td class="light" width="439">{$wifidb_ap.BTx}</td></tr>{/if}
+							{if $wifidb_ap.OTx}<tr><td class="header" width="112">OTx</td><td class="light" width="439">{$wifidb_ap.OTx}</td></tr>{/if}
+							{if $wifidb_ap.flags}<tr><td class="header" width="112">Flags</td><td class="light" width="439">{$wifidb_ap.flags}</td></tr>{/if}
+							{if $wifidb_ap.NT}<tr><td class="header" width="112">Network Type</td><td class="light" width="439">{$wifidb_ap.NT}</td></tr>{/if}
+							{if $wifidb_ap.lat_dm}<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_ap.lat_dm}</td></tr>{/if}
+							{if $wifidb_ap.lon_dm}<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_ap.lon_dm}</td></tr>{/if}
+							{if $wifidb_ap.FA}<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.FA}</td></tr>{/if}
+							{if $wifidb_ap.LA}<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.LA}</td></tr>{/if}
+							{if $wifidb_ap.high_rssi}<tr><td class="header" width="112">High RSSI</td><td class="light" width="439">{$wifidb_ap.high_rssi}</td></tr>{/if}
+							{if $wifidb_ap.high_gps_rssi}<tr><td class="header" width="112">High RSSI w/GPS</td><td class="light" width="439">{$wifidb_ap.high_gps_rssi}</td></tr>{/if}
+							{if $wifidb_ap.points}<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_ap.points|number_format:0}</td></tr>{/if}
+							{if $wifidb_ap.user}<tr><td class="header" width="112">User</td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></td></tr>{/if}
 							<tr>
 								<td class="header" width="112">Export:</td><td class="light" width="439">
 									{if $wifidb_ap.validgps eq 1}
@@ -158,15 +160,15 @@ if not, write to the
 								<th class="header" colspan="2">Date</th>
 							</tr>
 							{foreach item=wifidb_ap_gps from=$wifidb_assoc.signals}
-							<tr class="{$wifidb_ap_gps.class}">
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Sig}</td>
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.RSSI}</td>
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Lat}</td>
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Lon}</td>
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.Alt}</td>
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.NumOfSats}</td>
-								<td class="{$wifidb_ap_gps.class}">{$wifidb_ap_gps.AccuracyMeters}</td>
-								<td class="{$wifidb_ap_gps.class}" colspan="2">{$wifidb_ap_gps.GPS_Date}</td>
+							<tr class="{cycle values="light,dark"}">
+								<td>{$wifidb_ap_gps.Sig}</td>
+								<td>{$wifidb_ap_gps.RSSI}</td>
+								<td>{$wifidb_ap_gps.Lat}</td>
+								<td>{$wifidb_ap_gps.Lon}</td>
+								<td>{$wifidb_ap_gps.Alt}</td>
+								<td>{$wifidb_ap_gps.NumOfSats}</td>
+								<td>{$wifidb_ap_gps.AccuracyMeters}</td>
+								<td colspan="2">{$wifidb_ap_gps.GPS_Date}</td>
 							</tr>
 							{/foreach}
 						</tbody>
@@ -212,17 +214,17 @@ if not, write to the
 									</tbody>
 									<tbody>
 										{foreach name=outer item=wifidb_gi from=$wifidb_geonames}
-										<tr class="{$wifidb_gi.class}">
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.id}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.asciiname}</td>	
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.admin1name}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.admin2name}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.country_code}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.timezone}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.latitude}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.longitude}</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
-											<td class="{$wifidb_gi.class}">{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
+										<tr class="{cycle values="light,dark"}">
+											<td>{$wifidb_gi.id}</td>
+											<td>{$wifidb_gi.asciiname}</td>	
+											<td>{$wifidb_gi.admin1name}</td>
+											<td>{$wifidb_gi.admin2name}</td>
+											<td>{$wifidb_gi.country_code}</td>
+											<td>{$wifidb_gi.timezone}</td>
+											<td>{$wifidb_gi.latitude}</td>
+											<td>{$wifidb_gi.longitude}</td>
+											<td>{$wifidb_gi.miles|string_format:"%.2f"}mi</td>
+											<td>{$wifidb_gi.kilometers|string_format:"%.2f"}km</td>
 										</tr>
 										{/foreach}
 									</tbody>

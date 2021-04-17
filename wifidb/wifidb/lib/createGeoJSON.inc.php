@@ -225,6 +225,24 @@ class createGeoJSON
 		return $ret_data;
 	}
 
+	public function CreateCellGeoJsonSource($cell_id)
+	{
+		$layer_name = "cidp_".$cell_id;
+		$layer_source = "\n
+		map.addSource('".$layer_name."', {
+			type: 'geojson',
+			data: '".$this->URL_BASE."api/geojson.php?func=exp_cid&id=".$cell_id."',
+			buffer: 0,
+		});";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_name,
+		);
+		
+		return $ret_data;
+	}
+
 	public function CreateUserAllGeoJsonSource($user, $from = NULL, $inc = NULL)
 	{
 		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_user_all&user=".$user;

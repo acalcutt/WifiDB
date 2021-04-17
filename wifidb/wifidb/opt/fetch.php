@@ -40,65 +40,70 @@ $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
 switch($func)
 {
 	case "cid":
-		#Get count of files with this ap_id for pageation
-
 		$CellArray = $dbcore->export->CellArray($id);
-		$cell_info = $CellArray['data'];
-		
-		$sql = "SELECT file_id, Max(new) AS new FROM cell_hist WHERE cell_id = 80 GROUP BY file_id, new ORDER BY file_id DESC";
+		$cell_info = $CellArray['data'][0];
+		if($cell_info['validgps'] == 1){$geonames = $dbcore->export->GeoNamesArray($cell_info['lat'], $cell_info['lon'], 0, 10);}else{$geonames = array();}
+
+		$sql = "Select Count(distinct file_id) FROM cell_hist WHERE cell_id = ?";
+		$sqlprep = $dbcore->sql->conn->prepare($sql);
+		$sqlprep->bindParam(1, $id, PDO::PARAM_INT);
+		$sqlprep->execute();
+		$total_rows = $sqlprep->fetchColumn();
+
+		$sql = "SELECT cell_hist.file_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, cell_hist.new, COUNT(cell_hist.hist_date) As points\n"
+			. "FROM cell_hist\n"
+			. "INNER JOIN files ON cell_hist.file_id = files.id\n"
+			. "WHERE cell_hist.cell_id = ?\n"
+			. "GROUP BY cell_hist.file_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, cell_hist.new\n"
+			. "ORDER BY {$sort} {$ord}";
+		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
 		$fpointer = $prep->fetchAll();
-		$ap_array = array();
+		$file_array = array();
 		foreach($fpointer as $file)
 		{
-			$file_id = $file['file_id'];
-			$new = $file['new'];
-			
-			$sql = "SELECT cell_hist.rssi, cell_hist.hist_date, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch\n"
+			$sql1 = "SELECT cell_hist.rssi, cell_hist.hist_date, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch\n"
 				. "FROM cell_hist\n"
 				. "LEFT JOIN wifi_gps ON wifi_gps.GPS_ID = cell_hist.gps_id\n"
-				. "WHERE cell_hist.file_id = ?\n"
+				. "WHERE cell_hist.file_id = ? AND cell_hist.cell_id = ?\n"
 				. "ORDER BY hist_date DESC";
-			$prep1 = $dbcore->sql->conn->prepare($sql);
-			$prep1->bindParam(1, $file_id, PDO::PARAM_INT);
+			$prep1 = $dbcore->sql->conn->prepare($sql1);
+			$prep1->bindParam(1, $file['file_id'], PDO::PARAM_INT);
+			$prep1->bindParam(2, $id, PDO::PARAM_INT);
 			$prep1->execute();
 			$signals = $prep1->fetchAll();
-			
-			$sql = "SELECT * FROM files WHERE id = ?";
-			$prep2 = $dbcore->sql->conn->prepare($sql);
-			$prep2->bindParam(1, $id, PDO::PARAM_INT);
-			$prep2->execute();
-			$flpointer = $prep2->fetchAll();
-			foreach($flpointer as $fl)
-			{
-				$apcount++;
-				#Get AP GeoJSON
-				$ap_info = array(
-				"id" => $file_id,
-				"nu" => $new,
+
+			#Get AP GeoJSON
+			$ap_info = array(
+				"id" => $file['file_id'],
+				"validgps" => $file['ValidGPS'],
+				"nu" => $file['new'],
 				"signals" => $signals,
-				"file_user" => $fl['file_user'],
-				"file" => $fl['file_orig'],
-				"title" => $fl['title'],
-				"notes" => $fl['notes'],
-				"date" => $fl['file_date'],
-				"validgps" => $fl['ValidGPS']
-				);
-				$ap_array[] = $ap_info;
-			}
+				"points" => Count($signals),
+				"file_user" => $file['file_user'],
+				"file" => $file['file_orig'],
+				"title" => $file['title'],
+				"notes" => $file['notes'],
+				"date" => $file['file_date']
+			);
+			$ap_array[] = $ap_info;
+			$apcount++;
 		}
 		$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
 		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
-		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
+		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$cell_info['ssid']})");
 		$dbcore->smarty->assign('wifidb_assoc_lists', $ap_array);
-		$dbcore->smarty->assign('wifidb_cid', $cell_info[0]);
-		$dbcore->smarty->assign('wifidb_geonames', $results[3]);
+		$dbcore->smarty->assign('wifidb_cid', $cell_info);
+		$dbcore->smarty->assign('wifidb_geonames', $geonames);
 		$dbcore->smarty->display('fetch_cell.tpl');
 		break;
 	case "":
-		#Get count of files with this ap_id for pageation
+		$ApArray = $dbcore->export->ApArray($id);
+		$ap_info = $ApArray['data'][0];
+		if($ap_info['validgps'] == 1){$geonames = $dbcore->export->GeoNamesArray($ap_info['lat'], $ap_info['lon'], 0, 10);}else{$geonames = array();}
 
 		$sql = "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
 		$sqlprep = $dbcore->sql->conn->prepare($sql);
@@ -106,13 +111,53 @@ switch($func)
 		$sqlprep->execute();
 		$total_rows = $sqlprep->fetchColumn();
 
-		$results = $dbcore->APFetch($id, $sort, $ord, $from, $inc);
+		$sql = "SELECT wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New, COUNT(wifi_hist.Hist_Date) As points\n"
+			. "FROM wifi_hist\n"
+			. "INNER JOIN files ON wifi_hist.File_ID = files.id\n"
+			. "WHERE wifi_hist.AP_ID = ?\n"
+			. "GROUP BY wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New\n"
+			. "ORDER BY {$sort} {$ord}";
+		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$fpointer = $prep->fetchAll();
+		$file_array = array();
+		foreach($fpointer as $file)
+		{
+			$sql1 = "SELECT wifi_hist.AP_ID, wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.GPS_ID, wifi_hist.New, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch, wifi_gps.TrackAngle, wifi_gps.GPS_Date, wifi_gps.MPH, wifi_gps.KPH\n"
+				. "FROM wifi_hist\n"
+				. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID=wifi_gps.GPS_ID\n"
+				. "WHERE wifi_hist.File_ID = ? AND wifi_hist.AP_ID = ?\n"
+				. "ORDER BY wifi_hist.Hist_Date ASC";
+			$prep1 = $dbcore->sql->conn->prepare($sql1);
+			$prep1->bindParam(1, $file['File_ID'], PDO::PARAM_INT);
+			$prep1->bindParam(2, $id, PDO::PARAM_INT);
+			$prep1->execute();
+			$signals = $prep1->fetchAll();
+
+			#Get AP GeoJSON
+			$file_info = array(
+			"id" => $file['File_ID'],
+			"validgps" => $file['ValidGPS'],
+			"nu" => $file['New'],
+			"signals" => $signals,
+			"points" => Count($signals),
+			"file_user" => $file['file_user'],
+			"file" => $file['file_orig'],
+			"title" => $file['title'],
+			"notes" => $file['notes'],
+			"date" => $file['file_date']
+			);
+			$file_array[] = $file_info;
+		}
 		$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
 		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
-		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page ({$results[0]})");
-		$dbcore->smarty->assign('wifidb_assoc_lists', $results[1]);
-		$dbcore->smarty->assign('wifidb_ap', $results[2]);
-		$dbcore->smarty->assign('wifidb_geonames', $results[3]);
+		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page (".$ap_info[0]['ssid'].")");
+		$dbcore->smarty->assign('wifidb_assoc_lists', $file_array);
+		$dbcore->smarty->assign('wifidb_ap', $ap_info);
+		$dbcore->smarty->assign('wifidb_geonames', $geonames);
 		$dbcore->smarty->display('fetch.tpl');
 		break;
 }

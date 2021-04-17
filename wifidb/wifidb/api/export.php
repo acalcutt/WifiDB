@@ -314,10 +314,7 @@ switch($func)
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 			#Get SSID
-			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+			$sql = "SELECT SSID FROM wifi_ap WHERE AP_ID = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -328,10 +325,35 @@ switch($func)
 			if($range){$title .= "_".$range;}
 			#Create KMZ
 
-			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons);
+			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons, $valid_gps);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
 			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
 			$ap_signal = $dbcore->createKML->CreateApSignal3D($SigHistArray['data']);
+			if($ap_signal){$KML_Signal_data = $dbcore->createKML->createFolder("Signal History", $ap_signal, 1);}else{$KML_Signal_data = "";}
+			$results = $dbcore->createKML->createKMLstructure($title, $AP_PlaceMarks.$KML_Signal_data);
+			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
+			break;
+
+		case "exp_cid":
+			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
+
+			#Get SSID
+			$sql = "SELECT ssid FROM cell_id WHERE cell_id = ?";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $id, PDO::PARAM_INT);
+			$prep->execute();
+			$dbcore->sql->checkError(__LINE__, __FILE__);
+			$ap_array = $prep->fetch();
+			$ssid = $dbcore->formatSSID($ap_array['ssid']);
+			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'CID_'.$id.'-'.$ssid);
+			if($range){$title .= "_".$range;}
+			#Create KMZ
+
+			$CellArray = $dbcore->export->CellArray($id, $labeled, $new_icons, $valid_gps);
+			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($CellArray['data']);
+			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc, $valid_gps);
+			$ap_signal = $dbcore->createKML->CreateApSignal3D($CellSigHistArray['data'], 1, -140, -44);
 			if($ap_signal){$KML_Signal_data = $dbcore->createKML->createFolder("Signal History", $ap_signal, 1);}else{$KML_Signal_data = "";}
 			$results = $dbcore->createKML->createKMLstructure($title, $AP_PlaceMarks.$KML_Signal_data);
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
