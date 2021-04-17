@@ -20,10 +20,10 @@ You should have received a copy of the GNU General Public License along with thi
 						</tr>
 						<tr class="dark">
 							<td class="dark">{$wifidb_all_user_aps.id}</td>
-							<td class="dark">{$wifidb_all_user_aps.title}</td>
-							<td class="dark">{$wifidb_all_user_aps.file}</td>
-							<td class="dark">{$wifidb_all_user_aps.notes}</td>
-							<td class="dark">{$wifidb_all_user_aps.hash}</td>
+							<td class="dark">{$wifidb_all_user_aps.title|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.file|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.notes|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.hash|escape:'htmlall'}</td>
 						</tr>
 					</table>
 					<table class="content_table">
@@ -36,13 +36,13 @@ You should have received a copy of the GNU General Public License along with thi
 
 						</tr>
 						<tr class="dark">
-							<td class="dark">{$wifidb_all_user_aps.date}</td>	
-							<td class="dark">{$wifidb_all_user_aps.size}</td>
-							<td class="dark">{$wifidb_all_user_aps.aps} - {$wifidb_all_user_aps.gps}</td>
-							<td class="dark">{$wifidb_all_user_aps.NewAPPercent}%</td>
+							<td class="dark">{$wifidb_all_user_aps.date|escape:'htmlall'}</td>	
+							<td class="dark">{$wifidb_all_user_aps.size|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.aps|escape:'htmlall'} - {$wifidb_all_user_aps.gps|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.NewAPPercent|escape:'htmlall'}%</td>
 							<td class="dark">
 								{foreach name=users_all item=user from=$wifidb_all_user_aps.user}
-								<a href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a><br>
+								<a href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$wifidb_all_user_aps.user|escape:'htmlall'}">{$wifidb_all_user_aps.user|escape:'htmlall'}</a><br>
 								{/foreach}
 							</td>
 						</tr>
@@ -53,9 +53,9 @@ You should have received a copy of the GNU General Public License along with thi
 								<td width="40px"><b>GPS:</b></td>
 								<td>
 								{if $wifidb_all_user_aps.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_all_user_aps.id}" title="Show List on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_all_user_aps.id}" title="Export List to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_all_user_aps.id}" title="Export List to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$wifidb_all_user_aps.id}" title="Show List on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$wifidb_all_user_aps.id}" title="Export List to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=50000&id={$wifidb_all_user_aps.id}" title="Export List to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
@@ -156,10 +156,10 @@ You should have received a copy of the GNU General Public License along with thi
 							<tr class="{$wifidb_users_aps.class}">
 								<td class="{$wifidb_users_aps.class}">
 								{if $wifidb_users_aps.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_users_aps.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_users_aps.id}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_users_aps.id}" title="Export AP to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_users_aps.id}" title="Export AP to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$wifidb_users_aps.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_users_aps.id}&file_id={$wifidb_all_user_aps.id}&from=0&inc=50000" title="Show AP Signals For This File on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_users_aps.id}&file_id={$wifidb_all_user_aps.id}&from=0&inc=50000" title="Export AP Signals For This File to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=50000&id={$wifidb_users_aps.id}" title="Export AP to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
@@ -167,16 +167,16 @@ You should have received a copy of the GNU General Public License along with thi
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
 								{/if}
 								</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un}</td>
-								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.id}</a></td>
-								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid}</a></td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid|escape:'htmlall'}</a></td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la|escape:'htmlall'}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.list_points|number_format:0} / {$wifidb_users_aps.points|number_format:0}</td>
 							</tr>
 							{/foreach}

@@ -39,11 +39,11 @@ if not, write to the
 						</tr>
 						<tr class="{$wifidb_imp.color}">
 							<td class="{$wifidb_imp.color}"></td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.id}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.title}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.file}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.notes}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.date}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.id|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.title|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.file|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.notes|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.date|escape:'htmlall'}</td>
 							
 						</tr>
 						<tr class="header-centered">
@@ -56,11 +56,11 @@ if not, write to the
 						</tr>
 						<tr class="green">
 							<td class="{$wifidb_imp.color}"></td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.size}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.user}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.hash}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.ap}</td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.status}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.size|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.user|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.hash|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.ap|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.status|escape:'htmlall'}</td>
 						</tr>
 						{if not $smarty.foreach.importing.last}
 						<tr class="content-centered">

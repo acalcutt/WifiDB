@@ -71,13 +71,13 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_schedule from=$wifidb_schedules}
 						<tr class="{$wifidb_schedule.color}">
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id}</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename}</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon}</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval} minutes</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.status}</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.schedpid}</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nextrun_local}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval|escape:'htmlall'} minutes</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.status|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.schedpid|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nextrun_local|escape:'htmlall'}</td>
 						</tr>
 						{foreachelse}
 						<tr class="light-centered">
@@ -103,13 +103,13 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_daemon from=$wifidb_daemons}
 						<tr class="{$wifidb_daemon.color}">
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.nodename}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidfile}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pid}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcpu}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidmem}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcmd}</td>
-							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.lastupdatetime_local}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.nodename|escape:'htmlall'}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidfile|escape:'htmlall'}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pid|escape:'htmlall'}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcpu|escape:'htmlall'}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidmem|escape:'htmlall'}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcmd|escape:'htmlall'}</td>
+							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.lastupdatetime_local|escape:'htmlall'}</td>
 						</tr>
 						{foreachelse}
 						<tr align="center">

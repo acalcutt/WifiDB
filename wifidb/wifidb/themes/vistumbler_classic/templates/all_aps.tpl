@@ -101,8 +101,8 @@ You should have received a copy of the GNU General Public License along with thi
 							<td class="{$wifidb_ap.class}" width="75px">
 							{if $wifidb_ap.ValidGPS eq 1}
 								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_ap.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_ap.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}&from=0&inc=50000" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_ap.id}&from=0&inc=50000" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_ap.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 							{else}
 								<img width="20px" src="{$themeurl}img/globe_off.png">

@@ -21,7 +21,7 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-				{$user} has {$count} APs, which is greater than the {$inc} AP map limit. Please pick a smaller segment bellow.<br/><br/>
+				{$user} has {$count} APs, which is greater than the {$inc} AP map limit. Please pick a smaller segment below.<br/><br/>
 				The segments are ordered by ModDate, with the last modified APs first.<br/><br/>
 				{for $multiplier=1 to $ldivs}
 					<a class="links" href="{$wifidb_host_url}opt/map.php?func=user_all&labeled={$labeled}&user={$user}&from={($multiplier-1)*$inc}&inc={$inc}&clat={$clat}&clon={$clon}" title="View {$user} Map {$multiplier}">{$user} Map {$multiplier}</a><br/>

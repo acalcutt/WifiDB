@@ -23,12 +23,39 @@ if not, write to the
 				<table style="width: 100%" cellpadding="0" cellspacing="0">
 					<tr>
 						<td align="left">
-{if $func eq "exp_ap_sig"}
+{if $func eq "exp_cell_sig"}
 							<div style='text-align: center;'>
-								Signal History for <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $list_id ne 0} - File ID:{$list_id}{/if})
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$id}{if $list_id ne 0}&list_id={$list_id}{/if}" title="Export AP Signals to JSON{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $list_id ne 0}&file_id={$list_id}{/if}" title="Export AP Signals to KMZ{if $list_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$id}"><b>{$ssid}</b></a> (Cell ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
+							</div>
+{elseif $func eq "exp_ap_sig"}
+							<div style='text-align: center;'>
+								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
+								<br>
+							</div>
+{elseif $func eq "user_all"}
+							<div style='text-align: center;'>
+								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}"><b>{$user}</b></a> ({if $ldivs lte 1}Points:{$point_count}{else}Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+									<a href="{$wifidb_host_url}opt/geojson.php?labeled=1&func=user_all&user={$user}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$user}" title="Export User APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<br>
+							</div>
+{elseif $func eq "user_list"}
+							<div style='text-align: center;'>
+								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$id}"><b>{$title}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&id={$id}" title="Export List APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$id}" title="Export List APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<br>
+							</div>
+{elseif $func eq "exp_search"}
+							<div style='text-align: center;'>
+								Search Map<br>
 							</div>
 {/if}
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
@@ -44,7 +71,17 @@ if not, write to the
 									<input id='WDB_ELEV' type='radio' name='rtoggle' value='WDB_ELEV'{if $style eq "WDB_ELEV"} checked='checked'{/if}>
 									<label for='WDB_DARK_MATTER'>WDB JAXA Test</label>
 								</div>
-{if $func eq "exp_ap_sig"}
+{if $func eq "exp_cell_sig"}
+								<div id='siglabel'>
+									Point 	Label: 
+									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
+									<label for='lnone'>None</label>
+									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_label()"{if $sig_label eq "rssi"} checked='checked'{/if}>
+									<label for='lrssi'>RSSI</label>
+									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_label()"{if $sig_label eq "hist_date"} checked='checked'{/if}>
+									<label for='ldate'>Date</label>
+								</div>
+{elseif $func eq "exp_ap_sig"}
 								<div id='siglabel'>
 									Point 	Label: 
 									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
@@ -98,6 +135,45 @@ if not, write to the
 									<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
 									<button id="searchadr" onClick="searchadr()">Search</button>
 								</div>
+{if $ldivs gt 1}
+	{if $func eq "exp_ap_sig"}
+								<div>
+		{for $cdiv=1 to $ldivs}
+			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
+			{if $file_id ne 0}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}&file_id={$file_id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show AP Signals on Map for File ID {$file_id}">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{else}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show AP Signals on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{/if}
+			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
+		{/for}
+								</div>
+	{elseif $func eq "user_all"}
+								<div>
+		{for $cdiv=1 to $ldivs}
+			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&user={$user}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show User APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
+		{/for}
+								</div>
+	{elseif $func eq "user_list"}
+								<div>
+		{for $cdiv=1 to $ldivs}
+			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&id={$id}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show List APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
+		{/for}
+								</div>
+	{elseif $func eq "exp_search"}
+								<div>
+		{for $cdiv=1 to $ldivs}
+			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_search&from={($cdiv - 1) * $inc}&inc={$inc}{$export_url}" title="Show Search APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
+		{/for}
+								</div>
+	{/if}
+{/if}
 
 							</div>
 
@@ -114,7 +190,7 @@ if not, write to the
 
 {if $default_marker}
 							// Create a default Marker, colored black
-							var marker2 = new mapboxgl.Marker({ color: 'black', scale: .5})
+							var marker = new mapboxgl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
 							.setLngLat({$default_marker})
 							.addTo(map);
 {/if}
@@ -253,7 +329,7 @@ if not, write to the
 							function toggle_label() {
 								const url = new URL(window.location.href);
 								var radios = document.getElementsByName('sltoggle');
-								var layers = [{$layer_name}]
+								var layers = [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]
 								for (var i = 0, length = radios.length; i < length; i++) {
 									if (typeof radios[i] !== 'undefined') {
 										if (radios[i].checked) {
@@ -360,6 +436,48 @@ toggle_label()
 								//Ad Inspect
 								map.addControl(new MapboxInspect());
 								//WifiDB Information Popup
+{if $cell_layer_name}
+
+								map.on('click', function(e) {
+									var features = map.queryRenderedFeatures(e.point, {
+										layers: [{$cell_layer_name}]
+									});
+									if (!features.length) {
+										return;
+									}
+									var feature = features[0];
+									
+									var text = '<ul>';
+									if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
+									if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
+									if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
+									if (feature.properties.points) text  += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+									if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+									if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
+									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
+									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
+									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';									
+									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
+									if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
+									if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
+									if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
+									if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
+									if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
+									if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
+									if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
+									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									text += '</ul>';
+
+									var popup = new mapboxgl.Popup()
+										.setLngLat(map.unproject(e.point))
+										.setHTML(text)
+										.addTo(map);
+								});
+{/if}
+{if $layer_name}
+
 								map.on('click', function(e) {
 
 									var features = map.queryRenderedFeatures(e.point, {
@@ -371,11 +489,11 @@ toggle_label()
 									var feature = features[0];
 									
 									var text = '<ul>';
-									if (feature.properties.id) text += '<li>SSID: <a target="_blank" href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
+									if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
 									if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
 									if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
 									if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
-									if (feature.properties.points) text  += '<li>Points: <a target="_blank" href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+									if (feature.properties.points) text  += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
 									if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
 									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
 									if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
@@ -391,9 +509,12 @@ toggle_label()
 									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
 									if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
 									if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
-									if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + '</b></li>';
-									if (feature.properties.hist_file_id) text += '<li>File ID: <a target="_blank" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
-									if (feature.properties.user) text += '<li>Username: <a target="_blank" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+									if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
+									if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
+									if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
+									if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
+									if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&file_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
+									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 									
 									var popup = new mapboxgl.Popup()
@@ -401,50 +522,19 @@ toggle_label()
 										.setHTML(text)
 										.addTo(map);
 								});
-								
-								map.on('click', function(e) {
-									var features = map.queryRenderedFeatures(e.point, {
-										layers: [{$cell_layer_name}]
-									});
-									if (!features.length) {
-										return;
-									}
-									var feature = features[0];
-									
-									var text = '<ul>';
-									if (feature.properties.id) text += '<li>ID: <b>' + feature.properties.id + '</b></li>';
-									if (feature.properties.name) text += '<li>NAME: <b>' + feature.properties.name + '</b></li>';
-									if (feature.properties.mac) text += '<li>MAC: <b>' + feature.properties.mac + '</b></li>';
-									if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
-									if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
-									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
-									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
-									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-									if (feature.properties.lat) text += '<li>LATITUDE: <b>' + feature.properties.lat + '</b></li>';
-									if (feature.properties.lon) text += '<li>LONGITUDE: <b>' + feature.properties.lon + '</b></li>';
-									if (feature.properties.points) text += '<li>POINTS: <b>' + feature.properties.points + '</b></li>';
-									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
-									if (feature.properties.user) text += '<li>Username: <a target="_blank" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
-									text += '</ul>';
-
-									var popup = new mapboxgl.Popup()
-										.setLngLat(map.unproject(e.point))
-										.setHTML(text)
-										.addTo(map);
-								});
+{/if}
 
 								// indicate that the symbols are clickableby changing the cursor style to 'pointer'.
 								map.on('mousemove', function(e) {
 									var features = map.queryRenderedFeatures(e.point, {
-										layers: [{$layer_name},{$cell_layer_name}]
+										layers: [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]
 									});
 									map.getCanvas().style.cursor = (features.length) ? 'pointer' : '';
 								});
 							});
 							map.on('style.load', function () {
 								// Reset toggle buttons since the layers reset on style change
-{if $func ne "exp_ap_sig"}
+{if $func ne "exp_ap_sig" &&  $func ne "exp_cell_sig"}
 								var toggleButtonIds = ['WifiDB_weekly','WifiDB_monthly','WifiDB_0to1year','WifiDB_1to2year','WifiDB_2to3year','WifiDB_Legacy','cell_networks'];
 								for(var index in toggleButtonIds) {
 									var clicked_id = toggleButtonIds[index];

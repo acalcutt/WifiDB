@@ -49,6 +49,7 @@
 								<div class="inside_dark_header">WiFiDB Links</div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}">Home</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=AP_ID&ord=DESC&from=0&inc=100">List APs</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import File</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
@@ -56,7 +57,6 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
-								<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/live.php">Live APs</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=user&ord=ASC&from=0&inc=100">Users</a></div>

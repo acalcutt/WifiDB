@@ -39,10 +39,10 @@ if not, write to the
 						<tr style="background-color: {$wifidb_wait.color}">
 							<td class="header"></td>
 							<td class="{$wifidb_done.class}">{$wifidb_done.id}</td>
-							<td class="{$wifidb_done.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.title}</a></td>
-							<td class="{$wifidb_done.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file}</a></td>
-							<td class="{$wifidb_done.class}">{$wifidb_done.notes}</td>
-							<td class="{$wifidb_done.class}" colspan="2">{$wifidb_done.hash}</td>
+							<td class="{$wifidb_done.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.title|escape:'htmlall'}</a></td>
+							<td class="{$wifidb_done.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file|escape:'htmlall'}</a></td>
+							<td class="{$wifidb_done.class}">{$wifidb_done.notes|escape:'htmlall'}</td>
+							<td class="{$wifidb_done.class}" colspan="2">{$wifidb_done.hash|escape:'htmlall'}</td>
 						</tr>
 						<tr class="header-centered">
 							<th class="header"></th>
@@ -57,22 +57,22 @@ if not, write to the
 							<td class="header"></td>
 							<td width="75px" class="{$wifidb_done.class}">
 							{if $wifidb_done.validgps eq 1}
-								<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_done.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_done.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_done.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_done.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_done.id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_done.id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 							{else}
 								<img width="20px" src="{$themeurl}img/globe_off.png">
 								<img width="20px" src="{$themeurl}img/json_off.png">
 								<img width="20px" src="{$themeurl}img/kmz_off.png">
 							{/if}
 							</td>
-							<td class="{$wifidb_done.class}">{$wifidb_done.date}</td>
-							<td class="{$wifidb_done.class}">{$wifidb_done.size}</td>
-							<td class="{$wifidb_done.class}">{$wifidb_done.aps} - {$wifidb_done.gps}</td>
-							<td class="{$wifidb_done.class}">{$wifidb_done.efficiency}%</td>
+							<td class="{$wifidb_done.class}">{$wifidb_done.date|escape:'htmlall'}</td>
+							<td class="{$wifidb_done.class}">{$wifidb_done.size|escape:'htmlall'}</td>
+							<td class="{$wifidb_done.class}">{$wifidb_done.aps|escape:'htmlall'} - {$wifidb_done.gps|escape:'htmlall'}</td>
+							<td class="{$wifidb_done.class}">{$wifidb_done.efficiency|escape:'htmlall'}%</td>
 							<td class="{$wifidb_done.class}">
-								{foreach name=users_all item=user from=$wifidb_done.user}
-								<a class="links" href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}">{$user}</a><br>
+								{foreach name=users_all item=user from=$wifidb_done.user|escape:'htmlall'}
+								<a class="links" href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user|escape:'htmlall'}">{$user|escape:'htmlall'}</a><br>
 								{/foreach}
 							</td>
 						</tr>
