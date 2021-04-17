@@ -38,11 +38,11 @@ if not, write to the
 						</tr>
 						<tr style="background-color: {$wifidb_wait.color}">
 							<td class="yellow"></td>
-							<td class="yellow">{$wifidb_wait.id}</td>
-							<td class="yellow">{$wifidb_wait.title}</td>
-							<td class="yellow">{$wifidb_wait.file}</td>
-							<td class="yellow">{$wifidb_wait.notes}</td>
-							<td class="yellow">{$wifidb_wait.date}</td>
+							<td class="yellow">{$wifidb_wait.id|escape:'htmlall'}</td>
+							<td class="yellow">{$wifidb_wait.title|escape:'htmlall'}</td>
+							<td class="yellow">{$wifidb_wait.file|escape:'htmlall'}</td>
+							<td class="yellow">{$wifidb_wait.notes|escape:'htmlall'}</td>
+							<td class="yellow">{$wifidb_wait.date|escape:'htmlall'}</td>
 						</tr>
 						<tr class="header-centered">
 							<th class="yellow"></th>
@@ -53,10 +53,10 @@ if not, write to the
 						</tr>
 						<tr style="background-color: {$wifidb_wait.color}">
 							<td class="yellow"></td>
-							<td class="yellow">{$wifidb_wait.size}</td>
-							<td class="yellow">{$wifidb_wait.user}</td>
-							<td class="yellow">{$wifidb_wait.hash}</td>
-							<td class="yellow" colspan="2">{$wifidb_wait.status}</td>
+							<td class="yellow">{$wifidb_wait.size|escape:'htmlall'}</td>
+							<td class="yellow">{$wifidb_wait.user|escape:'htmlall'}</td>
+							<td class="yellow">{$wifidb_wait.hash|escape:'htmlall'}</td>
+							<td class="yellow" colspan="2">{$wifidb_wait.status|escape:'htmlall'}</td>
 						</tr>
 						{if not $smarty.foreach.waiting.last}
 						<tr class="content-centered">

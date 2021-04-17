@@ -20,10 +20,10 @@ You should have received a copy of the GNU General Public License along with thi
 						</tr>
 						<tr class="dark">
 							<td class="dark">{$wifidb_all_user_aps.id}</td>
-							<td class="dark">{$wifidb_all_user_aps.title}</td>
-							<td class="dark">{$wifidb_all_user_aps.file}</td>
-							<td class="dark">{$wifidb_all_user_aps.notes}</td>
-							<td class="dark">{$wifidb_all_user_aps.hash}</td>
+							<td class="dark">{$wifidb_all_user_aps.title|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.file|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.notes|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.hash|escape:'htmlall'}</td>
 						</tr>
 					</table>
 					<table class="content_table">
@@ -36,13 +36,13 @@ You should have received a copy of the GNU General Public License along with thi
 
 						</tr>
 						<tr class="dark">
-							<td class="dark">{$wifidb_all_user_aps.date}</td>	
-							<td class="dark">{$wifidb_all_user_aps.size}</td>
-							<td class="dark">{$wifidb_all_user_aps.aps} - {$wifidb_all_user_aps.gps}</td>
-							<td class="dark">{$wifidb_all_user_aps.NewAPPercent}%</td>
+							<td class="dark">{$wifidb_all_user_aps.date|escape:'htmlall'}</td>	
+							<td class="dark">{$wifidb_all_user_aps.size|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.aps|escape:'htmlall'} - {$wifidb_all_user_aps.gps|escape:'htmlall'}</td>
+							<td class="dark">{$wifidb_all_user_aps.NewAPPercent|escape:'htmlall'}%</td>
 							<td class="dark">
 								{foreach name=users_all item=user from=$wifidb_all_user_aps.user}
-								<a href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a><br>
+								<a href ="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$wifidb_all_user_aps.user|escape:'htmlall'}">{$wifidb_all_user_aps.user|escape:'htmlall'}</a><br>
 								{/foreach}
 							</td>
 						</tr>
@@ -167,16 +167,16 @@ You should have received a copy of the GNU General Public License along with thi
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
 								{/if}
 								</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id}</td>
-								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid}</a></td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.un|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.id|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid|escape:'htmlall'}</a></td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa|escape:'htmlall'}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la|escape:'htmlall'}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.list_points|number_format:0} / {$wifidb_users_aps.points|number_format:0}</td>
 							</tr>
 							{/foreach}
