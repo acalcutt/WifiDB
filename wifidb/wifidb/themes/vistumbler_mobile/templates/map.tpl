@@ -26,7 +26,7 @@ if not, write to the
 {if $func eq "exp_cell_sig"}
 							<div style='text-align: center;'>
 								Signal History for <b>{$ssid}</b> (Cell ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
@@ -34,7 +34,7 @@ if not, write to the
 {elseif $func eq "exp_ap_sig"}
 							<div style='text-align: center;'>
 								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
@@ -42,16 +42,20 @@ if not, write to the
 {elseif $func eq "user_all"}
 							<div style='text-align: center;'>
 								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}"><b>{$user}</b></a> ({if $ldivs lte 1}Points:{$point_count}{else}Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-									<a href="{$wifidb_host_url}opt/geojson.php?json=1&labeled=1&func=user_all&user={$user}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?labeled=1&func=user_all&user={$user}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$user}" title="Export User APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								<br>
 							</div>
 {elseif $func eq "user_list"}
 							<div style='text-align: center;'>
 								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$id}"><b>{$title}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$id}" title="Export List APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&id={$id}" title="Export List APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$id}" title="Export List APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								<br>
+							</div>
+{elseif $func eq "exp_search"}
+							<div style='text-align: center;'>
+								Search Map<br>
 							</div>
 {/if}
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
@@ -186,7 +190,7 @@ if not, write to the
 
 {if $default_marker}
 							// Create a default Marker, colored black
-							var marker = new mapboxgl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'black'{/if}, scale: .5})
+							var marker = new mapboxgl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
 							.setLngLat({$default_marker})
 							.addTo(map);
 {/if}

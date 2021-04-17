@@ -582,6 +582,7 @@ class export extends dbcore
 				"accuracy" => $hist['AccuracyMeters'],
 				"hdop" => $hist['HorDilPitch'],
 				"user" => $hist['file_user'],
+				"signal" => $hist['rssi'],
 				"rssi" => $hist['rssi'],
 				"hist_date" => $hist['hist_date'],
 				"hist_file_id" => $hist['file_id']
@@ -626,7 +627,8 @@ class export extends dbcore
 			. "CHAN LIKE ? AND\n"
 			. "AUTH LIKE ? AND\n"
 			. "ENCR LIKE ? \n";
-		if($sectype){$sql_count .= "AND SECTYPE =  ?";}
+		if($valid_gps){$sql_count .=" AND wap.HighGps_ID IS NOT NULL";}
+		if($sectype){$sql_count .=" AND wap.SECTYPE =  ?";}
 		$prep1 = $this->sql->conn->prepare($sql_count);
 		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
 		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
@@ -639,7 +641,7 @@ class export extends dbcore
 		$AP_ID_Count = $prep1->fetch(2);
 		$total_rows = $AP_ID_Count['ApCount'];
 		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+		$sql = "SELECT wap.ModDate, wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
 			. "wGPS.Alt As Alt,\n"

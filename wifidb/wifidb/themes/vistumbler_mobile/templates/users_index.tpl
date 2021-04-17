@@ -104,9 +104,9 @@ if not, write to the
 								<td class="{$wifidb_users.class}">{$wifidb_users.rowid}</td>
 								<td class="{$wifidb_users.class}">
 								{if $wifidb_users.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&labeled=0&user={$wifidb_users.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/geojson.php?json=1&labeled=1&func=user_all&user={$wifidb_users.user}&labeled=1" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$wifidb_users.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">

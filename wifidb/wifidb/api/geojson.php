@@ -96,6 +96,25 @@ switch($func)
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 	break;
 
+	case "exp_cid":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		#Get SSID
+
+		$sql = "SELECT ssid FROM cell_id WHERE cell_id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$dbcore->sql->checkError(__LINE__, __FILE__);
+		$ap_array = $prep->fetch();
+		$ssid = $dbcore->formatSSID($ap_array['ssid']);
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'CID_'.$id.'-'.$ssid);
+		#Create GeoJSON
+		$CellArray = $dbcore->export->CellArray($id, $labeled, $new_icons);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellArray['latlongarray']);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellArray['data']);
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
+	break;
+
 	case "exp_ap_sig":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
@@ -205,8 +224,8 @@ switch($func)
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points");
-		if(!in_array($sort, $sorts)){$sort = "AP_ID";}
+		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
+		if(!in_array($sort, $sorts)){$sort = "ModDate";}
 		$ords=array("ASC","DESC");
 		if(!in_array($ord, $ords)){$ord = "DESC";}
 

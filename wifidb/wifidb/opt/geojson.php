@@ -30,39 +30,36 @@ switch($func)
 {
 	case "user_all":
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
+		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		if((int)@$_REQUEST['json'] === 1){$json = 1;}else{$json = 0;}#output json instead of creating a download
 		if((int)@$_REQUEST['labeled'] === 1){$labeled = 1;}else{$labeled = 0;}#Show AP labels in kml file. by default labels are not shown.
 		$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
-		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-		if ($from == ""){$from = 0;}	
-		if($inc == "")
-		{
-			if ($inc == ""){$inc = 50000;}
+		if(!is_numeric($from)){$from = 0;}
+		if(!is_numeric($inc)){$inc = 50000;}		
 
-			$sql = "SELECT Count(AP_ID) As ap_count\n"
-				. "FROM wifi_ap\n"
-				. "WHERE\n"
-				. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
-			$result = $dbcore->sql->conn->prepare($sql);
-			$result->bindParam(1, $user, PDO::PARAM_STR);
-			$result->execute();
-			$newArray = $result->fetch(2);
-			$ap_count = $newArray['ap_count'];
-			if($ap_count > $inc)
-			{
-				$ldivs = ceil($ap_count / $inc);
-				$dbcore->smarty->assign('user', $user);
-				$dbcore->smarty->assign('inc', $inc);
-				$dbcore->smarty->assign('count', $ap_count);
-				$dbcore->smarty->assign('ldivs', $ldivs);
-				$dbcore->smarty->assign('json', $json);
-				$dbcore->smarty->assign('labeled', $labeled);
-				$dbcore->smarty->display('geojson_segments.tpl');
-				break;
-			}
+		$sql = "SELECT Count(AP_ID) As ap_count\n"
+			. "FROM wifi_ap\n"
+			. "WHERE\n"
+			. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
+		$result = $dbcore->sql->conn->prepare($sql);
+		$result->bindParam(1, $user, PDO::PARAM_STR);
+		$result->execute();
+		$newArray = $result->fetch(2);
+		$ap_count = $newArray['ap_count'];
+		if($ap_count > $inc)
+		{
+			$ldivs = ceil($ap_count / $inc);
+			$dbcore->smarty->assign('user', $user);
+			$dbcore->smarty->assign('inc', $inc);
+			$dbcore->smarty->assign('count', $ap_count);
+			$dbcore->smarty->assign('ldivs', $ldivs);
+			$dbcore->smarty->assign('json', $json);
+			$dbcore->smarty->assign('labeled', $labeled);
+			$dbcore->smarty->display('geojson_segments.tpl');
+			break;
 		}
-		
+
 		$url = $dbcore->URL_PATH.'api/geojson.php?json='.$json.'&func=exp_user_all&user='.$user.'&labeled='.$labeled;
 		header('Location: ' . $url);
 

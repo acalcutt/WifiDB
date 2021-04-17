@@ -406,8 +406,10 @@ switch($func)
 			if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 			if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-			if ($ord == ""){$ord = "ASC";}
-			if ($sort == ""){$sort = "ssid";}
+			$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
+			if(!in_array($sort, $sorts)){$sort = "ModDate";}
+			$ords=array("ASC","DESC");
+			if(!in_array($ord, $ords)){$ord = "DESC";}
 
 			$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($SearchArray['data']);

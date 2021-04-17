@@ -193,7 +193,7 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($uags['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$uags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = $layer_cell['layer_name'];
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -302,7 +302,7 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($mlgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$mlgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = $layer_cell['layer_name'];
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -397,7 +397,7 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($ags['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$ags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = $layer_cell['layer_name'];
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -638,7 +638,7 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lags['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$lags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = $layer_cell['layer_name'];
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -664,8 +664,8 @@ switch($func)
 		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
 		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 
-		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points");
-		if(!in_array($sort, $sorts)){$sort = "AP_ID";}
+		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
+		if(!in_array($sort, $sorts)){$sort = "ModDate";}
 		$ords=array("ASC","DESC");
 		if(!in_array($ord, $ords)){$ord = "DESC";}
 
@@ -677,7 +677,7 @@ switch($func)
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
+		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, 1, 1);
 		$results_all = $SearchArray['data'];
 		$ap_count = $SearchArray['count'];
 		$point_count = $SearchArray['total_rows'];
@@ -739,7 +739,7 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lsgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$lsgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = $layer_cell['layer_name'];
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
