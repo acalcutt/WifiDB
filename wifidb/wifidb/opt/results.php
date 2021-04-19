@@ -55,7 +55,8 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 0);
 	$results_all = $SearchArray['data'];
 	$total_rows = $SearchArray['total_rows'];
-	$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", $ssid, $mac, $chan, $radio, $auth, $encry);
+	$page_func = "func=".$func."&ssid=".$ssid."&mac=".$mac."&radio=".$radio."&chan=".$chan."&auth=".$auth."&encry=".$encry."&sectype=".$sectype."&";
+	$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, $page_func, "", $ssid, $mac, $chan, $radio, $auth, $encry);
 	
 	if($total_rows === 0){$dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');}
 	$dbcore->smarty->assign('wifidb_page_label', 'Search Results Page');
@@ -63,6 +64,8 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$dbcore->smarty->assign('total_rows', $total_rows);
 	$dbcore->smarty->assign('to', $to);
 	$dbcore->smarty->assign('from', $from);
+	$dbcore->smarty->assign('ord', $ord);
+	$dbcore->smarty->assign('sort', $sort);
 	$dbcore->smarty->assign('map_inc', $map_inc);
 	$dbcore->smarty->assign('ssid_search', $ssid);
 	$dbcore->smarty->assign('mac_search', $mac);

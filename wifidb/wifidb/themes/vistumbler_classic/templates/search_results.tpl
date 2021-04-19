@@ -21,68 +21,66 @@ if not, write to the
 			<div class="main">
 				{include file="topmenu.tpl"}
 				<div class="center">
-				<h2>Total APs found: {$total_rows|default:"0"}</h2>
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td align="center" colspan="10">
+				<b>Search Results: {$total_rows|default:"0"|number_format} Points</b> (
 								<a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Save Link</a> | 
 								<a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_search&inc={$map_inc}&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Map</a> | 
 								<a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">JSON</a> |								
-								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">KMZ</a>
-							</td>
-						</tr>
+								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">KMZ</a> )
+								<br/><br/>
+					{$page_list}
+				<table class="content_table">
+					<tbody>
 						<tr class="header">
 							<td width="75px">GPS
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=AP_ID&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=AP_ID&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=AP_ID&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=AP_ID&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								ID
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=SSID&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=SSID&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=SSID&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'SSID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=SSID&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'SSID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								SSID
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=mac&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=mac&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=BSSID&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'BSSID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=BSSID&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'BSSID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								MAC
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=chan&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=chan&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=CHAN&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'CHAN' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=CHAN&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'CHAN' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								Chan
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=radio&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=radio&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=RADTYPE&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'RADTYPE' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=RADTYPE&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'RADTYPE' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								Radio Type
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=auth&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=auth&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=AUTH&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AUTH' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=AUTH&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AUTH' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								Authentication
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=encry&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=encry&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=ENCR&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ENCR' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=ENCR&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ENCR' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								Encryption
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=FA&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=FA&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=FA&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'FA' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=FA&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'FA' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								First Active
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=LA&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=LA&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=LA&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'LA' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=LA&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'LA' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								Last Active
 							</td>
 							<td class="header">
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=points&amp;ord=ASC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
-								<a href="?ssid={$ssid_search}&amp;mac={$mac_search}&amp;radio={$radio_search}&amp;chan={$chan_search}&amp;auth={$auth_search}&amp;encry={$encry_search}&amp;sort=points&amp;ord=DESC&amp;from={$from}&amp;to={$to}"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=points&ord=ASC&from={$from}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+								<a href="?ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&sort=points&ord=DESC&from={$from}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								Points
 							</td>
 						</tr>
@@ -108,8 +106,8 @@ if not, write to the
 							<td class="{$result.class}">{$result.radio}</td>
 							<td class="{$result.class}">{$result.auth}</td>
 							<td class="{$result.class}">{$result.encry}</td>
-							<td class="{$result.class}">{$result.FA}</td>
-							<td class="{$result.class}">{$result.LA}</td>
+							<td class="{$result.class}">{$result.fa}</td>
+							<td class="{$result.class}">{$result.la}</td>
 							<td class="{$result.class}">{$result.points}</td>
 						</tr>
 						{foreachelse}

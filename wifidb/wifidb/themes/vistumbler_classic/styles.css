@@ -280,6 +280,10 @@ table.asscotable {
 	background-color: #315573;
 }
 
+.cell_border {
+	border: 1px inset black;
+}
+
 .dark {
 	text-align: left;
 	background-color: #a1bace;
