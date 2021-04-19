@@ -2,7 +2,7 @@
 error_reporting(0);
 @ini_set('display_errors', 0);
 /*
-Copyright (C) 2015 Andrew Calcutt
+Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -299,7 +299,7 @@ switch($func)
 			$title .= "_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 			if($range){$title .= "_".$range;}
 		
-			$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons, $only_new, 1);
+			$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, "AP_ID", "DESC", $labeled, $new_icons, $only_new, 1);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($UserListArray['data']);
 			$final_box = $dbcore->export->FindBox($UserListArray['latlongarray']);
 			$KML_region = $dbcore->createKML->PlotRegionBox($final_box, uniqid());	

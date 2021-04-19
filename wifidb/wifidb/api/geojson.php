@@ -144,8 +144,7 @@ switch($func)
 	case "exp_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$title = "File_".$id;
-		
-		
+
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
@@ -158,7 +157,7 @@ switch($func)
 		$title .= "_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
 		if($range){$title .= "_".$range;}
 
-		$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, $labeled, $new_icons, $only_new, $valid_gps);
+		$UserListArray = $dbcore->export->UserListArray($id, $from, $inc, "AP_ID", "DESC", $labeled, $new_icons, $only_new, $valid_gps);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($UserListArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserListArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -168,8 +167,7 @@ switch($func)
 	case "exp_cid_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$title = "File_".$id;
-		
-		
+
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
@@ -198,7 +196,7 @@ switch($func)
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($UserAllList['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 		break;
-		
+
 	case "exp_date":
 		$start_date = $_REQUEST['date'];
 		$end_date = $_REQUEST['end_date'];

@@ -104,9 +104,9 @@ if not, write to the
 									<label for='lmac'>Mac</label>
 									<input id='lchan' type='radio' name='sltoggle' value='chan' onclick="toggle_label()"{if $sig_label eq "chan"} checked='checked'{/if}>
 									<label for='lchan'>Channel</label>
-									<input id='lfa' type='radio' name='sltoggle' value='FA' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
+									<input id='lfa' type='radio' name='sltoggle' value='fa' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
 									<label for='lfa'>First Active</label>
-									<input id='lla' type='radio' name='sltoggle' value='LA' onclick="toggle_label()"{if $sig_label eq "LA"} checked='checked'{/if}>
+									<input id='lla' type='radio' name='sltoggle' value='la' onclick="toggle_label()"{if $sig_label eq "LA"} checked='checked'{/if}>
 									<label for='lla'>Last Active</label>
 									<input id='lp' type='radio' name='sltoggle' value='points' onclick="toggle_label()"{if $sig_label eq "points"} checked='checked'{/if}>
 									<label for='lp'>Points</label>

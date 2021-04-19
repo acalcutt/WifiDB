@@ -78,7 +78,6 @@ class frontend extends dbcore
 													"GetAnnouncement"=>  "1.0",
 													"HTMLFooter"	 =>  "1.0",
 													"HTMLHeader"	 =>  "1.0",
-													"UserAPList"	 =>  "1.0",
 													"UserLists"	  =>  "1.0"
 												);
 	}
@@ -414,86 +413,6 @@ class frontend extends dbcore
 		$this->GeneratePages($total_files, $from, $inc, $sort, $ord, 'alluserlists', $username);
 		return 1;
 	}
-
-	#===============================================#
-	#   Grab the AP's for a given user's Import	 #
-	#===============================================#
-	function UserAPList($row=0, $sort = "AP_ID", $ord = "DESC")
-	{
-		if(!$row){return 0;}
-		
-		# Get import list information
-		$sql = "SELECT id, file_orig, file_user, aps, gps, notes, title, file_date, hash, converted, prev_ext, NewAPPercent, size, ValidGPS FROM files WHERE id= ?";
-        $result = $this->sql->conn->prepare($sql);
-		$result->execute(array($row));
-		$user_array = $result->fetch(2);
-
-		$all_aps_array = array();
-		$all_aps_array['allaps'] = array();
-		$all_aps_array['id'] = $user_array['id'];
-		$all_aps_array['file'] = $user_array['file_orig'];
-		$all_aps_array['user'] = $user_array['file_user'];
-		$all_aps_array['notes'] = $user_array['notes'];
-		$all_aps_array['title'] = $user_array['title'];
-		$all_aps_array['aps'] = $user_array['aps'];
-		$all_aps_array['gps'] = $user_array['gps'];
-		$all_aps_array['size'] = $user_array['size'];
-		$all_aps_array['hash'] = $user_array['hash'];
-		$all_aps_array['date'] = $user_array['file_date'];
-		$all_aps_array['NewAPPercent'] = $user_array['NewAPPercent'];
-		$all_aps_array['validgps'] = $user_array['ValidGPS'];
-		
-
-		#Get APs, First Active, Last Active, and points that go with this list
-		$sql = "SELECT wifi_hist.AP_ID, wifi_hist.New, Min(wifi_hist.Hist_Date) As fa, Max(wifi_hist.Hist_Date) As la, Count(wifi_hist.Hist_Date) As list_points, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_gps.Lat, wifi_gps.Lon\n"
-				. "FROM wifi_hist\n"
-				. "INNER JOIN wifi_ap ON wifi_ap.AP_ID = wifi_hist.AP_ID\n"
-				. "LEFT JOIN wifi_gps ON wifi_gps.GPS_ID = wifi_ap.HighGps_ID\n"
-				. "WHERE wifi_hist.File_ID = ? \n"
-				. "GROUP BY wifi_hist.AP_ID, wifi_hist.New, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_gps.Lat, wifi_gps.Lon\n"
-				. "ORDER BY $sort $ord";
-
-		$prep_AP_IDS = $this->sql->conn->prepare($sql);
-		$prep_AP_IDS->bindParam(1,$user_array['id'], PDO::PARAM_INT);
-		$prep_AP_IDS->execute();
-		$count = 0;
-		$flip=0;
-		while ( $array = $prep_AP_IDS->fetch(2) )
-		{
-			$count++;
-			
-			if($flip)
-				{$style = "dark";$flip=0;}
-			else
-				{$style="light";$flip=1;}
-			
-			if($array['Lat']  == "0.0000" || $array['Lat']  == ""){$validgps = 0;}else{$validgps = 1;}
-			if($array['New'] == 1){$update_or_new = "New";}else{$update_or_new = "Update";}
-			
-			$all_aps_array['allaps'][] = array(
-					'id' => $array['AP_ID'],
-					'class' => $style,
-					'un' => $update_or_new,
-					'ssid' => $this->formatSSID($array['SSID']),
-					'mac' => $array['BSSID'],
-					'chan' => $array['CHAN'],
-					'radio' => $array['RADTYPE'],
-					'auth' => $array['AUTH'],
-					'encry' => $array['ENCR'],
-					'fa' => $array['fa'],
-					'la' => $array['la'],
-					'list_points' => $array['list_points'],
-					'points' => $array['points'],
-					'lat' => $array['Lat'],
-					'lon' => $array['Lon'],
-					'validgps' => $validgps
-			);
-		}
-		$all_aps_array['total_aps'] = $count;
-		$this->users_import_aps = $all_aps_array;
-		return 1;
-	}
-
 
 	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="", $view="", $id="")
 	{

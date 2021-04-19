@@ -1,7 +1,7 @@
 <?php
 /*
 Export.inc.php, holds the WiFiDB exporting functions.
-Copyright (C) 2018 Andrew Calcutt 2012 Phil Ferland
+Copyright (C) 2021 Andrew Calcutt 2012 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -167,33 +167,52 @@ class export extends dbcore
 		Return $ret_data;
 	}
 
-	public function UserListArray($file_id, $from = NULL, $inc = NULL, $named=0, $new_ap=0, $only_new=0, $valid_gps = 0)
+	public function UserListArray($file_id, $from = NULL, $inc = NULL, $sort = "AP_ID", $ord = "DESC", $named=0, $new_ap=0, $only_new=0, $valid_gps = 0)
 	{
-
-
-		$sql = "SELECT DISTINCT(wifi_hist.AP_ID)\n"
-			. "From wifi_hist\n"
-			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.AP_ID = wap.AP_ID\n"
-			. "WHERE wifi_hist.File_ID = ?";
-		if($only_new == 1){$sql .= " AND wifi_hist.New = 1";}	
-		if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
-		$sql .= "\nORDER BY wifi_hist.AP_ID DESC";
-		if($from !== NULL && $inc !== NULL){
-			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
-			else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
-		}
-		
-		$prep_AP_IDS = $this->sql->conn->prepare($sql);
-		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
-		$prep_AP_IDS->execute();
-		$Import_Map_Data="";
 		$latlon_array = array();
 		$ap_array = array();
 		$apcount = 0;
-		while ( $array = $prep_AP_IDS->fetch(2) )
+		
+		$sql = "SELECT wifi_hist.AP_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID, MAX(wifi_hist.New) AS new, MIN(wifi_hist.Hist_Date) as fa, MAX(wifi_hist.Hist_Date) as la, COUNT(wifi_hist.Hist_Date) As list_points\n"
+			. "FROM wifi_hist\n"
+			. "LEFT JOIN files ON wifi_hist.File_ID = files.id\n"
+			. "LEFT JOIN wifi_ap ON wifi_hist.AP_ID = wifi_ap.AP_ID\n"
+			. "WHERE wifi_hist.File_ID = ?";
+		if($only_new == 1){$sql .= " AND wifi_hist.New = 1";}	
+		if($valid_gps){$sql .= " AND wifi_ap.HighGps_ID IS NOT NULL";}
+		$sql .= "\nGROUP BY wifi_hist.AP_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID\n"
+			. "ORDER BY {$sort} {$ord}";
+		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+
+		$prep_AP_IDS = $this->sql->conn->prepare($sql);
+		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
+		$prep_AP_IDS->execute();
+		$filepointer = $prep_AP_IDS->fetchAll();
+
+		#Get File Info
+		$file_info = array(
+			"id" => $file_id,
+			"title" => $filepointer[0]['title'],
+			"file" => $filepointer[0]['file_orig'],
+			"notes" => $filepointer[0]['notes'],
+			"user" => $filepointer[0]['file_user'],
+			"date" => $filepointer[0]['file_date'],
+			"validgps" => $filepointer[0]['ValidGPS'],
+			"hash" => $filepointer[0]['hash'],
+			"NewAPPercent" => $filepointer[0]['NewAPPercent'],
+			"aps" => $filepointer[0]['aps'],
+			"gps" => $filepointer[0]['gps'],
+			"size" => $filepointer[0]['size'],
+			"new" => $filepointer[0]['new'],
+			"list_points" => $filepointer[0]['list_points'],
+			"points" => $filepointer[0]['points']
+		);
+		
+		#Get AP Info
+		foreach($filepointer as $array)
 		{
-			$apid = $array['AP_ID'];
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
 				. "wGPS.Lat As Lat,\n"
 				. "wGPS.Lon As Lon,\n"
 				. "wGPS.Alt As Alt,\n"
@@ -202,21 +221,22 @@ class export extends dbcore
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 				. "WHERE wap.AP_ID = ?";
-				
 			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $apid, PDO::PARAM_INT);
+			$result->bindParam(1, $array['AP_ID'], PDO::PARAM_INT);
 			$result->execute();
 			$appointer = $result->fetchAll();
 			foreach($appointer as $ap)
 			{
-				$apcount++;
+				if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
+				if($array['new'] == 1){$new='New';}else{$new='Update';}
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
+				"nu" => $new,
 				"new_ap" => $new_ap,
 				"named" => $named,
 				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
+				"ssid" => $this->formatSSID($ap['ssid']),
 				"chan" => $ap['CHAN'],
 				"radio" => $ap['RADTYPE'],
 				"nt" => $ap['NETTYPE'],
@@ -227,16 +247,23 @@ class export extends dbcore
 				"otx" => $ap['OTX'],
 				"fa" => $ap['fa'],
 				"la" => $ap['la'],
-				"points" => $ap['points'],
+				"points" => $array['points'],
+				"list_points" => $array['list_points'],
+				"high_sig" => $ap['high_sig'],
+				"high_rssi" => $ap['high_rssi'],
 				"high_gps_sig" => $ap['high_gps_sig'],
 				"high_gps_rssi" => $ap['high_gps_rssi'],
 				"lat" => $this->convert->dm2dd($ap['Lat']),
 				"lon" => $this->convert->dm2dd($ap['Lon']),
+				"lat_dm" => $ap['Lat'],
+				"lon_dm" => $ap['Lon'],
+				"validgps" => $validgps,
 				"alt" => $ap['Alt'],
 				"manuf"=>$this->findManuf($ap['BSSID']),
 				"user" => $ap['file_user'],
 				);
 				$ap_array[] = $ap_info;
+				$apcount++;
 				
 				$latlon_info = array(
 				"lat" => $this->convert->dm2dd($ap['Lat']),
@@ -250,6 +277,7 @@ class export extends dbcore
 			"count" => $apcount,
 			"data" => $ap_array,
 			"latlongarray" => $latlon_array,
+			"file_info" => $file_info
 		);
 		
 		return $ret_data;
@@ -1031,7 +1059,7 @@ class export extends dbcore
 				$id = $import['id'];
 				$this->verbosed($username." - ".$import['file_date']." - ".$id." - ".$import['title']);
 				$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $id.'_'.$import['title']);
-				$UserListArray = $this->UserListArray($id, NULL, NULL,$this->named, $new_icons, $only_new);
+				$UserListArray = $this->UserListArray($id, NULL, NULL, "AP_ID", "DESC", $this->named, $new_icons, $only_new);
 				$AP_PlaceMarks = $this->createKML->CreateApFeatureCollection($UserListArray['data']);
 				if($AP_PlaceMarks)
 				{

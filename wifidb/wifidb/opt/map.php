@@ -215,7 +215,7 @@ switch($func)
 		break;
 	case "user_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
-		
+
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
@@ -247,8 +247,15 @@ switch($func)
 		#Get the first point in the results
 		if($latitude == "" && $longitude== "")
 		{
-			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, 0, 0, 1);
+			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, "AP_ID", "DESC", 0, 0, 1);
 			$latlongarray = $UserListArray['latlongarray'];
+			$latitude = $latlongarray[0]['lat'];
+			$longitude = $latlongarray[0]['long'];
+		}
+		if($latitude == "" && $longitude== "")
+		{
+			$CellUserListArray = $dbcore->export->CellUserListArray($id, $from, 1, "cell_id", "DESC", 0, 0, 0, 1, "'BT','BLE'");
+			$latlongarray = $CellUserListArray['latlongarray'];
 			$latitude = $latlongarray[0]['lat'];
 			$longitude = $latlongarray[0]['long'];
 		}

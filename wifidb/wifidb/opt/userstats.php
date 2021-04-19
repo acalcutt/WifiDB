@@ -65,12 +65,16 @@ switch($func)
 			break;
 		#-------------
 		case "useraplist":
-			$sorts=array("New","AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","fa","la","list_points","points");
+			$sorts=array("New","AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","FA","LA","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
-			
-			$dbcore->UserAPList($row, $sort, $ord);
+
 			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, 1);
-			$dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->users_import_aps);
+			$UserListArray = $dbcore->export->UserListArray($row, $from, $inc, $sort, $ord);
+			$ap_info = $UserListArray['data'];
+			$file_info = $UserListArray['file_info'];
+
+			$dbcore->smarty->assign('file_info', $file_info);
+			$dbcore->smarty->assign('points' , $ap_info);
 			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
 			$dbcore->smarty->assign('cids' , $CellUserListArray['count']);
 			$dbcore->smarty->assign('sort' , $sort);
@@ -80,12 +84,12 @@ switch($func)
 		case "cidlist":
 			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "cell_id";}
-			
+
 			$UserListArray = $dbcore->export->UserListArray($row, $from, 1);
 			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, $inc, $sort, $ord, 0, 0, 0, 0, "'BT','BLE'");
 			$cell_info = $CellUserListArray['data'];
 			$file_info = $CellUserListArray['file_info'];
-			
+
 			$dbcore->smarty->assign('points', $cell_info);
 			$dbcore->smarty->assign('file_info', $file_info);
 			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
