@@ -78,6 +78,13 @@ You should have received a copy of the GNU General Public License along with thi
 								</div>
 							</td>
 							<td class="header">
+								<div>Network</div>
+								<div>
+									<a href="?func={$func}&sort=network&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func}&sort=network&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+								</div>
+							</td>
+							<td class="header">
 								<div>Points</div>
 								<div>
 									<a href="?func={$func}&sort=points&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
@@ -123,6 +130,9 @@ You should have received a copy of the GNU General Public License along with thi
 							</td>
 							<td class="cell_border">
 								{$wifidb_ap.la|escape:'htmlall'}
+							</td>
+							<td class="cell_border">
+								{$wifidb_ap.network|escape:'htmlall'}
 							</td>
 							<td class="cell_border">
 								{$wifidb_ap.points|number_format}

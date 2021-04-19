@@ -29,7 +29,7 @@ $dbcore->smarty->assign('func', $func);
 switch($func)
 {
 	case "bt":
-		$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","list_points","points","file_user");
+		$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","list_points","points","file_user");
 		if(!in_array($sort, $sorts)){$sort = "cell_id";}
 		#Get count of APs for pageation
 		$sql = "SELECT COUNT(*) FROM cell_id WHERE fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND type IN ('BT','BLE')";
@@ -39,7 +39,7 @@ switch($func)
 
 		#Get the list of access points in the requsted order
 		
-		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
+		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
 			. "wGPS.Alt As Alt,\n"
@@ -47,6 +47,7 @@ switch($func)
 			. "FROM cell_id AS cid\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
+			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = substring(cid.mac,4,3)\n"
 			. "WHERE cid.fa IS NOT NULL AND cid.type IN ('BT','BLE')\n"	
 			. "ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
@@ -65,6 +66,7 @@ switch($func)
 			$wifidb_aps_all[$n]['type'] = $array['type'];
 			$wifidb_aps_all[$n]['high_rssi'] = $array['high_rssi'];
 			$wifidb_aps_all[$n]['high_gps_rssi'] = $array['high_gps_rssi'];
+			$wifidb_aps_all[$n]['network'] = $array['network'];
 			$wifidb_aps_all[$n]['fa'] = $array['fa'];
 			$wifidb_aps_all[$n]['la'] = $array['la'];
 			$wifidb_aps_all[$n]['points'] = $array['points'];
@@ -85,7 +87,7 @@ switch($func)
 		$dbcore->smarty->display('all_cids.tpl');
 	break;
 	case "cid":
-		$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","list_points","points","file_user");
+		$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","list_points","points","file_user");
 		if(!in_array($sort, $sorts)){$sort = "cell_id";}
 		#Get count of APs for pageation
 		$sql = "SELECT COUNT(*) FROM cell_id WHERE fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND type NOT IN ('BT','BLE')";
@@ -95,7 +97,7 @@ switch($func)
 
 		#Get the list of access points in the requsted order
 		
-		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
+		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
 			. "wGPS.Alt As Alt,\n"
@@ -103,6 +105,7 @@ switch($func)
 			. "FROM cell_id AS cid\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
+			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = substring(cid.mac,4,3)\n"
 			. "WHERE cid.fa IS NOT NULL AND cid.type NOT IN ('BT','BLE')\n"	
 			. "ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
@@ -124,6 +127,7 @@ switch($func)
 			$wifidb_aps_all[$n]['type'] = $array['type'];
 			$wifidb_aps_all[$n]['high_rssi'] = $array['high_rssi'];
 			$wifidb_aps_all[$n]['high_gps_rssi'] = $array['high_gps_rssi'];
+			$wifidb_aps_all[$n]['network'] = $array['network'];
 			$wifidb_aps_all[$n]['fa'] = $array['fa'];
 			$wifidb_aps_all[$n]['la'] = $array['la'];
 			$wifidb_aps_all[$n]['points'] = $array['points'];
