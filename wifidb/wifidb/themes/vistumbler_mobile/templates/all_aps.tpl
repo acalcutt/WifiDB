@@ -1,6 +1,6 @@
 <!--
 all_aps.tpl: The Smarty AP List template for WiFiDB.
-Copyright (C) 2019 Andrew Calcutt
+Copyright (C) 2021 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -10,7 +10,10 @@ You should have received a copy of the GNU General Public License along with thi
 			<div class="main">
 				{include file="topmenu.tpl"}
 				<div class="center">
-					<h1>AP List</h1>
+<b><a href="{$wifidb_host_url}all.php" title="Show AP Points">[Access Points]</a></b> | <a href="{$wifidb_host_url}all.php?func=cid" title="Show Cell Points">[Cell Points]</a> | {if $func eq 'bt'}<b>{/if}<a href="{$wifidb_host_url}all.php?func=bt" title="Show Bluetooth Points">[BT Points]</a>
+<br/><br/>
+<b>{$points|number_format} Points</b>
+<br/><br/>
 {$pages_together}
 					<table class="content_table"">
 						<tr class="header">
@@ -112,37 +115,37 @@ You should have received a copy of the GNU General Public License along with thi
 							{/if}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.id}
+								{$wifidb_ap.id|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								<a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_ap.id}" title="View AP Details">{$wifidb_ap.ssid}</a>
+								<a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_ap.id}" title="View AP Details">{$wifidb_ap.ssid|escape:'htmlall'}</a>
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.mac}
+								{$wifidb_ap.mac|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.chan}
+								{$wifidb_ap.chan|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.auth}
+								{$wifidb_ap.auth|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.encry}
+								{$wifidb_ap.encry|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.radio}
+								{$wifidb_ap.radio|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.nt}
+								{$wifidb_ap.nt|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.fa}
+								{$wifidb_ap.fa|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.la}
+								{$wifidb_ap.la|escape:'htmlall'}
 							</td>
 							<td class="{$wifidb_ap.class}">
-								{$wifidb_ap.points|number_format:0}
+								{$wifidb_ap.points|number_format:0|escape:'htmlall'}
 							</td>
 						</tr>
 						{foreachelse}

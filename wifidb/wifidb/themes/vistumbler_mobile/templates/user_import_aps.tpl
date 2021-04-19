@@ -66,6 +66,10 @@ You should have received a copy of the GNU General Public License along with thi
 						</tbody>
 					</table>
 					<br/>
+{if $cids}
+<b><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_all_user_aps.id}" title="Show AP Points">[Access Points]</a></b> | <a href="{$wifidb_host_url}opt/userstats.php?func=cidlist&row={$wifidb_all_user_aps.id}" title="Show Cell Points">[Cell Points]</a> | <a href="{$wifidb_host_url}opt/userstats.php?func=btlist&row={$wifidb_all_user_aps.id}" title="Show Bluetooth Points">[BT Points]</a>
+<br/><br/>
+{/if}
 					<table class="content_table">
 						<tbody>
 							<tr class="header">

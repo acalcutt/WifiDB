@@ -331,13 +331,13 @@ class createKML
 		if(isset($ap_info_array['high_gps_rssi'])){$high_gps_rssi = '<b>High GPS RSSI: </b>'.$this->stripInvalidXml($ap_info_array['high_gps_rssi']).'<br />'."";}else{$high_gps_rssi = '';}
 		if(isset($ap_info_array['manuf'])){$manuf = '<b>Manufacturer: </b>'.$this->stripInvalidXml($ap_info_array['manuf']).'<br />'."";}else{$manuf = '';}
 		if(isset($ap_info_array['sectype'])){$sectype = '<b>SecType: </b>'.$this->stripInvalidXml($ap_info_array['sectype']).'<br />'."";}else{$sectype = '';}
-		if(isset($ap_info_array['NT'])){$NT = '<b>Network Type: </b>'.$this->stripInvalidXml($ap_info_array['NT']).'<br />'."";}else{$NT = '';}
+		if(isset($ap_info_array['nt'])){$NT = '<b>Network Type: </b>'.$this->stripInvalidXml($ap_info_array['nt']).'<br />'."";}else{$NT = '';}
 		if(isset($ap_info_array['radio'])){$radio = '<b>Radio Type: </b>'.$this->stripInvalidXml($ap_info_array['radio']).'<br />'."";}else{$radio = '';}
-		if(isset($ap_info_array['BTx'])){$BTx = '<b>BTx: </b>'.$this->stripInvalidXml($ap_info_array['BTx']).'<br />'."";}else{$BTx = '';}
-		if(isset($ap_info_array['OTx'])){$OTx = '<b>OTx: </b>'.$this->stripInvalidXml($ap_info_array['OTx']).'<br />'."";}else{$OTx = '';}
+		if(isset($ap_info_array['btx'])){$BTx = '<b>BTx: </b>'.$this->stripInvalidXml($ap_info_array['btx']).'<br />'."";}else{$BTx = '';}
+		if(isset($ap_info_array['otx'])){$OTx = '<b>OTx: </b>'.$this->stripInvalidXml($ap_info_array['otx']).'<br />'."";}else{$OTx = '';}
 		if(isset($ap_info_array['points'])){$points = '<b>Points: </b><a href="'.$this->URL_BASE.'api/export.php?func=exp_ap_sig&id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$this->stripInvalidXml($ap_info_array['points']).'</a><br />'."";}else{$points = '';}
-		if(isset($ap_info_array['FA'])){$FA = '<b>First Active: </b>'.$this->stripInvalidXml($ap_info_array['FA']).'<br />'."";}else{$FA = '';}
-		if(isset($ap_info_array['LA'])){$LA = '<b>Last Active: </b>'.$this->stripInvalidXml($ap_info_array['LA']).'<br />'."";}else{$LA = '';}
+		if(isset($ap_info_array['fa'])){$FA = '<b>First Active: </b>'.$this->stripInvalidXml($ap_info_array['fa']).'<br />'."";}else{$FA = '';}
+		if(isset($ap_info_array['la'])){$LA = '<b>Last Active: </b>'.$this->stripInvalidXml($ap_info_array['la']).'<br />'."";}else{$LA = '';}
 		if(isset($ap_info_array['hist_date'])){$hist_date = '<b>Hist Date: </b>'.$this->stripInvalidXml($ap_info_array['hist_date']).'<br />'."";}else{$hist_date = '';}
 		if(isset($ap_info_array['lat'])){$lat = '<b>Latitude: </b>'.$this->stripInvalidXml($ap_info_array['lat']).'<br />'."";}else{$lat = '';}
 		if(isset($ap_info_array['lon'])){$lon = '<b>Longitude: </b>'.$this->stripInvalidXml($ap_info_array['lon']).'<br />'."";}else{$lon = '';}
@@ -402,15 +402,15 @@ class createKML
 				<![CDATA[
 					<b>SSID: </b>".$ap_ssid."<br />
 					<b>Mac Address: </b>".$ap_info_array['mac']."<br />
-					<b>Network Type: </b>".$ap_info_array['NT']."<br />
+					<b>Network Type: </b>".$ap_info_array['nt']."<br />
 					<b>Radio Type: </b>".$ap_info_array['radio']."<br />
 					<b>Channel: </b>".$ap_info_array['chan']."<br />
 					<b>Authentication: </b>".$ap_info_array['auth']."<br />
 					<b>Encryption: </b>".$ap_info_array['encry']."<br />
-					<b>Basic Transfer Rates: </b>".$ap_info_array['BTx']."<br />
-					<b>Other Transfer Rates: </b>".$ap_info_array['OTx']."<br />
-					<b>First Active: </b>".$ap_info_array['FA']."<br />
-					<b>Last Updated: </b>".$ap_info_array['LA']."<br />
+					<b>Basic Transfer Rates: </b>".$ap_info_array['btx']."<br />
+					<b>Other Transfer Rates: </b>".$ap_info_array['otx']."<br />
+					<b>First Active: </b>".$ap_info_array['fa']."<br />
+					<b>Last Updated: </b>".$ap_info_array['la']."<br />
 					<b>Latitude: </b>".$ap_info_array['lat']."<br />
 					<b>Longitude: </b>".$ap_info_array['lon']."<br />
 					<b>Manufacturer: </b>".$ap_info_array['manuf']."<br />

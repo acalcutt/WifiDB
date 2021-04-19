@@ -55,7 +55,7 @@ if not, write to the
 							</div>
 {elseif $func eq "exp_search"}
 							<div style='text-align: center;'>
-								Search Map<br>
+								Search Map {if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {if ((($from / $inc) + 1) * $inc) gt $point_count}{$point_count}{else}{(($from / $inc) + 1) * $inc}{/if}){/if}<br>
 							</div>
 {/if}
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
@@ -457,8 +457,8 @@ toggle_label()
 									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
 									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
 									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';									
+									if (feature.properties.fa) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.la) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';									
 									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
 									if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
 									if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
@@ -500,10 +500,10 @@ toggle_label()
 									if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
 									if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
 									if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
-									if (feature.properties.NT) text += '<li>Network Type: <b>' + feature.properties.NT + '</b></li>';
+									if (feature.properties.nt) text += '<li>Network Type: <b>' + feature.properties.nt + '</b></li>';
 									if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
-									if (feature.properties.FA) text += '<li>First: <b>' + feature.properties.FA + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last: <b>' + feature.properties.LA + '</b></li>';
+									if (feature.properties.fa) text += '<li>First: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.la) text += '<li>Last: <b>' + feature.properties.la + '</b></li>';
 									if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
 									if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
 									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';

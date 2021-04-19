@@ -294,6 +294,13 @@ switch($func)
 		$layer_source_all .= $ll['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"none");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
+
+		$clgs = $dbcore->createGeoJSON->CreateCellListGeoJsonSource($id, $from, $inc);
+		$cl = $dbcore->createGeoJSON->CreateCellLayer($clgs['layer_name']);
+		$layer_source_all .= $clgs['layer_source'];
+		$layer_source_all .= $cl['layer_source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer($clgs['layer_name'],"", "Open Sans Regular", 10, "none");
+
 		
 		$mlgs = $dbcore->createGeoJSON->CreateListGeoJsonSource($id, $from, $inc);
 		$ml = $dbcore->createGeoJSON->CreateApLayer($mlgs['layer_name']);
@@ -302,7 +309,7 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($mlgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$mlgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$cell_layer_name = "'".$clgs['layer_name']."','".$layer_cell['layer_name']."'";
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);

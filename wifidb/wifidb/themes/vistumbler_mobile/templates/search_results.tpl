@@ -21,17 +21,13 @@ if not, write to the
 			<div class="main">
 				{include file="topmenu.tpl"}
 				<div class="center">
-				<h2>Total APs found: {$total_rows|default:"0"}</h2>
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td align="center" colspan="10">
+				<b>Search Results: {$total_rows|default:"0"|number_format} Points</b><br/><br/>
 								<a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Save Link</a> | 
 								<a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_search&inc={$map_inc}&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Map</a> | 
 								<a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">JSON</a> |								
 								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">KMZ</a>
-							</td>
-						</tr>
+				<table class="content_table">
+					<tbody>
 						<tr class="header">
 							<td width="75px">GPS
 							</td>
@@ -108,8 +104,8 @@ if not, write to the
 							<td class="{$result.class}">{$result.radio}</td>
 							<td class="{$result.class}">{$result.auth}</td>
 							<td class="{$result.class}">{$result.encry}</td>
-							<td class="{$result.class}">{$result.FA}</td>
-							<td class="{$result.class}">{$result.LA}</td>
+							<td class="{$result.class}">{$result.fa}</td>
+							<td class="{$result.class}">{$result.la}</td>
 							<td class="{$result.class}">{$result.points}</td>
 						</tr>
 						{foreachelse}

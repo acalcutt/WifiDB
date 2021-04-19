@@ -26,10 +26,7 @@ include('lib/init.inc.php');
 $usersa =  array();
 
 #Get SECTYPE and AP Counts
-if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT `SECTYPE`, count(`AP_ID`) AS `ap_count` FROM `wifi_ap` WHERE `fa` IS NOT NULL GROUP BY `SECTYPE`";}
-else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT [SECTYPE], count([AP_ID]) AS [ap_count] FROM [wifi_ap] WHERE [fa] IS NOT NULL GROUP BY [SECTYPE]";}
+$sql = "SELECT SECTYPE, count(AP_ID) AS ap_count FROM wifi_ap WHERE BSSID <> '00:00:00:00:00:00' AND fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' GROUP BY SECTYPE";
 $result = $dbcore->sql->conn->query($sql);
 $count = null;
 $open = null;

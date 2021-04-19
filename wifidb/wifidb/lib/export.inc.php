@@ -97,15 +97,15 @@ class export extends dbcore
 			"ssid" => $ap['SSID'],
 			"chan" => $ap['CHAN'],
 			"radio" => $ap['RADTYPE'],
-			"NT" => $ap['NETTYPE'],
+			"nt" => $ap['NETTYPE'],
 			"sectype" => $ap['SECTYPE'],
 			"auth" => $ap['AUTH'],
 			"encry" => $ap['ENCR'],
-			"BTx" => $ap['BTX'],
-			"OTx" => $ap['OTX'],
+			"btx" => $ap['BTX'],
+			"otx" => $ap['OTX'],
 			"flags" => $ap['FLAGS'],
-			"FA" => $ap['fa'],
-			"LA" => $ap['la'],
+			"fa" => $ap['fa'],
+			"la" => $ap['la'],
 			"points" => $ap['points'],
 			"high_sig" => $ap['high_gps_sig'],
 			"high_rssi" => $ap['high_gps_rssi'],
@@ -219,14 +219,14 @@ class export extends dbcore
 				"ssid" => $ap['SSID'],
 				"chan" => $ap['CHAN'],
 				"radio" => $ap['RADTYPE'],
-				"NT" => $ap['NETTYPE'],
+				"nt" => $ap['NETTYPE'],
 				"sectype" => $ap['SECTYPE'],
 				"auth" => $ap['AUTH'],
 				"encry" => $ap['ENCR'],
-				"BTx" => $ap['BTX'],
-				"OTx" => $ap['OTX'],
-				"FA" => $ap['fa'],
-				"LA" => $ap['la'],
+				"btx" => $ap['BTX'],
+				"otx" => $ap['OTX'],
+				"fa" => $ap['fa'],
+				"la" => $ap['la'],
 				"points" => $ap['points'],
 				"high_gps_sig" => $ap['high_gps_sig'],
 				"high_gps_rssi" => $ap['high_gps_rssi'],
@@ -320,14 +320,14 @@ class export extends dbcore
 			"ssid" => $apinfo['SSID'],
 			"chan" => $apinfo['CHAN'],
 			"radio" => $apinfo['RADTYPE'],
-			"NT" => $apinfo['NETTYPE'],
+			"nt" => $apinfo['NETTYPE'],
 			"sectype" => $apinfo['SECTYPE'],
 			"auth" => $apinfo['AUTH'],
 			"encry" => $apinfo['ENCR'],
-			"BTx" => $apinfo['BTX'],
-			"OTx" => $apinfo['OTX'],
-			"FA" => $apinfo['fa'],
-			"LA" => $apinfo['la'],
+			"btx" => $apinfo['BTX'],
+			"otx" => $apinfo['OTX'],
+			"fa" => $apinfo['fa'],
+			"la" => $apinfo['la'],
 			"points" => $apinfo['points'],
 			"high_gps_sig" => $apinfo['high_gps_sig'],
 			"high_gps_rssi" => $apinfo['high_gps_rssi'],
@@ -416,14 +416,14 @@ class export extends dbcore
 			"ssid" => $apinfo['SSID'],
 			"chan" => $apinfo['CHAN'],
 			"radio" => $apinfo['RADTYPE'],
-			"NT" => $apinfo['NETTYPE'],
+			"nt" => $apinfo['NETTYPE'],
 			"sectype" => $apinfo['SECTYPE'],
 			"auth" => $apinfo['AUTH'],
 			"encry" => $apinfo['ENCR'],
-			"BTx" => $apinfo['BTX'],
-			"OTx" => $apinfo['OTX'],
-			"FA" => $apinfo['fa'],
-			"LA" => $apinfo['la'],
+			"btx" => $apinfo['BTX'],
+			"otx" => $apinfo['OTX'],
+			"fa" => $apinfo['fa'],
+			"la" => $apinfo['la'],
 			"points" => $apinfo['points'],
 			"high_sig" => $apinfo['high_sig'],
 			"high_rssi" => $apinfo['high_rssi'],
@@ -574,8 +574,8 @@ class export extends dbcore
 			"chan" => $ap['chan'],
 			"auth" => $ap['authmode'],
 			"type" => $ap['type'],
-			"FA" => $ap['fa'],
-			"LA" => $ap['la'],
+			"fa" => $ap['fa'],
+			"la" => $ap['la'],
 			"points" => $ap['points'],
 			"high_rssi" => $ap['high_rssi'],
 			"high_gps_rssi" => $ap['high_gps_rssi'],
@@ -600,6 +600,112 @@ class export extends dbcore
 			"count" => $apcount,
 			"data" => $ap_array,
 			"latlongarray" => $latlon_array,
+		);
+		
+		return $ret_data;
+	}
+
+	public function CellUserListArray($file_id, $from = NULL, $inc = NULL, $sort = "cell_id", $ord = "DESC", $named=0, $new_ap=0, $only_new=0, $valid_gps = 0, $exclude = "'BT','BLE'", $include = "")
+	{
+		$latlon_array = array();
+		$ap_array = array();
+		$apcount = 0;
+		
+		$sql = "SELECT cell_hist.cell_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, MIN(cell_hist.hist_date) as fa, MAX(cell_hist.hist_date) as la, COUNT(cell_hist.hist_date) As list_points\n"
+			. "FROM cell_hist\n"
+			. "LEFT JOIN files ON cell_hist.file_id = files.id\n"
+			. "LEFT JOIN cell_id ON cell_hist.cell_id = cell_id.cell_id\n"
+			. "WHERE cell_hist.file_id = ?\n";
+		if($exclude){$sql .= "AND cell_id.type NOT IN (".$exclude.")\n";}
+		if($include){$sql .= "AND cell_id.type IN (".$include.")\n";}
+		$sql .= "GROUP BY cell_hist.cell_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new\n"
+			. "ORDER BY {$sort} {$ord}";
+		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		$prep_AP_IDS = $this->sql->conn->prepare($sql);
+		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
+		$prep_AP_IDS->execute();
+		$cidpointer = $prep_AP_IDS->fetchAll();
+		#Get File Info
+		$file_info = array(
+			"id" => $file_id,
+			"title" => $cidpointer[0]['title'],
+			"file" => $cidpointer[0]['file_orig'],
+			"notes" => $cidpointer[0]['notes'],
+			"user" => $cidpointer[0]['file_user'],
+			"date" => $cidpointer[0]['file_date'],
+			"validgps" => $cidpointer[0]['ValidGPS'],
+			"hash" => $cidpointer[0]['hash'],
+			"NewAPPercent" => $cidpointer[0]['NewAPPercent'],
+			"aps" => $cidpointer[0]['aps'],
+			"gps" => $cidpointer[0]['gps'],
+			"size" => $cidpointer[0]['size'],
+			"new" => $cidpointer[0]['new'],
+			"list_points" => $cidpointer[0]['list_points'],
+			"points" => $cidpointer[0]['points']
+		);
+
+		#Get Cell Info
+		foreach($cidpointer as $cid)
+		{
+			$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.file_user As file_user\n"
+				. "FROM cell_id AS cid\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
+				. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
+				. "WHERE cid.cell_id = ?";
+			$result = $this->sql->conn->prepare($sql);
+			$result->bindParam(1, $cid['cell_id'], PDO::PARAM_INT);
+			$result->execute();
+			$appointer = $result->fetchAll();
+			foreach($appointer as $ap)
+			{
+				if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
+				if($cid['new'] == 1){$new='New';}else{$new='Update';}
+				#Get AP GeoJSON
+				$ap_info = array(
+				"id" => $ap['cell_id'],
+				"nu" => $new,
+				"new_ap" => $new_ap,
+				"named" => $named,
+				"mac" => $ap['mac'],
+				"ssid" => $this->formatSSID($ap['ssid']),
+				"chan" => $ap['chan'],
+				"auth" => $ap['authmode'],
+				"type" => $ap['type'],
+				"fa" => $ap['fa'],
+				"la" => $ap['la'],
+				"points" => $ap['points'],
+				"list_points" => $cidpointer[0]['list_points'],
+				"high_rssi" => $ap['high_rssi'],
+				"high_gps_rssi" => $ap['high_gps_rssi'],
+				"lat" => $this->convert->dm2dd($ap['Lat']),
+				"lon" => $this->convert->dm2dd($ap['Lon']),
+				"lat_dm" => $ap['Lat'],
+				"lon_dm" => $ap['Lon'],
+				"validgps" => $validgps,
+				"alt" => $ap['Alt'],
+				"user" => $ap['file_user']
+				);
+				$ap_array[] = $ap_info;
+				$apcount++;
+				
+				$latlon_info = array(
+				"lat" => $this->convert->dm2dd($ap['Lat']),
+				"long" => $this->convert->dm2dd($ap['Lon']),
+				);
+				$latlon_array[] = $latlon_info;
+			}
+		}
+
+		$ret_data = array(
+			"count" => $apcount,
+			"data" => $ap_array,
+			"latlongarray" => $latlon_array,
+			"file_info" => $file_info
 		);
 		
 		return $ret_data;
@@ -703,7 +809,7 @@ class export extends dbcore
 			. "FROM wifi_ap\n"
 			. "WHERE\n"
 			. "BSSID <> '00:00:00:00:00:00' AND\n"
-			. "fa IS NOT NULL AND\n"
+			. "fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND\n"
 			. "SSID LIKE ? AND\n"
 			. "BSSID LIKE ? AND\n"
 			. "RADTYPE LIKE ? AND\n"
@@ -734,7 +840,7 @@ class export extends dbcore
 			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 			. "WHERE\n"
 			. "BSSID <> '00:00:00:00:00:00' AND\n"
-			. "fa IS NOT NULL AND\n"
+			. "fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND\n"
 			. "wap.SSID LIKE ? AND\n"
 			. "wap.BSSID LIKE ? AND\n"
 			. "wap.RADTYPE LIKE ? AND\n"
@@ -743,7 +849,7 @@ class export extends dbcore
 			. "wap.ENCR LIKE ?\n";
 		if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
 		if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
-		$sql .= " ORDER BY $sort $ord ";	
+		$sql .= " ORDER BY $sort $ord";	
 		if($from !== NULL && $inc !== NULL){
 			if($this->sql->service == "mysql"){$sql .=  " LIMIT ".$from.", ".$inc;}
 			else if($this->sql->service == "sqlsrv"){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
@@ -777,19 +883,21 @@ class export extends dbcore
 			"ssid" => $this->formatSSID($newArray['SSID']),
 			"chan" => $newArray['CHAN'],
 			"radio" => $newArray['RADTYPE'],
-			"NT" => $newArray['NETTYPE'],
+			"nt" => $newArray['NETTYPE'],
 			"sectype" => $newArray['SECTYPE'],
 			"auth" => $newArray['AUTH'],
 			"encry" => $newArray['ENCR'],
-			"BTx" => $newArray['BTX'],
-			"OTx" => $newArray['OTX'],
-			"FA" => $newArray['fa'],
-			"LA" => $newArray['la'],
+			"btx" => $newArray['BTX'],
+			"otx" => $newArray['OTX'],
+			"fa" => $newArray['fa'],
+			"la" => $newArray['la'],
 			"points" => $newArray['points'],
 			"high_gps_sig" => $newArray['high_gps_sig'],
 			"high_gps_rssi" => $newArray['high_gps_rssi'],
 			"lat" => $this->convert->dm2dd($newArray['Lat']),
 			"lon" => $this->convert->dm2dd($newArray['Lon']),
+			"lat_dm" => $newArray['Lat'],
+			"lon_dm" => $newArray['Lon'],
 			"alt" => $newArray['Alt'],
 			"manuf"=>$this->findManuf($newArray['BSSID']),
 			"user" => $newArray['file_user'],

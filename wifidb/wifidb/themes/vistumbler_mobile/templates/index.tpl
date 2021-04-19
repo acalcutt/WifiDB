@@ -21,10 +21,10 @@ You should have received a copy of the GNU General Public License along with thi
 								<th class="header-centered">Secure APs</th>
 						</tr>
 						<tr>
-								<td class="light-centered"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500" title="All Users">{$total_aps|escape:'htmlall'}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&map_inc=200000" title="Open APs">{$open_aps|escape:'htmlall'}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&map_inc=200000" title="WEP APs">{$wep_aps|escape:'htmlall'}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&map_inc=200000" title="Secure APs">{$sec_aps|escape:'htmlall'}</a></td>
+								<td class="light-centered"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500" title="All Users">{$total_aps|number_format}</a></td>
+								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&map_inc=200000" title="Open APs">{$open_aps|number_format}</a></td>
+								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&map_inc=200000" title="WEP APs">{$wep_aps|number_format}</a></td>
+								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&map_inc=200000" title="Secure APs">{$sec_aps|number_format}</a></td>
 						</tr>
 						<tr>
 								<th class="header-centered">Total Users</th>
@@ -34,7 +34,7 @@ You should have received a copy of the GNU General Public License along with thi
 						</tr>
 						<tr>
 								<td class="dark-centered">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users|escape:'htmlall'}</a>
+									<a href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users|number_format}</a>
 								</td>
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>

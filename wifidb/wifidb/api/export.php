@@ -428,7 +428,7 @@ switch($func)
 			if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 			if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-			$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
+			$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","fa","la","points","ModDate");
 			if(!in_array($sort, $sorts)){$sort = "ModDate";}
 			$ords=array("ASC","DESC");
 			if(!in_array($ord, $ords)){$ord = "DESC";}

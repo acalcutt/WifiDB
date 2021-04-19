@@ -59,17 +59,17 @@ class createGeoJSON
 		if(isset($ap_info_array['first_file_id'])){$first_file_id = '"first_file_id":'.json_encode($ap_info_array['first_file_id'], JSON_NUMERIC_CHECK).',';}else{$first_file_id = '';}
 		if(isset($ap_info_array['mac'])){$mac = '"mac":'.json_encode($ap_info_array['mac']).',';}else{$mac = '';}
 		if(isset($ap_info_array['sectype'])){$sectype = '"sectype":'.json_encode($ap_info_array['sectype'], JSON_NUMERIC_CHECK).',';}else{$sectype = '';}
-		if(isset($ap_info_array['NT'])){$NT = '"NT":'.json_encode($ap_info_array['NT']).',';}else{$NT = '';}
+		if(isset($ap_info_array['nt'])){$NT = '"nt":'.json_encode($ap_info_array['nt']).',';}else{$NT = '';}
 		if(isset($ap_info_array['radio'])){$radio = '"radio":'.json_encode($ap_info_array['radio']).',';}else{$radio = '';}
 		if(isset($ap_info_array['chan'])){$chan = '"chan":'.json_encode($ap_info_array['chan']).',';}else{$chan = '';}
 		if(isset($ap_info_array['auth'])){$auth = '"auth":'.json_encode($ap_info_array['auth']).',';}else{$auth = '';}
 		if(isset($ap_info_array['encry'])){$encry = '"encry":'.json_encode($ap_info_array['encry']).',';}else{$encry = '';}
 		if(isset($ap_info_array['type'])){$type = '"type":'.json_encode($ap_info_array['type']).',';}else{$type = '';}
-		if(isset($ap_info_array['BTx'])){$BTx = '"BTx":'.json_encode($ap_info_array['BTx']).',';}else{$BTx = '';}
-		if(isset($ap_info_array['OTx'])){$OTx = '"OTx":'.json_encode($ap_info_array['OTx']).',';}else{$OTx = '';}
+		if(isset($ap_info_array['btx'])){$BTx = '"btx":'.json_encode($ap_info_array['btx']).',';}else{$BTx = '';}
+		if(isset($ap_info_array['otx'])){$OTx = '"otx":'.json_encode($ap_info_array['otx']).',';}else{$OTx = '';}
 		if(isset($ap_info_array['points'])){$points = '"points":'.json_encode($ap_info_array['points']).',';}else{$points = '';}
-		if(isset($ap_info_array['FA'])){$FA = '"FA":'.json_encode($ap_info_array['FA']).',';}else{$FA = '';}
-		if(isset($ap_info_array['LA'])){$LA = '"LA":'.json_encode($ap_info_array['LA']).',';}else{$LA = '';}
+		if(isset($ap_info_array['fa'])){$FA = '"fa":'.json_encode($ap_info_array['fa']).',';}else{$FA = '';}
+		if(isset($ap_info_array['la'])){$LA = '"la":'.json_encode($ap_info_array['la']).',';}else{$LA = '';}
 		if(isset($ap_info_array['lat'])){$lat = '"lat":'.json_encode($ap_info_array['lat']).',';}else{$lat = '';}
 		if(isset($ap_info_array['lon'])){$lon = '"lon":'.json_encode($ap_info_array['lon']).',';}else{$lon = '';}
 		if(isset($ap_info_array['alt'])){$alt = '"alt":'.json_encode($ap_info_array['alt']).',';}else{$alt = '';}
@@ -101,8 +101,8 @@ class createGeoJSON
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"mac","{mac}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{FA}",$font,$size,$visibility);
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"LA","{LA}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"fa","{fa}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"la","{la}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"points","{points}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_sig","{high_gps_sig}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_rssi","{high_gps_rssi}",$font,$size,$visibility);
@@ -115,8 +115,8 @@ class createGeoJSON
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"mac","{mac}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"FA","{fa}",$font,$size,$visibility);
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"LA","{la}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"fa","{fa}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"la","{la}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"points","{points}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_rssi","{rssi}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"high_gps_sig","{rssi}",$font,$size,$visibility);
@@ -343,6 +343,26 @@ class createGeoJSON
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
 			data: '".$this->URL_BASE."api/geojson.php?func=exp_cell_sig&id=".$cell_id."&file_id=".$file_id."&from=".$from."&inc=".$inc."',
+			buffer: 0,
+		});";
+
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_name,
+		);
+		
+		return $ret_data;
+	}
+
+	public function CreateCellListGeoJsonSource($id, $from = NULL, $inc = NULL)
+	{
+		$layer_url = $this->URL_BASE."api/geojson.php?func=exp_cid_list&id=".$id;
+		if($from !== NULL && $inc !== NULL){$layer_url .=  "&from=".$from."&inc=".$inc;}
+		$layer_name = "clist_".$id;
+		$layer_source = "\n
+		map.addSource('".$layer_name."', {
+			type: 'geojson',
+			data: '".$layer_url."',
 			buffer: 0,
 		});";
 

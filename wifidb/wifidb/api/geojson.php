@@ -56,16 +56,18 @@ switch($func)
 			"ssid" => $ap['ssid'],
 			"chan" => $ap['chan'],
 			"radio" => $ap['radio'],
-			"NT" => $ap['NT'],
+			"nt" => $ap['NT'],
 			"sectype" => $ap['sectype'],
 			"auth" => $ap['auth'],
 			"encry" => $ap['encry'],
-			"BTx" => $ap['BTx'],
-			"OTx" => $ap['OTx'],
-			"FA" => $ap['FA'],
-			"LA" => $ap['LA'],
+			"btx" => $ap['BTx'],
+			"otx" => $ap['OTx'],
+			"fa" => $ap['FA'],
+			"la" => $ap['LA'],
 			"lat" => $dbcore->convert->dm2dd($ap['lat']),
 			"lon" => $dbcore->convert->dm2dd($ap['long']),
+			"lat_dm" => $ap['lat'],
+			"lon_dm" => $ap['long'],
 			"manuf"=>$dbcore->findManuf($ap['mac']),
 			"user" => $ap['username']
 			);
@@ -162,7 +164,31 @@ switch($func)
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
 
 		break;
+
+	case "exp_cid_list":
+		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+		$title = "File_".$id;
 		
+		
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $id, PDO::PARAM_INT);
+		$prep->execute();
+		$dbcore->sql->checkError(__LINE__, __FILE__);
+		$fetch = $prep->fetch();
+		$title .= "_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $fetch['title']);
+		if($range){$title .= "_".$range;}
+
+		$CellUserListArray = $dbcore->export->CellUserListArray($id, $from, $inc, "cell_id", "DESC", 0, 0, 0, 1);
+		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellUserListArray['latlongarray']);
+		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellUserListArray['data']);
+		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
+
+		break;
+
 	case "exp_user_all":
 		$user = $_REQUEST['user'];
 		$title = "User_".preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
@@ -179,13 +205,13 @@ switch($func)
 		if(empty($start_date)){	
 			#Get the date of the newest import
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY date DESC LIMIT 1";}
+				{$sql = "SELECT file_date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY file_date DESC LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT TOP 1 [date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [date] DESC";}
+				{$sql = "SELECT TOP 1 [file_date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [file_date] DESC";}
 			$date_query = $dbcore->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
-			$start_date = date('Y-m-d',strtotime($date_fetch['date']));
-			$end_date = date('Y-m-d',strtotime($date_fetch['date']));
+			$start_date = date('Y-m-d',strtotime($date_fetch['file_date']));
+			$end_date = date('Y-m-d',strtotime($date_fetch['file_date']));
 			$title_date = $start_date;
 		}elseif(empty($end_date)){
 			$end_date = $start_date;
@@ -224,7 +250,7 @@ switch($func)
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
+		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","fa","la","points","ModDate");
 		if(!in_array($sort, $sorts)){$sort = "ModDate";}
 		$ords=array("ASC","DESC");
 		if(!in_array($ord, $ords)){$ord = "DESC";}

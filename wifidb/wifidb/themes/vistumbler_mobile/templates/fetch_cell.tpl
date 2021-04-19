@@ -57,8 +57,8 @@ if not, write to the
 							<tr><td class="header" width="112">Channel #</td><td class="light" width="439">{$wifidb_cid.chan|escape:'htmlall'}</td></tr>
 							<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_cid.lat_dm|escape:'htmlall'}</td></tr>
 							<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_cid.lon_dm|escape:'htmlall'}</td></tr>
-							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_cid.FA|escape:'htmlall'}</td></tr>
-							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_cid.LA|escape:'htmlall'}</td></tr>
+							<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_cid.fa|escape:'htmlall'}</td></tr>
+							<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_cid.la|escape:'htmlall'}</td></tr>
 							<tr><td class="header" width="112">High RSSI</td><td class="light" width="439">{$wifidb_cid.high_rssi|escape:'htmlall'}</td></tr>
 							<tr><td class="header" width="112">High RSSI w/GPS</td><td class="light" width="439">{$wifidb_cid.high_gps_rssi|escape:'htmlall'}</td></tr>
 							<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_cid.points|number_format:0}</td></tr>

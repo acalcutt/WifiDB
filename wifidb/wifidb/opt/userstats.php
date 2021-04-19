@@ -8,7 +8,7 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 */
 define("SWITCH_SCREEN", "HTML");
-define("SWITCH_EXTRAS", "");
+define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
@@ -35,6 +35,7 @@ else
 	$dbcore->smarty->assign("wifidb_page_label", "Users Statistics Page");
 }
 
+$dbcore->smarty->assign('func' , $func);
 switch($func)
 {
 		case "allusers":
@@ -55,6 +56,7 @@ switch($func)
 			if(!in_array($sort, $sorts)){$sort = "id";}
 			
 			$dbcore->UsersLists($user, $sort, $ord, $from, $inc);
+			
 			$dbcore->smarty->assign('wifidb_user_details', $dbcore->user_all_imports_data);
 			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 			$dbcore->smarty->assign('sort' , $sort);
@@ -67,11 +69,47 @@ switch($func)
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 			
 			$dbcore->UserAPList($row, $sort, $ord);
+			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, 1);
 			$dbcore->smarty->assign('wifidb_all_user_aps' , $dbcore->users_import_aps);
 			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
+			$dbcore->smarty->assign('cids' , $CellUserListArray['count']);
 			$dbcore->smarty->assign('sort' , $sort);
 			$dbcore->smarty->assign('ord' , $ord);
 			$dbcore->smarty->display('user_import_aps.tpl');
+			break;
+		case "cidlist":
+			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","list_points","points");
+			if(!in_array($sort, $sorts)){$sort = "cell_id";}
+			
+			$UserListArray = $dbcore->export->UserListArray($row, $from, 1);
+			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, $inc, $sort, $ord, 0, 0, 0, 0, "'BT','BLE'");
+			$cell_info = $CellUserListArray['data'];
+			$file_info = $CellUserListArray['file_info'];
+			
+			$dbcore->smarty->assign('points', $cell_info);
+			$dbcore->smarty->assign('file_info', $file_info);
+			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
+			$dbcore->smarty->assign('aps' , $UserListArray['count']);
+			$dbcore->smarty->assign('sort' , $sort);
+			$dbcore->smarty->assign('ord' , $ord);
+			$dbcore->smarty->display('user_import_cids.tpl');
+			break;
+		case "btlist":
+			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","list_points","points");
+			if(!in_array($sort, $sorts)){$sort = "cell_id";}
+			
+			$UserListArray = $dbcore->export->UserListArray($row, $from, 1);
+			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, $inc, $sort, $ord, 0, 0, 0, 0, "", "'BT','BLE'");
+			$cell_info = $CellUserListArray['data'];
+			$file_info = $CellUserListArray['file_info'];
+			
+			$dbcore->smarty->assign('points', $cell_info);
+			$dbcore->smarty->assign('file_info', $file_info);
+			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
+			$dbcore->smarty->assign('aps' , $UserListArray['count']);
+			$dbcore->smarty->assign('sort' , $sort);
+			$dbcore->smarty->assign('ord' , $ord);
+			$dbcore->smarty->display('user_import_cids.tpl');
 			break;
 		#-------------
 		case "allap":
