@@ -172,15 +172,36 @@ class export extends dbcore
 		$latlon_array = array();
 		$ap_array = array();
 		$apcount = 0;
-		
-		$sql = "SELECT wifi_hist.AP_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID, MAX(wifi_hist.New) AS new, MIN(wifi_hist.Hist_Date) as fa, MAX(wifi_hist.Hist_Date) as la, COUNT(wifi_hist.Hist_Date) As list_points\n"
+
+		#Get File Info
+		$sql = "SELECT id, file_orig, file_user, file_date, title, notes, hash, NewAPPercent, aps, gps, size, ValidGPS FROM files WHERE id= ?";
+		$prepf = $this->sql->conn->prepare($sql);
+		$prepf->bindParam(1,$file_id, PDO::PARAM_INT);
+		$prepf->execute();
+		$file_array = $prepf->fetch(2);
+		$file_info = array(
+			"id" => $file_array['id'],
+			"file" => $file_array['file_orig'],
+			"user" => $file_array['file_user'],
+			"date" => $file_array['file_date'],
+			"title" => $file_array['title'],
+			"notes" => $file_array['notes'],
+			"hash" => $file_array['hash'],			
+			"validgps" => $file_array['ValidGPS'],
+			"aps" => $file_array['aps'],
+			"gps" => $file_array['gps'],
+			"size" => $file_array['size'],
+			"NewAPPercent" => $file_array['NewAPPercent'],		
+		);
+
+		#Get AP Info
+		$sql = "SELECT wifi_hist.AP_ID, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID, MAX(wifi_hist.New) AS new, MIN(wifi_hist.Hist_Date) as fa, MAX(wifi_hist.Hist_Date) as la, COUNT(wifi_hist.Hist_Date) As list_points\n"
 			. "FROM wifi_hist\n"
-			. "LEFT JOIN files ON wifi_hist.File_ID = files.id\n"
 			. "LEFT JOIN wifi_ap ON wifi_hist.AP_ID = wifi_ap.AP_ID\n"
 			. "WHERE wifi_hist.File_ID = ?";
 		if($only_new == 1){$sql .= " AND wifi_hist.New = 1";}	
 		if($valid_gps){$sql .= " AND wifi_ap.HighGps_ID IS NOT NULL";}
-		$sql .= "\nGROUP BY wifi_hist.AP_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID\n"
+		$sql .= "\nGROUP BY wifi_hist.AP_ID, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID\n"
 			. "ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
 		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
@@ -189,27 +210,6 @@ class export extends dbcore
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
 		$filepointer = $prep_AP_IDS->fetchAll();
-
-		#Get File Info
-		$file_info = array(
-			"id" => $file_id,
-			"title" => $filepointer[0]['title'],
-			"file" => $filepointer[0]['file_orig'],
-			"notes" => $filepointer[0]['notes'],
-			"user" => $filepointer[0]['file_user'],
-			"date" => $filepointer[0]['file_date'],
-			"validgps" => $filepointer[0]['ValidGPS'],
-			"hash" => $filepointer[0]['hash'],
-			"NewAPPercent" => $filepointer[0]['NewAPPercent'],
-			"aps" => $filepointer[0]['aps'],
-			"gps" => $filepointer[0]['gps'],
-			"size" => $filepointer[0]['size'],
-			"new" => $filepointer[0]['new'],
-			"list_points" => $filepointer[0]['list_points'],
-			"points" => $filepointer[0]['points']
-		);
-		
-		#Get AP Info
 		foreach($filepointer as $array)
 		{
 			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
@@ -638,15 +638,37 @@ class export extends dbcore
 		$latlon_array = array();
 		$ap_array = array();
 		$apcount = 0;
-		
-		$sql = "SELECT cell_hist.cell_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, MIN(cell_hist.hist_date) as fa, MAX(cell_hist.hist_date) as la, COUNT(cell_hist.hist_date) As list_points\n"
+
+		#Get File Info
+		$sql = "SELECT id, file_orig, file_user, file_date, title, notes, hash, NewAPPercent, aps, gps, size, ValidGPS FROM files WHERE id= ?";
+		$prepf = $this->sql->conn->prepare($sql);
+		$prepf->bindParam(1,$file_id, PDO::PARAM_INT);
+		$prepf->execute();
+		$file_array = $prepf->fetch(2);
+		$file_info = array(
+			"id" => $file_array['id'],
+			"file" => $file_array['file_orig'],
+			"user" => $file_array['file_user'],
+			"date" => $file_array['file_date'],
+			"title" => $file_array['title'],
+			"notes" => $file_array['notes'],
+			"hash" => $file_array['hash'],			
+			"validgps" => $file_array['ValidGPS'],
+			"aps" => $file_array['aps'],
+			"gps" => $file_array['gps'],
+			"size" => $file_array['size'],
+			"NewAPPercent" => $file_array['NewAPPercent'],		
+		);
+
+		#Get Cell Info
+		$sql = "SELECT cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network, MIN(cell_hist.hist_date) as fa, MAX(cell_hist.hist_date) as la, COUNT(cell_hist.hist_date) As list_points\n"
 			. "FROM cell_hist\n"
-			. "LEFT JOIN files ON cell_hist.file_id = files.id\n"
 			. "LEFT JOIN cell_id ON cell_hist.cell_id = cell_id.cell_id\n"
+			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cell_id.mac,0,4) AND CAST(mnc AS varchar) = substring(cell_id.mac,4,3)\n"
 			. "WHERE cell_hist.file_id = ?\n";
 		if($exclude){$sql .= "AND cell_id.type NOT IN (".$exclude.")\n";}
 		if($include){$sql .= "AND cell_id.type IN (".$include.")\n";}
-		$sql .= "GROUP BY cell_hist.cell_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, files.hash, files.NewAPPercent, files.aps, files.gps, files.size, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new\n"
+		$sql .= "GROUP BY cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network\n"
 			. "ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
 		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
@@ -654,26 +676,6 @@ class export extends dbcore
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
 		$cidpointer = $prep_AP_IDS->fetchAll();
-		#Get File Info
-		$file_info = array(
-			"id" => $file_id,
-			"title" => $cidpointer[0]['title'],
-			"file" => $cidpointer[0]['file_orig'],
-			"notes" => $cidpointer[0]['notes'],
-			"user" => $cidpointer[0]['file_user'],
-			"date" => $cidpointer[0]['file_date'],
-			"validgps" => $cidpointer[0]['ValidGPS'],
-			"hash" => $cidpointer[0]['hash'],
-			"NewAPPercent" => $cidpointer[0]['NewAPPercent'],
-			"aps" => $cidpointer[0]['aps'],
-			"gps" => $cidpointer[0]['gps'],
-			"size" => $cidpointer[0]['size'],
-			"new" => $cidpointer[0]['new'],
-			"list_points" => $cidpointer[0]['list_points'],
-			"points" => $cidpointer[0]['points']
-		);
-
-		#Get Cell Info
 		foreach($cidpointer as $cid)
 		{
 			$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
@@ -700,14 +702,15 @@ class export extends dbcore
 				"new_ap" => $new_ap,
 				"named" => $named,
 				"mac" => $ap['mac'],
+				"network" => $ap['network'],
 				"ssid" => $this->formatSSID($ap['ssid']),
 				"chan" => $ap['chan'],
 				"auth" => $ap['authmode'],
 				"type" => $ap['type'],
 				"fa" => $ap['fa'],
 				"la" => $ap['la'],
-				"points" => $ap['points'],
-				"list_points" => $cidpointer[0]['list_points'],
+				"points" => $cid['points'],
+				"list_points" => $cid['list_points'],
 				"high_rssi" => $ap['high_rssi'],
 				"high_gps_rssi" => $ap['high_gps_rssi'],
 				"lat" => $this->convert->dm2dd($ap['Lat']),
