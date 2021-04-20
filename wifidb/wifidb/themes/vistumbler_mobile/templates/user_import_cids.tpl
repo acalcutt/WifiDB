@@ -144,6 +144,13 @@ You should have received a copy of the GNU General Public License along with thi
 									</div>
 								</th>
 								<th class="header">
+									<div>Country</div>
+									<div>
+										<a href="?func={$func}&row={$file_info.id}&sort=country&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func}&row={$file_info.id}&sort=country&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									</div>
+								</th>
+								<th class="header">
 									<div>Points (List / Total)</div>
 									<div>
 										<a href="?func={$func}&row={$file_info.id}&sort=list_points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'list_points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
@@ -177,6 +184,7 @@ You should have received a copy of the GNU General Public License along with thi
 								<td class="cell_border">{$wifidb_users_aps.fa|escape:'htmlall'}</td>
 								<td class="cell_border">{$wifidb_users_aps.la|escape:'htmlall'}</td>
 								<td class="cell_border">{$wifidb_users_aps.network|escape:'htmlall'}</td>
+								<td class="cell_border">{$wifidb_users_aps.country|escape:'htmlall'}</td>
 								<td class="cell_border">{$wifidb_users_aps.list_points|number_format:0} / {$wifidb_users_aps.points|number_format:0}</td>
 							</tr>
 							{/foreach}

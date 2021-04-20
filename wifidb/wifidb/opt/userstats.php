@@ -82,7 +82,7 @@ switch($func)
 			$dbcore->smarty->display('user_import_aps.tpl');
 			break;
 		case "cidlist":
-			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","list_points","points");
+			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","country","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "cell_id";}
 
 			$UserListArray = $dbcore->export->UserListArray($row, $from, 1);
@@ -99,7 +99,7 @@ switch($func)
 			$dbcore->smarty->display('user_import_cids.tpl');
 			break;
 		case "btlist":
-			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","list_points","points");
+			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","country","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "cell_id";}
 			
 			$UserListArray = $dbcore->export->UserListArray($row, $from, 1);

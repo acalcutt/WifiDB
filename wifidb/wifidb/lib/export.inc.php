@@ -661,14 +661,14 @@ class export extends dbcore
 		);
 
 		#Get Cell Info
-		$sql = "SELECT cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network, MIN(cell_hist.hist_date) as fa, MAX(cell_hist.hist_date) as la, COUNT(cell_hist.hist_date) As list_points\n"
+		$sql = "SELECT cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network, cell_carriers.country, MIN(cell_hist.hist_date) as fa, MAX(cell_hist.hist_date) as la, COUNT(cell_hist.hist_date) As list_points\n"
 			. "FROM cell_hist\n"
 			. "LEFT JOIN cell_id ON cell_hist.cell_id = cell_id.cell_id\n"
-			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cell_id.mac,0,4) AND CAST(mnc AS varchar) = substring(cell_id.mac,4,3)\n"
+			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cell_id.mac,0,4) AND CAST(mnc AS varchar) = REPLACE(substring(cell_id.mac,4,3), '_', '')\n"
 			. "WHERE cell_hist.file_id = ?\n";
 		if($exclude){$sql .= "AND cell_id.type NOT IN (".$exclude.")\n";}
 		if($include){$sql .= "AND cell_id.type IN (".$include.")\n";}
-		$sql .= "GROUP BY cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network\n"
+		$sql .= "GROUP BY cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network, cell_carriers.country\n"
 			. "ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
 		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
@@ -702,7 +702,8 @@ class export extends dbcore
 				"new_ap" => $new_ap,
 				"named" => $named,
 				"mac" => $ap['mac'],
-				"network" => $ap['network'],
+				"network" => $cid['network'],
+				"country" => $cid['country'],
 				"ssid" => $this->formatSSID($ap['ssid']),
 				"chan" => $ap['chan'],
 				"auth" => $ap['authmode'],

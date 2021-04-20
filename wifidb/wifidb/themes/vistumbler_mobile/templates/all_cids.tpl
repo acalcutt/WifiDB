@@ -77,6 +77,7 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="?func={$func}&sort=la&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
+							{if $func eq 'cid'}
 							<td class="header">
 								<div>Network</div>
 								<div>
@@ -84,6 +85,14 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="?func={$func}&sort=network&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
+							<td class="header">
+								<div>Country</div>
+								<div>
+									<a href="?func={$func}&sort=country&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func}&sort=country&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+								</div>
+							</td>
+							{/if}
 							<td class="header">
 								<div>Points</div>
 								<div>
@@ -131,9 +140,14 @@ You should have received a copy of the GNU General Public License along with thi
 							<td class="cell_border">
 								{$wifidb_ap.la|escape:'htmlall'}
 							</td>
+							{if $func eq 'cid'}
 							<td class="cell_border">
 								{$wifidb_ap.network|escape:'htmlall'}
 							</td>
+							<td class="cell_border">
+								{$wifidb_ap.country|escape:'htmlall'}
+							</td>
+							{/if}
 							<td class="cell_border">
 								{$wifidb_ap.points|number_format}
 							</td>
