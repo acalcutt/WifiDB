@@ -13,7 +13,7 @@ if($dbcore->sql->service == "mysql")
 		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,\n"
 			. "c_gps.lat AS lat,\n"
 			. "c_gps.lon AS lon,\n"
-			. "c_file.user AS user\n"
+			. "c_file.file_user AS file_user\n"
 			. "FROM cell_id\n"
 			. "INNER JOIN wifi_gps AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id\n"
 			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
@@ -25,7 +25,7 @@ else if($dbcore->sql->service == "sqlsrv")
 		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,\n"
 			. "c_gps.lat AS lat,\n"
 			. "c_gps.lon AS lon,\n"
-			. "c_file.[user] AS [user]\n"
+			. "c_file.[file_user] AS [file_user]\n"
 			. "FROM cell_id\n"
 			. "INNER JOIN wifi_gps AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id\n"
 			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
@@ -74,7 +74,7 @@ for ($i = 0; TRUE; $i++) {
 		"rssi" => $ap['rssi'],
 		"fa" => $ap['fa'],
 		"la" => $ap['la'],
-		"user" => $ap['user'],
+		"user" => $ap['file_user'],
 		"points" => $ap['points']
 		);
 		if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
