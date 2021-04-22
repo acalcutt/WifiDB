@@ -449,6 +449,7 @@ toggle_label()
 									
 									var text = '<ul>';
 									if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
+									if (feature.properties.mapname) text += '<li>Name: <b>' + feature.properties.mapname + '</b></li>';
 									if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
 									if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
 									if (feature.properties.points) text  += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
@@ -556,6 +557,9 @@ toggle_label()
 								waiting();
 							});
 							map.on('move', displayCenter);
+map.on('idle',function(){
+map.resize();
+})
 							</script>
 						</td>
 					</tr>
