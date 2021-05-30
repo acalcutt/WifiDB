@@ -179,7 +179,7 @@ if not, write to the
 
 							<script>
 
-							var map = new mapboxgl.Map({
+							var map = new maplibregl.Map({
 								container: 'map',
 								style: '{$tileserver_gl_url}/styles/{$style}/style.json',
 								center: {$centerpoint},
@@ -190,7 +190,7 @@ if not, write to the
 
 {if $default_marker}
 							// Create a default Marker, colored black
-							var marker = new mapboxgl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
+							var marker = new maplibregl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
 							.setLngLat({$default_marker})
 							.addTo(map);
 {/if}
@@ -411,30 +411,30 @@ toggle_label()
 
 							map.once('style.load', function(e) {
 								//Add GeoLocate button
-								map.addControl(new mapboxgl.GeolocateControl({
+								map.addControl(new maplibregl.GeolocateControl({
 								positionOptions: {
 								enableHighAccuracy: true
 								},
 								trackUserLocation: true
 								}));
 								//Add Fullscreen Button
-								const fs = new mapboxgl.FullscreenControl();
+								const fs = new maplibregl.FullscreenControl();
 								map.addControl(fs)
 								fs._fullscreenButton.classList.add('needsclick');
 								//Add Navigation Control
-								map.addControl(new mapboxgl.NavigationControl({
+								map.addControl(new maplibregl.NavigationControl({
 								  visualizePitch: true,
 								  showZoom: true,
 								  showCompass: true
 								}));
 								//Scale Bar
-								var scale = new mapboxgl.ScaleControl({
+								var scale = new maplibregl.ScaleControl({
 									maxWidth: 80,
 									unit: 'imperial'
 								});
 								map.addControl(scale);
 								//Ad Inspect
-								map.addControl(new MapboxInspect());
+								map.addControl(new MaplibreInspect());
 								//WifiDB Information Popup
 {if $cell_layer_name}
 
@@ -471,7 +471,7 @@ toggle_label()
 									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 
-									var popup = new mapboxgl.Popup()
+									var popup = new maplibregl.Popup()
 										.setLngLat(map.unproject(e.point))
 										.setHTML(text)
 										.addTo(map);
@@ -518,7 +518,7 @@ toggle_label()
 									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 									
-									var popup = new mapboxgl.Popup()
+									var popup = new maplibregl.Popup()
 										.setLngLat(map.unproject(e.point))
 										.setHTML(text)
 										.addTo(map);
@@ -557,9 +557,21 @@ toggle_label()
 								waiting();
 							});
 							map.on('move', displayCenter);
-map.on('idle',function(){
-map.resize();
-})
+
+							//Trigger map resize when menu button is clicked.
+							$(".bt-menu-trigger").click(function () {
+								$(this).toggleClass("buttonstyle")
+										.trigger('classChanged');
+							});
+					  
+							$(".bt-menu-trigger").on(
+								"classChanged", function () {
+								$(document).ready( function () {
+											map.resize();
+									});
+								}
+							);
+	
 							</script>
 						</td>
 					</tr>
