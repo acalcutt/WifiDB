@@ -172,7 +172,7 @@ You should have received a copy of the GNU General Public License along with thi
 								</td>
 								<td class="cell_border">{$wifidb_users_aps.nu|escape:'htmlall'}</td>
 								<td class="cell_border">{$wifidb_users_aps.id|escape:'htmlall'}</td>
-								<td class="cell_border"><a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid|escape:'htmlall'}</a></td>
+								<td class="cell_border"><a href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}" title="View AP Details">{$wifidb_users_aps.ssid|escape:'htmlall'}</a></td>
 								<td class="cell_border">{$wifidb_users_aps.mac|escape:'htmlall'}</td>
 								<td class="cell_border">{$wifidb_users_aps.auth|escape:'htmlall'}</td>
 								<td class="cell_border">{$wifidb_users_aps.encry|escape:'htmlall'}</td>
