@@ -94,7 +94,7 @@ class export extends dbcore
 			"new_ap" => $new_ap,
 			"named" => $named,
 			"mac" => $ap['BSSID'],
-			"ssid" => $ap['SSID'],
+			"ssid" => $this->formatSSID($ap['SSID']),
 			"chan" => $ap['CHAN'],
 			"radio" => $ap['RADTYPE'],
 			"nt" => $ap['NETTYPE'],
@@ -203,8 +203,10 @@ class export extends dbcore
 		if($valid_gps){$sql .= " AND wifi_ap.HighGps_ID IS NOT NULL";}
 		$sql .= "\nGROUP BY wifi_hist.AP_ID, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID\n"
 			. "ORDER BY {$sort} {$ord}";
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		if($from !== NULL && $inc !== NULL){
+			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
+			else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+		}
 
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
@@ -236,7 +238,7 @@ class export extends dbcore
 				"new_ap" => $new_ap,
 				"named" => $named,
 				"mac" => $ap['BSSID'],
-				"ssid" => $this->formatSSID($ap['ssid']),
+				"ssid" => $this->formatSSID($ap['SSID']),
 				"chan" => $ap['CHAN'],
 				"radio" => $ap['RADTYPE'],
 				"nt" => $ap['NETTYPE'],
@@ -345,7 +347,7 @@ class export extends dbcore
 			"new_ap" => $new_ap,
 			"named" => $named,
 			"mac" => $apinfo['BSSID'],
-			"ssid" => $apinfo['SSID'],
+			"ssid" => $this->formatSSID($apinfo['SSID']),
 			"chan" => $apinfo['CHAN'],
 			"radio" => $apinfo['RADTYPE'],
 			"nt" => $apinfo['NETTYPE'],
@@ -441,7 +443,7 @@ class export extends dbcore
 			"new_ap" => $new_ap,
 			"named" => $named,
 			"mac" => $apinfo['BSSID'],
-			"ssid" => $apinfo['SSID'],
+			"ssid" => $this->formatSSID($apinfo['SSID']),
 			"chan" => $apinfo['CHAN'],
 			"radio" => $apinfo['RADTYPE'],
 			"nt" => $apinfo['NETTYPE'],
@@ -527,7 +529,7 @@ class export extends dbcore
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
 				"mac" => $ap['BSSID'],
-				"ssid" => $ap['SSID'],
+				"ssid" => $this->formatSSID($ap['SSID']),
 				"chan" => $ap['CHAN'],
 				"sectype" => $ap['SECTYPE'],
 				"auth" => $ap['AUTH'],
@@ -575,7 +577,7 @@ class export extends dbcore
 		$ap_array = array();
 		$apcount = 0;
 
-		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
+		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network, cell_carriers.country,\n"
 			. "wGPS.Lat As Lat,\n"
 			. "wGPS.Lon As Lon,\n"
 			. "wGPS.Alt As Alt,\n"
@@ -583,6 +585,7 @@ class export extends dbcore
 			. "FROM cell_id AS cid\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
+			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = REPLACE(substring(cid.mac,4,3), '_', '')\n"
 			. "WHERE cid.cell_id = ?";
 		if($valid_gps){$sql .=" AND cid.highgps_id IS NOT NULL";}
 		$prep = $this->sql->conn->prepare($sql);
@@ -592,13 +595,17 @@ class export extends dbcore
 		foreach($appointer as $ap)
 		{
 			if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
+			if($ap['network']){$name = $this->formatSSID($ap['network']);}else{$name = $this->formatSSID($ap['ssid']);}
 			#Get AP GeoJSON
 			$ap_info = array(
 			"id" => $ap['cell_id'],
 			"new_ap" => $new_ap,
 			"named" => $named,
 			"mac" => $ap['mac'],
-			"ssid" => $ap['ssid'],
+			"mapname" => $this->formatSSID($name),
+			"network" => $ap['network'],
+			"country" => $ap['country'],
+			"ssid" => $this->formatSSID($ap['ssid']),
 			"chan" => $ap['chan'],
 			"auth" => $ap['authmode'],
 			"type" => $ap['type'],
@@ -670,8 +677,10 @@ class export extends dbcore
 		if($include){$sql .= "AND cell_id.type IN (".$include.")\n";}
 		$sql .= "GROUP BY cell_hist.cell_id, cell_id.ssid, cell_id.mac, cell_id.authmode, cell_id.type, cell_id.chan, cell_id.points, cell_hist.new, cell_carriers.network, cell_carriers.country\n"
 			. "ORDER BY {$sort} {$ord}";
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		if($from !== NULL && $inc !== NULL){
+			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
+			else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
+		}
 		$prep_AP_IDS = $this->sql->conn->prepare($sql);
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
@@ -695,6 +704,7 @@ class export extends dbcore
 			{
 				if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
 				if($cid['new'] == 1){$new='New';}else{$new='Update';}
+				if($cid['network']){$name = $this->formatSSID($cid['network']);}else{$name = $this->formatSSID($ap['ssid']);}
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['cell_id'],
@@ -702,6 +712,7 @@ class export extends dbcore
 				"new_ap" => $new_ap,
 				"named" => $named,
 				"mac" => $ap['mac'],
+				"mapname" => $this->formatSSID($name),
 				"network" => $cid['network'],
 				"country" => $cid['country'],
 				"ssid" => $this->formatSSID($ap['ssid']),
@@ -788,7 +799,7 @@ class export extends dbcore
 				$ap_info = array(
 				"id" => $ap['cell_id'],
 				"mac" => $ap['mac'],
-				"ssid" => $ap['ssid'],
+				"ssid" => $this->formatSSID($ap['ssid']),
 				"chan" => $ap['chan'],
 				"auth" => $ap['authmode'],
 				"type" => $ap['type'],

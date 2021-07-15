@@ -315,7 +315,7 @@ class createKML
 		
 		if($ap_info_array['new_ap']){$icon_style = $sec_type_label."Style";}else{$icon_style = $sec_type_label."StyleDead";}
 		
-		$ssid = dbcore::formatSSID($this->stripInvalidXml($ap_info_array['ssid']));
+		$ssid = $this->stripInvalidXml($ap_info_array['ssid']);
 		if(isset($ap_info_array['named']) && $ap_info_array['named'] == 1){$named = "<name>".$ssid.'</name>';}else{$named = '';}
 		if(isset($ap_info_array['id'])){$id = '<b>SSID: </b><a href="'.$this->URL_BASE.'opt/fetch.php?id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$ssid.'</a><br />'."";}else{$id = '';}
 		if(isset($ap_info_array['live_id'])){$live_id_ssid = '<b>SSID: </b>'.$this->stripInvalidXml($ap_info_array['ssid']).'<br />'."";}else{$live_id_ssid = '';}

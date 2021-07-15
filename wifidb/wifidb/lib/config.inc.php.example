@@ -21,16 +21,17 @@ if not, write to the
 
 $config = array
 (    
-    'lastedit'              =>   '2015-03-03',
+    'lastedit'              =>   '2021-07-14',
 
     #----------General Settings------------#
     'wifidb_tools'          =>   '/opt/wifidb/tools/',
     'wifidb_install'        =>   '/var/www/htdocs/wifidb/',
-    'smarty_path'           =>   '/usr/share/php/smarty/libs/',
+    'smarty_path'           =>   '/usr/share/php/smarty/',
     'timezn'                =>   'UTC',
     'root'                  =>   'wifidb',
-    'hosturl'               =>   'http://wifidb.foo.lan/',
-    'tileserver_gl_url'     =>   'https://omt.foo.lan/',
+    'hosturl'               =>   'https://wifidb.foo.lan/',
+	'tileserver_gl_url'		=>   'https://tiles.foo.lan',
+    'WebSocketURL'          =>   'wss://wifidb.foo.lan/ws/',
     'dim'                   =>   DIRECTORY_SEPARATOR,
     'timetilldead'          =>   2,
     'config_fails'          =>   3,
@@ -62,7 +63,7 @@ $config = array
     'DKIM_copyHeaderFields' =>   true,
     'ListUnsubscribe'       =>   '<wifidb@someemail.com>, <https://wifidb.foo.lan/cp/?func=pref>',
     'XMailer'               =>   'WifiDB <https://wifidb.foo.lan/wifidb/>',
-
+	
     #---------------- Daemon Info ----------------#
     'daemon'                =>   1,
     'log_level'             =>   0,
@@ -109,26 +110,23 @@ $config = array
     'sep'                   =>   '-',
 
     #---------------- SQL Info ----------------#
+	#MS SQL SERVER
+    'srvc'                  =>   'sqlsrv',
+	'driver'                =>   'sqlsrv',
+	'port'                	=>   1433,
+    'host'                  =>   'localhost',
+	'db'                  	=>   'wifi',
+    'db_user'               =>   'wdbuser',
+    'db_pwd'                =>   'supersecretpw',
+	#MySQL Server
+    #'srvc'                  =>   'mysql',
+    #'host'                  =>   'localhost',
+	#'db'                  	=>   'wifi',
+    #'db_user'               =>   'wdbuser',
+    #'db_pwd'                =>   'supersecretpw',
     'charset'               =>   'utf8mb4',
     'collate'               =>   'utf8mb4_unicode_ci',
     'engine'                =>   'innodb',
-
-    #MS SQL SERVER
-    'srvc'                  =>   'sqlsrv',
-    'driver'                =>   'sqlsrv',
-    'port'                	=>   1433,
-    'host'                  =>   'localhost',
-    'db'                  	=>   'wifi',
-    'db_user'               =>   'wdbuser',
-    'db_pwd'                =>   'supersecretpw',
-    
-    #MySQL Server
-    #'srvc'                  =>   'mysql',
-    #'host'                  =>   'localhost',
-    #'db'                  	=>   'wifi',
-    #'db_user'               =>   'wdbuser',
-    #'db_pwd'                =>   'supersecretpw',
-
 
     #---------------- Export Info ----------------#
     'open_loc'              =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/open.png',
@@ -140,10 +138,10 @@ $config = array
     'daemon_out'            =>   'out/daemon/',
     'gpx_out'               =>   'out/gpx/',
     'csv_out'               =>   'out/csv/',
-    'region_out'            =>   'out/region/',
+	'region_out'               =>   'out/region/',
 
     #---------------- Header and Footer Additional Info -----------------#
     'ads'                   => '', # <-- put the code for your ads in here www.google.com/adsense
-    'header'                => '<meta name="description" content="A Wireless Database based off of scans from Vistumbler." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, database, DB, php, mysql" />',
+    'header'                => '<meta name="description" content="Vistumbler WifiDB is a project to collect wireless accesss points gathered by Vistumbler or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, wifi, database, DB, php" />',
     'tracker'               => '' # <-- put the code for the url tracker that you use here (ie - www.google.com/analytics )
 );

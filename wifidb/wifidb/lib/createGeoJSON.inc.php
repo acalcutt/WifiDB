@@ -58,6 +58,7 @@ class createGeoJSON
 		if(isset($ap_info_array['hist_file_id'])){$hist_file_id = '"hist_file_id":'.json_encode($ap_info_array['hist_file_id'], JSON_NUMERIC_CHECK).',';}else{$hist_file_id = '';}
 		if(isset($ap_info_array['first_file_id'])){$first_file_id = '"first_file_id":'.json_encode($ap_info_array['first_file_id'], JSON_NUMERIC_CHECK).',';}else{$first_file_id = '';}
 		if(isset($ap_info_array['mac'])){$mac = '"mac":'.json_encode($ap_info_array['mac']).',';}else{$mac = '';}
+		if(isset($ap_info_array['mapname'])){$mapname = '"mapname":'.json_encode($ap_info_array['mapname']).',';}else{$mapname = '';}
 		if(isset($ap_info_array['sectype'])){$sectype = '"sectype":'.json_encode($ap_info_array['sectype'], JSON_NUMERIC_CHECK).',';}else{$sectype = '';}
 		if(isset($ap_info_array['nt'])){$NT = '"nt":'.json_encode($ap_info_array['nt']).',';}else{$NT = '';}
 		if(isset($ap_info_array['radio'])){$radio = '"radio":'.json_encode($ap_info_array['radio']).',';}else{$radio = '';}
@@ -76,9 +77,9 @@ class createGeoJSON
 		if(isset($ap_info_array['sats'])){$sats = '"sats":'.json_encode($ap_info_array['sats']).',';}else{$sats = '';}
 		if(isset($ap_info_array['accuracy'])){$accuracy = '"accuracy":'.json_encode($ap_info_array['accuracy']).',';}else{$accuracy = '';}
 		if(isset($ap_info_array['hdop'])){$hdop = '"hdop":'.json_encode($ap_info_array['hdop']).',';}else{$hdop = '';}
-		$ssid = '"ssid":'.json_encode(dbcore::formatSSID($ap_info_array['ssid']));
+		$ssid = '"ssid":'.json_encode($ap_info_array['ssid']);
 
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$sectype.$NT.$radio.$chan.$auth.$encry.$type.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$sats.$accuracy.$hdop.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
+		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{'.$name.$id.$live_id.$user.$sig.$rssi.$manuf.$hist_date.$hist_file_id.$first_file_id.$high_gps_sig.$high_gps_rssi.$mac.$mapname.$sectype.$NT.$radio.$chan.$auth.$encry.$type.$BTx.$OTx.$points.$FA.$LA.$lat.$lon.$alt.$sats.$accuracy.$hdop.$ssid.'},"geometry":{"type":"Point","coordinates":['.json_encode($ap_info_array['lon'], JSON_NUMERIC_CHECK).','.json_encode($ap_info_array['lat'], JSON_NUMERIC_CHECK).']}}';
 
 		return $tmp;
 	}
@@ -112,7 +113,7 @@ class createGeoJSON
 
 	public function CreateCellLabelLayer($source, $source_layer = "", $font = "Open Sans Regular", $size = 10, $visibility = "none")
 	{
-		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{ssid}",$font,$size,$visibility);
+		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"ssid","{mapname}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"mac","{mac}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"chan","{chan}",$font,$size,$visibility);
 		$layer_source .= $this->CreateLabelLayer($source,$source_layer,"fa","{fa}",$font,$size,$visibility);
@@ -155,22 +156,6 @@ class createGeoJSON
 		return $layer_source;
 	}
 
-	public function CreateCellFeature($ap_info_array, $tc = 0)
-	{
-		
-		if($tc == 0){
-			$tippecanoe = '';
-		}else{
-			$tippecanoe = '"tippecanoe":{"maxzoom":19,"minzoom":0},';
-		}		
-		
-		$ap_info_array['mac'] = json_encode($ap_info_array['mac']);
-		$ap_info_array['ssid'] = json_encode(dbcore::formatSSID($ap_info_array['ssid']));
-		$ap_info_array['authmode'] = json_encode($ap_info_array['authmode']);
-		$tmp = "\n".'{"type":"Feature",'.$tippecanoe.'"properties":{"id":"'.$ap_info_array['id'].'","name":"'.$ap_info_array['name'].'","mac":'.$ap_info_array['mac'].',"ssid":'.$ap_info_array['ssid'].',"authmode":'.$ap_info_array['authmode'].',"chan":'.$ap_info_array['chan'].',"type":"'.$ap_info_array['type'].'","lat":"'.$ap_info_array['lat'].'","lon":"'.$ap_info_array['lon'].'","rssi":"'.$ap_info_array['rssi'].'","fa":"'.$ap_info_array['fa'].'","la":"'.$ap_info_array['la'].'","user":"'.$ap_info_array['user'].'","points":"'.$ap_info_array['points'].'"},"geometry":{"type":"Point","coordinates":['.$ap_info_array['lon'].','.$ap_info_array['lat'].']}}';
-
-		return $tmp;
-	}
 	public function CreateLatestGeoJsonSource()
 	{
 		$layer_name = 'latests';
