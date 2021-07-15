@@ -281,7 +281,7 @@ class api extends dbcore
 		{
 			case "import":
 				if($this->sql->service == "mysql")
-					{$sql = "INSERT INTO files_tmp(file, file_orig, date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					{$sql = "INSERT INTO files_tmp(file, file_orig, file_date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 

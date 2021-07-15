@@ -176,7 +176,7 @@ class apiv2 extends dbcore
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp WHERE date >= ? AND date <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp WHERE file_date >= ? AND file_date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -210,7 +210,7 @@ class apiv2 extends dbcore
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing WHERE date >= ? AND date <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing WHERE file_date >= ? AND file_date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -237,7 +237,7 @@ class apiv2 extends dbcore
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files WHERE date >= ? AND date <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files WHERE file_date >= ? AND file_date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -264,7 +264,7 @@ class apiv2 extends dbcore
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
                 return -1;
             }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad WHERE date >= ? AND date <= ?");
+            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad WHERE file_date >= ? AND file_date <= ?");
             $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
             $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
         }
@@ -315,38 +315,31 @@ class apiv2 extends dbcore
         }
 		
 		if($this->sql->service == "mysql")
-			{$files_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ? LIMIT 1");}
+			{$files_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ?");}
+			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ?");}
 		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$imp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ? LIMIT 1");}
+			{$imp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ?");}
+			{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, prev_ext, importing, ap, tot FROM files_importing WHERE hash = ?");}
 		$imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		if($this->sql->service == "mysql")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ? LIMIT 1");}
+			{$tmp_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, prev_ext FROM files_tmp WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, prev_ext FROM files_tmp WHERE hash = ?");}
+			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, prev_ext FROM files_tmp WHERE hash = ?");}
 		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-		if($this->sql->service == "mysql")
-			{$bad_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ? LIMIT 1");}
-		else if($this->sql->service == "sqlsrv")
-			{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, date, converted, thread_id, node_name, prev_ext, error_msg FROM files_bad WHERE hash = ?");}
-		$bad_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
 		$files_prep->execute();
 		$imp_prep->execute();
 		$tmp_prep->execute();
-		$bad_prep->execute();
 		
 		$files_ret = $files_prep->fetch(2);
 		$imp_ret = $imp_prep->fetch(2);
 		$tmp_ret = $tmp_prep->fetch(2);
-		$bad_ret = $bad_prep->fetch(2);
 
         if($files_ret['hash'] != "")
         {
@@ -360,10 +353,6 @@ class apiv2 extends dbcore
         elseif($tmp_ret['hash'] != "")
         {
             $this->mesg['scheduling'] = array("waiting"=>$tmp_ret);
-        }
-        elseif($bad_ret['hash'] != "")
-        {
-            $this->mesg['scheduling'] = array("bad"=>$bad_ret);
         }
         else
         {
