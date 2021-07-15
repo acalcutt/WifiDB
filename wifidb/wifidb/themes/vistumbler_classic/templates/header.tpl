@@ -50,7 +50,7 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}">Home</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/map.php?func=wifidbmap&labeled=0">Map</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}stats.php">Stats</a></div>
-								<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=AP_ID&ord=DESC&from=0&inc=100">List APs</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}all.php?sort=AP_ID&ord=DESC&from=0&inc=100">List Points</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}import/">Import File</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>

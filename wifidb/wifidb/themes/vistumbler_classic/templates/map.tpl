@@ -55,7 +55,7 @@ if not, write to the
 							</div>
 {elseif $func eq "exp_search"}
 							<div style='text-align: center;'>
-								Search Map<br>
+								Search Map {if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {if ((($from / $inc) + 1) * $inc) gt $point_count}{$point_count}{else}{(($from / $inc) + 1) * $inc}{/if}){/if}<br>
 							</div>
 {/if}
 							<div id='map' style='float:left; width: 100%; height:65vh;'></div>
@@ -104,9 +104,9 @@ if not, write to the
 									<label for='lmac'>Mac</label>
 									<input id='lchan' type='radio' name='sltoggle' value='chan' onclick="toggle_label()"{if $sig_label eq "chan"} checked='checked'{/if}>
 									<label for='lchan'>Channel</label>
-									<input id='lfa' type='radio' name='sltoggle' value='FA' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
+									<input id='lfa' type='radio' name='sltoggle' value='fa' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
 									<label for='lfa'>First Active</label>
-									<input id='lla' type='radio' name='sltoggle' value='LA' onclick="toggle_label()"{if $sig_label eq "LA"} checked='checked'{/if}>
+									<input id='lla' type='radio' name='sltoggle' value='la' onclick="toggle_label()"{if $sig_label eq "LA"} checked='checked'{/if}>
 									<label for='lla'>Last Active</label>
 									<input id='lp' type='radio' name='sltoggle' value='points' onclick="toggle_label()"{if $sig_label eq "points"} checked='checked'{/if}>
 									<label for='lp'>Points</label>
@@ -179,7 +179,7 @@ if not, write to the
 
 							<script>
 
-							var map = new mapboxgl.Map({
+							var map = new maplibregl.Map({
 								container: 'map',
 								style: '{$tileserver_gl_url}/styles/{$style}/style.json',
 								center: {$centerpoint},
@@ -190,7 +190,7 @@ if not, write to the
 
 {if $default_marker}
 							// Create a default Marker, colored black
-							var marker = new mapboxgl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
+							var marker = new maplibregl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
 							.setLngLat({$default_marker})
 							.addTo(map);
 {/if}
@@ -411,30 +411,30 @@ toggle_label()
 
 							map.once('style.load', function(e) {
 								//Add GeoLocate button
-								map.addControl(new mapboxgl.GeolocateControl({
+								map.addControl(new maplibregl.GeolocateControl({
 								positionOptions: {
 								enableHighAccuracy: true
 								},
 								trackUserLocation: true
 								}));
 								//Add Fullscreen Button
-								const fs = new mapboxgl.FullscreenControl();
+								const fs = new maplibregl.FullscreenControl();
 								map.addControl(fs)
 								fs._fullscreenButton.classList.add('needsclick');
 								//Add Navigation Control
-								map.addControl(new mapboxgl.NavigationControl({
+								map.addControl(new maplibregl.NavigationControl({
 								  visualizePitch: true,
 								  showZoom: true,
 								  showCompass: true
 								}));
 								//Scale Bar
-								var scale = new mapboxgl.ScaleControl({
+								var scale = new maplibregl.ScaleControl({
 									maxWidth: 80,
 									unit: 'imperial'
 								});
 								map.addControl(scale);
 								//Ad Inspect
-								map.addControl(new MapboxInspect());
+								map.addControl(new MaplibreInspect());
 								//WifiDB Information Popup
 {if $cell_layer_name}
 
@@ -449,6 +449,7 @@ toggle_label()
 									
 									var text = '<ul>';
 									if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
+									if (feature.properties.mapname) text += '<li>Name: <b>' + feature.properties.mapname + '</b></li>';
 									if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
 									if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
 									if (feature.properties.points) text  += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
@@ -457,8 +458,8 @@ toggle_label()
 									if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
 									if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
 									if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-									if (feature.properties.FA) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';									
+									if (feature.properties.fa) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.la) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';									
 									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
 									if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
 									if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
@@ -470,7 +471,7 @@ toggle_label()
 									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 
-									var popup = new mapboxgl.Popup()
+									var popup = new maplibregl.Popup()
 										.setLngLat(map.unproject(e.point))
 										.setHTML(text)
 										.addTo(map);
@@ -500,10 +501,10 @@ toggle_label()
 									if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
 									if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
 									if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
-									if (feature.properties.NT) text += '<li>Network Type: <b>' + feature.properties.NT + '</b></li>';
+									if (feature.properties.nt) text += '<li>Network Type: <b>' + feature.properties.nt + '</b></li>';
 									if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
-									if (feature.properties.FA) text += '<li>First: <b>' + feature.properties.FA + '</b></li>';
-									if (feature.properties.LA) text += '<li>Last: <b>' + feature.properties.LA + '</b></li>';
+									if (feature.properties.fa) text += '<li>First: <b>' + feature.properties.fa + '</b></li>';
+									if (feature.properties.la) text += '<li>Last: <b>' + feature.properties.la + '</b></li>';
 									if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
 									if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
 									if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
@@ -517,7 +518,7 @@ toggle_label()
 									if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
 									text += '</ul>';
 									
-									var popup = new mapboxgl.Popup()
+									var popup = new maplibregl.Popup()
 										.setLngLat(map.unproject(e.point))
 										.setHTML(text)
 										.addTo(map);
@@ -556,6 +557,21 @@ toggle_label()
 								waiting();
 							});
 							map.on('move', displayCenter);
+
+							//Trigger map resize when menu button is clicked.
+							$(".bt-menu-trigger").click(function () {
+								$(this).toggleClass("buttonstyle")
+										.trigger('classChanged');
+							});
+					  
+							$(".bt-menu-trigger").on(
+								"classChanged", function () {
+								$(document).ready( function () {
+											map.resize();
+									});
+								}
+							);
+	
 							</script>
 						</td>
 					</tr>
