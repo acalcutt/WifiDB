@@ -24,8 +24,8 @@ define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
 
-$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl.css" />';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/mapbox-gl-inspect.css" />';
+$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
+$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
 
 $latitude = filter_input(INPUT_GET, 'latitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $longitude = filter_input(INPUT_GET, 'longitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -509,7 +509,7 @@ switch($func)
 		$dbcore->smarty->display('map.tpl');
 		break;
 
-	case "exp_cell":
+	case "exp_cid":
 		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
@@ -569,7 +569,7 @@ switch($func)
 		$ml = $dbcore->createGeoJSON->CreateCellLayer($ags['layer_name']);
 		$layer_source_all .= $ags['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($ags['layer_name'],"", "Open Sans Regular", 10, "none");
+		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer($ags['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
 		$cell_layer_name = "'".$ags['layer_name']."','".$layer_cell['layer_name']."'";
