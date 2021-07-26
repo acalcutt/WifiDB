@@ -252,6 +252,19 @@ class import extends dbcore
 			if($gps['mph'] > 1200){$gps['mph'] = 0;}
 			if($gps['lat'] < -90000 || $gps['lat'] > 90000){$gps['lat'] = '0.0000';}
 			if($gps['lon'] < -180000 || $gps['lon'] > 180000){$gps['lon'] = '0.0000';}
+			$datetime = DateTime::createFromFormat('Y-m-d H:i:s.u', $gps['datetime']);
+			$errors = DateTime::getLastErrors();
+			if (!$datetime || !empty($errors['warning_count']))
+			{
+				$datetime2 = DateTime::createFromFormat('Y-m-d H:i:s', $gps['datetime']);
+				$errors2 = DateTime::getLastErrors();
+				if (!$datetime2 || !empty($errors2['warning_count']))
+				{
+					echo "csv line has invalid date $in_datetime !\n";
+					$gps['datetime'] = NULL;
+				}
+			}
+			
 					
 			$ValArray[] = array($file_id, $gps['id'], $gps['lat'], $gps['lon'], $gps['sats'], $gps['acc'], $gps['hdp'], $gps['alt'], $gps['geo'], $gps['kmh'], $gps['mph'], $gps['track'], $gps['datetime']);
 			
@@ -1649,6 +1662,8 @@ class import extends dbcore
 			if($line[1] == "BSSID" && $line[2] == "MANUFACTURER" && $line[3] == "SIGNAL" && $line[4] == "High Signal"){continue;} #tis the header, skip it..
 			$line_count = count($line);
 			if($line_count != 26){echo "csv line does not have 26 fields\r\n";continue;}else{echo "$line_count lines\r\n";}
+			
+			
 
 			if ($line[7]==='Open' && $line[8]==='None'){$sectype="1";}
 			if ($line[7]==='Open' && $line[8]==='WEP'){$sectype="2";}
@@ -1679,8 +1694,7 @@ class import extends dbcore
 			$date = @$line[24];
 			$time = @$line[25];
 			$datetime = $date." ".$time;
-			
-			
+
 			$gps_hash = md5($lat.$lon.$sats.$hdp.$alt.$geo.$kmh.$mph.$track.$datetime);
 			$garr = @$gdata[$gps_hash];
 			$fgid = @$garr['id'];
