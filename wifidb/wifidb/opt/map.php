@@ -24,8 +24,17 @@ define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
 
-$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+$ua = htmlentities($_SERVER['HTTP_USER_AGENT'], ENT_QUOTES, 'UTF-8');
+if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; rv:11.0') !== false)) {
+	$ie = 1;
+	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
+	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+}else{
+	$ie = 0;
+	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
+	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+}
+$dbcore->smarty->assign('ie', $ie);
 
 $latitude = filter_input(INPUT_GET, 'latitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $longitude = filter_input(INPUT_GET, 'longitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -247,7 +256,7 @@ switch($func)
 		#Get the first point in the results
 		if($latitude == "" && $longitude== "")
 		{
-			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, "AP_ID", "DESC", 0, 0, 1);
+			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, "AP_ID", "DESC", 0, 0, 0);
 			$latlongarray = $UserListArray['latlongarray'];
 			$latitude = $latlongarray[0]['lat'];
 			$longitude = $latlongarray[0]['long'];

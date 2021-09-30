@@ -129,6 +129,9 @@ if not, write to the
 								</div>
 								<div>
 									<button id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest AP</button>
+{if $ie eq 0}
+									<button id="Follow_3D" onClick="toggle3d(this.id)">Show 3d Terrain</button>
+{/if}
 								</div>
 {/if}									
 								<div>
@@ -232,6 +235,20 @@ if not, write to the
 									}, 2500);
 									FollowLatest = true;
 									el.firstChild.data = "Un-Follow Latest AP"
+								}
+							}
+
+							var Show3d = false;
+							function toggle3d(clicked_id) {
+								var el = document.getElementById(clicked_id);
+								if (Show3d) {
+									map.removeTerrain();
+									Show3d = false;
+									el.firstChild.data = "Show 3d Terrain"
+								} else {
+									map.addTerrain("terrain");
+									Show3d = true;
+									el.firstChild.data = "Hide 3d Terrain"
 								}
 							}
 							
@@ -388,6 +405,7 @@ if not, write to the
 							// --- End Address Search Box Functions ---
 
 							// Listen for every move event by the user
+{if $ie eq 0}
 							const displayCenter = function () {
 								const center = map.getCenter();
 								const latitude = center.lat.toFixed(6);
@@ -403,6 +421,7 @@ if not, write to the
 								url.searchParams.set('zoom', zoom);
 								window.history.replaceState(null, null, url); // or pushState
 							};
+{/if}
 
 							function init() {
 {$layer_source_all}
@@ -556,7 +575,9 @@ toggle_label()
 								};
 								waiting();
 							});
+{if $ie eq 0}
 							map.on('move', displayCenter);
+{/if}
 
 							//Trigger map resize when menu button is clicked.
 							$(".bt-menu-trigger").click(function () {
