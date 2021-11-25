@@ -286,25 +286,35 @@ if not, write to the
 								this._map = undefined;
 							  }
 							}
+
+							/* Remove Terrain Function */
+							function terrain_remove() {
+								map.removeTerrain();
+								var el = document.getElementById('terrain_button');
+								el.title = 'Show 3d Terrain'
+								el.classList.add('maplibregl-terrain');
+								el.classList.remove('maplibregl-terrain-hide');
+							}
+
+							/* Add Terrain Function */
+							function terrain_add() {
+								map.addTerrain("terrain");
+								var el = document.getElementById('terrain_button');
+								el.title = 'Hide 3d Terrain'
+								el.classList.add('maplibregl-terrain-hide');
+								el.classList.remove('maplibregl-terrain');
+							}
+								
 							
 							/* Toggle Terrain Function */
-							function terrain_toggle(event) {
-								var el = document.getElementById(event.target.id);
-
+							function terrain_toggle() {
+								var el = document.getElementById('terrain_button');
 								if ( el.classList.contains('maplibregl-terrain') )
 								{
-									map.addTerrain("terrain");
-									Show3d = true;
-									el.title = "Hide 3d Terrain"
+									terrain_add();
 								} else {
-									map.removeTerrain();
-									Show3d = false;
-									el.title = "Show 3d Terrain"
+									terrain_remove();
 								}
-
-								el.classList.toggle('maplibregl-terrain');
-								el.classList.toggle('maplibregl-terrain-hide');
-
 							}
 
 							/* Toggle Terrain Button */
@@ -495,7 +505,9 @@ if not, write to the
 
 							function init() {
 {$layer_source_all}
-toggle_label()
+toggle_label();
+terrain_remove();
+
 							};
 
 							map.once('style.load', function(e) {
