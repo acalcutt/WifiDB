@@ -193,24 +193,26 @@ if not, write to the
 								maxPitch: 85,
 {/if}
 							});
-
+{if $default_marker}
+							// Create a default Marker
+							var marker = new maplibregl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
+							.setLngLat({$default_marker})
+							.addTo(map);
+{/if}
 							// --- Start Map Style Selection ---
 							var styleList = document.getElementById('styles');
 							styleList.addEventListener('change', function (e) {
-							  var styleId = e.target.value;
-							  map.setStyle('https://tiles.wifidb.net/styles/' + styleId + '/style.json');
+								var styleId = e.target.value;
+								map.setStyle('https://tiles.wifidb.net/styles/' + styleId + '/style.json');
 {if $ie eq 0}
-							  var url = new URL(window.location.href);
-							  url.searchParams.set('style', styleId);
-							  window.history.replaceState(null, null, url); // or pushState
+								var url = new URL(window.location.href);
+								url.searchParams.set('style', styleId);
+								window.history.replaceState(null, null, url); // or pushState
 {/if}
 							});
 							// --- End Map Style Selection ---
 
 							// --- Start Point Label Selection ---
-							
-							var pointlabelsList = document.getElementById('pointlabels');
-							
 							function toggle_label() {
 								var point_labels = document.getElementById('pointlabels');
 								var point_labels_selected = pointlabels.options[point_labels.selectedIndex].value;
@@ -244,10 +246,8 @@ if not, write to the
 								};
 							};
 							
-							
+							var pointlabelsList = document.getElementById('pointlabels');
 							pointlabelsList.addEventListener('change', toggle_label);
-
-
 							// --- End Point Label Selection ---
 							
 {if $terrain ne 0}
@@ -328,13 +328,6 @@ if not, write to the
 							map.addControl(terrain_button, "top-right");
 							// --- End Terrain Toggle ---
 {/if}
-{if $default_marker}
-							// Create a default Marker, colored black
-							var marker = new maplibregl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
-							.setLngLat({$default_marker})
-							.addTo(map);
-{/if}
-
 							function GoToLatest() {
 								var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap'
 								console.log('url: ', url);
