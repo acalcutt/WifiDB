@@ -62,60 +62,63 @@ if not, write to the
 							<div id='map' style='float:left; width: 100%; height:65vh;'>
 
 								<div id='stylebackground'>
-									
-									Map Style:<select id="styles" class="dropdownSelect">
-									  <option value="WDB_OSM">3D</option>
-									  <option value="WDB_BASIC">Basic</option>
-									  <option value="WDB_DARK_MATTER">Dark</option>
-									</select>
+								<table>
+									<tr>
+										<td>Map Style</td>
+										<td>
+											<select id="styles" class="dropdownSelect">
+											  <option value="WDB_OSM">3D</option>
+											  <option value="WDB_BASIC">Basic</option>
+											  <option value="WDB_DARK_MATTER">Dark</option>
+											</select>
+										</td>
+									</tr>
+{if $func eq "exp_cell_sig"}
+									<tr>
+										<td>Point Label</td>
+										<td>
+											<select id="pointlabels" class="dropdownSelect">
+											  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+											  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
+											  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
+											</select>
+										</td>
+									</tr>
+{elseif $func eq "exp_ap_sig"}
+									<tr>
+										<td>Point Label</td>
+										<td>
+											<select id="pointlabels" class="dropdownSelect">
+											  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+											  <option value="signal"{if $sig_label eq "signal"} selected{/if}>Signal</option>
+											  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
+											  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
+											</select>
+										</td>
+									</tr>
+{else}
+									<tr>
+										<td>Point Label</td>
+										<td>
+											<select id="pointlabels" class="dropdownSelect">
+											  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+											  <option value="ssid"{if $sig_label eq "ssid"} selected{/if}>SSID</option>
+											  <option value="mac"{if $sig_label eq "mac"} selected{/if}>Mac</option>
+											  <option value="chan"{if $sig_label eq "chan"} selected{/if}>Channel</option>
+											  <option value="fa"{if $sig_label eq "fa"} selected{/if}>First Active</option>
+											  <option value="la"{if $sig_label eq "la"} selected{/if}>Last Active</option>
+											  <option value="points"{if $sig_label eq "points"} selected{/if}>Points</option>
+											  <option value="high_gps_sig"{if $sig_label eq "high_gps_sig"} selected{/if}>High Signal</option>
+											  <option value="high_gps_rssi"{if $sig_label eq "high_gps_rssi"} selected{/if}>High RSSI</option>
+											</select>
+										</td>
+									</tr>
+{/if}
+								</table>
 								</div>
-								
 							</div>
 							<div>
-{if $func eq "exp_cell_sig"}
-								<div id='siglabel'>
-									Point 	Label: 
-									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
-									<label for='lnone'>None</label>
-									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_label()"{if $sig_label eq "rssi"} checked='checked'{/if}>
-									<label for='lrssi'>RSSI</label>
-									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_label()"{if $sig_label eq "hist_date"} checked='checked'{/if}>
-									<label for='ldate'>Date</label>
-								</div>
-{elseif $func eq "exp_ap_sig"}
-								<div id='siglabel'>
-									Point 	Label: 
-									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
-									<label for='lnone'>None</label>
-									<input id='lsignal' type='radio' name='sltoggle' value='signal' onclick="toggle_label()"{if $sig_label eq "signal"} checked='checked'{/if}>
-									<label for='lsignal'>Signal</label>
-									<input id='lrssi' type='radio' name='sltoggle' value='rssi' onclick="toggle_label()"{if $sig_label eq "rssi"} checked='checked'{/if}>
-									<label for='lrssi'>RSSI</label>
-									<input id='ldate' type='radio' name='sltoggle' value='hist_date' onclick="toggle_label()"{if $sig_label eq "hist_date"} checked='checked'{/if}>
-									<label for='ldate'>Date</label>
-								</div>
-{else}
-								<div id='siglabel'>
-									<b>Point Label: </b>
-									<input id='lnone' type='radio' name='sltoggle' value='none' checked='checked' onclick="toggle_label()"{if $sig_label eq "none"} checked='checked'{/if}>
-									<label for='lnone'>None</label>
-									<input id='lssid' type='radio' name='sltoggle' value='ssid' onclick="toggle_label()"{if $sig_label eq "ssid"} checked='checked'{/if}>
-									<label for='lssid'>SSID</label>
-									<input id='lmac' type='radio' name='sltoggle' value='mac' onclick="toggle_label()"{if $sig_label eq "mac"} checked='checked'{/if}>
-									<label for='lmac'>Mac</label>
-									<input id='lchan' type='radio' name='sltoggle' value='chan' onclick="toggle_label()"{if $sig_label eq "chan"} checked='checked'{/if}>
-									<label for='lchan'>Channel</label>
-									<input id='lfa' type='radio' name='sltoggle' value='fa' onclick="toggle_label()"{if $sig_label eq "FA"} checked='checked'{/if}>
-									<label for='lfa'>First Active</label>
-									<input id='lla' type='radio' name='sltoggle' value='la' onclick="toggle_label()"{if $sig_label eq "LA"} checked='checked'{/if}>
-									<label for='lla'>Last Active</label>
-									<input id='lp' type='radio' name='sltoggle' value='points' onclick="toggle_label()"{if $sig_label eq "points"} checked='checked'{/if}>
-									<label for='lp'>Points</label>
-									<input id='hs' type='radio' name='sltoggle' value='high_gps_sig' onclick="toggle_label()"{if $sig_label eq "high_gps_sig"} checked='checked'{/if}>
-									<label for='hs'>High Signal</label>
-									<input id='hr' type='radio' name='sltoggle' value='high_gps_rssi' onclick="toggle_label()"{if $sig_label eq "high_gps_rssi"} checked='checked'{/if}>
-									<label for='hr'>High RSSI</label>
-								</div>
+{if $func eq "wifidbmap"}
 								<div>
 									<button id="latests" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
 									<button id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
@@ -192,17 +195,60 @@ if not, write to the
 							});
 
 							// --- Start Map Style Selection ---
-							var layerList = document.getElementById('styles');
-							var inputs = layerList.getElementsByTagName('input');
-
-							layerList.addEventListener('change', (e) => {
-								var styleId = e.target.value;
-								map.setStyle('{$tileserver_gl_url}/styles/' + styleId + '/style.json');
-								const url = new URL(window.location.href);
-								url.searchParams.set('style', styleId);
-								window.history.replaceState(null, null, url); // or pushState
+							var styleList = document.getElementById('styles');
+							styleList.addEventListener('change', function (e) {
+							  var styleId = e.target.value;
+							  map.setStyle('https://tiles.wifidb.net/styles/' + styleId + '/style.json');
+{if $ie eq 0}
+							  var url = new URL(window.location.href);
+							  url.searchParams.set('style', styleId);
+							  window.history.replaceState(null, null, url); // or pushState
+{/if}
 							});
 							// --- End Map Style Selection ---
+
+							// --- Start Point Label Selection ---
+							
+							var pointlabelsList = document.getElementById('pointlabels');
+							
+							function toggle_label() {
+								var point_labels = document.getElementById('pointlabels');
+								var point_labels_selected = pointlabels.options[point_labels.selectedIndex].value;
+								var layers = [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]
+								
+								for (var i = 0, length = point_labels.options.length; i < length; i++) {
+									let option_text = point_labels.options[i].text;
+									let option_value = point_labels.options[i].value;
+									
+									if (option_value === point_labels_selected) {
+										if (option_value !== 'none') {
+											for (var j = 0, length2 = layers.length; j < length2; j++) {
+												var layer_visibility = map.getLayoutProperty(layers[j], 'visibility');
+												if (layer_visibility === 'visible') {	
+													map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'visible');
+												}
+											}
+										}
+{if $ie eq 0}
+										var url = new URL(window.location.href);
+										url.searchParams.set("sig_label", option_value);
+										window.history.replaceState(null, null, url);
+{/if}
+									} else {
+										if (option_value !== 'none') {
+											for (var j = 0, length2 = layers.length; j < length2; j++) {
+												map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'none');
+											}
+										}
+									}
+								};
+							};
+							
+							
+							pointlabelsList.addEventListener('change', toggle_label);
+
+
+							// --- End Point Label Selection ---
 							
 {if $terrain ne 0}
 							// --- Start Terrain Toggle ---
@@ -394,34 +440,7 @@ if not, write to the
 							}
 							// --- End Year Visibility Functions ---
 
-							function toggle_label() {
-								const url = new URL(window.location.href);
-								var radios = document.getElementsByName('sltoggle');
-								var layers = [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]
-								for (var i = 0, length = radios.length; i < length; i++) {
-									if (typeof radios[i] !== 'undefined') {
-										if (radios[i].checked) {
-											if (radios[i].value !== 'none') {
-												for (var j = 0, length2 = layers.length; j < length2; j++) {
-													var layer_visibility = map.getLayoutProperty(layers[j], 'visibility');
-													if (layer_visibility === 'visible') {	
-														map.setLayoutProperty(layers[j] + '-' + radios[i].value, 'visibility', 'visible');
-													}
-												}
-											}
-											url.searchParams.set("sig_label", radios[i].value);
-										} else {
-											if (radios[i].value !== 'none') {
-												for (var j = 0, length2 = layers.length; j < length2; j++) {
-													map.setLayoutProperty(layers[j] + '-' + radios[i].value, 'visibility', 'none');
-												}
-											}
-										}
-									}
-								}
-								
-								window.history.replaceState(null, null, url);
-							}
+
 							// --- Start Address Search Box Functions ---
 							function searchadr()
 							{
