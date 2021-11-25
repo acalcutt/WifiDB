@@ -24,17 +24,32 @@ define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
 
+//$terrain   = filter_input(INPUT_GET, 'terrain', FILTER_SANITIZE_NUMBER_INT);
+//if(!is_numeric($terrain)){$terrain = 0;}
+//if($terrain == 0)
+//{
+//	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
+//	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+//}else{
+//	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
+//	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+//}
+
 $ua = htmlentities($_SERVER['HTTP_USER_AGENT'], ENT_QUOTES, 'UTF-8');
 if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; rv:11.0') !== false)) {
 	$ie = 1;
+	$terrain = 0;
 	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
 	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
 }else{
 	$ie = 0;
+	$terrain = 1;
 	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
 	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
 }
 $dbcore->smarty->assign('ie', $ie);
+$dbcore->smarty->assign('terrain', $terrain);
+$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 
 $latitude = filter_input(INPUT_GET, 'latitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $longitude = filter_input(INPUT_GET, 'longitude', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
@@ -118,8 +133,7 @@ switch($func)
 		$dbcore->smarty->assign('bearing', $bearing);
 		$dbcore->smarty->assign('sig_label', $sig_label);
 		$dbcore->smarty->assign('wifidbmap', 1);
-		$dbcore->smarty->assign('default_hidden', 0);	
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
+		$dbcore->smarty->assign('default_hidden', 0);
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "user_all":
@@ -218,7 +232,6 @@ switch($func)
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
 		$dbcore->smarty->assign('title', $title);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 
 		break;
@@ -256,7 +269,7 @@ switch($func)
 		#Get the first point in the results
 		if($latitude == "" && $longitude== "")
 		{
-			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, "AP_ID", "DESC", 0, 0, 0);
+			$UserListArray = $dbcore->export->UserListArray($id, $from, 1, "AP_ID", "DESC", 0, 0, 0, 1);
 			$latlongarray = $UserListArray['latlongarray'];
 			$latitude = $latlongarray[0]['lat'];
 			$longitude = $latlongarray[0]['long'];
@@ -341,7 +354,6 @@ switch($func)
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
 		$dbcore->smarty->assign('title', $title);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "exp_ap":
@@ -434,7 +446,6 @@ switch($func)
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('ssid', $apinfo['SSID']);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 
@@ -514,7 +525,6 @@ switch($func)
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
 		$dbcore->smarty->assign('signal_source_name', $asgs['layer_name']);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 
@@ -595,7 +605,6 @@ switch($func)
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('ssid', $apinfo['SSID']);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 
@@ -676,7 +685,6 @@ switch($func)
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
 		$dbcore->smarty->assign('signal_source_name', $asgs['layer_name']);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 
@@ -755,7 +763,6 @@ switch($func)
 		$dbcore->smarty->assign('sig_label', $sig_label);
 		$dbcore->smarty->assign('default_hidden', 1);
 		$dbcore->smarty->assign('id', $id);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 		
@@ -860,7 +867,6 @@ switch($func)
 		$dbcore->smarty->assign('id', $id);
 		$dbcore->smarty->assign('point_count', $point_count);
 		$dbcore->smarty->assign('ldivs', $ldivs);
-		$dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
 		$dbcore->smarty->display('map.tpl');
 		break;
 }

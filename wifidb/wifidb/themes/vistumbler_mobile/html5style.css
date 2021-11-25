@@ -1,6 +1,7 @@
 form div {
 	padding: .5em;
 }
+
 code:before {
 	position: absolute;
 	content: 'Code:';
@@ -294,6 +295,25 @@ a, a:hover, a:focus {
     height: 1px;
     border-bottom: 1px dashed #ddd;
     margin: 40px 0;
+}
+
+#map {
+    background: linear-gradient(0deg, rgba(36,0,0,1) 45%, rgb(249 209 89) 62%, rgb(81 151 173) 80%, rgb(2 92 179) 95%)
+}
+
+.maplibregl-terrain {
+	background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='25px' height='25px' viewBox='-4 -4 25 25' version='1.1'%3E%3Cg id='surface1'%3E%3Cpath style=' stroke:none;fill-rule:nonzero;fill:rgb(0%25,0%25,0%25);fill-opacity:1;' d='M 1.996094 15.234375 L 7.054688 9.722656 L 10.566406 13.234375 L 14.292969 16.957031 L 15.394531 15.855469 L 11.632812 12.089844 L 16.003906 7.410156 L 22.988281 15.234375 L 24.21875 15.234375 L 24.21875 14.265625 L 16.027344 5.089844 L 10.527344 10.984375 L 7.007812 7.464844 L 0.78125 14.246094 L 0.78125 15.234375 Z M 1.996094 15.234375 '/%3E%3Cpath style=' stroke:none;fill-rule:nonzero;fill:rgb(0%25,0%25,0%25);fill-opacity:1;' d='M 0.78125 19.140625 L 24.21875 19.140625 L 24.21875 20.703125 L 0.78125 20.703125 Z M 0.78125 19.140625 '/%3E%3C/g%3E%3C/svg%3E%0A");
+}
+
+.maplibregl-terrain-hide {
+	background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='25px' height='25px' viewBox='-4 -4 25 25' version='1.1'%3E%3Cg id='surface1'%3E%3Cpath style=' stroke:none;fill-rule:nonzero;fill:rgb(0%25,0%25,0%25);fill-opacity:1;' d='M 0.78125 19.140625 L 24.21875 19.140625 L 24.21875 20.703125 L 0.78125 20.703125 Z M 0.78125 19.140625 '/%3E%3C/g%3E%3C/svg%3E%0A");
+}
+
+#stylebackground {
+z-index: 1;
+position: absolute;
+background: #efefef;
+padding: 10px;
 }
 
 /* ---------------------------------------------------
