@@ -58,86 +58,86 @@ if not, write to the
 								Search Map {if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {if ((($from / $inc) + 1) * $inc) gt $point_count}{$point_count}{else}{(($from / $inc) + 1) * $inc}{/if}){/if}<br>
 							</div>
 {/if}
-							<div style='float:left; width:100%; height:65vh;'>
-								<div id='map'>
-									<div id='stylebackground'>
-										<table>
+							<div id='mapcontainer'>
+								<div id='map'>								
+									<div id="controls">
+										<table style="width: 100%">
 											<tr>
-												<td>Map Style</td>
+												<td style="width: 40px"></td>
 												<td>
-													<select id="styles" class="dropdownSelect">
-													  <option value="WDB_OSM">3D</option>
-													  <option value="WDB_BASIC">Basic</option>
-													  <option value="WDB_DARK_MATTER">Dark</option>
-													</select>
-												</td>
-											</tr>
-{if $func eq "exp_cell_sig"}
-											<tr>
-												<td>Point Label</td>
-												<td>
-													<select id="pointlabels" class="dropdownSelect">
-													  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
-													  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
-													  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
-													</select>
-												</td>
-											</tr>
+													<span id="all_controls" class="all_controls">
+														<div>
+															<span class="inline nowrap controls-icon">Map Style:
+																<select id="styles" class="dropdownSelect">
+																  <option value="WDB_OSM">3D</option>
+																  <option value="WDB_BASIC">Basic</option>
+																  <option value="WDB_DARK_MATTER">Dark</option>
+																</select>
+															</span>
+{if $func eq "exp_cell_sig"}				
+															<span class="inline nowrap controls-icon">Point Label:
+																<select id="pointlabels" class="dropdownSelect">
+																  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+																  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
+																  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
+																</select>
+															</span>
 {elseif $func eq "exp_ap_sig"}
-											<tr>
-												<td>Point Label</td>
-												<td>
-													<select id="pointlabels" class="dropdownSelect">
-													  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
-													  <option value="signal"{if $sig_label eq "signal"} selected{/if}>Signal</option>
-													  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
-													  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
-													</select>
-												</td>
-											</tr>
+															<span class="inline nowrap controls-icon">Point Label:
+																<select id="pointlabels" class="dropdownSelect">
+																  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+																  <option value="signal"{if $sig_label eq "signal"} selected{/if}>Signal</option>
+																  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
+																  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
+																</select>
+															</span>
 {else}
-											<tr>
-												<td>Point Label</td>
-												<td>
-													<select id="pointlabels" class="dropdownSelect">
-													  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
-													  <option value="ssid"{if $sig_label eq "ssid"} selected{/if}>SSID</option>
-													  <option value="mac"{if $sig_label eq "mac"} selected{/if}>Mac</option>
-													  <option value="chan"{if $sig_label eq "chan"} selected{/if}>Channel</option>
-													  <option value="fa"{if $sig_label eq "fa"} selected{/if}>First Active</option>
-													  <option value="la"{if $sig_label eq "la"} selected{/if}>Last Active</option>
-													  <option value="points"{if $sig_label eq "points"} selected{/if}>Points</option>
-													  <option value="high_gps_sig"{if $sig_label eq "high_gps_sig"} selected{/if}>High Signal</option>
-													  <option value="high_gps_rssi"{if $sig_label eq "high_gps_rssi"} selected{/if}>High RSSI</option>
-													</select>
-												</td>
-											</tr>
+															<span class="inline nowrap controls-icon">Point Label:
+																<select id="pointlabels" class="dropdownSelect">
+																  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+																  <option value="ssid"{if $sig_label eq "ssid"} selected{/if}>SSID</option>
+																  <option value="mac"{if $sig_label eq "mac"} selected{/if}>Mac</option>
+																  <option value="chan"{if $sig_label eq "chan"} selected{/if}>Channel</option>
+																  <option value="fa"{if $sig_label eq "fa"} selected{/if}>First Active</option>
+																  <option value="la"{if $sig_label eq "la"} selected{/if}>Last Active</option>
+																  <option value="points"{if $sig_label eq "points"} selected{/if}>Points</option>
+																  <option value="high_gps_sig"{if $sig_label eq "high_gps_sig"} selected{/if}>High Signal</option>
+																  <option value="high_gps_rssi"{if $sig_label eq "high_gps_rssi"} selected{/if}>High RSSI</option>
+																</select>
+															</span>
 {/if}
+															<span class="inline nowrap controls-icon">
+																	<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
+																	<button class="toggle-button" id="searchadr" onClick="searchadr()">Search</button>
+															</span>
+{if $func eq "wifidbmap"}
+															<span class="inline nowrap">
+																<button class="toggle-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
+																<button class="toggle-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+															</span>
+{/if}
+{if $func eq "wifidbmap" || $func eq "user_list"}	
+															<br/>
+															<button class="toggle-button" id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
+															<button class="toggle-button" id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
+															<button class="toggle-button" id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
+															<button class="toggle-button" id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
+															<button class="toggle-button" id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
+															<button class="toggle-button" id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
+															<button class="toggle-button" id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
+															<button class="toggle-button" id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Networks</button>
+{/if}
+														</div>
+													</span>
+												</td>
+												<td style="width: 40px"></td>
+											</tr>	
 										</table>
 									</div>
 								</div>
 							</div>
 							<div>
-{if $func eq "wifidbmap" || $func eq "user_list"}
-								<div>
-									<button id="latests" onClick="toggle_latest_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
-									<button id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
-									<button id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
-									<button id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
-									<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
-									<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
-									<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
-									<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
-									<button id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Netwotks</button>
-								</div>
-								<div>
-									<button id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest AP</button>
-								</div>
-{/if}
-								<div>
-									<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
-									<button id="searchadr" onClick="searchadr()">Search</button>
-								</div>
+				
 {if $ldivs gt 1}
 	{if $func eq "exp_ap_sig"}
 								<div>
@@ -252,10 +252,12 @@ if not, write to the
 			zoom: {$zoom},
 			pitch: {$pitch},
 			bearing: {$bearing},
+			attributionControl: false,
 {if $ie eq 0}
 			maxPitch: 85,
 {/if}
 		});
+		map.addControl(new maplibregl.AttributionControl(), 'top-right');
 
 {if $default_marker}
 		// Create a default Marker
@@ -296,9 +298,13 @@ if not, write to the
 				if (option_value === point_labels_selected) {
 					if (option_value !== 'none') {
 						for (var j = 0, length2 = layers.length; j < length2; j++) {
-							var layer_visibility = map.getLayoutProperty(layers[j], 'visibility');
-							if (layer_visibility === 'visible') {
-								map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'visible');
+							if (layers[j] !== "latests") {
+								var layer_visibility = map.getLayoutProperty(layers[j], 'visibility');
+								if (layer_visibility === 'visible') {
+									map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'visible');
+								}else{
+									map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'none');
+								}
 							}
 						}
 					}
@@ -310,7 +316,9 @@ if not, write to the
 				} else {
 					if (option_value !== 'none') {
 						for (var j = 0, length2 = layers.length; j < length2; j++) {
-							map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'none');
+							if (layers[j] !== "latests") {
+								map.setLayoutProperty(layers[j] + '-' + option_value, 'visibility', 'none');
+							}
 						}
 					}
 				}
@@ -319,6 +327,14 @@ if not, write to the
 		var pointlabelsList = document.getElementById('pointlabels');
 		pointlabelsList.addEventListener('change', toggle_label);
 		// --- End Point Label Selection ---
+
+		//Scale Bar
+		var scale = new maplibregl.ScaleControl({
+			maxWidth: 80,
+			unit: 'imperial'
+		});
+		map.addControl(scale, 'top-left');
+
 {if $terrain ne 0}
 		// --- Start Terrain Toggle ---
 
@@ -357,6 +373,33 @@ if not, write to the
 		map.addControl(terrain_button, "top-right");
 		// --- End Terrain Toggle ---
 {/if}
+		// --- Start Control Toggle ---
+		/* Toggle Control Function */
+		function control_toggle() {
+			var el = document.getElementById('menu_button');
+			var ac = document.getElementById('all_controls');
+			if (el.classList.contains('controls-hide-icon')) {
+				el.title = 'Show Controls';
+				el.classList.add('controls-show-icon');
+				el.classList.remove('controls-hide-icon');
+				ac.classList.add('hidden');
+			} else {
+				el.title = 'Hide Controls';
+				el.classList.add('controls-hide-icon');
+				el.classList.remove('controls-show-icon');
+				ac.classList.remove('hidden');
+			}
+		}
+
+		/* Toggle Control Button */
+		var menu_button = new MaplibreGLButtonControl({
+			className: "controls-hide-icon",
+			id: "menu_button",
+			title: "Hide Controls",
+			eventHandler: control_toggle
+		});
+		map.addControl(menu_button, "bottom-left");
+		// --- End Control Toggle ---
 		//Add GeoLocate button
 		map.addControl(new maplibregl.GeolocateControl({
 			positionOptions: {
@@ -374,13 +417,6 @@ if not, write to the
 			showZoom: true,
 			showCompass: true
 		}));
-
-		//Scale Bar
-		var scale = new maplibregl.ScaleControl({
-			maxWidth: 80,
-			unit: 'imperial'
-		});
-		map.addControl(scale);
 
 {if $ie eq 0}
 		//Inspect Button
@@ -419,14 +455,14 @@ if not, write to the
 			if (FollowLatest) {
 				clearInterval(LatestTimer);
 				FollowLatest = false;
-				el.firstChild.data = "Follow Latest AP";
+				el.firstChild.data = "Follow Latest";
 			} else {
 				GoToLatest();
 				LatestTimer = setInterval(function() {
 					GoToLatest();
 				}, 2500);
 				FollowLatest = true;
-				el.firstChild.data = "Un-Follow Latest AP";
+				el.firstChild.data = "Un-Follow Latest";
 			}
 		}
 		// --- Start Year Visibility Functions ---
@@ -436,65 +472,42 @@ if not, write to the
 			var btext = el.firstChild.data;
 			var btext = btext.replace("Show", "");
 			var btext = btext.replace("Hide", "");
+			var point_labels = document.getElementById('pointlabels');
+			var point_labels_selected = pointlabels.options[point_labels.selectedIndex].value;
 			var visibility = map.getLayoutProperty(clicked_id, 'visibility');
 			if (visibility === 'visible') {
 				map.setLayoutProperty(clicked_id, 'visibility', 'none');
-				for (var i = 0, length = radios.length; i < length; i++) {
-					if (radios[i].checked) {
-						if (radios[i].value !== 'none') {
-							map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'none');
-						}
+				for (var i = 0, length = point_labels.options.length; i < length; i++) {
+					var option_text = point_labels.options[i].text;
+					var option_value = point_labels.options[i].value;
+					if (option_value === point_labels_selected && option_value !== 'none') {
+						map.setLayoutProperty(clicked_id + '-' + option_value, 'visibility', 'none');
 					}
 				}
-				this.className = '';
+				if(clicked_id === 'latests'){
+					map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'none');
+				}
 				el.firstChild.data = "Show" + btext;
+				this.className = '';
 			} else {
-				this.className = 'active';
 				map.setLayoutProperty(clicked_id, 'visibility', 'visible');
-				for (var i = 0, length = radios.length; i < length; i++) {
-					if (radios[i].checked) {
-						if (radios[i].value !== 'none') {
-							map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'visible');
+				if(clicked_id === 'latests'){
+					map.setLayoutProperty(clicked_id + '-latests', 'visibility', 'visible');
+					map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'visible');
+				}else{
+					for (var i = 0, length = point_labels.options.length; i < length; i++) {
+						var option_text = point_labels.options[i].text;
+						var option_value = point_labels.options[i].value;
+						if (option_value === point_labels_selected && option_value !== 'none') {
+							map.setLayoutProperty(clicked_id + '-' + option_value, 'visibility', 'visible');
 						}
 					}
 				}
 				el.firstChild.data = "Hide" + btext;
+				this.className = 'active';
 			}
 		}
 
-		function toggle_latest_layer_button(clicked_id) {
-			var el = document.getElementById(clicked_id);
-			var radios = document.getElementsByName('sltoggle');
-			var btext = el.firstChild.data;
-			var btext = btext.replace("Show", "");
-			var btext = btext.replace("Hide", "");
-			var visibility = map.getLayoutProperty(clicked_id, 'visibility');
-			if (visibility === 'visible') {
-				map.setLayoutProperty(clicked_id, 'visibility', 'none');
-				for (var i = 0, length = radios.length; i < length; i++) {
-					if (radios[i].checked) {
-						if (radios[i].value !== 'none') {
-							map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'none');
-						}
-					}
-				}
-				map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'none');
-				this.className = '';
-				el.firstChild.data = "Show" + btext;
-			} else {
-				this.className = 'active';
-				map.setLayoutProperty(clicked_id, 'visibility', 'visible');
-				for (var i = 0, length = radios.length; i < length; i++) {
-					if (radios[i].checked) {
-						if (radios[i].value !== 'none') {
-							map.setLayoutProperty(clicked_id + '-' + radios[i].value, 'visibility', 'visible');
-						}
-					}
-				}
-				map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'visible');
-				el.firstChild.data = "Hide" + btext;
-			}
-		}
 		// --- End Year Visibility Functions ---
 		// --- Start Address Search Box Functions ---
 		function searchadr() {
@@ -704,20 +717,10 @@ if not, write to the
 {if $ie eq 0}
 		map.on('move', displayCenter);
 {/if}
-		//Trigger map resize when menu button is clicked.
-		$(".bt-menu-trigger").click(function() {
-			$(this).toggleClass("buttonstyle").trigger('classChanged');
-		});
-		$(".bt-menu-trigger").on("classChanged", function() {
-			$(document).ready(function() {
-				map.resize();
-			});
-		});
 
 		map.on('resize', function() {
 			map.getCanvas().focus();
 		});
-	
 							</script>
 						</td>
 					</tr>
