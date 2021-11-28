@@ -111,8 +111,10 @@ if not, write to the
 																	<button class="toggle-button" id="searchadr" onClick="searchadr()">Search</button>
 															</span>
 {if $func eq "wifidbmap"}
-															<button class="toggle-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
-															<button class="toggle-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+															<span class="inline nowrap">
+																<button class="toggle-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
+																<button class="toggle-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+															</span>
 {/if}
 {if $func eq "wifidbmap" || $func eq "user_list"}	
 															<br/>
