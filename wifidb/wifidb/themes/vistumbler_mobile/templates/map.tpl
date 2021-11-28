@@ -382,12 +382,14 @@ if not, write to the
 		});
 		map.addControl(scale);
 
+{if $ie eq 0}
 		//Inspect Button
 		map.addControl(new MaplibreInspect({
 			showMapPopupOnHover: false,
 			showInspectMapPopupOnHover: false,
 			selectThreshold: 5
 		}));
+{/if}
 
 		function GoToLatest() {
 			var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap';
@@ -582,6 +584,7 @@ if not, write to the
 				}
 			}, true);
 			//End Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
+
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
@@ -701,17 +704,17 @@ if not, write to the
 {if $ie eq 0}
 		map.on('move', displayCenter);
 {/if}
-			//Trigger map resize when menu button is clicked.
-			$(".bt-menu-trigger").click(function() {
-				$(this).toggleClass("buttonstyle").trigger('classChanged');
-			});
-			$(".bt-menu-trigger").on("classChanged", function() {
-				$(document).ready(function() {
-					map.resize();
-				});
+		//Trigger map resize when menu button is clicked.
+		$(".bt-menu-trigger").click(function() {
+			$(this).toggleClass("buttonstyle").trigger('classChanged');
 		});
-		
-		map.on("resize", () => {
+		$(".bt-menu-trigger").on("classChanged", function() {
+			$(document).ready(function() {
+				map.resize();
+			});
+		});
+
+		map.on('resize', function() {
 			map.getCanvas().focus();
 		});
 	
