@@ -298,7 +298,7 @@ a, a:hover, a:focus {
 }
 
 #map {
-    background: linear-gradient(0deg, rgba(36,0,0,1) 45%, rgb(249 209 89) 62%, rgb(81 151 173) 80%, rgb(2 92 179) 95%)
+    background: linear-gradient(0deg, rgba(36,0,0,1) 45%, rgb(249 209 89) 62%, rgb(81 151 173) 85%, rgb(2 92 179) 95%)
 }
 
 .maplibregl-terrain {
