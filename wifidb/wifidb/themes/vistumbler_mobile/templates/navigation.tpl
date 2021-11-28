@@ -30,7 +30,6 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></li>					
 						<li class="inside_dark_header">Ads</li>
 					</ul>
-					<div>
 					<div class="inside_text_center">
 						<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 						<!-- Vistumbler - Responsive Right -->

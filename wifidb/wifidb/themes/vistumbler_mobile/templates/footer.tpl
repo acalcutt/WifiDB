@@ -24,6 +24,5 @@
 				<!-- End ads -->
 			</div>
 		</div>
-	</div>
 </body>
 </html>
