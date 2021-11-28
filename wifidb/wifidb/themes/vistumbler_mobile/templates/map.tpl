@@ -264,6 +264,14 @@ if not, write to the
 		.addTo(map);
 {/if}
 
+		// Start Gamelike Controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
+		var deltaDistance = 100; // pixels the map pans when the up or down arrow is clicked
+		var deltaDegrees = 25; // degrees the map rotates when the left or right arrow is clicked
+		function easing(t) {
+			return t * (2 - t);
+		}
+		// End Gamelike Controls
+
 		// --- Start Map Style Selection ---
 		var styleList = document.getElementById('styles');
 		styleList.addEventListener('change', function(e) {
@@ -512,6 +520,35 @@ if not, write to the
 {/if}
 		};
 		map.once('style.load', function(e) {
+			//Start Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
+			map.getCanvas().focus();
+			map.getCanvas().addEventListener('keydown', function(e) {
+				e.preventDefault();
+				if (e.which === 38) {
+					// up
+					map.panBy([0, -deltaDistance], {
+						easing: easing
+					});
+				} else if (e.which === 40) {
+					// down
+					map.panBy([0, deltaDistance], {
+						easing: easing
+					});
+				} else if (e.which === 37) {
+					// left
+					map.easeTo({
+						bearing: map.getBearing() - deltaDegrees,
+						easing: easing
+					});
+				} else if (e.which === 39) {
+					// right
+					map.easeTo({
+						bearing: map.getBearing() + deltaDegrees,
+						easing: easing
+					});
+				}
+			}, true);
+			//End Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
 			//Add GeoLocate button
 			map.addControl(new maplibregl.GeolocateControl({
 				positionOptions: {
