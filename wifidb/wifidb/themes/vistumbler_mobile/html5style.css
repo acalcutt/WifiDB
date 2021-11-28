@@ -297,6 +297,12 @@ a, a:hover, a:focus {
 	margin: 40px 0;
 }
 
+#mapcontainer {
+	float:left;
+	height:70vh;
+	width: 100%;
+}
+
 #map {
 	background: linear-gradient(0deg, rgba(36,0,0,1) 45%, rgb(249 209 89) 62%, rgb(81 151 173) 85%, rgb(2 92 179) 95%);
 	height: 100%;
@@ -321,6 +327,49 @@ canvas {
 .maplibregl-terrain-hide {
 	background-image: url("data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' width='25px' height='25px' viewBox='-4 -4 25 25' version='1.1'%3E%3Cg id='surface1'%3E%3Cpath style=' stroke:none;fill-rule:nonzero;fill:rgb(0%25,0%25,0%25);fill-opacity:1;' d='M 0.78125 19.140625 L 24.21875 19.140625 L 24.21875 20.703125 L 0.78125 20.703125 Z M 0.78125 19.140625 '/%3E%3C/g%3E%3C/svg%3E%0A");
 }
+
+#controls {
+	z-index: 1;
+	bottom: 0;
+	left: 0;
+	position: absolute;
+	text-align: left;
+
+}
+
+#controls.hidden {
+	display: none;
+}
+
+.all_controls {
+	position: relative;
+}
+
+.all_controls.hidden {
+	display: none;
+}
+
+.controls-button {
+	height:40px;
+	width: 40px;
+
+}
+
+.controls-icon {
+	cursor: pointer;
+	background-color: #7386D5;
+	display: inline-block;
+	border-radius: 4px;
+	border: 1px solid #7386D5;
+	font-weight: bold;
+}
+
+.controls-icon:hover  {
+	  background-color: #7386D5;
+}
+
+
+
 /* ---------------------------------------------------
 	SIDEBAR STYLE
 ----------------------------------------------------- */
