@@ -58,63 +58,63 @@ if not, write to the
 								Search Map {if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {if ((($from / $inc) + 1) * $inc) gt $point_count}{$point_count}{else}{(($from / $inc) + 1) * $inc}{/if}){/if}<br>
 							</div>
 {/if}
-
-							<div id='map' style='float:left; width: 100%; height:65vh;'>
-
-								<div id='stylebackground'>
-								<table>
-									<tr>
-										<td>Map Style</td>
-										<td>
-											<select id="styles" class="dropdownSelect">
-											  <option value="WDB_OSM">3D</option>
-											  <option value="WDB_BASIC">Basic</option>
-											  <option value="WDB_DARK_MATTER">Dark</option>
-											</select>
-										</td>
-									</tr>
+							<div style='float:left; width:100%; height:65vh;'>
+								<div id='map' style='float:left; width:100%; height:100%;'>
+									<div id='stylebackground'>
+										<table>
+											<tr>
+												<td>Map Style</td>
+												<td>
+													<select id="styles" class="dropdownSelect">
+													  <option value="WDB_OSM">3D</option>
+													  <option value="WDB_BASIC">Basic</option>
+													  <option value="WDB_DARK_MATTER">Dark</option>
+													</select>
+												</td>
+											</tr>
 {if $func eq "exp_cell_sig"}
-									<tr>
-										<td>Point Label</td>
-										<td>
-											<select id="pointlabels" class="dropdownSelect">
-											  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
-											  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
-											  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
-											</select>
-										</td>
-									</tr>
+											<tr>
+												<td>Point Label</td>
+												<td>
+													<select id="pointlabels" class="dropdownSelect">
+													  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+													  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
+													  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
+													</select>
+												</td>
+											</tr>
 {elseif $func eq "exp_ap_sig"}
-									<tr>
-										<td>Point Label</td>
-										<td>
-											<select id="pointlabels" class="dropdownSelect">
-											  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
-											  <option value="signal"{if $sig_label eq "signal"} selected{/if}>Signal</option>
-											  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
-											  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
-											</select>
-										</td>
-									</tr>
+											<tr>
+												<td>Point Label</td>
+												<td>
+													<select id="pointlabels" class="dropdownSelect">
+													  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+													  <option value="signal"{if $sig_label eq "signal"} selected{/if}>Signal</option>
+													  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
+													  <option value="hist_date"{if $sig_label eq "hist_date"} selected{/if}>Date</option>
+													</select>
+												</td>
+											</tr>
 {else}
-									<tr>
-										<td>Point Label</td>
-										<td>
-											<select id="pointlabels" class="dropdownSelect">
-											  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
-											  <option value="ssid"{if $sig_label eq "ssid"} selected{/if}>SSID</option>
-											  <option value="mac"{if $sig_label eq "mac"} selected{/if}>Mac</option>
-											  <option value="chan"{if $sig_label eq "chan"} selected{/if}>Channel</option>
-											  <option value="fa"{if $sig_label eq "fa"} selected{/if}>First Active</option>
-											  <option value="la"{if $sig_label eq "la"} selected{/if}>Last Active</option>
-											  <option value="points"{if $sig_label eq "points"} selected{/if}>Points</option>
-											  <option value="high_gps_sig"{if $sig_label eq "high_gps_sig"} selected{/if}>High Signal</option>
-											  <option value="high_gps_rssi"{if $sig_label eq "high_gps_rssi"} selected{/if}>High RSSI</option>
-											</select>
-										</td>
-									</tr>
+											<tr>
+												<td>Point Label</td>
+												<td>
+													<select id="pointlabels" class="dropdownSelect">
+													  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
+													  <option value="ssid"{if $sig_label eq "ssid"} selected{/if}>SSID</option>
+													  <option value="mac"{if $sig_label eq "mac"} selected{/if}>Mac</option>
+													  <option value="chan"{if $sig_label eq "chan"} selected{/if}>Channel</option>
+													  <option value="fa"{if $sig_label eq "fa"} selected{/if}>First Active</option>
+													  <option value="la"{if $sig_label eq "la"} selected{/if}>Last Active</option>
+													  <option value="points"{if $sig_label eq "points"} selected{/if}>Points</option>
+													  <option value="high_gps_sig"{if $sig_label eq "high_gps_sig"} selected{/if}>High Signal</option>
+													  <option value="high_gps_rssi"{if $sig_label eq "high_gps_rssi"} selected{/if}>High RSSI</option>
+													</select>
+												</td>
+											</tr>
 {/if}
-								</table>
+										</table>
+									</div>
 								</div>
 							</div>
 							<div>
@@ -266,7 +266,7 @@ if not, write to the
 
 		// Start Gamelike Controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
 		var deltaDistance = 100; // pixels the map pans when the up or down arrow is clicked
-		var deltaDegrees = 25; // degrees the map rotates when the left or right arrow is clicked
+		var deltaDegrees = 30; // degrees the map rotates when the left or right arrow is clicked
 		function easing(t) {
 			return t * (2 - t);
 		}
@@ -521,7 +521,6 @@ if not, write to the
 		};
 		map.once('style.load', function(e) {
 			//Start Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-			map.getCanvas().focus();
 			map.getCanvas().addEventListener('keydown', function(e) {
 				e.preventDefault();
 				if (e.which === 38) {
