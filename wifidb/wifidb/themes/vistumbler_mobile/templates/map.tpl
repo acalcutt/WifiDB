@@ -63,13 +63,11 @@ if not, write to the
 									<div id="controls">
 										<table style="width: 100%">
 											<tr>
-												<td style="width: 40px">
-													<span id="iconShowHide" class="controls-icon" title="Toggle Controls"><img class="controls-button" id="showhidebtn" src="{$themeurl}img/control-panel-64.png"></span>
-												</td>
+												<td style="width: 40px"></td>
 												<td>
 													<span id="all_controls" class="all_controls">
 														<div>
-															<span class="inline nowrap player-btn controls-icon">Map Style:
+															<span class="inline nowrap controls-icon">Map Style:
 																<select id="styles" class="dropdownSelect">
 																  <option value="WDB_OSM">3D</option>
 																  <option value="WDB_BASIC">Basic</option>
@@ -77,7 +75,7 @@ if not, write to the
 																</select>
 															</span>
 {if $func eq "exp_cell_sig"}				
-															<span class="inline nowrap player-btn controls-icon">Point Label:
+															<span class="inline nowrap controls-icon">Point Label:
 																<select id="pointlabels" class="dropdownSelect">
 																  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
 																  <option value="rssi"{if $sig_label eq "rssi"} selected{/if}>RSSI</option>
@@ -85,7 +83,7 @@ if not, write to the
 																</select>
 															</span>
 {elseif $func eq "exp_ap_sig"}
-															<span class="inline nowrap player-btn controls-icon">Point Label:
+															<span class="inline nowrap controls-icon">Point Label:
 																<select id="pointlabels" class="dropdownSelect">
 																  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
 																  <option value="signal"{if $sig_label eq "signal"} selected{/if}>Signal</option>
@@ -94,7 +92,7 @@ if not, write to the
 																</select>
 															</span>
 {else}
-															<span class="inline nowrap player-btn controls-icon">Point Label:
+															<span class="inline nowrap controls-icon">Point Label:
 																<select id="pointlabels" class="dropdownSelect">
 																  <option value="none"{if $sig_label eq "none"} selected{/if}>None</option>
 																  <option value="ssid"{if $sig_label eq "ssid"} selected{/if}>SSID</option>
@@ -108,24 +106,24 @@ if not, write to the
 																</select>
 															</span>
 {/if}
-															<span class="inline nowrap player-btn video-icon">
+															<span class="inline nowrap controls-icon">
 																	<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
-																	<button id="searchadr" onClick="searchadr()">Search</button>
+																	<button class="toggle-button" id="searchadr" onClick="searchadr()">Search</button>
 															</span>
 {if $func eq "wifidbmap"}
-															<button id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
+															<button class="toggle-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
+															<button class="toggle-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
 {/if}
 {if $func eq "wifidbmap" || $func eq "user_list"}	
 															<br/>
-															<button id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
-															<button id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
-															<button id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
-															<button id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
-															<button id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
-															<button id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
-															<button id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
-															<button id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
-															<button id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Netwotks</button>
+															<button class="toggle-button" id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
+															<button class="toggle-button" id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
+															<button class="toggle-button" id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
+															<button class="toggle-button" id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
+															<button class="toggle-button" id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
+															<button class="toggle-button" id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
+															<button class="toggle-button" id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
+															<button class="toggle-button" id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Networks</button>
 {/if}
 														</div>
 													</span>
@@ -137,6 +135,7 @@ if not, write to the
 								</div>
 							</div>
 							<div>
+				
 {if $ldivs gt 1}
 	{if $func eq "exp_ap_sig"}
 								<div>
@@ -372,6 +371,33 @@ if not, write to the
 		map.addControl(terrain_button, "top-right");
 		// --- End Terrain Toggle ---
 {/if}
+		// --- Start Control Toggle ---
+		/* Toggle Control Function */
+		function control_toggle() {
+			var el = document.getElementById('menu_button');
+			var ac = document.getElementById('all_controls');
+			if (el.classList.contains('controls-hide-icon')) {
+				el.title = 'Show Controls';
+				el.classList.add('controls-show-icon');
+				el.classList.remove('controls-hide-icon');
+				ac.classList.add('hidden');
+			} else {
+				el.title = 'Hide Controls';
+				el.classList.add('controls-hide-icon');
+				el.classList.remove('controls-show-icon');
+				ac.classList.remove('hidden');
+			}
+		}
+
+		/* Toggle Control Button */
+		var menu_button = new MaplibreGLButtonControl({
+			className: "controls-hide-icon",
+			id: "menu_button",
+			title: "Hide Controls",
+			eventHandler: control_toggle
+		});
+		map.addControl(menu_button, "bottom-left");
+		// --- End Control Toggle ---
 		//Add GeoLocate button
 		map.addControl(new maplibregl.GeolocateControl({
 			positionOptions: {
@@ -702,13 +728,6 @@ if not, write to the
 		map.on('resize', function() {
 			map.getCanvas().focus();
 		});
-		
-		function HideControls() {
-			$('.all_controls').toggleClass('hidden');
-		}
-		hide_controls = document.getElementById('iconShowHide');
-		hide_controls.addEventListener('click', HideControls);
-	
 							</script>
 						</td>
 					</tr>
