@@ -59,7 +59,7 @@ if not, write to the
 							</div>
 {/if}
 							<div style='float:left; width:100%; height:65vh;'>
-								<div id='map' style='float:left; width:100%; height:100%;'>
+								<div id='map'>
 									<div id='stylebackground'>
 										<table>
 											<tr>
@@ -255,7 +255,7 @@ if not, write to the
 {if $ie eq 0}
 			maxPitch: 85,
 {/if}
-});
+		});
 
 {if $default_marker}
 		// Create a default Marker
@@ -357,6 +357,38 @@ if not, write to the
 		map.addControl(terrain_button, "top-right");
 		// --- End Terrain Toggle ---
 {/if}
+		//Add GeoLocate button
+		map.addControl(new maplibregl.GeolocateControl({
+			positionOptions: {
+				enableHighAccuracy: true
+			},
+			trackUserLocation: true
+		})); 
+
+		//Add Fullscreen Button
+		var fs = new maplibregl.FullscreenControl();
+		map.addControl(fs);
+		fs._fullscreenButton.classList.add('needsclick'); //Add Navigation Control
+		map.addControl(new maplibregl.NavigationControl({
+			visualizePitch: true,
+			showZoom: true,
+			showCompass: true
+		}));
+
+		//Scale Bar
+		var scale = new maplibregl.ScaleControl({
+			maxWidth: 80,
+			unit: 'imperial'
+		});
+		map.addControl(scale);
+
+		//Inspect Button
+		map.addControl(new MaplibreInspect({
+			showMapPopupOnHover: false,
+			showInspectMapPopupOnHover: false,
+			selectThreshold: 5
+		}));
+
 		function GoToLatest() {
 			var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap';
 			console.log('url: ', url);
@@ -519,8 +551,10 @@ if not, write to the
 			terrain_remove();
 {/if}
 		};
-		map.once('style.load', function(e) {
+
+		map.on('load', function () {
 			//Start Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
+			map.getCanvas().focus();
 			map.getCanvas().addEventListener('keydown', function(e) {
 				e.preventDefault();
 				if (e.which === 38) {
@@ -548,35 +582,6 @@ if not, write to the
 				}
 			}, true);
 			//End Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-			//Add GeoLocate button
-			map.addControl(new maplibregl.GeolocateControl({
-				positionOptions: {
-					enableHighAccuracy: true
-				},
-				trackUserLocation: true
-			})); 
-			//Add Fullscreen Button
-			var fs = new maplibregl.FullscreenControl();
-			map.addControl(fs);
-			fs._fullscreenButton.classList.add('needsclick'); //Add Navigation Control
-			map.addControl(new maplibregl.NavigationControl({
-				visualizePitch: true,
-				showZoom: true,
-				showCompass: true
-			}));
-			//Scale Bar
-			var scale = new maplibregl.ScaleControl({
-				maxWidth: 80,
-				unit: 'imperial'
-			});
-			map.addControl(scale);
-			//Ad Inspect
-			//map.addControl(new MaplibreInspect());
-			map.addControl(new MaplibreInspect({
-				showMapPopupOnHover: false,
-				showInspectMapPopupOnHover: false,
-				selectThreshold: 5
-			}));
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
@@ -696,14 +701,18 @@ if not, write to the
 {if $ie eq 0}
 		map.on('move', displayCenter);
 {/if}
-		//Trigger map resize when menu button is clicked.
-		$(".bt-menu-trigger").click(function() {
-			$(this).toggleClass("buttonstyle").trigger('classChanged');
-		});
-		$(".bt-menu-trigger").on("classChanged", function() {
-			$(document).ready(function() {
-				map.resize();
+			//Trigger map resize when menu button is clicked.
+			$(".bt-menu-trigger").click(function() {
+				$(this).toggleClass("buttonstyle").trigger('classChanged');
 			});
+			$(".bt-menu-trigger").on("classChanged", function() {
+				$(document).ready(function() {
+					map.resize();
+				});
+		});
+		
+		map.on("resize", () => {
+			map.getCanvas().focus();
 		});
 	
 							</script>
