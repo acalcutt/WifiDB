@@ -24,29 +24,29 @@ define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
 
-//$terrain   = filter_input(INPUT_GET, 'terrain', FILTER_SANITIZE_NUMBER_INT);
-//if(!is_numeric($terrain)){$terrain = 0;}
-//if($terrain == 0)
-//{
-//	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
-//	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
-//}else{
-//	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
-//	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
-//}
 
 $ua = htmlentities($_SERVER['HTTP_USER_AGENT'], ENT_QUOTES, 'UTF-8');
 if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; rv:11.0') !== false)) {
 	$ie = 1;
-	$terrain = 0;
-	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
-	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+//	$terrain = 1;
+//	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.ie.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
+//	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.ie.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
 }else{
 	$ie = 0;
-	$terrain = 1;
-	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
-	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+//	$terrain = 1;
+//	$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
+//	$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
 }
+
+
+$terrain = 1;
+//$wifidb_meta_header = '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.es6.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.es5.js"><\/script>\')}</script>';
+//$wifidb_meta_header .= '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.ie.min.js"><\/script>\')}</script>';
+$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.es5.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
+$wifidb_meta_header .= '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
+$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.ie.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+
+
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);
 $dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -118,6 +118,62 @@ switch($func)
 		$layer_source_all .= $ll['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"visible");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
+
+
+		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		
+		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
+		$dbcore->smarty->assign('layer_name', $layer_name);
+		$dbcore->smarty->assign('cell_layer_name', $cell_layer_name);
+		$dbcore->smarty->assign('style', $style);
+		$dbcore->smarty->assign('centerpoint', $centerpoint);
+		$dbcore->smarty->assign('zoom', $zoom);
+		$dbcore->smarty->assign('pitch', $pitch);
+		$dbcore->smarty->assign('bearing', $bearing);
+		$dbcore->smarty->assign('sig_label', $sig_label);
+		$dbcore->smarty->assign('wifidbmap', 1);
+		$dbcore->smarty->assign('default_hidden', 0);
+		$dbcore->smarty->display('map.tpl');
+		break;
+	case "heatmap":
+		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
+		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
+		
+		if (empty($latitude)){$latitude = 37.090240;}
+		if (empty($longitude)){$longitude = -95.009766;}
+		if (empty($zoom)){$zoom = 2;}
+		if (empty($bearing)){$bearing = 0;}
+		if (empty($pitch)){$pitch = 0;}
+		$centerpoint =  "[".$longitude.",".$latitude."]";
+		$layer_cell = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_cells","cell_networks","visible");
+		$layer_legacy = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB","WifiDB_Legacy","visible");
+		$layer_2_3 = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB","WifiDB_2to3year","visible");
+		$layer_1_2 = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB","WifiDB_1to2year","visible");
+		$layer_0_1 = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_newest","WifiDB_0to1year","visible");
+		$layer_monthly = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_newest","WifiDB_monthly","visible");
+		$layer_weekly = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_newest","WifiDB_weekly","visible");
+		$layer_source_all = $layer_cell['layer_source'];
+		$layer_source_all .= $layer_legacy['layer_source'];
+		$layer_source_all .= $layer_2_3['layer_source'];
+		$layer_source_all .= $layer_1_2['layer_source'];
+		$layer_source_all .= $layer_0_1['layer_source'];
+		$layer_source_all .= $layer_monthly['layer_source'];
+		$layer_source_all .= $layer_weekly['layer_source'];
+
+
+
+		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
+		$dl = $dbcore->createGeoJSON->CreateHeatMapLayer($dgs['layer_name']);
+		$layer_source_all .= $dgs['layer_source'];
+		$layer_source_all .= $dl['layer_source'];
+
+		$lgs = $dbcore->createGeoJSON->CreateLatestGeoJsonSource();
+		$ll = $dbcore->createGeoJSON->CreateHeatMapLayer($lgs['layer_name']);
+		$layer_source_all .= $lgs['layer_source'];
+		$layer_source_all .= $ll['layer_source'];
+
 
 
 		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";

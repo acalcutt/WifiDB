@@ -135,25 +135,79 @@ class createGeoJSON
 		map.addLayer({
 			'id': '".$source."-".$type."',";
 		}
-
-		$layer_source .= "\n
-		'source': '".$source."',
-		'type': 'symbol',
-		'layout': {
-			'text-field': '".$field."',
-			'text-font': ['".$font."'],
-			'text-size': ".$size.",
-			'visibility': '".$visibility."'
-		},
-		'paint': {
-			'text-halo-blur': 1,
-			'text-color': '#000000',
-			'text-halo-width': 2,
-			'text-halo-color': '#FFFFFF'
-		  }
+		$layer_source .= "
+			'source': '".$source."',
+			'type': 'symbol',
+			'layout': {
+				'text-field': '".$field."',
+				'text-font': ['".$font."'],
+				'text-size': ".$size.",
+				'visibility': '".$visibility."'
+			},
+			'paint': {
+				'text-halo-blur': 1,
+				'text-color': '#000000',
+				'text-halo-width': 2,
+				'text-halo-color': '#FFFFFF'
+			  }
 	});";
 		
 		return $layer_source;
+	}
+
+	public function CreateHeatMapLayer($data_source, $data_source_layer = "", $visibility = "none")
+	{
+		$layer_type = 'heatmap';
+		if($data_source_layer){$layer_lname = $data_source_layer."-".$layer_type;}else{$layer_lname = $data_source."-".$layer_type;};
+		
+		if ($data_source_layer) {$layer_source = "\n
+		map.addLayer(
+			{
+				'id': '".$layer_lname."',
+				'source-layer': '".$data_source_layer."',";
+		}else{$layer_source = "
+		map.addLayer(
+			{
+				'id': '".$layer_lname."',";
+		};			
+
+		$layer_source .= "
+				'source': '".$data_source."',
+				'type': '".$layer_type."',
+				'layout': {
+					'visibility': '".$visibility."'
+				},
+				'paint': {
+					'heatmap-radius': 4
+				},
+				'heatmap-color': 
+				[
+					'interpolate',
+					['linear'],
+					['heatmap-density'],
+					0, 'rgba(33,102,172,0)',
+					0.3, 'rgb(103,169,207)',
+					0.6, 'rgb(209,229,240)',
+					0.9, 'rgb(253,219,199)',
+					1.2, 'rgb(239,138,98)',
+					1.5, 'rgb(178,24,43)',
+				], 
+				'heatmap-radius': [
+					'interpolate',
+					['linear'],
+					['zoom'],
+					0, 2,
+					9, 20
+				],
+			})";
+
+		
+		$ret_data = array(
+		"layer_source" => $layer_source,
+		"layer_name" => $layer_lname,
+		);
+		
+		return $ret_data;
 	}
 
 	public function CreateLatestGeoJsonSource()
@@ -237,7 +291,8 @@ class createGeoJSON
 		map.addSource('".$layer_name."', {
 			type: 'geojson',
 			data: '".$layer_url."',
-			buffer: 0,		});";
+			buffer: 0,
+		});";
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
