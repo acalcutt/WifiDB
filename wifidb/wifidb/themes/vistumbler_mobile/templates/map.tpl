@@ -181,6 +181,21 @@ if not, write to the
 							</div>
 
 							<script>
+		//Maplibre map object
+		var map = new maplibregl.Map({
+			container: 'map',
+			style: '{$tileserver_gl_url}/styles/{$style}/style.json',
+			center: {$centerpoint},
+			zoom: {$zoom},
+			pitch: {$pitch},
+			bearing: {$bearing},
+			attributionControl: false,
+{if $ie eq 0}
+			maxPitch: 85,
+{/if}
+		});
+		map.addControl(new maplibregl.AttributionControl(), 'top-right');
+		
 		// --- Internet Explorer compatibility for MaplibreGLButtonControl ---
 		function _classCallCheck(instance, Constructor) {
 			if (!(instance instanceof Constructor)) {
@@ -245,35 +260,12 @@ if not, write to the
 			return MaplibreGLButtonControl;
 		}();
 
-		var map = new maplibregl.Map({
-			container: 'map',
-			style: '{$tileserver_gl_url}/styles/{$style}/style.json',
-			center: {$centerpoint},
-			zoom: {$zoom},
-			pitch: {$pitch},
-			bearing: {$bearing},
-			attributionControl: false,
-{if $ie eq 0}
-			maxPitch: 85,
-{/if}
-		});
-		map.addControl(new maplibregl.AttributionControl(), 'top-right');
-
 {if $default_marker}
 		// Create a default Marker
 		var marker = new maplibregl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
 		.setLngLat({$default_marker})
 		.addTo(map);
 {/if}
-
-		// Start Gamelike Controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-		var deltaDistance = 100; // pixels the map pans when the up or down arrow is clicked
-		var deltaDegrees = 30; // degrees the map rotates when the left or right arrow is clicked
-		function easing(t) {
-			return t * (2 - t);
-		}
-		// End Gamelike Controls
-
 		// --- Start Map Style Selection ---
 		var styleList = document.getElementById('styles');
 		styleList.addEventListener('change', function(e) {
@@ -418,14 +410,12 @@ if not, write to the
 			showCompass: true
 		}));
 
-{if $ie eq 0}
 		//Inspect Button
 		map.addControl(new MaplibreInspect({
 			showMapPopupOnHover: false,
 			showInspectMapPopupOnHover: false,
 			selectThreshold: 5
 		}));
-{/if}
 
 		function GoToLatest() {
 			var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap';
@@ -568,71 +558,65 @@ if not, write to the
 		};
 
 		map.on('load', function () {
-			//Start Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-			map.getCanvas().focus();
-			map.getCanvas().addEventListener('keydown', function(e) {
-				e.preventDefault();
-				if (e.which === 38) {
-					// up
-					map.panBy([0, -deltaDistance], {
-						easing: easing
-					});
-				} else if (e.which === 40) {
-					// down
-					map.panBy([0, deltaDistance], {
-						easing: easing
-					});
-				} else if (e.which === 37) {
-					// left
-					map.easeTo({
-						bearing: map.getBearing() - deltaDegrees,
-						easing: easing
-					});
-				} else if (e.which === 39) {
-					// right
-					map.easeTo({
-						bearing: map.getBearing() + deltaDegrees,
-						easing: easing
-					});
-				}
-			}, true);
-			//End Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
 				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
 				if (!inspectStyle) {
-					var features = map.queryRenderedFeatures(e.point, {
+
+					var queryBox;
+					var selectThreshold = 5;
+					if (selectThreshold === 0) {
+					  queryBox = e.point;
+					} else {
+					  // set a bbox around the pointer
+					  queryBox = [
+						[
+						e.point.x - selectThreshold,
+						e.point.y + selectThreshold
+						], // bottom left (SW)
+						[
+						e.point.x + selectThreshold,
+						e.point.y - selectThreshold
+						] // top right (NE)
+					  ];
+					}
+				
+					var features = map.queryRenderedFeatures(queryBox, {
 						layers: [{$cell_layer_name}]
 					});
 					if (!features.length) {
 						return;
 					}
-					var feature = features[0];
-					var text = '<ul>';
-					if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
-					if (feature.properties.mapname) text += '<li>Name: <b>' + feature.properties.mapname + '</b></li>';
-					if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
-					if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
-					if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
-					if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
-					if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
-					if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
-					if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
-					if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-					if (feature.properties.fa) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
-					if (feature.properties.la) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
-					if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
-					if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
-					if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
-					if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
-					if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
-					if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
-					if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
-					if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
-					if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
-					text += '</ul>';
+					
+					var text = '';
+					for (var i = 0; i < features.length; i++) {
+						var feature = features[i];
+						if (i !== 0) text += '<hr>';
+						text += '<ul>';
+						if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
+						if (feature.properties.mapname) text += '<li>Name: <b>' + feature.properties.mapname + '</b></li>';
+						if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
+						if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
+						if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+						if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+						if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
+						if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
+						if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
+						if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+						if (feature.properties.fa) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+						if (feature.properties.la) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
+						if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
+						if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
+						if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
+						if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
+						if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
+						if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
+						if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
+						if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
+						if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+						text += '</ul>';
+					}
 					var popup = new maplibregl.Popup().setLngLat(map.unproject(e.point)).setHTML(text).addTo(map);
 				}
 			});
@@ -641,41 +625,67 @@ if not, write to the
 			map.on('click', function(e) {
 				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
 				if (!inspectStyle) {
-					var features = map.queryRenderedFeatures(e.point, {
+					var queryBox;
+					var selectThreshold = 5;
+					if (selectThreshold === 0) {
+					  queryBox = e.point;
+					} else {
+					  // set a bbox around the pointer
+					  queryBox = [
+						[
+						e.point.x - selectThreshold,
+						e.point.y + selectThreshold
+						], // bottom left (SW)
+						[
+						e.point.x + selectThreshold,
+						e.point.y - selectThreshold
+						] // top right (NE)
+					  ];
+					}
+				
+					var features = map.queryRenderedFeatures(queryBox, {
 						layers: [{$layer_name}]
 					});
 					if (!features.length) {
 						return;
 					}
-					var feature = features[0];
-					var text = '<ul>';
-					if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
-					if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
-					if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
-					if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
-					if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
-					if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
-					if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-					if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
-					if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
-					if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
-					if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
-					if (feature.properties.nt) text += '<li>Network Type: <b>' + feature.properties.nt + '</b></li>';
-					if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
-					if (feature.properties.fa) text += '<li>First: <b>' + feature.properties.fa + '</b></li>';
-					if (feature.properties.la) text += '<li>Last: <b>' + feature.properties.la + '</b></li>';
-					if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
-					if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
-					if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
-					if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
-					if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
-					if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
-					if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
-					if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
-					if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
-					if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&file_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
-					if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
-					text += '</ul>';
+					
+					var text = '';
+					for (var i = 0; i < features.length; i++) {
+						var feature = features[i];
+						
+						if (i !== 0) text += '<hr>';
+						text += '<ul>';
+						if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
+						if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+						if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
+						if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
+						if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+						if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
+						if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+						if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
+						if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
+						if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
+						if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
+						if (feature.properties.nt) text += '<li>Network Type: <b>' + feature.properties.nt + '</b></li>';
+						if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
+						if (feature.properties.fa) text += '<li>First: <b>' + feature.properties.fa + '</b></li>';
+						if (feature.properties.la) text += '<li>Last: <b>' + feature.properties.la + '</b></li>';
+						if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
+						if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
+						if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
+						if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
+						if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
+						if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
+						if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
+						if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
+						if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
+						if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&file_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
+						if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+						text += '</ul>';
+					}
+					
+
 					var popup = new maplibregl.Popup().setLngLat(map.unproject(e.point)).setHTML(text).addTo(map);
 				}
 			});
@@ -725,10 +735,6 @@ if not, write to the
 			$(document).ready(function() {
 				map.resize();
 			});
-		});
-
-		map.on('resize', function() {
-			map.getCanvas().focus();
 		});
 							</script>
 						</td>
