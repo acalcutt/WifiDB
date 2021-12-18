@@ -329,40 +329,11 @@ if not, write to the
 
 {if $terrain ne 0}
 		// --- Start Terrain Toggle ---
-
-		/* Remove Terrain Function */
-		function terrain_remove() {
-			map.removeTerrain();
-			var el = document.getElementById('terrain_button');
-			el.title = 'Show 3d Terrain';
-			el.classList.add('maplibregl-terrain');
-			el.classList.remove('maplibregl-terrain-hide');
-		}
-		/* Add Terrain Function */
-		function terrain_add() {
-			map.addTerrain("terrain");
-			var el = document.getElementById('terrain_button');
-			el.title = 'Hide 3d Terrain';
-			el.classList.add('maplibregl-terrain-hide');
-			el.classList.remove('maplibregl-terrain');
-		}
-		/* Toggle Terrain Function */
-		function terrain_toggle() {
-			var el = document.getElementById('terrain_button');
-			if (el.classList.contains('maplibregl-terrain')) {
-				terrain_add();
-			} else {
-				terrain_remove();
-			}
-		}
-		/* Toggle Terrain Button */
-		var terrain_button = new MaplibreGLButtonControl({
-			className: "maplibregl-terrain",
-			id: "terrain_button",
-			title: "Show 3d Terrain",
-			eventHandler: terrain_toggle
-		});
-		map.addControl(terrain_button, "top-right");
+		map.addControl(
+			new maplibregl.TerrainControl({
+				id: "terrain"
+			})
+		);
 		// --- End Terrain Toggle ---
 {/if}
 		// --- Start Control Toggle ---
