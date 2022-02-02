@@ -59,7 +59,7 @@ if not, write to the
 							</div>
 {/if}
 							<div id='mapcontainer'>
-								<div id='map'>								
+								<div id='map'>
 									<div id="controls">
 										<table style="width: 100%">
 											<tr>
@@ -69,9 +69,9 @@ if not, write to the
 														<div>
 															<span class="inline nowrap controls-icon">Map Style:
 																<select id="styles" class="dropdownSelect">
-																  <option value="WDB_OSM">3D</option>
-																  <option value="WDB_BASIC">Basic</option>
-																  <option value="WDB_DARK_MATTER">Dark</option>
+																  <option value="WDB_OSM"{if $style eq "WDB_OSM"} selected{/if}>3D</option>
+																  <option value="WDB_BASIC"{if $style eq "WDB_BASIC"} selected{/if}>Basic</option>
+																  <option value="WDB_DARK_MATTER"{if $style eq "WDB_DARK_MATTER"} selected{/if}>Dark</option>
 																</select>
 															</span>
 {if $func eq "exp_cell_sig"}				
@@ -107,17 +107,17 @@ if not, write to the
 															</span>
 {/if}
 															<span class="inline nowrap controls-icon">
-																	<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
+																	<input class="address-input" type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
 																	<button class="toggle-button" id="searchadr" onClick="searchadr()">Search</button>
 															</span>
 {if $func eq "wifidbmap"}
 															<span class="inline nowrap">
-																<button class="toggle-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
-																<button class="toggle-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+																<button class="toggle-button latest-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
+																<button class="toggle-button latest-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
 															</span>
 {/if}
-{if $func eq "wifidbmap" || $func eq "user_list"}	
-															<br/>
+
+{if $func eq "wifidbmap" || $func eq "user_list"}
 															<button class="toggle-button" id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
 															<button class="toggle-button" id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
 															<button class="toggle-button" id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
@@ -130,7 +130,7 @@ if not, write to the
 														</div>
 													</span>
 												</td>
-												<td style="width: 40px"></td>
+												<td style="width: 75px"></td>
 											</tr>	
 										</table>
 									</div>
@@ -190,11 +190,73 @@ if not, write to the
 			pitch: {$pitch},
 			bearing: {$bearing},
 			attributionControl: false,
+			maplibreLogo: false,
 {if $ie eq 0}
 			maxPitch: 85,
 {/if}
 		});
+
 		map.addControl(new maplibregl.AttributionControl(), 'top-right');
+		map.addControl(new maplibregl.LogoControl(),'top-left');
+		
+		/*
+		var geocoder_api = {
+			forwardGeocode: function (config) {
+				var features = [];
+				var address = document.getElementById('searchadrbox').value;
+				var address = address.replace(/ /g, "+");
+				var url =
+					'https://nominatim.openstreetmap.org/search?q=' +
+					config.query +
+					'&format=geojson&polygon_geojson=1&addressdetails=1';
+				console.log('url: ', url);
+				var req = new XMLHttpRequest();
+				req.overrideMimeType("application/json");
+				req.open('GET', url, true);
+				req.onload = function() {
+					//console.log(req.responseText);
+					var json = JSON.parse(req.responseText);
+					console.log(json.features);
+					for (var a = 0; a < json.features.length; a++) {
+						var feature = json.features[a];
+						console.log(feature);
+						
+						var center = [
+							feature.bbox[0] +
+							(feature.bbox[2] - feature.bbox[0]) / 2,
+							feature.bbox[1] +
+							(feature.bbox[3] - feature.bbox[1]) / 2
+						];
+						
+						var point = {
+							type: 'Feature',
+							geometry: {
+								type: 'Point',
+								coordinates: center
+							},
+							place_name: feature.properties.display_name,
+							properties: feature.properties,
+							text: feature.properties.display_name,
+							place_type: ['place'],
+							center: center
+						};
+						features.push(point);
+					}
+				};
+				req.send(null);
+				console.log(features);
+				return {
+					features: features
+				};
+			}
+		}
+		map.addControl(
+			new MaplibreGeocoder(geocoder_api, {
+				maplibregl: maplibregl
+			}), 'top-right'
+		);		
+		*/
+		
 		
 		// --- Internet Explorer compatibility for MaplibreGLButtonControl ---
 		function _classCallCheck(instance, Constructor) {
@@ -325,13 +387,17 @@ if not, write to the
 			maxWidth: 80,
 			unit: 'imperial'
 		});
-		map.addControl(scale, 'top-left');
+		map.addControl(scale, 'bottom-right');
 
 {if $terrain ne 0}
 		// --- Start Terrain Toggle ---
 		map.addControl(
 			new maplibregl.TerrainControl({
-				id: "terrain"
+				id: "terrain",
+				options: {
+					exaggeration: 1,
+					elevationOffset: 0
+				}
 			})
 		);
 		// --- End Terrain Toggle ---
@@ -523,9 +589,6 @@ if not, write to the
 		function init() {
 {$layer_source_all}
 			toggle_label();
-{if $terrain ne 0}
-			terrain_remove();
-{/if}
 		};
 
 		map.on('load', function () {
