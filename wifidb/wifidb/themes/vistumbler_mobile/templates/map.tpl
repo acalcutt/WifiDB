@@ -112,6 +112,10 @@ if not, write to the
 															</span>
 {if $func eq "wifidbmap"}
 															<span class="inline nowrap">
+																<button class="toggle-button track-button" id="track_toggle" onClick="toggle_track(this.id)">Enable Track</button>
+																<button class="toggle-button track-button" id="track_download" onClick="track_download()">Download Track</button>
+															</span>
+															<span class="inline nowrap">
 																<button class="toggle-button latest-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
 																<button class="toggle-button latest-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
 															</span>
@@ -181,6 +185,7 @@ if not, write to the
 							</div>
 
 							<script>
+
 		//Maplibre map object
 		var map = new maplibregl.Map({
 			container: 'map',
@@ -391,15 +396,17 @@ if not, write to the
 
 {if $terrain ne 0}
 		// --- Start Terrain Toggle ---
-		map.addControl(
-			new maplibregl.TerrainControl({
-				id: "terrain",
-				options: {
-					exaggeration: 1,
-					elevationOffset: 0
-				}
-			})
-		);
+		if (maplibregl.supported()) {
+			map.addControl(
+				new maplibregl.TerrainControl({
+					id: "terrain",
+					options: {
+						exaggeration: 1,
+						elevationOffset: 0
+					}
+				})
+			);
+		}
 		// --- End Terrain Toggle ---
 {/if}
 		// --- Start Control Toggle ---
@@ -429,17 +436,72 @@ if not, write to the
 		});
 		map.addControl(menu_button, "bottom-left");
 		// --- End Control Toggle ---
+		
 		//Add GeoLocate button
-		map.addControl(new maplibregl.GeolocateControl({
+		var GeolocateControl = new maplibregl.GeolocateControl({
 			positionOptions: {
 				enableHighAccuracy: true
 			},
 			trackUserLocation: true
-		})); 
+		});
+		map.addControl(GeolocateControl);		
+		
+		//Create live track
+		var track = false;
+		var gpx_track_array= [];
+		var track_geojson = {
+			'type': 'FeatureCollection',
+			'features': [
+				{
+					'type': 'Feature',
+					'geometry': {
+						'type': 'LineString',
+						'coordinates': []
+					}
+				}
+			]
+		};
+
+		//Update track geojson on geolocate event
+		GeolocateControl.on('geolocate', function(e) {
+			if (track) {
+				if ((e.coords.latitude != null) && (e.coords.longitude != null)) {
+					console.log(e);
+					// append new coordinates to the lineString
+					track_geojson.features[0].geometry.coordinates.push([e.coords.longitude,e.coords.latitude]);
+					
+					// then update the map
+					map.getSource('track_line').setData(track_geojson);
+					map.moveLayer('track_line_layer');
+					
+					// append new coordinates to gpx
+					$trkpt_str = '<trkpt lat="' + e.coords.latitude + '" lon="' + e.coords.longitude + '">';
+					if (e.coords.altitude != null) {
+						$trkpt_str += '<ele>' + e.coords.altitude + '</ele>';
+					}
+					if (e.coords.speed != null) {
+						$trkpt_str += '<speed>' + e.coords.speed + '</speed>';
+					}
+					if (e.coords.accuracy != null) {
+						var hdop = e.coords.accuracy * 4;
+						$trkpt_str += '<hdop>' + hdop + '</hdop>';
+					}
+					if (e.timestamp != null) {
+						var date = new Date(e.timestamp).toISOString();
+						$trkpt_str += '<time>'+ date + '</time>';
+					}
+					$trkpt_str += '</trkpt>\r';
+					gpx_track_array.push([$trkpt_str]);
+				}
+			}
+		});
 
 		//Add Fullscreen Button
 		var fs = new maplibregl.FullscreenControl();
 		map.addControl(fs);
+
+		//map.addControl(new MapLibreStyleSwitcherControl());
+		
 		fs._fullscreenButton.classList.add('needsclick'); //Add Navigation Control
 		map.addControl(new maplibregl.NavigationControl({
 			visualizePitch: true,
@@ -535,6 +597,56 @@ if not, write to the
 			}
 		}
 
+		function toggle_track(clicked_id) {
+			var el = document.getElementById(clicked_id);
+			if (track) {
+				track = false;
+				gpx_track_array.push(['</trkseg></trk>\r']);
+				console.log("Track Disabled");
+				el.firstChild.data = "Enable Track";
+			} else {
+				var date = new Date().toISOString();
+				gpx_track_array.push(['<trk><name>' + date + '</name><desc></desc><trkseg>\r']);			
+				track = true;
+				console.log("Track Enabled");
+				el.firstChild.data = "Disabled Track";
+			}
+		}
+		
+		function track_download() {
+			var date = new Date().toISOString();
+			download(create_gpx(), 'wdb_map_track_' + date + '.gpx', 'text/plain');
+		}
+
+		function download(content, fileName, contentType) {
+
+			var a = document.createElement("a");
+			a.href = URL.createObjectURL(new Blob([content]));
+			a.setAttribute("download", fileName);
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		}
+
+		function create_gpx() {
+			var track_state = track;
+			if (track_state) {
+				track = false;
+				gpx_track_array.push(['</trkseg></trk>\r']);
+			}
+			var gpx = '<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" version="1.1" creator="wifidb.net"><metadata/>\r'
+			for (var g = 0; g < gpx_track_array.length; ++g) {
+				gpx += gpx_track_array[g];
+			}
+			gpx += '</gpx>'
+			if (track_state) {
+				var date = new Date().toISOString();
+				gpx_track_array.push(['<trk><name>' + date + '</name><desc></desc><trkseg>\r']);	
+				track = true;
+			}
+			return gpx;
+		}
+
 		// --- End Year Visibility Functions ---
 		// --- Start Address Search Box Functions ---
 		function searchadr() {
@@ -592,6 +704,33 @@ if not, write to the
 		};
 
 		map.on('load', function () {
+			map.addSource('track_line', {
+				'type': 'geojson',
+				'data': track_geojson
+			});
+			 
+			// add the line which will be modified for the track
+			map.addLayer({
+				'id': 'track_line_layer',
+				'type': 'line',
+				'source': 'track_line',
+				'layout': {
+					'line-cap': 'round',
+					'line-join': 'round'
+				},
+				'paint': {
+					'line-color': '#ffff66',
+					'line-width': 5,
+					'line-opacity': 0.8
+				}
+			});
+		
+		
+			// Show an alert if the browser does not support MapLibre GL. Hide hillshade
+			//if (!maplibregl.supported()) {
+			//  map.setLayoutProperty("terrain", 'visibility', 'none');
+			//  alert('Your browser does not support MapLibre GL');
+			//}
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
