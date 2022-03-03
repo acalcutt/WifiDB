@@ -163,9 +163,10 @@ try
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
+					$dbcore->createGPX = new createGPX($dbcore->URL_PATH, $dbcore->convert, 5);
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
+					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
 				####
 				case "import":
@@ -178,9 +179,10 @@ try
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
+					$dbcore->createGPX = new createGPX($dbcore->URL_PATH, $dbcore->convert, 5);
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
+					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
 				break;
 				####
@@ -211,27 +213,30 @@ try
 					$dbcore = new api($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
+					$dbcore->createGPX = new createGPX($dbcore->URL_PATH, $dbcore->convert, 5);
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
+					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
 
                 case "apiv2":
                     $dbcore = new apiv2($config, $SQL);
                     $dbcore->convert = new convert($config, $SQL);
                     $dbcore->Zip = new Zip;
+					$dbcore->createGPX = new createGPX($dbcore->URL_PATH, $dbcore->convert, 5);
                     $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-                    $dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
+                    $dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
 				break;
 
 				case "export":
 					$dbcore = new frontend($config);
 					$dbcore->convert = new convert($config);
 					$dbcore->Zip = new Zip;
+					$dbcore->createGPX = new createGPX($dbcore->URL_PATH, $dbcore->convert, 5);
 					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
+					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
 				break;
 
 				case "graph":

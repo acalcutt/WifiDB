@@ -20,10 +20,11 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createKMLObj, $createGeoJSONObj, $convertObj, $ZipObj){
+	public function __construct($config, $createGPXObj, $createKMLObj, $createGeoJSONObj, $convertObj, $ZipObj){
 		parent::__construct($config);
 
 		$this->convert = $convertObj;
+		$this->createGPX = $createGPXObj;
 		$this->createKML = $createKMLObj;
 		$this->createGeoJSON = $createGeoJSONObj;
 		$this->Zip = $ZipObj;
