@@ -21,20 +21,14 @@ if not, write to the
 class createGPX
 {
 
-	public function __construct($URL_PATH, $convertObj, $tilldead = 5)
+	public function __construct($URL_PATH)
 	{
 		$this->URL_BASE	 =   $URL_PATH;
-		$this->convert	  =   $convertObj;
-		$this->title = "Untitled";
-		$this->users = "WiFiDB";
-		$this->data = new stdClass();
-		$this->data->apdata = array();
-		$this->data->placemarks = array();
 	}
 
 	public function createGPXstructure($alldata)
 	{
-		$GPX_DATA = '<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" version="1.1" creator="wifidb.net"><metadata/>'.$alldata."\n</gpx>";
+		$GPX_DATA = '<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxx="http://www.garmin.com/xmlschemas/GpxExtensions/v3"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" version="1.1" creator="wifidb.net"><metadata/>'.$alldata."\n</gpx>";
 		Return $GPX_DATA;
 	}
 	
@@ -43,21 +37,19 @@ class createGPX
 		switch($ap_info_array['sectype'])
 		{
 			case 1:
-				$sec_type_label = "open";
+				$sec_type_colorhex = "#008000";
 				break;
 			case 2:
-				$sec_type_label = "wep";
+				$sec_type_colorhex = "#ffa500";
 				break;
 			case 3;
-				$sec_type_label = "secure";
+				$sec_type_colorhex = "#ff0000";
 				break;
 			default:
-				$sec_type_label = "open";
+				$sec_type_colorhex = "#008000";
 				break;
 		}
-		
-		if($ap_info_array['new_ap']){$icon_style = $sec_type_label."Style";}else{$icon_style = $sec_type_label."StyleDead";}
-		
+
 		$ssid = $this->stripInvalidXml($ap_info_array['ssid']);
 		if(isset($ap_info_array['named']) && $ap_info_array['named'] == 1){$named = "<name>".$ssid.'</name>';}else{$named = '<name> </name>';}
 		if(isset($ap_info_array['id'])){$id = '<b>SSID: </b><a href="'.$this->URL_BASE.'opt/fetch.php?id='.$this->stripInvalidXml($ap_info_array['id']).'" target="_blank">'.$ssid.'</a><br />'."";}else{$id = '';}
@@ -98,6 +90,7 @@ class createGPX
 		if(isset($ap_info_array['alt'])){
 			$tmp .= "<ele>".$ap_info_array['alt']."</ele>";
 		}
+		$tmp .= "<sym>circle</sym><extensions><color>".$sec_type_colorhex."</color></extensions>";
 		$tmp .= "</wpt>";
 		return $tmp;
 	}
