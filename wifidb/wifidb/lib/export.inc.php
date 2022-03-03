@@ -1,7 +1,7 @@
 <?php
 /*
 Export.inc.php, holds the WiFiDB exporting functions.
-Copyright (C) 2021 Andrew Calcutt 2012 Phil Ferland
+Copyright (C) 2022 Andrew Calcutt 2012 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either

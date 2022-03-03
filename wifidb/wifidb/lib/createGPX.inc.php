@@ -1,7 +1,7 @@
 <?php
 /*
-createGPX.inc.php, class to create GPX/GPX files
-Copyright (C) 2021 Andrew Calcutt
+createGPX.inc.php, class to create GPX files
+Copyright (C) 2022 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
