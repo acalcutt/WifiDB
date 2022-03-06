@@ -1,6 +1,6 @@
 <!--
 fetch.tpl: template for a single AP's data results.
-Copyright (C) 2018 Andrew Calcutt
+Copyright (C) 2022 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -42,11 +42,13 @@ if not, write to the
 							<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 							<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 							<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+							<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&from=0&inc=25000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 						{else}
 							<img width="20px" src="{$themeurl}img/globe_off.png">
 							<img width="20px" src="{$themeurl}img/sigmap_off.png">
 							<img width="20px" src="{$themeurl}img/json_off.png">
 							<img width="20px" src="{$themeurl}img/kmz_off.png">
+							<img width="20px" src="{$themeurl}img/gpx_off.png">
 						{/if}
 					</h1>
 					<table align="center" width="50%" border="1" cellpadding="4" cellspacing="0">
@@ -70,11 +72,13 @@ if not, write to the
 										<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 										<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 										<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+										<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&from=0&inc=25000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 									{else}
 										<img width="20px" src="{$themeurl}img/globe_off.png">
 										<img width="20px" src="{$themeurl}img/sigmap_off.png">
 										<img width="20px" src="{$themeurl}img/json_off.png">
 										<img width="20px" src="{$themeurl}img/kmz_off.png">
+										<img width="20px" src="{$themeurl}img/gpx_off.png">
 									{/if}
 								</td>
 							</tr>
@@ -114,12 +118,14 @@ if not, write to the
 								{if $wifidb_assoc.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$wifidb_assoc.id|escape:'htmlall'}" title="Show List on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$wifidb_assoc.id|escape:'htmlall'}" title="Export List to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=50000&id={$wifidb_assoc.id|escape:'htmlall'}" title="Export List to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$wifidb_assoc.id|escape:'htmlall'}" title="Export List to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$wifidb_assoc.id|escape:'htmlall'}" title="Export List to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
+									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user|escape:'htmlall'}">{$wifidb_assoc.file_user|escape:'htmlall'}</a></td>
@@ -133,10 +139,12 @@ if not, write to the
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}&file_id={$wifidb_assoc.id|escape:'htmlall'}" title="Show AP Signals on Map (for this file)"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 									<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}&amp;file_id={$wifidb_assoc.id|escape:'htmlall'}" title="Export AP Signals to JSON (for this file)"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id|escape:'htmlall'}&file_id={$wifidb_assoc.id|escape:'htmlall'}" title="Export AP Signals to KMZ (for this file)"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&from=0&inc=25000&id={$wifidb_cid.id|escape:'htmlall'}&amp;file_id={$wifidb_assoc.id|escape:'htmlall'}" title="Export AP Signals to GPX (for this file)"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
-									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
+									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
+									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="header" onclick="expandcontract('Row{$wifidb_assoc.id|escape:'htmlall'}','ClickIcon{$wifidb_assoc.id|escape:'htmlall'}')" id="ClickIcon{$wifidb_assoc.id|escape:'htmlall'}" style="cursor: pointer; cursor: hand;">+</td>

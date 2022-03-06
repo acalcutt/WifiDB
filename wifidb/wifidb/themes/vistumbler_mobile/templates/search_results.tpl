@@ -1,5 +1,6 @@
 <!--
 Database.inc.php, holds the database interactive functions.
+Copyright (C) 2022 Andrew Calcutt
 Copyright (C) 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -22,10 +23,11 @@ if not, write to the
 				{include file="topmenu.tpl"}
 				<div class="center">
 				<b>Search Results: {$total_rows|default:"0"|number_format} Points</b> (
-								<a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Save Link</a> | 
-								<a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_search&inc={$map_inc}&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Map</a> | 
-								<a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">JSON</a> |								
-								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">KMZ</a> )
+								<a title="(Right Click - Save Links As Bookmark)" class="links" href="{$wifidb_host_url}opt/results.php?&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Save Link</a> |
+								<a class="links" href="{$wifidb_host_url}opt/map.php?func=exp_search&inc={$map_inc}&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}">Map</a> |
+								<a class="links" href="{$wifidb_host_url}api/geojson.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&json=0&labeled=0">JSON</a> |
+								<a class="links" href="{$wifidb_host_url}api/export.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&xml=0&labeled=0">KMZ</a> |
+								<a class="links" href="{$wifidb_host_url}api/gpx.php?func=exp_search&ssid={$ssid_search}&mac={$mac_search}&radio={$radio_search}&chan={$chan_search}&auth={$auth_search}&encry={$encry_search}&sectype={$sectype_search}&xml=0&labeled=0">GPX</a> )
 								<br/><br/>
 					{$page_list}
 				<table class="content_table">
@@ -90,13 +92,15 @@ if not, write to the
 							{if $result.validgps eq 1}
 								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$result.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$result.id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap&id={$result.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-								<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$result.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap&id={$result.id}&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_ap_netlink&id={$result.id}&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?xml=1&func=exp_ap&id={$result.id}&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 							{else}
 								<img width="20px" src="{$themeurl}img/globe_off.png">
 								<img width="20px" src="{$themeurl}img/sigmap_off.png">
 								<img width="20px" src="{$themeurl}img/json_off.png">
 								<img width="20px" src="{$themeurl}img/kmz_off.png">
+								<img width="20px" src="{$themeurl}img/gpx_off.png">
 							{/if}
 							</td>
 							<td class="{$result.class}">{$result.id}</td>
@@ -118,6 +122,6 @@ if not, write to the
 					</tbody>
 				</table>
 					{$page_list}
-				</div>			
+				</div>
 			</div>
 {include file="footer.tpl"}

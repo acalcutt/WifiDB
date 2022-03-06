@@ -1,6 +1,6 @@
 <!--
 all_aps.tpl: The Smarty AP List template for WiFiDB.
-Copyright (C) 2021 Andrew Calcutt
+Copyright (C) 2022 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; Version 2 of the License.
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
@@ -105,13 +105,15 @@ You should have received a copy of the GNU General Public License along with thi
 							{if $wifidb_ap.ValidGPS eq 1}
 								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&labeled=0&id={$wifidb_ap.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$wifidb_ap.id}&from=0&inc=50000" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_ap_sig&id={$wifidb_ap.id}&from=0&inc=50000" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_ap.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&id={$wifidb_ap.id}&from=0&inc=50000&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$wifidb_ap.id}&from=0&inc=25000&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&id={$wifidb_ap.id}&from=0&inc=25000&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 							{else}
 								<img width="20px" src="{$themeurl}img/globe_off.png">
 								<img width="20px" src="{$themeurl}img/sigmap_off.png">
 								<img width="20px" src="{$themeurl}img/json_off.png">
 								<img width="20px" src="{$themeurl}img/kmz_off.png">
+								<img width="20px" src="{$themeurl}img/gpx_off.png">
 							{/if}
 							</td>
 							<td class="{$wifidb_ap.class}">

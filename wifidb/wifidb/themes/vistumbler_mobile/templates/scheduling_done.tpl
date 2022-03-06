@@ -32,7 +32,7 @@ if not, write to the
 							<th class="header"></th>
 							<th class="header">ID</th>
 							<th class="header">Title</th>
-							<th class="header">Filename</th>					
+							<th class="header">Filename</th>
 							<th class="header">Notes</th>
 							<th class="header" colspan="2">Hash</th>
 						</tr>
@@ -46,7 +46,7 @@ if not, write to the
 						</tr>
 						<tr class="header-centered">
 							<th class="header"></th>
-							<th width="75px" class="header">GPS</th>
+							<th width="95px" class="header">GPS</th>
 							<th class="header">Date</th>
 							<th class="header">Size</th>
 							<th class="header">APs/GPS Count</th>
@@ -58,12 +58,14 @@ if not, write to the
 							<td width="75px" class="{$wifidb_done.class}">
 							{if $wifidb_done.validgps eq 1}
 								<a href="{$wifidb_host_url}opt/map.php?func=user_list&labeled=0&id={$wifidb_done.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_done.id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_done.id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?json=1&func=exp_list&id={$wifidb_done.id|escape:'htmlall'}&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$wifidb_done.id|escape:'htmlall'}&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?json=1&func=exp_list&id={$wifidb_done.id|escape:'htmlall'}&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 							{else}
 								<img width="20px" src="{$themeurl}img/globe_off.png">
 								<img width="20px" src="{$themeurl}img/json_off.png">
 								<img width="20px" src="{$themeurl}img/kmz_off.png">
+								<img width="20px" src="{$themeurl}img/gpx_off.png">
 							{/if}
 							</td>
 							<td class="{$wifidb_done.class}">{$wifidb_done.date|escape:'htmlall'}</td>

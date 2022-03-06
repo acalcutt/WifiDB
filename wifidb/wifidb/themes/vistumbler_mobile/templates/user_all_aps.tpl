@@ -36,8 +36,11 @@ if not, write to the
 							</tr>
 							<tr class="dark">
 								<td class="dark" width="190px"><b>Export To</b></td>
-								<td class="dark"><a class="links" href="{$wifidb_host_url}opt/geojson.php?func=user_all&amp;from=0&amp;inc=50000&amp;user={$wifidb_all_user_aps.user}">JSON</a> |
-								<a class="links" href="{$wifidb_host_url}opt/export.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user}">KMZ</a></td>
+								<td class="dark">
+									<a class="links" href="{$wifidb_host_url}opt/geojson.php?func=user_all&amp;from=0&amp;inc=50000&amp;user={$wifidb_all_user_aps.user}">JSON</a> |
+									<a class="links" href="{$wifidb_host_url}opt/export.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user}">KMZ</a> |
+									<a class="links" href="{$wifidb_host_url}opt/gpx.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user}">GPX</a>
+								</td>
 							</tr>
 						</tbody>
 					</table>
@@ -128,11 +131,13 @@ if not, write to the
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$wifidb_users_aps.id}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 									<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap&from=0&inc=50000&id={$wifidb_users_aps.id}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$wifidb_users_aps.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap&from=0&inc=25000&id={$wifidb_users_aps.id}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
+									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.id}</a></td>

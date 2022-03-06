@@ -322,12 +322,13 @@ switch($func)
 			$ap_array = $prep->fetch();
 			$ssid = $dbcore->formatSSID($ap_array['SSID']);
 			$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), 'AP_'.$id.'-'.$ssid);
+			if(is_numeric($file_id) && $file_id){$title .= '_'.$file_id;}
 			if($range){$title .= "_".$range;}
 			#Create KMZ
 
 			$ApArray = $dbcore->export->ApArray($id, $labeled, $new_icons, $valid_gps);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($ApArray['data']);
-			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
+			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc, $valid_gps, $labeled);
 			$ap_signal = $dbcore->createKML->CreateApSignal3D($SigHistArray['data']);
 			if($ap_signal){$KML_Signal_data = $dbcore->createKML->createFolder("Signal History", $ap_signal, 1);}else{$KML_Signal_data = "";}
 			$results = $dbcore->createKML->createKMLstructure($title, $AP_PlaceMarks.$KML_Signal_data);
@@ -352,7 +353,7 @@ switch($func)
 
 			$CellArray = $dbcore->export->CellArray($id, $labeled, $new_icons, $valid_gps);
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($CellArray['data']);
-			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc, $valid_gps);
+			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc, $valid_gps, $labeled);
 			$ap_signal = $dbcore->createKML->CreateApSignal3D($CellSigHistArray['data'], 1, -140, -44);
 			if($ap_signal){$KML_Signal_data = $dbcore->createKML->createFolder("Signal History", $ap_signal, 1);}else{$KML_Signal_data = "";}
 			$results = $dbcore->createKML->createKMLstructure($title, $AP_PlaceMarks.$KML_Signal_data);
@@ -363,7 +364,7 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 			$title = "SigHist_".$id;
-			if(is_numeric($file_id)){$title .= '_'.$file_id;}
+			if(is_numeric($file_id) && $file_id){$title .= '_'.$file_id;}
 			if($range){$title .= "_".$range;}
 
 			$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc);
@@ -377,7 +378,7 @@ switch($func)
 			$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 			$title = "CellSigHist_".$id;
-			if(is_numeric($file_id)){$title .= '_'.$file_id;}
+			if(is_numeric($file_id) && $file_id){$title .= '_'.$file_id;}
 			if($range){$title .= "_".$range;}
 			$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc);
 			$KML_Signal_data = $dbcore->createKML->CreateApSignal3D($CellSigHistArray['data'], 1, -140, -44);

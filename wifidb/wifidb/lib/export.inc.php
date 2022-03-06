@@ -485,7 +485,7 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0)
+	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0, $named = 0)
 	{
 		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
 			. "wGPS.Lat As Lat,\n"
@@ -529,6 +529,7 @@ class export extends dbcore
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['AP_ID'],
+				"named" => $named,
 				"mac" => $ap['BSSID'],
 				"ssid" => $this->formatSSID($ap['SSID']),
 				"chan" => $ap['CHAN'],
@@ -755,7 +756,7 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function CellSigHistArray($cell_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0)
+	public function CellSigHistArray($cell_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0, $named = 0)
 	{
 
 		$sql = "SELECT cid.cell_id, cid.mac, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
@@ -799,6 +800,7 @@ class export extends dbcore
 				#Get AP GeoJSON
 				$ap_info = array(
 				"id" => $ap['cell_id'],
+				"named" => $named,
 				"mac" => $ap['mac'],
 				"ssid" => $this->formatSSID($ap['ssid']),
 				"chan" => $ap['chan'],

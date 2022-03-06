@@ -121,9 +121,9 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 		$title = "SigHist_".$id;
-		if(is_numeric($file_id)){$title .= '_'.$file_id;}
+		if(is_numeric($file_id) && $file_id){$title .= '_'.$file_id;}
 		if($range){$title .= "_".$range;}
-		$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc, $valid_gps);
+		$SigHistArray = $dbcore->export->SigHistArray($id, $file_id, $from, $inc, $valid_gps, $labeled);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($SigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($SigHistArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
@@ -133,9 +133,9 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 		$title = "CellSigHist_".$id;
-		if(is_numeric($file_id)){$title .= '_'.$file_id;}
+		if(is_numeric($file_id) && $file_id){$title .= '_'.$file_id;}
 		if($range){$title .= "_".$range;}
-		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc, $valid_gps);
+		$CellSigHistArray = $dbcore->export->CellSigHistArray($id, $file_id, $from, $inc, $valid_gps, $labeled);
 		$Center_LatLon = $dbcore->convert->GetCenterFromDegrees($CellSigHistArray['latlongarray']);
 		$results = $dbcore->createGeoJSON->CreateApFeatureCollection($CellSigHistArray['data']);
 		if($labeled){$file_name = $title."_Labeled.geojson";}else{$file_name = $title.".geojson";}
