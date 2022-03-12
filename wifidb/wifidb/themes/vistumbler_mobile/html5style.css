@@ -365,7 +365,18 @@ canvas {
 
 .toggle-button {
     padding: 0 .25em;
+}
 
+.latest-button {
+    background-color: #73add5;
+}
+
+.track-button {
+    background-color: #ffff66;
+}
+
+.address-input {
+    width: 125px;
 }
 /* ---------------------------------------------------
 	SIDEBAR STYLE
@@ -616,6 +627,17 @@ justify-content: flex-end;
 	input[type=radio] {
 		width: 20px;
 		height: 20px;
+	}
+	.mapboxgl-ctrl-attrib.mapboxgl-compact,
+	.maplibregl-ctrl-attrib.maplibregl-compact {
+		margin: 10px 10px 10px 30px;
+	}
+}
+
+@media screen {
+	.mapboxgl-ctrl-attrib.mapboxgl-compact,
+	.maplibregl-ctrl-attrib.maplibregl-compact {
+		margin: 10px 10px 10px 30px;
 	}
 }
 
