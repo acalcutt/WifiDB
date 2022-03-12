@@ -70,6 +70,7 @@ You should have received a copy of the GNU General Public License along with thi
 <b><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$file_info.id}" title="Show AP Points">[Access Points]</a></b> | <a href="{$wifidb_host_url}opt/userstats.php?func=cidlist&row={$file_info.id}" title="Show Cell Points">[Cell Points]</a> | <a href="{$wifidb_host_url}opt/userstats.php?func=btlist&row={$file_info.id}" title="Show Bluetooth Points">[BT Points]</a>
 <br/><br/>
 {/if}
+					{$pages_together}
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
@@ -189,6 +190,7 @@ You should have received a copy of the GNU General Public License along with thi
 							{/foreach}
 						</tbody>
 					</table>
+					{$pages_together}
 				</div>
 			</div>
 {include file="footer.tpl"}

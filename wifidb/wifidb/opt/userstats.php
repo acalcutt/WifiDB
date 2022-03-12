@@ -68,11 +68,21 @@ switch($func)
 			$sorts=array("New","AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","FA","LA","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 
-			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, 1);
+			$CellUserListArray = $dbcore->export->CellUserListArray($row, 0, 1);
 			$UserListArray = $dbcore->export->UserListArray($row, $from, $inc, $sort, $ord);
 			$ap_info = $UserListArray['data'];
 			$file_info = $UserListArray['file_info'];
 
+			$sql = "SELECT Count(DISTINCT wifi_hist.AP_ID) As ApCount\n"
+				. "FROM wifi_hist\n"
+				. "WHERE wifi_hist.File_ID = ?";
+			$sqlprep = $dbcore->sql->conn->prepare($sql);
+			$sqlprep->bindParam(1,$row, PDO::PARAM_INT);
+			$sqlprep->execute();
+			$total_rows = $sqlprep->fetchColumn();
+			$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "$func&row=$row&");
+
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 			$dbcore->smarty->assign('file_info', $file_info);
 			$dbcore->smarty->assign('points' , $ap_info);
 			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
@@ -85,11 +95,23 @@ switch($func)
 			$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","country","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "cell_id";}
 
-			$UserListArray = $dbcore->export->UserListArray($row, $from, 1);
+			$UserListArray = $dbcore->export->UserListArray($row, 0, 1);
 			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, $inc, $sort, $ord, 0, 0, 0, 0, "'BT','BLE'");
 			$cell_info = $CellUserListArray['data'];
 			$file_info = $CellUserListArray['file_info'];
 
+			$sql = "SELECT Count(DISTINCT cell_hist.cell_id) As ApCount\n"
+				. "FROM cell_hist\n"
+				. "LEFT JOIN cell_id ON cell_hist.cell_id = cell_id.cell_id\n"
+				. "WHERE cell_hist.file_id = ?\n"
+				. "AND cell_id.type NOT IN ('BT','BLE')\n";
+			$sqlprep = $dbcore->sql->conn->prepare($sql);
+			$sqlprep->bindParam(1,$row, PDO::PARAM_INT);
+			$sqlprep->execute();
+			$total_rows = $sqlprep->fetchColumn();
+			$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "$func&row=$row&");
+
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 			$dbcore->smarty->assign('points', $cell_info);
 			$dbcore->smarty->assign('file_info', $file_info);
 			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
@@ -106,7 +128,19 @@ switch($func)
 			$CellUserListArray = $dbcore->export->CellUserListArray($row, $from, $inc, $sort, $ord, 0, 0, 0, 0, "", "'BT','BLE'");
 			$cell_info = $CellUserListArray['data'];
 			$file_info = $CellUserListArray['file_info'];
-			
+
+			$sql = "SELECT Count(DISTINCT cell_hist.cell_id) As ApCount\n"
+				. "FROM cell_hist\n"
+				. "LEFT JOIN cell_id ON cell_hist.cell_id = cell_id.cell_id\n"
+				. "WHERE cell_hist.file_id = ?\n"
+				. "AND cell_id.type IN ('BT','BLE')\n";
+			$sqlprep = $dbcore->sql->conn->prepare($sql);
+			$sqlprep->bindParam(1,$row, PDO::PARAM_INT);
+			$sqlprep->execute();
+			$total_rows = $sqlprep->fetchColumn();
+			$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "$func&row=$row&");
+
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 			$dbcore->smarty->assign('points', $cell_info);
 			$dbcore->smarty->assign('file_info', $file_info);
 			$dbcore->smarty->assign('wifidb_all_user_row' , $row);
