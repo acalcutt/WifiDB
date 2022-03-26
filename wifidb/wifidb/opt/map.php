@@ -83,8 +83,17 @@ switch($func)
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
-		if (empty($latitude)){$latitude = 37.090240;}
-		if (empty($longitude)){$longitude = -95.009766;}
+		#Get the latest point lat and lon
+		if(empty($latitude) && empty($longitude))
+		{
+			$CurrentApList = $dbcore->export->ExportCurrentApArray();
+			$latlongarray = $CurrentApList['latlongarray'];
+			$latitude = $latlongarray[0]['lat'];
+			$longitude = $latlongarray[0]['long'];
+			if (empty($latitude)){$latitude = 37.090240;}
+			if (empty($longitude)){$longitude = -95.009766;}
+		}
+
 		if (empty($zoom)){$zoom = 2;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}
