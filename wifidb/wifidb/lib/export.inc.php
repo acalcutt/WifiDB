@@ -67,7 +67,7 @@ class export extends dbcore
 	public function ApArray($id, $named=0, $new_ap=0, $valid_gps=0)
 	{
 		$Import_Map_Data = "";
-		$latlon_array = array();
+		$latlongarray = array();
 		$ap_array = array();
 		$apcount = 0;
 		
@@ -125,15 +125,15 @@ class export extends dbcore
 			$apcount++;
 			
 			$latlon_info = array(
-			"lat" => $this->convert->dm2dd($apinfo['Lat']),
-			"long" => $this->convert->dm2dd($apinfo['Lon']),
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"long" => $this->convert->dm2dd($ap['Lon']),
 			);
-			$latlon_array[] = $latlon_info;
+			$latlongarray[] = $latlon_info;
 		}
 		$ret_data = array(
 			"count" => $apcount,
 			"data" => $ap_array,
-			"latlongarray" => $latlon_array,
+			"latlongarray" => $latlongarray,
 		);
 		
 		return $ret_data;
@@ -141,7 +141,7 @@ class export extends dbcore
 
 	public function ExportCurrentApArray($named=0, $new_icons=0)
 	{
-		$latlon_array = array();
+		$latlongarray = array();
 		$ap_array = array();
 		$apcount = 0;
 		
@@ -157,12 +157,12 @@ class export extends dbcore
 			$ApArray = $this->ApArray($ap_array['AP_ID'], $named, $new_icons);
 			$apcount = $ApArray['count'];
 			$ap_array = $ApArray['data'];
-			$latlon_array = $ApArray['latlon_array'];
+			$latlongarray = $ApArray['latlongarray'];
 		}
 		$ret_data = array(
 			"count" => $apcount,
 			"data" => $ap_array,
-			"latlongarray" => $latlon_array
+			"latlongarray" => $latlongarray
 		);
 		
 		Return $ret_data;
