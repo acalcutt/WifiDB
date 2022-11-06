@@ -27,43 +27,20 @@ define("SWITCH_EXTRAS", "cp");
 include('../lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'User Control Panel');
 
-#$theme = $GLOBALS['theme'];
-$theme = "vistumbler";
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 
-list($cookie_pass, $username) = explode(':', base64_decode($_COOKIE['WiFiDB_login_yes'], 1));
-#echo $username;
-#echo $cookie_pass;
-
-#Check if user is logged in
-$sql0 = "SELECT * FROM user_login_hashes WHERE username = ?";
-$result = $dbcore->sql->conn->prepare($sql0);
-$result->bindParam(1, $username, PDO::PARAM_STR);
-$result->execute();
-$user_logons = $result->fetchAll();
-$login_check = 0;
-$userArray = []; 
-foreach($user_logons as $logon)
+$username = $dbcore->sec->LoginUser;
+if($username)
 {
-	$db_pass = $logon['hash'];
-	if($db_pass == $cookie_pass)
-	{
-		$login_check = 1;
-		if($dbcore->sql->service == "mysql")
-			{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
-		$result = $dbcore->sql->conn->prepare($sql0);
-		$result->bindParam(1, $username, PDO::PARAM_STR);
-		$result->execute();
-		$userArray = $result->fetch();
-	}
-}
+	if($dbcore->sql->service == "mysql")
+		{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
+	else if($dbcore->sql->service == "sqlsrv")
+		{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
+	$result = $dbcore->sql->conn->prepare($sql0);
+	$result->bindParam(1, $username, PDO::PARAM_STR);
+	$result->execute();
+	$userArray = $result->fetch();
 
-#echo $login_check;
-
-if($login_check)
-{
 	switch($func)
 	{
 		##-------------##
