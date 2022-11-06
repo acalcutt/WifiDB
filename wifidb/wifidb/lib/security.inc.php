@@ -211,7 +211,7 @@ class security
 	function GenerateKey($len = 16)
 	{
 		// http://snippets.dzone.com/posts/show/3123
-		$base		   =   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
+		$base			=   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
 		$max			=   strlen($base)-1;
 		$activatecode	=   '';
 		mt_srand((double)microtime()*1000000);
@@ -451,24 +451,22 @@ class security
 			$this->login_check = 0;
 			return 0;
 		}
-		if($this->sql->service == "mysql")
-			{$sql0 = "SELECT * FROM user_login_hashes WHERE username = ? ORDER BY id DESC LIMIT 1";}
-		else if($this->sql->service == "sqlsrv")
-			{$sql0 = "SELECT TOP 1 * FROM user_login_hashes WHERE username = ? ORDER BY id DESC";}
+		$login_id = 0;
+		$sql0 = "SELECT id FROM user_login_hashes WHERE username = ? AND hash = ?";
 		$result = $this->sql->conn->prepare($sql0);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
-		$this->sql->checkError( $result->execute(), __LINE__, __FILE__);
-		$logon = $result->fetch(2);
-
-		#var_dump($newArray, $db_pass, $cookie_pass, crypt($cookie_pass, $db_pass));
-		if($logon['hash'] == $cookie_pass)
+		$result->bindParam(2, $cookie_pass, PDO::PARAM_STR);
+		$result->execute();
+		$fetch = $result->fetch(2);
+		$login_id = $fetch['id'];
+		if($login_id)
 		{
 			$this->check_privs();
 			$this->LoginLabel = "Logout";
-			$this->LoginUser = $logon['username'];
+			$this->LoginUser = $username;
 			$this->LoginUri = '?func=logout&return='.urlencode($return_url);
-			$this->login_val = $logon['username'];
-			$this->username = $logon['username'];
+			$this->login_val = $username;
+			$this->username = $username;
 			$this->login_check = 1;
 			return 1;
 		}
