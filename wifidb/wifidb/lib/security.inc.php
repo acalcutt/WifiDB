@@ -124,8 +124,7 @@ class security
 		$reserved = explode(":", $this->reserved_users);
 		foreach($reserved as $resv)
 		{
-			if($username == $resv)
-			{return 1;}
+			if(strcasecmp($username, $resv) == 0) {return 1;}
 		}
 		return 0;
 	}
