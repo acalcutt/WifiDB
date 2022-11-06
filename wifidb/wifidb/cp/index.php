@@ -42,12 +42,21 @@ $result->bindParam(1, $username, PDO::PARAM_STR);
 $result->execute();
 $user_logons = $result->fetchAll();
 $login_check = 0;
+$userArray = []; 
 foreach($user_logons as $logon)
 {
 	$db_pass = $logon['hash'];
 	if($db_pass == $cookie_pass)
 	{
 		$login_check = 1;
+		if($dbcore->sql->service == "mysql")
+			{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
+		$result = $dbcore->sql->conn->prepare($sql0);
+		$result->bindParam(1, $username, PDO::PARAM_STR);
+		$result->execute();
+		$userArray = $result->fetch();
 	}
 }
 
@@ -63,23 +72,14 @@ if($login_check)
 		break;
 
 		case 'profile':
-			if($dbcore->sql->service == "mysql")
-				{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
-			$result = $dbcore->sql->conn->prepare($sql0);
-			$result->bindParam(1, $username, PDO::PARAM_STR);
-			$result->execute();
-			$user = $result->fetch();
-
 			$cp_profile = array();
-			$cp_profile['email'] = $user['email'];
-			$cp_profile['website'] = $user['website'];
-			$cp_profile['Vis_ver'] = $user['Vis_ver'];
-			$cp_profile['username'] = $user['username'];
-			$cp_profile['id'] = $user['id'];
-			$cp_profile['apikey'] = $user['apikey'];
-			if($user['h_email']){$cp_profile['hide_email'] = 'checked';}else{$cp_profile['hide_email'] = 'unchecked';};
+			$cp_profile['email'] = $userArray['email'];
+			$cp_profile['website'] = $userArray['website'];
+			$cp_profile['Vis_ver'] = $userArray['Vis_ver'];
+			$cp_profile['username'] = $userArray['username'];
+			$cp_profile['id'] = $userArray['id'];
+			$cp_profile['apikey'] = $userArray['apikey'];
+			if($userArray['h_email']){$cp_profile['hide_email'] = 'checked';}else{$cp_profile['hide_email'] = 'unchecked';};
 			
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_profile.tpl');
@@ -88,25 +88,21 @@ if($login_check)
 		
 		##-------------##
 		case "update_user_profile":
-			$username = addslashes(strtolower($_POST['username']));
-			$user_id = addslashes(strtolower($_POST['user_id']));
-				$email = htmlentities(addslashes($_POST['email']),ENT_QUOTES);
+			$email = htmlentities(addslashes($_POST['email']),ENT_QUOTES);
 			$h_email = addslashes($_POST['h_email']);
 			if($h_email == "on"){$h_email = 1;}else{$h_email = 0;}
-				$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
+			$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
 			$Vis_ver = htmlentities(addslashes($_POST['Vis_ver']),ENT_QUOTES);
-			if($dbcore->sql->service == "mysql")
-				{$sql0 = "SELECT id FROM user_info WHERE username = '$username' LIMIT 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 id FROM user_info WHERE username = '$username'";}
-			$result = $dbcore->sql->conn->prepare($sql0);
-			$result->execute();
-			$array = $result->fetch();
 			$cp_profile = array();
-			if($array['id']+0 === $user_id+0)
+			if($userArray['id'])
 			{
-				$sql1 = "UPDATE user_info SET email = '$email', h_email = '$h_email', website = '$website', Vis_ver = '$Vis_ver' WHERE id = '$user_id'";
+				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ? WHERE id = ?";
 				$result = $dbcore->sql->conn->prepare($sql1);
+				$result->bindParam(1, $email, PDO::PARAM_STR);
+				$result->bindParam(2, $h_email, PDO::PARAM_STR);
+				$result->bindParam(3, $website, PDO::PARAM_STR);
+				$result->bindParam(4, $Vis_ver, PDO::PARAM_STR);
+				$result->bindParam(5, $userArray['id'], PDO::PARAM_INT);
 				if($result->execute())
 				{
 					$cp_profile['message'] = "<br>Updated $username's Profile<br><br>";
@@ -116,7 +112,7 @@ if($login_check)
 				}
 			}else
 			{
-				$cp_profile['message'] = "<br>User ID's did not match, there was an error, contact the support forums for more help<br><br>";
+				$cp_profile['message'] = "<br>You are not logged in. Please log in and try again.<br><br>";
 			}
 			
 			$dbcore->redirect_page('/wifidb/cp/index.php?func=profile', 2000);
@@ -126,27 +122,20 @@ if($login_check)
 
 		##-------------##
 		case 'pref':
-			if($dbcore->sql->service == "mysql")
-				{$sql0 = "SELECT * FROM user_info WHERE username = '$username' LIMIT 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = '$username'";}
-			$result = $dbcore->sql->conn->prepare($sql0);
-			$result->execute();
-			$newArray = $result->fetch();				
 
 			$cp_profile = array();
-			if($newArray['mail_updates']){$cp_profile['mail_updates'] = 'checked';}else{$cp_profile['mail_updates'] = 'unchecked';};
-			if($newArray['announcements']){$cp_profile['announcements'] = 'checked';}else{$cp_profile['announcements'] = 'unchecked';};
-			if($newArray['announce_comment']){$cp_profile['announce_comment'] = 'checked';}else{$cp_profile['announce_comment'] = 'unchecked';};
-			if($newArray['pub_geocache']){$cp_profile['pub_geocache'] = 'checked';}else{$cp_profile['pub_geocache'] = 'unchecked';};
-			if($newArray['new_users']){$cp_profile['new_users'] = 'checked';}else{$cp_profile['new_users'] = 'unchecked';};
-			if($newArray['schedule']){$cp_profile['schedule'] = 'checked';}else{$cp_profile['schedule'] = 'unchecked';};
-			if($newArray['imports']){$cp_profile['imports'] = 'checked';}else{$cp_profile['imports'] = 'unchecked';};
-			if($newArray['kmz']){$cp_profile['kmz'] = 'checked';}else{$cp_profile['kmz'] = 'unchecked';};
-			if($newArray['geonamed']){$cp_profile['geonamed'] = 'checked';}else{$cp_profile['geonamed'] = 'unchecked';};
-			if($newArray['statistics']){$cp_profile['statistics'] = 'checked';}else{$cp_profile['statistics'] = 'unchecked';};
-			$cp_profile['username'] = $newArray['username'];
-			$cp_profile['id'] = $newArray['id'];
+			if($userArray['mail_updates']){$cp_profile['mail_updates'] = 'checked';}else{$cp_profile['mail_updates'] = 'unchecked';};
+			if($userArray['announcements']){$cp_profile['announcements'] = 'checked';}else{$cp_profile['announcements'] = 'unchecked';};
+			if($userArray['announce_comment']){$cp_profile['announce_comment'] = 'checked';}else{$cp_profile['announce_comment'] = 'unchecked';};
+			if($userArray['pub_geocache']){$cp_profile['pub_geocache'] = 'checked';}else{$cp_profile['pub_geocache'] = 'unchecked';};
+			if($userArray['new_users']){$cp_profile['new_users'] = 'checked';}else{$cp_profile['new_users'] = 'unchecked';};
+			if($userArray['schedule']){$cp_profile['schedule'] = 'checked';}else{$cp_profile['schedule'] = 'unchecked';};
+			if($userArray['imports']){$cp_profile['imports'] = 'checked';}else{$cp_profile['imports'] = 'unchecked';};
+			if($userArray['kmz']){$cp_profile['kmz'] = 'checked';}else{$cp_profile['kmz'] = 'unchecked';};
+			if($userArray['geonamed']){$cp_profile['geonamed'] = 'checked';}else{$cp_profile['geonamed'] = 'unchecked';};
+			if($userArray['statistics']){$cp_profile['statistics'] = 'checked';}else{$cp_profile['statistics'] = 'unchecked';};
+			$cp_profile['username'] = $userArray['username'];
+			$cp_profile['id'] = $userArray['id'];
 			
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_email_prefs.tpl');
@@ -155,29 +144,21 @@ if($login_check)
 
 		##-------------##
 		case 'update_user_pref':
-			$username = addslashes(strtolower($_POST['username']));
-			$user_id = addslashes(strtolower($_POST['user_id']));
+			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
 			$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
 			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
 			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
-			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
-			if($dbcore->sql->service == "mysql")
-				{$sql0 = "SELECT id FROM user_info WHERE username = '$username' LIMIT 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 id FROM user_info WHERE username = '$username'";}
-			$result = $dbcore->sql->conn->prepare($sql0);
-			$result->execute();
-			$array = $result->fetch();
+
 			$cp_profile = array();
-			if($array['id']+0 === $user_id+0)
+			if($userArray['id'])
 			{
-				$sql1 = "UPDATE user_info SET
-															schedule	=	'$schedule',
-															imports = '$imports',
-															kmz = '$kmz',
-															new_users = '$new_users'
-															WHERE id = '$user_id'";
+				$sql1 = "UPDATE user_info SET schedule = ?, imports = ?, kmz = ?, new_users = ? WHERE id = ?";
 				$result = $dbcore->sql->conn->prepare($sql1);
+				$result->bindParam(1, $schedule, PDO::PARAM_INT);
+				$result->bindParam(2, $imports, PDO::PARAM_INT);
+				$result->bindParam(3, $kmz, PDO::PARAM_INT);
+				$result->bindParam(4, $new_users, PDO::PARAM_INT);
+				$result->bindParam(5, $userArray['id'], PDO::PARAM_INT);
 				if($result->execute())
 				{
 					$cp_profile['message'] = "<br>Updated $username's Preferences<br><br>";
@@ -187,7 +168,7 @@ if($login_check)
 				}
 			}else
 			{
-				$cp_profile['message'] = "<br>User ID's did not match, there was an error, contact the <a href='http://forum.techidiots.net/forum/viewforum.php?f=47'>support forums</a> for more help.<br><br>";
+				$cp_profile['message'] = "<br>You are not logged in. Please log in and try again.<br><br>";
 			}
 			
 			$dbcore->redirect_page('/wifidb/cp/index.php?func=pref', 2000);

@@ -42,12 +42,21 @@ $result->bindParam(1, $username, PDO::PARAM_STR);
 $result->execute();
 $user_logons = $result->fetchAll();
 $login_check = 0;
+$userArray = []; 
 foreach($user_logons as $logon)
 {
 	$db_pass = $logon['hash'];
 	if($db_pass == $cookie_pass)
 	{
 		$login_check = 1;
+		if($dbcore->sql->service == "mysql")
+			{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
+		$result = $dbcore->sql->conn->prepare($sql0);
+		$result->bindParam(1, $username, PDO::PARAM_STR);
+		$result->execute();
+		$userArray = $result->fetch();
 	}
 }
 
@@ -371,7 +380,6 @@ if($login_check)
 		case 'sendmsg_submit':
 		
 			if(@$_REQUEST['thread_id']){$thread_id = $_REQUEST['thread_id'];}else{$thread_id = uniqid('',TRUE);}
-			if(@$_REQUEST['from_id']){$from_id = $_REQUEST['from_id'];}else{$from_id = "";}
 			if(@$_REQUEST['to_id']){$to_id = $_REQUEST['to_id'];}else{$to_id = "";}
 			if(@$_REQUEST['subject']){$subject = $_REQUEST['subject'];}else{$subject = "";}	
 			if(@$_REQUEST['message']){$message = $_REQUEST['message'];}else{$message = "";}
@@ -379,59 +387,25 @@ if($login_check)
 			
 			if($message)
 			{
-				if($from_id)
+				if($userArray['id'] && $to_id)
 				{
-					$smt = $dbcore->sql->conn->prepare('SELECT username FROM user_info WHERE id = ?');
-					$smt->bindParam(1, $from_id, PDO::PARAM_INT);
-					$smt->execute();
-					$from_user_arr = $smt->fetch(2);
-					if(strcasecmp(@$from_user_arr['username'], $username) == 0)
+					try 
 					{
-						if($to_id)
-						{
-							$smt = $dbcore->sql->conn->prepare('SELECT username FROM user_info WHERE id = ?');
-							$smt->bindParam(1, $to_id, PDO::PARAM_INT);
-							$smt->execute();
-							$to_user_arr = $smt->fetch(2);
-							if(@$to_user_arr['username'])
-							{
-								echo $thread_id;
-								
-								try 
-								{
-									$smt = $dbcore->sql->conn->prepare('INSERT INTO pm (thread_id, title, user1, user2, message, stimestamp, user1read) VALUES (?, ?, ?, ?, ?, ?, 1)');
-									$smt->bindParam(1, $thread_id);
-									$smt->bindParam(2, $subject);
-									$smt->bindParam(3, $from_id);
-									$smt->bindParam(4, $to_id);
-									$smt->bindParam(5, $message);
-									$smt->bindParam(6, $timestamp);
-									$smt->execute();
-									$dbcore->redirect_page('/wifidb/cp/messages.php?func=inbox', 2000);
-									$cp_profile['message'] = "<br>Message Sent<br><br>";
-								} 
-								catch (Exception $e) 
-								{
-									$dbcore->redirect_page('/wifidb/cp/messages.php?func=sendmsg', 2000);
-									$cp_profile['message'] = "<br>Error sending message ".$e->getMessage()."<br><br>";
-								}
-							}
-							else
-							{
-								$dbcore->redirect_page('/wifidb/cp/messages.php?func=sendmsg', 2000);
-								$cp_profile['message'] = "<br>To username was not found<br><br>";
-							}
-						}
-						else
-						{
-							$dbcore->redirect_page('/wifidb/cp/messages.php?func=sendmsg', 2000);
-							$cp_profile['message'] = "<br>no 'to' uid was given<br><br>";
-						}
-					}
-					else
+						$smt = $dbcore->sql->conn->prepare('INSERT INTO pm (thread_id, title, user1, user2, message, stimestamp, user1read) VALUES (?, ?, ?, ?, ?, ?, 1)');
+						$smt->bindParam(1, $thread_id);
+						$smt->bindParam(2, $subject);
+						$smt->bindParam(3, $userArray['id']);
+						$smt->bindParam(4, $to_id);
+						$smt->bindParam(5, $message);
+						$smt->bindParam(6, $timestamp);
+						$smt->execute();
+						$dbcore->redirect_page('/wifidb/cp/messages.php?func=inbox', 2000);
+						$cp_profile['message'] = "<br>Message Sent<br><br>";
+					} 
+					catch (Exception $e) 
 					{
 						$dbcore->redirect_page('/wifidb/cp/messages.php?func=sendmsg', 2000);
-						$cp_profile['message'] = "From user does not match the currently logged in user<br><br>";
+						$cp_profile['message'] = "<br>Error sending message ".$e->getMessage()."<br><br>";
 					}
 				}
 				else
