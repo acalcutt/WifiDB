@@ -25,19 +25,19 @@ class dbcore
 	public function __construct($config = NULL)
 	{
 		if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
-		$this->sql					  = new SQL($config);
+		$this->sql						= new SQL($config);
 		$this->verbose					= 0;
-		$this->mesg					 = "";
-		$this->switches				 = array(SWITCH_SCREEN, SWITCH_EXTRAS);
-		$this->reserved_users		   = $config['reserved_users'];
-		$this->supported_extentions	 = array('csv','db3','vsz','vs1','gpx','ns1');
-		$this->login_check			  = 0;
-		$this->alerts_message_flag	  = 0;
-		$this->bypass_check			 = 0;
+		$this->mesg						= "";
+		$this->switches					= array(SWITCH_SCREEN, SWITCH_EXTRAS);
+		$this->reserved_users			= $config['reserved_users'];
+		$this->supported_extentions		= array('csv','db3','vsz','vs1','gpx','ns1');
+		$this->login_check				= 0;
+		$this->alerts_message_flag		= 0;
+		$this->bypass_check				= 0;
 		$this->debug					= 1;
-		$this->rebuild				  = $config['rebuild'];
+		$this->rebuild					= $config['rebuild'];
 		$this->log_level				= $config['log_level'];
-		$this->log_interval			 = $config['log_interval'];
+		$this->log_interval				= $config['log_interval'];
 
 		$this->default_refresh		  = $config['default_refresh'];
 		$this->default_timezone		 = $config['default_timezone'];
