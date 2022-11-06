@@ -124,7 +124,7 @@ class security
 		$reserved = explode(":", $this->reserved_users);
 		foreach($reserved as $resv)
 		{
-			if(strcasecmp($username, $resv) == 0) {return 1;}
+			if(stripos($username, $resv) !== false) {return 1;}
 		}
 		return 0;
 	}
@@ -368,45 +368,38 @@ class security
 		}
 	}
 	
-	function APILoginCheck($username = '', $apikey = '', $authoritah = 0)
+	function APILoginCheck($username = '', $apikey = '')
 	{
-		if($username != '')
+		if($username && $apikey)
 		{
-			if($this->sql->service == "mysql")
-				{$sql0 = "SELECT * FROM user_login_hash WHERE username = ? LIMIT 1";}
-			else if($this->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 * FROM user_login_hash WHERE username = ?";}
-			$result = $this->sql->conn->prepare($sql0);
+			$sql = "SELECT id, username, apikey, last_login FROM user_info WHERE username = ? AND apikey = ?";
+			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
-			$this->sql->checkError( $result->execute(), __LINE__, __FILE__);
-			$newArray = $result->fetch(2);
-			if($this->EnableAPIKey) {
-				if ($apikey === $newArray['apikey']) {
-					$this->privs = $this->check_privs();
-					$this->apikey = $newArray['apikey'];
-					$this->LoginLabel = $newArray['username'];
-					$this->login_val = $newArray['username'];
-					$this->username = $newArray['username'];
-					$this->last_login = $newArray['last_login'];
-					$this->login_check = 1;
-					return 1;
-				} else {
-					$this->LoginLabel = "";
-					$this->login_val = "Bad API Key.";
-					$this->login_check = 0;
-					return -1;
-				}
-			}else{
+			$result->bindParam(2, $apikey, PDO::PARAM_STR);
+			$result->execute();
+			$fetch = $result->fetch(2);
+			$login_id = $fetch['id'];
+			if($login_id)
+			{
 				$this->privs = $this->check_privs();
-				$this->LoginLabel = $username;
-				$this->login_val = $username;
-				$this->username = $username;
+				$this->apikey = $fetch['apikey'];
+				$this->LoginLabel = $fetch['username'];
+				$this->login_val = $fetch['username'];
+				$this->username = $fetch['username'];
+				$this->last_login = $fetch['last_login'];
 				$this->login_check = 1;
+				return 1;
+			} else {
+				$this->LoginLabel = "";
+				$this->login_val = "Bad Username or API Key.";
+				$this->login_check = 0;
+				return -1;
 			}
-		}else
+		}
+		else
 		{
 			$this->LoginLabel = "";
-			$this->login_val = "No Username.";
+			$this->login_val = "No Username or API Key.";
 			$this->login_check = 0;
 			return -1;
 		}

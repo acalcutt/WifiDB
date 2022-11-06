@@ -45,6 +45,7 @@ switch($func)
 			$details = array(
 				'title'=>$title,
 				'user'=>$dbcore->username,
+				'apikey'=>$dbcore->apikey,
 				'otherusers'=>$otherusers,
 				'size'=>$dbcore->format_size($size),
 				'notes'=>$notes,

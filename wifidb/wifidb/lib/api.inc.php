@@ -24,16 +24,15 @@ class api extends dbcore
 	{
 		parent::__construct($config);
 		$this->startdate	= "2011-Apr-14";
-		$this->lastedit	 = "2013-Apr-21";
-		$this->vernum	   = "1.0";
-		$this->Author	   = "Phil Ferland";
-		$this->contact	  = "pferland@randomintervals.com";
-		$this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
-	$this->username	 = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
-		$this->apikey	   = (@$_REQUEST['apikey']	? @$_REQUEST['apikey'] : "");
-		$this->session_id   = (@$_REQUEST['SessionID'] ? @$_REQUEST['SessionID'] : "");
-		$this->output	   = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
-		$this->message	  = "";
+		$this->lastedit		= "2022-Nov-16";
+		$this->vernum		= "1.1";
+		$this->Author		= "Phil Ferland, Andrew Calcutt";
+		$this->output		= (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
+		$this->username		= (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
+		$this->apikey		= (@$_REQUEST['apikey']	? @$_REQUEST['apikey'] : "");
+		$this->session_id 	= (@$_REQUEST['SessionID'] ? @$_REQUEST['SessionID'] : "");
+		$this->output		= (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
+		$this->message		= "";
 		$this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
 		//Lets see if we can find a user with this name.
 		//If so, lets check to see if the API key they provided is correct.
@@ -201,16 +200,17 @@ class api extends dbcore
 	
 	public function ImportVS1($details = array())
 	{
-		$user		   = $details['user'];
-		$otherusers	 = $details['otherusers'];
-		$date		   = $details['file_date'];
-		$title		  = $details['title'];
-		$notes		  = $details['notes'];
-		$size		   = $details['size'];
-		$hash		   = $details['hash'];
-		$ext			= $details['ext'];
-		$filename	   = $details['file_name'];
-		$file_orig	   = $details['file_orig'];
+		$user		= $details['user'];
+		$apikey		= $details['apikey'];
+		$otherusers	= $details['otherusers'];
+		$date		= $details['file_date'];
+		$title		= $details['title'];
+		$notes		= $details['notes'];
+		$size		= $details['size'];
+		$hash		= $details['hash'];
+		$ext		= $details['ext'];
+		$filename	= $details['file_name'];
+		$file_orig	= $details['file_orig'];
 
 		if($this->sql->service == "mysql")
 			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
@@ -280,35 +280,51 @@ class api extends dbcore
 		switch($task)
 		{
 			case "import":
-				if($this->sql->service == "mysql")
-					{$sql = "INSERT INTO files_tmp(file, file_orig, file_date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-				else if($this->sql->service == "sqlsrv")
-					{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-
-				$result = $this->sql->conn->prepare( $sql );
-				$result->bindValue(1, $filename, PDO::PARAM_STR);
-				$result->bindValue(2, $file_orig, PDO::PARAM_STR);
-				$result->bindValue(3, $date, PDO::PARAM_STR);
-				$result->bindValue(4, $user, PDO::PARAM_STR);
-				$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-				$result->bindValue(6, $notes, PDO::PARAM_STR);
-				$result->bindValue(7, $title, PDO::PARAM_STR);
-				$result->bindValue(8, $size, PDO::PARAM_STR);
-				$result->bindValue(9, $hash, PDO::PARAM_STR);
-				$result->bindValue(10, $type, PDO::PARAM_STR);
-				$result->execute();
-				$error = $this->sql->conn->errorCode();
-				if($error[0] == "00000")
+				$sql = "SELECT username, import_require_login FROM user_info WHERE username LIKE ?";
+				$stmt = $this->sql->conn->prepare($sql);
+				$stmt->bindParam(1, $user, PDO::PARAM_STR);
+				$stmt->execute();
+				$array = $stmt->fetch(2);
+				if($this->sec->CheckReservedUser($user) == 1 || $this->sec->CheckReservedUser($otherusers) == 1)
 				{
-					$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
-				}else
-				{
-					$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
+					$this->mesg = array("error" => "Reserved users are not allowed to import.");
 				}
-			break;
+				else if($array['username'] && $array['import_require_login'] == 1 && $this->sec->APILoginCheck($array['username'], $apikey) != 1)
+				{
+					$this->mesg = array("error" => "Your account requires an api key to import. Please make sure your api key is set correctly.");
+				}
+				else
+				{
+					if($this->sql->service == "mysql")
+						{$sql = "INSERT INTO files_tmp(file, file_orig, file_date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					else if($this->sql->service == "sqlsrv")
+						{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+
+					$result = $this->sql->conn->prepare( $sql );
+					$result->bindValue(1, $filename, PDO::PARAM_STR);
+					$result->bindValue(2, $file_orig, PDO::PARAM_STR);
+					$result->bindValue(3, $date, PDO::PARAM_STR);
+					$result->bindValue(4, $user, PDO::PARAM_STR);
+					$result->bindValue(5, $otherusers, PDO::PARAM_STR);
+					$result->bindValue(6, $notes, PDO::PARAM_STR);
+					$result->bindValue(7, $title, PDO::PARAM_STR);
+					$result->bindValue(8, $size, PDO::PARAM_STR);
+					$result->bindValue(9, $hash, PDO::PARAM_STR);
+					$result->bindValue(10, $type, PDO::PARAM_STR);
+					$result->execute();
+					$error = $this->sql->conn->errorCode();
+					if($error[0] == "00000")
+					{
+						$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
+					}else
+					{
+						$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
+					}
+				}
+				break;
 			default:
 				$this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://wifidb.net/wifidb/import/?func=supported_files");
-			break;
+				break;
 		}
 		return 1;
 	}

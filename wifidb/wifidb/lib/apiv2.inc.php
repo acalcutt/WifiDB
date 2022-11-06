@@ -20,77 +20,77 @@ if not, write to the
 */
 class apiv2 extends dbcore
 {
-    function __construct($config, &$SQL)
-    {
-        parent::__construct($config, $SQL);
-        $this->startdate	= "2016-Jan-10";
-        $this->lastedit	    = "2016-Jan-10";
-        $this->vernum	    = "2.1";
-        $this->Author	    = "Phil Ferland";
-        $this->contact	    = "pferland@randomintervals.com";
-        $this->output	    = (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
-        $this->username	    = (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
-        #var_dump($this->username);
-        $this->EnableAPIKey = $config['EnableAPIKey'];
-        $this->mesg	        = array();
-        $this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
-        $this->verbose      = 1;
-        #$this->EnableAPIKey = 0;
-        if($this->EnableAPIKey && !(SWITCH_SCREEN === "CLI"))
-        {
-            $this->sec->ValidateAPIKey();
-            if(!$this->sec->login_check)
-            {
-                $this->mesg = $this->sec->mesg;
-                $this->Output();
-            }
-            #var_dump($this->sec->login_check);
-            #var_dump($this->sec->mesg);
-        }else
-        {
-            #var_dump($this->sec->login_check);
-            #var_dump($this->sec->mesg);
-        }
-    }
+	function __construct($config, &$SQL)
+	{
+		parent::__construct($config, $SQL);
+		$this->startdate	= "2016-Jan-10";
+		$this->lastedit		= "2016-Jan-10";
+		$this->vernum		= "2.1";
+		$this->Author		= "Phil Ferland, Andrew Calcutt";
+		$this->output		= (@$_REQUEST['output']	? strtolower($_REQUEST['output']) : "json");
+		$this->username		= (@$_REQUEST['username']  ? @$_REQUEST['username'] : "AnonCoward" );
+		$this->apikey		= (@$_REQUEST['apikey']	? @$_REQUEST['apikey'] : "");
+		#var_dump($this->username);
+		$this->EnableAPIKey = $config['EnableAPIKey'];
+		$this->mesg			= array();
+		$this->GeoNamesLoopGiveUp = $config['GeoNamesLoopGiveUp'];
+		$this->verbose	  = 1;
+		#$this->EnableAPIKey = 0;
+		if($this->EnableAPIKey && !(SWITCH_SCREEN === "CLI"))
+		{
+			$this->sec->ValidateAPIKey();
+			if(!$this->sec->login_check)
+			{
+				$this->mesg = $this->sec->mesg;
+				$this->Output();
+			}
+			#var_dump($this->sec->login_check);
+			#var_dump($this->sec->mesg);
+		}else
+		{
+			#var_dump($this->sec->login_check);
+			#var_dump($this->sec->mesg);
+		}
+	}
 
-    public function createPIDFile()
-    {
+	public function createPIDFile()
+	{
 
-    }
+	}
 
-    public function GetLiveAP($ap_id = 0)
-    {
-        if($ap_id === 0)
-        {
+	public function GetLiveAP($ap_id = 0)
+	{
+		if($ap_id === 0)
+		{
 			$this->mesg = array("error" => "AP ID was 0, that cant be...");
-            return 0;
-        }
-        $APSelectSQL = "SELECT ssid, mac, auth, encry, sectype,
-                          chan, radio, BTx, OTx, NT, Label, FA, LA
-                        FROM live_aps WHERE id = ?";
-        $ap_prep = $this->sql->conn->prepare($APSelectSQL);
-        $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
-        #var_dump("Before JOIN query: ".microtime(1));
-        $this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
+			return 0;
+		}
+		$APSelectSQL = "SELECT ssid, mac, auth, encry, sectype,
+						  chan, radio, BTx, OTx, NT, Label, FA, LA
+						FROM live_aps WHERE id = ?";
+		$ap_prep = $this->sql->conn->prepare($APSelectSQL);
+		$ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
+		#var_dump("Before JOIN query: ".microtime(1));
+		$this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
 
-        #var_dump("After JOIN query: ".microtime(1));
-        $APFetch = $ap_prep->fetchAll(2);
+		#var_dump("After JOIN query: ".microtime(1));
+		$APFetch = $ap_prep->fetchAll(2);
 
-        $SigHistSQL = "SELECT
-                    live_gps.lat, live_gps.long, live_gps.sats, live_gps.hdp,
-                    live_gps.alt, live_gps.geo, live_gps.kmh, live_gps.mph, live_gps.track, live_gps.timestamp AS GPS_timestamp,
-                    live_signals.signal, live_signals.rssi, live_signals.timestamp AS signal_timestamp
-                     FROM live_aps INNER JOIN live_signals ON
-                         live_signals.ap_id=live_aps.id INNER JOIN
-                         live_gps ON live_gps.id=live_signals.gps_id WHERE live_aps.id = ?";
-        $ap_prep = $this->sql->conn->prepare($SigHistSQL);
-        $ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
-        #var_dump("Before JOIN query: ".microtime(1));
-        $this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
-        #var_dump("After JOIN query: ".microtime(1));
-        $SignalDataFetch = $ap_prep->fetchAll(2);
-        return array('apdata'=> $APFetch, 'gdata'=> $SignalDataFetch);
-    }
+		$SigHistSQL = "SELECT
+					live_gps.lat, live_gps.long, live_gps.sats, live_gps.hdp,
+					live_gps.alt, live_gps.geo, live_gps.kmh, live_gps.mph, live_gps.track, live_gps.timestamp AS GPS_timestamp,
+					live_signals.signal, live_signals.rssi, live_signals.timestamp AS signal_timestamp
+					 FROM live_aps INNER JOIN live_signals ON
+						 live_signals.ap_id=live_aps.id INNER JOIN
+						 live_gps ON live_gps.id=live_signals.gps_id WHERE live_aps.id = ?";
+		$ap_prep = $this->sql->conn->prepare($SigHistSQL);
+		$ap_prep->bindParam(1, $ap_id, PDO::PARAM_STR);
+		#var_dump("Before JOIN query: ".microtime(1));
+		$this->sql->checkError($ap_prep->execute(), __LINE__, __FILE__);
+		#var_dump("After JOIN query: ".microtime(1));
+		$SignalDataFetch = $ap_prep->fetchAll(2);
+		return array('apdata'=> $APFetch, 'gdata'=> $SignalDataFetch);
+	}
 
 	public function GeoNames($lat, $long)
 	{
@@ -167,153 +167,154 @@ class apiv2 extends dbcore
 		return 1;
 	}
 
-    public function GetWaitingScheduleTable()
-    {
-        if($this->AllDateRange == 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp");
-        }else {
-            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+	public function GetWaitingScheduleTable()
+	{
+		if($this->AllDateRange == 1) {
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp");
+		}else {
+			if (($this->StartDate == "") OR ($this->EndDate == "")) {
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
-                return -1;
-            }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp WHERE file_date >= ? AND file_date <= ?");
-            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
-        }
-        $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $return = $schedule_prep->fetchAll(2);
-        if(count($return) < 1)
-        {
-            $this->mesg['schedule'] = "No Imports running.";
-        }else
-        {
-            $i = 1;
-            $altered = array();
-            foreach($return as $value)
-            {
-                $altered["Waiting".$i] = $value;
-                $i++;
-            }
+				return -1;
+			}
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_tmp WHERE file_date >= ? AND file_date <= ?");
+			$schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+			$schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
+		}
+		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		$return = $schedule_prep->fetchAll(2);
+		if(count($return) < 1)
+		{
+			$this->mesg['schedule'] = "No Imports running.";
+		}else
+		{
+			$i = 1;
+			$altered = array();
+			foreach($return as $value)
+			{
+				$altered["Waiting".$i] = $value;
+				$i++;
+			}
 
-            $this->mesg['schedule'] = $altered;
-        }
-        return 0;
-    }
+			$this->mesg['schedule'] = $altered;
+		}
+		return 0;
+	}
 
-    public function GetImportingScheduleTable()
-    {
-        if($this->AllDateRange === 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing");
-            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        }else {
-            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+	public function GetImportingScheduleTable()
+	{
+		if($this->AllDateRange === 1) {
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing");
+			$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		}else {
+			if (($this->StartDate == "") OR ($this->EndDate == "")) {
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
-                return -1;
-            }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing WHERE file_date >= ? AND file_date <= ?");
-            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
-        }
-        $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $return = $schedule_prep->fetch(2);
+				return -1;
+			}
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_importing WHERE file_date >= ? AND file_date <= ?");
+			$schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+			$schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
+		}
+		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		$return = $schedule_prep->fetch(2);
 
-        if(count($return) < 1)
-        {
-            $this->mesg['schedule'] = "No Imports running.";
-        }else
-        {
-            $this->mesg['schedule'] = $return;
-        }
-        return 0;
-    }
+		if(count($return) < 1)
+		{
+			$this->mesg['schedule'] = "No Imports running.";
+		}else
+		{
+			$this->mesg['schedule'] = $return;
+		}
+		return 0;
+	}
 
-    public function GetFinishedScheduleTable()
-    {
-        if($this->AllDateRange === 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files");
-            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        }else {
-            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+	public function GetFinishedScheduleTable()
+	{
+		if($this->AllDateRange === 1) {
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files");
+			$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		}else {
+			if (($this->StartDate == "") OR ($this->EndDate == "")) {
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
-                return -1;
-            }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files WHERE file_date >= ? AND file_date <= ?");
-            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
-        }
-        $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $return = $schedule_prep->fetch(2);
+				return -1;
+			}
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files WHERE file_date >= ? AND file_date <= ?");
+			$schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+			$schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
+		}
+		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		$return = $schedule_prep->fetch(2);
 
-        if(count($return) < 1)
-        {
-            $this->mesg['schedule'] = "No Imports running.";
-        }else
-        {
-            $this->mesg['schedule'] = $return;
-        }
-        return 0;
-    }
+		if(count($return) < 1)
+		{
+			$this->mesg['schedule'] = "No Imports running.";
+		}else
+		{
+			$this->mesg['schedule'] = $return;
+		}
+		return 0;
+	}
 
-    public function GetBadScheduleTable()
-    {
-        if($this->AllDateRange === 1) {
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad");
-            $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        }else {
-            if (($this->StartDate == "") OR ($this->EndDate == "")) {
+	public function GetBadScheduleTable()
+	{
+		if($this->AllDateRange === 1) {
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad");
+			$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		}else {
+			if (($this->StartDate == "") OR ($this->EndDate == "")) {
 				$this->mesg = array("error" => "StartDate or EndDate are not set.");
-                return -1;
-            }
-            $schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad WHERE file_date >= ? AND file_date <= ?");
-            $schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
-            $schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
-        }
-        $this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
-        $return = $schedule_prep->fetch(2);
+				return -1;
+			}
+			$schedule_prep = $this->sql->conn->prepare("SELECT * FROM files_bad WHERE file_date >= ? AND file_date <= ?");
+			$schedule_prep->bindParam(1, $this->StartDate, PDO::PARAM_STR);
+			$schedule_prep->bindParam(2, $this->EndDate, PDO::PARAM_STR);
+		}
+		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
+		$return = $schedule_prep->fetch(2);
 
-        if(count($return) < 1)
-        {
-            $this->mesg['schedule'] = "No Imports running.";
-        }else
-        {
-            $this->mesg['schedule'] = $return;
-        }
-        return 0;
-    }
+		if(count($return) < 1)
+		{
+			$this->mesg['schedule'] = "No Imports running.";
+		}else
+		{
+			$this->mesg['schedule'] = $return;
+		}
+		return 0;
+	}
 
-    public function GetDaemonStatuses()
-    {
-        $sql = "SELECT nodename, pidfile, pid, pidtime, pidmem, pidcmd, date FROM daemon_pid_stats";
-        $result = $this->sql->conn->query($sql);
-        $result->execute();
-        $fetch = $result->fetchAll(2);
-        //var_dump($fetch);
-        if(count($fetch) < 1)
-        {
-            $this->mesg['daemons'] = "No Daemons running.";
-        }else
-        {
-            $i = 1;
-            $altered = array();
-            foreach($fetch as $value)
-            {
-                $altered["daemon".$i] = $value;
-                $i++;
-            }
+	public function GetDaemonStatuses()
+	{
+		$sql = "SELECT nodename, pidfile, pid, pidtime, pidmem, pidcmd, date FROM daemon_pid_stats";
+		$result = $this->sql->conn->query($sql);
+		$result->execute();
+		$fetch = $result->fetchAll(2);
+		//var_dump($fetch);
+		if(count($fetch) < 1)
+		{
+			$this->mesg['daemons'] = "No Daemons running.";
+		}else
+		{
+			$i = 1;
+			$altered = array();
+			foreach($fetch as $value)
+			{
+				$altered["daemon".$i] = $value;
+				$i++;
+			}
 
 			$this->mesg = array("daemons" => $altered);
-        }
-        return 0;
-    }
+		}
+		return 0;
+	}
 
-    public function CheckHash($hash)
-    {
-        if($hash == "")
-        {
-            $this->mesg = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
-            return -1;
-        }
-		
+	public function CheckHash($hash)
+	
+	{
+		if($hash == "")
+		{
+			$this->mesg = array("error"=>"No hash has been given to check. there is nothing to do here, my job is done.");
+			return -1;
+		}
+		$hash = strtolower($hash);
 		if($this->sql->service == "mysql")
 			{$files_prep = $this->sql->conn->prepare("SELECT id, UPPER(hash) AS hash, file_name, file_user, notes, title, size, file_date, converted, node_name, prev_ext, completed, aps, gps FROM files WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
@@ -341,47 +342,48 @@ class apiv2 extends dbcore
 		$imp_ret = $imp_prep->fetch(2);
 		$tmp_ret = $tmp_prep->fetch(2);
 
-        if($files_ret['hash'] != "")
-        {
-            if($imp_ret['hash'] != "")
-            {
-                $this->mesg['scheduling'] = array("importing"=>$imp_ret);
-            }else{
-                $this->mesg['scheduling'] = array("finished"=>$files_ret);
-            }
-        }
-        elseif($tmp_ret['hash'] != "")
-        {
-            $this->mesg['scheduling'] = array("waiting"=>$tmp_ret);
-        }
-        else
-        {
-            $this->mesg['scheduling'] = array("unknown"=>"Hash not found in WifiDB");
-        }
-        return 1;
-    }
+		if($files_ret['hash'] != "")
+		{
+			if($imp_ret['hash'] != "")
+			{
+				$this->mesg['scheduling'] = array("importing"=>$imp_ret);
+			}else{
+				$this->mesg['scheduling'] = array("finished"=>$files_ret);
+			}
+		}
+		elseif($tmp_ret['hash'] != "")
+		{
+			$this->mesg['scheduling'] = array("waiting"=>$tmp_ret);
+		}
+		else
+		{
+			$this->mesg['scheduling'] = array("unknown"=>"Hash not found in WifiDB");
+		}
+		return 1;
+	}
 
-    public function ImportVS1($details = array())
-    {
-        $user		   = $details['user'];
-        $otherusers	 = $details['otherusers'];
-        $date		   = $details['file_date'];
-        $title		  = $details['title'];
-        $notes		  = $details['notes'];
-        $size		   = $details['size'];
-        $hash		   = $details['hash'];
-        $ext			= $details['ext'];
-        $filename	   = $details['file_name'];
-		$file_orig	   = $details['file_orig'];
+	public function ImportVS1($details = array())
+	{
+		$user		= $details['user'];
+		$apikey		= $details['apikey'];
+		$otherusers	= $details['otherusers'];
+		$date		= $details['file_date'];
+		$title		= $details['title'];
+		$notes		= $details['notes'];
+		$size		= $details['size'];
+		$hash		= $details['hash'];
+		$ext		= $details['ext'];
+		$filename	= $details['file_name'];
+		$file_orig	= $details['file_orig'];
 
-        if(substr($user, -1) == "|")
-        {
-            $user = str_replace("|", "", $user);
-        }else
-        {
-            $exp = explode("|", $user);
-            $user = $exp[0];
-        }
+		if(substr($user, -1) == "|")
+		{
+			$user = str_replace("|", "", $user);
+		}else
+		{
+			$exp = explode("|", $user);
+			$user = $exp[0];
+		}
 		if($this->sql->service == "mysql")
 			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
@@ -395,27 +397,27 @@ class apiv2 extends dbcore
 		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 		$files_prep->execute();
 
-        $tmp_ret = $tmp_prep->fetch(2);
-        $files_ret = $files_prep->fetch(2);
-        if($tmp_ret['hash'] != "")
-        {
+		$tmp_ret = $tmp_prep->fetch(2);
+		$files_ret = $files_prep->fetch(2);
+		if($tmp_ret['hash'] != "")
+		{
 			$this->mesg = array("error" => "File Hash already waiting for import: ".$hash);
-            return -1;
-        }
-        if($files_ret['hash'] != "")
-        {
+			return -1;
+		}
+		if($files_ret['hash'] != "")
+		{
 			$this->mesg = array("error" => "File Hash already exists in WiFiDB:  $hash");
-            return -1;
-        }
-        $this->mesg['import']["title"] = $title;
-        $this->mesg['import']["user"] = $user;
-        if($otherusers)
-        {
-            $this->mesg['import']['otherusers'] = $otherusers;
-        }
+			return -1;
+		}
+		$this->mesg['import']["title"] = $title;
+		$this->mesg['import']["user"] = $user;
+		if($otherusers)
+		{
+			$this->mesg['import']['otherusers'] = $otherusers;
+		}
 
-        switch($ext)
-        {
+		switch($ext)
+		{
 			case "vs1":
 				$task = "import";
 				$type = "vistumbler";
@@ -452,35 +454,50 @@ class apiv2 extends dbcore
 				$task = "";
 				$type = "";
 			break;
-        }
+		}
 
-        switch($task)
-        {
-            case "import":
-				$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-				$result = $this->sql->conn->prepare( $sql );
-				$result->bindValue(1, $filename, PDO::PARAM_STR);
-				$result->bindValue(2, $file_orig, PDO::PARAM_STR);
-				$result->bindValue(3, $date, PDO::PARAM_STR);
-				$result->bindValue(4, $user, PDO::PARAM_STR);
-				$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-				$result->bindValue(6, $notes, PDO::PARAM_STR);
-				$result->bindValue(7, $title, PDO::PARAM_STR);
-				$result->bindValue(8, $size, PDO::PARAM_STR);
-				$result->bindValue(9, $hash, PDO::PARAM_STR);
-				$result->bindValue(10, $type, PDO::PARAM_STR);
-				$result->execute();
-				$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
-				$this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
-				$this->mesg['import']["filehash"] = $hash;
-				return 1;
-                break;
-            default:
-                $this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://wifidb.net/wifidb/import/?func=supported_files");
-                break;
-        }
-        return 1;
-    }
+		switch($task)
+		{
+			case "import":
+				$sql = "SELECT username, import_require_login FROM user_info WHERE username LIKE ?";
+				$stmt = $this->sql->conn->prepare($sql);
+				$stmt->bindParam(1, $user, PDO::PARAM_STR);
+				$stmt->execute();
+				$array = $stmt->fetch(2);
+				if($this->sec->CheckReservedUser($user) == 1 || $this->sec->CheckReservedUser($otherusers) == 1)
+				{
+					$this->mesg = array("error" => "Reserved users are not allowed to import.");
+				}
+				else if($array['username'] && $array['import_require_login'] == 1 && $this->sec->APILoginCheck($array['username'], $apikey) != 1)
+				{
+					$this->mesg = array("error" => "Your account requires an api key to import. Please make sure your api key is set correctly");
+				}
+				else
+				{
+					$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+					$result = $this->sql->conn->prepare( $sql );
+					$result->bindValue(1, $filename, PDO::PARAM_STR);
+					$result->bindValue(2, $file_orig, PDO::PARAM_STR);
+					$result->bindValue(3, $date, PDO::PARAM_STR);
+					$result->bindValue(4, $user, PDO::PARAM_STR);
+					$result->bindValue(5, $otherusers, PDO::PARAM_STR);
+					$result->bindValue(6, $notes, PDO::PARAM_STR);
+					$result->bindValue(7, $title, PDO::PARAM_STR);
+					$result->bindValue(8, $size, PDO::PARAM_STR);
+					$result->bindValue(9, $hash, PDO::PARAM_STR);
+					$result->bindValue(10, $type, PDO::PARAM_STR);
+					$result->execute();
+					$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
+					$this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
+					$this->mesg['import']["filehash"] = $hash;
+				}
+				break;
+			default:
+				$this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://wifidb.net/wifidb/import/?func=supported_files");
+				break;
+		}
+		return 1;
+	}
 
 	public function Locate()
 	{
@@ -537,199 +554,199 @@ class apiv2 extends dbcore
 		}
 	}
 
-    public function GetTitleIDFromSessionID()
-    {
-        $sql = "SELECT title_id FROM live_users WHERE session_id = ?";
-        $prep = $this->sql->conn->prepare($sql);
-        $prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
-        $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-        $fetch = $prep->fetch(2);
-        return $fetch['title_id'];
-    }
+	public function GetTitleIDFromSessionID()
+	{
+		$sql = "SELECT title_id FROM live_users WHERE session_id = ?";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $_REQUEST['SessionID'], PDO::PARAM_STR);
+		$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
+		$fetch = $prep->fetch(2);
+		return $fetch['title_id'];
+	}
 
-    public function ManageLiveSession($date = "", $time = "")
-    {
-        if(isset($_REQUEST['SessionID']))
-        {
-            #var_dump("SessionID Set.");
-            $timestamp = $date." ".$time;
-            if(isset($_REQUEST['completed']))
-            {
-                #var_dump("Completed Set");
-                $TitleID = $this->GetTitleIDFromSessionID();
-                $completed = (int)$_REQUEST['completed'];
-                $sql = "UPDATE live_titles SET completed = ? WHERE id = ?";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $completed, PDO::PARAM_INT);
-                $prep->bindParam(2, $TitleID, PDO::PARAM_INT);
-                $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-                $this->mesg[] = "Session_Completed";
-                return 2;
-            }
+	public function ManageLiveSession($date = "", $time = "")
+	{
+		if(isset($_REQUEST['SessionID']))
+		{
+			#var_dump("SessionID Set.");
+			$timestamp = $date." ".$time;
+			if(isset($_REQUEST['completed']))
+			{
+				#var_dump("Completed Set");
+				$TitleID = $this->GetTitleIDFromSessionID();
+				$completed = (int)$_REQUEST['completed'];
+				$sql = "UPDATE live_titles SET completed = ? WHERE id = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $completed, PDO::PARAM_INT);
+				$prep->bindParam(2, $TitleID, PDO::PARAM_INT);
+				$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
+				$this->mesg[] = "Session_Completed";
+				return 2;
+			}
 
-            $sql = "SELECT title_id FROM live_users LEFT JOIN live_titles ON live_users.session_id = ? AND live_titles.completed = 0 WHERE live_users.session_id = ?";
-            $prep = $this->sql->conn->prepare($sql);
-            $prep->bindParam(1, $_REQUEST['SessionID']);
-            $prep->bindParam(2, $_REQUEST['SessionID']);
-            $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-            $title_data = $prep->fetch(2);
+			$sql = "SELECT title_id FROM live_users LEFT JOIN live_titles ON live_users.session_id = ? AND live_titles.completed = 0 WHERE live_users.session_id = ?";
+			$prep = $this->sql->conn->prepare($sql);
+			$prep->bindParam(1, $_REQUEST['SessionID']);
+			$prep->bindParam(2, $_REQUEST['SessionID']);
+			$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
+			$title_data = $prep->fetch(2);
 
-            if(count($title_data) !== 1)
-            {
+			if(count($title_data) !== 1)
+			{
 				$this->mesg = array("error" => "Session_Expired");
-                return 0;
-            }
+				return 0;
+			}
 
-            $title_id = $title_data['title_id'];
-            #var_dump($title_id);
-            if ($this->sec->login_check)
-            {
-                #var_dump("LoginCheck True");
-                $sql = "SELECT t1.id, t1.username, t1.session_id, t1.title_id, t2.title, t2.notes FROM live_users AS t1 LEFT JOIN live_titles AS t2 ON t2.id = t1.title_id WHERE username = ?";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $this->username, PDO::PARAM_STR);
-                $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-                $fetch = $prep->fetch(2);
-                #var_dump($fetch);
-                if ($fetch)
-                {
-                    #var_dump($timestamp);
-                    #var_dump("Title Update");
-                    $this->sec->SessionID = $fetch['session_id'];
-                    $sql = "UPDATE live_titles SET timestamp = ? WHERE id = ?";
-                    $prep = $this->sql->conn->prepare($sql);
-                    $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
-                    $prep->bindParam(2, $title_id, PDO::PARAM_INT);
-                    $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
-                    #var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
-                    return 1;
-                } else {
-                    #var_dump("Title Insert.");
-                    $this->InsertLiveTitle();
-                }
-            } else {
-                #var_dump("LoginCheck False");
-                $this->sec->SessionID = $_REQUEST['SessionID'];
+			$title_id = $title_data['title_id'];
+			#var_dump($title_id);
+			if ($this->sec->login_check)
+			{
+				#var_dump("LoginCheck True");
+				$sql = "SELECT t1.id, t1.username, t1.session_id, t1.title_id, t2.title, t2.notes FROM live_users AS t1 LEFT JOIN live_titles AS t2 ON t2.id = t1.title_id WHERE username = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $this->username, PDO::PARAM_STR);
+				$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
+				$fetch = $prep->fetch(2);
+				#var_dump($fetch);
+				if ($fetch)
+				{
+					#var_dump($timestamp);
+					#var_dump("Title Update");
+					$this->sec->SessionID = $fetch['session_id'];
+					$sql = "UPDATE live_titles SET timestamp = ? WHERE id = ?";
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(1, $timestamp, PDO::PARAM_STR);
+					$prep->bindParam(2, $title_id, PDO::PARAM_INT);
+					$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
+					#var_dump("Fetched WDBSessionID: " . $this->sec->SessionID);
+					return 1;
+				} else {
+					#var_dump("Title Insert.");
+					$this->InsertLiveTitle();
+				}
+			} else {
+				#var_dump("LoginCheck False");
+				$this->sec->SessionID = $_REQUEST['SessionID'];
 
-                #var_dump("Timestamp: ".$timestamp);
-                $sql = "UPDATE live_titles SET timestamp = ? WHERE id = ?";
-                $prep = $this->sql->conn->prepare($sql);
-                $prep->bindParam(1, $timestamp, PDO::PARAM_STR);
-                $prep->bindParam(2, $title_id, PDO::PARAM_INT);
-                $this->sql->checkError($prep->execute(), __LINE__, __FILE__);
+				#var_dump("Timestamp: ".$timestamp);
+				$sql = "UPDATE live_titles SET timestamp = ? WHERE id = ?";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $timestamp, PDO::PARAM_STR);
+				$prep->bindParam(2, $title_id, PDO::PARAM_INT);
+				$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
 
-                #var_dump("Old API Generate: ".$this->OldAPIGenerate());
+				#var_dump("Old API Generate: ".$this->OldAPIGenerate());
 
-                if(WDB_DEBUG) {
-                    $this->mesg['debug'][] = "User Not Logged In. Or using Old Live API.";
-                }
-                return 0;
-            }
-        }elseif(isset($_REQUEST['title']))
-        {
-            #var_dump("New Title.");
-            $this->InsertLiveTitle();
-            return 1;
-        }else{
-            if(isset($_REQUEST['completed']))
-            {
+				if(WDB_DEBUG) {
+					$this->mesg['debug'][] = "User Not Logged In. Or using Old Live API.";
+				}
+				return 0;
+			}
+		}elseif(isset($_REQUEST['title']))
+		{
+			#var_dump("New Title.");
+			$this->InsertLiveTitle();
+			return 1;
+		}else{
+			if(isset($_REQUEST['completed']))
+			{
 				$this->mesg = array("error" => "Completed flag was set, but no session ID to complete...");
-                return 0;
-            }
-            $this->OldAPIGenerate();
-            return 1;
-        }
-    }
+				return 0;
+			}
+			$this->OldAPIGenerate();
+			return 1;
+		}
+	}
 
-    public function InsertLiveTitle()
-    {
-        if(!isset($_REQUEST['title'])) {
+	public function InsertLiveTitle()
+	{
+		if(!isset($_REQUEST['title'])) {
 
-            $this->sec->SessionID = preg_replace("/[^a-zA-Z0-9]+/", "", $_REQUEST['SessionID']); //SessionID's should be letters and numbers only. Remove anything else.
-            $this->OldAPIGenerate();
-            return 0;
-        } else {
-            $timestamp = date("Y-m-d H:i:s");
-            $insertTitle = "INSERT INTO live_titles (title, notes, timestamp, completed ) VALUES (?, ?, ?, 0)";
-            $prep_Title = $this->sql->conn->prepare($insertTitle);
-            $prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
-            $prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
-            $prep_Title->bindParam(3, $timestamp, PDO::PARAM_STR);
+			$this->sec->SessionID = preg_replace("/[^a-zA-Z0-9]+/", "", $_REQUEST['SessionID']); //SessionID's should be letters and numbers only. Remove anything else.
+			$this->OldAPIGenerate();
+			return 0;
+		} else {
+			$timestamp = date("Y-m-d H:i:s");
+			$insertTitle = "INSERT INTO live_titles (title, notes, timestamp, completed ) VALUES (?, ?, ?, 0)";
+			$prep_Title = $this->sql->conn->prepare($insertTitle);
+			$prep_Title->bindParam(1, $_REQUEST['title'], PDO::PARAM_STR);
+			$prep_Title->bindParam(2, $_REQUEST['notes'], PDO::PARAM_STR);
+			$prep_Title->bindParam(3, $timestamp, PDO::PARAM_STR);
 
-            $this->sql->checkError($prep_Title->execute(), __LINE__, __FILE__);
-            $TitleID = $this->sql->conn->lastInsertID();
-            #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
-        }
-        $this->sec->SessionID = $this->sec->GenerateKey(64);
-        #var_dump("Generated: " . $this->sec->SessionID);
+			$this->sql->checkError($prep_Title->execute(), __LINE__, __FILE__);
+			$TitleID = $this->sql->conn->lastInsertID();
+			#var_dump("Title ID: " . $this->sql->conn->lastInsertID());
+		}
+		$this->sec->SessionID = $this->sec->GenerateKey(64);
+		#var_dump("Generated: " . $this->sec->SessionID);
 
-        $sessionInsert = "INSERT INTO live_users (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
-        $prep_user = $this->sql->conn->prepare($sessionInsert);
-        $prep_user->bindParam(1, $this->sec->username, PDO::PARAM_STR);
-        $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
-        $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
+		$sessionInsert = "INSERT INTO live_users (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+		$prep_user = $this->sql->conn->prepare($sessionInsert);
+		$prep_user->bindParam(1, $this->sec->username, PDO::PARAM_STR);
+		$prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
+		$prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
 
-        $this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
-        $this->mesg["SessionID"] = $this->sec->SessionID;
-        return 1;
-    }
+		$this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
+		$this->mesg["SessionID"] = $this->sec->SessionID;
+		return 1;
+	}
 
-    public function OldAPIGenerate()
-    {
-        $date = date("Y-m-d H:i:s");
-        $this->sec->SessionID = $this->sec->GenerateKey(64);
-        $note = "Live Imports Using Old API";
-        $insertTitle = "INSERT INTO live_titles (id, title, notes) VALUES ('', ?, ?)";
-        $prep_Title = $this->sql->conn->prepare($insertTitle);
-        $prep_Title->bindParam(1, $date, PDO::PARAM_STR);
-        $prep_Title->bindParam(2, $note, PDO::PARAM_STR);
-        $this->sql->checkError($prep_Title->execute(), __LINE__, __FILE__);
-        $TitleID = $this->sql->conn->lastInsertID();
-        #var_dump("Title ID: " . $this->sql->conn->lastInsertID());
+	public function OldAPIGenerate()
+	{
+		$date = date("Y-m-d H:i:s");
+		$this->sec->SessionID = $this->sec->GenerateKey(64);
+		$note = "Live Imports Using Old API";
+		$insertTitle = "INSERT INTO live_titles (id, title, notes) VALUES ('', ?, ?)";
+		$prep_Title = $this->sql->conn->prepare($insertTitle);
+		$prep_Title->bindParam(1, $date, PDO::PARAM_STR);
+		$prep_Title->bindParam(2, $note, PDO::PARAM_STR);
+		$this->sql->checkError($prep_Title->execute(), __LINE__, __FILE__);
+		$TitleID = $this->sql->conn->lastInsertID();
+		#var_dump("Title ID: " . $this->sql->conn->lastInsertID());
 
-        $sessionInsert = "INSERT INTO live_users (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
-        $prep_user = $this->sql->conn->prepare($sessionInsert);
-        $prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
-        $prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
-        $prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
-        $this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
-    }
+		$sessionInsert = "INSERT INTO live_users (id, username, session_id, title_id) VALUES ('', ?, ?, ?)";
+		$prep_user = $this->sql->conn->prepare($sessionInsert);
+		$prep_user->bindParam(1, $this->username, PDO::PARAM_STR);
+		$prep_user->bindParam(2, $this->sec->SessionID, PDO::PARAM_STR);
+		$prep_user->bindParam(3, $TitleID, PDO::PARAM_INT);
+		$this->sql->checkError($prep_user->execute(), __LINE__, __FILE__);
+	}
 
-    public function Output($mesg = NULL)
-    {
-        if($mesg !== NULL || $mesg[0] !== NULL)
-        {
-            if(is_string($mesg))
-            {
-                $this->mesg = array($mesg);
-            }else
-            {
-                $this->mesg = $mesg;
-            }
-        }
-        if(empty($this->mesg)){return array("Empty Data Set.");}
+	public function Output($mesg = NULL)
+	{
+		if($mesg !== NULL || $mesg[0] !== NULL)
+		{
+			if(is_string($mesg))
+			{
+				$this->mesg = array($mesg);
+			}else
+			{
+				$this->mesg = $mesg;
+			}
+		}
+		if(empty($this->mesg)){return array("Empty Data Set.");}
 
-        switch(strtolower($this->output))
-        {
-            case "json":
-                echo json_encode($this->mesg);
-                break;
-            case "xml":
-                echo $this->xml->ArrayToXML($this->mesg);
-                break;
-            case "raw":
-                echo $this->recursive_raw("|", "[", "]", $this->mesg);
-                break;
-            default:
-                echo json_encode($this->mesg);
-                break;
-        }
-        exit();
-    }
+		switch(strtolower($this->output))
+		{
+			case "json":
+				echo json_encode($this->mesg);
+				break;
+			case "xml":
+				echo $this->xml->ArrayToXML($this->mesg);
+				break;
+			case "raw":
+				echo $this->recursive_raw("|", "[", "]", $this->mesg);
+				break;
+			default:
+				echo json_encode($this->mesg);
+				break;
+		}
+		exit();
+	}
 
-    public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
-    {
-        $sql2 = "SELECT * FROM wifi_pointers WHERE
+	public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
+	{
+		$sql2 = "SELECT * FROM wifi_pointers WHERE
 				ssid LIKE ? AND
 				mac LIKE ? AND
 				radio LIKE ? AND
@@ -737,93 +754,93 @@ class apiv2 extends dbcore
 				auth LIKE ? AND
 				encry LIKE ?";
 
-        $prep2 = $this->sql->conn->prepare($sql2);
+		$prep2 = $this->sql->conn->prepare($sql2);
 
-        $ssid = $ssid."%";
-        $prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-        $mac = $mac."%";
-        $prep2->bindParam(2, $mac, PDO::PARAM_STR);
-        $radio = $radio."%";
-        $prep2->bindParam(3, $radio, PDO::PARAM_STR);
-        $chan = $chan."%";
-        $prep2->bindParam(4, $chan, PDO::PARAM_STR);
-        $auth = $auth."%";
-        $prep2->bindParam(5, $auth, PDO::PARAM_STR);
-        $encry = $encry."%";
-        $prep2->bindParam(6, $encry, PDO::PARAM_STR);
-        $this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
-        $total_rows = $prep2->rowCount();
-        if(!$total_rows)
-        {
-            $this->mesg = "No AP's Found";
-            return 0;
-        }
-        $row_color = 0;
-        $results_all = array();
-        $i=0;
-        while ($newArray = $prep2->fetch(2))
-        {
-            if($row_color == 1)
-            {
-                $row_color = 0;
-                $results_all[$i]['class'] = "light";
-            }
-            else
-            {
-                $row_color = 1;
-                $results_all[$i]['class'] = "dark";
-            }
-            $results_all[$i]['id'] = $newArray['id'];
-            $results_all[$i]['ssid'] = $newArray['ssid'];
-            $results_all[$i]['mac'] = $newArray['mac'];
-            $results_all[$i]['sectype'] = $newArray['sectype'];
-            $results_all[$i]['chan'] = $newArray['chan'];
-            $results_all[$i]['auth'] = $newArray['auth'];
-            $results_all[$i]['encry'] = $newArray['encry'];
-            $results_all[$i]['radio'] = $newArray['radio'];
-            $results_all[$i]['BTx']=$newArray['BTx'];
-            $results_all[$i]['OTx']=$newArray['OTx'];
-            $results_all[$i]['label']=$newArray['label'];
-            $results_all[$i]['FA']=$newArray['FA'];
-            $results_all[$i]['LA']=$newArray['LA'];
-            $results_all[$i]['NT'] = $newArray['NT'];
-            $results_all[$i]['manuf']=$newArray['manuf'];
-            $results_all[$i]['geonames_id']=$newArray['geonames_id'];
-            $results_all[$i]['admin1_id']=$newArray['admin1_id'];
-            $results_all[$i]['admin2_id']=$newArray['admin2_id'];
-            $results_all[$i]['username']=$newArray['username'];
-            $results_all[$i]['ap_hash'] = $newArray['ap_hash'];
-            $i++;
-        }
-        $this->mesg = $results_all;
-        return $results_all;
-    }
+		$ssid = $ssid."%";
+		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+		$mac = $mac."%";
+		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+		$radio = $radio."%";
+		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+		$chan = $chan."%";
+		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+		$auth = $auth."%";
+		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+		$encry = $encry."%";
+		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+		$this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
+		$total_rows = $prep2->rowCount();
+		if(!$total_rows)
+		{
+			$this->mesg = "No AP's Found";
+			return 0;
+		}
+		$row_color = 0;
+		$results_all = array();
+		$i=0;
+		while ($newArray = $prep2->fetch(2))
+		{
+			if($row_color == 1)
+			{
+				$row_color = 0;
+				$results_all[$i]['class'] = "light";
+			}
+			else
+			{
+				$row_color = 1;
+				$results_all[$i]['class'] = "dark";
+			}
+			$results_all[$i]['id'] = $newArray['id'];
+			$results_all[$i]['ssid'] = $newArray['ssid'];
+			$results_all[$i]['mac'] = $newArray['mac'];
+			$results_all[$i]['sectype'] = $newArray['sectype'];
+			$results_all[$i]['chan'] = $newArray['chan'];
+			$results_all[$i]['auth'] = $newArray['auth'];
+			$results_all[$i]['encry'] = $newArray['encry'];
+			$results_all[$i]['radio'] = $newArray['radio'];
+			$results_all[$i]['BTx']=$newArray['BTx'];
+			$results_all[$i]['OTx']=$newArray['OTx'];
+			$results_all[$i]['label']=$newArray['label'];
+			$results_all[$i]['FA']=$newArray['FA'];
+			$results_all[$i]['LA']=$newArray['LA'];
+			$results_all[$i]['NT'] = $newArray['NT'];
+			$results_all[$i]['manuf']=$newArray['manuf'];
+			$results_all[$i]['geonames_id']=$newArray['geonames_id'];
+			$results_all[$i]['admin1_id']=$newArray['admin1_id'];
+			$results_all[$i]['admin2_id']=$newArray['admin2_id'];
+			$results_all[$i]['username']=$newArray['username'];
+			$results_all[$i]['ap_hash'] = $newArray['ap_hash'];
+			$i++;
+		}
+		$this->mesg = $results_all;
+		return $results_all;
+	}
 
-    private function recursive_raw($sep = "", $open = "", $close = "", $data = array())
-    {
-        if($sep === ""){$sep = "|";}
-        if($open === ""){$open = "[";}
-        if($close === ""){$close = "]";}
-        if($data === NULL){return -1;}
+	private function recursive_raw($sep = "", $open = "", $close = "", $data = array())
+	{
+		if($sep === ""){$sep = "|";}
+		if($open === ""){$open = "[";}
+		if($close === ""){$close = "]";}
+		if($data === NULL){return -1;}
 
-        foreach($data as $val)
-        {
-            if(is_array($val))
-            {
-                foreach($val as $key=>$v)
-                {
-                    if(is_array($v))
-                    {
-                        $val[$key] = $this->recursive_raw($sep, $open, $close, $v);
-                    }
-                }
-                $res[] = $open.implode($sep, $val).$close;
-            }else
-            {
-                $res[] = $val;
-            }
+		foreach($data as $val)
+		{
+			if(is_array($val))
+			{
+				foreach($val as $key=>$v)
+				{
+					if(is_array($v))
+					{
+						$val[$key] = $this->recursive_raw($sep, $open, $close, $v);
+					}
+				}
+				$res[] = $open.implode($sep, $val).$close;
+			}else
+			{
+				$res[] = $val;
+			}
 
-        }
-        return $open.implode($sep, $res).$close;
-    }
+		}
+		return $open.implode($sep, $res).$close;
+	}
 }
