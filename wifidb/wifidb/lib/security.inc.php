@@ -146,7 +146,15 @@ class security
 			$this->mesg[] = "Email is empty.";
 			return 0;
 		}
-		
+
+		#Check if reserverved User
+		if($this->CheckReservedUser(@$newArray['username']))
+		{
+			$this->logd("User creation failed! Username contains a reservered name.", "error");
+			$this->mesg['message'] = "User creation failed! Username contains a reservered name. Please choose a different username.";
+			return 0;
+		}
+
 		#Check if username already exists
 		if($this->sql->service == "mysql")
 			{$sql = "SELECT username FROM user_info WHERE username LIKE ? LIMIT 1";}
@@ -162,7 +170,7 @@ class security
 			$this->mesg['message'] = "User creation failed! A user with this username already exists.";
 			return 0;
 		}
-		
+
 		#Check if the email address already exists
 		if($this->sql->service == "mysql")
 			{$sql = "SELECT email FROM user_info WHERE email LIKE ? LIMIT 1";}
@@ -186,10 +194,7 @@ class security
 		$join_date		  = date($this->datetime_format);
 		$api_key			= $this->GenerateKey(64);
 
-		$sql = "INSERT INTO user_info (username, password, uid, validated, 
-										locked, permissions, email, join_date, apikey) 
-										VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
-
+		$sql = "INSERT INTO user_info (username, password, uid, validated, locked, permissions, email, join_date, apikey) VALUES (?, ?, ?, ?, '0', '0001', ?, ?, ?)";
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
