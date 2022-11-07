@@ -39,6 +39,10 @@ if not, write to the
 							<th width="30%" class="dark">Api Key</th>
 							<td class="light"><input type="text" name="apikey" size="75%" value="{$user_cp_profile.apikey}"></td>
 						</tr>
+						<tr>
+							<th width="30%" class="dark">Require Login for Import</th>
+							<td class="light"><input name="import_require_login" type="checkbox" {$user_cp_profile.import_require_login}></td>
+						</tr>
 						<tr class="light-centered">
 							<td colspan="2">
 									<input type="hidden" name="username" value="{$user_cp_profile.username}">

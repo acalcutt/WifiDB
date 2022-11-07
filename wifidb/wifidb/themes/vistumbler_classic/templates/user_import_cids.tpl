@@ -52,12 +52,14 @@ You should have received a copy of the GNU General Public License along with thi
 								<td>
 								{if $file_info.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$file_info.id}" title="Show List on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$file_info.id}" title="Export List to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=50000&id={$file_info.id}" title="Export List to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&json=0&from=0&inc=50000&id={$file_info.id}" title="Export List to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>					
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&xml=0&from=0&inc=25000&id={$file_info.id}" title="Export List to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&xml=0&l=0&from=0&inc=25000&id={$file_info.id}" title="Export List to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
+									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 							</tr>
@@ -66,6 +68,7 @@ You should have received a copy of the GNU General Public License along with thi
 					<br/>
 <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$file_info.id}" title="Show AP Points">[Access Points]</a> | {if $func eq 'cidlist'}<b>{/if}<a href="{$wifidb_host_url}opt/userstats.php?func=cidlist&row={$file_info.id}" title="Show Cell Points">[Cell Points]</a>{if $func eq 'cidlist'}</b>{/if} | {if $func eq 'btlist'}<b>{/if}<a href="{$wifidb_host_url}opt/userstats.php?func=btlist&row={$file_info.id}" title="Show Bluetooth Points">[BT Points]</a>{if $func eq 'btlist'}</b>{/if}
 <br/><br/>
+					{$pages_together}
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
@@ -164,14 +167,16 @@ You should have received a copy of the GNU General Public License along with thi
 								<td class="cell_border">
 								{if $wifidb_users_aps.validgps eq 1}
 									<a href="{$wifidb_host_url}opt/map.php?func=exp_cid&id={$wifidb_users_aps.id}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_users_aps.id}&file_id={$file_info.id}&from=0&inc=50000" title="Show AP Signals For This File on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_users_aps.id}&file_id={$file_info.id}&from=0&inc=50000" title="Export AP Signals For This File to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=50000&id={$wifidb_users_aps.id}" title="Export AP to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_users_aps.id}&file_id={$file_info.id}" title="Show AP Signals For This File on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&json=0&from=0&inc=50000&id={$wifidb_users_aps.id}&file_id={$file_info.id}" title="Export AP Signals For This File to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_cid&xml=0&from=0&inc=25000&id={$wifidb_users_aps.id}" title="Export AP to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&xml=0&from=0&inc=25000&id={$wifidb_users_aps.id}&file_id={$file_info.id}" title="Export AP Signals For This File to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/sigmap_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
+									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="cell_border">{$wifidb_users_aps.nu|escape:'htmlall'}</td>
@@ -190,6 +195,7 @@ You should have received a copy of the GNU General Public License along with thi
 							{/foreach}
 						</tbody>
 					</table>
+					{$pages_together}
 				</div>
 			</div>
 {include file="footer.tpl"}

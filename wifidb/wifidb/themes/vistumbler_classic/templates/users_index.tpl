@@ -30,7 +30,7 @@ if not, write to the
 									<div>#</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
 								</th>
-								<th class="header" width="75px">
+								<th class="header" width="95px">
 									<div>GPS</div>
 									<div>
 										<a href="?func=allusers&sort=ValidGPS&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ValidGPS' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
@@ -107,10 +107,12 @@ if not, write to the
 									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
 									<img width="20px" src="{$themeurl}img/kmz_off.png">
+									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="{$wifidb_users.class}"><a class="links" href="?func=alluserlists&user={$wifidb_users.user}">{$wifidb_users.user}</a></td>

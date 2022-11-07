@@ -28,6 +28,7 @@ if not, write to the
 								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$id}"><b>{$ssid}</b></a> (Cell ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to GPX{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
 							</div>
@@ -36,14 +37,16 @@ if not, write to the
 								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to GPX{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{if $file_id ne 0}<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id={$id}" title="Show All AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>{/if}
 								<br>
 							</div>
 {elseif $func eq "user_all"}
 							<div style='text-align: center;'>
 								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}"><b>{$user}</b></a> ({if $ldivs lte 1}Points:{$point_count}{else}Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-									<a href="{$wifidb_host_url}opt/geojson.php?labeled=1&func=user_all&user={$user}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?&func=user_all&user={$user}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$user}" title="Export User APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&user={$user}" title="Export User APs to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								<br>
 							</div>
 {elseif $func eq "user_list"}
@@ -51,6 +54,7 @@ if not, write to the
 								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$id}"><b>{$title}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&id={$id}" title="Export List APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$id}" title="Export List APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&id={$id}" title="Export List APs to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								<br>
 							</div>
 {elseif $func eq "exp_search"}
@@ -59,7 +63,7 @@ if not, write to the
 							</div>
 {/if}
 							<div id='mapcontainer'>
-								<div id='map'>								
+								<div id='map'>
 									<div id="controls">
 										<table style="width: 100%">
 											<tr>
@@ -69,9 +73,10 @@ if not, write to the
 														<div>
 															<span class="inline nowrap controls-icon">Map Style:
 																<select id="styles" class="dropdownSelect">
-																  <option value="WDB_OSM">3D</option>
-																  <option value="WDB_BASIC">Basic</option>
-																  <option value="WDB_DARK_MATTER">Dark</option>
+																  <option value="WDB_OSM"{if $style eq "WDB_OSM"} selected{/if}>3D</option>
+																  <option value="WDB_BASIC"{if $style eq "WDB_BASIC"} selected{/if}>Basic</option>
+																  <option value="WDB_DARK_MATTER"{if $style eq "WDB_DARK_MATTER"} selected{/if}>Dark</option>
+																  <option value="WDB_SAT"{if $style eq "WDB_SAT"} selected{/if}>Satellite</option>
 																</select>
 															</span>
 {if $func eq "exp_cell_sig"}				
@@ -107,17 +112,21 @@ if not, write to the
 															</span>
 {/if}
 															<span class="inline nowrap controls-icon">
-																	<input type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
+																	<input class="address-input" type="text" placeholder="Address Search.." name="searchadrbox" id="searchadrbox">
 																	<button class="toggle-button" id="searchadr" onClick="searchadr()">Search</button>
 															</span>
 {if $func eq "wifidbmap"}
 															<span class="inline nowrap">
-																<button class="toggle-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
-																<button class="toggle-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
+																<button class="toggle-button track-button" id="track_toggle" onClick="toggle_track(this.id)">Enable Track</button>
+																<button class="toggle-button track-button" id="track_download" onClick="track_download()">Download Track</button>
+															</span>
+															<span class="inline nowrap">
+																<button class="toggle-button latest-button" id="Follow_AP" onClick="toggleFollowLatest(this.id)">Follow Latest</button>
+																<button class="toggle-button latest-button" id="latests" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Latest</button>
 															</span>
 {/if}
-{if $func eq "wifidbmap" || $func eq "user_list"}	
-															<br/>
+
+{if $func eq "wifidbmap" || $func eq "user_list"}
 															<button class="toggle-button" id="dailys" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Day</button>
 															<button class="toggle-button" id="WifiDB_weekly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Week</button>
 															<button class="toggle-button" id="WifiDB_monthly" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Month</button>
@@ -130,7 +139,7 @@ if not, write to the
 														</div>
 													</span>
 												</td>
-												<td style="width: 40px"></td>
+												<td style="width: 75px"></td>
 											</tr>	
 										</table>
 									</div>
@@ -181,6 +190,84 @@ if not, write to the
 							</div>
 
 							<script>
+
+		//Maplibre map object
+		var map = new maplibregl.Map({
+			container: 'map',
+			style: '{$tileserver_gl_url}/styles/{$style}/style.json',
+			center: {$centerpoint},
+			zoom: {$zoom},
+			pitch: {$pitch},
+			bearing: {$bearing},
+			attributionControl: false,
+			maplibreLogo: false,
+{if $ie eq 0}
+			maxPitch: 85,
+{/if}
+		});
+
+		map.addControl(new maplibregl.AttributionControl(), 'top-right');
+		map.addControl(new maplibregl.LogoControl(),'top-left');
+		
+		/*
+		var geocoder_api = {
+			forwardGeocode: function (config) {
+				var features = [];
+				var address = document.getElementById('searchadrbox').value;
+				var address = address.replace(/ /g, "+");
+				var url =
+					'https://nominatim.openstreetmap.org/search?q=' +
+					config.query +
+					'&format=geojson&polygon_geojson=1&addressdetails=1';
+				console.log('url: ', url);
+				var req = new XMLHttpRequest();
+				req.overrideMimeType("application/json");
+				req.open('GET', url, true);
+				req.onload = function() {
+					//console.log(req.responseText);
+					var json = JSON.parse(req.responseText);
+					console.log(json.features);
+					for (var a = 0; a < json.features.length; a++) {
+						var feature = json.features[a];
+						console.log(feature);
+						
+						var center = [
+							feature.bbox[0] +
+							(feature.bbox[2] - feature.bbox[0]) / 2,
+							feature.bbox[1] +
+							(feature.bbox[3] - feature.bbox[1]) / 2
+						];
+						
+						var point = {
+							type: 'Feature',
+							geometry: {
+								type: 'Point',
+								coordinates: center
+							},
+							place_name: feature.properties.display_name,
+							properties: feature.properties,
+							text: feature.properties.display_name,
+							place_type: ['place'],
+							center: center
+						};
+						features.push(point);
+					}
+				};
+				req.send(null);
+				console.log(features);
+				return {
+					features: features
+				};
+			}
+		}
+		map.addControl(
+			new MaplibreGeocoder(geocoder_api, {
+				maplibregl: maplibregl
+			}), 'top-right'
+		);		
+		*/
+		
+		
 		// --- Internet Explorer compatibility for MaplibreGLButtonControl ---
 		function _classCallCheck(instance, Constructor) {
 			if (!(instance instanceof Constructor)) {
@@ -245,35 +332,12 @@ if not, write to the
 			return MaplibreGLButtonControl;
 		}();
 
-		var map = new maplibregl.Map({
-			container: 'map',
-			style: '{$tileserver_gl_url}/styles/{$style}/style.json',
-			center: {$centerpoint},
-			zoom: {$zoom},
-			pitch: {$pitch},
-			bearing: {$bearing},
-			attributionControl: false,
-{if $ie eq 0}
-			maxPitch: 85,
-{/if}
-		});
-		map.addControl(new maplibregl.AttributionControl(), 'top-right');
-
 {if $default_marker}
 		// Create a default Marker
 		var marker = new maplibregl.Marker({ {if $sectype eq 1}color: 'green'{elseif $sectype eq 2}color: 'orange'{elseif $sectype eq 3}color: 'red'{else}color: 'purple'{/if}, scale: .5})
 		.setLngLat({$default_marker})
 		.addTo(map);
 {/if}
-
-		// Start Gamelike Controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-		var deltaDistance = 100; // pixels the map pans when the up or down arrow is clicked
-		var deltaDegrees = 30; // degrees the map rotates when the left or right arrow is clicked
-		function easing(t) {
-			return t * (2 - t);
-		}
-		// End Gamelike Controls
-
 		// --- Start Map Style Selection ---
 		var styleList = document.getElementById('styles');
 		styleList.addEventListener('change', function(e) {
@@ -333,44 +397,19 @@ if not, write to the
 			maxWidth: 80,
 			unit: 'imperial'
 		});
-		map.addControl(scale, 'top-left');
+		map.addControl(scale, 'bottom-right');
 
 {if $terrain ne 0}
 		// --- Start Terrain Toggle ---
-
-		/* Remove Terrain Function */
-		function terrain_remove() {
-			map.removeTerrain();
-			var el = document.getElementById('terrain_button');
-			el.title = 'Show 3d Terrain';
-			el.classList.add('maplibregl-terrain');
-			el.classList.remove('maplibregl-terrain-hide');
+		if (maplibregl.supported()) {
+			map.addControl(
+				new maplibregl.TerrainControl({
+					source: "terrain_source",
+					exaggeration: 1,
+					elevationOffset: 0
+				})
+			);
 		}
-		/* Add Terrain Function */
-		function terrain_add() {
-			map.addTerrain("terrain");
-			var el = document.getElementById('terrain_button');
-			el.title = 'Hide 3d Terrain';
-			el.classList.add('maplibregl-terrain-hide');
-			el.classList.remove('maplibregl-terrain');
-		}
-		/* Toggle Terrain Function */
-		function terrain_toggle() {
-			var el = document.getElementById('terrain_button');
-			if (el.classList.contains('maplibregl-terrain')) {
-				terrain_add();
-			} else {
-				terrain_remove();
-			}
-		}
-		/* Toggle Terrain Button */
-		var terrain_button = new MaplibreGLButtonControl({
-			className: "maplibregl-terrain",
-			id: "terrain_button",
-			title: "Show 3d Terrain",
-			eventHandler: terrain_toggle
-		});
-		map.addControl(terrain_button, "top-right");
 		// --- End Terrain Toggle ---
 {/if}
 		// --- Start Control Toggle ---
@@ -400,17 +439,72 @@ if not, write to the
 		});
 		map.addControl(menu_button, "bottom-left");
 		// --- End Control Toggle ---
+		
 		//Add GeoLocate button
-		map.addControl(new maplibregl.GeolocateControl({
+		var GeolocateControl = new maplibregl.GeolocateControl({
 			positionOptions: {
 				enableHighAccuracy: true
 			},
 			trackUserLocation: true
-		})); 
+		});
+		map.addControl(GeolocateControl);		
+		
+		//Create live track
+		var track = false;
+		var gpx_track_array= [];
+		var track_geojson = {
+			'type': 'FeatureCollection',
+			'features': [
+				{
+					'type': 'Feature',
+					'geometry': {
+						'type': 'LineString',
+						'coordinates': []
+					}
+				}
+			]
+		};
+
+		//Update track geojson on geolocate event
+		GeolocateControl.on('geolocate', function(e) {
+			if (track) {
+				if ((e.coords.latitude != null) && (e.coords.longitude != null)) {
+					console.log(e);
+					// append new coordinates to the lineString
+					track_geojson.features[0].geometry.coordinates.push([e.coords.longitude,e.coords.latitude]);
+					
+					// then update the map
+					map.getSource('track_line').setData(track_geojson);
+					map.moveLayer('track_line_layer');
+					
+					// append new coordinates to gpx
+					$trkpt_str = '<trkpt lat="' + e.coords.latitude + '" lon="' + e.coords.longitude + '">';
+					if (e.coords.altitude != null) {
+						$trkpt_str += '<ele>' + e.coords.altitude + '</ele>';
+					}
+					if (e.coords.speed != null) {
+						$trkpt_str += '<speed>' + e.coords.speed + '</speed>';
+					}
+					if (e.coords.accuracy != null) {
+						var hdop = e.coords.accuracy * 4;
+						$trkpt_str += '<hdop>' + hdop + '</hdop>';
+					}
+					if (e.timestamp != null) {
+						var date = new Date(e.timestamp).toISOString();
+						$trkpt_str += '<time>'+ date + '</time>';
+					}
+					$trkpt_str += '</trkpt>\r';
+					gpx_track_array.push([$trkpt_str]);
+				}
+			}
+		});
 
 		//Add Fullscreen Button
 		var fs = new maplibregl.FullscreenControl();
 		map.addControl(fs);
+
+		//map.addControl(new MapLibreStyleSwitcherControl());
+		
 		fs._fullscreenButton.classList.add('needsclick'); //Add Navigation Control
 		map.addControl(new maplibregl.NavigationControl({
 			visualizePitch: true,
@@ -418,14 +512,12 @@ if not, write to the
 			showCompass: true
 		}));
 
-{if $ie eq 0}
 		//Inspect Button
 		map.addControl(new MaplibreInspect({
 			showMapPopupOnHover: false,
 			showInspectMapPopupOnHover: false,
 			selectThreshold: 5
 		}));
-{/if}
 
 		function GoToLatest() {
 			var url = '{$wifidb_host_url}api/geojson.php?func=exp_latest_ap';
@@ -508,6 +600,56 @@ if not, write to the
 			}
 		}
 
+		function toggle_track(clicked_id) {
+			var el = document.getElementById(clicked_id);
+			if (track) {
+				track = false;
+				gpx_track_array.push(['</trkseg></trk>\r']);
+				console.log("Track Disabled");
+				el.firstChild.data = "Enable Track";
+			} else {
+				var date = new Date().toISOString();
+				gpx_track_array.push(['<trk><name>' + date + '</name><desc></desc><trkseg>\r']);			
+				track = true;
+				console.log("Track Enabled");
+				el.firstChild.data = "Disabled Track";
+			}
+		}
+		
+		function track_download() {
+			var date = new Date().toISOString();
+			download(create_gpx(), 'wdb_map_track_' + date + '.gpx', 'text/plain');
+		}
+
+		function download(content, fileName, contentType) {
+
+			var a = document.createElement("a");
+			a.href = URL.createObjectURL(new Blob([content]));
+			a.setAttribute("download", fileName);
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		}
+
+		function create_gpx() {
+			var track_state = track;
+			if (track_state) {
+				track = false;
+				gpx_track_array.push(['</trkseg></trk>\r']);
+			}
+			var gpx = '<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd" version="1.1" creator="wifidb.net"><metadata/>\r'
+			for (var g = 0; g < gpx_track_array.length; ++g) {
+				gpx += gpx_track_array[g];
+			}
+			gpx += '</gpx>'
+			if (track_state) {
+				var date = new Date().toISOString();
+				gpx_track_array.push(['<trk><name>' + date + '</name><desc></desc><trkseg>\r']);	
+				track = true;
+			}
+			return gpx;
+		}
+
 		// --- End Year Visibility Functions ---
 		// --- Start Address Search Box Functions ---
 		function searchadr() {
@@ -562,77 +704,89 @@ if not, write to the
 		function init() {
 {$layer_source_all}
 			toggle_label();
-{if $terrain ne 0}
-			terrain_remove();
-{/if}
 		};
 
 		map.on('load', function () {
-			//Start Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
-			map.getCanvas().focus();
-			map.getCanvas().addEventListener('keydown', function(e) {
-				e.preventDefault();
-				if (e.which === 38) {
-					// up
-					map.panBy([0, -deltaDistance], {
-						easing: easing
-					});
-				} else if (e.which === 40) {
-					// down
-					map.panBy([0, deltaDistance], {
-						easing: easing
-					});
-				} else if (e.which === 37) {
-					// left
-					map.easeTo({
-						bearing: map.getBearing() - deltaDegrees,
-						easing: easing
-					});
-				} else if (e.which === 39) {
-					// right
-					map.easeTo({
-						bearing: map.getBearing() + deltaDegrees,
-						easing: easing
-					});
+			map.addSource('track_line', {
+				'type': 'geojson',
+				'data': track_geojson
+			});
+			 
+			// add the line which will be modified for the track
+			map.addLayer({
+				'id': 'track_line_layer',
+				'type': 'line',
+				'source': 'track_line',
+				'layout': {
+					'line-cap': 'round',
+					'line-join': 'round'
+				},
+				'paint': {
+					'line-color': '#ffff66',
+					'line-width': 5,
+					'line-opacity': 0.8
 				}
-			}, true);
-			//End Gamelike controls (https://maplibre.org/maplibre-gl-js-docs/example/game-controls/)
+			});
 
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
 				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
 				if (!inspectStyle) {
-					var features = map.queryRenderedFeatures(e.point, {
+
+					var queryBox;
+					var selectThreshold = 5;
+					if (selectThreshold === 0) {
+					  queryBox = e.point;
+					} else {
+					  // set a bbox around the pointer
+					  queryBox = [
+						[
+						e.point.x - selectThreshold,
+						e.point.y + selectThreshold
+						], // bottom left (SW)
+						[
+						e.point.x + selectThreshold,
+						e.point.y - selectThreshold
+						] // top right (NE)
+					  ];
+					}
+				
+					var features = map.queryRenderedFeatures(queryBox, {
 						layers: [{$cell_layer_name}]
 					});
 					if (!features.length) {
 						return;
 					}
-					var feature = features[0];
-					var text = '<ul>';
-					if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
-					if (feature.properties.mapname) text += '<li>Name: <b>' + feature.properties.mapname + '</b></li>';
-					if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
-					if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
-					if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
-					if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
-					if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
-					if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
-					if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
-					if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-					if (feature.properties.fa) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
-					if (feature.properties.la) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
-					if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
-					if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
-					if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
-					if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
-					if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
-					if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
-					if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
-					if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
-					if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
-					text += '</ul>';
+					
+					var text = '';
+					for (var i = 0; i < features.length; i++) {
+						var feature = features[i];
+						if (i !== 0) text += '<hr>';
+						text += '<ul>';
+						if (feature.properties.id) text += '<li>ID: <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id=' + feature.properties.id + '"><b>' + feature.properties.id + '</b></a></li>';
+						if (feature.properties.mapname) text += '<li>Name: <b>' + feature.properties.mapname + '</b></li>';
+						if (feature.properties.name) text += '<li>Name: <b>' + feature.properties.name + '</b></li>';
+						if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
+						if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+						if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+						if (feature.properties.authmode) text += '<li>AUTHMODE: <b>' + feature.properties.authmode + '</b></li>';
+						if (feature.properties.chan) text += '<li>CHAN: <b>' + feature.properties.chan + '</b></li>';
+						if (feature.properties.type) text += '<li>TYPE: <b>' + feature.properties.type + '</b></li>';
+						if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+						if (feature.properties.fa) text += '<li>First Active: <b>' + feature.properties.fa + '</b></li>';
+						if (feature.properties.la) text += '<li>Last Active: <b>' + feature.properties.la + '</b></li>';
+						if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
+						if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
+						if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
+						if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
+						if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
+						if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
+						if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
+						if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a></li>';
+						if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+						text += '</ul>';
+					}
 					var popup = new maplibregl.Popup().setLngLat(map.unproject(e.point)).setHTML(text).addTo(map);
 				}
 			});
@@ -641,41 +795,67 @@ if not, write to the
 			map.on('click', function(e) {
 				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
 				if (!inspectStyle) {
-					var features = map.queryRenderedFeatures(e.point, {
+					var queryBox;
+					var selectThreshold = 5;
+					if (selectThreshold === 0) {
+					  queryBox = e.point;
+					} else {
+					  // set a bbox around the pointer
+					  queryBox = [
+						[
+						e.point.x - selectThreshold,
+						e.point.y + selectThreshold
+						], // bottom left (SW)
+						[
+						e.point.x + selectThreshold,
+						e.point.y - selectThreshold
+						] // top right (NE)
+					  ];
+					}
+				
+					var features = map.queryRenderedFeatures(queryBox, {
 						layers: [{$layer_name}]
 					});
 					if (!features.length) {
 						return;
 					}
-					var feature = features[0];
-					var text = '<ul>';
-					if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
-					if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
-					if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
-					if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
-					if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
-					if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
-					if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
-					if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
-					if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
-					if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
-					if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
-					if (feature.properties.nt) text += '<li>Network Type: <b>' + feature.properties.nt + '</b></li>';
-					if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
-					if (feature.properties.fa) text += '<li>First: <b>' + feature.properties.fa + '</b></li>';
-					if (feature.properties.la) text += '<li>Last: <b>' + feature.properties.la + '</b></li>';
-					if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
-					if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
-					if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
-					if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
-					if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
-					if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
-					if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
-					if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
-					if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
-					if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&file_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
-					if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
-					text += '</ul>';
+					
+					var text = '';
+					for (var i = 0; i < features.length; i++) {
+						var feature = features[i];
+						
+						if (i !== 0) text += '<hr>';
+						text += '<ul>';
+						if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
+						if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+						if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
+						if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
+						if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+						if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
+						if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
+						if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
+						if (feature.properties.auth) text += '<li>Auth: <b>' + feature.properties.auth + '</b></li>';
+						if (feature.properties.encry) text += '<li>Encryption: <b>' + feature.properties.encry + '</b></li>';
+						if (feature.properties.manuf) text += '<li>Manufacturer: <b>' + feature.properties.manuf + '</b></li>';
+						if (feature.properties.nt) text += '<li>Network Type: <b>' + feature.properties.nt + '</b></li>';
+						if (feature.properties.radio) text += '<li>Radio Type: <b>' + feature.properties.radio + '</b></li>';
+						if (feature.properties.fa) text += '<li>First: <b>' + feature.properties.fa + '</b></li>';
+						if (feature.properties.la) text += '<li>Last: <b>' + feature.properties.la + '</b></li>';
+						if (feature.properties.high_gps_sig) text += '<li>High Signal w/GPS: <b>' + feature.properties.high_gps_sig + '</b></li>';
+						if (feature.properties.high_gps_rssi) text += '<li>High RSSI w/GPS: <b>' + feature.properties.high_gps_rssi + '</b></li>';
+						if (feature.properties.hist_date) text += '<li>Date: <b>' + feature.properties.hist_date + '</b></li>';
+						if (feature.properties.lat) text += '<li>Latitude: <b>' + feature.properties.lat + '</b></li>';
+						if (feature.properties.lon) text += '<li>Logitude: <b>' + feature.properties.lon + '</b></li>';
+						if (feature.properties.alt) text += '<li>Altitude: <b>' + feature.properties.alt + ' m</b></li>';
+						if (feature.properties.sats) text += '<li>GPS Sats: <b>' + feature.properties.sats + '</b></li>';
+						if (feature.properties.accuracy) text += '<li>GPS Accuracy: <b>' + feature.properties.accuracy + ' m</b></li>';
+						if (feature.properties.hdop) text += '<li>GPS HDOP: <b>' + feature.properties.hdop + '</b></li>';
+						if (feature.properties.hist_file_id) text += '<li>File ID: <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row=' + feature.properties.hist_file_id + '"><b>' + feature.properties.hist_file_id + '</b></a> <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&labeled=0&id={$id}&file_id=' + feature.properties.hist_file_id + '"><b>(Map)</b></a></li>';
+						if (feature.properties.user) text += '<li>Username: <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user=' + feature.properties.user + '"><b>' + feature.properties.user + '</b></a></li>';
+						text += '</ul>';
+					}
+					
+
 					var popup = new maplibregl.Popup().setLngLat(map.unproject(e.point)).setHTML(text).addTo(map);
 				}
 			});
@@ -717,9 +897,14 @@ if not, write to the
 {if $ie eq 0}
 		map.on('move', displayCenter);
 {/if}
-
-		map.on('resize', function() {
-			map.getCanvas().focus();
+		//Trigger map resize when menu button is clicked.
+		$(".bt-menu-trigger").click(function() {
+			$(this).toggleClass("buttonstyle").trigger('classChanged');
+		});
+		$(".bt-menu-trigger").on("classChanged", function() {
+			$(document).ready(function() {
+				map.resize();
+			});
 		});
 							</script>
 						</td>
