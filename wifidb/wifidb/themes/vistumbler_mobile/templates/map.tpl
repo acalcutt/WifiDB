@@ -76,6 +76,7 @@ if not, write to the
 																  <option value="WDB_OSM"{if $style eq "WDB_OSM"} selected{/if}>3D</option>
 																  <option value="WDB_BASIC"{if $style eq "WDB_BASIC"} selected{/if}>Basic</option>
 																  <option value="WDB_DARK_MATTER"{if $style eq "WDB_DARK_MATTER"} selected{/if}>Dark</option>
+																  <option value="WDB_SAT"{if $style eq "WDB_SAT"} selected{/if}>Satellite</option>
 																</select>
 															</span>
 {if $func eq "exp_cell_sig"}				
@@ -403,11 +404,9 @@ if not, write to the
 		if (maplibregl.supported()) {
 			map.addControl(
 				new maplibregl.TerrainControl({
-					id: "terrain",
-					options: {
-						exaggeration: 1,
-						elevationOffset: 0
-					}
+					source: "terrain_source",
+					exaggeration: 1,
+					elevationOffset: 0
 				})
 			);
 		}
@@ -728,13 +727,7 @@ if not, write to the
 					'line-opacity': 0.8
 				}
 			});
-		
-		
-			// Show an alert if the browser does not support MapLibre GL. Hide hillshade
-			//if (!maplibregl.supported()) {
-			//  map.setLayoutProperty("terrain", 'visibility', 'none');
-			//  alert('Your browser does not support MapLibre GL');
-			//}
+
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
