@@ -133,7 +133,7 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
-								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user|escape:'htmlall'}">{$wifidb_assoc.user|escape:'htmlall'}</a></td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.file_user|escape:'htmlall'}">{$wifidb_assoc.file_user|escape:'htmlall'}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.file|escape:'htmlall'}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id}">{$wifidb_assoc.title|escape:'htmlall'}</a></td>
 								<td class="light">{$wifidb_assoc.notes|escape:'htmlall'}</td>
