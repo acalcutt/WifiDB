@@ -75,7 +75,7 @@ if($username)
 			if($h_email !== (int)$userArray['h_email']){$dbcore->sec->logd("Update profile h_email for ".$username."(".$user_id.") from ".$userArray['h_email']." to ".$h_email, "message");}
 			if($website !== $userArray['website']){$dbcore->sec->logd("Update profile website for ".$username."(".$user_id.") from ".$userArray['website']." to ".$website, "message");}
 			if($Vis_ver !== $userArray['Vis_ver']){$dbcore->sec->logd("Update profile Vis_ver for ".$username."(".$user_id.") from ".$userArray['Vis_ver']." to ".$Vis_ver, "message");}
-			if($apikey !== $userArray['apikey']){$dbcore->sec->logd("Update profile apikey for ".$username."(".$user_id.") from ".$userArray['apikey']." to ".$apikey, "message");}
+			if($apikey !== $userArray['apikey']){$dbcore->sec->logd("Update profile apikey for ".$username."(".$user_id.")", "message");}
 			if($import_require_login !== (int)$userArray['import_require_login']){$dbcore->sec->logd("Update profile import_require_login for ".$username."(".$user_id.") from ".$userArray['import_require_login']." to ".$import_require_login, "message");}
 			
 			$cp_profile = array();
