@@ -395,7 +395,7 @@ class security
 				
 				$this->login_val = "good";
 				$this->login_check = 1;
-				$this->logd("User has successfully logged in: ". var_export($username, 1), "message");
+				$this->logd("Login Successful for ".var_export($username, 1), "message");
 				$this->mesg[] = "User is logged in.";
 				return 1;
 			}
