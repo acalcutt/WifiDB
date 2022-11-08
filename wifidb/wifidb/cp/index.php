@@ -68,25 +68,28 @@ if($username)
 			if($h_email == "on"){$h_email = 1;}else{$h_email = 0;}
 			$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
 			$Vis_ver = htmlentities(addslashes($_POST['Vis_ver']),ENT_QUOTES);
+			$apikey = htmlentities(addslashes($_POST['apikey']),ENT_QUOTES);
 			$import_require_login = ((@$_POST['import_require_login']) == 'on' ? 1 : 0);
 			
 			if($email !== $userArray['email']){$dbcore->sec->logd("Update profile email for ".$username."(".$user_id.") from ".$userArray['email']." to ".$email, "message");}
 			if($h_email !== (int)$userArray['h_email']){$dbcore->sec->logd("Update profile h_email for ".$username."(".$user_id.") from ".$userArray['h_email']." to ".$h_email, "message");}
 			if($website !== $userArray['website']){$dbcore->sec->logd("Update profile website for ".$username."(".$user_id.") from ".$userArray['website']." to ".$website, "message");}
 			if($Vis_ver !== $userArray['Vis_ver']){$dbcore->sec->logd("Update profile Vis_ver for ".$username."(".$user_id.") from ".$userArray['Vis_ver']." to ".$Vis_ver, "message");}
+			if($apikey !== $userArray['apikey']){$dbcore->sec->logd("Update profile apikey for ".$username."(".$user_id.") from ".$userArray['apikey']." to ".$apikey, "message");}
 			if($import_require_login !== (int)$userArray['import_require_login']){$dbcore->sec->logd("Update profile import_require_login for ".$username."(".$user_id.") from ".$userArray['import_require_login']." to ".$import_require_login, "message");}
 			
 			$cp_profile = array();
 			if($userArray['id'])
 			{
-				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ?, import_require_login = ? WHERE id = ?";
+				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ?, apikey = ?, import_require_login = ? WHERE id = ?";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				$result->bindParam(1, $email, PDO::PARAM_STR);
 				$result->bindParam(2, $h_email, PDO::PARAM_STR);
 				$result->bindParam(3, $website, PDO::PARAM_STR);
 				$result->bindParam(4, $Vis_ver, PDO::PARAM_STR);
-				$result->bindParam(5, $import_require_login, PDO::PARAM_INT);
-				$result->bindParam(6, $user_id, PDO::PARAM_INT);
+				$result->bindParam(5, $apikey, PDO::PARAM_STR);
+				$result->bindParam(6, $import_require_login, PDO::PARAM_INT);
+				$result->bindParam(7, $user_id, PDO::PARAM_INT);
 				if($result->execute())
 				{
 					$cp_profile['message'] = "<br>Updated $username's Profile<br><br>";
