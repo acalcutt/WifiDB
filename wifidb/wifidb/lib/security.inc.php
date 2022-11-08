@@ -8,31 +8,33 @@ class security
 	{
 		$this->sql				= &$dbcore->sql;
 		$this->cli				= &$dbcore->cli;
-		$this->mesg			   = array();
-		$this->log_level		  = 42;
-		$this->This_is_me		 = getmypid();
+		$this->mesg				= array();
+		$this->log_level		= $config['log_level'];
+		$this->Log_Type			= $config['log_type'];
+		$this->TOOLS_PATH		= $config['wifidb_tools'];
+		$this->This_is_me		= getmypid();
 		$this->date_format		= "Y-m-d";
 		$this->time_format		= "H:i:s";
 		$this->datetime_format	= $this->date_format." ".$this->time_format;
-		$this->EnableAPIKey	   = $config['EnableAPIKey'];
-		$this->login_val		  = "No Cookie";
-		$this->last_login		 = 0;
+		$this->EnableAPIKey		= $config['EnableAPIKey'];
+		$this->login_val		= "No Cookie";
+		$this->last_login		= 0;
 		$this->login_check		= 0;
-		$this->LoginLabel		 = "AnonCoward";
-		$this->activatecode	   = "";
-		$this->priv_name		  = "AnonCoward";
-		$this->privs			  = 0;
-		$this->username		   = "AnonCoward";
-		$this->apikey			 = "";
-		$this->email_validation   = $config['email_validation'];
-		$this->reserved_users	 = $config['reserved_users'];
+		$this->LoginLabel		= "AnonCoward";
+		$this->activatecode		= "";
+		$this->priv_name		= "AnonCoward";
+		$this->privs			= 0;
+		$this->username			= "AnonCoward";
+		$this->apikey			= "";
+		$this->email_validation	= $config['email_validation'];
+		$this->reserved_users	= $config['reserved_users'];
 		$this->timeout			= $config['timeout'];
-		$this->config_fails	   = $config['config_fails'];
+		$this->config_fails		= $config['config_fails'];
 		$this->HOSTURL			= $config['hosturl'];
-		$this->root			   = $config['root'];
-		$this->URL_PATH		   = $this->HOSTURL.$this->root.'/';
-		$this->SessionID		  = "";
-		$ssl_flag				 = parse_url($this->URL_PATH, PHP_URL_SCHEME);
+		$this->root				= $config['root'];
+		$this->URL_PATH			= $this->HOSTURL.$this->root.'/';
+		$this->SessionID		= "";
+		$ssl_flag				= parse_url($this->URL_PATH, PHP_URL_SCHEME);
 		if($ssl_flag == "https")
 		{
 			$this->ssl = "1";
@@ -46,9 +48,73 @@ class security
 	}
 	
 	
-	function logd($message = "", $type = "", $prefix = "")
+	public function logd($message = '', $type = "message", $prefix = "")
 	{
-		return @dbcore::logd($message, $type, $prefix);
+		if($this->log_level) # Check to see if logging is turned on.
+		{
+			if(@strtoupper(SWITCH_SCREEN) === "CLI" && $prefix === "")
+			{
+				$prefix = $this->This_is_me;
+			}else{
+				$prefix = "httpd";
+			}
+			if($message === "")
+			{
+				$this->verbosed("Logd was told to write a blank string.\r\n Message has NOT been logged and this will NOT be allowed!", -1);
+				return 0;
+			}
+
+			$date = date("Y-m-d");
+			$utime = explode(".", microtime(1));
+			$time = date("H:i:s.").$utime[1];
+			$datetime = $date." ".$time;
+			$message = $message."\r\n"; #append the date and time to the log message.
+			switch($this->Log_Type)
+			{
+				case "SQL":
+					$this->log_sql($message, $type, $prefix, $datetime);
+					break;
+				case "File":
+					$this->log_file($message, $type, $prefix, $datetime);
+					break;
+				case "Both":
+					$this->log_sql($message, $type, $prefix, $datetime);
+					$this->log_file($message, $type, $prefix, $datetime);
+			}
+		}
+	}
+
+	private function log_sql($message, $type, $prefix, $datetime)
+	{
+		$sql = "INSERT INTO log (message, level, timestamp, prefix) VALUES (?, ?, ?, ?)";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->bindParam(1, $message, PDO::PARAM_STR);
+		$prep->bindParam(2, $type, PDO::PARAM_STR);
+		$prep->bindParam(3, $datetime, PDO::PARAM_STR);
+		$prep->bindParam(4, $prefix, PDO::PARAM_INT);
+		$prep->execute();
+		if($this->sql->checkError())
+		{
+			$this->verbosed("Error writing to the Log table 0_o", -1);
+			throw new ErrorException("Error writing to the Log table. ".var_export($this->sql->conn->errorInfo() ,1));
+			return 0;
+		}else
+		{
+			return 1;
+		}
+	}
+
+	private function log_file($message = "", $type = "", $prefix = 0, $datetime = "")
+	{
+		$date = date($this->date_format);
+		$filename = $this->TOOLS_PATH.'log/security/'.$prefix.'_wifidbd_'.$date.'.log'; #generate the log file name for today.
+		#If it does not exist create the log file.
+		if(!is_file($filename)){ fopen($filename, "w");}
+
+		$filehandle = fopen($filename, "a"); # Append to the end of the log file.
+		$write_message = fwrite($filehandle, $message); # Lets write our message.
+		if(!$write_message){echo "The WiFiDB Import/Export Daemon could not write message to the file, thats not good...";} # If there was an error, lets let them know ad the console.
+		fclose($filehandle); # Now we need to close the file, otherwise we might have lock errors.
 	}
 	
 	function define_priv_name($member)
@@ -329,7 +395,7 @@ class security
 				
 				$this->login_val = "good";
 				$this->login_check = 1;
-				$this->logd("User has successfully logged in: ". var_export($username, 1), "error");
+				$this->logd("User has successfully logged in: ". var_export($username, 1), "message");
 				$this->mesg[] = "User is logged in.";
 				return 1;
 			}
@@ -353,7 +419,7 @@ class security
 				$this->login_val = "locked";
 				$this->login_check = 0;
 				$this->mesg[] = "User is locked.";
-				$this->logd("User is locked: ".$username , "error");
+				$this->logd("User account locked: '".$username."'" , "error");
 				return 1;
 			}else
 			{
@@ -367,7 +433,7 @@ class security
 				$this->login_val = "p_fail";
 				$this->login_check = 0;
 				$this->mesg[] = "Username or Password is incorrect.";
-				$this->logd("Incorrect password for user : ".$username." | ".$password, "error");
+				$this->logd("Incorrect password for user: '".$username."'", "error");
 				return 1;
 			}
 		}

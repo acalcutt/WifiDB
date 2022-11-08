@@ -1,6 +1,5 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2014 Andrew Calcutt
+Copyright (C) 2022 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -30,7 +29,7 @@ if not, write to the
 						<tr>
 							<th width="30%" class="header">New KMZ Export</th>
 							<td align="center" class="light"><input name="kmz" type="checkbox" {$user_cp_profile.kmz}></td></td>
-						</tr>						
+						</tr>
 						<tr>
 							<th width="30%" class="header">Import Started</th>
 							<td align="center" class="dark"><input name="schedule" type="checkbox" {$user_cp_profile.schedule}></td></td>
@@ -41,9 +40,7 @@ if not, write to the
 						</tr>
 						<tr class="light-centered">
 							<td colspan="2">
-									<input type="hidden" name="username" value="{$user_cp_profile.username}">
-									<input type="hidden" name="user_id" value="{$user_cp_profile.id}">
-									<input type="submit" value="Update Me!">
+								<input type="submit" value="Update Me!">
 							</td>
 						</tr>
 					</table>

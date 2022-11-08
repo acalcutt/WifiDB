@@ -1,7 +1,6 @@
 <?php
 /*
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2011 Phil Ferland
+Copyright (C) 2022 Andrew Calcutt 2011 Phil Ferland
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -40,10 +39,10 @@ if($username)
 	$result->bindParam(1, $username, PDO::PARAM_STR);
 	$result->execute();
 	$userArray = $result->fetch();
+	$user_id = $userArray['id'];
 
 	switch($func)
 	{
-		##-------------##
 		case '':
 			header('Location: /wifidb/cp/index.php?func=profile');
 		break;
@@ -53,9 +52,8 @@ if($username)
 			$cp_profile['email'] = $userArray['email'];
 			$cp_profile['website'] = $userArray['website'];
 			$cp_profile['Vis_ver'] = $userArray['Vis_ver'];
-			$cp_profile['username'] = $userArray['username'];
-			$cp_profile['id'] = $userArray['id'];
 			$cp_profile['apikey'] = $userArray['apikey'];
+			if($userArray['import_require_login']){$cp_profile['import_require_login'] = 'checked';}else{$cp_profile['import_require_login'] = 'unchecked';};
 			if($userArray['h_email']){$cp_profile['hide_email'] = 'checked';}else{$cp_profile['hide_email'] = 'unchecked';};
 			
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
@@ -70,16 +68,25 @@ if($username)
 			if($h_email == "on"){$h_email = 1;}else{$h_email = 0;}
 			$website = htmlentities(addslashes($_POST['website']),ENT_QUOTES);
 			$Vis_ver = htmlentities(addslashes($_POST['Vis_ver']),ENT_QUOTES);
+			$import_require_login = ((@$_POST['import_require_login']) == 'on' ? 1 : 0);
+			
+			if($email !== $userArray['email']){$dbcore->sec->logd("Update profile email for ".$username."(".$user_id.") from ".$userArray['email']." to ".$email, "message");}
+			if($h_email !== (int)$userArray['h_email']){$dbcore->sec->logd("Update profile h_email for ".$username."(".$user_id.") from ".$userArray['h_email']." to ".$h_email, "message");}
+			if($website !== $userArray['website']){$dbcore->sec->logd("Update profile website for ".$username."(".$user_id.") from ".$userArray['website']." to ".$website, "message");}
+			if($Vis_ver !== $userArray['Vis_ver']){$dbcore->sec->logd("Update profile Vis_ver for ".$username."(".$user_id.") from ".$userArray['Vis_ver']." to ".$Vis_ver, "message");}
+			if($import_require_login !== (int)$userArray['import_require_login']){$dbcore->sec->logd("Update profile import_require_login for ".$username."(".$user_id.") from ".$userArray['import_require_login']." to ".$import_require_login, "message");}
+			
 			$cp_profile = array();
 			if($userArray['id'])
 			{
-				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ? WHERE id = ?";
+				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ?, import_require_login = ? WHERE id = ?";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				$result->bindParam(1, $email, PDO::PARAM_STR);
 				$result->bindParam(2, $h_email, PDO::PARAM_STR);
 				$result->bindParam(3, $website, PDO::PARAM_STR);
 				$result->bindParam(4, $Vis_ver, PDO::PARAM_STR);
-				$result->bindParam(5, $userArray['id'], PDO::PARAM_INT);
+				$result->bindParam(5, $import_require_login, PDO::PARAM_INT);
+				$result->bindParam(6, $user_id, PDO::PARAM_INT);
 				if($result->execute())
 				{
 					$cp_profile['message'] = "<br>Updated $username's Profile<br><br>";
@@ -101,19 +108,11 @@ if($username)
 		case 'pref':
 
 			$cp_profile = array();
-			if($userArray['mail_updates']){$cp_profile['mail_updates'] = 'checked';}else{$cp_profile['mail_updates'] = 'unchecked';};
-			if($userArray['announcements']){$cp_profile['announcements'] = 'checked';}else{$cp_profile['announcements'] = 'unchecked';};
-			if($userArray['announce_comment']){$cp_profile['announce_comment'] = 'checked';}else{$cp_profile['announce_comment'] = 'unchecked';};
-			if($userArray['pub_geocache']){$cp_profile['pub_geocache'] = 'checked';}else{$cp_profile['pub_geocache'] = 'unchecked';};
-			if($userArray['new_users']){$cp_profile['new_users'] = 'checked';}else{$cp_profile['new_users'] = 'unchecked';};
 			if($userArray['schedule']){$cp_profile['schedule'] = 'checked';}else{$cp_profile['schedule'] = 'unchecked';};
 			if($userArray['imports']){$cp_profile['imports'] = 'checked';}else{$cp_profile['imports'] = 'unchecked';};
 			if($userArray['kmz']){$cp_profile['kmz'] = 'checked';}else{$cp_profile['kmz'] = 'unchecked';};
-			if($userArray['geonamed']){$cp_profile['geonamed'] = 'checked';}else{$cp_profile['geonamed'] = 'unchecked';};
-			if($userArray['statistics']){$cp_profile['statistics'] = 'checked';}else{$cp_profile['statistics'] = 'unchecked';};
-			$cp_profile['username'] = $userArray['username'];
-			$cp_profile['id'] = $userArray['id'];
-			
+			if($userArray['new_users']){$cp_profile['new_users'] = 'checked';}else{$cp_profile['new_users'] = 'unchecked';};
+
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_email_prefs.tpl');
 
@@ -125,6 +124,11 @@ if($username)
 			$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
 			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
 			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
+			
+			if($schedule !== (int)$userArray['schedule']){$dbcore->sec->logd("Update email pref schedule for ".$username."(".$user_id.") from ".$userArray['schedule']." to ".$schedule, "message");}
+			if($imports !== (int)$userArray['imports']){$dbcore->sec->logd("Update email pref imports for ".$username."(".$user_id.") from ".$userArray['imports']." to ".$imports, "message");}
+			if($kmz !== (int)$userArray['kmz']){$dbcore->sec->logd("Update email pref kmz for ".$username."(".$user_id.") from ".$userArray['kmz']." to ".$kmz, "message");}
+			if($new_users !== (int)$userArray['new_users']){$dbcore->sec->logd("Update email pref new_users for ".$username."(".$user_id.") from ".$userArray['new_users']." to ".$new_users, "message");}
 
 			$cp_profile = array();
 			if($userArray['id'])

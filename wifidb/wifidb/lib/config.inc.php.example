@@ -20,128 +20,129 @@ if not, write to the
 */
 
 $config = array
-(    
-    'lastedit'              =>   '2021-07-14',
+(	
+	'lastedit'			  =>   '2021-07-14',
 
-    #----------General Settings------------#
-    'wifidb_tools'          =>   '/opt/wifidb/tools/',
-    'wifidb_install'        =>   '/var/www/htdocs/wifidb/',
-    'smarty_path'           =>   '/usr/share/php/smarty/',
-    'timezn'                =>   'UTC',
-    'root'                  =>   'wifidb',
-    'hosturl'               =>   'https://wifidb.foo.lan/',
+	#----------General Settings------------#
+	'wifidb_tools'		  =>   '/opt/wifidb/tools/',
+	'wifidb_install'		=>   '/var/www/htdocs/wifidb/',
+	'smarty_path'		   =>   '/usr/share/php/smarty/',
+	'timezn'				=>   'UTC',
+	'root'				  =>   'wifidb',
+	'hosturl'			   =>   'https://wifidb.foo.lan/',
 	'tileserver_gl_url'		=>   'https://tiles.foo.lan',
-    'WebSocketURL'          =>   'wss://wifidb.foo.lan/ws/',
-    'dim'                   =>   DIRECTORY_SEPARATOR,
-    'timetilldead'          =>   2,
-    'config_fails'          =>   3,
-    'email_validation'      =>   1,
-    'wifidb_email_updates'  =>   1,
-    'GeoNamesLoopGiveUp'    =>   5000,
-    'reserved_users'        =>   'WiFiDB::wifidb:Recovery:root:system:admin',
-    'dBmMaxSignal'          =>   '-30',
-    'dBmDissociationSignal'.=>   '-85',
-    'verbose'               =>   1,
-    'EnableAPIKey'          =>   0,
-    #----------SMTP Settings------------#
-    'smtp_debug'            =>   0,                         // Enable verbose debug output 0:disable 2:verbose
-    'smtp_host'             =>   'smtp.someemail.com',      // Specify main and backup SMTP servers
-    'smtp_port'             =>   587,                       // Specify smtp port
-    'smtp_user'             =>   'wifidb@someemail.com',    // SMTP username
-    'smtp_pass'             =>   'supersecretpw',           // SMTP password    
-    'smtp_from'             =>   'wifidb@someemail.com',    // SMTP from
-    'smtp_replyto'          =>   '',                        // SMTP reply to
-    'smtp_secure'           =>   'tls',                     // Auth type, tls or ssl
-    'smtp_auth'             =>   true,
-    'smtp_authtype'         =>   'LOGIN',
-    'smtp_options'          =>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
-    'DKIM_domain'           =>   'someemail.com',
-    'DKIM_private'          =>   'private.pem',
-    'DKIM_selector'         =>   'wdb',
-    'DKIM_passphrase'       =>   '',
-    'DKIM_identity'         =>   'wifidb@someemail.com',
-    'DKIM_copyHeaderFields' =>   true,
-    'ListUnsubscribe'       =>   '<wifidb@someemail.com>, <https://wifidb.foo.lan/cp/?func=pref>',
-    'XMailer'               =>   'WifiDB <https://wifidb.foo.lan/wifidb/>',
+	'WebSocketURL'		  =>   'wss://wifidb.foo.lan/ws/',
+	'dim'				   =>   DIRECTORY_SEPARATOR,
+	'timetilldead'		  =>   2,
+	'config_fails'		  =>   3,
+	'email_validation'	  =>   1,
+	'wifidb_email_updates'  =>   1,
+	'GeoNamesLoopGiveUp'	=>   5000,
+	'reserved_users'		=>   'wifidb:recover:root:system:admin:hack:virus',
+	'dBmMaxSignal'		  =>   '-30',
+	'dBmDissociationSignal'.=>   '-85',
+	'verbose'			   =>   1,
+	'EnableAPIKey'		  =>   0,
+	#----------SMTP Settings------------#
+	'smtp_debug'			=>   0,						 // Enable verbose debug output 0:disable 2:verbose
+	'smtp_host'			 =>   'smtp.someemail.com',	  // Specify main and backup SMTP servers
+	'smtp_port'			 =>   587,					   // Specify smtp port
+	'smtp_user'			 =>   'wifidb@someemail.com',	// SMTP username
+	'smtp_pass'			 =>   'supersecretpw',		   // SMTP password	
+	'smtp_from'			 =>   'wifidb@someemail.com',	// SMTP from
+	'smtp_replyto'		  =>   '',						// SMTP reply to
+	'smtp_secure'		   =>   'tls',					 // Auth type, tls or ssl
+	'smtp_auth'			 =>   true,
+	'smtp_authtype'		 =>   'LOGIN',
+	'smtp_options'		  =>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
+	'DKIM_domain'		   =>   'someemail.com',
+	'DKIM_private'		  =>   'private.pem',
+	'DKIM_selector'		 =>   'wdb',
+	'DKIM_passphrase'	   =>   '',
+	'DKIM_identity'		 =>   'wifidb@someemail.com',
+	'DKIM_copyHeaderFields' =>   true,
+	'ListUnsubscribe'	   =>   '<wifidb@someemail.com>, <https://wifidb.foo.lan/cp/?func=pref>',
+	'XMailer'			   =>   'WifiDB <https://wifidb.foo.lan/wifidb/>',
 	
-    #---------------- Daemon Info ----------------#
-    'daemon'                =>   1,
-    'log_level'             =>   0,
-    'log_interval'          =>   1,
-    'apache_user'           =>   'www-data',
-    'apache_group'          =>   'www-data',
-    'pid_file_loc'          =>   '/var/run/wifidb/',
+	#---------------- Daemon Info ----------------#
+	'daemon'				=>   1,
+	'log_level'			 =>   5,
+	'log_type'			 =>   'SQL',
+	'log_interval'		  =>   1,
+	'apache_user'		   =>   'www-data',
+	'apache_group'		  =>   'www-data',
+	'pid_file_loc'		  =>   '/var/run/wifidb/',
 
-    #-------------Themes Settings--------------#
-    'default_theme'         =>   'vistumbler_mobile',
-    'default_refresh'       =>   15,
-    'default_timezone'      =>   0,
-    'default_dst'           =>   0,
-    'timeout'               =>   31536000, #(86400 [seconds in a day] * 365 [days in a year])
+	#-------------Themes Settings--------------#
+	'default_theme'		 =>   'vistumbler_mobile',
+	'default_refresh'	   =>   15,
+	'default_timezone'	  =>   0,
+	'default_dst'		   =>   0,
+	'timeout'			   =>   31536000, #(86400 [seconds in a day] * 365 [days in a year])
 
-    #-------------Console Viewer Settings--------------#
-    'console_refresh'       =>   15,
-    'console_scroll'        =>   1,
-    'console_last5'         =>   1,
-    'console_lines'         =>   10,
-    'console_log'           =>   '/var/log/wifidb',
+	#-------------Console Viewer Settings--------------#
+	'console_refresh'	   =>   15,
+	'console_scroll'		=>   1,
+	'console_last5'		 =>   1,
+	'console_lines'		 =>   10,
+	'console_log'		   =>   '/var/log/wifidb',
 
-    #---------------- Debug Info ----------------#
-    'bypass_check'          =>   0,
-    'rebuild'               =>   0,
-    'debug'                 =>   0,
-    'bench'                 =>   0,
+	#---------------- Debug Info ----------------#
+	'bypass_check'		  =>   0,
+	'rebuild'			   =>   0,
+	'debug'				 =>   0,
+	'bench'				 =>   0,
 
-    #---------------- Tables ----------------#
-    'settings_tb'           =>   'settings',
-    'users_t'               =>   'user_imports',
-    'pointers_table'        =>   'wifi_pointers',
-    'signals_table'         =>   'wifi_signals',
-    'gps_table'             =>   'wifi_gps',
-    'user_logins_table'     =>   'user_info',
-    'DB_stats'              =>   'DB_stats',
-    'validate_table'        =>   'user_validate',
-    'share_cache'           =>   'share_waypoints',
-    'files'                 =>   'files',
-    'files_tmp'             =>   'files_tmp',
-    'annunc'                =>   'annunc',
-    'annunc_comm'           =>   'annunc_comm',
-    'gps_ext'               =>   '_GPS',
-    'sep'                   =>   '-',
+	#---------------- Tables ----------------#
+	'settings_tb'		   =>   'settings',
+	'users_t'			   =>   'user_imports',
+	'pointers_table'		=>   'wifi_pointers',
+	'signals_table'		 =>   'wifi_signals',
+	'gps_table'			 =>   'wifi_gps',
+	'user_logins_table'	 =>   'user_info',
+	'DB_stats'			  =>   'DB_stats',
+	'validate_table'		=>   'user_validate',
+	'share_cache'		   =>   'share_waypoints',
+	'files'				 =>   'files',
+	'files_tmp'			 =>   'files_tmp',
+	'annunc'				=>   'annunc',
+	'annunc_comm'		   =>   'annunc_comm',
+	'gps_ext'			   =>   '_GPS',
+	'sep'				   =>   '-',
 
-    #---------------- SQL Info ----------------#
+	#---------------- SQL Info ----------------#
 	#MS SQL SERVER
-    'srvc'                  =>   'sqlsrv',
-	'driver'                =>   'sqlsrv',
-	'port'                	=>   1433,
-    'host'                  =>   'localhost',
-	'db'                  	=>   'wifi',
-    'db_user'               =>   'wdbuser',
-    'db_pwd'                =>   'supersecretpw',
+	'srvc'				  =>   'sqlsrv',
+	'driver'				=>   'sqlsrv',
+	'port'					=>   1433,
+	'host'				  =>   'localhost',
+	'db'				  	=>   'wifi',
+	'db_user'			   =>   'wdbuser',
+	'db_pwd'				=>   'supersecretpw',
 	#MySQL Server
-    #'srvc'                  =>   'mysql',
-    #'host'                  =>   'localhost',
-	#'db'                  	=>   'wifi',
-    #'db_user'               =>   'wdbuser',
-    #'db_pwd'                =>   'supersecretpw',
-    'charset'               =>   'utf8mb4',
-    'collate'               =>   'utf8mb4_unicode_ci',
-    'engine'                =>   'innodb',
+	#'srvc'				  =>   'mysql',
+	#'host'				  =>   'localhost',
+	#'db'				  	=>   'wifi',
+	#'db_user'			   =>   'wdbuser',
+	#'db_pwd'				=>   'supersecretpw',
+	'charset'			   =>   'utf8mb4',
+	'collate'			   =>   'utf8mb4_unicode_ci',
+	'engine'				=>   'innodb',
 
-    #---------------- Export Info ----------------#
-    'open_loc'              =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/open.png',
-    'WEP_loc'               =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/secure-wep.png',
-    'WPA_loc'               =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/secure.png',
-    'KML_SOURCE_URL'        =>   'http://www.opengis.net/kml/2.2',
-    'kml_out'               =>   'out/kml/',
-    'vs1_out'               =>   'out/vs1/',
-    'daemon_out'            =>   'out/daemon/',
-    'gpx_out'               =>   'out/gpx/',
-    'csv_out'               =>   'out/csv/',
-	'region_out'               =>   'out/region/',
+	#---------------- Export Info ----------------#
+	'open_loc'			  =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/open.png',
+	'WEP_loc'			   =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/secure-wep.png',
+	'WPA_loc'			   =>   'https://github.com/acalcutt/Vistumbler/raw/master/Vistumbler/Images/secure.png',
+	'KML_SOURCE_URL'		=>   'http://www.opengis.net/kml/2.2',
+	'kml_out'			   =>   'out/kml/',
+	'vs1_out'			   =>   'out/vs1/',
+	'daemon_out'			=>   'out/daemon/',
+	'gpx_out'			   =>   'out/gpx/',
+	'csv_out'			   =>   'out/csv/',
+	'region_out'			   =>   'out/region/',
 
-    #---------------- Header and Footer Additional Info -----------------#
-    'ads'                   => '', # <-- put the code for your ads in here www.google.com/adsense
-    'header'                => '<meta name="description" content="Vistumbler WifiDB is a project to collect wireless accesss points gathered by Vistumbler or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, wifi, database, DB, php" />',
-    'tracker'               => '' # <-- put the code for the url tracker that you use here (ie - www.google.com/analytics )
+	#---------------- Header and Footer Additional Info -----------------#
+	'ads'				   => '', # <-- put the code for your ads in here www.google.com/adsense
+	'header'				=> '<meta name="description" content="Vistumbler WifiDB is a project to collect wireless accesss points gathered by Vistumbler or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, wifi, database, DB, php" />',
+	'tracker'			   => '' # <-- put the code for the url tracker that you use here (ie - www.google.com/analytics )
 );
