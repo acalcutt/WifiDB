@@ -99,14 +99,14 @@ switch($func)
 		if($admin_cookie === 1)
 		{
 			$cookie_name = 'WiFiDB_admin_login_yes';
-			$msg = 'Admin Logout Successful!';
+			$msg = 'Admin Logout Successful';
 			if($dbcore->root != '')
 			{$path  = '/'.$dbcore->root.'/cp/admin/';}
 			else{$path  = '/cp/admin/';}
 		}else
 		{
 			$cookie_name = 'WiFiDB_login_yes';
-			$msg = 'Logout Successful!';
+			$msg = 'Logout Successful';
 			if($dbcore->root != '')
 			{$path  = '/'.$dbcore->root.'/';}
 			else{$path  = '/';}
@@ -123,12 +123,15 @@ switch($func)
 		
 		if(setcookie($cookie_name, "@LOGGEDOUT!:".$username, time()-3600, $path, $dbcore->sec->domain, $dbcore->sec->ssl))
 		{
-			$message = $msg;
+			$message = $msg." for ".var_export($username, 1);
+			$dbcore->sec->logd($message, "message");
+			
 			$dbcore->redirect_page("", 2000);
 		}
 		else
 		{
-			$message = "Could not log you out.. :-(";
+			$message = "Could not log out ".var_export($username, 1);
+			$dbcore->sec->logd($message, "error");
 		}
 		if(strpos($return,'/wifidb/cp/') !== false){$return = '/'.$dbcore->root;}#Redirect control panel logout to homepage
 		$dbcore->redirect_page($return, 2000);
