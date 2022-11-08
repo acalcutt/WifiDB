@@ -360,6 +360,11 @@ if($username)
 			if(@$_REQUEST['subject']){$subject = $_REQUEST['subject'];}else{$subject = "";}	
 			if(@$_REQUEST['message']){$message = $_REQUEST['message'];}else{$message = "";}
 			$timestamp = date('Y-m-d G:i:s');
+
+			$smt = $dbcore->sql->conn->prepare('SELECT id, username FROM user_info WHERE id = ?');
+			$smt->bindParam(1, $to_id, PDO::PARAM_INT);
+			$smt->execute();
+			$touser = $smt->fetch(2);
 			
 			if($message)
 			{
@@ -367,6 +372,7 @@ if($username)
 				{
 					try 
 					{
+						$dbcore->sec->logd("send message from ".$userArray['username']."(".$userArray['id'].") to ".$touser['username']."(".$touser['id'].") in thread ".$thread_id, "message");
 						$smt = $dbcore->sql->conn->prepare('INSERT INTO pm (thread_id, title, user1, user2, message, stimestamp, user1read) VALUES (?, ?, ?, ?, ?, ?, 1)');
 						$smt->bindParam(1, $thread_id);
 						$smt->bindParam(2, $subject);
