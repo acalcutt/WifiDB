@@ -40,27 +40,39 @@ switch($func)
         switch($dbcore->sec->login_val)
         {
             case "locked":
-                $message = 'This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and bitch to Phil.';
+                $message = 'This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and request support.';
+                if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+                $dbcore->redirect_page($return, 5000);
             break;
 
             case "validate":
                 $message = 'This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.';
+                if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+                $dbcore->redirect_page($return, 5000);
             break;
             
             case "hash_tbl_fail":
                 $message = "Failed to set Hash for the Login Cookie to the table...";
+                if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+                $dbcore->redirect_page($return, 5000);
             break;
 
             case "p_fail":
                 $message = 'Bad Username or Password!';
+                if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+                $dbcore->redirect_page($return, 5000);
             break;
 
             case "u_fail":
                 $message = 'Username does not exsist.';
+                if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+                $dbcore->redirect_page($return, 5000);
             break;
 
             case "u_u_r_fail":
                 $message = "Failed to update User row";
+                if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+                $dbcore->redirect_page($return, 5000);
             break;
 
             case "good":
@@ -138,14 +150,20 @@ switch($func)
         $email      = $_REQUEST['time_email'];
         if(!$dbcore->checkEmail($email))
         {
-            $dbcore->smarty->assign('message', 'Email is not valid.');
+            $dbcore->smarty->assign('message', "<font color='Red'><h2>Email is not valid.</h2></font>");
             $dbcore->smarty->display('create_user.tpl');
         }
-        if($password !== $password2)
+        else if($password !== $password2)
         {
-            $dbcore->smarty->assign('message', 'Passwords did not match.');
+            $dbcore->smarty->assign('message', "<font color='Red'><h2>Passwords did not match.</h2></font>");
             $dbcore->smarty->display('create_user.tpl');
-        }else
+        }
+        else if($password === '')
+        {
+            $dbcore->smarty->assign('message', "<font color='Red'><h2>Passwords is blank.</h2></font>");
+            $dbcore->smarty->display('create_user.tpl');
+        }
+        else
         {
             #var_dump("Start Create User");
             $ret = $dbcore->sec->CreateUser($username, $password, $email);
@@ -326,7 +344,7 @@ switch($func)
 					$message = "Email Confirmation has been enabled, but failed to send the email. Contact the Admins for help.";
 				}
 				$dbcore->smarty->assign("message", $message);
-				$dbcore->smarty->display('login_result.tpl');				
+				$dbcore->smarty->display('login_result.tpl');
 			}
 		}
     break;
