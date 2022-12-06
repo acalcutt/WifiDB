@@ -1523,12 +1523,22 @@ class import extends dbcore
 		$NewCellIds = 0;
 		$cell_count = 0;
 		$cell_hist_count = 0;
+		$line_count = 0;
 		
 		foreach($File_return as $key => $file_line)
 		{
+			$line_count++;
 			$apinfo = str_getcsv ($file_line);
-			if(strpos($apinfo[0], 'WigleWifi') !== false && strpos($apinfo[1], 'appRelease') !== false){continue;}
-			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}			
+			if($line_count === 1)
+			{
+				if(strpos($apinfo[0], 'WigleWifi') === false && strpos($apinfo[1], 'appRelease') === false)
+				{
+					return array(-1, "File was not a wiglewificsv file.");
+				}else{
+					continue;
+				}
+			}
+			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}
 			$fBSSID = strtoupper(@$apinfo[0]);
 			$fSSID = @$apinfo[1];
 			$fCapabilities = @$apinfo[2];
