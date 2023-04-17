@@ -1815,7 +1815,7 @@ class import extends dbcore
 					#echo "---------------------6 columns!----------------";
 					#This is from an older version of the VS1 GPS data, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
-					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
+					if($gps_line[1] == "" || $gps_line[2] == ""){continue 2;}
 					if($gps_line[0] == 0){$increment_ids = 1;}
 					if($increment_ids){$gps_line[0]++;}
 					$gps_date = $gps_line[4];
@@ -1843,7 +1843,7 @@ class import extends dbcore
 					#trigger_error("12 columns!", E_USER_NOTICE);
 					#This is the current version of the VS1 export, sanitize and order it into an array.
 					$gps_line = $file_line_exp;
-					if($gps_line[1] == "" || $gps_line[2] == ""){continue;}
+					if($gps_line[1] == "" || $gps_line[2] == ""){continue 2;}
 					if($gps_line[0] == 0){$increment_ids = 1;}
 					if($increment_ids){$gps_line[0]++;}
 					
