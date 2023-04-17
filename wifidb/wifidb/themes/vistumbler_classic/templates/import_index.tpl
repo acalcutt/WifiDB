@@ -40,7 +40,7 @@ if not, write to the
 							<ul class="wrapper">
 								<li class="form-row><label for="title">Title of Import:</label><br /><input type="text" name="title" id="title"></li>
 								<li class="form-row><label for="files">File(s):</label><br /><input name="upload[]" type="file" id="files" multiple="multiple" /></li>
-								<li class="form-row><label for="user">Username:</label><br /><input type="text" name="user" id="user"></li>
+								<li class="form-row><label for="user">Username:</label><br /><input type="text" name="user" id="user" {if $logged_in_user}value="{$logged_in_user}" {/if}></li>
 								<li class="form-row><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><br /><input type="text" name="otherusers" id="otherusers"></li>
 								<li class="form-row><label for="notes">Notes:</label><br /><textarea name="notes" id="notes" rows="4" cols="30"></textarea></li>
 								<li class="form-row><label for="type">Import Type:</label><br />

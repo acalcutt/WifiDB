@@ -470,6 +470,8 @@ canvas {
 	border-radius: 4px;
 	border: 1px solid #7386D5;
 	font-weight: bold;
+	font-size: 12px;
+	font-family: Arial;
 }
 
 .controls-icon:hover  {

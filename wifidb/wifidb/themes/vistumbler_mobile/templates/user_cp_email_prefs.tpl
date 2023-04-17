@@ -1,6 +1,5 @@
 <!--
-Database.inc.php, holds the database interactive functions.
-Copyright (C) 2014 Andrew Calcutt
+Copyright (C) 2022 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either

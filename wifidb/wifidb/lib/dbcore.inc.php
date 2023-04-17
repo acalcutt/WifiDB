@@ -37,6 +37,7 @@ class dbcore
 		$this->debug					= 1;
 		$this->rebuild					= $config['rebuild'];
 		$this->log_level				= $config['log_level'];
+		$this->Log_Type					= $config['log_type'];
 		$this->log_interval				= $config['log_interval'];
 
 		$this->default_refresh		  = $config['default_refresh'];
@@ -406,7 +407,7 @@ class dbcore
 				return 0;
 			}
 
-			$date = date("y-m-d");
+			$date = date("Y-m-d");
 			$utime = explode(".", microtime(1));
 			$time = date("H:i:s.").$utime[1];
 			$datetime = $date." ".$time;
@@ -423,13 +424,6 @@ class dbcore
 					$dbcore->log_sql($message, $type, $prefix, $datetime);
 					$dbcore->log_file($message, $type, $prefix, $datetime);
 			}
-
-
-				# Done with the SQL Log, lets write to the file log now, if we are on the CLI
-				if($this->cli)
-				{
-
-				}
 		}
 	}
 

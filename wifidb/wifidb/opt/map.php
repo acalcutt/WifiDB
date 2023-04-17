@@ -40,19 +40,10 @@ if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; r
 
 
 $terrain = 1;
-$wifidb_meta_header = '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.es6.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.es5.js"><\/script>\')}</script>';
-//$wifidb_meta_header .= '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.ie.min.js"><\/script>\')}</script>';
-//$wifidb_meta_header = '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.es2017.js"></script>
-$wifidb_meta_header .= '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl2.css" />';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-style-switcher.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-style-switcher.css" />';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-geocoder.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-geocoder.css" />';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.ie.min.js"></script><link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
-
-//$wifidb_meta_header .= '<script src="https://cdn.jsdelivr.net/npm/babel-regenerator-runtime@6.5.0/runtime.js"></script>';
-//$wifidb_meta_header .= '<script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"></script>';
-//$wifidb_meta_header .= '<script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.js"></script>';
-
-
+$wifidb_meta_header = '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
+$wifidb_meta_header .= '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
+$wifidb_meta_header .= '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-compat.js"><\/script>\')}</script>';
+$wifidb_meta_header .= '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect-compat.min.js"><\/script>\')}</script>';
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);
 $dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -94,7 +85,7 @@ switch($func)
 			if (empty($longitude)){$longitude = -95.009766;}
 		}
 
-		if (empty($zoom)){$zoom = 2;}
+		if (empty($zoom)){$zoom = 4;}
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";

@@ -25,6 +25,7 @@ class security
 		$this->priv_name		= "AnonCoward";
 		$this->privs			= 0;
 		$this->username			= "AnonCoward";
+		$this->LoginUser		= "";
 		$this->apikey			= "";
 		$this->email_validation	= $config['email_validation'];
 		$this->reserved_users	= $config['reserved_users'];
@@ -214,9 +215,9 @@ class security
 		}
 
 		#Check if reserverved User
-		if($this->CheckReservedUser(@$newArray['username']))
+		if($this->CheckReservedUser(@$username))
 		{
-			$this->logd("User creation failed! Username contains a reservered name.", "error");
+			$this->logd("User creation failed for ".var_export($username, 1)."! Username contains a reservered name.", "error");
 			$this->mesg['message'] = "User creation failed! Username contains a reservered name. Please choose a different username.";
 			return 0;
 		}
@@ -232,7 +233,7 @@ class security
 		$newArray = $result->fetch(2);
 		if(@$newArray['username'])
 		{
-			$this->logd("User creation failed! A user with this username already exists.", "error");
+			$this->logd("User creation failed for ".var_export($username, 1)."! A user with this username already exists.", "error");
 			$this->mesg['message'] = "User creation failed! A user with this username already exists.";
 			return 0;
 		}
@@ -248,7 +249,7 @@ class security
 		$newArray = $result->fetch(2);
 		if(@$newArray['email'])
 		{
-			$this->logd("User creation failed! A user with this email already exists.", "error");
+			$this->logd("User creation failed for ".var_export($username, 1)."! A user with this email already exists.", "error");
 			$this->mesg['message'] = "User creation failed! A user with this email already exists.";
 			return 0;
 		}

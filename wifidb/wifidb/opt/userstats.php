@@ -68,7 +68,7 @@ switch($func)
 			$sorts=array("New","AP_ID","SSID","BSSID","AUTH","ENCR","RADTYPE","CHAN","FA","LA","list_points","points");
 			if(!in_array($sort, $sorts)){$sort = "AP_ID";}
 
-			$CellUserListArray = $dbcore->export->CellUserListArray($row, 0, 1);
+			$CellUserListArray = $dbcore->export->CellUserListArray($row, 0, 1, "cell_id", "DESC", 0, 0, 0, 0);
 			$UserListArray = $dbcore->export->UserListArray($row, $from, $inc, $sort, $ord);
 			$ap_info = $UserListArray['data'];
 			$file_info = $UserListArray['file_info'];
