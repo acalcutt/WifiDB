@@ -25,10 +25,12 @@ else if($dbcore->sql->service == "sqlsrv")
 		$sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type, cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,\n"
 			. "c_gps.lat AS lat,\n"
 			. "c_gps.lon AS lon,\n"
-			. "c_file.[file_user] AS [file_user]\n"
+			. "c_file.[file_user] AS [file_user],\n"
+			. "cell_carriers.network, cell_carriers.country\n"
 			. "FROM cell_id\n"
 			. "INNER JOIN wifi_gps AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id\n"
 			. "INNER JOIN files AS c_file ON c_file.id = cell_id.file_id\n"
+			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cell_id.mac,0,4) AND CAST(mnc AS varchar) = substring(cell_id.mac,4,3)\n"
 			. "WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL\n"
 			. "ORDER BY cell_id.cell_id OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
 	}
@@ -58,14 +60,15 @@ for ($i = 0; TRUE; $i++) {
 		$prep3->execute();
 		$prep3_fetch = $prep3->fetch(2);
 
-		if($prep3_fetch['network']){$name = $prep3_fetch['network'];}else{$name = $ap['ssid'];}
+		if($ap['network']){$name = $ap['network'];}else{$name = $ap['ssid'];}
 		echo $name." - ".$ap['ssid']." - ".$MCCMNC." - ".$MCC." - ".$MNC." - ".$LAC." - ".$CELLID." - ".$prep3_fetch['network']." - ".$prep3_fetch['country']."\r\n";
 		#Create AP Array
 		$ap_info = array(
 		"id" => $ap['cell_id'],
-		"name" => $name,
 		"mac" => $ap['mac'],
-		"ssid" => $ap['ssid'],
+		"mapname" => $dbcore->formatSSID($name),
+		"network" => $ap['network'],
+		"ssid" => $dbcore->formatSSID($ap['ssid']),
 		"authmode" => $ap['authmode'],
 		"chan" => $ap['chan'],
 		"type" => $ap['type'],
@@ -78,7 +81,7 @@ for ($i = 0; TRUE; $i++) {
 		"points" => $ap['points']
 		);
 		if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-		$Import_Map_Data .=$dbcore->createGeoJSON->CreateCellFeature($ap_info, 1);
+		$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info, 1);
 	}
 	$number_of_rows = $prep->rowCount();
 	echo $number_of_rows.'-';

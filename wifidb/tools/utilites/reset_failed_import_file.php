@@ -257,8 +257,8 @@ If($File_Hash)
 	}
 	
 	$sqlhp = "INSERT INTO files_tmp\n"
-		.	 "(file_user, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
-			. "SELECT file_user, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+		.	 "(file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
+			. "SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
 			. "FROM files_importing\n"
 			. "WHERE id = ?";
 	$resgps = $dbcore->sql->conn->prepare($sqlhp);

@@ -201,7 +201,7 @@ While(1)
 		{
 			##### make sure import/export files are in sync with remote nodes
 			#$dbcore->verbosed("Synchronizing files between nodes...", 1);
-			#$cmd = '/opt/unison/sync_wifidb_imports > /opt/unison/log/sync_wifidb_imports 2>&1';
+			#$cmd = '/opt/unison/sync_wifidb_imports';
 			#exec($cmd);
 			#####
 		}
@@ -228,7 +228,7 @@ While(1)
 					break;
 				#Error Converting file for daemon, continue run.
 				case 0:
-					continue;
+					continue 2;
 				case 1:
 					$dbcore->verbosed("Import function inside the daemon Completed With A Return Of : 1");
 			}

@@ -282,10 +282,8 @@ class daemon extends wdbcli
 		$file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));		
 
 		$source = $this->PATH.'import/up/'.$file_name;
-		$return	=	file($source);
-		$count	=	count($return);
-		if(!($count < 1))//make sure there is at least a 'valid' file in the field
-		{			
+		if(file_exists($source) && count(file($source)) > 1)//make sure the file exists
+		{
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
 			if($this->sql->service == "mysql")
 				{$update_tmp = "UPDATE files_importing SET tot = 'Preparing for Import', importing = '1' WHERE id = ?";}
