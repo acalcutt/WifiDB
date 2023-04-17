@@ -89,7 +89,7 @@ if($config['srvc'] == "mysql")
 }
 else if($config['srvc'] == "sqlsrv")
 {
-	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'];
+	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].';TrustServerCertificate=true';
 	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
 	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 	$sql = "SELECT TOP 1 [version] FROM [settings]";

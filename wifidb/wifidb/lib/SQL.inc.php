@@ -29,7 +29,7 @@ class SQL
 		}
 		else if($this->service == "sqlsrv")
 		{
-			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database;
+			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database.';TrustServerCertificate=true';
 			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
 			$this->conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 			$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
