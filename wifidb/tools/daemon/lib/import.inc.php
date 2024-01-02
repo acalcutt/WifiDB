@@ -1524,6 +1524,7 @@ class import extends dbcore
 		$cell_count = 0;
 		$cell_hist_count = 0;
 		$line_count = 0;
+		$version=0;
 		
 		foreach($File_return as $key => $file_line)
 		{
@@ -1535,21 +1536,41 @@ class import extends dbcore
 				{
 					return array(-1, "File was not a wiglewificsv file.");
 				}else{
+					$version=str_replace('WigleWifi-','',$apinfo[0]);
 					continue;
 				}
 			}
 			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}
-			$fBSSID = strtoupper(@$apinfo[0]);
-			$fSSID = @$apinfo[1];
-			$fCapabilities = @$apinfo[2];
-			$fDate = @$apinfo[3];
-			$fchannel = @$apinfo[4];
-			$fRSSI = @$apinfo[5];
-			$fLat = $this->convert->all2dm(number_format(@$apinfo[6],7));
-			$fLon = $this->convert->all2dm(number_format(@$apinfo[7],7));
-			$fAltitudeMeters = @$apinfo[8];
-			$fAccuracy = @$apinfo[9];
-			$fType = @$apinfo[10];
+			if($version >= 1.6)
+			{
+				$fBSSID = strtoupper(@$apinfo[0]);
+				$fSSID = @$apinfo[1];
+				$fCapabilities = @$apinfo[2];
+				$fDate = @$apinfo[3];
+				$fchannel = @$apinfo[4];
+				$ffreq = @$apinfo[5];
+				$fRSSI = @$apinfo[6];
+				$fLat = $this->convert->all2dm(number_format(@$apinfo[7],7));
+				$fLon = $this->convert->all2dm(number_format(@$apinfo[8],7));
+				$fAltitudeMeters = @$apinfo[9];
+				$fAccuracy = @$apinfo[10];
+				$fRCOIs = @$apinfo[11];
+				$fMfgrId = @$apinfo[12];
+				$fType = @$apinfo[13];
+			} else {
+				$fBSSID = strtoupper(@$apinfo[0]);
+				$fSSID = @$apinfo[1];
+				$fCapabilities = @$apinfo[2];
+				$fDate = @$apinfo[3];
+				$fchannel = @$apinfo[4];
+				$ffreq = 0;
+				$fRSSI = @$apinfo[5];
+				$fLat = $this->convert->all2dm(number_format(@$apinfo[6],7));
+				$fLon = $this->convert->all2dm(number_format(@$apinfo[7],7));
+				$fAltitudeMeters = @$apinfo[8];
+				$fAccuracy = @$apinfo[9];
+				$fType = @$apinfo[10];
+			}
 
 			if(substr($fDate, 0, 4) == "1969"){continue;}//Continue on bad date
 			if (($timestamp = strtotime($fDate)) !== false) 
@@ -1617,6 +1638,7 @@ class import extends dbcore
 						'bssid'	   =>  $fBSSID,
 						'flags'   =>  $fCapabilities,
 						'chan'	  =>  $fchannel,
+						'freq'	  =>  $ffreq,
 						'type'	 =>  $fType,
 						'signals'   =>  $fsigs
 					);
