@@ -40,10 +40,13 @@ if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; r
 
 
 $terrain = 1;
-$wifidb_meta_header = '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" />';
+#$wifidb_meta_header = '<link href="https://unpkg.com/maplibre-gl@3.3.0/dist/maplibre-gl.css" rel="stylesheet" />';
+$wifidb_meta_header = '<link href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" rel="stylesheet" />';
 $wifidb_meta_header .= '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
-$wifidb_meta_header .= '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-compat.js"><\/script>\')}</script>';
-$wifidb_meta_header .= '<script>if (typeof Symbol !== \'undefined\') {document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"><\/script>\')}else{document.write(\'<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect-compat.min.js"><\/script>\')}</script>';
+$wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-contour@0.0.5/dist/index.min.js"></script>';
+#$wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-gl@3.3.0/dist/maplibre-gl.js"></script>';
+$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script>';
+$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script>';
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);
 $dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);
@@ -55,7 +58,7 @@ $bearing = filter_input(INPUT_GET, 'bearing', FILTER_SANITIZE_NUMBER_FLOAT, FILT
 $pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
 $style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
-$styles = array("WDB_OSM","WDB_DARK_MATTER","WDB_BASIC","WDB_ELEV");
+$styles = array("WDB_OSM","OpenMapTiles","protomaps","WDB_BASIC_OVERTURE","WDB_SAT");
 if(!in_array($style, $styles)){$style = "WDB_OSM";}
 
 $from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);

@@ -73,9 +73,10 @@ if not, write to the
 														<div>
 															<span class="inline nowrap controls-icon">Map Style:
 																<select id="styles" class="dropdownSelect">
-																  <option value="WDB_OSM"{if $style eq "WDB_OSM"} selected{/if}>3D</option>
-																  <option value="WDB_BASIC"{if $style eq "WDB_BASIC"} selected{/if}>Basic</option>
-																  <option value="WDB_DARK_MATTER"{if $style eq "WDB_DARK_MATTER"} selected{/if}>Dark</option>
+																  <option value="WDB_OSM"{if $style eq "WDB_OSM"} selected{/if}>WifiDB 3D</option>
+																  <option value="OpenMapTiles"{if $style eq "OpenMapTiles"} selected{/if}>OSM OpenMapTiles</option>
+																  <option value="protomaps"{if $style eq "protomaps"} selected{/if}>Protomaps</option>
+																  <option value="WDB_BASIC_OVERTURE"{if $style eq "WDB_BASIC_OVERTURE"} selected{/if}>Overture</option>
 																  <option value="WDB_SAT"{if $style eq "WDB_SAT"} selected{/if}>Satellite</option>
 																</select>
 															</span>
@@ -190,6 +191,15 @@ if not, write to the
 							</div>
 
 							<script>
+		var demSource = new mlcontour.DemSource({
+			url: 'https://tiles.wifidb.net/data/jaxa_terrarium/{literal}{z}/{x}/{y}{/literal}.png',
+			encoding: 'terrarium',
+			maxzoom: 11,
+			worker: true,
+			cacheSize: 100,
+			timeoutMs: 10_000
+		});
+		demSource.setupMaplibre(maplibregl);
 
 		//Maplibre map object
 		var map = new maplibregl.Map({
@@ -342,7 +352,7 @@ if not, write to the
 		var styleList = document.getElementById('styles');
 		styleList.addEventListener('change', function(e) {
 			var styleId = e.target.value;
-			map.setStyle('https://tiles.wifidb.net/styles/' + styleId + '/style.json');
+			map.setStyle('https://tiles.wifidb.net/styles/' + styleId + '/style.json',{literal}{diff: false}{/literal});
 {if $ie eq 0}
 			var url = new URL(window.location.href);
 			url.searchParams.set('style', styleId);
@@ -401,15 +411,13 @@ if not, write to the
 
 {if $terrain ne 0}
 		// --- Start Terrain Toggle ---
-		if (maplibregl.supported()) {
-			map.addControl(
-				new maplibregl.TerrainControl({
-					source: "terrain_source",
-					exaggeration: 1,
-					elevationOffset: 0
-				})
-			);
-		}
+		map.addControl(
+			new maplibregl.TerrainControl({
+				source: "terrain_source",
+				exaggeration: 1,
+				elevationOffset: 0
+			})
+		);
 		// --- End Terrain Toggle ---
 {/if}
 		// --- Start Control Toggle ---
@@ -704,6 +712,79 @@ if not, write to the
 		function init() {
 {$layer_source_all}
 			toggle_label();
+
+			//Contour lines
+			var layers = map.getStyle().layers;
+			// Find the index of the first symbol layer in the map style
+			var firstSymbolId;
+			for (var i = 0; i < layers.length; i++) {
+				if (layers[i].type === 'symbol') {
+					firstSymbolId = layers[i].id;
+					break;
+				}
+			}
+
+			map.addSource("contour_source", {
+				type: "vector",
+				tiles: [
+					demSource.contourProtocolUrl({
+						// convert meters to feet, default=1 for meters
+						multiplier: 3.28084,
+						thresholds: {
+						// zoom: [minor, major]
+						11: [250, 1000],
+						14: [200, 800],
+						15: [100, 400],
+						16: [50, 200],
+						17: [20, 100],
+						},
+						// optional, override vector tile parameters:
+						contourLayer: "contours",
+						elevationKey: "ele",
+						levelKey: "level",
+						extent: 4096,
+						buffer: 1,
+					}),
+				],
+				maxzoom: 17,
+			});
+
+			map.addLayer({
+				"id": "contours",
+				"type": "line",
+				"source": "contour_source",
+				"source-layer": "contours",
+				"paint": {
+					"line-color": "rgba(0,0,0, 50%)",
+					"line-opacity": 0.3,
+					"line-width": ["match", ["get", "level"], 1, 1, 0.5]
+				},
+				"layout": {
+					"line-join": "round"
+				}
+			});
+
+			map.addLayer({
+					"id": "contour_text",
+					"type": "symbol",
+					"source": "contour_source",
+					"source-layer": "contours",
+					"filter": [">", ["get", "level"], 0],
+					"paint": {
+						"text-halo-color": "white",
+						"text-halo-width": 1,
+						"text-opacity": 0.4,
+					},
+					"layout": {
+						"symbol-placement": "line",
+						"text-anchor": "center",
+						"text-size": 10,
+						"text-field": ["concat", ["number-format", ["get", "ele"], {}], "'"],
+						"text-font": ["Noto Sans Bold"]
+					}
+				},
+				firstSymbolId
+			);
 		};
 
 		map.on('load', function () {
