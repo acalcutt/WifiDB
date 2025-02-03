@@ -487,15 +487,14 @@ class import extends dbcore
 	
 	private function InsertAp($File_ID, $BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS)
 	{
-		$ap_hash = md5($SSID.$BSSID.$CHAN.$SECTYPE.$AUTH.$ENCR);
-		
-		if($this->sql->service == "sqlsrv")
-		{			
+		$ap_hash = md5($SSID . $BSSID . $CHAN . $SECTYPE . $AUTH . $ENCR);
+		$return = 0;
+
+		if ($this->sql->service == "sqlsrv") {
 			$retry = true;
-			while ($retry)
-			{
-				try 
-				{
+			while ($retry) {
+				try {
+					$this->sql->conn->beginTransaction();
 					$sql = "MERGE INTO wifi_ap WITH (HOLDLOCK)\n"
 						. "	USING (SELECT :s_bssid AS BSSID, :s_ssid AS SSID, :s_chan AS CHAN, :s_sectype AS SECTYPE, :s_auth AS AUTH, :s_encr AS ENCR) AS newap (BSSID, SSID, CHAN, SECTYPE, AUTH, ENCR)\n"
 						. "		ON wifi_ap.BSSID = newap.BSSID AND wifi_ap.SSID = newap.SSID AND wifi_ap.CHAN = newap.CHAN AND wifi_ap.SECTYPE = newap.SECTYPE AND wifi_ap.AUTH = newap.AUTH AND wifi_ap.ENCR = newap.ENCR\n"
@@ -505,7 +504,7 @@ class import extends dbcore
 						. "		INSERT (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, FLAGS, ap_hash, File_ID)\n"
 						. "		VALUES (:BSSID, :SSID, :CHAN, :AUTH, :ENCR, :SECTYPE, :RADTYPE, :NETTYPE, :BTX, :OTX, :FLAGS, :ap_hash, :File_ID)\n"
 						. 'OUTPUT INSERTED.AP_ID, $action, INSERTED.RADTYPE, INSERTED.FLAGS;';
-						
+
 					$prep = $this->sql->conn->prepare($sql);
 					$prep->bindParam(':s_bssid', $BSSID, PDO::PARAM_STR);
 					$prep->bindParam(':s_ssid', $SSID, PDO::PARAM_STR);
@@ -516,7 +515,7 @@ class import extends dbcore
 					$prep->bindParam(':BSSID', $BSSID, PDO::PARAM_STR);
 					$prep->bindParam(':SSID', $SSID, PDO::PARAM_STR);
 					$prep->bindParam(':CHAN', $CHAN, PDO::PARAM_INT);
-					$prep->bindParam(':AUTH', $AUTH, PDO::PARAM_STR);		
+					$prep->bindParam(':AUTH', $AUTH, PDO::PARAM_STR);
 					$prep->bindParam(':ENCR', $ENCR, PDO::PARAM_STR);
 					$prep->bindParam(':SECTYPE', $SECTYPE, PDO::PARAM_INT);
 					$prep->bindParam(':RADTYPE', $RADTYPE, PDO::PARAM_STR);
@@ -526,20 +525,87 @@ class import extends dbcore
 					$prep->bindParam(':FLAGS', $FLAGS, PDO::PARAM_STR);
 					$prep->bindParam(':ap_hash', $ap_hash, PDO::PARAM_STR);
 					$prep->bindParam(':File_ID', $File_ID, PDO::PARAM_INT);
-					$prep->execute();
-					$return = $prep->fetch(2);
-					$retry = false;
+					$success = $prep->execute();
+					if ($success === false) {
+						$error = $prep->errorInfo();
+						$this->verbosed("Error inserting ap: " . $error[2], -1);
+						$this->sql->conn->rollBack();
+						$return = 0;
+						$retry = false;
+					} else {
+						$return = $prep->fetch(2);
+						$this->sql->conn->commit();
+						$retry = false;
+					}
+				} catch (Exception $e) {
+					if ($this->sql->isPDOException($this->sql->conn, $e)) {
+						$retry = true;
+					} else {
+						$this->sql->conn->rollBack();
+						$return = 0;
+						$retry = false;
+					}
 				}
-				catch (Exception $e) 
-				{
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					$return = 0;
+			}
+		} elseif ($this->sql->service == "mysql") {
+			$retry = true;
+			while ($retry) {
+				try {
+					$this->sql->conn->beginTransaction();
+					$sql = "SELECT AP_ID, RADTYPE, FLAGS FROM wifi_ap WHERE BSSID = ? AND SSID = ? AND CHAN = ? AND SECTYPE = ? AND AUTH = ? AND ENCR = ? FOR UPDATE";
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->execute([$BSSID, $SSID, $CHAN, $SECTYPE, $AUTH, $ENCR]);
+					$fetch_ap = $prep->fetch(PDO::FETCH_ASSOC);
+					if ($fetch_ap) {
+						$ap_id = $fetch_ap['AP_ID'];
+						$ap_RADTYPE = $fetch_ap['RADTYPE'];
+						$ap_FLAGS = $fetch_ap['FLAGS'];
+						$sql = "UPDATE wifi_ap SET ModDate = NOW() WHERE AP_ID = ?";
+						$prep = $this->sql->conn->prepare($sql);
+						$prep->execute([$ap_id]);
+						$return = [
+							"AP_ID" => $ap_id,
+							"\$action" => "UPDATE",
+							"RADTYPE" => $ap_RADTYPE,
+							"FLAGS" => $ap_FLAGS,
+						];
+					} else {
+						$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, FLAGS, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+						$prep = $this->sql->conn->prepare($sql);
+						$prep->execute([$BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS, $ap_hash, $File_ID]);
+						$ap_id = $this->sql->conn->lastInsertId();
+						$return = [
+							"AP_ID" => $ap_id,
+							"\$action" => "INSERT",
+							"RADTYPE" => $RADTYPE,
+							"FLAGS" => $FLAGS,
+						];
+					}
+					$success = $prep->execute();
+					if ($success === false) {
+						$error = $prep->errorInfo();
+						$this->verbosed("Error inserting ap: " . $error[2], -1);
+						$this->sql->conn->rollBack();
+						$return = 0;
+						$retry = false;
+					} else {
+						$this->sql->conn->commit();
+						$retry = false;
+					}
+				} catch (Exception $e) {
+					if ($this->sql->isPDOException($this->sql->conn, $e)) {
+						$retry = true;
+					} else {
+						$this->sql->conn->rollBack();
+						$return = 0;
+						$retry = false;
+					}
 				}
 			}
 		}
 		return $return;
 	}
-	
+
 	private function InsertGps($File_ID, $g_id, $g_lat, $g_lon, $g_sats, $g_hdp, $g_alt, $g_geo, $g_kmh, $g_mph, $g_track, $g_AccuracyMeters, $g_datetime)
 	{
 		$retry = true;
