@@ -161,7 +161,7 @@ if not, write to the
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.gps|number_format:0|escape:'htmlall'}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.efficiency|escape:'htmlall'}%</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.date|escape:'htmlall'}</td>
-								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
+								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/admin_action.php?action=reset_file&amp;file_id={$wifidb_user_prev.id}&amp;return={$wifidb_host_url}opt/userstats.php?func=alluserlists%26user={$wifidb_user_details.user|escape:'url'}" title="Reset and Re-import this file" style="font-size: 16px;">&#x21bb;</a></td>{/if}
 							</tr>
 							{/foreach}
 						</tbody>
