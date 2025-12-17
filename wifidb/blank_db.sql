@@ -2683,7 +2683,7 @@ ALTER TABLE `user_waypoints`
 ALTER TABLE `wifi_ap`
   ADD PRIMARY KEY (`AP_ID`),
   ADD KEY `HighGps_ID` (`HighGps_ID`),
-  ADD KEY `ap_hash` (`ap_hash`),
+  ADD UNIQUE KEY `ap_hash` (`ap_hash`),
   ADD KEY `File_ID` (`File_ID`),
   ADD KEY `BSSID` (`BSSID`),
   ADD KEY `SECTYPE` (`SECTYPE`);
