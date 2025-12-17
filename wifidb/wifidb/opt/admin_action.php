@@ -79,6 +79,59 @@ switch($action)
 		}
 		break;
 
+	case "delete_file":
+		if(!$file_id || !is_numeric($file_id))
+		{
+			die("Invalid file ID");
+		}
+
+		// Get file info for confirmation
+		$sql = "SELECT id, file_name, file_orig, file_user, title FROM files WHERE id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $file_id, PDO::PARAM_INT);
+		$prep->execute();
+		$file_info = $prep->fetch(PDO::FETCH_ASSOC);
+
+		if(!$file_info)
+		{
+			die("File not found");
+		}
+
+		if($confirm == "yes")
+		{
+			// Execute the delete
+			$result = delete_file($dbcore, $file_id);
+
+			if($result['success'])
+			{
+				$message = "File ID {$file_id} has been deleted.";
+				$message_type = "success";
+			}
+			else
+			{
+				$message = "Error deleting file: " . $result['error'];
+				$message_type = "error";
+			}
+
+			// Display result page
+			$dbcore->smarty->assign("wifidb_page_label", "Admin Action Result");
+			$dbcore->smarty->assign("message", $message);
+			$dbcore->smarty->assign("message_type", $message_type);
+			$dbcore->smarty->assign("return_url", $return_url ? $return_url : $dbcore->wifidb_host_url);
+			$dbcore->smarty->display('admin_action_result.tpl');
+		}
+		else
+		{
+			// Show confirmation page
+			$dbcore->smarty->assign("wifidb_page_label", "Confirm Delete File");
+			$dbcore->smarty->assign("file_info", $file_info);
+			$dbcore->smarty->assign("action", $action);
+			$dbcore->smarty->assign("file_id", $file_id);
+			$dbcore->smarty->assign("return_url", $return_url);
+			$dbcore->smarty->display('admin_action_confirm.tpl');
+		}
+		break;
+
 	default:
 		die("Invalid action");
 }
@@ -208,6 +261,151 @@ function reset_file($dbcore, $File_ID)
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
+
+		// Delete the file record
+		$sqlhp = "DELETE FROM files WHERE id = ?";
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+
+		return array('success' => true);
+	}
+	catch(Exception $e)
+	{
+		return array('success' => false, 'error' => $e->getMessage());
+	}
+}
+
+/**
+ * Delete a file by removing its data and deleting/moving the uploaded file
+ * Does NOT queue the file for re-import.
+ */
+function delete_file($dbcore, $File_ID)
+{
+	try {
+		// Similar AP/Cell re-assignment logic as reset_file
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
+		$apl = $dbcore->sql->conn->prepare($sql);
+		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$apl->execute();
+
+		while($ap = $apl->fetch(PDO::FETCH_NUM))
+		{
+			$AP_ID = $ap[0];
+
+			if($dbcore->sql->service == "mysql")
+				{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` != ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? AND [File_ID] != ?";}
+			$resgps = $dbcore->sql->conn->prepare($sqlhp);
+			$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
+			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
+			$resgps->execute();
+			$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
+			$New_File_ID = $fetchgps['File_ID'];
+
+			if($New_File_ID)
+			{
+				if($dbcore->sql->service == "mysql")
+					{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+				$prep = $dbcore->sql->conn->prepare($sqlu);
+				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
+				$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
+				$prep->execute();
+			}
+		}
+
+		// Cells
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
+		$apl = $dbcore->sql->conn->prepare($sql);
+		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$apl->execute();
+
+		while($ap = $apl->fetch(PDO::FETCH_NUM))
+		{
+			$cell_id = $ap[0];
+
+			if($dbcore->sql->service == "mysql")
+				{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? AND `file_id` != ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? AND [file_id] != ?";}
+			$resgps = $dbcore->sql->conn->prepare($sqlhp);
+			$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
+			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
+			$resgps->execute();
+			$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
+			$New_File_ID = $fetchgps['file_id'];
+
+			if($New_File_ID)
+			{
+				if($dbcore->sql->service == "mysql")
+					{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
+				$prep = $dbcore->sql->conn->prepare($sqlu);
+				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
+				$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
+				$prep->execute();
+			}
+		}
+
+		// Delete wifi_hist records
+		$sqlhp = "DELETE FROM wifi_hist WHERE File_ID = ?";
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+
+		// Delete wifi_ap records (only those still pointing to this file)
+		$sqlhp = "DELETE FROM wifi_ap WHERE File_ID = ?";
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+
+		// Delete wifi_gps records
+		$sqlhp = "DELETE FROM wifi_gps WHERE File_ID = ?";
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+
+		// Delete cell_hist records
+		$sqlhp = "DELETE FROM cell_hist WHERE file_id = ?";
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+
+		// Delete cell_id records (only those still pointing to this file)
+		$sqlhp = "DELETE FROM cell_id WHERE file_id = ?";
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+
+		// Before deleting DB file record, try to move underlying uploaded file to deleted folder
+		$sqlf = "SELECT file_name FROM files WHERE id = ? LIMIT 1";
+		$prep = $dbcore->sql->conn->prepare($sqlf);
+		$prep->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$prep->execute();
+		$finfo = $prep->fetch(PDO::FETCH_ASSOC);
+		if($finfo && !empty($finfo['file_name']))
+		{
+			$orig = $finfo['file_name'];
+			$upload_dir = realpath(dirname(__FILE__).'/../import/up');
+			if($upload_dir !== false)
+			{
+				$src = $upload_dir.DIRECTORY_SEPARATOR.$orig;
+				$del_dir = $upload_dir.DIRECTORY_SEPARATOR.'deleted';
+				if(!is_dir($del_dir)) { @mkdir($del_dir, 0755, true); }
+				$dst = $del_dir.DIRECTORY_SEPARATOR.$orig;
+				if(is_file($src)) { @rename($src, $dst); }
+			}
+		}
 
 		// Delete the file record
 		$sqlhp = "DELETE FROM files WHERE id = ?";

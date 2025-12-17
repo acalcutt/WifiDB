@@ -14,7 +14,7 @@ version 2 of the License, or (at your option) any later version.
 					<table class="content_table">
 						<tbody>
 							<tr class="subheading">
-								<th class="subheading" colspan="2">Reset File for Re-Import</th>
+								<th class="subheading" colspan="2">{if $action == 'reset_file'}Reset File for Re-Import{elseif $action == 'delete_file'}Delete File Permanently{/if}</th>
 							</tr>
 							<tr class="light">
 								<td class="light" width="150px"><strong>File ID:</strong></td>
@@ -39,14 +39,14 @@ version 2 of the License, or (at your option) any later version.
 										<li>Remove all WiFi AP data associated with this file</li>
 										<li>Remove all GPS history for this file</li>
 										<li>Remove all Cell/Bluetooth data associated with this file</li>
-										<li>Queue the file for re-import</li>
+										{if $action == 'reset_file'}<li>Queue the file for re-import</li>{elseif $action == 'delete_file'}<li>This file will be permanently deleted from the database and not re-imported. The underlying uploaded file will be moved to <em>import/up/deleted</em> if present.</li>{/if}
 									</ul>
 									<p>APs/Cells that exist in other imports will be preserved and re-linked.</p>
 								</td>
 							</tr>
 							<tr class="dark">
 								<td class="dark" colspan="2" style="text-align: center; padding: 15px;">
-									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;file_id={$file_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Reset</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;file_id={$file_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">{if $action == 'reset_file'}Confirm Reset{elseif $action == 'delete_file'}Confirm Delete{/if}</a>
 									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>

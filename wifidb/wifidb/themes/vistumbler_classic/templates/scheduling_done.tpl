@@ -25,7 +25,7 @@ if not, write to the
 					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><b><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></b></span>
 					<table class="content_table"> 
 						<tr class="header-centered">
-							<th colspan="7" align="center">Files completed</th>
+							<th colspan="8" align="center">Files completed</th>
 						</tr>
 						{foreach item=wifidb_done from=$wifidb_done_all_array name=done}
 						<tr class="header-centered">
@@ -38,7 +38,12 @@ if not, write to the
 						</tr>
 						<tr style="background-color: {$wifidb_wait.color}">
 							<td class="header"></td>
-							<td class="{$wifidb_done.class}">{$wifidb_done.id}</td>
+							<td class="{$wifidb_done.class}">{$wifidb_done.id}
+								{if $wifidb_login_priv_name == "Administrator"}
+									&nbsp;<a href="{$wifidb_host_url}opt/admin_action.php?action=reset_file&amp;file_id={$wifidb_done.id}&amp;return={$wifidb_host_url}opt/scheduling.php?func=done" title="Reset and Re-import this file" style="font-size: 16px; margin-right:6px;">&#x21bb;</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action=delete_file&amp;file_id={$wifidb_done.id}&amp;return={$wifidb_host_url}opt/scheduling.php?func=done" title="Delete this file (permanent)" style="font-size: 16px; color: #cc0000;">&#x1F5D1;</a>
+								{/if}
+							</td>
 							<td class="{$wifidb_done.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.title|escape:'htmlall'}</a></td>
 							<td class="{$wifidb_done.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$wifidb_done.id}">{$wifidb_done.file|escape:'htmlall'}</a></td>
 							<td class="{$wifidb_done.class}">{$wifidb_done.notes|escape:'htmlall'}</td>
@@ -78,6 +83,7 @@ if not, write to the
 								{/foreach}
 							</td>
 						</tr>
+                            
 						{if not $smarty.foreach.done.last}
 						<tr class="content-centered">
 							<th colspan="6"><br/></th>
