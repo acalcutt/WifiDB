@@ -294,6 +294,12 @@ You should have received a copy of the GNU General Public License along with thi
 									   </div>
 								   </div>
 
+								   <div style="margin-bottom: 30px;">
+									   <h3 style="margin: 0 0 10px 0; color: #333;">WiFi Authentication Over Time</h3>
+									  <canvas id="auth_chart" style="width: 100%; height: 300px;"></canvas>
+									   <p style="font-size: 11px; color: #666; margin-top: 5px;">Shows percentage breakdown of Open (green), Personal (blue), and Enterprise (purple) authentication over time.</p>
+								   </div>
+
 								<div style="margin-bottom: 30px;">
 									<h3 style="margin: 0 0 10px 0; color: #333;">Cell Towers Over Time</h3>
 									   <canvas id="cell_chart" style="width: 100%; height: 250px;"></canvas>
@@ -498,16 +504,95 @@ You should have received a copy of the GNU General Public License along with thi
 							responsive: true,
 							plugins: {
 								legend: { position: 'top' },
-								title: { display: true, text: 'WiFi Encryption Over Time' }
+								title: { display: true, text: 'WiFi Encryption Over Time' },
+								tooltip: { mode: 'index', intersect: false }
 							},
 							interaction: { mode: 'index', intersect: false },
 							scales: {
 								y: {
+									stacked: true,
 									beginAtZero: true,
 									max: 100,
 									title: { display: true, text: '% of APs' }
 								}
 							}
+						}
+					});
+
+					// WiFi Authentication Percentage Chart
+					var authLabels = [
+						{foreach from=$auth_chart_data_raw item=row}
+							"{$row.month}-01",
+						{/foreach}
+					];
+					var authOpen = [ {foreach from=$auth_chart_data_raw item=row}{$row.auth_open_pct},{/foreach} ];
+					// WEP is folded into Open for auth chart; no separate WEP series
+					var authWpa = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_wpa_pct)}{$row.auth_wpa_pct}{else}0{/if},{/foreach} ];
+					var authWpa2 = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_wpa2_pct)}{$row.auth_wpa2_pct}{else}0{/if},{/foreach} ];
+					var authOwe = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_owe_pct)}{$row.auth_owe_pct}{else}0{/if},{/foreach} ];
+					var authWpa3 = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_wpa3_pct)}{$row.auth_wpa3_pct}{else}0{/if},{/foreach} ];
+					new Chart(document.getElementById('auth_chart').getContext('2d'), {
+						type: 'line',
+						data: {
+							labels: authLabels,
+							datasets: [
+								{
+									label: 'Open %',
+									data: authOpen,
+									backgroundColor: 'rgba(76, 175, 80, 0.5)',
+									borderColor: '#4CAF50',
+									fill: true,
+									tension: 0.1,
+									stack: 'Stack 0'
+								},
+
+								{
+									label: 'WPA %',
+									data: authWpa,
+									backgroundColor: 'rgba(255, 152, 0, 0.5)',
+									borderColor: '#FF9800',
+									fill: true,
+									tension: 0.1,
+									stack: 'Stack 0'
+								},
+								{
+									label: 'WPA2 %',
+									data: authWpa2,
+									backgroundColor: 'rgba(33, 150, 243, 0.5)',
+									borderColor: '#2196F3',
+									fill: true,
+									tension: 0.1,
+									stack: 'Stack 0'
+								},
+								{
+									label: 'OWE %',
+									data: authOwe,
+									backgroundColor: 'rgba(156, 39, 176, 0.5)',
+									borderColor: '#9C27B0',
+									fill: true,
+									tension: 0.1,
+									stack: 'Stack 0'
+								},
+								{
+									label: 'WPA3 %',
+									data: authWpa3,
+									backgroundColor: 'rgba(63,81,181,0.5)',
+									borderColor: '#3F51B5',
+									fill: true,
+									tension: 0.1,
+									stack: 'Stack 0'
+								}
+							]
+						},
+						options: {
+							responsive: true,
+							plugins: {
+								legend: { position: 'top' },
+								title: { display: true, text: 'WiFi Authentication Over Time' },
+								tooltip: { mode: 'index', intersect: false }
+							},
+							interaction: { mode: 'index', intersect: false },
+							scales: { y: { stacked: true, beginAtZero: true, max: 100, title: { display: true, text: '% of APs' } } }
 						}
 					});
 

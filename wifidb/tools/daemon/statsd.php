@@ -232,21 +232,33 @@ function generateStatsCache($dbcore) {
 				COUNT(*) as new_count,
 				SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
 				SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
-				SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count
+				SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count,
+				/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+				SUM(CASE WHEN SECTYPE = 1  OR SECTYPE = 2 THEN 1 ELSE 0 END) as auth_open_count,
+				SUM(CASE WHEN AUTH LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count,
+				SUM(CASE WHEN AUTH LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+				SUM(CASE WHEN AUTH LIKE '%WPA2%' OR AUTH LIKE '%WPA2-%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+				SUM(CASE WHEN AUTH LIKE '%WPA%' AND AUTH NOT LIKE '%WPA2%' AND AUTH NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count
 				FROM wifi_ap
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
 				ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month,
-				COUNT(*) as new_count,
-				SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
-				SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
-				SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count
-				FROM wifi_ap
-				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'
-				GROUP BY FORMAT(fa, 'yyyy-MM')
-				ORDER BY month ASC";
+			COUNT(*) as new_count,
+			SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
+			SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
+			SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count,
+			/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+			SUM(CASE WHEN SECTYPE = 1  OR SECTYPE = 2 THEN 1 ELSE 0 END) as auth_open_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA2%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA%' AND AUTH NOT LIKE '%WPA2%' AND AUTH NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count,
+			SUM(CASE WHEN AUTH LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count
+		FROM wifi_ap
+		WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'
+		GROUP BY FORMAT(fa, 'yyyy-MM')
+		ORDER BY month ASC";
 	}
 	$result = $dbcore->sql->conn->query($sql);
 	$timeseries_wifi = $result->fetchAll(2);
@@ -256,25 +268,42 @@ function generateStatsCache($dbcore) {
 	$cumulative_open = 0;
 	$cumulative_wep = 0;
 	$cumulative_secure = 0;
+	$cumulative_auth_open = 0;
+	$cumulative_auth_owe = 0;
+	$cumulative_auth_wpa = 0;
+	$cumulative_auth_wpa2 = 0;
+	$cumulative_auth_wpa3 = 0;
 
-	foreach($timeseries_wifi as $row) {
+		foreach($timeseries_wifi as $row) {
 		$cumulative_total += $row['new_count'];
 		$cumulative_open += $row['open_count'];
 		$cumulative_wep += $row['wep_count'];
 		$cumulative_secure += $row['secure_count'];
+
+			// accumulate auth counts (prefer AUTH-derived auth_open_count which includes WEP)
+			$cumulative_auth_open += isset($row['auth_open_count']) ? $row['auth_open_count'] : ((isset($row['open_count']) ? $row['open_count'] : 0) + (isset($row['wep_count']) ? $row['wep_count'] : 0));
+			$cumulative_auth_owe += isset($row['auth_owe_count']) ? $row['auth_owe_count'] : 0;
+			$cumulative_auth_wpa3 += isset($row['auth_wpa3_count']) ? $row['auth_wpa3_count'] : 0;
+			$cumulative_auth_wpa2 += isset($row['auth_wpa2_count']) ? $row['auth_wpa2_count'] : 0;
+			$cumulative_auth_wpa += isset($row['auth_wpa_count']) ? $row['auth_wpa_count'] : 0;
 
 		   $open_pct = ($cumulative_total > 0) ? round(($cumulative_open / $cumulative_total) * 100, 2) : 0;
 		   $wep_pct = ($cumulative_total > 0) ? round(($cumulative_wep / $cumulative_total) * 100, 2) : 0;
 		   // Secure is the remainder to ensure sum is 100
 		   $secure_pct = ($cumulative_total > 0) ? round(100 - $open_pct - $wep_pct, 2) : 0;
 
-		   $wifi_graph_data[] = array(
+			$wifi_graph_data[] = array(
 			   'month' => $row['month'],
 			   'new_count' => (int)$row['new_count'],
 			   'cumulative' => $cumulative_total,
 			   'open_pct' => $open_pct,
 			   'wep_pct' => $wep_pct,
-			   'secure_pct' => $secure_pct
+			   'secure_pct' => $secure_pct,
+				'auth_open_pct' => ($cumulative_total > 0) ? round(($cumulative_auth_open / $cumulative_total) * 100, 2) : 0,
+				   'auth_owe_pct' => ($cumulative_total > 0) ? round(($cumulative_auth_owe / $cumulative_total) * 100, 2) : 0,
+				   'auth_wpa3_pct' => ($cumulative_total > 0) ? round(($cumulative_auth_wpa3 / $cumulative_total) * 100, 2) : 0,
+				   'auth_wpa2_pct' => ($cumulative_total > 0) ? round(($cumulative_auth_wpa2 / $cumulative_total) * 100, 2) : 0,
+				   'auth_wpa_pct' => ($cumulative_total > 0) ? round(($cumulative_auth_wpa / $cumulative_total) * 100, 2) : 0
 		   );
 	}
 	updateCache($dbcore, 'wifi_timeseries', $wifi_graph_data);

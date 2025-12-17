@@ -149,6 +149,28 @@ if($use_cache) {
 		$wifi_graph_data = getCache($dbcore, 'wifi_timeseries');
 		if($wifi_graph_data === null) $wifi_graph_data = array();
 
+		// If cached wifi timeseries contains auth percentages, build auth chart data from cache
+		$auth_chart_data = array();
+		if(is_array($wifi_graph_data) && count($wifi_graph_data) > 0) {
+			foreach($wifi_graph_data as $row) {
+				// build auth percentages from cached percentages if present, otherwise derive from counts
+				$cum = isset($row['cumulative']) ? $row['cumulative'] : 0;
+				$auth_open = isset($row['auth_open_pct']) ? $row['auth_open_pct'] : (isset($row['auth_open_count']) && $cum>0 ? round(($row['auth_open_count']/$cum)*100,2) : (isset($row['open_count']) && isset($row['wep_count']) && $cum>0 ? round((($row['open_count']+$row['wep_count'])/$cum)*100,2) : 0));
+				$auth_wpa = isset($row['auth_wpa_pct']) ? $row['auth_wpa_pct'] : (isset($row['auth_wpa_count']) && $cum>0 ? round(($row['auth_wpa_count']/$cum)*100,2) : 0);
+				$auth_wpa2 = isset($row['auth_wpa2_pct']) ? $row['auth_wpa2_pct'] : (isset($row['auth_wpa2_count']) && $cum>0 ? round(($row['auth_wpa2_count']/$cum)*100,2) : 0);
+				$auth_owe = isset($row['auth_owe_pct']) ? $row['auth_owe_pct'] : (isset($row['auth_owe_count']) && $cum>0 ? round(($row['auth_owe_count']/$cum)*100,2) : 0);
+				$auth_wpa3 = isset($row['auth_wpa3_pct']) ? $row['auth_wpa3_pct'] : (isset($row['auth_wpa3_count']) && $cum>0 ? round(($row['auth_wpa3_count']/$cum)*100,2) : 0);
+				$auth_chart_data[] = array(
+					'month' => $row['month'],
+					'auth_open_pct' => $auth_open,
+					'auth_wpa_pct' => $auth_wpa,
+					'auth_wpa2_pct' => $auth_wpa2,
+					'auth_owe_pct' => $auth_owe,
+					'auth_wpa3_pct' => $auth_wpa3
+				);
+			}
+		}
+
 		$cell_graph_data = getCache($dbcore, 'cell_timeseries');
 		if($cell_graph_data === null) $cell_graph_data = array();
 
@@ -318,24 +340,36 @@ if(!$use_cache) {
 	# For date-filtered views, we still need to compute these (but they'll be faster with date range)
 	if($dbcore->sql->service == "mysql") {
 		$sql = "SELECT DATE_FORMAT(fa, '%Y-%m') as month,
-				COUNT(*) as new_count,
-				SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
-				SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
-				SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count
-				FROM wifi_ap
-				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'".$date_filter_sql."
-				GROUP BY DATE_FORMAT(fa, '%Y-%m')
-				ORDER BY month ASC";
+			COUNT(*) as new_count,
+			SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
+			SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
+			SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count,
+			/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+			SUM(CASE WHEN SECTYPE = 1  OR SECTYPE = 2 THEN 1 ELSE 0 END) as auth_open_count,
+			SUM(CASE WHEN AUTH LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA2%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA%' AND AUTH NOT LIKE '%WPA2%' AND AUTH NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count
+			FROM wifi_ap
+			WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'".$date_filter_sql."
+			GROUP BY DATE_FORMAT(fa, '%Y-%m')
+			ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month,
-				COUNT(*) as new_count,
-				SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
-				SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
-				SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count
-				FROM wifi_ap
-				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'".$date_filter_sql."
-				GROUP BY FORMAT(fa, 'yyyy-MM')
-				ORDER BY month ASC";
+			COUNT(*) as new_count,
+			SUM(CASE WHEN SECTYPE = 1 THEN 1 ELSE 0 END) as open_count,
+			SUM(CASE WHEN SECTYPE = 2 THEN 1 ELSE 0 END) as wep_count,
+			SUM(CASE WHEN SECTYPE = 3 THEN 1 ELSE 0 END) as secure_count,
+			/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+			SUM(CASE WHEN SECTYPE = 1  OR SECTYPE = 2 THEN 1 ELSE 0 END) as auth_open_count,
+			SUM(CASE WHEN AUTH LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA2%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+			SUM(CASE WHEN AUTH LIKE '%WPA%' AND AUTH NOT LIKE '%WPA2%' AND AUTH NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count
+			FROM wifi_ap
+			WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'".$date_filter_sql."
+			GROUP BY FORMAT(fa, 'yyyy-MM')
+			ORDER BY month ASC";
 	}
 	$result = $dbcore->sql->conn->query($sql);
 	$timeseries_wifi = $result->fetchAll(2);
@@ -345,11 +379,27 @@ if(!$use_cache) {
 	$cumulative_wep = 0;
 	$cumulative_secure = 0;
 
+	// Authentication cumulative counters (detailed)
+	$cumulative_auth_open = 0;
+	$cumulative_auth_owe = 0;
+	$cumulative_auth_wpa = 0;
+	$cumulative_auth_wpa2 = 0;
+	$cumulative_auth_wpa3 = 0;
+
+	$auth_chart_data = array();
+
 	foreach($timeseries_wifi as $row) {
 		$cumulative_total += $row['new_count'];
 		$cumulative_open += $row['open_count'];
 		$cumulative_wep += $row['wep_count'];
 		$cumulative_secure += $row['secure_count'];
+
+		// accumulate auth counts (prefer AUTH-derived auth_open_count which includes WEP)
+		$cumulative_auth_open += isset($row['auth_open_count']) ? $row['auth_open_count'] : ((isset($row['open_count']) ? $row['open_count'] : 0) + (isset($row['wep_count']) ? $row['wep_count'] : 0));
+		$cumulative_auth_owe += isset($row['auth_owe_count']) ? $row['auth_owe_count'] : 0;
+		$cumulative_auth_wpa3 += isset($row['auth_wpa3_count']) ? $row['auth_wpa3_count'] : 0;
+		$cumulative_auth_wpa2 += isset($row['auth_wpa2_count']) ? $row['auth_wpa2_count'] : 0;
+		$cumulative_auth_wpa += isset($row['auth_wpa_count']) ? $row['auth_wpa_count'] : 0;
 
 		   $open_pct = ($cumulative_total > 0) ? round(($cumulative_open / $cumulative_total) * 100, 2) : 0;
 		   $wep_pct = ($cumulative_total > 0) ? round(($cumulative_wep / $cumulative_total) * 100, 2) : 0;
@@ -364,6 +414,22 @@ if(!$use_cache) {
 			   'wep_pct' => $wep_pct,
 			   'secure_pct' => $secure_pct
 		   );
+
+		// compute authentication percentages and store for separate chart
+		$auth_open_pct = ($cumulative_total > 0) ? round(($cumulative_auth_open / $cumulative_total) * 100, 2) : 0;
+		$auth_owe_pct = ($cumulative_total > 0) ? round(($cumulative_auth_owe / $cumulative_total) * 100, 2) : 0;
+		$auth_wpa3_pct = ($cumulative_total > 0) ? round(($cumulative_auth_wpa3 / $cumulative_total) * 100, 2) : 0;
+		$auth_wpa2_pct = ($cumulative_total > 0) ? round(($cumulative_auth_wpa2 / $cumulative_total) * 100, 2) : 0;
+		$auth_wpa_pct = ($cumulative_total > 0) ? round(($cumulative_auth_wpa / $cumulative_total) * 100, 2) : 0;
+		$auth_chart_data[] = array(
+			'month' => $row['month'],
+			'auth_open_pct' => $auth_open_pct,
+			'auth_wep_pct' => $auth_wep_pct,
+			'auth_owe_pct' => $auth_owe_pct,
+			'auth_wpa_pct' => $auth_wpa_pct,
+			'auth_wpa2_pct' => $auth_wpa2_pct,
+			'auth_wpa3_pct' => $auth_wpa3_pct
+		);
 	}
 
 	#Get time-series data for Cell towers per month
@@ -541,6 +607,9 @@ $dbcore->smarty->assign('wifi_graph_data', json_encode($wifi_graph_data));
 $dbcore->smarty->assign('wifi_graph_data_raw', $wifi_graph_data);
 $dbcore->smarty->assign('cell_graph_data', json_encode($cell_graph_data));
 $dbcore->smarty->assign('bt_graph_data', json_encode($bt_graph_data));
+// Authentication chart data (Open / Personal / Enterprise)
+$dbcore->smarty->assign('auth_chart_data', json_encode($auth_chart_data));
+$dbcore->smarty->assign('auth_chart_data_raw', $auth_chart_data);
 
 $dbcore->smarty->display('index.tpl');
 

@@ -268,6 +268,12 @@ You should have received a copy of the GNU General Public License along with thi
 								</div>
 
 								<div style="margin-bottom: 30px;">
+									<h3 style="margin: 0 0 10px 0; color: #333;">WiFi Authentication Over Time</h3>
+									<canvas id="auth_chart" style="width: 100%; height: 300px;"></canvas>
+									<p style="font-size: 11px; color: #666; margin-top: 5px;">Shows percentage breakdown of Open, Personal, and Enterprise authentication over time.</p>
+								</div>
+
+								<div style="margin-bottom: 30px;">
 									<h3 style="margin: 0 0 10px 0; color: #333;">WiFi Networks Over Time</h3>
 									<canvas id="wifi_chart" style="width: 100%; height: 300px;"></canvas>
 									<p style="font-size: 11px; color: #666; margin-top: 5px;">Mouse-over graph to see values. Select a range to zoom in, double-click to zoom out.</p>
@@ -370,6 +376,42 @@ You should have received a copy of the GNU General Public License along with thi
 							}
 						});
 					}
+
+					// WiFi Authentication Percentage Chart (Chart.js)
+					if (window.authData === undefined) { var authData = {/literal}{$auth_chart_data}{literal}; } else { var authData = window.authData; }
+					if (authData && authData.length > 0 && window.Chart) {
+						var authLabels = authData.map(function(row) { return row.month + "-01"; });
+						var authOpen = authData.map(function(row) { return row.auth_open_pct; });
+						// WEP is folded into Open for auth chart; no separate WEP series
+						var authWpa = authData.map(function(row) { return row.auth_wpa_pct !== undefined ? row.auth_wpa_pct : 0; });
+						var authWpa2 = authData.map(function(row) { return row.auth_wpa2_pct !== undefined ? row.auth_wpa2_pct : 0; });
+						var authOwe = authData.map(function(row) { return row.auth_owe_pct !== undefined ? row.auth_owe_pct : 0; });
+						var authWpa3 = authData.map(function(row) { return row.auth_wpa3_pct !== undefined ? row.auth_wpa3_pct : 0; });
+						var ctxAuth = document.getElementById('auth_chart').getContext('2d');
+						new Chart(ctxAuth, {
+							type: 'line',
+							data: {
+								labels: authLabels,
+								datasets: [
+									{ label: 'Open %', data: authOpen, backgroundColor: 'rgba(76,175,80,0.5)', borderColor: '#4CAF50', fill: true, tension: 0.1, stack: 'Stack 0' },
+
+									{ label: 'WPA %', data: authWpa, backgroundColor: 'rgba(255,152,0,0.5)', borderColor: '#FF9800', fill: true, tension: 0.1, stack: 'Stack 0' },
+									{ label: 'WPA2 %', data: authWpa2, backgroundColor: 'rgba(33,150,243,0.5)', borderColor: '#2196F3', fill: true, tension: 0.1, stack: 'Stack 0' },
+									{ label: 'OWE %', data: authOwe, backgroundColor: 'rgba(156,39,176,0.5)', borderColor: '#9C27B0', fill: true, tension: 0.1, stack: 'Stack 0' },
+									{ label: 'WPA3 %', data: authWpa3, backgroundColor: 'rgba(63,81,181,0.5)', borderColor: '#3F51B5', fill: true, tension: 0.1, stack: 'Stack 0' }
+								]
+							},
+							options: {
+								responsive: true,
+								plugins: {
+									legend: { display: true },
+									tooltip: { mode: 'index', intersect: false }
+								},
+								interaction: { mode: 'index', intersect: false },
+								scales: { y: { stacked: true, beginAtZero: true, max: 100, title: { display: true, text: '% of APs' } } }
+							}
+							});
+						}
 
 					// WiFi Networks Chart (Chart.js)
 					if (wifiData && wifiData.length > 0 && window.Chart) {
