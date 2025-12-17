@@ -21,12 +21,6 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
-// Show all error's with strict santex
-//***DEV USE ONLY*** TODO: remove dev stuff
-#ini_set('display_errors', 1);//***DEV USE ONLY***
-#ini_set("screen.enabled", TRUE);//***DEV USE ONLY***
-#error_reporting(E_ALL);# || E_STRICT);//***DEV USE ONLY***
-//***DEV USE ONLY***
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
 if(!function_exists('WiFiDBexception_handler')) {
 	function WiFiDBexception_handler($err)
@@ -72,12 +66,6 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 	}
 	require $config['wifidb_tools'].'daemon.config.inc.php';
 }
-$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'].';charset='.$config['charset'];
-$options = array(
-	PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$config['charset'].' COLLATE '.$config['collate'],
-);
-
-
 if($config['srvc'] == "mysql")
 {
 	$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'].';charset='.$config['charset'];
@@ -97,10 +85,10 @@ else if($config['srvc'] == "sqlsrv")
 
 $res = $conn->query($sql);
 $fetch = $res->fetch(2);
+$db_version = $fetch['version'];
+unset($res, $conn, $fetch, $sql);
 
-unset($res);
-unset($conn);
-if($fetch['version'] != '0.40')
+if($db_version != '0.40')
 {
 	$cwd = getcwd().'/';
 	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
@@ -110,11 +98,9 @@ if($fetch['version'] != '0.40')
 				If this database is older than Version 0.30 I would do a Full Fresh Install, After making a backup of all your data.
 				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
 	}
+	unset($cwd, $gen_cwd);
 }
-unset($fetch);
-unset($gen_cwd);
-unset($cwd);
-unset($sql);
+unset($db_version);
 
 if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
@@ -149,7 +135,24 @@ function autoload_function($class) {
 		throw new errorexception("Could not load class `{$class}`");
 	}
 }
-spl_autoload_register('autoload_function'); 
+spl_autoload_register('autoload_function');
+
+/**
+ * Initialize export-related objects on $dbcore
+ * @param object $dbcore The core object to attach export components to
+ * @param array $config Configuration array
+ * @param mixed $SQL Optional SQL object for apiv2
+ */
+function initExportComponents($dbcore, $config, $SQL = null) {
+	$dbcore->convert = ($SQL !== null) ? new convert($config, $SQL) : new convert($config);
+	$dbcore->Zip = new Zip;
+	$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
+	$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
+	$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
+	$dbcore->export = ($SQL !== null)
+		? new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL)
+		: new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
+}
 
 try
 {
@@ -158,109 +161,80 @@ try
 		case "cli":
 			switch(strtolower(SWITCH_EXTRAS))
 			{
-				####
 				case "export":
 					$dbcore = new daemon($config, $daemon_config);
-					$dbcore->convert = new convert($config);
-					$dbcore->Zip = new Zip;
-					$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
-				break;
-				####
+					initExportComponents($dbcore, $config);
+					break;
+
 				case "import":
 					$dbcore = new daemon($config, $daemon_config);
 					$dbcore->convert = new convert($config);
 					$dbcore->wdbmail = new wdbmail($config);
-					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
-				####
+					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose);
+					break;
+
 				case "daemon":
 					$dbcore = new daemon($config, $daemon_config);
-					$dbcore->convert = new convert($config);
-					$dbcore->Zip = new Zip;
-					$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
-					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose );
-				break;
-				####
+					initExportComponents($dbcore, $config);
+					$dbcore->import = new import($config, $dbcore->convert, $dbcore->verbose);
+					break;
+
 				case "cli":
 					$dbcore = new wdbcli($config, $daemon_config);
-				break;
-				####
+					break;
+
 				case "api":
 					$dbcore = new api($config);
 					break;
-				####
+
 				case "frontend_prep":
 					$dbcore = new frontend($config);
 					break;
-				####
+
 				default:
 					die("bad cli extras switch.");
-					break;
 			}
 			$dbcore->cli = 1;
 			break;
 
-		################
 		case "html":
 			switch(strtolower(SWITCH_EXTRAS))
 			{
 				case "api":
 					$dbcore = new api($config);
-					$dbcore->convert = new convert($config);
-					$dbcore->Zip = new Zip;
-					$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
-				break;
+					initExportComponents($dbcore, $config);
+					break;
 
-                case "apiv2":
-                    $dbcore = new apiv2($config, $SQL);
-                    $dbcore->convert = new convert($config, $SQL);
-                    $dbcore->Zip = new Zip;
-					$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
-                    $dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-                    $dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL);
-				break;
+				case "apiv2":
+					$dbcore = new apiv2($config, $SQL);
+					initExportComponents($dbcore, $config, $SQL);
+					break;
 
 				case "export":
 					$dbcore = new frontend($config);
-					$dbcore->convert = new convert($config);
-					$dbcore->Zip = new Zip;
-					$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
-					$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-					$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
-				break;
+					initExportComponents($dbcore, $config);
+					break;
 
 				case "graph":
 					$dbcore = new frontend($config);
 					$dbcore->graphs = new graphs($dbcore->PATH, $dbcore->URL_PATH);
-				break;
+					break;
 
 				case "cp":
 					$dbcore = new frontend($config);
-				break;
+					break;
 
 				default:
 					$dbcore = new frontend($config);
 					$dbcore->wdbmail = new wdbmail($config);
-				break;
+					break;
 			}
 			$dbcore->cli = 0;
 			break;
-		################
-		Default:
+
+		default:
 			die("Unknown Switch Set. gurgle...cough...dead...");
-			break;
 	}
-	#done setting up WiFiDB, whether it be the daemon or the web interface, or just plain failing in a spectacular fashion...
 }
 catch (Exception $e) {
 	throw new ErrorException($e);
