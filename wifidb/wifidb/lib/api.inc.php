@@ -690,7 +690,7 @@ class api extends dbcore
 
 	public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
 	{
-		$sql2 = "SELECT * FROM wifi_pointers WHERE
+		$sql2 = "SELECT * FROM wifi_ap WHERE
 				ssid LIKE ? AND
 				mac LIKE ? AND
 				radio LIKE ? AND
