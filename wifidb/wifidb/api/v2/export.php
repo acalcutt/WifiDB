@@ -422,7 +422,7 @@ switch($func)
 			break;
 			
 		case "exp_all_countries":
-			$sql = "SELECT DISTINCT(country_code) FROM `wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `country_code`";
+			$sql = "SELECT DISTINCT(country_code) FROM `wifi_ap` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `country_code`";
 			$result = $dbcore->sql->conn->query($sql);
 			while($country_fetch = $result->fetch(2))
 			{
@@ -444,7 +444,7 @@ switch($func)
 		case "exp_country":
 			$country_code = $_REQUEST['country_code'];
 			#Get admin1 ids in this country code
-			$sql = "SELECT DISTINCT(admin1_id) FROM `wifi_pointers` WHERE `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin1_id`";
+			$sql = "SELECT DISTINCT(admin1_id) FROM `wifi_ap` WHERE `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin1_id`";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $country_code, PDO::PARAM_STR);
 			$prep_ap->execute();
@@ -480,7 +480,7 @@ switch($func)
 			$box_latlon = array();
 			$results = '';
 			#Get APs in this admin2 region
-			$sql = "SELECT DISTINCT(admin2_id) FROM `wifi_pointers` WHERE `admin1_id` = ?  And `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin2_id`";
+			$sql = "SELECT DISTINCT(admin2_id) FROM `wifi_ap` WHERE `admin1_id` = ?  And `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin2_id`";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $admin1_id, PDO::PARAM_INT);
 			$prep_ap->bindParam(2, $country_code, PDO::PARAM_STR);
@@ -519,7 +519,7 @@ switch($func)
 			$box_latlon = array();
 			$results = '';
 			#Get APs in this admin2 region
-			$sql = "SELECT `id`, `lat`, `long` FROM `wifi_pointers` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `id`, `lat`, `long` FROM `wifi_ap` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $admin2_id, PDO::PARAM_INT);
 			$prep_ap->bindParam(2, $admin1_id, PDO::PARAM_INT);
