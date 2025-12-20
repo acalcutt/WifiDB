@@ -22,7 +22,7 @@ list($vs1data ) = $dbcore->import->CreateDataArrayFromVS1("/wifidb/www/wifidb/im
 
 $wander_rating = 0;
 
-$sql = "select DATEDIFF(`LA`, `FA`) as DD from wifi_pointers WHERE ap_hash = ?";
+$sql = "select DATEDIFF(`LA`, `FA`) as DD from wifi_ap WHERE ap_hash = ?";
 $prep = $this->sql->conn->prepare($sql);
 $prep->bindParam(1, $this->ap_hash, PDO::PARAM_STR);
 $prep->execute();
