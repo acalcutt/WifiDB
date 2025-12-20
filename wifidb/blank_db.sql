@@ -2238,6 +2238,18 @@ INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `last_exp
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `stats_cache`
+--
+
+CREATE TABLE `stats_cache` (
+  `cache_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cache_data` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `share_waypoints`
 --
 
@@ -2638,6 +2650,12 @@ ALTER TABLE `schedule`
 --
 ALTER TABLE `settings`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `stats_cache`
+--
+ALTER TABLE `stats_cache`
+  ADD PRIMARY KEY (`cache_key`);
 
 --
 -- Indexes for table `share_waypoints`
