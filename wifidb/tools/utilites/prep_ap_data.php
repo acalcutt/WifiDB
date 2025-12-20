@@ -13,12 +13,12 @@ require('../daemon/config.inc.php');
 require( $daemon_config['wifidb_install']."/lib/init.inc.php" );
 require( $daemon_config['wifidb_install']."/lib/config.inc.php" );
 
-$sql = "SELECT `id`, `ssid`, `ap_hash` FROM `wifi_ap`";
+$sql = "SELECT `AP_ID`, `ssid`, `ap_hash` FROM `wifi_ap`";
 $query = $dbcore->sql->conn->query($sql);
 $all = $query->fetchAll(2);
 foreach($all as $ap)
 {
-    echo "Preping for AP: \r\n\tID:{$ap['id']}\r\n\tSSID: {$ap['ssid']}\r\n\tAP Hash: {$ap['ap_hash']}\r\n";
-    $dbcore->APFetch($ap['id']);
+    echo "Preping for AP: \r\n\tID:{$ap['AP_ID']}\r\n\tSSID: {$ap['ssid']}\r\n\tAP Hash: {$ap['ap_hash']}\r\n";
+    $dbcore->APFetch($ap['AP_ID']);
     echo "Done with that one...\r\n";
 }

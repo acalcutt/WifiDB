@@ -519,7 +519,7 @@ switch($func)
 			$box_latlon = array();
 			$results = '';
 			#Get APs in this admin2 region
-			$sql = "SELECT `id`, `lat`, `long` FROM `wifi_ap` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `AP_ID`, `lat`, `long` FROM `wifi_ap` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $admin2_id, PDO::PARAM_INT);
 			$prep_ap->bindParam(2, $admin1_id, PDO::PARAM_INT);
@@ -528,7 +528,7 @@ switch($func)
 			$fetchaps = $prep_ap->fetchAll();
 			foreach($fetchaps as $ap)
 			{
-				$ap_id = $ap['id'];
+				$ap_id = $ap['AP_ID'];
 				$ap_lat = $ap['lat'];
 				$ap_long = $ap['long'];
 				
