@@ -33,8 +33,8 @@ if($rep == "y")
     $dbcore->sql->conn->query("TRUNCATE `wifi_gps`");
     #var_dump($dbcore->sql->conn->errorInfo());
 
-    echo "clearing wifi_pointers\r\n";
-    $dbcore->sql->conn->query("TRUNCATE `wifi_pointers`");
+    echo "clearing wifi_ap\r\n";
+    $dbcore->sql->conn->query("TRUNCATE `wifi_ap`");
     #var_dump($dbcore->sql->conn->errorInfo());
 
     echo "clearing wifi_signals\r\n";
