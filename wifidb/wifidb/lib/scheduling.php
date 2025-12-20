@@ -198,7 +198,7 @@ switch($func)
 
         if($files[0]){$kmldate=$files[0];}else{$kmldate=date ("Y-m-d");}
 
-        $sql = "SELECT `LA` FROM `wifi_ap` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
+        $sql = "SELECT `LA` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
         $result = $dbcore->sql->conn->query($sql);
         $ap_array = $result->fetch(2);
 
