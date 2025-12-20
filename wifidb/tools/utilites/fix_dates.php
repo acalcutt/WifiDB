@@ -75,11 +75,11 @@ while($array = $result->fetch(1))
 	}	
 }
 
-#Fix date and time in the wifi_pointers table
+#Fix date and time in the wifi_ap table
 
-$sql = "SELECT * FROM `wifi_pointers`";
+$sql = "SELECT * FROM `wifi_ap`";
 $result = $dbcore->sql->conn->query($sql);
-$dbcore->verbosed("Fixing wifi_pointers date/time stamps");
+$dbcore->verbosed("Fixing wifi_ap date/time stamps");
 while($array = $result->fetch(1))
 {
 	$id = $array['id'];
@@ -136,7 +136,7 @@ while($array = $result->fetch(1))
 	if($new_fastamp != $fastamp)
 	{
 		echo "wifi_pointer:".$id." - ".$fastamp."-->".$new_fastamp."\r\n";
-		$sql = "UPDATE `wifi_pointers` SET `FA`=? WHERE `id`=?";
+		$sql = "UPDATE `wifi_ap` SET `FA`=? WHERE `id`=?";
 		$prepnr = $dbcore->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $new_fastamp, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $id, PDO::PARAM_INT);
@@ -195,7 +195,7 @@ while($array = $result->fetch(1))
 	if($new_lastamp != $lastamp)
 	{
 		echo "wifi_pointer:".$id." - ".$lastamp."-->".$new_lastamp."\r\n";
-		$sql = "UPDATE `wifi_pointers` SET `LA`=? WHERE `id`=?";
+		$sql = "UPDATE `wifi_ap` SET `LA`=? WHERE `id`=?";
 		$prepnr = $dbcore->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $new_lastamp, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $id, PDO::PARAM_INT);
@@ -204,12 +204,12 @@ while($array = $result->fetch(1))
 }
 
 #When Fisrt Active is blank and Last Active has a value, set First Active to Last Active
-$dbcore->verbosed("Fixing wifi_pointers blank FA");
-$sql = "UPDATE `wifi_pointers` SET FA=LA WHERE FA='0000-00-00 00:00:00' and LA <> '0000-00-00 00:00:00'";
+$dbcore->verbosed("Fixing wifi_ap blank FA");
+$sql = "UPDATE `wifi_ap` SET FA=LA WHERE FA='0000-00-00 00:00:00' and LA <> '0000-00-00 00:00:00'";
 $fix1 = $dbcore->sql->conn->query($sql);
 
-$dbcore->verbosed("Fixing wifi_pointers blank LA");
+$dbcore->verbosed("Fixing wifi_ap blank LA");
 #When Last Active is blank and First Active has a value, set Last Active to First Active
-$sql = "UPDATE `wifi_pointers` SET LA=FA WHERE LA='0000-00-00 00:00:00' and FA <> '0000-00-00 00:00:00'";
+$sql = "UPDATE `wifi_ap` SET LA=FA WHERE LA='0000-00-00 00:00:00' and FA <> '0000-00-00 00:00:00'";
 $fix2 = $dbcore->sql->conn->query($sql);
 ?>
