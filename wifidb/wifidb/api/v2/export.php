@@ -102,9 +102,9 @@ switch($func)
 		case "exp_all":
 			$results="";
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT DISTINCT(`user`) FROM `files` ORDER BY `user` ASC";}
+				{$sql = "SELECT DISTINCT(`file_user`) AS `user` FROM `files` ORDER BY `file_user` ASC";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT DISTINCT([user]) FROM [files] ORDER BY [user] ASC";}
+				{$sql = "SELECT DISTINCT([file_user]) AS [user] FROM [files] ORDER BY [file_user] ASC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll(2);
@@ -112,9 +112,9 @@ switch($func)
 			{
 				$username = $user['user'];
 				if($dbcore->sql->service == "mysql")
-					{$sql1 = "SELECT `id` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
+					{$sql1 = "SELECT `id` FROM `files` WHERE `file_user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
+					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [file_user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
 				$prep1 = $dbcore->sql->conn->prepare($sql1);
 				$prep1->bindParam(1, $username, PDO::PARAM_STR);
 				$prep1->execute();
@@ -216,9 +216,9 @@ switch($func)
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
+				{$sql = "SELECT `id`, `file_user` AS `user`, `title`, `file_date` AS `date` FROM `files` WHERE `file_user` LIKE ? And `ValidGPS` = 1";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
+				{$sql = "SELECT [id], [file_user] AS [user], [title], [file_date] AS [date] FROM [files] WHERE [file_user] LIKE ? And [ValidGPS] = 1";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
