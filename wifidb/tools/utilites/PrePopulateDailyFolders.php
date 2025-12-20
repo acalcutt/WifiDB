@@ -31,7 +31,7 @@ foreach($UsersImportsResult->fetchAll(2) as $import)
 	foreach(explode("-", $import['points']) as $ap)
 	{
 		$id = explode(":", $ap)[0];
-		$AP_FA_Result = $dbcore->sql->conn->prepare("SELECT FA FROM `wifi_pointers` WHERE `id` = ?");
+		$AP_FA_Result = $dbcore->sql->conn->prepare("SELECT FA FROM `wifi_ap` WHERE `id` = ?");
 		$AP_FA_Result->bindParam(1, $id, PDO::PARAM_INT);
 		$AP_FA_Result->execute();
 		$dbcore->sql->checkError(__LINE__, __FILE__);
