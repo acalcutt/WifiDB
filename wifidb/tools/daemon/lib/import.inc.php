@@ -117,6 +117,22 @@ class import extends dbcore
 					}
 				}
 			}
+			else if($this->sql->service == "mysql")
+			{
+				// For MySQL, use REPLACE INTO for atomic upsert
+				$sql = "REPLACE INTO cell_id (file_id, mac, ssid, authmode, chan, type, cell_hash, ModDate) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+				$prep = $this->sql->conn->prepare($sql);
+				$prep->bindParam(1, $file_id, PDO::PARAM_INT);
+				$prep->bindParam(2, $cells['bssid'], PDO::PARAM_STR);
+				$prep->bindParam(3, $cells['ssid'], PDO::PARAM_STR);
+				$prep->bindParam(4, $cells['flags'], PDO::PARAM_STR);
+				$prep->bindParam(5, $cells['chan'], PDO::PARAM_INT);
+				$prep->bindParam(6, $cells['type'], PDO::PARAM_STR);
+				$prep->bindParam(7, $cells['cell_hash'], PDO::PARAM_STR);
+				$prep->execute();
+				$cell_id = $this->sql->conn->lastInsertId();
+				$ap_action = "INSERT"; // REPLACE always inserts
+			}
 			
 			if($cell_id != 0)
 			{
