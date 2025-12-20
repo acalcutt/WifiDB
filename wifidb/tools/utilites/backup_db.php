@@ -16,14 +16,14 @@ $full_export_file = $dbcore->PATH."out/archive/dumps/WiFiDB_Full_".$date.".sql";
 $ap_gps_export_file = $dbcore->PATH."out/archive/dumps/WiFiDB_AP_GPS_".$date.".sql";
 var_dump($ap_gps_export_file, $full_export_file);
 
-$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_agps}' FROM `wifi_pointers`,`wifi_gps`, `wifi_signals`");
+$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_agps}' FROM `wifi_ap`,`wifi_gps`, `wifi_signals`");
 var_dump($dbcore->sql->conn->errorInfo());
 if(move_uploaded_file($tmp_agps, $ap_gps_export_file))
 {
     $tarfile = $dbcore->TarFile($ap_gps_export_file);
     var_dump($tarfile);
 }
-$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_full}' FROM `wifi_pointers`,`wifi_gps`, `wifi_signals`, `user_imports`, `files`, `live_aps`, `live_gps`, `live_titles`");
+$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_full}' FROM `wifi_ap`,`wifi_gps`, `wifi_signals`, `user_imports`, `files`, `live_aps`, `live_gps`, `live_titles`");
 var_dump($dbcore->sql->conn->errorInfo());
 if(copy($tmp_full, $full_export_file))
 {

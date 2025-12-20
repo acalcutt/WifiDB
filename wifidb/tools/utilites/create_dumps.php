@@ -24,7 +24,7 @@ $sql_file = '-- WiFiDB SQL Dump
 
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";';
 
-$tables = array('wifi_pointers', 'wifi_gps', 'wifi_signals', 'user_imports', 'files', 'live_aps', 'live_gps', 'live_titles');
+$tables = array('wifi_ap', 'wifi_gps', 'wifi_signals', 'user_imports', 'files', 'live_aps', 'live_gps', 'live_titles');
 foreach ($tables as $table)
 {
     var_dump($table);
@@ -64,14 +64,14 @@ $values = "({$i}, '407998950_WDB_Export.VS1', 0, '', '2009-08-24 15:36:34', '15.
 
 
 
-$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_agps}' FROM `wifi_pointers`,`wifi_gps`, `wifi_signals`");
+$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_agps}' FROM `wifi_ap`,`wifi_gps`, `wifi_signals`");
 var_dump($dbcore->sql->conn->errorInfo());
 if(move_uploaded_file($tmp_agps, $ap_gps_export_file))
 {
     $tarfile = $dbcore->TarFile($ap_gps_export_file);
     var_dump($tarfile);
 }
-$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_full}' FROM `wifi_pointers`,`wifi_gps`, `wifi_signals`, `user_imports`, `files`, `live_aps`, `live_gps`, `live_titles`");
+$dbcore->sql->conn->query("SELECT * INTO OUTFILE '{$tmp_full}' FROM `wifi_ap`,`wifi_gps`, `wifi_signals`, `user_imports`, `files`, `live_aps`, `live_gps`, `live_titles`");
 var_dump($dbcore->sql->conn->errorInfo());
 if(copy($tmp_full, $full_export_file))
 {

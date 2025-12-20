@@ -17,7 +17,7 @@ if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon con
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 echo "Start fixing the Usernames in the WiFi Pointers table.\n";
-$result = $dbcore->sql->conn->query("SELECT id, username FROM wifi_pointers");
+$result = $dbcore->sql->conn->query("SELECT id, username FROM wifi_ap");
 $fetch = $result->fetchAll(2);
 foreach($fetch as $row)
 {
@@ -44,7 +44,7 @@ foreach($fetch as $row)
         $user = explode( ";", $row['username'] )[0];
     }
 
-    $dbcore->sql->conn->query("UPDATE wifi_pointers SET `username` = '$user' WHERE `id` = '".$row['id']."'");
+    $dbcore->sql->conn->query("UPDATE wifi_ap SET `username` = '$user' WHERE `id` = '".$row['id']."'");
     if(!$dbcore->sql->checkError(__LINE__, __FILE__))
     {
         echo "Updated to $user\n";

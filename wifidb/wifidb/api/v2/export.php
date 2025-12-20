@@ -102,9 +102,9 @@ switch($func)
 		case "exp_all":
 			$results="";
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT DISTINCT(`user`) FROM `files` ORDER BY `user` ASC";}
+				{$sql = "SELECT DISTINCT(`file_user`) AS `user` FROM `files` ORDER BY `file_user` ASC";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT DISTINCT([user]) FROM [files] ORDER BY [user] ASC";}
+				{$sql = "SELECT DISTINCT([file_user]) AS [user] FROM [files] ORDER BY [file_user] ASC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll(2);
@@ -112,9 +112,9 @@ switch($func)
 			{
 				$username = $user['user'];
 				if($dbcore->sql->service == "mysql")
-					{$sql1 = "SELECT `id` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
+					{$sql1 = "SELECT `id` FROM `files` WHERE `file_user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
+					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [file_user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
 				$prep1 = $dbcore->sql->conn->prepare($sql1);
 				$prep1->bindParam(1, $username, PDO::PARAM_STR);
 				$prep1->execute();
@@ -216,9 +216,9 @@ switch($func)
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `id`, `user`, `title`, `date` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1";}
+				{$sql = "SELECT `id`, `file_user` AS `user`, `title`, `file_date` AS `date` FROM `files` WHERE `file_user` LIKE ? And `ValidGPS` = 1";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [user], [title], [date] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1";}
+				{$sql = "SELECT [id], [file_user] AS [user], [title], [file_date] AS [date] FROM [files] WHERE [file_user] LIKE ? And [ValidGPS] = 1";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -422,7 +422,7 @@ switch($func)
 			break;
 			
 		case "exp_all_countries":
-			$sql = "SELECT DISTINCT(country_code) FROM `wifi_pointers` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `country_code`";
+			$sql = "SELECT DISTINCT(country_code) FROM `wifi_ap` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `country_code`";
 			$result = $dbcore->sql->conn->query($sql);
 			while($country_fetch = $result->fetch(2))
 			{
@@ -444,7 +444,7 @@ switch($func)
 		case "exp_country":
 			$country_code = $_REQUEST['country_code'];
 			#Get admin1 ids in this country code
-			$sql = "SELECT DISTINCT(admin1_id) FROM `wifi_pointers` WHERE `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin1_id`";
+			$sql = "SELECT DISTINCT(admin1_id) FROM `wifi_ap` WHERE `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin1_id`";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $country_code, PDO::PARAM_STR);
 			$prep_ap->execute();
@@ -480,7 +480,7 @@ switch($func)
 			$box_latlon = array();
 			$results = '';
 			#Get APs in this admin2 region
-			$sql = "SELECT DISTINCT(admin2_id) FROM `wifi_pointers` WHERE `admin1_id` = ?  And `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin2_id`";
+			$sql = "SELECT DISTINCT(admin2_id) FROM `wifi_ap` WHERE `admin1_id` = ?  And `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin2_id`";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $admin1_id, PDO::PARAM_INT);
 			$prep_ap->bindParam(2, $country_code, PDO::PARAM_STR);
@@ -519,7 +519,7 @@ switch($func)
 			$box_latlon = array();
 			$results = '';
 			#Get APs in this admin2 region
-			$sql = "SELECT `id`, `lat`, `long` FROM `wifi_pointers` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
+			$sql = "SELECT `AP_ID`, `lat`, `long` FROM `wifi_ap` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
 			$prep_ap = $dbcore->sql->conn->prepare($sql);
 			$prep_ap->bindParam(1, $admin2_id, PDO::PARAM_INT);
 			$prep_ap->bindParam(2, $admin1_id, PDO::PARAM_INT);
@@ -528,7 +528,7 @@ switch($func)
 			$fetchaps = $prep_ap->fetchAll();
 			foreach($fetchaps as $ap)
 			{
-				$ap_id = $ap['id'];
+				$ap_id = $ap['AP_ID'];
 				$ap_lat = $ap['lat'];
 				$ap_long = $ap['long'];
 				

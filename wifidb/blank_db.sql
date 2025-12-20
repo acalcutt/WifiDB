@@ -1800,11 +1800,20 @@ CREATE TABLE `cell_id` (
   `type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `highgps_id` bigint(20) DEFAULT NULL,
   `high_rssi` int(11) DEFAULT NULL,
+  `high_gps_rssi` int(11) DEFAULT NULL,
   `points` bigint(20) DEFAULT NULL,
   `fa` datetime(3) DEFAULT NULL,
   `la` datetime(3) DEFAULT NULL,
-  `cell_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+  `cell_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ModDate` datetime(3) NOT NULL DEFAULT current_timestamp(3) ON UPDATE current_timestamp(3)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Indexes for table `cell_id`
+--
+ALTER TABLE `cell_id`
+  ADD PRIMARY KEY (`cell_id`),
+  ADD UNIQUE KEY `cell_unique` (`mac`,`ssid`,`authmode`,`chan`,`type`);
 
 -- --------------------------------------------------------
 
@@ -1818,6 +1827,7 @@ CREATE TABLE `daemon_pid_stats` (
   `pidfile` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `pid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `pidtime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `pidcpu` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `pidmem` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `pidcmd` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `date` timestamp NOT NULL DEFAULT current_timestamp()
@@ -2228,6 +2238,18 @@ INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `last_exp
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `stats_cache`
+--
+
+CREATE TABLE `stats_cache` (
+  `cache_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `cache_data` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `share_waypoints`
 --
 
@@ -2628,6 +2650,12 @@ ALTER TABLE `schedule`
 --
 ALTER TABLE `settings`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `stats_cache`
+--
+ALTER TABLE `stats_cache`
+  ADD PRIMARY KEY (`cache_key`);
 
 --
 -- Indexes for table `share_waypoints`

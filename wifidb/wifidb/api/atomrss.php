@@ -39,16 +39,16 @@ $result = $dbcore->sql->conn->query($query);
 while($row = $result->fetch(2))
 {
     $newItem = $TestFeed->createNewItem();
-    $newItem->setTitle('"'.$row['user'].'" Imported \''.$row['title'].'\'');
-    $newItem->setLink($dbcore->URL_PATH."opt/userstats.php?func=useraplist&amp;row=".$row['user_row']);
-    $newItem->setDate(strtotime($row['date']));
-    $newItem->setDescription("User: ".$row['user']."<br />
+    $newItem->setTitle('"'.$row['file_user'].'" Imported \''.$row['title'].'\'');
+    $newItem->setLink($dbcore->URL_PATH."opt/userstats.php?func=useraplist&amp;row=".$row['file_user']);
+    $newItem->setDate(strtotime($row['file_date']));
+    $newItem->setDescription("User: ".$row['file_user']."<br />
 Title: ".$row['title']."<br />
-Date: ".$row['date']."<br />
-Filename: ".$row['file']."<br />
+Date: ".$row['file_date']."<br />
+Filename: ".$row['file_orig']."<br />
 File Size: ".$row['size']." kb<br />
 Notes: ".$row['notes']."<br />
-<a href='".$dbcore->URL_PATH."opt/userstats.php?func=useraplist&amp;row=".$row['user_row']."'>Link</a>");
+<a href='".$dbcore->URL_PATH."opt/userstats.php?func=useraplist&amp;row=".$row['file_user']."'>Link</a>");
     $TestFeed->addItem($newItem);
 }
 $TestFeed->genarateFeed();
