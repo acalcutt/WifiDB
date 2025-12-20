@@ -39,12 +39,17 @@ if not, write to the
 						</tr>
 						<tr class="{$wifidb_imp.color}">
 							<td class="{$wifidb_imp.color}"></td>
-							<td class="{$wifidb_imp.color}">{$wifidb_imp.id|escape:'htmlall'}</td>
+							<td class="{$wifidb_imp.color}">{$wifidb_imp.id|escape:'htmlall'}
+								{if $wifidb_login_priv_name == "Administrator"}
+									&nbsp;<a href="{$wifidb_host_url}opt/admin_action.php?action=reset_failed_file&amp;file_id={$wifidb_imp.id}&amp;return={$wifidb_host_url}opt/scheduling.php" title="Reset and Re-import this file" style="font-size: 16px; margin-right:6px;">&#x21bb;</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action=delete_failed_file&amp;file_id={$wifidb_imp.id}&amp;return={$wifidb_host_url}opt/scheduling.php" title="Delete this file (permanent)" style="font-size: 16px; color: #cc0000;">&#x1F5D1;</a>
+								{/if}
+							</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.title|escape:'htmlall'}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.file|escape:'htmlall'}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.notes|escape:'htmlall'}</td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.date|escape:'htmlall'}</td>
-							
+
 						</tr>
 						<tr class="header-centered">
 							<th class="{$wifidb_imp.color}"></th>

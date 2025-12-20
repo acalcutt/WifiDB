@@ -23,9 +23,11 @@ if not, write to the
 					</tr>
 					<tr>
 						<td class="header">
-							<a href="?func=profile">Profile</a> 
+							<a href="?func=profile">Profile</a>
 							|
 							<a href="?func=pref">Email Preferences</a>
+							|
+							<a href="?func=myimports">My Imports</a>
 						</td>
 					</tr>
 				</table>
