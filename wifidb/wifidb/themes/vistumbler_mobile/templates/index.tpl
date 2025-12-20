@@ -73,14 +73,33 @@ You should have received a copy of the GNU General Public License along with thi
 								<th class="header-centered" colspan="3">Last Import List</th>
 						</tr>
 						<tr>
+							{* Users headers: show one or two columns depending on whether 'withgps' differs *}
+							{if $new_import_user_withgps neq '' && $new_import_user_withgps neq $new_import_user}
 								<th class="header-centered">Any</th>
 								<th class="header-centered">With GPS</th>
+							{else}
+								<th class="header-centered" colspan="2">Any</th>
+							{/if}
+
+							{* AP headers *}
+							{if $new_ap_ssid_withgps neq '' && $new_ap_ssid_withgps neq $new_ap_ssid}
 								<th class="header-centered">Any</th>
 								<th class="header-centered">With GPS</th>
+							{else}
+								<th class="header-centered" colspan="2">Any</th>
+							{/if}
+
+							{* Import list headers *}
+							{if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
 								<th class="header-centered">Any</th>
 								<th class="header-centered" colspan="2">With GPS</th>
+							{else}
+								<th class="header-centered" colspan="3">Any</th>
+							{/if}
 						</tr>
 						<tr>
+							{* Users data row *}
+							{if $new_import_user_withgps neq '' && $new_import_user_withgps neq $new_import_user}
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>
 								{if $user_validgps eq 1}
@@ -88,11 +107,6 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{else}
-									<img width="20px" src="{$themeurl}img/globe_off.png">
-									<img width="20px" src="{$themeurl}img/json_off.png">
-									<img width="20px" src="{$themeurl}img/kmz_off.png">
-									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="dark-centered">
@@ -104,6 +118,20 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{/if}
 								</td>
+							{else}
+								<td class="dark-centered" colspan="2">
+									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>
+								{if $user_validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+								{/if}
+								</td>
+							{/if}
+
+							{* AP data row: either two columns or a single colspan=2 *}
+							{if $new_ap_id_withgps neq '' && $new_ap_id_withgps neq $new_ap_id}
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
 								{if $ap_validgps eq 1}
@@ -112,12 +140,6 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 									<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{else}
-									<img width="20px" src="{$themeurl}img/globe_off.png">
-									<img width="20px" src="{$themeurl}img/sigmap_off.png">
-									<img width="20px" src="{$themeurl}img/json_off.png">
-									<img width="20px" src="{$themeurl}img/kmz_off.png">
-									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="dark-centered">
@@ -130,6 +152,21 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{/if}
 								</td>
+							{else}
+								<td class="dark-centered" colspan="2">
+									<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
+									{if $ap_validgps eq 1}
+										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+										<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+										<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+										<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+									{/if}
+								</td>
+							{/if}
+
+							{* Import list data row: either two columns (any + withgps) or a single colspan covering both *}
+							{if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
 								<td class="dark-centered">
 									<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
 								{if $list_validgps eq 1}
@@ -137,11 +174,6 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{else}
-									<img width="20px" src="{$themeurl}img/globe_off.png">
-									<img width="20px" src="{$themeurl}img/json_off.png">
-									<img width="20px" src="{$themeurl}img/kmz_off.png">
-									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
 								<td class="dark-centered" colspan="2">
@@ -153,18 +185,29 @@ You should have received a copy of the GNU General Public License along with thi
 									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{/if}
 								</td>
+							{else}
+								<td class="dark-centered" colspan="3">
+									<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
+								{if $list_validgps eq 1}
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+								{/if}
+								</td>
+							{/if}
 						</tr>
 					</tbody>
-				</table>
-
+				</table>			<div style="height:10px"></div>
 				{if $top_wifi|@count > 0}
 				<table class="content_table">
 					<tbody>
 						<tr>
-							<td colspan="6" class="subheading">Top {$top_n} WiFi Networks (by observations)</td>
+							<td colspan="7" class="subheading">Top {$top_n} WiFi Networks (by observations)</td>
 						</tr>
 						<tr>
 							<th class="header-centered">#</th>
+							<th class="header-centered">GPS</th>
 							<th class="header-centered">SSID</th>
 							<th class="header-centered">BSSID</th>
 							<th class="header-centered">Auth</th>
@@ -172,18 +215,31 @@ You should have received a copy of the GNU General Public License along with thi
 							<th class="header-centered">Points</th>
 						</tr>
 						{foreach from=$top_wifi item=wifi key=idx}
-						<tr>
-							<td class="{cycle values="light-centered,dark-centered"}">{$idx+1}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">
-								<a href="{$wifidb_host_url}opt/fetch.php?id={$wifi.id|escape:'htmlall'}" title="View AP Details">{$wifi.ssid}</a>
-								{if $wifi.validgps eq 1}
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$wifi.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								{/if}
-							</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$wifi.bssid}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$wifi.auth}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$wifi.encr}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$wifi.points|number_format}</td>
+					{cycle name=topwifi_row values="light,dark" assign=rowclass}
+					<tr class="{$rowclass}">
+						<td class="{$rowclass}-centered">{$idx+1}</td>
+						<td class="{$rowclass}-centered" width="120px">
+						{if $wifi.validgps eq 1}
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifi.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&amp;from=0&amp;inc=50000&amp;id={$wifi.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+							<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&amp;from=0&amp;inc=50000&amp;id={$wifi.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+							<a href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;from=0&amp;inc=25000&amp;id={$wifi.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+							<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&amp;from=0&amp;inc=25000&amp;id={$wifi.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+						{else}
+							<img width="20px" src="{$themeurl}img/globe_off.png">
+							<img width="20px" src="{$themeurl}img/sigmap_off.png">
+							<img width="20px" src="{$themeurl}img/json_off.png">
+							<img width="20px" src="{$themeurl}img/kmz_off.png">
+							<img width="20px" src="{$themeurl}img/gpx_off.png">
+						{/if}
+						</td>
+						<td class="{$rowclass}-centered">
+							<a href="{$wifidb_host_url}opt/fetch.php?id={$wifi.id|escape:'htmlall'}" title="View AP Details">{$wifi.ssid}</a>
+						</td>
+						<td class="{$rowclass}-centered">{$wifi.bssid}</td>
+						<td class="{$rowclass}-centered">{$wifi.auth}</td>
+						<td class="{$rowclass}-centered">{$wifi.encr}</td>
+						<td class="{$rowclass}-centered">{$wifi.points|number_format}</td>
 						</tr>
 						{/foreach}
 					</tbody>
@@ -194,27 +250,45 @@ You should have received a copy of the GNU General Public License along with thi
 				<table class="content_table">
 					<tbody>
 						<tr>
-							<td colspan="5" class="subheading">Top {$top_n} Cell Towers (by observations)</td>
+							<td colspan="6" class="subheading">Top {$top_n} Cell Towers (by observations)</td>
 						</tr>
 						<tr>
 							<th class="header-centered">#</th>
+							<th class="header-centered">GPS</th>
 							<th class="header-centered">Name</th>
 							<th class="header-centered">ID</th>
 							<th class="header-centered">Type</th>
 							<th class="header-centered">Points</th>
 						</tr>
 						{foreach from=$top_cell item=cell key=idx}
-						<tr>
-							<td class="{cycle values="light-centered,dark-centered"}">{$idx+1}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">
-								<a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$cell.id|escape:'htmlall'}" title="View Cell Details">{$cell.ssid}</a>
-								{if $cell.validgps eq 1}
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&id={$cell.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								{/if}
-							</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$cell.mac}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$cell.type}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$cell.points|number_format}</td>
+					{cycle name=topcell_row values="light,dark" assign=rowclass}
+					<tr class="{$rowclass}">
+						<td class="{$rowclass}-centered">{$idx+1}</td>
+						<td class="{$rowclass}-centered">
+						{if $cell.validgps eq 1}
+							<span style="margin-left:6px">
+								<a href="{$wifidb_host_url}opt/map.php?func=exp_cid&amp;id={$cell.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$cell.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$cell.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$cell.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&amp;from=0&amp;inc=25000&amp;id={$cell.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+							</span>
+						{else}
+							<span style="margin-left:6px">
+								<img width="20px" src="{$themeurl}img/globe_off.png">
+								<img width="20px" src="{$themeurl}img/sigmap_off.png">
+								<img width="20px" src="{$themeurl}img/json_off.png">
+								<img width="20px" src="{$themeurl}img/kmz_off.png">
+								<img width="20px" src="{$themeurl}img/gpx_off.png">
+							</span>
+						{/if}
+						</td>
+						<td class="{$rowclass}-centered">
+							<a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$cell.id|escape:'htmlall'}" title="View Cell Details">{$cell.ssid}</a>
+						</td>
+						<td class="{$rowclass}-centered">{$cell.mac}</td>
+						<td class="{$rowclass}-centered">{$cell.type}</td>
+						<td class="{$rowclass}-centered">{$cell.points|number_format}</td>
 						</tr>
 						{/foreach}
 					</tbody>
@@ -225,33 +299,50 @@ You should have received a copy of the GNU General Public License along with thi
 				<table class="content_table">
 					<tbody>
 						<tr>
-							<td colspan="5" class="subheading">Top {$top_n} Bluetooth Devices (by observations)</td>
+							<td colspan="6" class="subheading">Top {$top_n} Bluetooth Devices (by observations)</td>
 						</tr>
 						<tr>
 							<th class="header-centered">#</th>
+							<th class="header-centered">GPS</th>
 							<th class="header-centered">Name</th>
 							<th class="header-centered">MAC</th>
 							<th class="header-centered">Type</th>
 							<th class="header-centered">Points</th>
 						</tr>
 						{foreach from=$top_bt item=bt key=idx}
-						<tr>
-							<td class="{cycle values="light-centered,dark-centered"}">{$idx+1}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">
-								<a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$bt.id|escape:'htmlall'}" title="View Bluetooth Details">{$bt.ssid}</a>
-								{if $bt.validgps eq 1}
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&id={$bt.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								{/if}
-							</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$bt.mac}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$bt.type}</td>
-							<td class="{cycle values="light-centered,dark-centered"}">{$bt.points|number_format}</td>
+					{cycle name=topbt_row values="light,dark" assign=rowclass}
+					<tr class="{$rowclass}">
+						<td class="{$rowclass}-centered">{$idx+1}</td>
+						<td class="{$rowclass}-centered">
+						{if $bt.validgps eq 1}
+							<span style="margin-left:6px">
+								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&amp;id={$bt.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+								<a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+								<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+							</span>
+						{else}
+							<span style="margin-left:6px">
+								<img width="20px" src="{$themeurl}img/globe_off.png">
+								<img width="20px" src="{$themeurl}img/sigmap_off.png">
+								<img width="20px" src="{$themeurl}img/json_off.png">
+								<img width="20px" src="{$themeurl}img/kmz_off.png">
+								<img width="20px" src="{$themeurl}img/gpx_off.png">
+							</span>
+						{/if}
+						</td>
+						<td class="{$rowclass}-centered">
+							<a href="{$wifidb_host_url}opt/fetch.php?func=bt&id={$bt.id|escape:'htmlall'}" title="View Bluetooth Details">{$bt.ssid}</a>
+						</td>
+						<td class="{$rowclass}-centered">{$bt.mac}</td>
+						<td class="{$rowclass}-centered">{$bt.type}</td>
+						<td class="{$rowclass}-centered">{$bt.points|number_format}</td>
 						</tr>
 						{/foreach}
 					</tbody>
 				</table>
-				{/if}
-
+				{/if}			<div style="height:10px"></div>
 				<!-- Statistics Over Time Graphs -->
 				<table class="content_table">
 					<tbody>

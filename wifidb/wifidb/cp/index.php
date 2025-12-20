@@ -127,7 +127,7 @@ if($username)
 			$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
 			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
 			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
-			
+
 			if($schedule !== (int)$userArray['schedule']){$dbcore->sec->logd("Update email pref schedule for ".$username."(".$user_id.") from ".$userArray['schedule']." to ".$schedule, "message");}
 			if($imports !== (int)$userArray['imports']){$dbcore->sec->logd("Update email pref imports for ".$username."(".$user_id.") from ".$userArray['imports']." to ".$imports, "message");}
 			if($kmz !== (int)$userArray['kmz']){$dbcore->sec->logd("Update email pref kmz for ".$username."(".$user_id.") from ".$userArray['kmz']." to ".$kmz, "message");}
@@ -154,10 +154,37 @@ if($username)
 			{
 				$cp_profile['message'] = "<br>You are not logged in. Please log in and try again.<br><br>";
 			}
-			
+
 			$dbcore->redirect_page('/wifidb/cp/index.php?func=pref', 2000);
 			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
 			$dbcore->smarty->display('user_cp_msg.tpl');
+		break;
+
+		##-------------##
+		case 'myimports':
+			$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
+			$inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
+
+			$sorts=array("id","file_orig","title","notes","aps","gps","NewAPPercent","date");
+			if(!in_array($sort, $sorts)){$sort = "id";}
+			$ords=array("ASC","DESC");
+			if(!in_array($ord, $ords)){$ord = "DESC";}
+			if(!is_numeric($from)){$from = 0;}
+			if(!is_numeric($inc)){$inc = 100;}
+
+			$dbcore->UsersLists($username, $sort, $ord, $from, $inc);
+
+			// Re-generate pagination with correct func for control panel
+			$total_files = $dbcore->user_all_imports_data['total_files'];
+			$dbcore->GeneratePages($total_files, $from, $inc, $sort, $ord, 'myimports&');
+
+			$dbcore->smarty->assign('wifidb_user_details', $dbcore->user_all_imports_data);
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
+			$dbcore->smarty->assign('sort', $sort);
+			$dbcore->smarty->assign('ord', $ord);
+			$dbcore->smarty->display('user_cp_myimports.tpl');
 		break;
 	}
 }
