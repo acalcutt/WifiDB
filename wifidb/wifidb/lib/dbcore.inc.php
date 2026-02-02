@@ -137,7 +137,7 @@ class dbcore
 
 	function GetAPhash($id)
 	{
-		$sql = "SELECT ap_hash FROM wifi_pointers WHERE id = '$id'";
+		$sql = "SELECT ap_hash FROM wifi_ap WHERE id = '$id'";
 		$result = $this->sql->conn->query($sql);
 		$ret = $result->fetch(2);
 		$hash = $ret['ap_hash'];

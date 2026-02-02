@@ -96,7 +96,7 @@ $config = array
 	#---------------- Tables ----------------#
 	'settings_tb'		   =>   'settings',
 	'users_t'			   =>   'user_imports',
-	'pointers_table'		=>   'wifi_pointers',
+	'pointers_table'		=>   'wifi_ap',
 	'signals_table'		 =>   'wifi_signals',
 	'gps_table'			 =>   'wifi_gps',
 	'user_logins_table'	 =>   'user_info',

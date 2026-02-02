@@ -105,7 +105,7 @@ $dbcore->smarty->display('header.tpl');
 							<td style="border-style: solid; border-width: 1px" height="26" colspan="3">
 								<ol>
 									<li>Re-wrote the back end storage, there is no longer 2 tables per Access Point in a seperate database called wifi_st. 
-											There are now three tables in the wifi database called; wifi_pointers (Holds the general Information for each AP), 
+											There are now three tables in the wifi database called; wifi_ap (Holds the general Information for each AP), 
 											wifi_signals (holds all the signal history data with an ID pointer for GPS), wifi_gps (holds all the GPS Coord data).</li>
 										
 									<li>Re-wrote the core of WiFiDB. All pages start off by calling <i>/lib/init.inc.php</i>, this sets up the environment,

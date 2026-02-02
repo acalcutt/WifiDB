@@ -198,9 +198,21 @@ switch($func)
 
         if($files[0]){$kmldate=$files[0];}else{$kmldate=date ("Y-m-d");}
 
-        $sql = "SELECT `LA` FROM `wifi_pointers` WHERE `lat` != '0.0000' ORDER BY `id` DESC LIMIT 1";
-        $result = $dbcore->sql->conn->query($sql);
-        $ap_array = $result->fetch(2);
+        if ($dbcore->sql->service == "mysql") {
+            $sql = "SELECT a.la FROM `wifi_ap` a LEFT JOIN `wifi_gps` g ON g.GPS_ID = a.HighGps_ID WHERE g.Lat != '0.0000' ORDER BY a.AP_ID DESC LIMIT 1";
+            $result = $dbcore->sql->conn->query($sql);
+            $ap_array = $result->fetch(2);
+        } else if ($dbcore->sql->service == "sqlsrv") {
+            // MSSQL: prefer GPS-based lat check; use TOP 1 and bracketed identifiers
+            $sql = "SELECT TOP 1 a.[la] FROM [wifi_ap] a LEFT JOIN [wifi_gps] g ON g.[GPS_ID] = a.[HighGps_ID] WHERE g.[Lat] <> 0.0000 ORDER BY a.[AP_ID] DESC";
+            $result = $dbcore->sql->conn->query($sql);
+            $ap_array = $result->fetch(2);
+        } else {
+            // Fallback: any non-null la
+            $sql = "SELECT la FROM `wifi_ap` WHERE la IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";
+            $result = $dbcore->sql->conn->query($sql);
+            $ap_array = $result->fetch(2);
+        }
 
         if($ap_array['LA'])
         {

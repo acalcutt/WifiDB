@@ -41,7 +41,7 @@ if($chan != ""){$sql_a[] = "`chan` like '%$chan%'";}
 
 $waps = array();
 $sql_imp = implode(" AND ", $sql_a);
-$sql = "SELECT * FROM `wifi_pointers` WHERE ".$sql_imp." ORDER by `ssid` ASC LIMIT 0,15";
+$sql = "SELECT * FROM `wifi_ap` WHERE ".$sql_imp." ORDER by `ssid` ASC LIMIT 0,15";
 $result = $dbcore->sql->conn->query($sql);
 while($obj = $result->fetch(2))
 {
