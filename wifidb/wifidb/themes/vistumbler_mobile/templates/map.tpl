@@ -1,22 +1,3 @@
-<!--
-
-Copyright (C) 2021 Andrew Calcutt
-
-This program is free software; you can redistribute it and/or modify it under the terms
-of the GNU General Public License as published by the Free Software Foundation; either
-version 2 of the License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with this program;
-if not, write to the
-
-   Free Software Foundation, Inc.,
-   59 Temple Place, Suite 330,
-   Boston, MA 02111-1307 USA
--->
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
@@ -200,6 +181,7 @@ if not, write to the
 			timeoutMs: 10_000
 		});
 		demSource.setupMaplibre(maplibregl);
+		maplibregl.setWorkerCount(6)
 
 		//Maplibre map object
 		var map = new maplibregl.Map({
@@ -216,7 +198,7 @@ if not, write to the
 {/if}
 		});
 
-		map.addControl(new maplibregl.AttributionControl(), 'top-right');
+		map.addControl(new maplibregl.AttributionControl({literal}{customAttribution: ''}{/literal}), 'top-right');
 		map.addControl(new maplibregl.LogoControl(),'top-left');
 		
 		/*
@@ -659,37 +641,75 @@ if not, write to the
 		}
 
 		// --- End Year Visibility Functions ---
-		// --- Start Address Search Box Functions ---
-		function searchadr() {
-			var address = document.getElementById('searchadrbox').value;
-			var address = address.replace(/ /g, "+");
-			var url = 'https://geocoder.api.here.com/6.2/geocode.json?app_id=PosJ3G7XOlfZLXeYgxeZ&app_code=4yaMcu0yxndGUH6X1_vHAw&searchtext=' + address;
-			console.log('url: ', url);
-			var req = new XMLHttpRequest();
-			req.overrideMimeType("application/json");
-			req.open('GET', url, true);
-			req.onload = function() {
-				console.log(req.responseText);
-				var jsonResponse = JSON.parse(req.responseText);
-				var lat = jsonResponse.Response.View[0].Result[0].Location.DisplayPosition.Latitude;
-				var lng = jsonResponse.Response.View[0].Result[0].Location.DisplayPosition.Longitude;
-				var lnglat = [lng.toFixed(6), lat.toFixed(6)];
-				map.setCenter(lnglat);
-				console.log('lnglat: ', lnglat);
-			};
-			req.send(null);
-		}
-		var input = document.getElementById("searchadrbox");
-		input.addEventListener("keyup", function(event) {
-			// Cancel the default action, if needed
-			event.preventDefault();
-			// Number 13 is the "Enter" key on the keyboard
-			if (event.keyCode === 13) {
-				// Trigger the button element with a click
-				document.getElementById("searchadr").click();
+			// --- Start Google Geocoding API Functions ---
+
+			function searchadr() {
+				var address = document.getElementById('searchadrbox').value;
+				// Replace spaces with '+' for the URL
+				var formattedAddress = encodeURIComponent(address);
+
+				// Replace with your actual Google Geocoding API Key
+				var googleApiKey = 'AIzaSyAQoa70ppFx6OilVgjRbY3S8aoiIK9_Bjw';
+
+				// Google Geocoding API endpoint for forward geocoding (address to lat/lng)
+				var url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' + formattedAddress + '&key=' + googleApiKey;
+
+				//console.log('Google Geocoding URL: ', url);
+
+				var req = new XMLHttpRequest();
+				req.overrideMimeType("application/json");
+				req.open('GET', url, true);
+
+				req.onload = function() {
+					if (req.status >= 200 && req.status < 300) { // Check if the request was successful
+						//console.log("Google Geocoding Response:", req.responseText);
+						var jsonResponse = JSON.parse(req.responseText);
+
+						if (jsonResponse.status === 'OK' && jsonResponse.results.length > 0) {
+							var lat = jsonResponse.results[0].geometry.location.lat;
+							var lng = jsonResponse.results[0].geometry.location.lng;
+							var lnglat = [lng.toFixed(6), lat.toFixed(6)]; // Google returns lat, lng in order
+
+							// Assuming 'map' is your map object and setCenter expects [lng, lat]
+							// Adjust this if your map library expects [lat, lng]
+							map.setCenter(lnglat);
+							console.log('Coordinates (lng, lat): ', lnglat);
+
+							// You might also want to display the formatted address returned by Google
+							var formattedAddressFromGoogle = jsonResponse.results[0].formatted_address;
+							//console.log('Formatted Address: ', formattedAddressFromGoogle);
+
+						} else {
+							//console.error('Google Geocoding API Error or no results found. Status:', jsonResponse.status);
+							alert('Could not find coordinates for the provided address. Please try again.');
+						}
+					} else {
+						console.error('Google Geocoding API Request Failed. Status:', req.status);
+						//alert('Error fetching geocoding data. Please try again later.');
+					}
+				};
+
+				req.onerror = function() {
+					console.error('Network error occurred while fetching Google Geocoding data.');
+					//alert('A network error occurred. Please check your internet connection.');
+				};
+
+				req.send(null);
 			}
-		});
-		// --- End Address Search Box Functions ---
+
+			// Event listener for the search input (similar to your original code)
+			var input = document.getElementById("searchadrbox");
+			input.addEventListener("keyup", function(event) {
+				// Cancel the default action, if needed
+				event.preventDefault();
+				// Number 13 is the "Enter" key on the keyboard
+				if (event.keyCode === 13) {
+					// Trigger the button element with a click
+					document.getElementById("searchadr").click(); // Assuming you have a button with id="searchadr"
+				}
+			});
+
+			// --- End Google Geocoding API Functions --
 		// Listen for every move event by the user
 {if $ie eq 0}
 		var displayCenter = function displayCenter() {
@@ -812,7 +832,7 @@ if not, write to the
 			//WifiDB Information Popup
 {if $cell_layer_name}
 			map.on('click', function(e) {
-				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
+				const inspectStyle = map.getStyle().metadata?.['maplibregl-inspect:inspect'] ?? 0;
 				if (!inspectStyle) {
 
 					var queryBox;
@@ -874,7 +894,7 @@ if not, write to the
 {/if}
 {if $layer_name}
 			map.on('click', function(e) {
-				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
+				const inspectStyle = map.getStyle().metadata?.['maplibregl-inspect:inspect'] ?? 0;
 				if (!inspectStyle) {
 					var queryBox;
 					var selectThreshold = 5;
@@ -943,7 +963,7 @@ if not, write to the
 {/if}
 			// indicate that the symbols are clickableby changing the cursor style to 'pointer'.
 			map.on('mousemove', function(e) {
-				var inspectStyle = map.getStyle().metadata['maplibregl-inspect:inspect'];
+				const inspectStyle = map.getStyle().metadata?.['maplibregl-inspect:inspect'] ?? 0;
 				if (!inspectStyle) {
 					var features = map.queryRenderedFeatures(e.point, {
 						layers: [{if $layer_name}{$layer_name}{/if}{if $layer_name && $cell_layer_name},{/if}{if $cell_layer_name}{$cell_layer_name}{/if}]

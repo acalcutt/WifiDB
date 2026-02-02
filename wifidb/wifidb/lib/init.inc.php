@@ -279,42 +279,44 @@ function create_base_cookies($URL_PATH)
 	$PATH	   = ";path=".$root;
 	$ultimate_path = $_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
 	?>
-<script type="text/javascript">
+	<script type="text/javascript">
 	function checkTimeZone()
 	{
 		var expiredays = 86400;
-		var rightNow = new Date();
-        var exdate=new Date();
-		var date1 = new Date(rightNow.getFullYear(), 0, 1, 0, 0, 0, 0);
-		var date2 = new Date(rightNow.getFullYear(), 6, 1, 0, 0, 0, 0);
-		var temp = date1.toGMTString();
-		var date3 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
-		var temp = date2.toGMTString();
-		var date4 = new Date(temp.substring(0, temp.lastIndexOf(" ")-1));
-		var hoursDiffStdTime = (date1 - date3) / (1000 * 60 * 60);
-		var hoursDiffDaylightTime = (date2 - date4) / (1000 * 60 * 60);
-		if (hoursDiffDaylightTime == hoursDiffStdTime)
-		{
-			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_dst=0" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		var exdate = new Date();
+		exdate.setDate(exdate.getDate()+expiredays);
 
-			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_check=1" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		// Modern browsers can provide the IANA timezone name
+		var tzName = null;
+		try {
+			if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+				var opts = Intl.DateTimeFormat().resolvedOptions();
+				if (opts && opts.timeZone) {
+					tzName = opts.timeZone;
+				}
+			}
+		} catch(e) { tzName = null; }
 
-			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_timezone=" + hoursDiffStdTime +((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		// timezone offset in hours (local = -getTimezoneOffset()/60)
+		var offsetMinutes = (new Date()).getTimezoneOffset();
+		var hoursOffset = -offsetMinutes/60;
+
+		// DST detection: compare offsets in Jan and Jul
+		var now = new Date();
+		var jan = new Date(now.getFullYear(),0,1);
+		var jul = new Date(now.getFullYear(),6,1);
+		var isDST = (jan.getTimezoneOffset() != jul.getTimezoneOffset()) ? 1 : 0;
+
+		var cookieOpts = "<?php echo $domain.$PATH.$ssl; ?>;expires=" + exdate.toUTCString();
+
+		if (tzName !== null) {
+			document.cookie = "wifidb_client_tzname=" + encodeURIComponent(tzName) + ";" + cookieOpts;
 		}
-		else
-		{
-			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_dst=1" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
+		document.cookie = "wifidb_client_timezone=" + hoursOffset + ";" + cookieOpts;
+		document.cookie = "wifidb_client_dst=" + (isDST ? 1 : 0) + ";" + cookieOpts;
+		document.cookie = "wifidb_client_check=1;" + cookieOpts;
 
-			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_check=1" + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-
-			exdate.setDate(exdate.getDate()+expiredays);
-			document.cookie="wifidb_client_timezone=" + hoursDiffStdTime + ((expiredays==null) ? "" : "<?php echo $domain.$PATH.$ssl; ?>;expires=" +exdate.toUTCString());
-		}
+		// reload current request URI so server sees cookies
 		location.href = '<?php echo $ultimate_path; ?>';
 	}
 	</script>

@@ -35,8 +35,32 @@ if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
 if(!is_numeric($inc)){$inc = 250;}
 
-$TZone= (@$_COOKIE['wifidb_client_timezone'] ? @$_COOKIE['wifidb_client_timezone'] : $dbcore->default_timezone);
-$dst = (@$_COOKIE['wifidb_client_dst']!='' ? @$_COOKIE['wifidb_client_dst'] : $dbcore->default_dst);
+$TZone = null;
+// prefer explicit client cookie, then configured default, else try to auto-detect
+if (isset($_COOKIE['wifidb_client_timezone']) && $_COOKIE['wifidb_client_timezone'] !== '') {
+	$TZone = $_COOKIE['wifidb_client_timezone'];
+} elseif (isset($dbcore->default_timezone) && $dbcore->default_timezone !== null) {
+	$TZone = $dbcore->default_timezone;
+} else {
+	// fallback to server timezone offset (hours)
+	try {
+		$dt = new DateTime("now", new DateTimeZone(@date_default_timezone_get()));
+		$TZone = ($dt->getOffset() / 3600);
+	} catch (Exception $e) {
+		$TZone = 0;
+	}
+}
+
+$dst = null;
+if (isset($_COOKIE['wifidb_client_dst']) && $_COOKIE['wifidb_client_dst'] !== '') {
+	$dst = $_COOKIE['wifidb_client_dst'];
+} elseif (isset($dbcore->default_dst) && $dbcore->default_dst !== null) {
+	$dst = $dbcore->default_dst;
+} else {
+	// server DST flag (1 if DST is in effect on server timezone)
+	$dst = (int)date('I');
+}
+
 $refresh = (@$_COOKIE['wifidb_refresh']!='' ? @$_COOKIE['wifidb_refresh'] : $dbcore->default_refresh);
 #echo $func;
 switch($func)
@@ -44,17 +68,21 @@ switch($func)
 	case 'refresh':
 		$POST_refresh = filter_input(INPUT_POST, 'refresh', FILTER_SANITIZE_ENCODED);
 		if( (!isset($POST_refresh)) or $POST_refresh=='' ) { $POST_refresh = $refresh; }
-		setcookie( 'wifidb_refresh' , $POST_refresh , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
-		header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
+		// store cookie at site root so it's available across the app
+		setcookie('wifidb_refresh', $POST_refresh, (time()+($dbcore->timeout)), '/'.$dbcore->root.'/');
+		// use a relative path redirect to avoid sending users to an external HOSTURL value
+		header('Location: /'.$dbcore->root.'/opt/scheduling.php');
 	break;
 	case 'timezone':
 		$POST_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_ENCODED);
 		$POST_dst = filter_input(INPUT_POST, 'dst', FILTER_SANITIZE_ENCODED);
 		if( (!isset($POST_timezone)) or $POST_timezone=='' ) { $POST_timezone = $TZone; }
 		if( (!isset($POST_dst)) or $POST_dst=='' ) { $POST_dst = 0; }
-		setcookie( 'wifidb_client_timezone' , $POST_timezone , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
-		setcookie( 'wifidb_client_dst' , $POST_dst , (time()+($dbcore->timeout)), "/".$dbcore->root."/opt/scheduling.php" );
-		header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
+		// store cookie at site root so it's available across the app
+		setcookie('wifidb_client_timezone', $POST_timezone, (time()+($dbcore->timeout)), '/'.$dbcore->root.'/');
+		setcookie('wifidb_client_dst', $POST_dst, (time()+($dbcore->timeout)), '/'.$dbcore->root.'/');
+		// use a relative path redirect to avoid sending users to an external HOSTURL value
+		header('Location: /'.$dbcore->root.'/opt/scheduling.php');
 	break;
 #######################################################################
 	case 'full_kml':
@@ -677,18 +705,60 @@ switch($func)
 		$prep = $dbcore->sql->conn->query($sql);
 		$prepf = $prep->fetch(1);
 		$complete_count = $prepf[0];
-		
+
 		#Get Importing Count
 		$sql = "SELECT Count(id) AS imp_count FROM files_importing";
 		$prep = $dbcore->sql->conn->query($sql);
 		$prepf = $prep->fetch(1);
 		$importing_count = $prepf[0];
-		
+
 		#Get Waiting Count
 		$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
 		$prep = $dbcore->sql->conn->query($sql);
 		$prepf = $prep->fetch(1);
 		$waiting_count = $prepf[0];
+
+		#Get Today's Admin Jobs (limited info for public display)
+		$admin_jobs_row = array();
+		$n = 0;
+		$today_start = date('Y-m-d 00:00:00');
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT id, job_type, status, created_at, started_at, completed_at FROM admin_jobs WHERE created_at >= ? ORDER BY created_at DESC LIMIT 50";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 50 id, job_type, status, created_at, started_at, completed_at FROM admin_jobs WHERE created_at >= ? ORDER BY created_at DESC";}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $today_start, PDO::PARAM_STR);
+		$prep->execute();
+		while ($newArray = $prep->fetch(2))
+		{
+			$status = $newArray['status'];
+			if($status == 'completed')
+				{$color = 'lime';}
+			else if($status == 'running')
+				{$color = 'yellow';}
+			else if($status == 'failed')
+				{$color = 'red';}
+			else
+				{$color = 'lightgray';}
+
+			$created_time = strtotime($newArray['created_at']);
+			$created_local = date("h:i:s A", $created_time + $alter_by);
+
+			$completed_local = '';
+			if($newArray['completed_at'])
+			{
+				$completed_time = strtotime($newArray['completed_at']);
+				$completed_local = date("h:i:s A", $completed_time + $alter_by);
+			}
+
+			$admin_jobs_row[$n]['color'] = $color;
+			$admin_jobs_row[$n]['id'] = $newArray['id'];
+			$admin_jobs_row[$n]['job_type'] = $newArray['job_type'];
+			$admin_jobs_row[$n]['status'] = $newArray['status'];
+			$admin_jobs_row[$n]['created_at'] = $created_local;
+			$admin_jobs_row[$n]['completed_at'] = $completed_local;
+			$n++;
+		}
 
 		$dbcore->smarty->assign('wifidb_page_label', 'Scheduling Page (Waiting Imports and Daemon Status)');
 		$dbcore->smarty->assign('wifidb_refresh_options', $refresh_opt);
@@ -696,6 +766,7 @@ switch($func)
 		$dbcore->smarty->assign('wifidb_dst_options', $dst_opt);
 		$dbcore->smarty->assign('wifidb_schedules', $schedule_row);
 		$dbcore->smarty->assign('wifidb_daemons', $pid_row);
+		$dbcore->smarty->assign('wifidb_admin_jobs', $admin_jobs_row);
 		$dbcore->smarty->assign('curtime_local', $curtime_local);
 		$dbcore->smarty->assign('curtime_utc', $curtime_utc);
 		$dbcore->smarty->assign('complete_count', $complete_count);

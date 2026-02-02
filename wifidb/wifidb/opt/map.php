@@ -40,13 +40,13 @@ if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; r
 
 
 $terrain = 1;
-#$wifidb_meta_header = '<link href="https://unpkg.com/maplibre-gl@3.3.0/dist/maplibre-gl.css" rel="stylesheet" />';
+#$wifidb_meta_header = '<link href="https://unpkg.com/maplibre-gl@4.0.0-pre.6/dist/maplibre-gl.css" rel="stylesheet" />';
 $wifidb_meta_header = '<link href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" rel="stylesheet" />';
 $wifidb_meta_header .= '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
 $wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-contour@0.0.5/dist/index.min.js"></script>';
-#$wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-gl@3.3.0/dist/maplibre-gl.js"></script>';
+#$wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-gl@4.0.0-pre.6/dist/maplibre-gl.js"></script>';
 $wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script>';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.min.js"></script>';
+$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.js"></script>';
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);
 $dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);

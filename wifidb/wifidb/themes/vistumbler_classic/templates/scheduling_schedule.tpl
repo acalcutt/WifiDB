@@ -71,7 +71,7 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_schedule from=$wifidb_schedules}
 						<tr class="{$wifidb_schedule.color}">
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if $wifidb_login_priv_name == "Administrator"} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a>{/if}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval|escape:'htmlall'} minutes</td>
@@ -90,7 +90,7 @@ if not, write to the
 					<br />
 					<table class="content_table">
 						<tr class="subheading">
-							<th colspan="7">Daemon Status</th>
+							<th colspan="8">Daemon Status</th>
 						</tr>
 						<tr class="header-centered">
 							<th class="header-centered">NODE</th>
@@ -100,6 +100,7 @@ if not, write to the
 							<th class="header-centered">MEM</th>
 							<th class="header-centered">CMD</th>
 							<th class="header-centered">UPDATED</th>
+							{if $wifidb_login_priv_name == "Administrator"}<th class="header-centered">ACTION</th>{/if}
 						</tr>
 						{foreach item=wifidb_daemon from=$wifidb_daemons}
 						<tr class="{$wifidb_daemon.color}">
@@ -110,10 +111,17 @@ if not, write to the
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidmem|escape:'htmlall'}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcmd|escape:'htmlall'}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.lastupdatetime_local|escape:'htmlall'}</td>
+							{if $wifidb_login_priv_name == "Administrator"}
+							<td class="{$wifidb_daemon.color}">
+								{if $wifidb_daemon.pid == 0 || $wifidb_daemon.color == 'red' || $wifidb_daemon.color == 'yellow'}
+								<a href="{$wifidb_host_url}opt/admin_action.php?action=delete_daemon_pid&amp;pidfile={$wifidb_daemon.pidfile|escape:'url'}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Delete this PID record and file">&#x2716;</a>
+								{/if}
+							</td>
+							{/if}
 						</tr>
 						{foreachelse}
 						<tr align="center">
-							<td class="light-centered" colspan="7">
+							<td class="light-centered" colspan="8">
 								Sorry there are no daemon PIDs...
 							</td>
 						</tr>

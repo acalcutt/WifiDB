@@ -25,6 +25,49 @@ $file_id = filter_input(INPUT_GET, 'file_id', FILTER_SANITIZE_NUMBER_INT);
 $confirm = filter_input(INPUT_GET, 'confirm', FILTER_SANITIZE_STRING);
 $return_url = filter_input(INPUT_GET, 'return', FILTER_SANITIZE_URL);
 
+/**
+ * Queue an admin job for background processing
+ */
+function queue_admin_job($dbcore, $job_type, $target_id, $target_table, $requested_by)
+{
+	try
+	{
+		$sql = "INSERT INTO admin_jobs (job_type, target_id, target_table, requested_by, status, created_at) VALUES (?, ?, ?, ?, 'pending', ?)";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$created_at = date('Y-m-d H:i:s');
+		$prep->bindParam(1, $job_type, PDO::PARAM_STR);
+		$prep->bindParam(2, $target_id, PDO::PARAM_INT);
+		$prep->bindParam(3, $target_table, PDO::PARAM_STR);
+		$prep->bindParam(4, $requested_by, PDO::PARAM_STR);
+		$prep->bindParam(5, $created_at, PDO::PARAM_STR);
+		$prep->execute();
+
+		// Get the job ID
+		if($dbcore->sql->service == "mysql")
+		{
+			$job_id = $dbcore->sql->conn->lastInsertId();
+		}
+		else
+		{
+			// SQL Server - get the ID from the insert
+			$sql = "SELECT MAX(id) as job_id FROM admin_jobs WHERE job_type = ? AND target_id = ? AND requested_by = ?";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $job_type, PDO::PARAM_STR);
+			$prep->bindParam(2, $target_id, PDO::PARAM_INT);
+			$prep->bindParam(3, $requested_by, PDO::PARAM_STR);
+			$prep->execute();
+			$result = $prep->fetch(PDO::FETCH_ASSOC);
+			$job_id = $result['job_id'];
+		}
+
+		return array('success' => true, 'job_id' => $job_id);
+	}
+	catch(Exception $e)
+	{
+		return array('success' => false, 'error' => $e->getMessage());
+	}
+}
+
 switch($action)
 {
 	case "delete_my_file":
@@ -54,17 +97,17 @@ switch($action)
 
 		if($confirm == "yes")
 		{
-			// Execute the delete
-			$result = delete_user_file($dbcore, $file_id);
+			// Queue the job for background processing
+			$result = queue_admin_job($dbcore, 'user_delete_file', $file_id, 'files', $username);
 
 			if($result['success'])
 			{
-				$message = "File ID {$file_id} has been deleted.";
+				$message = "Delete job for File ID {$file_id} has been queued (Job #{$result['job_id']}). It will be processed shortly.";
 				$message_type = "success";
 			}
 			else
 			{
-				$message = "Error deleting file: " . $result['error'];
+				$message = "Error queuing job: " . $result['error'];
 				$message_type = "error";
 			}
 
@@ -89,180 +132,5 @@ switch($action)
 
 	default:
 		die("Invalid action");
-}
-
-/**
- * Delete a user's own file by removing its data and moving the uploaded file
- */
-function delete_user_file($dbcore, $File_ID)
-{
-	try {
-		// Go through APs with this File ID and update to alternate file if available
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
-		$apl = $dbcore->sql->conn->prepare($sql);
-		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$apl->execute();
-
-		while($ap = $apl->fetch(PDO::FETCH_NUM))
-		{
-			$AP_ID = $ap[0];
-
-			if($dbcore->sql->service == "mysql")
-				{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` != ? LIMIT 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? AND [File_ID] != ?";}
-			$resgps = $dbcore->sql->conn->prepare($sqlhp);
-			$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
-			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
-			$resgps->execute();
-			$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
-			$New_File_ID = $fetchgps['File_ID'];
-
-			if($New_File_ID)
-			{
-				if($dbcore->sql->service == "mysql")
-					{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
-				else if($dbcore->sql->service == "sqlsrv")
-					{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
-				$prep = $dbcore->sql->conn->prepare($sqlu);
-				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
-				$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
-				$prep->execute();
-			}
-		}
-
-		// Cells
-		if($dbcore->sql->service == "mysql")
-			{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
-		$apl = $dbcore->sql->conn->prepare($sql);
-		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$apl->execute();
-
-		while($ap = $apl->fetch(PDO::FETCH_NUM))
-		{
-			$cell_id = $ap[0];
-
-			if($dbcore->sql->service == "mysql")
-				{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? AND `file_id` != ? LIMIT 1";}
-			else if($dbcore->sql->service == "sqlsrv")
-				{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? AND [file_id] != ?";}
-			$resgps = $dbcore->sql->conn->prepare($sqlhp);
-			$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
-			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
-			$resgps->execute();
-			$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
-			$New_File_ID = $fetchgps['file_id'];
-
-			if($New_File_ID)
-			{
-				if($dbcore->sql->service == "mysql")
-					{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
-				else if($dbcore->sql->service == "sqlsrv")
-					{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
-				$prep = $dbcore->sql->conn->prepare($sqlu);
-				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
-				$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
-				$prep->execute();
-			}
-		}
-
-		// Delete wifi_hist records
-		$sqlhp = "DELETE FROM wifi_hist WHERE File_ID = ?";
-		$resgps = $dbcore->sql->conn->prepare($sqlhp);
-		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$resgps->execute();
-
-		// Delete wifi_ap records (only those still pointing to this file)
-		$sqlhp = "DELETE FROM wifi_ap WHERE File_ID = ?";
-		$resgps = $dbcore->sql->conn->prepare($sqlhp);
-		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$resgps->execute();
-
-		// Delete wifi_gps records
-		$sqlhp = "DELETE FROM wifi_gps WHERE File_ID = ?";
-		$resgps = $dbcore->sql->conn->prepare($sqlhp);
-		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$resgps->execute();
-
-		// Delete cell_hist records
-		$sqlhp = "DELETE FROM cell_hist WHERE file_id = ?";
-		$resgps = $dbcore->sql->conn->prepare($sqlhp);
-		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$resgps->execute();
-
-		// Delete cell_id records (only those still pointing to this file)
-		$sqlhp = "DELETE FROM cell_id WHERE file_id = ?";
-		$resgps = $dbcore->sql->conn->prepare($sqlhp);
-		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$resgps->execute();
-
-		// Get full file info before deletion
-		$sqlf = "SELECT * FROM files WHERE id = ?";
-		$prep = $dbcore->sql->conn->prepare($sqlf);
-		$prep->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$prep->execute();
-		$finfo = $prep->fetch(PDO::FETCH_ASSOC);
-
-		if($finfo && !empty($finfo['file_name']))
-		{
-			$orig = $finfo['file_name'];
-			$upload_dir = realpath(dirname(__FILE__).'/../import/up');
-			if($upload_dir !== false)
-			{
-				$del_dir = $upload_dir.DIRECTORY_SEPARATOR.'user_deleted';
-				if(!is_dir($del_dir)) { @mkdir($del_dir, 0755, true); }
-
-				// Save file info to txt file for potential re-import
-				save_file_info($finfo, $del_dir);
-
-				// Move the uploaded file
-				$src = $upload_dir.DIRECTORY_SEPARATOR.$orig;
-				$dst = $del_dir.DIRECTORY_SEPARATOR.$orig;
-				if(is_file($src)) { @rename($src, $dst); }
-			}
-		}
-
-		// Delete the file record
-		$sqlhp = "DELETE FROM files WHERE id = ?";
-		$resgps = $dbcore->sql->conn->prepare($sqlhp);
-		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
-		$resgps->execute();
-
-		return array('success' => true);
-	}
-	catch(Exception $e)
-	{
-		return array('success' => false, 'error' => $e->getMessage());
-	}
-}
-
-/**
- * Save file info to a txt file for potential re-import
- * Format matches filenames_create.php: HASH|TYPE|FILENAME|ORIG_FILENAME|USERNAME|TITLE|DATE|NOTES
- */
-function save_file_info($finfo, $del_dir)
-{
-	if(empty($finfo['file_name'])) return;
-
-	// Get base filename without extension for the info file
-	$base_name = pathinfo($finfo['file_name'], PATHINFO_FILENAME);
-	$info_file = $del_dir.DIRECTORY_SEPARATOR.$base_name.'.txt';
-
-	$hash = trim($finfo['hash']);
-	$type = trim($finfo['type']) == "" ? "vistumbler" : trim($finfo['type']);
-	$title = trim($finfo['title']) == "" ? "Untitled" : trim($finfo['title']);
-	$title = str_replace(array("|", "\n", "\r"), "", $title);
-	$notes = str_replace(array("|", "\n", "\r"), "", $finfo['notes']);
-	$user = str_replace(array("|", "\n", "\r"), "", $finfo['file_user']);
-
-	$content = "# FILE HASH | TYPE | FILENAME | ORIG_FILENAME | USERNAME | TITLE | DATE | NOTES\r\n";
-	$content .= $hash."|".$type."|".$finfo['file_orig']."|".$finfo['file_name']."|".$user."|".$title."|".$finfo['file_date']."|".$notes."\r\n";
-
-	@file_put_contents($info_file, $content);
 }
 ?>

@@ -7,8 +7,8 @@
 					<!-- WifiDB -->
 					<ins class="adsbygoogle"
 						 style="display:block"
-						 data-ad-client="ca-pub-4275640341473005"
-						 data-ad-slot="3954826537"
+						 data-ad-client="ca-pub-2350008141216245"
+						 data-ad-slot="4095054379"
 						 data-ad-format="auto"
 						 data-full-width-responsive="true"></ins>
 					<script>

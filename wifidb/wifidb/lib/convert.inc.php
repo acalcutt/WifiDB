@@ -145,56 +145,88 @@ class convert extends dbcore
 	 */
 	public function findCapabilities($Found_Capabilities = "")
 	{
-		If(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "CCMP") And stristr($Found_Capabilities, "EAP"))
-		{	$Found_AUTH = "WPA2-Enterprise";
-			$Found_ENCR = "CCMP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "CCMP") And stristr($Found_Capabilities, "EAP"))
-		{	$Found_AUTH = "WPA-Enterprise";
-			$Found_ENCR = "CCMP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "CCMP"))
-		{	$Found_AUTH = "WPA2-Personal";
-			$Found_ENCR = "CCMP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "CCMP"))
-		{	$Found_AUTH = "WPA-Personal";
-			$Found_ENCR = "CCMP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "TKIP") And stristr($Found_Capabilities, "EAP"))
-		{	$Found_AUTH = "WPA2-Enterprise";
-			$Found_ENCR = "TKIP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "TKIP") And stristr($Found_Capabilities, "EAP"))
-		{	$Found_AUTH = "WPA-Enterprise";
-			$Found_ENCR = "TKIP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA2") And stristr($Found_Capabilities, "TKIP"))
-		{	$Found_AUTH = "WPA2-Personal";
-			$Found_ENCR = "TKIP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WPA") And stristr($Found_Capabilities, "TKIP"))
-		{	$Found_AUTH = "WPA-Personal";
-			$Found_ENCR = "TKIP";
-			$Found_SecType = 3;
-		}ElseIf(stristr($Found_Capabilities, "WEP"))
-		{	$Found_AUTH = "Open";
-			$Found_ENCR = "WEP";
-			$Found_SecType = 2;
-		}Else
-		{	$Found_AUTH = "Open";
-			$Found_ENCR = "None";
-			$Found_SecType = 1;
+		// Normalize input and use unified detection logic
+		// This replaces the older repetitive branches with a single normalized parser.
+
+		// Normalize
+		$cap = strtoupper((string)$Found_Capabilities);
+
+		// Determine cipher/encryption
+		$encr = null;
+		if (strpos($cap, 'GCMP') !== false || strpos($cap, 'GCMP-256') !== false) {
+			$encr = 'GCMP';
+		} elseif (strpos($cap, 'CCMP') !== false || strpos($cap, 'AES') !== false) {
+			$encr = 'CCMP';
+		} elseif (strpos($cap, 'TKIP') !== false) {
+			$encr = 'TKIP';
+		} elseif (strpos($cap, 'WEP') !== false) {
+			$encr = 'WEP';
+		} else {
+			$encr = 'None';
 		}
-		if(stristr($Found_Capabilities, "IBSS"))
-		{
-			$nt = "Ad-Hoc";
-		}else
-		{
-			$nt = "Infrastructure";
+
+		// Determine auth (WPA/WPA2/WPA3/OWE/Open) and whether Enterprise (EAP) or PSK/SAE
+		$auth = 'Open';
+		$sectype = 1; // 1=open, 2=wep, 3=wpafamily
+
+		// Flags
+		$hasWPA3 = (strpos($cap, 'WPA3') !== false) || (strpos($cap, 'SAE') !== false);
+		$hasWPA2 = (strpos($cap, 'WPA2') !== false) || (strpos($cap, 'RSN') !== false);
+		$hasWPA = (strpos($cap, 'WPA') !== false);
+		$hasEAP = (strpos($cap, 'EAP') !== false);
+		$hasPSK = (strpos($cap, 'PSK') !== false) || (strpos($cap, 'PERSONAL') !== false);
+		$hasOWE = (strpos($cap, 'OWE') !== false);
+
+		if ($encr === 'WEP') {
+			$auth = 'Open';
+			$sectype = 2;
+		} elseif ($hasWPA3) {
+			$sectype = 3;
+			if ($hasEAP) {
+				$auth = 'WPA3-Enterprise';
+			} elseif (strpos($cap, 'SAE') !== false) {
+				$auth = 'WPA3-SAE';
+			} else {
+				$auth = 'WPA3';
+			}
+		} elseif ($hasWPA2) {
+			$sectype = 3;
+			if ($hasEAP) {
+				$auth = 'WPA2-Enterprise';
+			} elseif ($hasPSK) {
+				$auth = 'WPA2-Personal';
+			} else {
+				$auth = 'WPA2';
+			}
+		} elseif ($hasWPA) {
+			$sectype = 3;
+			if ($hasEAP) {
+				$auth = 'WPA-Enterprise';
+			} elseif ($hasPSK) {
+				$auth = 'WPA-Personal';
+			} else {
+				$auth = 'WPA';
+			}
+		} elseif ($hasOWE) {
+			// Opportunistic Wireless Encryption - encrypted but no auth exchange
+			$sectype = 3;
+			$auth = 'OWE';
+		} else {
+			$auth = 'Open';
+			$encr = ($encr === 'None') ? 'None' : $encr;
 		}
-		$out = array($Found_AUTH, $Found_ENCR, $Found_SecType, $nt);
-		return $out;
+
+		// Network type
+		if (strpos($cap, 'IBSS') !== false) {
+			$nt = 'Ad-Hoc';
+		} else {
+			$nt = 'Infrastructure';
+		}
+
+		// Ensure sensible defaults
+		if ($encr === null) { $encr = 'None'; }
+
+		return array($auth, $encr, $sectype, $nt);
 	}
 
 	/**
@@ -203,169 +235,45 @@ class convert extends dbcore
 	 */
 	public function findFreq($frequency = 0)
 	{
-		switch(true)
-		{
-			case ($frequency == 2412 || $frequency == 1):
-				$chan = 1;
+		// Accept either a channel number (1..165) or an RF frequency in MHz.
+		// If frequency looks like a small integer (<= 200) treat it as channel.
+		$chan = 0;
+		$radio = "802.11g";
+
+		if (is_numeric($frequency)) {
+			$f = (int)$frequency;
+			if ($f <= 0) {
+				$chan = 0;
 				$radio = "802.11g";
-				break;
-			case ($frequency == 2417 || $frequency == 2):
-				$chan = 2;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2422 || $frequency == 3):
-				$chan = 3;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2427 || $frequency == 4):
-				$chan = 4;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2432 || $frequency == 5):
-				$chan = 5;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2437 || $frequency == 6):
-				$chan = 6;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2442 || $frequency == 7):
-				$chan = 7;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2447 || $frequency == 8):
-				$chan = 8;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2452 || $frequency == 9):
-				$chan = 9;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2457 || $frequency == 10):
-				$chan = 10;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2462 || $frequency == 11):
-				$chan = 11;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2467 || $frequency == 12):
-				$chan = 12;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2472 || $frequency == 13):
-				$chan = 13;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 2484 || $frequency == 14):
-				$chan = 14;
-				$radio = "802.11g";
-				break;
-			case ($frequency == 5180 || $frequency == 36):
-				$chan = 36;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5200 || $frequency == 40):
-				$chan = 40;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5220 || $frequency == 44):
-				$chan = 44;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5240 || $frequency == 48):
-				$chan = 48;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5260 || $frequency == 52):
-				$chan = 52;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5280 || $frequency == 56):				
-				$chan = 56;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5300 || $frequency == 60):
-				$chan = 60;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5320 || $frequency == 64):
-				$chan = 64;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5500 || $frequency == 100):
-				$chan = 100;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5520 || $frequency == 104):
-				$chan = 104;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5540 || $frequency == 108):
-				$chan = 108;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5560 || $frequency == 112):
-				$chan = 112;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5580 || $frequency == 116):
-				$chan = 116;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5600 || $frequency == 120):
-				$chan = 120;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5620 || $frequency == 124):
-				$chan = 124;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5640 || $frequency == 128):
-				$chan = 128;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5660 || $frequency == 132):
-				$chan = 132;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5680 || $frequency == 136):
-				$chan = 136;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5700 || $frequency == 140):
-				$chan = 140;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5720 || $frequency == 144):
-				$chan = 144;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5745 || $frequency == 149):
-				$chan = 149;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5765 || $frequency == 153):
-				$chan = 153;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5785 || $frequency == 157):
-				$chan = 157;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5805 || $frequency == 161):
-				$chan = 161;
-				$radio = "802.11n";
-				break;
-			case ($frequency == 5825 || $frequency == 165):
-				$chan = 165;
-				$radio = "802.11n";
-				break;
-			default:
-				$chan = $frequency;
-				$radio = "802.11g";
-				break;
+			} elseif ($f <= 200) {
+				// Treated as channel number
+				$chan = $f;
+				$radio = ($chan <= 14) ? "802.11g" : "802.11n";
+			} else {
+				// Treated as MHz
+				if ($f == 2484) {
+					$chan = 14;
+					$radio = "802.11g";
+				} elseif ($f >= 2400 && $f < 2500) {
+					$chan = (int) round(($f - 2407) / 5);
+					$radio = "802.11g";
+				} elseif ($f >= 5000 && $f < 5955) {
+					// 5 GHz band
+					$chan = (int) round(($f - 5000) / 5);
+					$radio = "802.11n";
+				} elseif ($f >= 5955 && $f <= 7125) {
+					// 6 GHz (Wi‑Fi 6E / Wi‑Fi 7) band
+					$chan = (int) round(($f - 5950) / 5);
+					$radio = "802.11ax";
+				} else {
+					$chan = $f;
+					$radio = ($f < 5000) ? "802.11g" : "802.11n";
+				}
+			}
+		} else {
+			$chan = $frequency;
 		}
+
 		$out = array($chan, $radio);
 		return $out;
 	}
