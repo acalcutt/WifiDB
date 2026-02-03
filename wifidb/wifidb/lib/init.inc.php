@@ -104,8 +104,23 @@ unset($db_version);
 
 if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
-    if ((!@isset($_COOKIE['wifidb_client_check']) || !@isset($_COOKIE['wifidb_client_timezone']))) {
+    // Check if user agent is a bot/crawler to skip cookie enforcement
+    $ua_agent = isset($_SERVER['HTTP_USER_AGENT']) ? strtolower($_SERVER['HTTP_USER_AGENT']) : '';
+    $is_bot = (strpos($ua_agent, 'bot') !== false || strpos($ua_agent, 'google') !== false || strpos($ua_agent, 'slurp') !== false || strpos($ua_agent, 'crawler') !== false || strpos($ua_agent, 'spider') !== false || strpos($ua_agent, 'mediapartners') !== false);
+
+    if (!$is_bot && (!@isset($_COOKIE['wifidb_client_check']) || !@isset($_COOKIE['wifidb_client_timezone'])) && !isset($_GET['ck_attempt'])) {
         create_base_cookies($config['hosturl'] . $config['root']);
+        exit();
+    }
+    
+    // Clean up the URL if cookies were successfully set
+    if (isset($_GET['ck_attempt']) && isset($_COOKIE['wifidb_client_check'])) {
+        $queryParams = $_GET;
+        unset($queryParams['ck_attempt']);
+        $queryString = http_build_query($queryParams);
+        $scriptName = $_SERVER['SCRIPT_NAME'];
+        $redirectUrl = $scriptName . ($queryString ? '?' . $queryString : '');
+        header("Location: " . $redirectUrl);
         exit();
     }
 }
@@ -261,23 +276,35 @@ function create_base_cookies($URL_PATH)
 	$ssl_flag = parse_url($URL_PATH, PHP_URL_SCHEME);
 	if($ssl_flag == "https")
 	{
-		$ssl = ";secure";
+		$ssl = ";secure;SameSite=Lax";
 	}else
 	{
-		$ssl = "";
+		$ssl = ";SameSite=Lax";
 	}
-	$domain = ";domain=".$_SERVER['HTTP_HOST'];
+	// Removing domain constraint to avoid issues with www vs non-www or redirect loops
+	// $domain = ";domain=".$_SERVER['HTTP_HOST'];
+	$domain = ""; 
+	
 	$folder = parse_url($URL_PATH, PHP_URL_PATH);
-	$c = strlen($folder);
-	if($folder[$c-1] == "/" && $c > 1)
-	{
-		$root = substr($folder, 0, -1);
-	}else
-	{
-		$root = $folder;
+	if (empty($folder) || $folder === '/') {
+		$root = '/';
+	} else {
+		$c = strlen($folder);
+		if($folder[$c-1] == "/" && $c > 1)
+		{
+			$root = substr($folder, 0, -1);
+		}else
+		{
+			$root = $folder;
+		}
 	}
 	$PATH	   = ";path=".$root;
-	$ultimate_path = $_SERVER['SCRIPT_NAME'].'?'.$_SERVER['QUERY_STRING'];
+	$ultimate_path = $_SERVER['SCRIPT_NAME'];
+	if(!empty($_SERVER['QUERY_STRING'])){
+		$ultimate_path .= '?'.$_SERVER['QUERY_STRING'].'&ck_attempt=1';
+	} else {
+		$ultimate_path .= '?ck_attempt=1';
+	}
 	?>
 	<script type="text/javascript">
 	function checkTimeZone()

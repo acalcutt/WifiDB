@@ -1,16 +1,45 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
     <head>
+<!-- Google tag (gtag.js) -->
+{literal}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S1ZD9TQYZK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'analytics_storage': 'denied'
+  });
+
+  gtag('config', 'G-S1ZD9TQYZK');
+</script>
+{/literal}
         <link rel="stylesheet" href="{$themeurl}styles.css" />
 		<link rel="stylesheet" href="{$themeurl}lib/sceditor/minified/themes/default.min.css" id="theme-style" />
 		<script src="{$themeurl}lib/sceditor/minified/sceditor.min.js"></script>
 		<script src="{$themeurl}lib/sceditor/minified/icons/monocons.js"></script>
 		<script src="{$themeurl}lib/sceditor/minified/formats/bbcode.js"></script>
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
+        {$wifidb_seo_content|default:""}
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        
+        <!-- Open Graph -->
+        <meta property="og:title" content="{$wifidb_page_label} | Vistumbler WiFiDB" />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+        <meta property="og:image" content="{$themeurl}img/logo.png" />
+        <meta property="og:description" content="Vistumbler WiFiDB is a global open-source wireless network database." />
+        <link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+
         {$wifidb_meta_header}
         {$redirect_func}
     </head>
     <body style="background-color: #145285" {$redirect_html}>
+        <!-- Cookie consent & consent-mode helper (loads before ad scripts in body) -->
+        <script src="{$themeurl}lib/cookie-consent.js"></script>
         {$install_header}
         {$wifidb_announce_header}
         

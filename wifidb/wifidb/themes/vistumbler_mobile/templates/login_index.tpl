@@ -20,7 +20,7 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-				<form method="post" action="/wifidb/login.php?func=login_proc">
+				<form method="post" action="{$wifidb_host_url}login.php?func=login_proc">
 					<table align="center">
 						<tbody>
 							<tr>

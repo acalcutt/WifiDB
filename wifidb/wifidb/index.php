@@ -23,6 +23,7 @@ define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
 
+$dbcore->smarty->assign('wifidb_page_label', 'Home');
 $dbcore->smarty->display('main.tpl');
 
 ?>

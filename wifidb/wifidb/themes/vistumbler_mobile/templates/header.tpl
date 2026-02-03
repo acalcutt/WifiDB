@@ -1,7 +1,36 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
+<!-- Google tag (gtag.js) -->
+{literal}
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-S1ZD9TQYZK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'analytics_storage': 'denied'
+  });
+
+  gtag('config', 'G-S1ZD9TQYZK');
+</script>
+{/literal}
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{$wifidb_page_label} | Vistumbler WiFiDB</title>
+	{$wifidb_seo_content|default:""}
+	
+	<!-- Open Graph -->
+	<meta property="og:title" content="{$wifidb_page_label} | Vistumbler WiFiDB" />
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+	<meta property="og:image" content="{$themeurl}img/logo.png" />
+	<meta property="og:description" content="Vistumbler WiFiDB is a global open-source wireless network database. Upload, map, and analyze WiFi access points." />
+
+	<link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+
 	{$WebSocketScripts|default:""}
 	{$wifidb_meta_header|default:""}
 	{$redirect_func|default:""}
@@ -19,6 +48,8 @@
 	</script>
 	<script type="text/javascript" src="{$themeurl}lib/adframe.js"></script>
 	<!-- Start Collapsible Menu Scripts-->
+    <!-- Cookie consent & consent-mode helper (loads before ad scripts in body) -->
+    <script src="{$themeurl}lib/cookie-consent.js"></script>
 	<script src="{$themeurl}lib/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
     <script type="text/javascript">
         $(document).ready(function () {

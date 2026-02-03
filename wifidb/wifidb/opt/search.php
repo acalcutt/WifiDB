@@ -24,7 +24,7 @@ define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
 
-$dbcore->smarty->assign('wifidb_page_label', 'Search Page');
+$dbcore->smarty->assign('wifidb_page_label', 'Search Wireless Database');
 
 $dbcore->smarty->display('search_index.tpl');
 ?>

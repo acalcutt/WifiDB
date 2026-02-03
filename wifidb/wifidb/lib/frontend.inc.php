@@ -48,7 +48,7 @@ class frontend extends dbcore
 
 			$this->smarty->assign('themeurl', $this->URL_PATH.'themes/'.$this->theme.'/');
 			$this->smarty->assign('wifidb_host_url', $this->URL_PATH);
-			$this->smarty->assign('wifidb_meta_header', $this->meta->header);
+			$this->smarty->assign('wifidb_seo_content', $this->meta->header);
 			$this->smarty->assign('wifidb_theme', $this->theme);
 			$this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
 			$this->smarty->assign('tileserver_gl_url', $this->tileserver_gl_url);

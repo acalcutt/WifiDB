@@ -23,6 +23,7 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
+$dbcore->smarty->assign('wifidb_page_label', 'Network Map');
 
 
 $ua = htmlentities($_SERVER['HTTP_USER_AGENT'], ENT_QUOTES, 'UTF-8');

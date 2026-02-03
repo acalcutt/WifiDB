@@ -31,12 +31,13 @@ You should have received a copy of the GNU General Public License along with thi
 						<li class="inside_dark_header">Ads</li>
 					</ul>
 					<div class="inside_text_center">
-						<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-						<!-- Vistumbler - Responsive Right -->
+						<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2350008141216245"
+							 crossorigin="anonymous"></script>
+						<!-- WifiDB Vertical -->
 						<ins class="adsbygoogle"
 							 style="display:block"
-							 data-ad-client="ca-pub-4275640341473005"
-							 data-ad-slot="2546768734"
+							 data-ad-client="ca-pub-2350008141216245"
+							 data-ad-slot="8040593654"
 							 data-ad-format="auto"
 							 data-full-width-responsive="true"></ins>
 						<script>

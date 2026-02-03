@@ -20,7 +20,7 @@ if not, write to the
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 <head>
-    <link rel="stylesheet" href="/wifidb/themes/vistumbler/styles.css" />
+    <link rel="stylesheet" href="{$themeurl}styles.css" />
     <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
     {$wifidb_meta_header}
     {$redirect_func}
@@ -36,7 +36,7 @@ if not, write to the
                 <tr>
                     <td style="width: 228px">
                         <a href="http://www.wifidb.net">
-                            <img alt="Random Intervals Logo" src="/wifidb/themes/vistumbler/img/logo.png" class="no_border" />
+                            <img alt="Random Intervals Logo" src="{$themeurl}img/logo.png" class="no_border" />
                         </a>
                     </td>
                 </tr>
@@ -50,14 +50,14 @@ if not, write to the
             <table style="width: 100%" cellpadding="0" cellspacing="0">
                 <tr>
                     <td style="width: 10px; height: 20px" class="cell_top_left">
-                        <img alt="" src="/wifidb/themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                        <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                     </td>
                     <td class="cell_top_mid" style="height: 20px" align="left">
                     </td>
                     <td class="cell_top_mid" style="height: 20px" align="right">
                     </td>
                     <td style="width: 10px" class="cell_top_right">
-                        <img alt="" src="/wifidb/themes/vistumbler/img/1x1_transparent.gif" width="10" height="1" />
+                        <img alt="" src="{$themeurl}img/1x1_transparent.gif" width="10" height="1" />
                     </td>
                 </tr>
                 <tr>

@@ -24,6 +24,7 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
+$dbcore->smarty->assign('wifidb_page_label', 'User Login');
 
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
@@ -141,6 +142,7 @@ switch($func)
 
 	#---#
 	case "create_user_form":
+		$dbcore->smarty->assign('wifidb_page_label', 'Create New User');
 		$dbcore->smarty->assign('message', "");
 		$dbcore->smarty->display('create_user.tpl');
 	break;
@@ -306,6 +308,7 @@ switch($func)
 	break;
 
 	case "reset_user_pass_request":
+		$dbcore->smarty->assign('wifidb_page_label', 'Reset Password');
 		$dbcore->smarty->display("reset_password_request.tpl");
 	break;
 

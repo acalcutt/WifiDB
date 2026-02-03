@@ -24,7 +24,7 @@ define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
 
-$dbcore->smarty->assign('wifidb_page_label', 'Import Page');
+$dbcore->smarty->assign('wifidb_page_label', 'Import Wireless Data');
 $func = (empty($_GET['func'])) ? "" : $_GET['func'];
 
 $type = "schedule";

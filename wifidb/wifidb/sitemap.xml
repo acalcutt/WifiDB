@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/</loc><priority>1.00</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/import/</loc><priority>0.85</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/map.php?func=wifidbmap&amp;labeled=0&amp;sig_label=none</loc><priority>0.85</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/stats.php</loc><priority>0.85</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/scheduling.php</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/scheduling.php?func=waiting</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/scheduling.php?func=done</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/scheduling.php?func=schedule</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/scheduling.php?func=daemon_kml</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/userstats.php?func=allusers&amp;sort=file_user&amp;ord=ASC&amp;from=0&amp;inc=100</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/search.php</loc><priority>0.75</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/live.php</loc><priority>0.35</priority></url>
+<url><changefreq>weekly</changefreq><loc>https://wifidb.net/themes/</loc><priority>0.50</priority></url>
+<url><changefreq>daily</changefreq><loc>https://wifidb.net/privacy.php</loc><priority>0.50</priority></url>
+</urlset>

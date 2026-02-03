@@ -68,7 +68,7 @@ if not, write to the
 					<table width="100%">
 						<tr>
 							<td>
-								<img alt="" src="/wifidb/themes/wifidb/img/1x1_transparent.gif" width="100%" height="1" />
+								<img alt="" src="{$themeurl}img/1x1_transparent.gif" width="100%" height="1" />
 							</td>
 						</tr>
 						<tr>

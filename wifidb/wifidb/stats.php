@@ -567,7 +567,7 @@ if ($usercount == NULL)
     $lastid = 0;
 }
 
-$dbcore->smarty->assign('wifidb_page_label', 'Index Page');
+$dbcore->smarty->assign('wifidb_page_label', 'Network Statistics');
 $dbcore->smarty->assign('total_aps', $count);
 $dbcore->smarty->assign('open_aps', $open);
 $dbcore->smarty->assign('wep_aps', $wep);

@@ -22,11 +22,11 @@ Crawl-delay: 10
 # Directories
 Disallow: /cp/
 Disallow: /lib/
-Disallow: /opt/
-Disallow: /themes/
 Disallow: /console/
 Disallow: /install/
 # Files
 Disallow: /all.php
 Disallow: /login.php
 Disallow: /import/index.php
+
+Sitemap: https://wifidb.net/sitemap.xml

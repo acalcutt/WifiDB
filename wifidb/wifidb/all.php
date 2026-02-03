@@ -11,7 +11,6 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
-$dbcore->smarty->assign('wifidb_page_label', 'All Access Points Page');
 
 $sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
 $ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
@@ -25,10 +24,13 @@ if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
 if(!is_numeric($inc)){$inc = 250;}
 
+$dbcore->smarty->assign('wifidb_page_label', 'List of Wireless Access Points');
+
 $dbcore->smarty->assign('func', $func);
 switch($func)
 {
 	case "bt":
+		$dbcore->smarty->assign('wifidb_page_label', 'List of Bluetooth Devices');
 		$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","country","list_points","points","file_user");
 		if(!in_array($sort, $sorts)){$sort = "cell_id";}
 		#Get count of APs for pageation
@@ -88,6 +90,7 @@ switch($func)
 		$dbcore->smarty->display('all_cids.tpl');
 	break;
 	case "cid":
+		$dbcore->smarty->assign('wifidb_page_label', 'List of Cellular IDs');
 		$sorts=array("new","cell_id","ssid","mac","authmode","type","chan","fa","la","network","country","list_points","points","file_user");
 		if(!in_array($sort, $sorts)){$sort = "cell_id";}
 		#Get count of APs for pageation

@@ -535,7 +535,7 @@ justify-content: flex-end;
 /* ---------------------------------------------------
 	MEDIAQUERIES
 ----------------------------------------------------- */
-@media (max-width: 768px), only screen and (-webkit-min-device-pixel-ratio: 2), only screen and (min--moz-device-pixel-ratio: 2), only screen and ( -o-min-device-pixel-ratio: 2/1), only screen and ( min-device-pixel-ratio: 2), only screen and ( min-resolution: 192dpi), only screen and ( min-resolution: 2dppx) {
+@media (max-width: 768px) {
 	#sidebar {
 		margin-left: -250px;
 		transform: rotateY(90deg);
@@ -592,7 +592,7 @@ justify-content: flex-end;
 	}
 }
 
-@media only screen and (-webkit-min-device-pixel-ratio: 2), only screen and (min--moz-device-pixel-ratio: 2), only screen and ( -o-min-device-pixel-ratio: 2/1), only screen and ( min-device-pixel-ratio: 2), only screen and ( min-resolution: 192dpi), only screen and ( min-resolution: 2dppx) {
+@media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2), only screen and (max-width: 1000px) and (min--moz-device-pixel-ratio: 2), only screen and (max-width: 1000px) and ( -o-min-device-pixel-ratio: 2/1), only screen and (max-width: 1000px) and ( min-device-pixel-ratio: 2), only screen and (max-width: 1000px) and ( min-resolution: 192dpi), only screen and (max-width: 1000px) and ( min-resolution: 2dppx) {
 	body {
 		font-size: 130%;
 	}

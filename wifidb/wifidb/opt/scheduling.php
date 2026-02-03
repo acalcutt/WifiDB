@@ -456,7 +456,7 @@ switch($func)
 		<script type="text/javascript">
 			var host = "'.$dbcore->WebSocketURL.'Scheduling";
 		</script>
-		<script type="text/javascript" src="/wifidb/lib/WebSockClient.js"></script>');
+		<script type="text/javascript" src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/WebSockClient.js"></script>');
 		$dbcore->smarty->assign('OnLoad', "onload='init()'");
 
 		$timezone_opt = '';

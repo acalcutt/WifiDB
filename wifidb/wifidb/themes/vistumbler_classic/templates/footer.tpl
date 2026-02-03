@@ -16,7 +16,7 @@
                     </table>
                     <div class="inside_text_center" align=center>
                         <strong>
-                            Vistumbler WifiDB {$wifidb_version_label} <br />
+                            © 2007–2026 TechIdiots LLC. All rights reserved. | <a href="{$wifidb_host_url}privacy.php">Privacy Policy</a> | WifiDB {$wifidb_version_label} <br />
                         </strong>
                     </div>
                     <br />
@@ -32,12 +32,13 @@
 				<td style="height: 300px" valign="top" class="center">
 					<!-- Start ads -->
 						<div align="center">
-							<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-							<!-- WifiDB -->
+							<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2350008141216245"
+								 crossorigin="anonymous"></script>
+							<!-- WifiDB Horizontal -->
 							<ins class="adsbygoogle"
 								 style="display:block"
-								 data-ad-client="ca-pub-4275640341473005"
-								 data-ad-slot="3954826537"
+								 data-ad-client="ca-pub-2350008141216245"
+								 data-ad-slot="6299844992"
 								 data-ad-format="auto"
 								 data-full-width-responsive="true"></ins>
 							<script>
