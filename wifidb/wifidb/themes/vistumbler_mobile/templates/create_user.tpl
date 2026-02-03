@@ -25,6 +25,14 @@
 								<td><input type="text" name="time_email" value=""></td>
 							</tr>
 							<tr>
+								<td colspan="2">
+									<label>
+										<input type="checkbox" name="agree_terms" value="yes" required>
+										I agree to the <a href="{$wifidb_host_url}terms.php" target="_blank">Terms of Use</a> and <a href="{$wifidb_host_url}privacy.php" target="_blank">Privacy Policy</a>
+									</label>
+								</td>
+							</tr>
+							<tr>
 								<td colspan="2"><p align="center"><input type="submit" value="Create Me!"></p></td>
 							</tr>
 						</table>

@@ -313,16 +313,16 @@ class security
 			{
 				$cookie_name = 'WiFiDB_admin_login_yes';
 
-				if($this->URL_PATH != '')
-				{$path  = '/'.$this->root.'/cp/admin/';}
+				if($this->root != '')
+				{$path  = '/'.trim($this->root, '/').'/cp/admin/';}
 				else{$path  = '/cp/admin/';}
 				$cookie_timeout = time()-3600;
 			}else
 			{
 				$cookie_name = 'WiFiDB_login_yes';
 
-				if($this->URL_PATH != '')
-				{$path  = '/'.$this->root.'/';}
+				if($this->root != '')
+				{$path  = '/'.trim($this->root, '/').'/';}
 				else{$path  = '/';}
 			}
 			if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), $cookie_timeout, $path, $this->domain, $this->ssl))

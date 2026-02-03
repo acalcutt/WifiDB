@@ -30,6 +30,7 @@ $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
 
 if($return == ''){$return = '/'.$dbcore->root;}
+$root_path = ($dbcore->root != '' ? '/'.trim($dbcore->root, '/') : '');
 switch($func)
 {
 	case "login_proc":
@@ -42,37 +43,37 @@ switch($func)
 		{
 			case "locked":
 				$message = 'This user is locked out. contact this WiFiDB\'s admin, or go to the <a href="http://forum.techidiots.net/">forums</a> and request support.';
-				if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
 			break;
 
 			case "validate":
 				$message = 'This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.';
-				if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
 			break;
 			
 			case "hash_tbl_fail":
 				$message = "Failed to set Hash for the Login Cookie to the table...";
-				if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
 			break;
 
 			case "p_fail":
 				$message = 'Bad Username or Password!';
-				if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
 			break;
 
 			case "u_fail":
 				$message = 'Username does not exsist.';
-				if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
 			break;
 
 			case "u_u_r_fail":
 				$message = "Failed to update User row";
-				if($return){$return = '/'.$dbcore->root.'/login.php?return='.urlencode($return);}else{$return = '/'.$dbcore->root.'/login.php';}
+				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
 			break;
 
@@ -102,14 +103,14 @@ switch($func)
 			$cookie_name = 'WiFiDB_admin_login_yes';
 			$msg = 'Admin Logout Successful';
 			if($dbcore->root != '')
-			{$path  = '/'.$dbcore->root.'/cp/admin/';}
+			{$path  = '/'.trim($dbcore->root, '/').'/cp/admin/';}
 			else{$path  = '/cp/admin/';}
 		}else
 		{
 			$cookie_name = 'WiFiDB_login_yes';
 			$msg = 'Logout Successful';
 			if($dbcore->root != '')
-			{$path  = '/'.$dbcore->root.'/';}
+			{$path  = '/'.trim($dbcore->root, '/').'/';}
 			else{$path  = '/';}
 		}
 		list($cookie_pass_hash, $username) = explode(":", base64_decode($_COOKIE[$cookie_name]));
@@ -153,7 +154,13 @@ switch($func)
 		$password   = $_REQUEST['time_pass'];
 		$password2  = $_REQUEST['time_pass2'];
 		$email	  = $_REQUEST['time_email'];
-		if(!$dbcore->checkEmail($email))
+		$agree_terms = isset($_REQUEST['agree_terms']) ? $_REQUEST['agree_terms'] : '';
+		if($agree_terms !== 'yes')
+		{
+			$dbcore->smarty->assign('message', "<font color='Red'><h2>You must agree to the Terms of Use and Privacy Policy to create an account.</h2></font>");
+			$dbcore->smarty->display('create_user.tpl');
+		}
+		else if(!$dbcore->checkEmail($email))
 		{
 			$dbcore->smarty->assign('message', "<font color='Red'><h2>Email is not valid.</h2></font>");
 			$dbcore->smarty->display('create_user.tpl');

@@ -16,7 +16,8 @@
                     </table>
                     <div class="inside_text_center" align=center>
                         <strong>
-                            © 2007–2026 TechIdiots LLC. All rights reserved. | <a href="{$wifidb_host_url}privacy.php">Privacy Policy</a> | WifiDB {$wifidb_version_label} <br />
+                            WifiDB {$wifidb_version_label} | © 2007–2026 TechIdiots LLC. All rights reserved.<br />
+                            <a href="{$wifidb_host_url}">About</a> | <a href="{$wifidb_host_url}contact.php">Contact</a> | <a href="{$wifidb_host_url}privacy.php">Privacy Policy</a> | <a href="{$wifidb_host_url}terms.php">Terms of Use</a> | <a href="{$wifidb_host_url}cookies.php">Cookie Policy</a>
                         </strong>
                     </div>
                     <br />

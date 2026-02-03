@@ -1,6 +1,7 @@
 			<div class="foot">
 				<div class="inside_text_center">
-				© 2007–2026 TechIdiots LLC. All rights reserved. | <a href="{$wifidb_host_url}privacy.php">Privacy Policy</a> | WifiDB {$wifidb_version_label}
+				WifiDB {$wifidb_version_label} | © 2007–2026 TechIdiots LLC. All rights reserved.<br/>
+				<a href="{$wifidb_host_url}">About</a> | <a href="{$wifidb_host_url}contact.php">Contact</a> | <a href="{$wifidb_host_url}privacy.php">Privacy Policy</a> | <a href="{$wifidb_host_url}terms.php">Terms of Use</a> | <a href="{$wifidb_host_url}cookies.php">Cookie Policy</a>
 				<br/>
 				<!-- Start ads -->
 					<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2350008141216245"

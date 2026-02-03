@@ -38,6 +38,12 @@ if not, write to the
 						<tr class="dark">
 							<td>Project Support</td><td><b><a class="links" title="Forum" href="https://forum.techidiots.net/forum/viewforum.php?f=44">WiFiDB Forum</a></b></td>
 						</tr>
+						<tr class="light">
+							<td>Established</td><td><b>2007</b></td>
+						</tr>
+						<tr class="dark">
+							<td>Operated By</td><td><b>TechIdiots LLC</b> | <a class="links" title="Contact" href="{$wifidb_host_url}contact.php">Contact Us</a></td>
+						</tr>
 					</table>
 				</div>
 			</div>

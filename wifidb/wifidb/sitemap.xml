@@ -14,4 +14,7 @@
 <url><changefreq>daily</changefreq><loc>https://wifidb.net/opt/live.php</loc><priority>0.35</priority></url>
 <url><changefreq>weekly</changefreq><loc>https://wifidb.net/themes/</loc><priority>0.50</priority></url>
 <url><changefreq>daily</changefreq><loc>https://wifidb.net/privacy.php</loc><priority>0.50</priority></url>
+<url><changefreq>yearly</changefreq><loc>https://wifidb.net/terms.php</loc><priority>0.50</priority></url>
+<url><changefreq>yearly</changefreq><loc>https://wifidb.net/cookies.php</loc><priority>0.50</priority></url>
+<url><changefreq>yearly</changefreq><loc>https://wifidb.net/contact.php</loc><priority>0.50</priority></url>
 </urlset>
