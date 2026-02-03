@@ -8,7 +8,7 @@
                 <input type="hidden" name="theme" value="{$theme}" />
                 <INPUT  type="submit" NAME="submit" VALUE="Select This Theme" onclick="this.form.submit(); this.disabled = 1;" >
             </form>
-            <a href="{$theme_image_url}" target="_blank"><img src="{$theme_tn}"></a>
+            <a href="{$theme_image_url}" target="_blank"><img src="{$theme_tn}" alt="Theme preview"></a>
             <br>
             <br>
         </td>

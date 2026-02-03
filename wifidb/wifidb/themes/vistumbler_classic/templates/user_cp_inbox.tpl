@@ -66,9 +66,9 @@ if not, write to the
 							{$message.stimestamp}
 						</td>
 						<td class="{$message.class}">
-							<a href="{$wifidb_host_url}cp/messages.php?func=mark-read&id={$message.id}" title="Mark Read"><img width="20px" src="{$themeurl}img/mark-read.png"></a>
-							<a href="{$wifidb_host_url}cp/messages.php?func=mark-unread&id={$message.id}" title="Mark Un-Read"><img width="20px" src="{$themeurl}img/mark-unread.png"></a>
-							<a href="{$wifidb_host_url}cp/messages.php?func=delmsg&id={$message.id}" title="Delete Message"><img width="20px" src="{$themeurl}img/delete.png"></a>
+							<a href="{$wifidb_host_url}cp/messages.php?func=mark-read&id={$message.id}" title="Mark Read"><img width="20px" src="{$themeurl}img/mark-read.png" alt="Mark Read"></a>
+							<a href="{$wifidb_host_url}cp/messages.php?func=mark-unread&id={$message.id}" title="Mark Un-Read"><img width="20px" src="{$themeurl}img/mark-unread.png" alt="Mark Un-Read"></a>
+							<a href="{$wifidb_host_url}cp/messages.php?func=delmsg&id={$message.id}" title="Delete Message"><img width="20px" src="{$themeurl}img/delete.png" alt="Delete Message"></a>
 						</td>
 					</tr>
 					{foreachelse}

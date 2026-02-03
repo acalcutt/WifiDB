@@ -93,7 +93,7 @@ if not, write to the
 											<tbody>
 											<tr>
 												<td valign="center" align="right">{$wifidb_waiting.ssid|default:""}</td>
-												<td valign="center" align="left"><img width="20px" src="../img/globe_{$wifidb_gps}.png"></td>
+												<td valign="center" align="left"><img width="20px" src="../img/globe_{$wifidb_gps}.png" alt="GPS status"></td>
 											</tr>
 											<tr>
 												<td align="center">{$wifidb_waiting.tot|default:"Waiting to import..."}</td>

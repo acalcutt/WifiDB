@@ -23,15 +23,15 @@ if not, write to the
 				<div class="center">
 					<h2>My Imports
 					{if $wifidb_user_details.validgps eq 1}
-						<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$wifidb_user_details.user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-						<a href="{$wifidb_host_url}api/geojson.php?func=exp_user_all&from=0&inc=50000&user={$wifidb_user_details.user|escape:'htmlall'}&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-						<a href="{$wifidb_host_url}api/export.php?func=exp_user_all&from=0&inc=25000&user={$wifidb_user_details.user|escape:'htmlall'}&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-						<a href="{$wifidb_host_url}api/gpx.php?func=exp_user_all&from=0&inc=25000&user={$wifidb_user_details.user|escape:'htmlall'}&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+						<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$wifidb_user_details.user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png" alt="Show on Map"></a>
+						<a href="{$wifidb_host_url}api/geojson.php?func=exp_user_all&from=0&inc=50000&user={$wifidb_user_details.user|escape:'htmlall'}&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png" alt="Export to JSON"></a>
+						<a href="{$wifidb_host_url}api/export.php?func=exp_user_all&from=0&inc=25000&user={$wifidb_user_details.user|escape:'htmlall'}&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png" alt="Export to KMZ"></a>
+						<a href="{$wifidb_host_url}api/gpx.php?func=exp_user_all&from=0&inc=25000&user={$wifidb_user_details.user|escape:'htmlall'}&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png" alt="Export to GPX"></a>
 					{else}
-						<img width="20px" src="{$themeurl}img/globe_off.png">
-						<img width="20px" src="{$themeurl}img/json_off.png">
-						<img width="20px" src="{$themeurl}img/kmz_off.png">
-						<img width="20px" src="{$themeurl}img/gpx_off.png">
+						<img width="20px" src="{$themeurl}img/globe_off.png" alt="">
+						<img width="20px" src="{$themeurl}img/json_off.png" alt="">
+						<img width="20px" src="{$themeurl}img/kmz_off.png" alt="">
+						<img width="20px" src="{$themeurl}img/gpx_off.png" alt="">
 					{/if}
 					</h2>
 					<table class="content_table">
@@ -65,82 +65,82 @@ if not, write to the
 							<tr class="header">
 								<th class="header" width="75px">
 									<div>GPS</div>
-									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif" alt=""></div>
 								</th>
 								<th class="header">
 									<div>ID</div>
 									<div>
-										<a href="?func=myimports&sort=id&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'id' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=id&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'id' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=id&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'id' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=id&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'id' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>File</div>
 									<div>
-										<a href="?func=myimports&sort=file_orig&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'file_orig' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=file_orig&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'file_orig' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=file_orig&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'file_orig' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=file_orig&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'file_orig' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Title</div>
 									<div>
-										<a href="?func=myimports&sort=title&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=title&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=title&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=title&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'title' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Notes</div>
 									<div>
-										<a href="?func=myimports&sort=notes&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'notes' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=notes&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'notes' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=notes&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'notes' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=notes&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'notes' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>APs</div>
 									<div>
-										<a href="?func=myimports&sort=aps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=aps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=aps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=aps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'aps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Points</div>
 									<div>
-										<a href="?func=myimports&sort=gps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=gps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=gps&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=gps&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'gps' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Efficiency</div>
 									<div>
-										<a href="?func=myimports&sort=NewAPPercent&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=NewAPPercent&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=NewAPPercent&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=NewAPPercent&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header" width="150px">
 									<div>Date</div>
 									<div>
-										<a href="?func=myimports&sort=date&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=myimports&sort=date&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=myimports&sort=date&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}" alt="Sort ascending"></a>
+										<a href="?func=myimports&sort=date&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Actions</div>
-									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
+									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif" alt=""></div>
 								</th>
 							</tr>
 							{foreach item=wifidb_user_prev from=$wifidb_user_details.other_imports}
 							<tr class="{$wifidb_user_prev.class}">
 								<td class="{$wifidb_user_prev.class}">
 								{if $wifidb_user_prev.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$wifidb_user_prev.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$wifidb_user_prev.id}&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$wifidb_user_prev.id}&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$wifidb_user_prev.id}&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$wifidb_user_prev.id}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png" alt="Show on Map"></a>
+									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$wifidb_user_prev.id}&json=0&labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png" alt="Export to JSON"></a>
+									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$wifidb_user_prev.id}&xml=0&labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png" alt="Export to KMZ"></a>
+									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$wifidb_user_prev.id}&xml=0&labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png" alt="Export to GPX"></a>
 								{else}
-									<img width="20px" src="{$themeurl}img/globe_off.png">
-									<img width="20px" src="{$themeurl}img/json_off.png">
-									<img width="20px" src="{$themeurl}img/kmz_off.png">
-									<img width="20px" src="{$themeurl}img/gpx_off.png">
+									<img width="20px" src="{$themeurl}img/globe_off.png" alt="">
+									<img width="20px" src="{$themeurl}img/json_off.png" alt="">
+									<img width="20px" src="{$themeurl}img/kmz_off.png" alt="">
+									<img width="20px" src="{$themeurl}img/gpx_off.png" alt="">
 								{/if}
 								</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.id}</td>
