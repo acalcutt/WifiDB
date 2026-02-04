@@ -14,7 +14,9 @@
     'analytics_storage': 'denied'
   });
 
-  gtag('config', 'G-S1ZD9TQYZK');
+{/literal}
+  gtag('config', 'G-S1ZD9TQYZK', {ldelim} 'ip_version': '{$ip_version}' {rdelim});
+{literal}
 </script>
 {/literal}
         <link rel="stylesheet" href="{$themeurl}styles.css" />

@@ -34,33 +34,33 @@ if not, write to the
 					For Bulk Imports, We support the <a href="https://github.com/acalcutt/WiFiDBClient/releases/" target="_blank">WifiDB Uploader</a><br><br>
 					Username is optional, but it helps keep track of who has imported what Access Points<br><br>
 				</div>
-				<div style="text-align: center;">
-					<div style="display: inline-block; text-align: left;">
+				<div class="import-form-container">
 						<form action="{$wifidb_host_url}import/?func=import" method="post" enctype="multipart/form-data">
 							<ul class="wrapper">
-								<li class="form-row><label for="title">Title of Import:</label><br /><input type="text" name="title" id="title"></li>
-								<li class="form-row><label for="files">File(s):</label><br /><input name="upload[]" type="file" id="files" multiple="multiple" /></li>
-								<li class="form-row><label for="user">Username:</label><br /><input type="text" name="user" id="user" {if $logged_in_user}value="{$logged_in_user}" {/if}></li>
-								<li class="form-row><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><br /><input type="text" name="otherusers" id="otherusers"></li>
-								<li class="form-row><label for="notes">Notes:</label><br /><textarea name="notes" id="notes" rows="4" cols="30"></textarea></li>
-								<li class="form-row><label for="type">Import Type:</label><br />
-									<input type="radio" name="type" id="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB<br />
-									<input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3<br />
-									<input type="radio" name="type" id="type" value="wiglewificsv">WigleWifi CSV<br />
-									<input type="radio" name="type" id="type" value="swardriving">SWardriving CSV<br />
-									<input type="radio" name="type" id="type" value="kismet">Kismet netxml<br />
+								<li class="form-row"><label for="title">Title of Import:</label><input type="text" name="title" id="title" class="form-input"></li>
+								<li class="form-row"><label for="files">File(s):</label><input name="upload[]" type="file" id="files" multiple="multiple" class="form-input" /></li>
+								<li class="form-row"><label for="user">Username:</label><input type="text" name="user" id="user" {if $wifidb_login_user}value="{$wifidb_login_user}" readonly{/if} class="form-input"></li>
+								<li class="form-row"><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><input type="text" name="otherusers" id="otherusers" class="form-input"></li>
+								<li class="form-row"><label for="notes">Notes:</label><textarea name="notes" id="notes" rows="4" cols="30" class="form-input"></textarea></li>
+								<li class="form-row"><label for="type">Import Type:</label>
+									<div class="radio-group">
+										<label><input type="radio" name="type" id="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB</label>
+										<label><input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3</label>
+										<label><input type="radio" name="type" id="type" value="wiglewificsv">WigleWifi CSV</label>
+										<label><input type="radio" name="type" id="type" value="swardriving">SWardriving CSV</label>
+										<label><input type="radio" name="type" id="type" value="kismet">Kismet netxml</label>
+									</div>
 								</li>
 								<li>
 									<br />
 									{if $allowimports eq 1}
-										<button type="submit">Submit</button>
+										<button type="submit" class="submit-btn">Submit</button>
 									{else}
 										Importing is currently disabled.
 									{/if}
 								</li>
 							</ul>
 						</form>
-					</div>
 				</div>
 			</div>
 {include file="footer.tpl"}

@@ -651,37 +651,58 @@ if not, write to the
 		}
 
 		// --- End Year Visibility Functions ---
-		// --- Start Address Search Box Functions ---
+		// --- Start Google Geocoding API Functions ---
+
 		function searchadr() {
 			var address = document.getElementById('searchadrbox').value;
-			var address = address.replace(/ /g, "+");
-			var url = 'https://geocoder.api.here.com/6.2/geocode.json?app_id=PosJ3G7XOlfZLXeYgxeZ&app_code=4yaMcu0yxndGUH6X1_vHAw&searchtext=' + address;
-			console.log('url: ', url);
+			// Replace spaces with '+' for the URL
+			var formattedAddress = encodeURIComponent(address);
+
+			// Google Geocoding API Key (from config)
+			var googleApiKey = '{$googleApiKey|escape:"javascript"}';
+
+			// Google Geocoding API endpoint for forward geocoding (address to lat/lng)
+			var url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' + formattedAddress + '&key=' + googleApiKey;
+
 			var req = new XMLHttpRequest();
 			req.overrideMimeType("application/json");
 			req.open('GET', url, true);
+
 			req.onload = function() {
-				console.log(req.responseText);
-				var jsonResponse = JSON.parse(req.responseText);
-				var lat = jsonResponse.Response.View[0].Result[0].Location.DisplayPosition.Latitude;
-				var lng = jsonResponse.Response.View[0].Result[0].Location.DisplayPosition.Longitude;
-				var lnglat = [lng.toFixed(6), lat.toFixed(6)];
-				map.setCenter(lnglat);
-				console.log('lnglat: ', lnglat);
+				if (req.status >= 200 && req.status < 300) {
+					var jsonResponse = JSON.parse(req.responseText);
+
+					if (jsonResponse.status === 'OK' && jsonResponse.results.length > 0) {
+						var lat = jsonResponse.results[0].geometry.location.lat;
+						var lng = jsonResponse.results[0].geometry.location.lng;
+						var lnglat = [lng.toFixed(6), lat.toFixed(6)];
+						map.setCenter(lnglat);
+						console.log('Coordinates (lng, lat): ', lnglat);
+					} else {
+						alert('Could not find coordinates for the provided address. Please try again.');
+					}
+				} else {
+					console.error('Google Geocoding API Request Failed. Status:', req.status);
+				}
 			};
+
+			req.onerror = function() {
+				console.error('Network error occurred while fetching Google Geocoding data.');
+			};
+
 			req.send(null);
 		}
+
+		// Event listener for the search input (press Enter to trigger search)
 		var input = document.getElementById("searchadrbox");
 		input.addEventListener("keyup", function(event) {
-			// Cancel the default action, if needed
 			event.preventDefault();
-			// Number 13 is the "Enter" key on the keyboard
 			if (event.keyCode === 13) {
-				// Trigger the button element with a click
 				document.getElementById("searchadr").click();
 			}
 		});
-		// --- End Address Search Box Functions ---
+
+		// --- End Google Geocoding API Functions ---
 		// Listen for every move event by the user
 {if $ie eq 0}
 		var displayCenter = function displayCenter() {

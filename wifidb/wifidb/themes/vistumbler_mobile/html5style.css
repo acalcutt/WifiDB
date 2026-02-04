@@ -529,8 +529,71 @@ ul.CTAs a {
   list-style-type: none;
 }
 .form-row {
-display: flex;
-justify-content: flex-end;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 15px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+}
+
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    margin-top: 5px;
+}
+
+.radio-group label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.submit-btn:hover {
+    background-color: #45a049;
+}
+
+.import-form-container {
+    padding: 10px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+    .form-row {
+        flex-direction: row;
+        align-items: flex-start;
+    }
+    .form-row > label {
+        flex: 0 0 200px; /* Fixed width for labels */
+        text-align: right;
+        margin-right: 20px;
+        padding-top: 5px; /* Align text with input */
+        font-weight: bold;
+    }
+    .form-input {
+        width: auto;
+        flex: 1; /* Take remaining space */
+        margin-top: 0;
+    }
+    .radio-group {
+        flex: 1;
+        margin-top: 0; 
+    }
 }
 /* ---------------------------------------------------
 	MEDIAQUERIES
@@ -593,37 +656,6 @@ justify-content: flex-end;
 }
 
 @media only screen and (max-width: 1000px) and (-webkit-min-device-pixel-ratio: 2), only screen and (max-width: 1000px) and (min--moz-device-pixel-ratio: 2), only screen and (max-width: 1000px) and ( -o-min-device-pixel-ratio: 2/1), only screen and (max-width: 1000px) and ( min-device-pixel-ratio: 2), only screen and (max-width: 1000px) and ( min-resolution: 192dpi), only screen and (max-width: 1000px) and ( min-resolution: 2dppx) {
-	body {
-		font-size: 130%;
-	}
-	
-	button {
-		font-size: 130%;
-	}
-	
-	textarea {
-		font-size: 130%;
-	}
-	
-	input[type=file] {
-		font-size: 130%;
-	}
-	
-	input[type=text] {
-		font-size: 130%;
-	}
-	
-	input[type=submit] {
-		font-size: 130%;
-	}
-	
-	select {
-		font-size: 130%;
-	}
-	
-	input[type=password] {
-		font-size: 130%;
-	}	
 	input[type=radio] {
 		width: 20px;
 		height: 20px;

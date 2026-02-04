@@ -648,8 +648,8 @@
 				// Replace spaces with '+' for the URL
 				var formattedAddress = encodeURIComponent(address);
 
-				// Replace with your actual Google Geocoding API Key
-				var googleApiKey = 'AIzaSyAQoa70ppFx6OilVgjRbY3S8aoiIK9_Bjw';
+				// Google Geocoding API Key (from config)
+				var googleApiKey = '{$googleApiKey|escape:"javascript"}';
 
 				// Google Geocoding API endpoint for forward geocoding (address to lat/lng)
 				var url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' + formattedAddress + '&key=' + googleApiKey;

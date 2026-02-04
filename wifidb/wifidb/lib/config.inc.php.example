@@ -144,5 +144,6 @@ $config = array
 	#---------------- Header and Footer Additional Info -----------------#
 	'ads'				   => '', # <-- put the code for your ads in here www.google.com/adsense
 	'header'				=> '<meta name="description" content="Vistumbler WifiDB is a project to collect wireless accesss points gathered by Vistumbler or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, wifi, database, DB, php" />',
-	'tracker'			   => '' # <-- put the code for the url tracker that you use here (ie - www.google.com/analytics )
+	'tracker'			   => '', # <-- put the code for the url tracker that you use here (ie - www.google.com/analytics )
+	'googleApiKey'		 =>   '', # Google Geocoding API key (leave empty for none)
 );
