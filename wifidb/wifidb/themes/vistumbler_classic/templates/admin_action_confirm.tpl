@@ -14,7 +14,7 @@ version 2 of the License, or (at your option) any later version.
 					<table class="content_table">
 						<tbody>
 							<tr class="subheading">
-								<th class="subheading" colspan="2">{if $action == 'reset_file'}Reset File for Re-Import{elseif $action == 'delete_file'}Delete File Permanently{elseif $action == 'reset_schedule'}Reset Daemon Schedule{elseif $action == 'delete_daemon_pid'}Delete Daemon PID{else}Confirm Action{/if}</th>
+								<th class="subheading" colspan="2">{if $action == 'reset_file'}Reset File for Re-Import{elseif $action == 'delete_file'}Delete File Permanently{elseif $action == 'reset_schedule'}Reset Daemon Schedule{elseif $action == 'run_schedule_now'}Run Schedule Now{elseif $action == 'delete_daemon_pid'}Delete Daemon PID{else}Confirm Action{/if}</th>
 							</tr>
 							{if $action == 'delete_daemon_pid'}
 							<tr class="light">
@@ -78,6 +78,43 @@ version 2 of the License, or (at your option) any later version.
 							<tr class="light">
 								<td class="light" colspan="2" style="text-align: center; padding: 15px;">
 									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;schedule_id={$schedule_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #4a6fa5; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Reset</a>
+									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
+								</td>
+							</tr>
+							{elseif $action == 'run_schedule_now'}
+							<tr class="light">
+								<td class="light" width="150px"><strong>Schedule ID:</strong></td>
+								<td class="light">{$schedule_info.id}</td>
+							</tr>
+							<tr class="dark">
+								<td class="dark"><strong>Node:</strong></td>
+								<td class="dark">{$schedule_info.nodename|escape:'htmlall'}</td>
+							</tr>
+							<tr class="light">
+								<td class="light"><strong>Daemon:</strong></td>
+								<td class="light">{$schedule_info.daemon|escape:'htmlall'}</td>
+							</tr>
+							<tr class="dark">
+								<td class="dark"><strong>Current Status:</strong></td>
+								<td class="dark">{$schedule_info.status|escape:'htmlall'}</td>
+							</tr>
+							<tr class="light">
+								<td class="light"><strong>Interval:</strong></td>
+								<td class="light">{$schedule_info.interval|escape:'htmlall'} minutes</td>
+							</tr>
+							<tr class="dark">
+								<td class="dark" colspan="2" style="padding: 15px;">
+									<p style="font-weight: bold;">This action will:</p>
+									<ul>
+										<li>Set the schedule status to "Waiting"</li>
+										<li>Clear the PID</li>
+										<li>Set the next run time to NOW (Run Immediately)</li>
+									</ul>
+								</td>
+							</tr>
+							<tr class="light">
+								<td class="light" colspan="2" style="text-align: center; padding: 15px;">
+									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;schedule_id={$schedule_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #2e8b57; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Run Now</a>
 									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>

@@ -71,7 +71,7 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_schedule from=$wifidb_schedules}
 						<tr class="{$wifidb_schedule.color}">
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if $wifidb_login_priv_name == "Administrator"} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a>{/if}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if $wifidb_login_priv_name == "Administrator"} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a> <a href="{$wifidb_host_url}opt/admin_action.php?action=run_schedule_now&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Run Now">&#9658;</a>{/if}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval|escape:'htmlall'} minutes</td>

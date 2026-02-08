@@ -401,6 +401,60 @@ switch($action)
 		}
 		break;
 
+	case "run_schedule_now":
+		$schedule_id = filter_input(INPUT_GET, 'schedule_id', FILTER_SANITIZE_NUMBER_INT);
+		if(!$schedule_id || !is_numeric($schedule_id))
+		{
+			die("Invalid schedule ID");
+		}
+
+		// Get schedule info
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon FROM schedule WHERE schedule.id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $schedule_id, PDO::PARAM_INT);
+		$prep->execute();
+		$schedule_info = $prep->fetch(PDO::FETCH_ASSOC);
+
+		if(!$schedule_info)
+		{
+			die("Schedule not found");
+		}
+
+		if($confirm == "yes")
+		{
+			$result = run_schedule_now($dbcore, $schedule_id);
+
+			if($result['success'])
+			{
+				$message = "Schedule ID {$schedule_id} ({$schedule_info['daemon']}) has been set to run now.";
+				$message_type = "success";
+			}
+			else
+			{
+				$message = "Error updating schedule: " . $result['error'];
+				$message_type = "error";
+			}
+
+			// Display result page
+			$dbcore->smarty->assign("wifidb_page_label", "Admin Action Result");
+			$dbcore->smarty->assign("message", $message);
+			$dbcore->smarty->assign("message_type", $message_type);
+			$dbcore->smarty->assign("return_url", $return_url ? $return_url : $dbcore->wifidb_host_url.'opt/scheduling.php?func=schedule');
+			$dbcore->smarty->display('admin_action_result.tpl');
+		}
+		else
+		{
+			// Show confirmation page
+			$dbcore->smarty->assign("wifidb_page_label", "Confirm Run Schedule Now");
+			$dbcore->smarty->assign("message", "Are you sure you want to run <strong>{$schedule_info['daemon']}</strong> immediately?<br>This will set the next run time to NOW.");
+			$dbcore->smarty->assign("schedule_info", $schedule_info);
+			$dbcore->smarty->assign("action", $action);
+			$dbcore->smarty->assign("schedule_id", $schedule_id);
+			$dbcore->smarty->assign("return_url", $return_url);
+			$dbcore->smarty->display('admin_action_confirm.tpl');
+		}
+		break;
+
 	default:
 		die("Invalid action");
 }
@@ -415,6 +469,31 @@ function reset_schedule($dbcore, $schedule_id, $interval)
 	{
 		// Calculate next run time: now + interval minutes
 		$next_run = date('Y-m-d H:i:s', strtotime("+{$interval} minutes"));
+
+		// Update the schedule
+		$sql = "UPDATE schedule SET status = 'Waiting', pid = '', nextrun = ? WHERE id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $next_run, PDO::PARAM_STR);
+		$prep->bindParam(2, $schedule_id, PDO::PARAM_INT);
+		$prep->execute();
+
+		return array('success' => true);
+	}
+	catch(Exception $e)
+	{
+		return array('success' => false, 'error' => $e->getMessage());
+	}
+}
+
+/**
+ * Set a daemon schedule to run immediately
+ */
+function run_schedule_now($dbcore, $schedule_id)
+{
+	try
+	{
+		// Reset next run time to now so it runs immediately
+		$next_run = date('Y-m-d H:i:s');
 
 		// Update the schedule
 		$sql = "UPDATE schedule SET status = 'Waiting', pid = '', nextrun = ? WHERE id = ?";
