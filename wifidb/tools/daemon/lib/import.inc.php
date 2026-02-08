@@ -2295,7 +2295,173 @@ class import extends dbcore
 				'newcells'=>0
 		);
 		return $ret;
-	}	
+	}
+
+	public function import_ns1($source="", $file_id, $file_importing_id)
+	{
+		if(!file_exists($source))
+		{
+			return array(-1, "File does not exist");
+		}
+		
+		$parser = new NS1Parser();
+		$data = $parser->parse($source);
+
+		if (isset($data['error'])) {
+			return array(-1, $data['error']);
+		}
+
+		$aps = $data['aps'];
+		$count = count($aps);
+		
+		$gdata = array();
+		$apdata = array();
+		$gid = 0;
+
+		foreach ($aps as $key => $ap) {
+			$calc = "AP: ".($key+1)." / ".$count;
+			$this->UpdateImportingStatus($file_importing_id, $calc, $ap['ssid']);
+
+			$fSSID = $ap['ssid'];
+			$fBSSID = $ap['bssid'];
+			if(!$this->validateMacAddress($fBSSID)){continue;}
+
+			$chan = $ap['last_channel'];
+			if (!$chan) $chan = 0;
+			
+			// Flags parsing for authentication/encryption
+			$authen = "Open";
+			$encry = "None";
+			$sectype = 1; // 1=Open, 2=WEP, 3=WPA/WPA2
+			$nt = "infrastructure";
+
+			$flags = $ap['flags'];
+			if ($flags & 0x0002) $nt = "ad-hoc";
+			if ($flags & 0x0010) {
+				 $authen = "Open";
+				 $encry = "WEP";
+				 $sectype = 2; // WEP
+			}
+
+			// Extended Flags (Version 12)
+			if (isset($ap['ap_flags']) && $ap['ap_flags'] > 0) {
+				$apFlags = $ap['ap_flags'];
+				
+				// Auth
+				$hasWPA = false;
+				if ($apFlags & 0x0001) { $authen = "WPA-Personal"; $hasWPA = true; } // WPA-PSK
+				if ($apFlags & 0x0002) { $authen = "WPA-Enterprise"; $hasWPA = true; }
+				if ($apFlags & 0x0004) { $authen = "WPA2-Personal"; $hasWPA = true; }
+				if ($apFlags & 0x0008) { $authen = "WPA2-Enterprise"; $hasWPA = true; }
+				if ($apFlags & 0x0010) { $authen = "WPA3"; $hasWPA = true; }
+				if ($apFlags & 0x0020) { $authen = "OWE"; $hasWPA = true; }
+
+				// Encry
+				$encList = array();
+				if ($apFlags & 0x0040) $encList[] = "TKIP";
+				
+				if ($apFlags & 0x0080) {
+					$encList[] = "CCMP";
+				}
+				if ($apFlags & 0x0100) $encList[] = "GCMP";
+				if ($apFlags & 0x0200) $encList[] = "GCMP-256";
+				if ($apFlags & 0x0400) $encList[] = "CCMP-256";
+				if ($apFlags & 0x0800) $encList[] = "BIP";
+
+				if (count($encList) > 0) {
+					$encry = implode("+", $encList);
+				}
+				if ($hasWPA) $sectype = 3; 
+			}
+
+			// Process History and GPS
+			if (isset($ap['history'])) {
+				foreach ($ap['history'] as $dp) {
+					$fRSSI = $dp['signal'];
+					$fSignal = $this->convert->dBm2Sig($fRSSI);
+					
+					// Convert Windows FileTime (100ns since 1601) to Unix Timestamp
+					// 11644473600 is seconds between 1601 and 1970
+					$ts = ($dp['time'] / 10000000) - 11644473600; 
+					if ($ts < 0) $ts = 0; 
+					$fDate = date("Y-m-d H:i:s", $ts);
+
+					$fgid = 0; // Default no GPS
+
+					if (isset($dp['gps'])) {
+						$gps = $dp['gps'];
+						$fLat = $gps['lat'];
+						$fLon = $gps['lon'];
+						$fAlt = $gps['alt'];
+						
+						$fLatStr = $this->convert->all2dm(number_format($fLat, 7, '.', ''));
+						$fLonStr = $this->convert->all2dm(number_format($fLon, 7, '.', ''));
+
+						$gps_hash = md5($fLatStr.$fLonStr.$fAlt.$fDate);
+						$garr = @$gdata[$gps_hash];
+						$fgid = @$garr['id'];
+						if(!$fgid){$gid++;$fgid=$gid;}
+						
+						$gdata[$gps_hash] = array(
+							'id'	=>  $fgid,
+							'lat'   =>  $fLatStr,
+							'lon'   =>  $fLonStr,
+							'sats'  =>  $gps['sats'],
+							'acc'   =>  $gps['hdop'],
+							'hdp'   =>  $gps['hdop'],
+							'alt'   =>  $fAlt,
+							'geo'   =>  null,
+							'kmh'   =>  $gps['speed'],
+							'mph'   =>  $gps['speed'] * 0.621371,
+							'track' =>  $gps['track'],
+							'datetime'  =>  $fDate
+						);
+					}
+					
+					// Add sig data - format: gid,signal,rssi
+					// Key AP data by features to group identical APs
+					$ap_hash = md5($fSSID.$fBSSID.$chan.$sectype.$authen.$encry);
+					$aarr = @$apdata[$ap_hash];
+					$fsigs = @$aarr['signals'];
+					if($fsigs){$fsigs .= "\\";}
+					$fsigs .= $fgid.",".$fSignal.",".$fRSSI;
+					
+					$apdata[$ap_hash] = array(
+						'ap_hash'   => $ap_hash, // used to identify unique AP instance
+						'ssid'	  =>  $fSSID,
+						'bssid'	 =>  $fBSSID,
+						'auth'	  =>  $authen,
+						'encry'	 =>  $encry,
+						'sectype'   =>  $sectype,
+						'flags'	 =>  $ap['flags'],
+						'radio'	 =>  "802.11", 
+						'chan'	  =>  $chan,
+						'btx'	   =>  null,
+						'otx'	   =>  null,
+						'nt'		=>  $nt,
+						'signals'   =>  $fsigs
+					);
+				}
+			}
+		}
+
+		#Import AP/GPS Arrays
+		$this->rssi_signals_flag = 1;
+		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 0, 1);
+		
+		#Find if file had Valid GPS
+		$this->UpdateFileValidGPS($file_id);
+		
+		$ret = array(
+				'aps'=>$AP_Import['aps'],
+				'gps'=>$AP_Import['gps'],
+				'newaps'=>$AP_Import['newaps'],
+				'cells'=>0,
+				'cells_hist'=>0,
+				'newcells'=>0
+		);
+		return $ret;
+	}
 	
 }
 

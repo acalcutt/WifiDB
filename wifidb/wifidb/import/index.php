@@ -125,6 +125,10 @@ switch($func)
 							$ext_fail = 0;
 							$task = "import";
 						break;
+						case "ns1":
+							$ext_fail = 0;
+							$task = "import";
+						break;
 						default:
 							$ext_fail = 1;
 							$task = "";
@@ -158,9 +162,9 @@ switch($func)
 								//in order that they where uploaded
 								
 								if($dbcore->sql->service == "mysql")
-									{$sql = "INSERT INTO `files_tmp`(`file`, `file_orig`, `date`, `user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+									{$sql = "INSERT INTO `files_tmp`(`file_name`, `file_orig`, `file_date`, `file_user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 								else if($dbcore->sql->service == "sqlsrv")
-									{$sql = "INSERT INTO [files_tmp]([file], [file_orig], [date], [user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+									{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
 								$result = $dbcore->sql->conn->prepare( $sql );
 								$result->bindValue(1, $filename, PDO::PARAM_STR);

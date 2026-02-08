@@ -342,7 +342,7 @@ class daemon extends wdbcli
 					$this->wdbmail->mail_users($message, $subject, "schedule");
 				}
 				
-				if($file_type == "vistumbler" || $file_type == "")
+				if($file_type == "vistumbler" || $file_type == "ns1" || $file_type == "")
 				{
 					if($file_ext == 'csv')
 					{
@@ -384,6 +384,11 @@ class daemon extends wdbcli
 						{
 							$tmp = array(-1, "Extracted VS1 Does not exists. ".$detination_vs1);
 						}
+					}
+					elseif($file_ext == 'ns1' || $file_type == "ns1")
+					{
+						$this->verbosed("Importing NS1. ".$source, 1);
+						$tmp = $this->import->import_ns1($source, $file_row,  $importing_id);
 					}
 					else
 					{

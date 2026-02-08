@@ -45,6 +45,7 @@ if not, write to the
 								<li class="form-row"><label for="type">Import Type:</label>
 									<div class="radio-group">
 										<label><input type="radio" name="type" id="type" value="vistumbler" checked>Vistumbler VS1/VSZ/CSV/MDB</label>
+										<label><input type="radio" name="type" id="type" value="ns1">NetStumbler NS1</label>
 										<label><input type="radio" name="type" id="type" value="wardrive">Wardrive DB/DB3</label>
 										<label><input type="radio" name="type" id="type" value="wiglewificsv">WigleWifi CSV</label>
 										<label><input type="radio" name="type" id="type" value="swardriving">SWardriving CSV</label>
