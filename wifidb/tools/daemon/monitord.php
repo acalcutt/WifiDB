@@ -79,7 +79,7 @@ while(1)
 		$result = $dbcore->sql->conn->query($daemon_sql);
 		$result->execute();
 		$daemon_array = $result->fetch(2);
-		if($daemon_array['id'])
+		if(is_array($daemon_array) && isset($daemon_array['id']))
 		{
 			$sql = "UPDATE daemon_pid_stats SET pid = '$pid', pidtime = '$time', pidcpu = '$cpu', pidmem = '$mem', pidcmd = '$cmd' , date = '$timestamp' where nodename = '$node_name' AND pidfile = '$pidfile'";
 			$result_update = $dbcore->sql->conn->query($sql);
