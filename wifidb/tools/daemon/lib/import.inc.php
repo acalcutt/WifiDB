@@ -279,6 +279,32 @@ class import extends dbcore
 					echo "csv line has invalid date $in_datetime !\n";
 					$gps['datetime'] = NULL;
 				}
+				else
+				{
+					// assign the successful fallback parse so later checks operate on the DateTime
+					$datetime = $datetime2;
+				}
+			}
+			// If we have a valid datetime, reject points that are in the future.
+			// Normalize to UTC for comparison and allow a small skew (5 minutes) to account for clock differences.
+			if ($datetime instanceof DateTime)
+			{
+				try {
+					$dt_utc = clone $datetime;
+					$dt_utc->setTimezone(new DateTimeZone('UTC'));
+					$now_utc = new DateTime('now', new DateTimeZone('UTC'));
+					$skew_seconds = 300; // 5 minutes
+					if ($dt_utc->getTimestamp() > ($now_utc->getTimestamp() + $skew_seconds))
+					{
+						$this->verbosed("Skipping future GPS point: " . $gps['datetime'] . " (UTC " . $dt_utc->format('Y-m-d H:i:s') . ")", 3);
+						// undo counters for this skipped point and continue
+						$Insert_Size--;
+						$lcount--;
+						continue;
+					}
+				} catch (Exception $e) {
+					// On any parse/timezone error, fallback to inserting as-is (or already NULL)
+				}
 			}
 			
 					
@@ -316,6 +342,35 @@ class import extends dbcore
 
 				$Insert_Size = 0;
 				$ValArray = array();
+			}
+		}
+		// Cleanup any GPS rows we just inserted that are clearly in the future (allow small skew).
+		// This handles re-imports where old future-dated rows may have been written.
+		$skew_seconds = 300; // 5 minutes
+		$retry = true;
+		while ($retry)
+		{
+			try {
+				if($this->sql->service == "mysql")
+				{
+					$sqlc = "UPDATE `wifi_gps` SET `GPS_Date` = NULL WHERE `File_ID` = ? AND `GPS_Date` > (NOW() + INTERVAL ? SECOND)";
+					$prepc = $this->sql->conn->prepare($sqlc);
+					$prepc->bindParam(1, $file_id, PDO::PARAM_INT);
+					$prepc->bindParam(2, $skew_seconds, PDO::PARAM_INT);
+					$prepc->execute();
+				}
+				else if($this->sql->service == "sqlsrv")
+				{
+					$sqlc = "UPDATE [wifi_gps] SET [GPS_Date] = NULL WHERE [File_ID] = ? AND [GPS_Date] > DATEADD(second, ?, GETUTCDATE())";
+					$prepc = $this->sql->conn->prepare($sqlc);
+					$prepc->bindParam(1, $file_id, PDO::PARAM_INT);
+					$prepc->bindParam(2, $skew_seconds, PDO::PARAM_INT);
+					$prepc->execute();
+				}
+				$retry = false;
+			}
+			catch (Exception $e) {
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
 			}
 		}
 		$this->verbosed("Importing AP Data [$ap_count]:", 2);
@@ -558,6 +613,23 @@ class import extends dbcore
 	
 	private function InsertGps($File_ID, $g_id, $g_lat, $g_lon, $g_sats, $g_hdp, $g_alt, $g_geo, $g_kmh, $g_mph, $g_track, $g_AccuracyMeters, $g_datetime)
 	{
+		// If datetime is provided and appears to be in the future, null it out to avoid future-dated rows.
+		if ($g_datetime)
+		{
+			try {
+				$dt = new DateTime($g_datetime);
+				$dt->setTimezone(new DateTimeZone('UTC'));
+				$now_utc = new DateTime('now', new DateTimeZone('UTC'));
+				$skew_seconds = 300; // 5 minutes
+				if ($dt->getTimestamp() > ($now_utc->getTimestamp() + $skew_seconds))
+				{
+					$this->verbosed("InsertGps: nulling future GPS datetime: $g_datetime", 3);
+					$g_datetime = NULL;
+				}
+			} catch (Exception $e) {
+				// leave $g_datetime as-is (or null) if parsing fails
+			}
+		}
 		$retry = true;
 		while ($retry)
 		{
@@ -1557,8 +1629,15 @@ class import extends dbcore
 				}
 			}
 			if(strpos($apinfo[0], 'MAC') !== false && strpos($apinfo[1], 'SSID') !== false){continue;}
-			if($version >= 1.6)
+			
+			// Detect format version and parse accordingly
+			// v1.6: 14 columns - added Frequency (col 5), RCOIs (col 11), MfgrId (col 12)
+			// v1.4: 11 columns - no Frequency, RCOIs, or MfgrId columns
+			$col_count = count($apinfo);
+			if($col_count >= 14 || $version >= 1.6)
 			{
+				// WigleWifi v1.6+ format (14 columns)
+				// MAC,SSID,AuthMode,FirstSeen,Channel,Frequency,RSSI,CurrentLatitude,CurrentLongitude,AltitudeMeters,AccuracyMeters,RCOIs,MfgrId,Type
 				$fBSSID = strtoupper(@$apinfo[0]);
 				$fSSID = @$apinfo[1];
 				$fCapabilities = @$apinfo[2];
@@ -1574,17 +1653,21 @@ class import extends dbcore
 				$fMfgrId = @$apinfo[12];
 				$fType = @$apinfo[13];
 			} else {
+				// WigleWifi v1.4 format (11 columns)
+				// MAC,SSID,AuthMode,FirstSeen,Channel,RSSI,CurrentLatitude,CurrentLongitude,AltitudeMeters,AccuracyMeters,Type
 				$fBSSID = strtoupper(@$apinfo[0]);
 				$fSSID = @$apinfo[1];
 				$fCapabilities = @$apinfo[2];
 				$fDate = @$apinfo[3];
 				$fchannel = @$apinfo[4];
-				$ffreq = 0;
+				$ffreq = 0; // Not available in v1.4
 				$fRSSI = @$apinfo[5];
 				$fLat = $this->convert->all2dm(number_format(@$apinfo[6],7));
 				$fLon = $this->convert->all2dm(number_format(@$apinfo[7],7));
 				$fAltitudeMeters = @$apinfo[8];
 				$fAccuracy = @$apinfo[9];
+				$fRCOIs = ''; // Not available in v1.4
+				$fMfgrId = ''; // Not available in v1.4
 				$fType = @$apinfo[10];
 			}
 
