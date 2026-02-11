@@ -576,13 +576,172 @@ function reset_failed_file($dbcore, $File_ID)
 {
 	try
 	{
-		// Just mark the file as not importing so it gets picked up again
+		// This reset is for an incomplete import: use the files_importing id to find file hash
+		// and cleanup any partial data in the `files`/`wifi_*`/`cell_*` tables, then leave
+		// the `files_importing` row so the daemon can re-import.
+
+		// Get hash from files_importing
+		if($dbcore->sql->service == "mysql")
+			{$sqlhp = "SELECT `hash` FROM `files_importing` WHERE `id` = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sqlhp = "SELECT TOP 1 [hash] FROM [files_importing] WHERE [id] = ?";}
+		$resgps = $dbcore->sql->conn->prepare($sqlhp);
+		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+		$resgps->execute();
+		$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
+		$File_Hash = $fetchgps['hash'] ?? null;
+
+		if($File_Hash)
+		{
+			// Find file id from hash
+			if($dbcore->sql->service == "mysql")
+				{$sqlhp = "SELECT `id` FROM `files` WHERE `hash` = ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sqlhp = "SELECT TOP 1 [id] FROM [files] WHERE [hash] = ?";}
+			$resgps = $dbcore->sql->conn->prepare($sqlhp);
+			$resgps->bindParam(1, $File_Hash, PDO::PARAM_STR);
+			$resgps->execute();
+			$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
+			$Partial_File_ID = $fetchgps['id'] ?? null;
+
+			if($Partial_File_ID)
+			{
+				$dbcore->verbosed("Found partial import with File ID: $Partial_File_ID, cleaning up before reset...");
+
+				// Reassign APs to alternate file if available
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
+				$apl = $dbcore->sql->conn->prepare($sql);
+				$apl->bindParam(1, $Partial_File_ID, PDO::PARAM_INT);
+				$apl->execute();
+
+				while($ap = $apl->fetch(PDO::FETCH_NUM))
+				{
+					$AP_ID = $ap[0];
+
+					if($dbcore->sql->service == "mysql")
+						{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID != ? LIMIT 1";}
+					else if($dbcore->sql->service == "sqlsrv")
+						{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? And [File_ID] != ?";}
+					$resgps = $dbcore->sql->conn->prepare($sqlhp);
+					$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
+					$resgps->bindParam(2, $Partial_File_ID, PDO::PARAM_INT);
+					$resgps->execute();
+					$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
+					$New_File_ID = $fetchgps['File_ID'] ?? null;
+
+					if($New_File_ID)
+					{
+						if($dbcore->sql->service == "mysql")
+							{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
+						else if($dbcore->sql->service == "sqlsrv")
+							{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+						$prep = $dbcore->sql->conn->prepare($sqlu);
+						$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
+						$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
+						$prep->execute();
+					}
+				}
+
+				// Reassign cells if present
+				if($dbcore->sql->service == "mysql")
+					{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
+				else if($dbcore->sql->service == "sqlsrv")
+					{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
+				$apl = $dbcore->sql->conn->prepare($sql);
+				$apl->bindParam(1, $Partial_File_ID, PDO::PARAM_INT);
+				$apl->execute();
+
+				while($ap = $apl->fetch(PDO::FETCH_NUM))
+				{
+					$cell_id = $ap[0];
+
+					if($dbcore->sql->service == "mysql")
+						{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? And `file_id != ? LIMIT 1";}
+					else if($dbcore->sql->service == "sqlsrv")
+						{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? And [file_id] != ?";}
+					$resgps = $dbcore->sql->conn->prepare($sqlhp);
+					$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
+					$resgps->bindParam(2, $Partial_File_ID, PDO::PARAM_INT);
+					$resgps->execute();
+					$fetchgps = $resgps->fetch(PDO::FETCH_ASSOC);
+					$New_File_ID = $fetchgps['file_id'] ?? null;
+
+					if($New_File_ID)
+					{
+						if($dbcore->sql->service == "mysql")
+							{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
+						else if($dbcore->sql->service == "sqlsrv")
+							{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
+						$prep = $dbcore->sql->conn->prepare($sqlu);
+						$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
+						$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
+						$prep->execute();
+					}
+				}
+
+				// Delete partial data for the found File ID
+				$tables = array(
+					"DELETE FROM wifi_hist WHERE File_ID = ?",
+					"DELETE FROM wifi_ap WHERE File_ID = ?",
+					"DELETE FROM wifi_gps WHERE File_ID = ?",
+					"DELETE FROM cell_hist WHERE file_id = ?",
+					"DELETE FROM cell_id WHERE file_id = ?",
+					"DELETE FROM files WHERE id = ?"
+				);
+
+				foreach($tables as $sqlt)
+				{
+					$retry = true;
+					while ($retry)
+					{
+						try
+						{
+							$resgps = $dbcore->sql->conn->prepare($sqlt);
+							$resgps->bindParam(1, $Partial_File_ID, PDO::PARAM_INT);
+							$resgps->execute();
+							$retry = false;
+						}
+						catch (Exception $e)
+						{
+							$retry = $dbcore->sql->isPDOException($dbcore->sql->conn, $e);
+						}
+					}
+				}
+			}
+		}
+
+		// Copy files_importing row to files_tmp so metadata is preserved for re-import attempts
+		$retry = true;
+		while ($retry)
+		{
+			try
+			{
+				$sqlhp = "INSERT INTO files_tmp\n"
+					. "(file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
+					. "SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+					. "FROM files_importing\n"
+					. "WHERE id = ?";
+				$resgps = $dbcore->sql->conn->prepare($sqlhp);
+				$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
+				$resgps->execute();
+				$retry = false;
+			}
+			catch (Exception $e)
+			{
+				$retry = $dbcore->sql->isPDOException($dbcore->sql->conn, $e);
+			}
+		}
+
+		// Mark files_importing as not importing so daemon will pick it up again
 		$sql = "UPDATE files_importing SET importing = 0, tot = NULL, ap = NULL WHERE id = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$prep->execute();
 
-		return array('success' => true, 'message' => "Failed file ID $File_ID reset for re-import");
+		return array('success' => true, 'message' => "Failed file import ID $File_ID reset (partial data cleaned) and ready for re-import");
 	}
 	catch(Exception $e)
 	{
