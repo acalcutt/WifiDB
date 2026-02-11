@@ -137,6 +137,11 @@ if(!$dbcore->ForceDaemonRun)
 	$job_id = $job['id'];
 	$dbcore->job_interval = $job['interval'];
 	$dbcore->verbosed("Job ID: $job_id , Interval:".$dbcore->job_interval);
+	if(!$dbcore->ForceDaemonRun)
+	{
+		#Set Job to Running
+		$dbcore->SetStartJob($job_id);
+	}
 }
 
 /**
