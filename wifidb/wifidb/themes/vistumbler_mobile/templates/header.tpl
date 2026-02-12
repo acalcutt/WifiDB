@@ -36,11 +36,13 @@
 	{$WebSocketScripts|default:""}
 	{$wifidb_meta_header|default:""}
 	{$redirect_func|default:""}
+	<!-- QR loader for client-side QR generation -->
+	<script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
 	<link rel="stylesheet" href="{$themeurl}html5style.css" />
-	<link rel="stylesheet" href="{$themeurl}lib/sceditor/minified/themes/default.min.css" id="theme-style" />
-	<script src="{$themeurl}lib/sceditor/minified/sceditor.min.js"></script>
-	<script src="{$themeurl}lib/sceditor/minified/icons/monocons.js"></script>
-	<script src="{$themeurl}lib/sceditor/minified/formats/bbcode.js"></script>
+	<link rel="stylesheet" href="{$wifidb_host_url}lib/js/sceditor/minified/themes/default.min.css" id="theme-style" />
+	<script src="{$wifidb_host_url}lib/js/sceditor/minified/sceditor.min.js"></script>
+	<script src="{$wifidb_host_url}lib/js/sceditor/minified/icons/monocons.js"></script>
+	<script src="{$wifidb_host_url}lib/js/sceditor/minified/formats/bbcode.js"></script>
 </head>
 <body {$redirect_html|default:""} {$OnLoad|default:""}>
 	<script type="text/javascript">
@@ -51,8 +53,8 @@
 	<script type="text/javascript" src="{$themeurl}lib/adframe.js"></script>
 	<!-- Start Collapsible Menu Scripts-->
     <!-- Cookie consent & consent-mode helper (loads before ad scripts in body) -->
-    <script src="{$themeurl}lib/cookie-consent.js"></script>
-	<script src="{$themeurl}lib/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
+	<script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
+	<script src="{$wifidb_host_url}lib/js/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
     <script type="text/javascript">
         $(document).ready(function () {
             $('.bt-menu-trigger').on('click', function () {

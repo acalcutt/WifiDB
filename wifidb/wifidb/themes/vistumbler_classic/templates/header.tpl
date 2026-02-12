@@ -20,10 +20,10 @@
 </script>
 {/literal}
         <link rel="stylesheet" href="{$themeurl}styles.css" />
-		<link rel="stylesheet" href="{$themeurl}lib/sceditor/minified/themes/default.min.css" id="theme-style" />
-		<script src="{$themeurl}lib/sceditor/minified/sceditor.min.js"></script>
-		<script src="{$themeurl}lib/sceditor/minified/icons/monocons.js"></script>
-		<script src="{$themeurl}lib/sceditor/minified/formats/bbcode.js"></script>
+        <link rel="stylesheet" href="{$wifidb_host_url}lib/js/sceditor/minified/themes/default.min.css" id="theme-style" />
+        <script src="{$wifidb_host_url}lib/js/sceditor/minified/sceditor.min.js"></script>
+        <script src="{$wifidb_host_url}lib/js/sceditor/minified/icons/monocons.js"></script>
+        <script src="{$wifidb_host_url}lib/js/sceditor/minified/formats/bbcode.js"></script>
         <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
         {$wifidb_seo_content|default:""}
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,10 +38,12 @@
 
         {$wifidb_meta_header}
         {$redirect_func}
+        <!-- QR loader for client-side QR generation (shared) -->
+        <script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
     </head>
     <body style="background-color: #145285" {$redirect_html}>
-        <!-- Cookie consent & consent-mode helper (loads before ad scripts in body) -->
-        <script src="{$themeurl}lib/cookie-consent.js"></script>
+        <!-- Cookie consent & consent-mode helper (shared) -->
+        <script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
         {$install_header}
         {$wifidb_announce_header}
         

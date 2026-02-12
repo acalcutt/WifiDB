@@ -455,11 +455,11 @@ switch($func)
 
 	case 'websockets':
 		$wspath = $dbcore->WebSocketURL;
-		$dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/jquery-1.11.3.js"></script>
+		$dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/js/jquery-3.4.1.slim.js"></script>
 		<script type="text/javascript">
 			var host = "'.$dbcore->WebSocketURL.'Scheduling";
 		</script>
-		<script type="text/javascript" src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/WebSockClient.js"></script>');
+		<script type="text/javascript" src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/js/WebSockClient.js"></script>');
 		$dbcore->smarty->assign('OnLoad', "onload='init()'");
 
 		$timezone_opt = '';

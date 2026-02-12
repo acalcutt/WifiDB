@@ -386,7 +386,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 
 				<!-- Include Dygraphs library -->
-				<script src="{$themeurl}lib/chart.min.js"></script>
+				<script src="{$wifidb_host_url}lib/js/chart.min.js"></script>
 				<script>
 				{literal}
 				document.addEventListener('DOMContentLoaded', function() {

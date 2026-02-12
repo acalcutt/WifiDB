@@ -1,7 +1,6 @@
 (function(){
     'use strict';
     var COOKIE_NAME = 'vi_cookie_consent';
-    var EU_COUNTRIES = ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','LV','LI','LT','LU','MT','NL','NO','PL','PT','RO','SK','SI','ES','SE'];
 
     function readConsent(){
         var m = document.cookie.match(new RegExp('(?:^|; )'+COOKIE_NAME+'=([^;]*)'));
@@ -16,12 +15,7 @@
         document.cookie = COOKIE_NAME+'='+v+'; path=/; expires='+expires.toUTCString();
     }
 
-    function loadAdsScript(){
-        // Handled by script tag in HTML with consent mode
-    }
-
     function applyConsentState(cons){
-        // cons: {ad_storage, analytics_storage, ad_user_data, ad_personalization}
         try{
             if(window.gtag) {
                 var gCons = {};
@@ -36,9 +30,8 @@
             }
         }catch(e){}
 
-        // Load or block ads script depending on ad_storage
         if(cons.ad_storage === 'granted'){
-            loadAdsScript();
+            // placeholder for ad load
         }
     }
 
@@ -105,40 +98,22 @@
         });
     }
 
-    function isEuCountry(code){
-        if(!code) return false;
-        return EU_COUNTRIES.indexOf(code.toUpperCase()) !== -1;
-    }
-
     function determineAndMaybeShow(){
         var existing = readConsent();
         if(existing){
             applyConsentState(existing);
             return;
         }
-        // Try to detect country via ipapi.co; conservative: if failure, show banner
         fetch('https://ipapi.co/json/').then(function(r){ return r.json(); }).then(function(j){
             var cc = j && (j.country || j.country_code || j.country_code_iso3) ? (j.country || j.country_code) : null;
-            if(isEuCountry(cc) || !cc){
-                showBanner({analytics_storage:'denied', ad_personalization:'denied'});
-            } else {
-                // Non-EU default: grant consent for ads/analytics
-                var cons = {ad_storage:'granted', analytics_storage:'granted', ad_user_data:'granted', ad_personalization:'granted'};
-                writeConsent(cons);
-                applyConsentState(cons);
-            }
-        }).catch(function(){
-            // On error, show banner to be safe
-            showBanner({analytics_storage:'denied', ad_personalization:'denied'});
-        });
+            if(!cc){ showBanner({analytics_storage:'denied', ad_personalization:'denied'}); return; }
+            var EU = ['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','LV','LI','LT','LU','MT','NL','NO','PL','PT','RO','SK','SI','ES','SE'];
+            if(EU.indexOf(cc.toUpperCase()) !== -1){ showBanner({analytics_storage:'denied', ad_personalization:'denied'}); }
+            else { var cons = {ad_storage:'granted', analytics_storage:'granted', ad_user_data:'granted', ad_personalization:'granted'}; writeConsent(cons); applyConsentState(cons); }
+        }).catch(function(){ showBanner({analytics_storage:'denied', ad_personalization:'denied'}); });
     }
 
-    // Run early
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', function() {
-            determineAndMaybeShow();
-        });
-    } else {
-        determineAndMaybeShow();
-    }
+        document.addEventListener('DOMContentLoaded', function() { determineAndMaybeShow(); });
+    } else { determineAndMaybeShow(); }
 })();

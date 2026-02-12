@@ -399,6 +399,25 @@ CREATE TABLE [dbo].[geonames_country_names](
 	[EquivalentFipsCode] [nvarchar](255) NULL
 ) ON [PRIMARY]
 GO
+
+/****** Object:  Table [dbo].[link_tokens]    Script Date: 02/12/2026 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[link_tokens](
+	[id] [int] IDENTITY(1,1) NOT NULL,
+	[token] [nvarchar](64) NOT NULL,
+	[user_id] [int] NOT NULL,
+	[expires] [datetime2](0) NOT NULL,
+	[used] [bit] NOT NULL DEFAULT 0,
+	[created_at] [datetime2](0) NOT NULL,
+ CONSTRAINT [PK_link_tokens_id] PRIMARY KEY CLUSTERED 
+(
+	[id] ASC
+)
+) ON [PRIMARY]
+GO
 /****** Object:  Table [dbo].[live_aps]    Script Date: 12/17/2025 1:56:41 PM ******/
 SET ANSI_NULLS ON
 GO

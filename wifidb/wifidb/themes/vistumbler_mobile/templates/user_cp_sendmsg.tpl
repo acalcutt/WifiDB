@@ -60,7 +60,7 @@ if not, write to the
 								icons: 'monocons',
 								autoUpdate: true,
 								autoExpand: true,
-								style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css',
+								style: '{$wifidb_host_url}lib/js/sceditor/minified/themes/content/default.min.css',
 								emoticonsRoot: '{$themeurl}img/'
 							});
 						</script>

@@ -121,7 +121,12 @@ class convert extends dbcore
 
 		$return="0.0000000";
 
-		$sign = ($geocord_in[0] == "-") ? "-" : "";
+		$geocord_in = (string)$geocord_in;
+		if ($geocord_in === "" || strlen($geocord_in) === 0) {
+			return $return;
+		}
+
+		$sign = (isset($geocord_in[0]) && $geocord_in[0] == "-") ? "-" : "";
 		$geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
 
 		$latlon_exp = explode(".", $geocord_in);

@@ -40,6 +40,23 @@ CREATE TABLE `annunc` (
 
 -- --------------------------------------------------------
 
+-- --------------------------------------------------------
+--
+-- Table structure for table `link_tokens`
+--
+
+CREATE TABLE `link_tokens` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `token` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `expires` datetime NOT NULL,
+  `used` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
 --
 -- Table structure for table `boundaries`
 --
