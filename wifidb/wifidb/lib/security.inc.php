@@ -160,15 +160,16 @@ class security
 
 		#var_dump($newArray);
 		if($this->sql->service == "mysql")
-			{$sql1 = "SELECT * FROM user_login_hashes WHERE username = ? ORDER BY id DESC LIMIT 1";}
+			{$sql1 = "SELECT * FROM user_login_hashes WHERE username = ? AND hash = ? ORDER BY id DESC LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql1 = "SELECT TOP 1 * FROM user_login_hashes WHERE username = ? ORDER BY id DESC";}
+			{$sql1 = "SELECT TOP 1 * FROM user_login_hashes WHERE username = ? AND hash = ? ORDER BY id DESC";}
 		$prep = $this->sql->conn->prepare($sql1);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
+		$prep->bindParam(2, $cookie_pass_seed, PDO::PARAM_STR);
 		$this->sql->checkError($prep->execute(), __LINE__, __FILE__);
 		$result = $prep->fetch(2);
 		#var_dump($result['hash']);
-		if($result['hash'] == $cookie_pass_seed)
+		if(isset($result['hash']) && $result['hash'] == $cookie_pass_seed)
 		{
 			$this->privs = (int)$newArray['permissions'];
 			if($this->privs >= 1000)
