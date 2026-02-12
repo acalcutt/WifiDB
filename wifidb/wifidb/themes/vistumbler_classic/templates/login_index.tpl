@@ -18,7 +18,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="header.tpl"}
-                                    <form method="post" action="/wifidb/login.php?func=login_proc">
+                                    <form method="post" action="{$wifidb_host_url}login.php?func=login_proc">
                                         <table align="center">
                                             <tbody>
                                                 <tr>

@@ -3,7 +3,7 @@
 				<div class="center">
 					<br/>
 					<img src="{$themeurl}img/logo.png">
-					<form method="post" action="/wifidb/login.php?func=reset_password_finish">
+					<form method="post" action="{$wifidb_host_url}login.php?func=reset_password_finish">
 						<table align="center">
 							<tbody>
 								<tr>

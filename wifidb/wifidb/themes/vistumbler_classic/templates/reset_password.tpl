@@ -18,11 +18,11 @@ if not, write to the
    Boston, MA 02111-1307 USA
 -->
 {include file="vistumbler_header.tpl"}
-                                    <form method="post" action="/wifidb/login.php?func=reset_password_proc">
+                                    <form method="post" action="{$wifidb_host_url}login.php?func=reset_password_proc">
                                         <table align="center">
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="2"><p align="center"><img src="{$wifidb_host_url}themes/vistubler/img/logo.png"></p></td>
+                                                    <td colspan="2"><p align="center"><img src="{$themeurl}img/logo.png"></p></td>
                                                 </tr>
                                                 <tr>
                                                     <td>Username</td>
