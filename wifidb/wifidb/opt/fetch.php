@@ -41,8 +41,17 @@ switch($func)
 {
 	case "cid":
 		$CellArray = $dbcore->export->CellArray($id);
+		if (!isset($CellArray['data'][0]) || !is_array($CellArray['data'][0])) {
+			header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+			echo "Cell not found.";
+			exit();
+		}
 		$cell_info = $CellArray['data'][0];
-		if($cell_info['validgps'] == 1){$geonames = $dbcore->export->GeoNamesArray($cell_info['lat'], $cell_info['lon'], 0, 10);}else{$geonames = array();}
+		if(!empty($cell_info['validgps']) && $cell_info['validgps'] == 1){
+			$geonames = $dbcore->export->GeoNamesArray($cell_info['lat'], $cell_info['lon'], 0, 10);
+		} else {
+			$geonames = array();
+		}
 
 		$sql = "Select Count(distinct file_id) FROM cell_hist WHERE cell_id = ?";
 		$sqlprep = $dbcore->sql->conn->prepare($sql);
@@ -102,8 +111,33 @@ switch($func)
 		break;
 	case "":
 		$ApArray = $dbcore->export->ApArray($id);
+		if (!isset($ApArray['data'][0]) || !is_array($ApArray['data'][0])) {
+			header($_SERVER['SERVER_PROTOCOL'] . ' 404 Not Found');
+			echo "AP not found.";
+			exit();
+		}
 		$ap_info = $ApArray['data'][0];
-		if($ap_info['validgps'] == 1){$geonames = $dbcore->export->GeoNamesArray($ap_info['lat'], $ap_info['lon'], 0, 10);}else{$geonames = array();}
+		// Normalize AP array keys so templates using different casing won't emit notices
+		// Provide both lowercase and mixed-case (e.g., btx / BTx) and common aliases
+		if (!is_array($ap_info)) { $ap_info = array(); }
+		// Alias lower<->mixed case for transmitter fields
+		if (isset($ap_info['btx']) && !isset($ap_info['BTx'])) { $ap_info['BTx'] = $ap_info['btx']; }
+		if (isset($ap_info['otx']) && !isset($ap_info['OTx'])) { $ap_info['OTx'] = $ap_info['otx']; }
+		if (isset($ap_info['BTx']) && !isset($ap_info['btx'])) { $ap_info['btx'] = $ap_info['BTx']; }
+		if (isset($ap_info['OTx']) && !isset($ap_info['otx'])) { $ap_info['otx'] = $ap_info['OTx']; }
+		// Latitude/longitude aliases (decimal and DM forms)
+		if (isset($ap_info['lat']) && !isset($ap_info['latitude'])) { $ap_info['latitude'] = $ap_info['lat']; }
+		if (isset($ap_info['lon']) && !isset($ap_info['longitude'])) { $ap_info['longitude'] = $ap_info['lon']; }
+		if (!isset($ap_info['lat_dm'])) { $ap_info['lat_dm'] = isset($ap_info['lat']) ? $ap_info['lat'] : ''; }
+		if (!isset($ap_info['lon_dm'])) { $ap_info['lon_dm'] = isset($ap_info['lon']) ? $ap_info['lon'] : ''; }
+		// Ensure common keys exist to avoid undefined index notices in templates
+		$ensure = array('BTx','OTx','btx','otx','lat','lon','latitude','longitude','lat_dm','lon_dm','fa','la','validgps','alt','manuf','user','ssid','chan','points');
+		foreach ($ensure as $k) { if (!array_key_exists($k, $ap_info)) { $ap_info[$k] = ''; } }
+		if(!empty($ap_info['validgps']) && $ap_info['validgps'] == 1){
+			$geonames = $dbcore->export->GeoNamesArray($ap_info['lat'], $ap_info['lon'], 0, 10);
+		} else {
+			$geonames = array();
+		}
 
 		$sql = "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
 		$sqlprep = $dbcore->sql->conn->prepare($sql);
@@ -154,7 +188,8 @@ switch($func)
 		}
 		$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
 		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
-		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page (".$ap_info[0]['ssid'].")");
+		$ssid = isset($ap_info['ssid']) ? $ap_info['ssid'] : '';
+		$dbcore->smarty->assign('wifidb_page_label', "Access Point Page (" . $ssid . ")");
 		$dbcore->smarty->assign('wifidb_assoc_lists', $file_array);
 		$dbcore->smarty->assign('wifidb_ap', $ap_info);
 		$dbcore->smarty->assign('wifidb_geonames', $geonames);
