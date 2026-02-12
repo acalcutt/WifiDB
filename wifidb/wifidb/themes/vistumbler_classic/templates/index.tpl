@@ -316,7 +316,7 @@ You should have received a copy of the GNU General Public License along with thi
                         <td class="{$rowclass}-centered">
                         {if $bt.validgps eq 1}
                             <span style="margin-left:6px">
-                                <a href="{$wifidb_host_url}opt/map.php?func=exp_cell&amp;id={$bt.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                <a href="{$wifidb_host_url}opt/map.php?func=exp_cid&amp;id={$bt.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                 <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
                                 <a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
                                 <a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>

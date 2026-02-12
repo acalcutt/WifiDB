@@ -38,7 +38,7 @@ if not, write to the
 					</script>
 					<h1>{$wifidb_cid.ssid|escape:'htmlall'}
 						{if $wifidb_cid.validgps eq 1}
-							<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+							<a href="{$wifidb_host_url}opt/map.php?func=exp_cid&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 							<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 							<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 							<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
@@ -68,7 +68,7 @@ if not, write to the
 							<tr>
 								<td class="header" width="112">Export:</td><td class="light" width="439">
 									{if $wifidb_cid.validgps eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+										<a href="{$wifidb_host_url}opt/map.php?func=exp_cid&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
 										<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Show AP Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
 										<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&from=0&inc=50000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 										<a href="{$wifidb_host_url}api/export.php?func=exp_cid&from=0&inc=25000&id={$wifidb_cid.id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
