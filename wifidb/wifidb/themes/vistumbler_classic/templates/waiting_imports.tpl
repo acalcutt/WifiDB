@@ -20,7 +20,11 @@ if not, write to the
 {include file="vistumbler_header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-				<meta http-equiv="refresh" content="15">
+				<script>var WIFIDB_BASE_URL = '{$wifidb_host_url}';</script>
+				<script src="{$wifidb_host_url}lib/js/scheduling.live.js"></script>
+				{literal}
+				<script>document.addEventListener('DOMContentLoaded', function(){ if(typeof schedulingLiveInit === 'function'){ schedulingLiveInit({func:'importing', interval:15000}); }});</script>
+				{/literal}
 				<table border="1" width="90%">
 					<tbody>
 					<tr class="header">

@@ -20,42 +20,50 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-				<meta http-equiv="refresh" content="15">
-				<div class="center">
+				<script>var WIFIDB_BASE_URL = '{$wifidb_host_url}';</script>
+				<script src="{$wifidb_host_url}lib/js/scheduling.live.js"></script>
+				{literal}
+				<script>document.addEventListener('DOMContentLoaded', function(){ if(typeof schedulingLiveInit === 'function'){ schedulingLiveInit({func:'schedule', interval:15000}); }});</script>
+				{/literal}
+				<!-- Top menu counts (kept outside .center) -->
+				<p class="center">
 					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if $wifidb_login_priv_name == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
-					<table class="content_table">
-						<tr class="subheading">
-							<th colspan="2">Schedule Display Settings</th>
-						</tr>
-						<tr>
-							<td  class="header" colspan="1">Page Refresh Rate</td>
-							<td class="light" colspan="1">
-								<form action="{$wifidb_host_url}opt/scheduling.php?func=refresh" method="post" enctype="multipart/form-data">
-									<SELECT NAME="refresh">  
-										{$wifidb_refresh_options}
-									</SELECT>
-									<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
-								</form>
-							</td>
-						</tr>
-						<tr>
-							<td  class="header" colspan="1">Time Zone</td>
-							<td class="light" colspan="1">
-								<form action="{$wifidb_host_url}opt/scheduling.php?func=timezone" method="post" enctype="multipart/form-data">
-									<SELECT NAME="timezone">  
-										{$wifidb_timezone_options}
-									</SELECT>
-									<input type="checkbox" name="dst" value="1" {$wifidb_dst_options}>DST
-									<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
-								</form>
-							</td>
-						</tr>
-						<tr>
-							<td  class="header" colspan="1">Local Time</td>
-							<td class="light" colspan="1">{$curtime_local}</td>
-						</tr>
-					</table>
-					<br />
+				</p>
+				<!-- Schedule Display Settings moved outside of .center so JS replacements don't overwrite user selections -->
+				<table class="content_table">
+					<tr class="subheading">
+						<th colspan="2">Schedule Display Settings</th>
+					</tr>
+					<tr>
+						<td  class="header" colspan="1">Page Refresh Rate</td>
+						<td class="light" colspan="1">
+							<form action="{$wifidb_host_url}opt/scheduling.php?func=refresh" method="post" enctype="multipart/form-data">
+								<SELECT NAME="refresh">  
+									{$wifidb_refresh_options}
+								</SELECT>
+								<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
+							</form>
+						</td>
+					</tr>
+					<tr>
+						<td  class="header" colspan="1">Time Zone</td>
+						<td class="light" colspan="1">
+							<form action="{$wifidb_host_url}opt/scheduling.php?func=timezone" method="post" enctype="multipart/form-data">
+								<SELECT NAME="timezone">  
+									{$wifidb_timezone_options}
+								</SELECT>
+								<input type="checkbox" name="dst" value="1" {$wifidb_dst_options}>DST
+								<INPUT TYPE=SUBMIT NAME="submit" VALUE="Submit">
+							</form>
+						</td>
+					</tr>
+					<tr>
+						<td  class="header" colspan="1">Local Time</td>
+						<td class="light" colspan="1">{$curtime_local}</td>
+					</tr>
+				</table>
+				<br />
+				<div class="center">
 					<table class="content_table">
 						<tr class="subheading">
 							<th colspan="7">Daemon Schedule</th>

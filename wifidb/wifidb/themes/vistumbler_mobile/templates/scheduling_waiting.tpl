@@ -20,7 +20,17 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-				<meta http-equiv="refresh" content="15">
+				<script>var WIFIDB_BASE_URL = '{$wifidb_host_url}';</script>
+				<script src="{$wifidb_host_url}lib/js/scheduling.live.js"></script>
+				{literal}
+				<script>
+				document.addEventListener('DOMContentLoaded', function(){
+					if(typeof schedulingLiveInit === 'function'){
+						schedulingLiveInit({func:'waiting', interval:15000});
+					}
+				});
+				</script>
+				{/literal}
 				<div class="center">
 					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><b><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></b></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if $wifidb_login_priv_name == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
 					<table class="content_table"> 
