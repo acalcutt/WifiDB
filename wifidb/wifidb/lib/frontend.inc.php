@@ -36,9 +36,9 @@ class frontend extends dbcore
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
 			$this->sec->LoginCheck();
 			$this->meta = new stdClass();
-			$this->meta->ads = $config['ads'];
-			$this->meta->tracker = $config['tracker'];
-			$this->meta->header = $config['header'];
+			$this->meta->ads = isset($config['ads']) ? $config['ads'] : '';
+			$this->meta->tracker = isset($config['tracker']) ? $config['tracker'] : '';
+			$this->meta->header = isset($config['header']) ? $config['header'] : '';
 
 			$this->smarty = new Smarty();
 			$this->smarty->template_dir = $config['wifidb_install'].'themes/'.$this->theme.'/templates/';
@@ -48,6 +48,7 @@ class frontend extends dbcore
 
 			$this->smarty->assign('themeurl', $this->URL_PATH.'themes/'.$this->theme.'/');
 			$this->smarty->assign('wifidb_host_url', $this->URL_PATH);
+			$this->wifidb_host_url = $this->URL_PATH;
 			$this->smarty->assign('wifidb_seo_content', $this->meta->header);
 			$this->smarty->assign('wifidb_theme', $this->theme);
 			$this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
@@ -118,7 +119,7 @@ class frontend extends dbcore
 		$sql = "SELECT body FROM annunc WHERE enabled = '1'";
 		$result = $this->sql->conn->query($sql);
 		$array = $result->fetch(2);
-		if($this->sql->checkError() || $array['body'] == "")
+		if ($this->sql->checkError() || !is_array($array) || !isset($array['body']) || $array['body'] == "")
 		{
 			return 0;
 		}
@@ -141,8 +142,12 @@ class frontend extends dbcore
 		}
 		$this->smarty->assign("install_header", $this->check_install_folder());
 		$announc = $this->GetAnnouncement();
+		$ann_body = '';
+		if (is_array($announc) && isset($announc['body']) && $announc['body'] !== '') {
+			$ann_body = $announc['body'];
+		}
 
-		$this->smarty->assign("wifidb_announce_header", '<p class="annunc_text">'.$announc['body'].'</p>');
+		$this->smarty->assign("wifidb_announce_header", '<p class="annunc_text">'. $ann_body .'</p>');
 		$this->smarty->assign("wifidb_mysticache_link", $wifidb_mysticache_link);
 		$this->login_bar = $login_bar;
 		return 1;
