@@ -54,7 +54,7 @@
 	<!-- Start Collapsible Menu Scripts-->
     <!-- Cookie consent & consent-mode helper (loads before ad scripts in body) -->
 	<script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
-	<script src="{$wifidb_host_url}lib/js/jquery-3.4.1.slim.js" integrity="sha256-BTlTdQO9/fascB1drekrDVkaKd9PkwBymMlHOiG+qLI=" crossorigin="anonymous"></script>
+	<script src="{$wifidb_host_url}lib/js/jquery-4.0.0.min.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {
             $('.bt-menu-trigger').on('click', function () {

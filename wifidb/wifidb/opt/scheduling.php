@@ -455,7 +455,7 @@ switch($func)
 
 	case 'websockets':
 		$wspath = $dbcore->WebSocketURL;
-		$dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/js/jquery-3.4.1.slim.js"></script>
+		$dbcore->smarty->assign('WebSocketScripts', '<script src="'.$dbcore->HOSTURL.$dbcore->root.'/lib/js/jquery-4.0.0.min.js"></script>
 		<script type="text/javascript">
 			var host = "'.$dbcore->WebSocketURL.'Scheduling";
 		</script>
