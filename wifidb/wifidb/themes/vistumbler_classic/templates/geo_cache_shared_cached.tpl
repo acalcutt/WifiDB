@@ -24,20 +24,20 @@ if not, write to the
                                 <table border="1" cellpadding="2" cellspacing="0" style="width: 95%">
                                     <tbody>
                                         <tr>
-                                            <th class="style3">ID<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=id&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/down.png"></a>
-                                                <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=id&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/up.png"></a>
+                                            <th class="style3">ID<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=id&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+                                                    <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=id&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
                                             </th>
-                                            <th class="style3">Name<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=name&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/down.png"></a>
-                                                <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=name&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/up.png"></a>
+                                                <th class="style3">Name<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=name&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+                                                    <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=name&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
                                             </th>
-                                            <th class="style3">Lat<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=lat&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/down.png"></a>
-                                                <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=lat&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/up.png"></a>
+                                            <th class="style3">Lat<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=lat&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+                                                    <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=lat&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
                                             </th>
-                                            <th class="style3">Long<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=long&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/down.png"></a>
-                                                <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=long&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/up.png"></a>
+                                                <th class="style3">Long<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=long&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+                                                    <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=long&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
                                             </th>
-                                            <th class="style3">Catagory<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=cat&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/down.png"></a>
-                                                <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=cat&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="http://192.168.1.27/wifidb/themes/vistumbler/img/up.png"></a>
+                                            <th class="style3">Catagory<a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=cat&amp;ord=ASC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/down.png"></a>
+                                                    <a href="?func=boeyes&amp;boeye_func=list_all&amp;sort=cat&amp;ord=DESC&amp;from=0&amp;to=100"><img height="15" width="15" border="0" src="{$themeurl}img/up.png"></a>
                                             </th>
                                         </tr>
                                         <tr class="light">
