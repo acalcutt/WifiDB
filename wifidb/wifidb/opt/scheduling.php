@@ -603,7 +603,7 @@ switch($func)
 			$altered = $nextrun+$alter_by;
 			$nextrun_local = date("Y-m-d h:i:s A", $altered);
 			$nextrun_utc = date('Y-m-d h:i:s A', $nextrun);
-			$curtime = date();
+			$curtime = time();
 			$lastupdatetime = strtotime($newArray['pidud']);
 			$interval = (int)$newArray['interval'];
 			$status = $newArray['status'];
@@ -637,7 +637,7 @@ switch($func)
 			{
 				$color = 'red';
 			}			
-			else if($curtime < $nextrun_utc)
+			else if($curtime < $nextrun)
 			{
 				$color = 'lightgreen';
 			}
