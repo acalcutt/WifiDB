@@ -239,10 +239,17 @@ $sql = "SELECT Count(id) AS imp_count FROM files_tmp";
 $prep = $dbcore->sql->conn->query($sql);
 $prepf = $prep->fetch(1);
 $waiting_count = $prepf[0];
+
+#Get Bad Count
+$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+$prep = $dbcore->sql->conn->query($sql);
+$prepf = $prep->fetch(1);
+$bad_count = $prepf[0];
 		
 $dbcore->smarty->assign('mesg', $mesg);
 $dbcore->smarty->assign('allowimports', $allowimports);
 $dbcore->smarty->assign('complete_count', $complete_count);
 $dbcore->smarty->assign('importing_count', $importing_count);
 $dbcore->smarty->assign('waiting_count', $waiting_count);
+$dbcore->smarty->assign('bad_count', $bad_count);
 $dbcore->smarty->display('import_index.tpl');

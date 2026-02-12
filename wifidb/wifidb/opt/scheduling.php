@@ -22,6 +22,9 @@ define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
 
+// compute a safe cookie path: use the app root if present, otherwise '/'
+$cookie_path = (isset($dbcore->root) && $dbcore->root !== '') ? '/'.trim($dbcore->root, '/').'/' : '/';
+
 $func = strtolower(filter_input(INPUT_GET, 'func', FILTER_SANITIZE_ENCODED));
 
 $sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
@@ -69,9 +72,9 @@ switch($func)
 		$POST_refresh = filter_input(INPUT_POST, 'refresh', FILTER_SANITIZE_ENCODED);
 		if( (!isset($POST_refresh)) or $POST_refresh=='' ) { $POST_refresh = $refresh; }
 		// store cookie at site root so it's available across the app
-		setcookie('wifidb_refresh', $POST_refresh, (time()+($dbcore->timeout)), '/'.$dbcore->root.'/');
-		// use a relative path redirect to avoid sending users to an external HOSTURL value
-		header('Location: /'.$dbcore->root.'/opt/scheduling.php');
+		setcookie('wifidb_refresh', $POST_refresh, (time()+($dbcore->timeout)), $cookie_path);
+		// redirect to the schedule view on the canonical site URL
+		header('Location: '.$dbcore->URL_PATH.'opt/scheduling.php?func=schedule');
 	break;
 	case 'timezone':
 		$POST_timezone = filter_input(INPUT_POST, 'timezone', FILTER_SANITIZE_ENCODED);
@@ -79,10 +82,10 @@ switch($func)
 		if( (!isset($POST_timezone)) or $POST_timezone=='' ) { $POST_timezone = $TZone; }
 		if( (!isset($POST_dst)) or $POST_dst=='' ) { $POST_dst = 0; }
 		// store cookie at site root so it's available across the app
-		setcookie('wifidb_client_timezone', $POST_timezone, (time()+($dbcore->timeout)), '/'.$dbcore->root.'/');
-		setcookie('wifidb_client_dst', $POST_dst, (time()+($dbcore->timeout)), '/'.$dbcore->root.'/');
-		// use a relative path redirect to avoid sending users to an external HOSTURL value
-		header('Location: /'.$dbcore->root.'/opt/scheduling.php');
+		setcookie('wifidb_client_timezone', $POST_timezone, (time()+($dbcore->timeout)), $cookie_path);
+		setcookie('wifidb_client_dst', $POST_dst, (time()+($dbcore->timeout)), $cookie_path);
+		// redirect to the schedule view on the canonical site URL
+		header('Location: '.$dbcore->URL_PATH.'opt/scheduling.php?func=schedule');
 	break;
 #######################################################################
 	case 'full_kml':
@@ -718,6 +721,24 @@ switch($func)
 		$prepf = $prep->fetch(1);
 		$waiting_count = $prepf[0];
 
+		#Get Bad Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+		$prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$bad_count = $prepf[0];
+
+		#Get Bad Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+		$prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$bad_count = $prepf[0];
+
+		#Get Bad Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+		$prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$bad_count = $prepf[0];
+
 		#Get Today's Admin Jobs (limited info for public display)
 		$admin_jobs_row = array();
 		$n = 0;
@@ -772,6 +793,9 @@ switch($func)
 		$dbcore->smarty->assign('complete_count', $complete_count);
 		$dbcore->smarty->assign('importing_count', $importing_count);
 		$dbcore->smarty->assign('waiting_count', $waiting_count);
+		$dbcore->smarty->assign('bad_count', $bad_count);
+		$dbcore->smarty->assign('bad_count', $bad_count);
+		$dbcore->smarty->assign('bad_count', $bad_count);
 		$dbcore->smarty->display('scheduling_schedule.tpl');
 	break;
 	
@@ -831,6 +855,14 @@ switch($func)
 		$dbcore->smarty->assign('complete_count', $complete_count);
 		$dbcore->smarty->assign('importing_count', $importing_count);
 		$dbcore->smarty->assign('waiting_count', $waiting_count);
+
+		#Get Bad Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+		$prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$bad_count = $prepf[0];
+
+		$dbcore->smarty->assign('bad_count', $bad_count);
 		$dbcore->smarty->display('scheduling_done.tpl');
 	break;
 	
@@ -882,8 +914,85 @@ switch($func)
 		$dbcore->smarty->assign('complete_count', $complete_count);
 		$dbcore->smarty->assign('importing_count', $importing_count);
 		$dbcore->smarty->assign('waiting_count', $waiting_count);
+
+		#Get Bad Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+		$prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$bad_count = $prepf[0];
+
+		$dbcore->smarty->assign('bad_count', $bad_count);
 		$dbcore->smarty->display('scheduling_waiting.tpl');
 	break;
+
+		case 'bad':
+				// Restrict access to this page to administrators only
+				if(isset($dbcore->sec->priv_name) && $dbcore->sec->priv_name != "Administrator")
+				{
+					header("HTTP/1.1 403 Forbidden");
+					die("Access denied. Administrator privileges required.");
+				}
+
+				$bad_row = array();
+			$n=0;
+			$class_f = 0;
+			$sql = "SELECT id, file_name, file_orig, file_user, notes, title, file_date, size, hash, type, error_msg FROM files_bad\n";
+			if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort} {$ord} LIMIT {$from},{$inc}";} 
+			else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+			$result_1 = $dbcore->sql->conn->query($sql);
+			while ($newArray = $result_1->fetch(2))
+			{
+				if($class_f){$class = "light"; $class_f = 0;}else{$class = "dark"; $class_f = 1;}
+				$color = 'red';
+				$bad_row[$n]['color'] = $color;
+				$bad_row[$n]['class'] = $class;
+				$bad_row[$n]['id'] = $newArray['id'];
+				$bad_row[$n]['file'] = $newArray['file_orig'];
+				$bad_row[$n]['file_name'] = $newArray['file_name'];
+				$bad_row[$n]['title'] = $newArray['title'];
+				$bad_row[$n]['notes'] = $newArray['notes'];
+				$bad_row[$n]['date'] = $newArray['file_date'];
+				$bad_row[$n]['size'] = $newArray['size'];
+				$bad_row[$n]['hash'] = $newArray['hash'];
+				$bad_row[$n]['user'] = $newArray['file_user'];
+				$bad_row[$n]['error'] = $newArray['error_msg'];
+				$bad_row[$n]['type'] = isset($newArray['type']) ? $newArray['type'] : '';
+				$n++;
+			}
+
+			#Get Counts
+			$sql = "SELECT Count(id) AS imp_count FROM files WHERE completed = 1";
+			$prep = $dbcore->sql->conn->query($sql);
+			$prepf = $prep->fetch(1);
+			$complete_count = $prepf[0];
+
+			$sql = "SELECT Count(id) AS imp_count FROM files_importing";
+			$prep = $dbcore->sql->conn->query($sql);
+			$prepf = $prep->fetch(1);
+			$importing_count = $prepf[0];
+
+			$sql = "SELECT Count(id) AS imp_count FROM files_tmp";
+			$prep = $dbcore->sql->conn->query($sql);
+			$prepf = $prep->fetch(1);
+			$waiting_count = $prepf[0];
+
+			$dbcore->GeneratePages($n, $from, $inc, $sort, $ord, 'bad&');
+			$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
+			$dbcore->smarty->assign('wifidb_page_label', 'Files Bad (Rejected Imports)');
+			$dbcore->smarty->assign('wifidb_bad', $bad_row);
+			$dbcore->smarty->assign('complete_count', $complete_count);
+			$dbcore->smarty->assign('importing_count', $importing_count);
+			$dbcore->smarty->assign('waiting_count', $waiting_count);
+
+			#Get Bad Count
+			$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+			$prep = $dbcore->sql->conn->query($sql);
+			$prepf = $prep->fetch(1);
+			$bad_count = $prepf[0];
+
+			$dbcore->smarty->assign('bad_count', $bad_count);
+			$dbcore->smarty->display('scheduling_bad.tpl');
+		break;
 	
 	default:
 		$importing_row = array();
@@ -953,6 +1062,14 @@ switch($func)
 		$dbcore->smarty->assign('complete_count', $complete_count);
 		$dbcore->smarty->assign('importing_count', $importing_count);
 		$dbcore->smarty->assign('waiting_count', $waiting_count);
+
+		#Get Bad Count
+		$sql = "SELECT Count(id) AS imp_count FROM files_bad";
+		$prep = $dbcore->sql->conn->query($sql);
+		$prepf = $prep->fetch(1);
+		$bad_count = $prepf[0];
+
+		$dbcore->smarty->assign('bad_count', $bad_count);
 		$dbcore->smarty->display('scheduling_importing.tpl');
 	break;
 }

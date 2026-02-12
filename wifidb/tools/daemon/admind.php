@@ -268,6 +268,9 @@ function process_admin_job($dbcore, $job)
 		case 'reset_failed_file':
 			return reset_failed_file($dbcore, $target_id);
 
+			case 'reset_files_bad':
+				return reset_files_bad($dbcore, $target_id);
+
 		case 'delete_failed_file':
 			return delete_failed_file($dbcore, $target_id);
 
@@ -972,4 +975,90 @@ function delete_pidfile($dbcore, $pidfile_name)
 		return array('success' => false, 'error' => $e->getMessage());
 	}
 }
+
+/**
+ * Reset a files_bad entry back to files_tmp for re-import
+ */
+function reset_files_bad($dbcore, $Bad_ID)
+{
+	try {
+		if(!$Bad_ID || !is_numeric($Bad_ID)){
+			return array('success' => false, 'error' => 'Invalid files_bad id');
+		}
+
+		// Fetch files_bad row
+		if($dbcore->sql->service == "mysql")
+			{$sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, error_msg FROM files_bad WHERE id = ? LIMIT 1";}
+		else if($dbcore->sql->service == "sqlsrv")
+			{$sql = "SELECT TOP 1 [id], [file_name], [file_orig], [file_user], [otherusers], [notes], [title], [size], [file_date], [hash], [converted], [prev_ext], [type], [error_msg] FROM [files_bad] WHERE [id] = ?";}
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $Bad_ID, PDO::PARAM_INT);
+		$prep->execute();
+		$file_bad = $prep->fetch(PDO::FETCH_ASSOC);
+		if(!$file_bad){
+			return array('success' => false, 'error' => "files_bad id $Bad_ID not found");
+		}
+
+		$hash = $file_bad['hash'];
+
+		// Perform checks and move inside a transaction to avoid race conditions
+		try {
+			$dbcore->sql->conn->beginTransaction();
+
+			// Check if file already exists in files
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT TOP 1 [id] FROM [files] WHERE [hash] = ?";}
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $hash, PDO::PARAM_STR);
+			$prep->execute();
+			$exists = $prep->fetch(PDO::FETCH_ASSOC);
+			if($exists && $exists['id']){
+				$dbcore->sql->conn->rollBack();
+				return array('success' => false, 'error' => "File with same hash already exists in 'files' (id={$exists['id']}). Not re-adding to import queue.");
+			}
+
+			// Check files_tmp to avoid duplicate tmp entries
+			if($dbcore->sql->service == "mysql")
+				{$sql = "SELECT id FROM files_tmp WHERE hash = ? LIMIT 1";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "SELECT TOP 1 [id] FROM [files_tmp] WHERE [hash] = ?";}
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $hash, PDO::PARAM_STR);
+			$prep->execute();
+			$tmp_exists = $prep->fetch(PDO::FETCH_ASSOC);
+			if($tmp_exists && $tmp_exists['id']){
+				$dbcore->sql->conn->rollBack();
+				return array('success' => false, 'error' => "A files_tmp entry with same hash already exists (id={$tmp_exists['id']}). Not re-adding.");
+			}
+
+			// Insert into files_tmp from files_bad
+			$sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type FROM files_bad WHERE id = ?";
+			$res = $dbcore->sql->conn->prepare($sql);
+			$res->bindParam(1, $Bad_ID, PDO::PARAM_INT);
+			$res->execute();
+
+			// Delete files_bad row
+			if($dbcore->sql->service == "mysql")
+				{$sql = "DELETE FROM files_bad WHERE id = ?";}
+			else if($dbcore->sql->service == "sqlsrv")
+				{$sql = "DELETE FROM [files_bad] WHERE [id] = ?";}
+			$res = $dbcore->sql->conn->prepare($sql);
+			$res->bindParam(1, $Bad_ID, PDO::PARAM_INT);
+			$res->execute();
+
+			$dbcore->sql->conn->commit();
+			return array('success' => true, 'message' => "Moved files_bad id $Bad_ID to files_tmp and removed from files_bad. Daemon will pick it up for import.");
+		} catch (Exception $e) {
+			if($dbcore->sql->conn->inTransaction()){
+				$dbcore->sql->conn->rollBack();
+			}
+			return array('success' => false, 'error' => $e->getMessage());
+		}
+	} catch (Exception $e) {
+		return array('success' => false, 'error' => $e->getMessage());
+	}
+}
+
 ?>

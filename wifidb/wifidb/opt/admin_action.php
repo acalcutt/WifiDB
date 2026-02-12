@@ -281,6 +281,122 @@ switch($action)
 		}
 		break;
 
+		case "reset_files_bad":
+			if(!$file_id || !is_numeric($file_id))
+			{
+				die("Invalid file ID");
+			}
+
+			// Get file info for confirmation from files_bad table
+			$sql = "SELECT id, file_name, file_orig, file_user, title, notes, error_msg FROM files_bad WHERE id = ?";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
+			$prep->execute();
+			$file_info = $prep->fetch(PDO::FETCH_ASSOC);
+
+			if(!$file_info)
+			{
+				die("File not found in files_bad");
+			}
+
+			if($confirm == "yes")
+			{
+				// Queue the job for background processing
+				$result = queue_admin_job($dbcore, 'reset_files_bad', $file_id, 'files_bad', $dbcore->sec->LoginUser);
+
+				if($result['success'])
+				{
+					$message = "Reset job for bad File ID {$file_id} has been queued (Job #{$result['job_id']}). It will be processed shortly.";
+					$message_type = "success";
+				}
+				else
+				{
+					$message = "Error queuing job: " . $result['error'];
+					$message_type = "error";
+				}
+
+				// Display result page
+				$dbcore->smarty->assign("wifidb_page_label", "Admin Action Result");
+				$dbcore->smarty->assign("message", $message);
+				$dbcore->smarty->assign("message_type", $message_type);
+				$dbcore->smarty->assign("return_url", $return_url ? $return_url : $dbcore->wifidb_host_url);
+				$dbcore->smarty->display('admin_action_result.tpl');
+			}
+			else
+			{
+				// Show confirmation page
+				$dbcore->smarty->assign("wifidb_page_label", "Confirm Reset Bad File");
+				$dbcore->smarty->assign("file_info", $file_info);
+				$dbcore->smarty->assign("action", $action);
+				$dbcore->smarty->assign("file_id", $file_id);
+				$dbcore->smarty->assign("return_url", $return_url);
+				$dbcore->smarty->display('admin_action_confirm.tpl');
+			}
+			break;
+
+	case "edit_files_bad":
+		if(!$file_id || !is_numeric($file_id))
+		{
+			die("Invalid file ID");
+		}
+
+		// If form submitted (POST), perform update
+		if($_SERVER['REQUEST_METHOD'] === 'POST')
+		{
+			$post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
+			$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+
+			// Validate type against allowed import types
+			$allowed_types = array('vistumbler','ns1','wardrive','wiglewificsv','swardriving','kismet');
+			if(!in_array($post_type, $allowed_types)){
+				$post_type = '';
+			}
+			$post_file_user = filter_input(INPUT_POST, 'file_user', FILTER_SANITIZE_STRING);
+			$post_otherusers = filter_input(INPUT_POST, 'otherusers', FILTER_SANITIZE_STRING);
+			$post_notes = filter_input(INPUT_POST, 'notes', FILTER_SANITIZE_STRING);
+
+			$sql = "UPDATE files_bad SET title = ?, type = ?, file_user = ?, otherusers = ?, notes = ? WHERE id = ?";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $post_title, PDO::PARAM_STR);
+			$prep->bindParam(2, $post_type, PDO::PARAM_STR);
+			$prep->bindParam(3, $post_file_user, PDO::PARAM_STR);
+			$prep->bindParam(4, $post_otherusers, PDO::PARAM_STR);
+			$prep->bindParam(5, $post_notes, PDO::PARAM_STR);
+			$prep->bindParam(6, $file_id, PDO::PARAM_INT);
+			$prep->execute();
+
+			$message = "Updated files_bad ID {$file_id}.";
+			$message_type = "success";
+			$dbcore->smarty->assign("wifidb_page_label", "Admin Action Result");
+			$dbcore->smarty->assign("message", $message);
+			$dbcore->smarty->assign("message_type", $message_type);
+			$dbcore->smarty->assign("return_url", $return_url ? $return_url : $dbcore->wifidb_host_url.'opt/scheduling.php?func=bad');
+			$dbcore->smarty->display('admin_action_result.tpl');
+			break;
+		}
+		else
+		{
+			// Show edit form populated from files_bad
+			$sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, type, error_msg FROM files_bad WHERE id = ?";
+			$prep = $dbcore->sql->conn->prepare($sql);
+			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
+			$prep->execute();
+			$file_info = $prep->fetch(PDO::FETCH_ASSOC);
+
+			if(!$file_info)
+			{
+				die("File not found in files_bad");
+			}
+
+			$dbcore->smarty->assign("wifidb_page_label", "Edit Bad Import");
+			$dbcore->smarty->assign("file_info", $file_info);
+			$dbcore->smarty->assign("action", $action);
+			$dbcore->smarty->assign("file_id", $file_id);
+			$dbcore->smarty->assign("return_url", $return_url);
+			$dbcore->smarty->display('admin_edit_files_bad.tpl');
+			break;
+		}
+
 	case "delete_daemon_pid":
 		$pidfile = filter_input(INPUT_GET, 'pidfile', FILTER_SANITIZE_STRING);
 		if(empty($pidfile))

@@ -7,817 +7,685 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU General Public License along with this program; If not, see <http://www.gnu.org/licenses/gpl-2.0.html>.
 -->
 {include file="header.tpl"}
-			<div class="main">
-				{include file="topmenu.tpl"}
+            <div class="main">
+                {include file="topmenu.tpl"}
 
-				<!-- Date Range Filter -->
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td colspan="6" class="subheading">Filter by Date Range</td>
-						</tr>
-						<tr>
-							<td colspan="6" class="light-centered" style="padding: 10px;">
-								<form method="get" action="{$wifidb_host_url}stats.php" style="display: inline;">
-									<input type="hidden" name="top" value="{$top_n}">
-									<button type="submit" name="range" value="all" style="margin: 2px; padding: 5px 10px;{if $date_range eq 'all'} background-color: #4CAF50; color: white;{/if}">All Time</button>
-									<button type="submit" name="range" value="30days" style="margin: 2px; padding: 5px 10px;{if $date_range eq '30days'} background-color: #4CAF50; color: white;{/if}">Last 30 Days</button>
-									<button type="submit" name="range" value="90days" style="margin: 2px; padding: 5px 10px;{if $date_range eq '90days'} background-color: #4CAF50; color: white;{/if}">Last 90 Days</button>
-									<button type="submit" name="range" value="6months" style="margin: 2px; padding: 5px 10px;{if $date_range eq '6months'} background-color: #4CAF50; color: white;{/if}">Last 6 Months</button>
-									<button type="submit" name="range" value="1year" style="margin: 2px; padding: 5px 10px;{if $date_range eq '1year'} background-color: #4CAF50; color: white;{/if}">Last Year</button>
-									<button type="submit" name="range" value="2years" style="margin: 2px; padding: 5px 10px;{if $date_range eq '2years'} background-color: #4CAF50; color: white;{/if}">Last 2 Years</button>
-								</form>
-								<form method="get" action="{$wifidb_host_url}stats.php" style="display: inline; margin-left: 20px;">
-									<input type="hidden" name="top" value="{$top_n}">
-									<input type="hidden" name="range" value="custom">
-									<label>From: <input type="date" name="start_date" value="{$start_date}" style="padding: 3px;"></label>
-									<label>To: <input type="date" name="end_date" value="{$end_date}" style="padding: 3px;"></label>
-									<button type="submit" style="margin: 2px; padding: 5px 10px;">Apply</button>
-								</form>
-							</td>
-						</tr>
-						{if $date_filter_label neq 'All Time'}
-						<tr>
-							<td colspan="6" class="dark-centered"><strong>Showing: {$date_filter_label}</strong>{if $start_date} (from {$start_date}){/if}{if $end_date} (to {$end_date}){/if}</td>
-						</tr>
-						{/if}
-					</tbody>
-				</table>
+                <!-- Date Range Filter -->
+                <table class="content_table">
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="subheading">Filter by Date Range</td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" class="light-centered" style="padding: 10px;">
+                                <form method="get" action="{$wifidb_host_url}stats.php" style="display: inline;">
+                                    <input type="hidden" name="top" value="{$top_n}">
+                                    <button type="submit" name="range" value="all" style="margin: 2px; padding: 5px 10px;{if $date_range eq 'all'} background-color: #4CAF50; color: white;{/if}">All Time</button>
+                                    <button type="submit" name="range" value="30days" style="margin: 2px; padding: 5px 10px;{if $date_range eq '30days'} background-color: #4CAF50; color: white;{/if}">Last 30 Days</button>
+                                    <button type="submit" name="range" value="90days" style="margin: 2px; padding: 5px 10px;{if $date_range eq '90days'} background-color: #4CAF50; color: white;{/if}">Last 90 Days</button>
+                                    <button type="submit" name="range" value="6months" style="margin: 2px; padding: 5px 10px;{if $date_range eq '6months'} background-color: #4CAF50; color: white;{/if}">Last 6 Months</button>
+                                    <button type="submit" name="range" value="1year" style="margin: 2px; padding: 5px 10px;{if $date_range eq '1year'} background-color: #4CAF50; color: white;{/if}">Last Year</button>
+                                    <button type="submit" name="range" value="2years" style="margin: 2px; padding: 5px 10px;{if $date_range eq '2years'} background-color: #4CAF50; color: white;{/if}">Last 2 Years</button>
+                                </form>
+                                <form method="get" action="{$wifidb_host_url}stats.php" style="display: inline; margin-left: 20px;">
+                                    <input type="hidden" name="top" value="{$top_n}">
+                                    <input type="hidden" name="range" value="custom">
+                                    <label>From: <input type="date" name="start_date" value="{$start_date}" style="padding: 3px;"></label>
+                                    <label>To: <input type="date" name="end_date" value="{$end_date}" style="padding: 3px;"></label>
+                                    <button type="submit" style="margin: 2px; padding: 5px 10px;">Apply</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {if $date_filter_label neq 'All Time'}
+                        <tr>
+                            <td colspan="6" class="dark-centered"><strong>Showing: {$date_filter_label}</strong>{if $start_date} (from {$start_date}){/if}{if $end_date} (to {$end_date}){/if}</td>
+                        </tr>
+                        {/if}
+                    </tbody>
+                </table>
 
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td colspan="7" class="subheading">Statistics</td>
-						</tr>
-						<tr>
-								<th class="header-centered">Total Users</th>
-								<th class="header-centered">Total WiFi AP's</th>
-								<th class="header-centered">Open APs</th>
-								<th class="header-centered">WEP APs</th>
-								<th class="header-centered">Secure APs</th>
-								<th class="header-centered">Total Cell Towers</th>
-								<th class="header-centered">Total Bluetooth</th>
-						</tr>
-						<tr>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users|number_format}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500" title="All WiFi APs">{$total_aps|number_format}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&map_inc=200000" title="Open APs">{$open_aps|number_format}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&map_inc=200000" title="WEP APs">{$wep_aps|number_format}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&map_inc=200000" title="Secure APs">{$sec_aps|number_format}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}all.php?func=cid&sort=cell_id&ord=DESC&from=0&inc=250" title="All Cell Towers">{$cell_count|number_format}</a></td>
-								<td class="light-centered"><a href="{$wifidb_host_url}all.php?func=bt&sort=cell_id&ord=DESC&from=0&inc=250" title="All Bluetooth Devices">{$bt_count|number_format}</a></td>
-						</tr>
-						<tr>
-								<th class="header-centered" colspan="2">Last user to import</th>
-								<th class="header-centered" colspan="2">Last AP added</th>
-								<th class="header-centered" colspan="3">Last Import List</th>
-						</tr>
-						<tr>
-							{* Users headers: show one or two columns depending on whether 'withgps' differs *}
-							{if $new_import_user_withgps neq '' && $new_import_user_withgps neq $new_import_user}
-								<th class="header-centered">Any</th>
-								<th class="header-centered">With GPS</th>
-							{else}
-								<th class="header-centered" colspan="2">Any</th>
-							{/if}
+                <table class="content_table">
+                    <tbody>
+                        <tr>
+                            <td colspan="7" class="subheading">Statistics</td>
+                        </tr>
+                        <tr>
+                                <th class="header-centered">Total Users</th>
+                                <th class="header-centered">Total WiFi AP's</th>
+                                <th class="header-centered">Open APs</th>
+                                <th class="header-centered">WEP APs</th>
+                                <th class="header-centered">Secure APs</th>
+                                <th class="header-centered">Total Cell Towers</th>
+                                <th class="header-centered">Total Bluetooth</th>
+                        </tr>
+                        <tr>
+                                <td class="light-centered"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers" title="View All Users">{$total_users|number_format}</a></td>
+                                <td class="light-centered"><a href="{$wifidb_host_url}all.php?sort=ModDate&ord=DESC&from=0&to=500" title="All WiFi APs">{$total_aps|number_format}</a></td>
+                                <td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=1&map_inc=200000" title="Open APs">{$open_aps|number_format}</a></td>
+                                <td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=2&map_inc=200000" title="WEP APs">{$wep_aps|number_format}</a></td>
+                                <td class="light-centered"><a href="{$wifidb_host_url}opt/results.php?ord=DESC&sort=ModDate&sectype=3&map_inc=200000" title="Secure APs">{$sec_aps|number_format}</a></td>
+                                <td class="light-centered"><a href="{$wifidb_host_url}all.php?func=cid&sort=cell_id&ord=DESC&from=0&inc=250" title="All Cell Towers">{$cell_count|number_format}</a></td>
+                                <td class="light-centered"><a href="{$wifidb_host_url}all.php?func=bt&sort=cell_id&ord=DESC&from=0&inc=250" title="All Bluetooth Devices">{$bt_count|number_format}</a></td>
+                        </tr>
+                        <tr>
+                                <th class="header-centered" colspan="2">Last user to import</th>
+                                <th class="header-centered" colspan="2">Last AP added</th>
+                                <th class="header-centered" colspan="3">Last Import List</th>
+                        </tr>
+                        <tr>
+                            {* Users headers: show one or two columns depending on whether 'withgps' differs *}
+                            {if $new_import_user_withgps neq '' && $new_import_user_withgps neq $new_import_user}
+                                <th class="header-centered">Any</th>
+                                <th class="header-centered">With GPS</th>
+                            {else}
+                                <th class="header-centered" colspan="2">Any</th>
+                            {/if}
 
-							{* AP headers *}
-							{if $new_ap_ssid_withgps neq '' && $new_ap_ssid_withgps neq $new_ap_ssid}
-								<th class="header-centered">Any</th>
-								<th class="header-centered">With GPS</th>
-							{else}
-								<th class="header-centered" colspan="2">Any</th>
-							{/if}
+                            {* AP headers *}
+                            {if $new_ap_ssid_withgps neq '' && $new_ap_ssid_withgps neq $new_ap_ssid}
+                                <th class="header-centered">Any</th>
+                                <th class="header-centered">With GPS</th>
+                            {else}
+                                <th class="header-centered" colspan="2">Any</th>
+                            {/if}
 
-							{* Import list headers *}
-							{if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
-								<th class="header-centered">Any</th>
-								<th class="header-centered" colspan="2">With GPS</th>
-							{else}
-								<th class="header-centered" colspan="3">Any</th>
-							{/if}
-						</tr>
-						<tr>
-							{* Users data row *}
-							{if $new_import_user_withgps neq '' && $new_import_user_withgps neq $new_import_user}
-								<td class="dark-centered">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>
-								{if $user_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=alluserlists&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-								<td class="dark-centered">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user_withgps|escape:'htmlall'}" title="View User Details">{$new_import_user_withgps|escape:'htmlall'}</a>
-								{if $new_import_user_withgps}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=alluserlists&from=0&inc=25000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-							{else}
-								<td class="dark-centered" colspan="2">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>
-								{if $user_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=alluserlists&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-							{/if}
+                            {* Import list headers *}
+                            {if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
+                                <th class="header-centered">Any</th>
+                                <th class="header-centered" colspan="2">With GPS</th>
+                            {else}
+                                <th class="header-centered" colspan="3">Any</th>
+                            {/if}
+                        </tr>
+                        <tr>
+                            {* Users data row *}
+                            {if $new_import_user_withgps neq '' && $new_import_user_withgps neq $new_import_user}
+                                <td class="dark-centered">
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>
+                                {if $user_validgps eq 1}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                                <td class="dark-centered">
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user_withgps|escape:'htmlall'}" title="View User Details">{$new_import_user_withgps|escape:'htmlall'}</a>
+                                {if $new_import_user_withgps}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/export.php?func=alluserlists&from=0&inc=25000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                            {else}
+                                <td class="dark-centered" colspan="2">
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$new_import_user|escape:'htmlall'}" title="View User Details">{$new_import_user|escape:'htmlall'}</a>
+                                {if $user_validgps eq 1}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$new_import_user|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$new_import_user|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                            {/if}
 
-							{* AP data row *}
-							{if $new_ap_id_withgps neq '' && $new_ap_id_withgps neq $new_ap_id}
-								<td class="dark-centered">
-									<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
-								{if $ap_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-								<td class="dark-centered">
-									<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id_withgps|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid_withgps}</a>
-								{if $new_ap_id_withgps}
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-							{else}
-								<td class="dark-centered" colspan="2">
-									<a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
-									{if $ap_validgps eq 1}
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-										<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-										<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-										<a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-										<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-									{/if}
-								</td>
-							{/if}
+                            {* AP data row: either two columns or a single colspan=2 *}
+                            {if $new_ap_id_withgps neq '' && $new_ap_id_withgps neq $new_ap_id}
+                                <td class="dark-centered">
+                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
+                                {if $ap_validgps eq 1}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                                <td class="dark-centered">
+                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id_withgps|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid_withgps}</a>
+                                {if $new_ap_id_withgps}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                            {else}
+                                <td class="dark-centered" colspan="2">
+                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
+                                    {if $ap_validgps eq 1}
+                                        <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                        <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+                                        <a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                        <a href="{$wifidb_host_url}api/export.php?func=exp_ap&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                        <a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&from=0&inc=25000&id={$new_ap_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                    {/if}
+                                </td>
+                            {/if}
 
-							{* Import list data row *}
-							{if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
-								<td class="dark-centered">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
-								{if $list_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-								<td class="dark-centered" colspan="2">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id_withgps|escape:'htmlall'}"  title="View List Details">{$new_import_title_withgps}</a>
-								{if $new_import_id_withgps}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-							{else}
-								<td class="dark-centered" colspan="3">
-									<a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
-								{if $list_validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-								{/if}
-								</td>
-							{/if}
-						</tr>
-					</tbody>
-				</table>			<div style="height:10px"></div>
-				{if $top_wifi|@count > 0}
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td colspan="7" class="subheading">Top {$top_n} WiFi Networks (by observations)</td>
-						</tr>
-						<tr>
-							<th class="header-centered">#</th>
-							<th class="header-centered">GPS</th>
-							<th class="header-centered">SSID</th>
-							<th class="header-centered">BSSID</th>
-							<th class="header-centered">Auth</th>
-							<th class="header-centered">Encryption</th>
-							<th class="header-centered">Points</th>
-						</tr>
-						{foreach from=$top_wifi item=wifi key=idx}
-					{cycle name=topwifi_row values="light,dark" assign=rowclass}
-					<tr class="{$rowclass}">
-						<td class="{$rowclass}-centered">{$idx+1}</td>
-						<td class="{$rowclass}-centered" width="120px">
-						{if $wifi.validgps eq 1}
-							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifi.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&amp;from=0&amp;inc=50000&amp;id={$wifi.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-							<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&amp;from=0&amp;inc=50000&amp;id={$wifi.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-							<a href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;from=0&amp;inc=25000&amp;id={$wifi.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-							<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&amp;from=0&amp;inc=25000&amp;id={$wifi.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-						{else}
-							<img width="20px" src="{$themeurl}img/globe_off.png">
-							<img width="20px" src="{$themeurl}img/sigmap_off.png">
-							<img width="20px" src="{$themeurl}img/json_off.png">
-							<img width="20px" src="{$themeurl}img/kmz_off.png">
-							<img width="20px" src="{$themeurl}img/gpx_off.png">
-						{/if}
-						</td>
-						<td class="{$rowclass}-centered">
-						<a href="{$wifidb_host_url}opt/fetch.php?id={$wifi.id|escape:'htmlall'}" title="View AP Details">{$wifi.ssid}</a>
-						</td>
-						<td class="{$rowclass}-centered">{$wifi.bssid}</td>
-						<td class="{$rowclass}-centered">{$wifi.auth}</td>
-						<td class="{$rowclass}-centered">{$wifi.encr}</td>
-						<td class="{$rowclass}-centered">{$wifi.points|number_format}</td>
-						</tr>
-						{/foreach}
-					</tbody>
-				</table>
-				{/if}
+                            {* Import list data row: either two columns (any + withgps) or a single colspan covering both *}
+                            {if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
+                                <td class="dark-centered">
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
+                                {if $list_validgps eq 1}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                                <td class="dark-centered" colspan="2">
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id_withgps|escape:'htmlall'}"  title="View List Details">{$new_import_title_withgps}</a>
+                                {if $new_import_id_withgps}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                            {else}
+                                <td class="dark-centered" colspan="3">
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
+                                {if $list_validgps eq 1}
+                                    <a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/export.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                    <a href="{$wifidb_host_url}api/gpx.php?func=exp_list&from=0&inc=25000&id={$new_import_id|escape:'htmlall'}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                                {/if}
+                                </td>
+                            {/if}
+                        </tr>
+                    </tbody>
+                </table>            <div style="height:10px"></div>
+                {if $top_wifi|@count > 0}
+                <table class="content_table">
+                    <tbody>
+                        <tr>
+                            <td colspan="7" class="subheading">Top {$top_n} WiFi Networks (by observations)</td>
+                        </tr>
+                        <tr>
+                            <th class="header-centered">#</th>
+                            <th class="header-centered">GPS</th>
+                            <th class="header-centered">SSID</th>
+                            <th class="header-centered">BSSID</th>
+                            <th class="header-centered">Auth</th>
+                            <th class="header-centered">Encryption</th>
+                            <th class="header-centered">Points</th>
+                        </tr>
+                        {foreach from=$top_wifi item=wifi key=idx}
+                    {cycle name=topwifi_row values="light,dark" assign=rowclass}
+                    <tr class="{$rowclass}">
+                        <td class="{$rowclass}-centered">{$idx+1}</td>
+                        <td class="{$rowclass}-centered" width="120px">
+                        {if $wifi.validgps eq 1}
+                            <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&amp;id={$wifi.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                            <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&amp;from=0&amp;inc=50000&amp;id={$wifi.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+                            <a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&amp;from=0&amp;inc=50000&amp;id={$wifi.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                            <a href="{$wifidb_host_url}api/export.php?func=exp_ap&amp;from=0&amp;inc=25000&amp;id={$wifi.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                            <a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&amp;from=0&amp;inc=25000&amp;id={$wifi.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                        {else}
+                            <img width="20px" src="{$themeurl}img/globe_off.png">
+                            <img width="20px" src="{$themeurl}img/sigmap_off.png">
+                            <img width="20px" src="{$themeurl}img/json_off.png">
+                            <img width="20px" src="{$themeurl}img/kmz_off.png">
+                            <img width="20px" src="{$themeurl}img/gpx_off.png">
+                        {/if}
+                        </td>
+                        <td class="{$rowclass}-centered">
+                            <a href="{$wifidb_host_url}opt/fetch.php?id={$wifi.id|escape:'htmlall'}" title="View AP Details">{$wifi.ssid}</a>
+                        </td>
+                        <td class="{$rowclass}-centered">{$wifi.bssid}</td>
+                        <td class="{$rowclass}-centered">{$wifi.auth}</td>
+                        <td class="{$rowclass}-centered">{$wifi.encr}</td>
+                        <td class="{$rowclass}-centered">{$wifi.points|number_format}</td>
+                        </tr>
+                        {/foreach}
+                    </tbody>
+                </table>
+                {/if}
 
-				{if $top_cell|@count > 0}
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td colspan="6" class="subheading">Top {$top_n} Cell Towers (by observations)</td>
-						</tr>
-						<tr>
-							<th class="header-centered">#</th>
-							<th class="header-centered">GPS</th>
-							<th class="header-centered">Name</th>
-							<th class="header-centered">ID</th>
-							<th class="header-centered">Type</th>
-							<th class="header-centered">Points</th>
-						</tr>
-						{foreach from=$top_cell item=cell key=idx}
-					{cycle name=topcell_row values="light,dark" assign=rowclass}
-					<tr class="{$rowclass}">
-						<td class="{$rowclass}-centered">{$idx+1}</td>
-						<td class="{$rowclass}-centered">
-						{if $cell.validgps eq 1}
-							<span style="margin-left:6px">
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_cid&amp;id={$cell.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$cell.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$cell.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img,json_on.png"></a>
-								<a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$cell.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-								<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&amp;from=0&amp;inc=25000&amp;id={$cell.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-							</span>
-						{else}
-							<span style="margin-left:6px">
-								<img width="20px" src="{$themeurl}img/globe_off.png">
-								<img width="20px" src="{$themeurl}img/sigmap_off.png">
-								<img width="20px" src="{$themeurl}img/json_off.png">
-								<img width="20px" src="{$themeurl}img/kmz_off.png">
-								<img width="20px" src="{$themeurl}img/gpx_off.png">
-							</span>
-						{/if}
-						</td>
-						<td class="{$rowclass}-centered">
-							<a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$cell.id|escape:'htmlall'}" title="View Cell Details">{$cell.ssid}</a>
-						</td>
-						<td class="{$rowclass}-centered">{$cell.mac}</td>
-						<td class="{$rowclass}-centered">{$cell.type}</td>
-						<td class="{$rowclass}-centered">{$cell.points|number_format}</td>
-						</tr>
-						{/foreach}
-					</tbody>
-				</table>
-				{/if}
+                {if $top_cell|@count > 0}
+                <table class="content_table">
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="subheading">Top {$top_n} Cell Towers (by observations)</td>
+                        </tr>
+                        <tr>
+                            <th class="header-centered">#</th>
+                            <th class="header-centered">GPS</th>
+                            <th class="header-centered">Name</th>
+                            <th class="header-centered">ID</th>
+                            <th class="header-centered">Type</th>
+                            <th class="header-centered">Points</th>
+                        </tr>
+                        {foreach from=$top_cell item=cell key=idx}
+                    {cycle name=topcell_row values="light,dark" assign=rowclass}
+                    <tr class="{$rowclass}">
+                        <td class="{$rowclass}-centered">{$idx+1}</td>
+                        <td class="{$rowclass}-centered">
+                        {if $cell.validgps eq 1}
+                            <span style="margin-left:6px">
+                                <a href="{$wifidb_host_url}opt/map.php?func=exp_cid&amp;id={$cell.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$cell.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+                                <a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$cell.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                <a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$cell.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                <a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&amp;from=0&amp;inc=25000&amp;id={$cell.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                            </span>
+                        {else}
+                            <span style="margin-left:6px">
+                                <img width="20px" src="{$themeurl}img/globe_off.png">
+                                <img width="20px" src="{$themeurl}img/sigmap_off.png">
+                                <img width="20px" src="{$themeurl}img/json_off.png">
+                                <img width="20px" src="{$themeurl}img/kmz_off.png">
+                                <img width="20px" src="{$themeurl}img/gpx_off.png">
+                            </span>
+                        {/if}
+                        </td>
+                        <td class="{$rowclass}-centered">
+                            <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$cell.id|escape:'htmlall'}" title="View Cell Details">{$cell.ssid}</a>
+                        </td>
+                        <td class="{$rowclass}-centered">{$cell.mac}</td>
+                        <td class="{$rowclass}-centered">{$cell.type}</td>
+                        <td class="{$rowclass}-centered">{$cell.points|number_format}</td>
+                        </tr>
+                        {/foreach}
+                    </tbody>
+                </table>
+                {/if}
 
-				{if $top_bt|@count > 0}
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td colspan="6" class="subheading">Top {$top_n} Bluetooth Devices (by observations)</td>
-						</tr>
-						<tr>
-							<th class="header-centered">#</th>
-							<th class="header-centered">Name</th>
-							<th class="header-centered">GPS</th>
-							<th class="header-centered">MAC</th>
-							<th class="header-centered">Type</th>
-							<th class="header-centered">Points</th>
-						</tr>
-						{foreach from=$top_bt item=bt key=idx}
-					{cycle name=topbt_row values="light,dark" assign=rowclass}
-					<tr class="{$rowclass}">
-						<td class="{$rowclass}-centered">{$idx+1}</td>
-						<td class="{$rowclass}-centered">
-							<a href="{$wifidb_host_url}opt/fetch.php?func=bt&id={$bt.id|escape:'htmlall'}" title="View Bluetooth Details">{$bt.ssid}</a>
-						</td>
-						<td class="{$rowclass}-centered">
-						{if $bt.validgps eq 1}
-							<span style="margin-left:6px">
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell&amp;id={$bt.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-								<a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
-								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-								<a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-								<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
-							</span>
-						{else}
-							<span style="margin-left:6px">
-								<img width="20px" src="{$themeurl}img/globe_off.png">
-								<img width="20px" src="{$themeurl}img/sigmap_off.png">
-								<img width="20px" src="{$themeurl}img/json_off.png">
-								<img width="20px" src="{$themeurl}img/kmz_off.png">
-								<img width="20px" src="{$themeurl}img/gpx_off.png">
-							</span>
-						{/if}
-						</td>
-						<td class="{$rowclass}-centered">{$bt.mac}</td>
-						<td class="{$rowclass}-centered">{$bt.type}</td>
-						<td class="{$rowclass}-centered">{$bt.points|number_format}</td>
-						</tr>
-						{/foreach}
-					</tbody>
-				</table>
-				{/if}			<div style="height:10px"></div>
-				<!-- Statistics Over Time Graphs -->
-				<table class="content_table">
-					<tbody>
-						<tr>
-							<td colspan="6" class="subheading">Statistics Over Time</td>
-						</tr>
-						<tr>
-							<td colspan="6" class="light" style="padding: 20px;">
-								<div style="margin-bottom: 30px;">
-									<h3 style="margin: 0 0 10px 0; color: #333;">WiFi Networks Over Time</h3>
-									   <canvas id="wifi_chart" style="width: 100%; height: 300px;"></canvas>
-									<p style="font-size: 11px; color: #666; margin-top: 5px;">Mouse-over graph to see values. Select a range to zoom in, double-click to zoom out.</p>
-								</div>
+                {if $top_bt|@count > 0}
+                <table class="content_table">
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="subheading">Top {$top_n} Bluetooth Devices (by observations)</td>
+                        </tr>
+                        <tr>
+                            <th class="header-centered">#</th>
+                            <th class="header-centered">GPS</th>
+                            <th class="header-centered">Name</th>
+                            <th class="header-centered">MAC</th>
+                            <th class="header-centered">Type</th>
+                            <th class="header-centered">Points</th>
+                        </tr>
+                        {foreach from=$top_bt item=bt key=idx}
+                    {cycle name=topbt_row values="light,dark" assign=rowclass}
+                    <tr class="{$rowclass}">
+                        <td class="{$rowclass}-centered">{$idx+1}</td>
+                        <td class="{$rowclass}-centered">
+                        {if $bt.validgps eq 1}
+                            <span style="margin-left:6px">
+                                <a href="{$wifidb_host_url}opt/map.php?func=exp_cell&amp;id={$bt.id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+                                <a href="{$wifidb_host_url}opt/map.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
+                                <a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&amp;from=0&amp;inc=50000&amp;id={$bt.id|escape:'htmlall'}&amp;json=0&amp;labeled=0" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+                                <a href="{$wifidb_host_url}api/export.php?func=exp_cid&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+                                <a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&amp;from=0&amp;inc=25000&amp;id={$bt.id|escape:'htmlall'}&amp;xml=0&amp;labeled=0" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+                            </span>
+                        {else}
+                            <span style="margin-left:6px">
+                                <img width="20px" src="{$themeurl}img/globe_off.png">
+                                <img width="20px" src="{$themeurl}img/sigmap_off.png">
+                                <img width="20px" src="{$themeurl}img/json_off.png">
+                                <img width="20px" src="{$themeurl}img/kmz_off.png">
+                                <img width="20px" src="{$themeurl}img/gpx_off.png">
+                            </span>
+                        {/if}
+                        </td>
+                        <td class="{$rowclass}-centered">
+                            <a href="{$wifidb_host_url}opt/fetch.php?func=bt&id={$bt.id|escape:'htmlall'}" title="View Bluetooth Details">{$bt.ssid}</a>
+                        </td>
+                        <td class="{$rowclass}-centered">{$bt.mac}</td>
+                        <td class="{$rowclass}-centered">{$bt.type}</td>
+                        <td class="{$rowclass}-centered">{$bt.points|number_format}</td>
+                        </tr>
+                        {/foreach}
+                    </tbody>
+                </table>
+                {/if}            <div style="height:10px"></div>
+                <!-- Statistics Over Time Graphs -->
+                <table class="content_table">
+                    <tbody>
+                        <tr>
+                            <td colspan="6" class="subheading">Statistics Over Time</td>
+                        </tr>
+                        <tr>
+                            <td colspan="6" class="light" style="padding: 20px;">
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 10px 0; color: #333;">WiFi Encryption Over Time</h3>
+                                    <!-- Chart.js WiFi Encryption Chart -->
+                                    <canvas id="encryption_chart" style="width: 100%; height: 300px;"></canvas>
+                                    <p style="font-size: 11px; color: #666; margin-top: 5px;">Shows percentage breakdown of Open (red), WEP (orange), and Secure (green) networks over time.</p>
+                                </div>
 
-								   <div style="margin-bottom: 30px;">
-									   <h3 style="margin: 0 0 10px 0; color: #333;">WiFi Encryption Over Time</h3>
-									  <canvas id="encryption_chart" style="width: 100%; height: 300px;"></canvas>
-									   <p style="font-size: 11px; color: #666; margin-top: 5px;">Shows percentage breakdown of Open (red), WEP (orange), and Secure (green) networks over time.</p>
-									   <!-- Debug output for wifi_graph_data -->
-									   <div style="margin-top: 10px;">
-										   <strong>Debug: First 10 rows of WiFi Encryption Data</strong>
-										   <table border="1" cellpadding="3" style="font-size: 11px; margin-top: 5px;">
-											   <tr>
-												   <th>Month</th>
-												   <th>Open %</th>
-												   <th>WEP %</th>
-												   <th>Secure %</th>
-											   </tr>
-											   {foreach from=$wifi_graph_data item=row name=dbg}
-												   {if $smarty.foreach.dbg.iteration <= 10}
-												   <tr>
-													   <td>{$row.month}</td>
-													   <td>{$row.open_pct}</td>
-													   <td>{$row.wep_pct}</td>
-													   <td>{$row.secure_pct}</td>
-												   </tr>
-												   {/if}
-											   {/foreach}
-										   </table>
-									   </div>
-								   </div>
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 10px 0; color: #333;">WiFi Authentication Over Time</h3>
+                                    <canvas id="auth_chart" style="width: 100%; height: 300px;"></canvas>
+                                    <p style="font-size: 11px; color: #666; margin-top: 5px;">Shows percentage breakdown of Open, Personal, and Enterprise authentication over time.</p>
+                                </div>
 
-								   <div style="margin-bottom: 30px;">
-									   <h3 style="margin: 0 0 10px 0; color: #333;">WiFi Authentication Over Time</h3>
-									  <canvas id="auth_chart" style="width: 100%; height: 300px;"></canvas>
-									   <p style="font-size: 11px; color: #666; margin-top: 5px;">Shows percentage breakdown of Open (green), Personal (blue), and Enterprise (purple) authentication over time.</p>
-								   </div>
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 10px 0; color: #333;">WiFi Networks Over Time</h3>
+                                    <canvas id="wifi_chart" style="width: 100%; height: 300px;"></canvas>
+                                    <p style="font-size: 11px; color: #666; margin-top: 5px;">Mouse-over graph to see values. Select a range to zoom in, double-click to zoom out.</p>
+                                </div>
 
-								<div style="margin-bottom: 30px;">
-									<h3 style="margin: 0 0 10px 0; color: #333;">Cell Towers Over Time</h3>
-									   <canvas id="cell_chart" style="width: 100%; height: 250px;"></canvas>
-								</div>
+                                <div style="margin-bottom: 30px;">
+                                    <h3 style="margin: 0 0 10px 0; color: #333;">Cell Towers Over Time</h3>
+                                    <canvas id="cell_chart" style="width: 100%; height: 250px;"></canvas>
+                                </div>
 
-								<div>
-									<h3 style="margin: 0 0 10px 0; color: #333;">Bluetooth Devices Over Time</h3>
-									   <canvas id="bt_chart" style="width: 100%; height: 250px;"></canvas>
-								</div>
-							</td>
-						</tr>
-					</tbody>
-				</table>
+                                <div>
+                                    <h3 style="margin: 0 0 10px 0; color: #333;">Bluetooth Devices Over Time</h3>
+                                    <canvas id="bt_chart" style="width: 100%; height: 250px;"></canvas>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
-				   <!-- Include Chart.js library -->
-				   <script src="{$themeurl}lib/chart.min.js"></script>
-				<script>
-				{literal}
-				document.addEventListener('DOMContentLoaded', function() {
-					// Parse the data from PHP
-					var wifiData = {/literal}{$wifi_graph_data}{literal};
-					var cellData = {/literal}{$cell_graph_data}{literal};
-					var btData = {/literal}{$bt_graph_data}{literal};
 
-					// Helper to format numbers
-					function formatNumber(num) {
-						if (num >= 1000000) return (num/1000000).toFixed(2) + 'M';
-						if (num >= 1000) return (num/1000).toFixed(1) + 'K';
-						return num.toString();
-					}
+                <!-- Include Dygraphs library -->
+                <script src="{$themeurl}lib/chart.min.js"></script>
+                <script>
+                {literal}
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Parse the data from PHP
+                    var wifiData = {/literal}{$wifi_graph_data}{literal};
+                    var cellData = {/literal}{$cell_graph_data}{literal};
+                    var btData = {/literal}{$bt_graph_data}{literal};
 
-					// WiFi Networks Chart (new per month + cumulative)
-					if (wifiData && wifiData.length > 0) {
-						var wifiChartData = "Date,New Networks,Cumulative Total\n";
-						wifiData.forEach(function(row) {
-							wifiChartData += row.month + "-01," + row.new_count + "," + row.cumulative + "\n";
-						});
+                    // WiFi Encryption Percentage Chart (Chart.js)
+                    if (wifiData && wifiData.length > 0 && window.Chart) {
+                        var labels = wifiData.map(function(row) { return row.month + "-01"; });
+                        var openData = wifiData.map(function(row) { return row.open_pct; });
+                        var wepData = wifiData.map(function(row) { return row.wep_pct; });
+                        var secureData = wifiData.map(function(row) { return row.secure_pct; });
+                        var ctx = document.getElementById('encryption_chart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: [
+                                    {
+                                        label: 'Open %',
+                                        data: openData,
+                                        backgroundColor: 'rgba(204,0,0,0.2)',
+                                        borderColor: 'rgba(204,0,0,1)',
+                                        fill: true,
+                                        stack: 'Stack 0',
+                                        tension: 0.1
+                                    },
+                                    {
+                                        label: 'WEP %',
+                                        data: wepData,
+                                        backgroundColor: 'rgba(255,140,0,0.2)',
+                                        borderColor: 'rgba(255,140,0,1)',
+                                        fill: true,
+                                        stack: 'Stack 0',
+                                        tension: 0.1
+                                    },
+                                    {
+                                        label: 'Secure %',
+                                        data: secureData,
+                                        backgroundColor: 'rgba(0,204,102,0.2)',
+                                        borderColor: 'rgba(0,204,102,1)',
+                                        fill: true,
+                                        stack: 'Stack 0',
+                                        tension: 0.1
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: true },
+                                    title: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false
+                                    }
+                                },
+                                interaction: {
+                                    mode: 'index',
+                                    intersect: false
+                                },
+                                scales: {
+                                    x: {
+                                        title: { display: false },
+                                        ticks: { maxTicksLimit: 10 }
+                                    },
+                                    y: {
+                                        stacked: true,
+                                        min: 0,
+                                        max: 100,
+                                        title: { display: true, text: 'Percentage' }
+                                    }
+                                }
+                            }
+                        });
+                    }
 
-						new Dygraph(
-							document.getElementById("wifi_chart"),
-							wifiChartData,
-							{
-								legend: 'always',
-								showRoller: true,
-								rollPeriod: 1,
-								ylabel: 'New Networks',
-								y2label: 'Cumulative Total',
-								series: {
-									'New Networks': { axis: 'y1', color: '#666666' },
-									'Cumulative Total': { axis: 'y2', color: '#cc0000' }
-								},
-								axes: {
-									y: { axisLabelWidth: 60 },
-									y2: { axisLabelWidth: 80, valueFormatter: formatNumber, axisLabelFormatter: formatNumber }
-								},
-								fillGraph: false,
-								stackedGraph: false,
-								drawPoints: false,
-								strokeWidth: 2,
-								highlightSeriesOpts: { strokeWidth: 3 }
-							}
-						);
-					}
+                    // WiFi Authentication Percentage Chart (Chart.js)
+                    if (window.authData === undefined) { var authData = {/literal}{$auth_chart_data}{literal}; } else { var authData = window.authData; }
+                    if (authData && authData.length > 0 && window.Chart) {
+                        var authLabels = authData.map(function(row) { return row.month + "-01"; });
+                        var authOpen = authData.map(function(row) { return row.auth_open_pct; });
+                        // WEP is folded into Open for auth chart; no separate WEP series
+                        var authWpa = authData.map(function(row) { return row.auth_wpa_pct !== undefined ? row.auth_wpa_pct : 0; });
+                        var authWpa2 = authData.map(function(row) { return row.auth_wpa2_pct !== undefined ? row.auth_wpa2_pct : 0; });
+                        var authOwe = authData.map(function(row) { return row.auth_owe_pct !== undefined ? row.auth_owe_pct : 0; });
+                        var authWpa3 = authData.map(function(row) { return row.auth_wpa3_pct !== undefined ? row.auth_wpa3_pct : 0; });
+                        var ctxAuth = document.getElementById('auth_chart').getContext('2d');
+                        new Chart(ctxAuth, {
+                            type: 'line',
+                            data: {
+                                labels: authLabels,
+                                datasets: [
+                                    { label: 'Open %', data: authOpen, backgroundColor: 'rgba(76,175,80,0.5)', borderColor: '#4CAF50', fill: true, tension: 0.1, stack: 'Stack 0' },
 
-					// WiFi Encryption Percentage Chart
-					if (wifiData && wifiData.length > 0) {
-						var encryptionChartData = "Date,Open %,WEP %,Secure %\n";
-						wifiData.forEach(function(row) {
-							encryptionChartData += row.month + "-01," + row.open_pct + "," + row.wep_pct + "," + row.secure_pct + "\n";
-						});
+                                    { label: 'WPA %', data: authWpa, backgroundColor: 'rgba(255,152,0,0.5)', borderColor: '#FF9800', fill: true, tension: 0.1, stack: 'Stack 0' },
+                                    { label: 'WPA2 %', data: authWpa2, backgroundColor: 'rgba(33,150,243,0.5)', borderColor: '#2196F3', fill: true, tension: 0.1, stack: 'Stack 0' },
+                                    { label: 'OWE %', data: authOwe, backgroundColor: 'rgba(156,39,176,0.5)', borderColor: '#9C27B0', fill: true, tension: 0.1, stack: 'Stack 0' },
+                                    { label: 'WPA3 %', data: authWpa3, backgroundColor: 'rgba(63,81,181,0.5)', borderColor: '#3F51B5', fill: true, tension: 0.1, stack: 'Stack 0' }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: true },
+                                    tooltip: { mode: 'index', intersect: false }
+                                },
+                                interaction: { mode: 'index', intersect: false },
+                                scales: { y: { stacked: true, beginAtZero: true, max: 100, title: { display: true, text: '% of APs' } } }
+                            }
+                            });
+                        }
 
-						new Dygraph(
-							document.getElementById("encryption_chart"),
-							encryptionChartData,
-							{
-								legend: 'always',
-								ylabel: 'Percentage',
-								   <script>
-					// WiFi Networks Chart (new per month + cumulative)
-					var wifiLabels = [
-						{foreach from=$wifi_chart_data item=row}
-							"{$row.month}-01",
-						{/foreach}
-					];
-					var wifiNew = [
-						{foreach from=$wifi_chart_data item=row}
-							{$row.new_count},
-						{/foreach}
-					];
-					var wifiCumulative = [
-						{foreach from=$wifi_chart_data item=row}
-							{$row.cumulative},
-						{/foreach}
-					];
-					new Chart(document.getElementById('wifi_chart').getContext('2d'), {
-						type: 'bar',
-						data: {
-							labels: wifiLabels,
-							datasets: [
-								{
-									label: 'New Networks',
-									data: wifiNew,
-									backgroundColor: 'rgba(33, 150, 243, 0.5)',
-									borderColor: 'rgba(33, 150, 243, 1)',
-									borderWidth: 1,
-									yAxisID: 'y',
-								},
-								{
-									label: 'Cumulative Total',
-									data: wifiCumulative,
-									type: 'line',
-									borderColor: '#4CAF50',
-									backgroundColor: 'rgba(76, 175, 80, 0.2)',
-									fill: false,
-									yAxisID: 'y1',
-									tension: 0.1
-								}
-							]
-						},
-						options: {
-							responsive: true,
-							interaction: { mode: 'index', intersect: false },
-							stacked: false,
-							plugins: {
-								legend: { position: 'top' },
-								title: { display: true, text: 'WiFi Networks Over Time' }
-							},
-							scales: {
-								y: {
-									type: 'linear',
-									display: true,
-									position: 'left',
-									title: { display: true, text: 'New Networks' }
-								},
-								y1: {
-									type: 'linear',
-									display: true,
-									position: 'right',
-									grid: { drawOnChartArea: false },
-									title: { display: true, text: 'Cumulative Total' }
-								}
-							}
-						}
-					});
+                    // WiFi Networks Chart (Chart.js)
+                    if (wifiData && wifiData.length > 0 && window.Chart) {
+                        var wifiLabels = wifiData.map(function(row) { return row.month + "-01"; });
+                        var wifiNew = wifiData.map(function(row) { return row.new_count; });
+                        var wifiCumulative = wifiData.map(function(row) { return row.cumulative; });
+                        var ctxWifi = document.getElementById('wifi_chart').getContext('2d');
+                        new Chart(ctxWifi, {
+                            type: 'line',
+                            data: {
+                                labels: wifiLabels,
+                                datasets: [
+                                    {
+                                        label: 'New Networks',
+                                        data: wifiNew,
+                                        backgroundColor: 'rgba(102,102,102,0.2)',
+                                        borderColor: 'rgba(102,102,102,1)',
+                                        yAxisID: 'y',
+                                        fill: true,
+                                        tension: 0.1,
+                                        pointRadius: 0
+                                    },
+                                    {
+                                        label: 'Cumulative Total',
+                                        data: wifiCumulative,
+                                        backgroundColor: 'rgba(204,0,0,0.1)',
+                                        borderColor: 'rgba(204,0,0,1)',
+                                        yAxisID: 'y2',
+                                        fill: false,
+                                        tension: 0.1,
+                                        pointRadius: 0
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: true },
+                                    title: { display: false }
+                                },
+                                scales: {
+                                    y: {
+                                        type: 'linear',
+                                        position: 'left',
+                                        title: { display: true, text: 'New Networks' }
+                                    },
+                                    y2: {
+                                        type: 'linear',
+                                        position: 'right',
+                                        grid: { drawOnChartArea: false },
+                                        title: { display: true, text: 'Cumulative Total' }
+                                    },
+                                    x: {
+                                        ticks: { maxTicksLimit: 10 }
+                                    }
+                                }
+                            }
+                        });
+                    }
 
-					// WiFi Encryption Percentage Chart
-					var encLabels = [
-						{foreach from=$encryption_chart_data item=row}
-							"{$row.month}-01",
-						{/foreach}
-					];
-					var encOpen = [
-						{foreach from=$encryption_chart_data item=row}
-							{$row.open_pct},
-						{/foreach}
-					];
-					var encWep = [
-						{foreach from=$encryption_chart_data item=row}
-							{$row.wep_pct},
-						{/foreach}
-					];
-					var encSec = [
-						{foreach from=$encryption_chart_data item=row}
-							{$row.secure_pct},
-						{/foreach}
-					];
-					new Chart(document.getElementById('encryption_chart').getContext('2d'), {
-						type: 'line',
-						data: {
-							labels: encLabels,
-							datasets: [
-								{
-									label: 'Open %',
-									data: encOpen,
-									backgroundColor: 'rgba(139, 195, 74, 0.5)',
-									borderColor: '#8BC34A',
-									fill: true,
-									stack: 'Stack 0',
-									tension: 0.1
-								},
-								{
-									label: 'WEP %',
-									data: encWep,
-									backgroundColor: 'rgba(255, 193, 7, 0.5)',
-									borderColor: '#FFC107',
-									fill: true,
-									stack: 'Stack 0',
-									tension: 0.1
-								},
-								{
-									label: 'Secure %',
-									data: encSec,
-									backgroundColor: 'rgba(33, 150, 243, 0.5)',
-									borderColor: '#2196F3',
-									fill: true,
-									stack: 'Stack 0',
-									tension: 0.1
-								}
-							]
-						},
-						options: {
-							responsive: true,
-							plugins: {
-								legend: { position: 'top' },
-								title: { display: true, text: 'WiFi Encryption Over Time' },
-								tooltip: { mode: 'index', intersect: false }
-							},
-							interaction: { mode: 'index', intersect: false },
-							scales: {
-								y: {
-									stacked: true,
-									beginAtZero: true,
-									max: 100,
-									title: { display: true, text: '% of APs' }
-								}
-							}
-						}
-					});
+                    // Cell Towers Chart (Chart.js)
+                    if (cellData && cellData.length > 0 && window.Chart) {
+                        var cellLabels = cellData.map(function(row) { return row.month + "-01"; });
+                        var cellNew = cellData.map(function(row) { return row.new_count; });
+                        var cellCumulative = cellData.map(function(row) { return row.cumulative; });
+                        var ctxCell = document.getElementById('cell_chart').getContext('2d');
+                        new Chart(ctxCell, {
+                            type: 'line',
+                            data: {
+                                labels: cellLabels,
+                                datasets: [
+                                    {
+                                        label: 'New Towers',
+                                        data: cellNew,
+                                        backgroundColor: 'rgba(102,102,102,0.2)',
+                                        borderColor: 'rgba(102,102,102,1)',
+                                        yAxisID: 'y',
+                                        fill: true,
+                                        tension: 0.1,
+                                        pointRadius: 0
+                                    },
+                                    {
+                                        label: 'Cumulative Total',
+                                        data: cellCumulative,
+                                        backgroundColor: 'rgba(136,95,205,0.1)',
+                                        borderColor: 'rgba(136,95,205,1)',
+                                        yAxisID: 'y2',
+                                        fill: false,
+                                        tension: 0.1,
+                                        pointRadius: 0
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: true },
+                                    title: { display: false }
+                                },
+                                scales: {
+                                    y: {
+                                        type: 'linear',
+                                        position: 'left',
+                                        title: { display: true, text: 'New Towers' }
+                                    },
+                                    y2: {
+                                        type: 'linear',
+                                        position: 'right',
+                                        grid: { drawOnChartArea: false },
+                                        title: { display: true, text: 'Cumulative Total' }
+                                    },
+                                    x: {
+                                        ticks: { maxTicksLimit: 10 }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        document.getElementById("cell_chart").outerHTML = '<p style="color: #999; text-align: center;">No cell tower data available</p>';
+                    }
 
-					// WiFi Authentication Percentage Chart
-					var authLabels = [
-						{foreach from=$auth_chart_data_raw item=row}
-							"{$row.month}-01",
-						{/foreach}
-					];
-					var authOpen = [ {foreach from=$auth_chart_data_raw item=row}{$row.auth_open_pct},{/foreach} ];
-					// WEP is folded into Open for auth chart; no separate WEP series
-					var authWpa = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_wpa_pct)}{$row.auth_wpa_pct}{else}0{/if},{/foreach} ];
-					var authWpa2 = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_wpa2_pct)}{$row.auth_wpa2_pct}{else}0{/if},{/foreach} ];
-					var authOwe = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_owe_pct)}{$row.auth_owe_pct}{else}0{/if},{/foreach} ];
-					var authWpa3 = [ {foreach from=$auth_chart_data_raw item=row}{if isset($row.auth_wpa3_pct)}{$row.auth_wpa3_pct}{else}0{/if},{/foreach} ];
-					new Chart(document.getElementById('auth_chart').getContext('2d'), {
-						type: 'line',
-						data: {
-							labels: authLabels,
-							datasets: [
-								{
-									label: 'Open %',
-									data: authOpen,
-									backgroundColor: 'rgba(76, 175, 80, 0.5)',
-									borderColor: '#4CAF50',
-									fill: true,
-									tension: 0.1,
-									stack: 'Stack 0'
-								},
-
-								{
-									label: 'WPA %',
-									data: authWpa,
-									backgroundColor: 'rgba(255, 152, 0, 0.5)',
-									borderColor: '#FF9800',
-									fill: true,
-									tension: 0.1,
-									stack: 'Stack 0'
-								},
-								{
-									label: 'WPA2 %',
-									data: authWpa2,
-									backgroundColor: 'rgba(33, 150, 243, 0.5)',
-									borderColor: '#2196F3',
-									fill: true,
-									tension: 0.1,
-									stack: 'Stack 0'
-								},
-								{
-									label: 'OWE %',
-									data: authOwe,
-									backgroundColor: 'rgba(156, 39, 176, 0.5)',
-									borderColor: '#9C27B0',
-									fill: true,
-									tension: 0.1,
-									stack: 'Stack 0'
-								},
-								{
-									label: 'WPA3 %',
-									data: authWpa3,
-									backgroundColor: 'rgba(63,81,181,0.5)',
-									borderColor: '#3F51B5',
-									fill: true,
-									tension: 0.1,
-									stack: 'Stack 0'
-								}
-							]
-						},
-						options: {
-							responsive: true,
-							plugins: {
-								legend: { position: 'top' },
-								title: { display: true, text: 'WiFi Authentication Over Time' },
-								tooltip: { mode: 'index', intersect: false }
-							},
-							interaction: { mode: 'index', intersect: false },
-							scales: { y: { stacked: true, beginAtZero: true, max: 100, title: { display: true, text: '% of APs' } } }
-						}
-					});
-
-					// Cell Towers Chart
-					var cellLabels = [
-						{foreach from=$cell_chart_data item=row}
-							"{$row.month}-01",
-						{/foreach}
-					];
-					var cellNew = [
-						{foreach from=$cell_chart_data item=row}
-							{$row.new_count},
-						{/foreach}
-					];
-					var cellCumulative = [
-						{foreach from=$cell_chart_data item=row}
-							{$row.cumulative},
-						{/foreach}
-					];
-					new Chart(document.getElementById('cell_chart').getContext('2d'), {
-						type: 'bar',
-						data: {
-							labels: cellLabels,
-							datasets: [
-								{
-									label: 'New Towers',
-									data: cellNew,
-									backgroundColor: 'rgba(156, 39, 176, 0.5)',
-									borderColor: '#9C27B0',
-									borderWidth: 1,
-									yAxisID: 'y',
-								},
-								{
-									label: 'Cumulative Total',
-									data: cellCumulative,
-									type: 'line',
-									borderColor: '#FF9800',
-									backgroundColor: 'rgba(255, 152, 0, 0.2)',
-									fill: false,
-									yAxisID: 'y1',
-									tension: 0.1
-								}
-							]
-						},
-						options: {
-							responsive: true,
-							interaction: { mode: 'index', intersect: false },
-							stacked: false,
-							plugins: {
-								legend: { position: 'top' },
-								title: { display: true, text: 'Cell Towers Over Time' }
-							},
-							scales: {
-								y: {
-									type: 'linear',
-									display: true,
-									position: 'left',
-									title: { display: true, text: 'New Towers' }
-								},
-								y1: {
-									type: 'linear',
-									display: true,
-									position: 'right',
-									grid: { drawOnChartArea: false },
-									title: { display: true, text: 'Cumulative Total' }
-								}
-							}
-						}
-					});
-
-					// Bluetooth Chart
-					var btLabels = [
-						{foreach from=$bt_chart_data item=row}
-							"{$row.month}-01",
-						{/foreach}
-					];
-					var btNew = [
-						{foreach from=$bt_chart_data item=row}
-							{$row.new_count},
-						{/foreach}
-					];
-					var btCumulative = [
-						{foreach from=$bt_chart_data item=row}
-							{$row.cumulative},
-						{/foreach}
-					];
-					new Chart(document.getElementById('bt_chart').getContext('2d'), {
-						type: 'bar',
-						data: {
-							labels: btLabels,
-							datasets: [
-								{
-									label: 'New Devices',
-									data: btNew,
-									backgroundColor: 'rgba(233, 30, 99, 0.5)',
-									borderColor: '#E91E63',
-									borderWidth: 1,
-									yAxisID: 'y',
-								},
-								{
-									label: 'Cumulative Total',
-									data: btCumulative,
-									type: 'line',
-									borderColor: '#00BCD4',
-									backgroundColor: 'rgba(0, 188, 212, 0.2)',
-									fill: false,
-									yAxisID: 'y1',
-									tension: 0.1
-								}
-							]
-						},
-						options: {
-							responsive: true,
-							interaction: { mode: 'index', intersect: false },
-							stacked: false,
-							plugins: {
-								legend: { position: 'top' },
-								title: { display: true, text: 'Bluetooth Devices Over Time' }
-							},
-							scales: {
-								y: {
-									type: 'linear',
-									display: true,
-									position: 'left',
-									title: { display: true, text: 'New Devices' }
-								},
-								y1: {
-									type: 'linear',
-									display: true,
-									position: 'right',
-									grid: { drawOnChartArea: false },
-									title: { display: true, text: 'Cumulative Total' }
-								}
-							}
-						}
-					});
-								   </script>
+                    // Bluetooth Chart (Chart.js)
+                    if (btData && btData.length > 0 && window.Chart) {
+                        var btLabels = btData.map(function(row) { return row.month + "-01"; });
+                        var btNew = btData.map(function(row) { return row.new_count; });
+                        var btCumulative = btData.map(function(row) { return row.cumulative; });
+                        var ctxBt = document.getElementById('bt_chart').getContext('2d');
+                        new Chart(ctxBt, {
+                            type: 'line',
+                            data: {
+                                labels: btLabels,
+                                datasets: [
+                                    {
+                                        label: 'New Devices',
+                                        data: btNew,
+                                        backgroundColor: 'rgba(102,102,102,0.2)',
+                                        borderColor: 'rgba(102,102,102,1)',
+                                        yAxisID: 'y',
+                                        fill: true,
+                                        tension: 0.1,
+                                        pointRadius: 0
+                                    },
+                                    {
+                                        label: 'Cumulative Total',
+                                        data: btCumulative,
+                                        backgroundColor: 'rgba(0,102,204,0.1)',
+                                        borderColor: 'rgba(0,102,204,1)',
+                                        yAxisID: 'y2',
+                                        fill: false,
+                                        tension: 0.1,
+                                        pointRadius: 0
+                                    }
+                                ]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: true },
+                                    title: { display: false }
+                                },
+                                scales: {
+                                    y: {
+                                        type: 'linear',
+                                        position: 'left',
+                                        title: { display: true, text: 'New Devices' }
+                                    },
+                                    y2: {
+                                        type: 'linear',
+                                        position: 'right',
+                                        grid: { drawOnChartArea: false },
+                                        title: { display: true, text: 'Cumulative Total' }
+                                    },
+                                    x: {
+                                        ticks: { maxTicksLimit: 10 }
+                                    }
+                                }
+                            }
+                        });
+                    } else {
+                        document.getElementById("bt_chart").outerHTML = '<p style="color: #999; text-align: center;">No Bluetooth data available</p>';
+                    }
+                });
+                {/literal}
+                </script>
+            </div>
+{include file="footer.tpl"}
