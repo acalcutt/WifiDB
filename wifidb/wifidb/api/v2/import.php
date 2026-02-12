@@ -50,8 +50,21 @@ switch($func)
 
 			$hash           =   hash_file('md5', $tmp);
 			$prefilename    =   str_replace(" ", "_", $_FILES['file']['name']);
-			$file_ext       =   explode('.', $prefilename);
-			$ext            =   strtolower($file_ext[1]);
+			$path_parts     =   pathinfo($prefilename);
+			$ext            =   strtolower(@$path_parts['extension']);
+			// If a CSV upload, try to detect Wigle CSV format by peeking at the file contents
+			if($ext === 'csv'){
+				$first_lines = @file($tmp, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+				if($first_lines && count($first_lines) > 0){
+					$line0 = $first_lines[0];
+					$line1 = (count($first_lines) > 1) ? $first_lines[1] : "";
+					// Wigle CSV files include a pre-header like "WigleWifi-1.6" on the first line,
+					// and a header row with "MAC" and "SSID" on the next line. Detect that.
+					if(strpos($line0, 'WigleWifi') !== false || (stripos($line1, 'MAC') !== false && stripos($line1, 'SSID') !== false)){
+						$ext = 'wiglecsv';
+					}
+				}
+			}
 			$rand           =   rand(00000000, 99999999);
 			$uploadfolder   =   $dbcore->PATH.'import/up/';
 			$filename       =   'APIupload_'.$rand.'_'.$prefilename;
