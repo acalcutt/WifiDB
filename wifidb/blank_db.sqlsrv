@@ -47,12 +47,12 @@ CREATE TABLE [dbo].[cell_carriers](
 	[carrier_id] [bigint] IDENTITY(1691,1) NOT NULL,
 	[mcc] [int] NULL,
 	[mcc_int] [int] NULL,
-	[mnc] [nvarchar](3) NULL,
+	[mnc] [nvarchar](8) NULL,
 	[mnc_int] [int] NULL,
-	[iso] [nvarchar](3) NULL,
-	[country] [nvarchar](33) NULL,
-	[country_code] [nvarchar](4) NULL,
-	[network] [nvarchar](72) NULL,
+	[iso] [nvarchar](16) NULL,
+	[country] [nvarchar](128) NULL,
+	[country_code] [nvarchar](16) NULL,
+	[network] [nvarchar](255) NULL,
  CONSTRAINT [PK_cell_carriers_carrier_id] PRIMARY KEY CLUSTERED 
 (
 	[carrier_id] ASC

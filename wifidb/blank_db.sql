@@ -77,12 +77,12 @@ CREATE TABLE `cell_carriers` (
   `carrier_id` bigint(20) NOT NULL,
   `mcc` int(3) DEFAULT NULL,
   `mcc_int` int(4) DEFAULT NULL,
-  `mnc` varchar(3) DEFAULT NULL,
+  `mnc` varchar(8) DEFAULT NULL,
   `mnc_int` int(4) DEFAULT NULL,
-  `iso` varchar(3) DEFAULT NULL,
-  `country` varchar(33) DEFAULT NULL,
-  `country_code` varchar(4) DEFAULT NULL,
-  `network` varchar(72) DEFAULT NULL
+  `iso` varchar(16) DEFAULT NULL,
+  `country` varchar(128) DEFAULT NULL,
+  `country_code` varchar(16) DEFAULT NULL,
+  `network` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 --

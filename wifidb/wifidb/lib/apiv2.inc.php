@@ -438,6 +438,14 @@ class apiv2 extends dbcore
 				$task = "import";
 				$type = "wigle";
 			break;
+			case "wiglewificsv":
+				$task = "import";
+				$type = "wiglewificsv";
+			break;
+			case "gz":
+				$task = "import";
+				$type = "wiglewificsv";
+			break;
 			case "mdb":
 				$task = "import";
 				$type = "vistumbler";

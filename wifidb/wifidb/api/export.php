@@ -188,12 +188,12 @@ switch($func)
 			{	
 				#Get the date of the newest import
 				if($dbcore->sql->service == "mysql")
-					{$sql = "SELECT `date` FROM `files` WHERE `completed` = 1 And `ValidGPS` = 1 ORDER BY `date` DESC LIMIT 1";}
+					{$sql = "SELECT `file_date` FROM `files` WHERE `completed` = 1 And `ValidGPS` = 1 ORDER BY `file_date` DESC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [date] DESC";}
+					{$sql = "SELECT TOP 1 [file_date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [file_date] DESC";}
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
-				$datestamp = $date_fetch['date'];
+				$datestamp = $date_fetch['file_date'];
 				$datestamp_split = explode(" ", $datestamp);
 				$date = $datestamp_split[0];
 			}
@@ -204,9 +204,9 @@ switch($func)
 			
 			#Create Queries
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `id`, `title` FROM `files` WHERE `date` LIKE ? ORDER BY `date` DESC";}
+				{$sql = "SELECT `id`, `title` FROM `files` WHERE `file_date` LIKE ? ORDER BY `file_date` DESC";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [title] FROM [files] WHERE [date] LIKE ? ORDER BY [date] DESC";}
+				{$sql = "SELECT [id], [title] FROM [files] WHERE [file_date] LIKE ? ORDER BY [file_date] DESC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $date_search, PDO::PARAM_STR);
 			$prep->execute();
@@ -395,7 +395,7 @@ switch($func)
 				if($dbcore->sql->service == "mysql")
 					{$sql = "SELECT date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY date DESC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$sql = "SELECT TOP 1 [date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [date] DESC";}
+					{$sql = "SELECT TOP 1 [file_date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [file_date] DESC";}
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
 				$start_date = date('Y-m-d',strtotime($date_fetch['date']));
