@@ -234,6 +234,105 @@ class convert extends dbcore
 		return array($auth, $encr, $sectype, $nt);
 	}
 
+		/**
+		 * Build a Vistumbler-style capabilities string from native fields.
+		 * Prefer an explicit $flags value when provided (from wifi_ap.FLAGS),
+		 * otherwise construct from $auth, $encr, $sectype and $nt.
+		 *
+		 * Examples: "[WPA2-CCMP-PSK][WPA-CCMP-PSK][ESS]" or "[WEP][ESS]" or "[ESS]"
+		 *
+		 * @param string $auth
+		 * @param string $encr
+		 * @param int $sectype
+		 * @param string $nt
+		 * @param string $flags
+		 * @return string
+		 */
+		public function buildCapabilities($auth = '', $encr = '', $sectype = 1, $nt = 'Infrastructure', $flags = '')
+		{
+			// If explicit flags were stored, prefer them unchanged — but
+			// ignore legacy numeric-only bitmask values which are not
+			// usable as Vistumbler-style textual tokens.
+			if (!empty($flags)) {
+				$flags_str = (string)$flags;
+				// If the flags value is purely numeric (legacy bitmask), fall
+				// through and build a textual capabilities string instead.
+				if (preg_match('/^\s*\d+\s*$/', $flags_str) === 1) {
+					// ignore numeric legacy flags
+				} else {
+					return $flags_str;
+				}
+			}
+
+			$auth = (string)$auth;
+			$encr = strtoupper((string)$encr);
+			$nt = (string)$nt;
+			$sectype = (int)$sectype;
+
+			$tokens = array();
+
+			// WEP networks are represented simply as [WEP][ESS] (or [IBSS])
+			if ($sectype === 2 || stripos($encr, 'WEP') !== false) {
+				$tokens[] = '[WEP]';
+				$tokens[] = (stripos($nt, 'IBSS') !== false) ? '[IBSS]' : '[ESS]';
+				return implode('', $tokens);
+			}
+
+			// OWE (Opportunistic Wireless Encryption)
+			if (stripos($auth, 'OWE') !== false) {
+				$tokens[] = '[OWE]';
+				$tokens[] = (stripos($nt, 'IBSS') !== false) ? '[IBSS]' : '[ESS]';
+				return implode('', $tokens);
+			}
+
+			// Build list of WPA-family versions to emit
+			$versions = array();
+			if (stripos($auth, 'WPA3') !== false || stripos($auth, 'SAE') !== false) {
+				$versions[] = 'WPA3';
+			}
+			if (stripos($auth, 'WPA2') !== false || stripos($auth, 'RSN') !== false) {
+				$versions[] = 'WPA2';
+			}
+			if (stripos($auth, 'WPA') !== false) {
+				// include WPA if present; avoids empty output for many legacy caps
+				if (!in_array('WPA', $versions, true)) {
+					$versions[] = 'WPA';
+				}
+			}
+
+			// If no WPA family detected, treat as open/infrastructure
+			if (empty($versions)) {
+				$tokens[] = (stripos($nt, 'IBSS') !== false) ? '[IBSS]' : '[ESS]';
+				return implode('', $tokens);
+			}
+
+			// For each version, build a token like WPA2-CCMP-PSK
+			foreach ($versions as $v) {
+				$parts = array($v);
+
+				// cipher/encryption token (if known and not "NONE")
+				if ($encr !== '' && strtoupper($encr) !== 'NONE') {
+					$parts[] = $encr;
+				}
+
+				// key management: EAP/PSK/SAE when determinable from $auth
+				if (stripos($auth, 'ENTERPRISE') !== false || stripos($auth, 'EAP') !== false) {
+					$parts[] = 'EAP';
+				} elseif (stripos($auth, 'SAE') !== false) {
+					$parts[] = 'SAE';
+				} elseif (stripos($auth, 'PSK') !== false || stripos($auth, 'PERSONAL') !== false) {
+					$parts[] = 'PSK';
+				}
+
+				$tokens[] = '[' . implode('-', $parts) . ']';
+			}
+
+			// network type token
+			$tokens[] = (stripos($nt, 'IBSS') !== false) ? '[IBSS]' : '[ESS]';
+
+			return implode('', $tokens);
+		}
+
 	/**
 	 * @param $frequency
 	 * @return array

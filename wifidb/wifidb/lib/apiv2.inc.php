@@ -756,31 +756,86 @@ class apiv2 extends dbcore
 		exit();
 	}
 
-	public function Search($ssid, $mac, $radio, $chan, $auth, $encry)
+	public function Search($ssid, $mac, $radio, $chan, $auth, $encry, $from = 0, $inc = 50000, $gpsOnly = false)
 	{
-		$sql2 = "SELECT * FROM wifi_ap WHERE
-				ssid LIKE ? AND
-				mac LIKE ? AND
-				radio LIKE ? AND
-				chan LIKE ? AND
-				auth LIKE ? AND
-				encry LIKE ?";
+		// Prepare parameters: if empty, search all ('%'); otherwise honor client-supplied value (including any % wildcards)
+		$ssid = ($ssid === "") ? '%' : $ssid;
+		$mac  = ($mac === "") ? '%' : $mac;
+		$radio= ($radio === "") ? '%' : $radio;
+		$chan = ($chan === "") ? '%' : $chan;
+		$auth = ($auth === "") ? '%' : $auth;
+		$encry= ($encry === "") ? '%' : $encry;
 
-		$prep2 = $this->sql->conn->prepare($sql2);
+		// optional gps-only clause
+		$gps_clause = "";
+		if ($gpsOnly) {
+			$gps_clause = " AND wifi_ap.HighGps_ID IS NOT NULL";
+		}
 
-		$ssid = $ssid."%";
-		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-		$mac = $mac."%";
-		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-		$radio = $radio."%";
-		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-		$chan = $chan."%";
-		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-		$auth = $auth."%";
-		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-		$encry = $encry."%";
-		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-		$this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
+		// If SQL Server, use ROW_NUMBER() for paging; otherwise use MySQL-style LIMIT
+		if ($this->sql->service == "sqlsrv") {
+			$rn_low = (int)$from;
+			$rn_high = (int)$from + (int)$inc;
+			$sql2 = "SELECT * FROM (
+				  SELECT 
+					  wifi_ap.AP_ID AS AP_ID, wifi_ap.AP_ID AS id,
+					  wifi_ap.BSSID AS BSSID, wifi_ap.BSSID AS mac,
+					  wifi_ap.SSID AS ssid,
+					  wifi_ap.CHAN AS chan, wifi_ap.AUTH AS auth, wifi_ap.ENCR AS encry,
+					   wifi_ap.SECTYPE AS sectype, wifi_ap.RADTYPE AS radio, wifi_ap.NETTYPE AS NT,
+					   wifi_ap.BTX AS BTx, wifi_ap.OTX AS OTx, wifi_ap.FLAGS AS FLAGS,
+					   wifi_ap.HighGps_ID AS HighGps_ID, wifi_ap.File_ID AS File_ID,
+					   wifi_ap.high_sig AS high_sig, wifi_ap.high_rssi AS high_rssi,
+					   wifi_ap.high_gps_sig AS high_gps_sig, wifi_ap.high_gps_rssi AS high_gps_rssi,
+					   wifi_ap.ap_hash AS ap_hash, wifi_ap.points AS points,
+					   wifi_ap.fa AS FA, wifi_ap.la AS LA, wifi_ap.ModDate AS ModDate,
+					   wifi_gps.Lat AS gps_lat, wifi_gps.Lon AS gps_lon,
+					   ROW_NUMBER() OVER (ORDER BY ModDate DESC) AS rn
+				FROM wifi_ap
+				LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID
+				WHERE ssid LIKE ? AND bssid LIKE ? AND wifi_ap.RADTYPE LIKE ? AND wifi_ap.CHAN LIKE ? AND wifi_ap.AUTH LIKE ? AND wifi_ap.ENCR LIKE ?" . $gps_clause . "
+			) t WHERE t.rn > ? AND t.rn <= ?";
+
+			$prep2 = $this->sql->conn->prepare($sql2);
+			$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+			$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+			$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+			$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+			$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+			$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+			$prep2->bindParam(7, $rn_low, PDO::PARAM_INT);
+			$prep2->bindParam(8, $rn_high, PDO::PARAM_INT);
+			$this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
+		} else {
+			$sql2 = "SELECT 
+					   wifi_ap.AP_ID AS AP_ID, wifi_ap.AP_ID AS id,
+					   wifi_ap.BSSID AS BSSID, wifi_ap.BSSID AS mac,
+					   wifi_ap.SSID AS ssid,
+					   wifi_ap.CHAN AS chan, wifi_ap.AUTH AS auth, wifi_ap.ENCR AS encry,
+					   wifi_ap.SECTYPE AS sectype, wifi_ap.RADTYPE AS radio, wifi_ap.NETTYPE AS NT,
+					   wifi_ap.BTX AS BTx, wifi_ap.OTX AS OTx, wifi_ap.FLAGS AS FLAGS,
+					   wifi_ap.HighGps_ID AS HighGps_ID, wifi_ap.File_ID AS File_ID,
+					   wifi_ap.high_sig AS high_sig, wifi_ap.high_rssi AS high_rssi,
+					   wifi_ap.high_gps_sig AS high_gps_sig, wifi_ap.high_gps_rssi AS high_gps_rssi,
+					   wifi_ap.ap_hash AS ap_hash, wifi_ap.points AS points,
+					   wifi_ap.fa AS FA, wifi_ap.la AS LA, wifi_ap.ModDate AS ModDate,
+					   wifi_gps.Lat AS gps_lat, wifi_gps.Lon AS gps_lon
+				FROM wifi_ap
+				LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID
+				WHERE ssid LIKE ? AND bssid LIKE ? AND wifi_ap.RADTYPE LIKE ? AND wifi_ap.CHAN LIKE ? AND wifi_ap.AUTH LIKE ? AND wifi_ap.ENCR LIKE ?" . $gps_clause . "
+				ORDER BY ModDate DESC LIMIT ?, ?";
+
+			$prep2 = $this->sql->conn->prepare($sql2);
+			$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+			$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+			$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+			$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+			$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+			$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+			$prep2->bindParam(7, $from, PDO::PARAM_INT);
+			$prep2->bindParam(8, $inc, PDO::PARAM_INT);
+			$this->sql->checkError($prep2->execute(), __LINE__, __FILE__);
+		}
 		$total_rows = $prep2->rowCount();
 		if(!$total_rows)
 		{
@@ -802,9 +857,17 @@ class apiv2 extends dbcore
 				$row_color = 1;
 				$results_all[$i]['class'] = "dark";
 			}
-			$results_all[$i]['id'] = $newArray['id'];
-			$results_all[$i]['ssid'] = $newArray['ssid'];
-			$results_all[$i]['mac'] = $newArray['mac'];
+			$results_all[$i]['id'] = isset($newArray['id']) ? $newArray['id'] : (isset($newArray['AP_ID']) ? $newArray['AP_ID'] : null);
+			$results_all[$i]['ssid'] = isset($newArray['ssid']) ? $newArray['ssid'] : null;
+			if (isset($newArray['mac'])) {
+				$results_all[$i]['mac'] = $newArray['mac'];
+			} elseif (isset($newArray['BSSID'])) {
+				$results_all[$i]['mac'] = $newArray['BSSID'];
+			} elseif (isset($newArray['bssid'])) {
+				$results_all[$i]['mac'] = $newArray['bssid'];
+			} else {
+				$results_all[$i]['mac'] = null;
+			}
 			$results_all[$i]['sectype'] = $newArray['sectype'];
 			$results_all[$i]['chan'] = $newArray['chan'];
 			$results_all[$i]['auth'] = $newArray['auth'];
@@ -822,6 +885,36 @@ class apiv2 extends dbcore
 			$results_all[$i]['admin2_id']=$newArray['admin2_id'];
 			$results_all[$i]['username']=$newArray['username'];
 			$results_all[$i]['ap_hash'] = $newArray['ap_hash'];
+			$results_all[$i]['high_sig'] = isset($newArray['high_sig']) ? $newArray['high_sig'] : null;
+			$results_all[$i]['high_rssi'] = isset($newArray['high_rssi']) ? $newArray['high_rssi'] : null;
+			$results_all[$i]['high_gps_sig'] = isset($newArray['high_gps_sig']) ? $newArray['high_gps_sig'] : null;
+			$results_all[$i]['high_gps_rssi'] = isset($newArray['high_gps_rssi']) ? $newArray['high_gps_rssi'] : null;
+			// If gps values are available, convert DMM to decimal degrees using helper
+			if(!empty($newArray['gps_lat'])) {
+				$results_all[$i]['lat'] = $this->convert->dm2dd($newArray['gps_lat']);
+			}
+			if(!empty($newArray['gps_lon'])) {
+				$results_all[$i]['long'] = $this->convert->dm2dd($newArray['gps_lon']);
+			}
+
+			// Build Vistumbler-style capability flags for client consumption.
+			$results_all[$i]['flags'] = $this->convert->buildCapabilities(
+				isset($newArray['auth']) ? $newArray['auth'] : '',
+				isset($newArray['encry']) ? $newArray['encry'] : '',
+				isset($newArray['sectype']) ? $newArray['sectype'] : 1,
+				isset($newArray['NT']) ? $newArray['NT'] : '',
+				isset($newArray['FLAGS']) ? $newArray['FLAGS'] : ''
+			);
+
+			// If gpsOnly requested, skip entries where converted lat/long are both 0.0
+			if (!empty($gpsOnly)) {
+				$latVal = isset($results_all[$i]['lat']) ? (float)$results_all[$i]['lat'] : null;
+				$lonVal = isset($results_all[$i]['long']) ? (float)$results_all[$i]['long'] : null;
+				if ($latVal !== null && $lonVal !== null && $latVal == 0.0 && $lonVal == 0.0) {
+					unset($results_all[$i]);
+					continue;
+				}
+			}
 			$i++;
 		}
 		$this->mesg = $results_all;

@@ -385,6 +385,158 @@ class export extends dbcore
 		return $ret_data;
 	}
 
+	/**
+	 * Return APs whose best-GPS point falls within a lat/lon bounding box and
+	 * whose last-active date (wap.la) falls within [start_date, end_date).
+	 * Coordinates must be in NMEA Degrees-Minutes format (DDMM.MMMM) to match
+	 * the storage format used in wifi_gps.  Pass null for start_date or end_date
+	 * to leave that bound open.  Returns the same ap_info array format as the
+	 * other export functions so GeoJSON/MVT callers get consistent output.
+	 */
+	public function BboxDateArray($lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+	                               $start_date = null, $end_date = null,
+	                               $from = null, $inc = 5000)
+	{
+		$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
+
+		if ($this->sql->service === 'sqlsrv') {
+			// Drive from the GPS bbox subquery so SQL Server uses nested loops
+			// through IX_wifi_ap_HighGps_covering into wifi_ap rather than
+			// scanning millions of date-range wifi_ap rows and hash-joining to wifi_gps.
+			//
+			// Explicit CAST removes the nvarchar implicit conversion so the
+			// IX_wifi_gps_LatLon statistics are used accurately for cardinality.
+			//
+			// When $from is null (no pagination — always the case for tile requests)
+			// we use SELECT TOP (n) with no ORDER BY.  This lets SQL Server early-
+			// terminate the nested loop as soon as n rows have been found rather than
+			// completing all 800k+ iterations and then sorting before OFFSET/FETCH.
+			// Tile thinning handles distribution so ordering is not required.
+			//
+			// OPTION (LOOP JOIN, FORCE ORDER) prevents the optimizer from reverting
+			// to the hash-join plan regardless of its cardinality estimates.
+			if ($from === null) {
+				$top_clause = 'TOP (' . (int)$inc . ') ';
+			} else {
+				$top_clause = '';
+			}
+
+			$sql = "SELECT {$top_clause}wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR,
+			               wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,
+			               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
+			               wGPS.Lat AS Lat, wGPS.Lon AS Lon, wGPS.Alt AS Alt,
+			               wf.file_user
+			        FROM (SELECT GPS_ID, Lat, Lon, Alt
+			              FROM wifi_gps
+			              WHERE Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+			                AND Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+			             ) AS wGPS
+			        INNER JOIN wifi_ap AS wap ON wap.HighGps_ID = wGPS.GPS_ID
+			        LEFT JOIN files AS wf ON wf.id = wap.File_ID
+			        WHERE wap.points IS NOT NULL";
+
+			if ($start_date !== null && $end_date !== null) {
+				$sql .= ' AND wap.la >= ? AND wap.la < ?';
+				$params[] = $start_date;
+				$params[] = $end_date;
+			} elseif ($start_date !== null) {
+				$sql .= ' AND wap.la >= ?';
+				$params[] = $start_date;
+			} elseif ($end_date !== null) {
+				$sql .= ' AND wap.la < ?';
+				$params[] = $end_date;
+			}
+
+			if ($from === null) {
+				// No ORDER BY — TOP + early termination, order irrelevant for tile thinning.
+				$sql .= ' OPTION (LOOP JOIN, FORCE ORDER)';
+			} else {
+				$sql .= ' ORDER BY wap.AP_ID'
+				      . ' OFFSET ' . (int)$from . ' ROWS FETCH NEXT ' . (int)$inc . ' ROWS ONLY'
+				      . ' OPTION (LOOP JOIN, FORCE ORDER)';
+			}
+
+		} else {
+			// MySQL
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR,
+			               wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,
+			               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
+			               wGPS.Lat AS Lat, wGPS.Lon AS Lon, wGPS.Alt AS Alt,
+			               wf.file_user
+			        FROM wifi_ap AS wap
+			        LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID
+			        LEFT JOIN files    AS wf   ON wf.id        = wap.File_ID
+			        WHERE wap.HighGps_ID IS NOT NULL
+			          AND wap.points IS NOT NULL
+			          AND wGPS.Lat BETWEEN ? AND ?
+			          AND wGPS.Lon BETWEEN ? AND ?";
+
+			if ($start_date !== null && $end_date !== null) {
+				$sql .= ' AND wap.la >= ? AND wap.la < ?';
+				$params[] = $start_date;
+				$params[] = $end_date;
+			} elseif ($start_date !== null) {
+				$sql .= ' AND wap.la >= ?';
+				$params[] = $start_date;
+			} elseif ($end_date !== null) {
+				$sql .= ' AND wap.la < ?';
+				$params[] = $end_date;
+			}
+
+			if ($from !== null) {
+				$sql .= ' ORDER BY wap.AP_ID LIMIT ' . (int)$from . ',' . (int)$inc;
+			} else {
+				$sql .= ' ORDER BY wap.AP_ID LIMIT ' . (int)$inc;
+			}
+		}
+
+		$prep = $this->sql->conn->prepare($sql);
+		foreach ($params as $i => $val) {
+			$prep->bindValue($i + 1, $val, PDO::PARAM_STR);
+		}
+		$prep->execute();
+		$fetch_aps = $prep->fetchAll();
+
+		$ap_array    = [];
+		$latlon_array = [];
+
+		foreach ($fetch_aps as $ap) {
+			$ap_info = [
+				'id'            => $ap['AP_ID'],
+				'new_ap'        => 1,
+				'named'         => 0,
+				'mac'           => $ap['BSSID'],
+				'ssid'          => $this->formatSSID($ap['SSID']),
+				'chan'           => $ap['CHAN'],
+				'radio'         => $ap['RADTYPE'],
+				'nt'            => $ap['NETTYPE'],
+				'sectype'       => $ap['SECTYPE'],
+				'auth'          => $ap['AUTH'],
+				'encry'         => $ap['ENCR'],
+				'btx'           => $ap['BTX'],
+				'otx'           => $ap['OTX'],
+				'fa'            => $ap['fa'],
+				'la'            => $ap['la'],
+				'points'        => $ap['points'],
+				'high_gps_sig'  => $ap['high_gps_sig'],
+				'high_gps_rssi' => $ap['high_gps_rssi'],
+				'lat'           => $this->convert->dm2dd($ap['Lat']),
+				'lon'           => $this->convert->dm2dd($ap['Lon']),
+				'alt'           => $ap['Alt'],
+				'manuf'         => $this->findManuf($ap['BSSID']),
+				'user'          => $ap['file_user'],
+			];
+			$ap_array[]    = $ap_info;
+			$latlon_array[] = ['lat' => $ap_info['lat'], 'long' => $ap_info['lon']];
+		}
+
+		return [
+			'count'        => count($ap_array),
+			'data'         => $ap_array,
+			'latlon_array' => $latlon_array,
+		];
+	}
+
 	public function DateArray($start_date, $end_date, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
 	{
 		$start_date = (empty($start_date)) ? date("Y-m-d H:i:s") : date('Y-m-d H:i:s',strtotime($start_date));

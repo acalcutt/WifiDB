@@ -50,7 +50,9 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	if ($map_inc == ""){$map_inc = 50000;}
 	if ($ord == ""){$ord = "ASC";}
 	if ($sort == ""){$sort = "ssid";}
-	$to = ($from+$limit);
+	$labeled = 0;
+	$new_icons = 0;
+	$to = ($from + $inc);
 	
 	$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 0);
 	$results_all = $SearchArray['data'];

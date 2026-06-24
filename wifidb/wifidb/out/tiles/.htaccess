@@ -1,0 +1,32 @@
+# WifiDB Static MVT Tile Directory
+# Apache configuration for pre-generated Mapbox Vector Tiles.
+#
+# Files in this directory are gzip-compressed PBF tiles written by mvtd.php.
+# MapLibre expects them to arrive with Content-Type: application/x-protobuf
+# and Content-Encoding: gzip.  Without these headers, MapLibre silently shows
+# no tiles.
+#
+# Deploy this file to: /srv/www/virtual/wifidb.net/out/tiles/.htaccess
+# Ensure mod_headers is enabled:  a2enmod headers && systemctl reload apache2
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.pbf$">
+        Header always set Content-Type    "application/x-protobuf"
+        Header always set Content-Encoding "gzip"
+        Header always set Vary            "Accept-Encoding"
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, OPTIONS"
+        # Cache-Control is set per-bucket by cache busting via mtime.
+        # Allow browsers/proxies to cache tiles for 24 hours; daily bucket
+        # tiles will be regenerated hourly so the URL content changes.
+        Header always set Cache-Control   "public, max-age=86400"
+    </FilesMatch>
+</IfModule>
+
+# Prevent PHP processing .pbf files (serve as raw binary).
+<FilesMatch "\.pbf$">
+    SetHandler default-handler
+</FilesMatch>
+
+# Deny directory listings.
+Options -Indexes

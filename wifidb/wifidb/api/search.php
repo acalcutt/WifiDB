@@ -23,61 +23,24 @@ define("SWITCH_EXTRAS", "api");
 
 require '../lib/init.inc.php';
 
-if(@$_REQUEST['ssid'] == "%" || @$_REQUEST['mac'] == "%" || @$_REQUEST['radio'] == "%" || @$_REQUEST['chan'] == "%" || @$_REQUEST['auth'] == "%" || @$_REQUEST['encry'] == "%" )
-{
-    $dbcore->mesg = 'Come on man, you can`t wildcard search for all of something, be more specific...';
-    $dbcore->Output();
-}else
-{
-    if(@$_REQUEST['ssid'])
-    {
-        $ssid   =   $_REQUEST['ssid'];
-    }else
-    {
-        $ssid   =   "";
-    }
-    
-    if(@$_REQUEST['mac'])
-    {
-        $mac    =   $_REQUEST['mac'];
-    }else
-    {
-        $mac    =   "";
-    }
-    
-    if(@$_REQUEST['radio'])
-    {
-        $radio  =   $_REQUEST['radio'];
-    }else
-    {
-        $radio  =   "";
-    }
-    
-    if(@$_REQUEST['chan'])
-    {
-        $chan   =   $_REQUEST['chan'];
-    }else
-    {
-        $chan   =   "";
-    }
-    
-    if(@$_REQUEST['auth'])
-    {
-        $auth   =   $_REQUEST['auth'];
-    }else
-    {
-        $auth   =   "";
-    }
-    
-    if(@$_REQUEST['encry'])
-    {
-        $encry  =   $_REQUEST['encry'];
-    }else
-    {
-        $encry  =   "";
-    }
-    
-    $dbcore->search($ssid, $mac, $radio, $chan, $auth, $encry);
-    $dbcore->Output();
+// Collect request params; allow client to supply '%' wildcards explicitly.
+$ssid   = isset($_REQUEST['ssid']) ? $_REQUEST['ssid'] : "";
+$mac    = isset($_REQUEST['mac']) ? $_REQUEST['mac'] : "";
+$radio  = isset($_REQUEST['radio']) ? $_REQUEST['radio'] : "";
+$chan   = isset($_REQUEST['chan']) ? $_REQUEST['chan'] : "";
+$auth   = isset($_REQUEST['auth']) ? $_REQUEST['auth'] : "";
+$encry  = isset($_REQUEST['encry']) ? $_REQUEST['encry'] : "";
+
+# optional paging parameters
+$from = (isset($_REQUEST['from']) ? (int)$_REQUEST['from'] : 0);
+$inc = (isset($_REQUEST['inc']) ? (int)$_REQUEST['inc'] : 50000);
+# optional gps-only flag: when true, only return APs with associated GPS (HighGps_ID)
+$gpsonly = false;
+if (isset($_REQUEST['gpsonly'])) {
+    $v = $_REQUEST['gpsonly'];
+    if ($v === '1' || strtolower($v) === 'true') { $gpsonly = true; }
 }
+
+$dbcore->search($ssid, $mac, $radio, $chan, $auth, $encry, $from, $inc, $gpsonly);
+$dbcore->Output();
 ?>
