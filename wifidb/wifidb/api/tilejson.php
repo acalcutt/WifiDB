@@ -53,14 +53,25 @@ if (!array_key_exists($bucket, $bucket_meta)) {
 
 $base_url = rtrim($dbcore->URL_PATH, '/');
 
+// ── Format selection ─────────────────────────────────────────────────────────
+// ?format=mlt   → MapLibre Tile (MLT) descriptor, served by mlt.php
+// ?format=mvt   → Mapbox Vector Tile (PBF) descriptor (default), served by mvt.php
+//
+// The TileJSON "format" field is a MapLibre extension to TileJSON 3.0.0.
+// MapLibre GL JS ≥ 5.12 and MapLibre Native (Android ≥ 12.1.0 / iOS ≥ 6.2.0)
+// read this field to select the correct tile decoder.
+$format = preg_replace('/[^a-z]/', '', strtolower((string)@$_REQUEST['format']));
+if ($format !== 'mlt') $format = 'mvt';   // default
+
 // ── Tile URL ─────────────────────────────────────────────────────────────────
-// mvt.php serves all tiles.  It checks out/tiles/{bucket}/{z}/{x}/{y}.pbf first
-// (the unified store written by both mvtd.php and itself); on a cache miss it
-// queries the DB, generates the tile, writes it to out/tiles/, and returns it.
-// This means pre-generated daemon tiles are served from the same code path as
-// on-demand tiles — no separate static/dynamic mode needed.
-$tiles_url    = $base_url . '/api/mvt.php?bucket=' . $bucket . '&z={z}&x={x}&y={y}';
-$tile_maxzoom = 14;
+// Both mvt.php and mlt.php check the pre-generated tile store first; on a cache
+// miss they query the DB, generate the tile, write it, and return it.
+if ($format === 'mlt') {
+    $tiles_url = $base_url . '/api/mlt.php?bucket=' . $bucket . '&z={z}&x={x}&y={y}';
+} else {
+    $tiles_url = $base_url . '/api/mvt.php?bucket=' . $bucket . '&z={z}&x={x}&y={y}';
+}
+$tile_maxzoom = 19;
 
 $tilejson = [
     'tilejson'      => '3.0.0',
@@ -80,14 +91,35 @@ $tilejson = [
             'minzoom'     => 0,
             'maxzoom'     => $tile_maxzoom,
             'fields'      => [
-                'sectype' => 'Number',  // 1=open, 2=WEP, 3=secure
-                'chan'     => 'Number',  // WiFi channel
-                'radio'   => 'String',  // radio type (e.g. "802.11n")
-                'mac'     => 'String',  // BSSID
-                'user'    => 'String',  // submitting username
+                'sectype'       => 'Number',  // 0=unknown, 1=open, 2=WEP, 3=secure
+                'chan'           => 'Number',  // WiFi channel
+                'points'        => 'Number',  // total observation points
+                'high_gps_sig'  => 'Number',  // best GPS signal strength
+                'high_gps_rssi' => 'Number',  // best GPS RSSI
+                'radio'         => 'String',  // radio type (e.g. "802.11n", "802.11ax")
+                'mac'           => 'String',  // BSSID
+                'user'          => 'String',  // submitting username
+                'ssid'          => 'String',  // network name
+                'auth'          => 'String',  // auth method (e.g. "WPA2-Personal")
+                'encry'         => 'String',  // encryption (e.g. "CCMP", "TKIP")
+                'nt'            => 'String',  // network type (e.g. "Infrastructure")
+                'btx'           => 'String',  // basic transmit rates
+                'otx'           => 'String',  // optional transmit rates
+                'fa'            => 'String',  // first seen datetime
+                'la'            => 'String',  // last seen datetime
+                'lat'           => 'String',  // latitude (decimal degrees string)
+                'lon'           => 'String',  // longitude (decimal degrees string)
+                'alt'           => 'String',  // altitude (metres string)
+                'manuf'         => 'String',  // MAC manufacturer name
+                'id_str'        => 'String',  // AP database ID (string form)
             ],
         ],
     ],
 ];
+
+// Add format field for MLT tiles (MapLibre extension to TileJSON 3.0.0).
+if ($format === 'mlt') {
+    $tilejson['format'] = 'mlt';
+}
 
 echo json_encode($tilejson, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);

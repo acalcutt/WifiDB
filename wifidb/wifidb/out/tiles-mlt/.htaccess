@@ -1,0 +1,30 @@
+# WifiDB Static MLT Tile Directory
+# Apache configuration for pre-generated MapLibre Tiles (MLT).
+#
+# Files in this directory are gzip-compressed MLT tiles written by mltd.php.
+# MapLibre expects them to arrive with Content-Type: application/vnd.mapbox-vector-tile
+# and Content-Encoding: gzip.
+#
+# Deploy this file to: /srv/www/virtual/wifidb.net/out/tiles-mlt/.htaccess
+# Ensure mod_headers is enabled:  a2enmod headers && systemctl reload apache2
+#
+# Note: tiles are normally served via mlt.php (which checks this directory for
+# pre-generated tiles before falling back to on-demand generation).  This
+# .htaccess is only needed if you configure Apache to serve .mlt files directly
+# and bypass PHP entirely for pre-generated zoom levels.
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.mlt$">
+        Header always set Content-Type    "application/vnd.mapbox-vector-tile"
+        Header always set Content-Encoding "gzip"
+        Header always set Vary            "Accept-Encoding"
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header always set Cache-Control   "public, max-age=86400"
+    </FilesMatch>
+</IfModule>
+
+# Prevent PHP processing .mlt files (serve as raw binary).
+<FilesMatch "\.mlt$">
+    SetHandler default-handler
+</FilesMatch>
