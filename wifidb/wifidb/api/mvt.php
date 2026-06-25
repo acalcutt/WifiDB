@@ -112,7 +112,10 @@ $rows = $result['data'];
 
 // ── Build MVT ─────────────────────────────────────────────────────────────────
 // Fixed property key order — must match the indices used in tags arrays below.
-$keys     = ['sectype', 'chan', 'radio', 'mac', 'user'];
+$keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
+             'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
+             'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
+             'lat', 'lon', 'alt', 'manuf', 'id_str'];
 $keys_idx = array_flip($keys);   // name → index
 
 // Value deduplication: store encoded Value message content, keyed by "type:raw".
@@ -166,11 +169,27 @@ foreach ($rows as $row) {
 
     // Build flat [key_idx, val_idx, ...] tags array.
     $tags = [
-        $keys_idx['sectype'], $add_value('int', (int)$row['sectype']),
-        $keys_idx['chan'],     $add_value('int', (int)$row['chan']),
-        $keys_idx['radio'],   $add_value('str', (string)$row['radio']),
-        $keys_idx['mac'],     $add_value('str', (string)$row['mac']),
-        $keys_idx['user'],    $add_value('str', (string)$row['user']),
+        $keys_idx['sectype'],      $add_value('int', (int)$row['sectype']),
+        $keys_idx['chan'],          $add_value('int', (int)$row['chan']),
+        $keys_idx['radio'],        $add_value('str', (string)$row['radio']),
+        $keys_idx['mac'],          $add_value('str', (string)$row['mac']),
+        $keys_idx['user'],         $add_value('str', (string)$row['user']),
+        $keys_idx['ssid'],         $add_value('str', (string)$row['ssid']),
+        $keys_idx['auth'],         $add_value('str', (string)$row['auth']),
+        $keys_idx['encry'],        $add_value('str', (string)$row['encry']),
+        $keys_idx['nt'],           $add_value('str', (string)$row['nt']),
+        $keys_idx['btx'],          $add_value('str', (string)$row['btx']),
+        $keys_idx['otx'],          $add_value('str', (string)$row['otx']),
+        $keys_idx['fa'],           $add_value('str', (string)$row['fa']),
+        $keys_idx['la'],           $add_value('str', (string)$row['la']),
+        $keys_idx['points'],       $add_value('int', (int)$row['points']),
+        $keys_idx['high_gps_sig'], $add_value('int', (int)$row['high_gps_sig']),
+        $keys_idx['high_gps_rssi'],$add_value('int', (int)$row['high_gps_rssi']),
+        $keys_idx['lat'],          $add_value('str', (string)$row['lat']),
+        $keys_idx['lon'],          $add_value('str', (string)$row['lon']),
+        $keys_idx['alt'],          $add_value('str', (string)$row['alt']),
+        $keys_idx['manuf'],        $add_value('str', (string)$row['manuf']),
+        $keys_idx['id_str'],       $add_value('str', (string)$row['id']),
     ];
 
     $features[] = mvt_encode_point_feature((int)$row['id'], $px, $py, $tags);

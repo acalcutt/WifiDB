@@ -83,9 +83,9 @@ if (true) {
 // Adjust to match your data coverage and server capacity.
 
 $min_zoom = 1;
-$max_zoom = 12;   // z1-z12 covers all wardriving zoom levels.
-                  // z13-z14 can remain dynamic (served by mvt.php + file cache).
-                  // Estimate: world bbox at z12 ≈ 16M tiles; most empty = fast skip.
+$max_zoom = 19;   // z1-z19 matches the tippecanoe PMTiles export.
+                  // z13-z19 tiles are small-bbox and fast to generate per-tile.
+                  // On-demand fallback (mvt.php) still handles any cache misses.
 
 // Bounding box for the AP fetch query.
 // APs outside this box are excluded from tile generation.
@@ -184,7 +184,10 @@ function encode_tile_from_points(
     });
 
     // ── Build MVT layer within the 1.5 MB uncompressed budget ─────────────────
-    $keys     = ['sectype', 'chan', 'radio', 'mac', 'user'];
+    $keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
+                  'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
+                  'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
+                  'lat', 'lon', 'alt', 'manuf', 'id_str'];
     $keys_idx = array_flip($keys);
     $values_bytes = [];
     $values_idx   = [];
@@ -215,11 +218,27 @@ function encode_tile_from_points(
         $seen_pixel[$pixel_key] = true;
 
         $tags = [
-            $keys_idx['sectype'], $add_value('int', (int)$ap['sectype']),
-            $keys_idx['chan'],     $add_value('int', (int)$ap['chan']),
-            $keys_idx['radio'],   $add_value('str', (string)$ap['radio']),
-            $keys_idx['mac'],     $add_value('str', (string)$ap['mac']),
-            $keys_idx['user'],    $add_value('str', (string)$ap['user']),
+            $keys_idx['sectype'],      $add_value('int', (int)$ap['sectype']),
+            $keys_idx['chan'],          $add_value('int', (int)$ap['chan']),
+            $keys_idx['radio'],        $add_value('str', (string)$ap['radio']),
+            $keys_idx['mac'],          $add_value('str', (string)$ap['mac']),
+            $keys_idx['user'],         $add_value('str', (string)$ap['user']),
+            $keys_idx['ssid'],         $add_value('str', (string)$ap['ssid']),
+            $keys_idx['auth'],         $add_value('str', (string)$ap['auth']),
+            $keys_idx['encry'],        $add_value('str', (string)$ap['encry']),
+            $keys_idx['nt'],           $add_value('str', (string)$ap['nt']),
+            $keys_idx['btx'],          $add_value('str', (string)$ap['btx']),
+            $keys_idx['otx'],          $add_value('str', (string)$ap['otx']),
+            $keys_idx['fa'],           $add_value('str', (string)$ap['fa']),
+            $keys_idx['la'],           $add_value('str', (string)$ap['la']),
+            $keys_idx['points'],       $add_value('int', (int)$ap['points']),
+            $keys_idx['high_gps_sig'], $add_value('int', (int)$ap['high_gps_sig']),
+            $keys_idx['high_gps_rssi'],$add_value('int', (int)$ap['high_gps_rssi']),
+            $keys_idx['lat'],          $add_value('str', (string)$ap['lat']),
+            $keys_idx['lon'],          $add_value('str', (string)$ap['lon']),
+            $keys_idx['alt'],          $add_value('str', (string)$ap['alt']),
+            $keys_idx['manuf'],        $add_value('str', (string)$ap['manuf']),
+            $keys_idx['id_str'],       $add_value('str', (string)$ap['id']),
         ];
         $feat      = mvt_encode_point_feature((int)$ap['id'], $px, $py, $tags);
         $feat_cost = strlen($feat) + 3;
@@ -284,14 +303,27 @@ foreach ($buckets as $bucket) {
 
         foreach ($rows as $row) {
             $aps[] = [
-                'id'      => (int)$row['id'],
-                'lat'     => (float)$row['lat'],
-                'lon'     => (float)$row['lon'],
-                'sectype' => (int)$row['sectype'],
-                'chan'     => (int)$row['chan'],
-                'radio'   => (string)$row['radio'],
-                'mac'     => (string)$row['mac'],
-                'user'    => (string)$row['user'],
+                'id'            => (int)$row['id'],
+                'lat'           => (float)$row['lat'],
+                'lon'           => (float)$row['lon'],
+                'alt'           => (string)$row['alt'],
+                'sectype'       => (int)$row['sectype'],
+                'chan'           => (int)$row['chan'],
+                'radio'         => (string)$row['radio'],
+                'mac'           => (string)$row['mac'],
+                'user'          => (string)$row['user'],
+                'ssid'          => (string)$row['ssid'],
+                'auth'          => (string)$row['auth'],
+                'encry'         => (string)$row['encry'],
+                'nt'            => (string)$row['nt'],
+                'btx'           => (string)$row['btx'],
+                'otx'           => (string)$row['otx'],
+                'fa'            => (string)$row['fa'],
+                'la'            => (string)$row['la'],
+                'points'        => (int)$row['points'],
+                'high_gps_sig'  => (int)$row['high_gps_sig'],
+                'high_gps_rssi' => (int)$row['high_gps_rssi'],
+                'manuf'         => (string)$row['manuf'],
             ];
         }
         $offset += count($rows);
