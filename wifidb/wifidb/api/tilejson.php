@@ -13,8 +13,11 @@ MapLibre can use this directly as a type:"vector" source URL:
       "url"  => "https://wifidb.net/api/tilejson.php?bucket=weekly"
   ]));
 
-The `tiles` array in the response points to mvt.php which serves
-Mapbox Vector Tiles (PBF) per z/x/y tile.
+The `tiles` array points directly to the pre-generated static tile files under
+out/tiles/ (MVT/PBF) or out/tiles-mlt/ (MLT).  Apache serves them with the
+correct Content-Type/Content-Encoding headers via the .htaccess in each directory.
+The mvtd.php / mltd.php daemons generate tiles z1–z19 for all buckets;
+no PHP tile-generation script is invoked per tile request.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -64,12 +67,13 @@ $format = preg_replace('/[^a-z]/', '', strtolower((string)@$_REQUEST['format']))
 if ($format !== 'mlt') $format = 'mvt';   // default
 
 // ── Tile URL ─────────────────────────────────────────────────────────────────
-// Both mvt.php and mlt.php check the pre-generated tile store first; on a cache
-// miss they query the DB, generate the tile, write it, and return it.
+// Point directly to the pre-generated static tile files.  Apache serves them
+// with the correct Content-Type/Content-Encoding via out/tiles/.htaccess and
+// out/tiles-mlt/.htaccess.  No PHP tile-generation script is involved.
 if ($format === 'mlt') {
-    $tiles_url = $base_url . '/api/mlt.php?bucket=' . $bucket . '&z={z}&x={x}&y={y}';
+    $tiles_url = $base_url . '/out/tiles-mlt/' . $bucket . '/{z}/{x}/{y}.mlt';
 } else {
-    $tiles_url = $base_url . '/api/mvt.php?bucket=' . $bucket . '&z={z}&x={x}&y={y}';
+    $tiles_url = $base_url . '/out/tiles/' . $bucket . '/{z}/{x}/{y}.pbf';
 }
 $tile_maxzoom = 19;
 

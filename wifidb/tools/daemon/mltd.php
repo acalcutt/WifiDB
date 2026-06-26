@@ -86,6 +86,21 @@ $bucket_ttl = [
     'legacy'   =>  2592000,
 ];
 
+// Per-bucket maximum tile age in seconds.
+// Any tile file older than this is deleted during the cleanup sweep, regardless
+// of whether the daemon would regenerate it.  Set to roughly 2× the bucket's
+// own time window so stale tiles are purged once the data has fully rolled out
+// of the window.
+$bucket_max_age = [
+    'daily'    =>    172800,  //  2 days   (bucket window: 1 day)
+    'weekly'   =>   1209600,  //  14 days  (bucket window: 7 days)
+    'monthly'  =>   5184000,  //  60 days  (bucket window: ~30 days)
+    '0to1year' =>  31536000,  //  1 year
+    '1to2year' =>  31536000,  //  1 year
+    '2to3year' =>  31536000,  //  1 year
+    'legacy'   =>  31536000,  //  1 year
+];
+
 // ── CLI flags ─────────────────────────────────────────────────────────────────
 $argv_safe   = $argv ?? [];
 $force_regen = in_array('--force', $argv_safe, true);
@@ -217,6 +232,14 @@ foreach ($buckets as $bucket) {
     $ttl          = $bucket_ttl[$bucket];
     $bucket_start = microtime(true);
 
+    // ── Zoom-first streaming approach ─────────────────────────────────────────
+    // Rather than fetching all APs into a single giant array and then iterating
+    // zoom levels (which for legacy requires 7 GB+ of PHP memory), we iterate
+    // zoom levels first.  For each zoom level we page through the DB, bin each
+    // page's rows into the tile_map, and write tiles at the end.  Only one
+    // page-worth of raw rows plus one zoom level's tile_map is live in memory
+    // at any time.
+
     [$start_date, $end_date] = bucket_date_window($bucket);
 
     $lat_min_dm = dd2dm($data_bbox['lat_min']);
@@ -224,70 +247,76 @@ foreach ($buckets as $bucket) {
     $lon_min_dm = dd2dm($data_bbox['lon_min']);
     $lon_max_dm = dd2dm($data_bbox['lon_max']);
 
-    echo ts() . "[{$bucket}] Fetching APs...\n";
-    $aps    = [];
-    $offset = 0;
-    while (true) {
-        $result = $dbcore->export->BboxDateArray(
-            $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-            $start_date, $end_date,
-            $offset, $page_size
-        );
-        $rows = $result['data'] ?? [];
-        if (empty($rows)) break;
-
-        foreach ($rows as $row) {
-            $aps[] = [
-                'id'            => (int)$row['id'],
-                'lat'           => (float)$row['lat'],
-                'lon'           => (float)$row['lon'],
-                'alt'           => (string)$row['alt'],
-                'sectype'       => (int)$row['sectype'],
-                'chan'           => (int)$row['chan'],
-                'radio'         => (string)$row['radio'],
-                'mac'           => (string)$row['mac'],
-                'user'          => (string)$row['user'],
-                'ssid'          => (string)$row['ssid'],
-                'auth'          => (string)$row['auth'],
-                'encry'         => (string)$row['encry'],
-                'nt'            => (string)$row['nt'],
-                'btx'           => (string)$row['btx'],
-                'otx'           => (string)$row['otx'],
-                'fa'            => (string)$row['fa'],
-                'la'            => (string)$row['la'],
-                'points'        => (int)$row['points'],
-                'high_gps_sig'  => (int)$row['high_gps_sig'],
-                'high_gps_rssi' => (int)$row['high_gps_rssi'],
-                'manuf'         => (string)$row['manuf'],
-            ];
-        }
-        $offset += count($rows);
-        echo ts() . "[{$bucket}]   ... {$offset} APs fetched\n";
-        if (count($rows) < $page_size) break;
-    }
-
-    $ap_count = count($aps);
-    if ($ap_count === 0) {
+    // Quick AP-count check: fetch first page to see if bucket has any data.
+    $first = $dbcore->export->BboxDateArray(
+        $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+        $start_date, $end_date, 0, 1
+    );
+    if (empty($first['data'])) {
         echo ts() . "[{$bucket}] Skipping — no APs in bucket.\n\n";
         continue;
     }
-    echo ts() . "[{$bucket}] {$ap_count} APs total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
+
+    echo ts() . "[{$bucket}] Starting z{$min_zoom}–z{$max_zoom} (streaming per zoom)...\n";
 
     $bucket_written = 0;
     $bucket_total   = 0;
 
     for ($z = $min_zoom; $z <= $max_zoom; $z++) {
-        $z_start  = microtime(true);
-        $tile_map = [];  // [x][y] => [ap, ...]
+        $z_start   = microtime(true);
+        $tile_map  = [];  // [tx][ty] => [ap, ...]
+        $offset    = 0;
+        $ap_count  = 0;
 
-        foreach ($aps as $ap) {
-            $tx = lon_to_tile_x($ap['lon'], $z);
-            $ty = lat_to_tile_y($ap['lat'], $z);
-            $tile_map[$tx][$ty][] = $ap;
+        // ── Stream pages for this zoom level ──────────────────────────────────
+        while (true) {
+            $result = $dbcore->export->BboxDateArray(
+                $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+                $start_date, $end_date,
+                $offset, $page_size
+            );
+            $rows = $result['data'] ?? [];
+            if (empty($rows)) break;
+
+            foreach ($rows as $row) {
+                $lat = (float)$row['lat'];
+                $lon = (float)$row['lon'];
+                if ($lat == 0.0 && $lon == 0.0) continue;
+
+                $tx = lon_to_tile_x($lon, $z);
+                $ty = lat_to_tile_y($lat, $z);
+                $tile_map[$tx][$ty][] = [
+                    'id'            => (int)$row['id'],
+                    'lat'           => $lat,
+                    'lon'           => $lon,
+                    'alt'           => (string)$row['alt'],
+                    'sectype'       => (int)$row['sectype'],
+                    'chan'           => (int)$row['chan'],
+                    'radio'         => (string)$row['radio'],
+                    'mac'           => (string)$row['mac'],
+                    'user'          => (string)$row['user'],
+                    'ssid'          => (string)$row['ssid'],
+                    'auth'          => (string)$row['auth'],
+                    'encry'         => (string)$row['encry'],
+                    'nt'            => (string)$row['nt'],
+                    'btx'           => (string)$row['btx'],
+                    'otx'           => (string)$row['otx'],
+                    'fa'            => (string)$row['fa'],
+                    'la'            => (string)$row['la'],
+                    'points'        => (int)$row['points'],
+                    'high_gps_sig'  => (int)$row['high_gps_sig'],
+                    'high_gps_rssi' => (int)$row['high_gps_rssi'],
+                    'manuf'         => (string)$row['manuf'],
+                ];
+                $ap_count++;
+            }
+            $offset += count($rows);
+            if (count($rows) < $page_size) break;
         }
 
         $z_written = $z_skipped = $z_empty = 0;
 
+        // ── Write tiles for this zoom ──────────────────────────────────────────
         foreach ($tile_map as $tx => $y_map) {
             foreach ($y_map as $ty => $tile_aps) {
                 $bucket_total++;
@@ -340,39 +369,37 @@ foreach ($buckets as $bucket) {
         }
 
         $z_elapsed = round(microtime(true) - $z_start, 1);
-        echo ts() . "[{$bucket}] z={$z}: {$z_written} written, {$z_skipped} skipped, {$z_empty} empty — {$z_elapsed}s\n";
+        echo ts() . "[{$bucket}] z={$z}: {$z_written} written, {$z_skipped} skipped, {$z_empty} empty, {$ap_count} APs — {$z_elapsed}s\n";
         unset($tile_map);
     }
 
-    unset($aps);
     $bucket_elapsed = round(microtime(true) - $bucket_start, 1);
     echo ts() . "[{$bucket}] Done — {$bucket_written}/{$bucket_total} tiles written in {$bucket_elapsed}s\n\n";
 }
 
 $grand_elapsed = round(microtime(true) - $run_start, 1);
 
-// ── On-demand tile cleanup ────────────────────────────────────────────────────
-// mlt.php writes on-demand tiles for z > $max_zoom into out/tiles-mlt/ but
-// never deletes them.  The daemon owns cleanup for the whole store.
+// ── Stale tile age cleanup ────────────────────────────────────────────────────
+// Sweep all zoom levels (z1–z19) and delete any .mlt tile whose mtime exceeds
+// the bucket's max age.  This is separate from the data-driven deletion in the
+// main loop: that removes tiles with no APs in the current run; this removes
+// tiles that are simply too old relative to the bucket window.
 if ($single_bucket === null) {
-    echo ts() . "--- On-demand tile cleanup (z>" . $max_zoom . ") ---\n";
+    echo ts() . "--- Stale tile cleanup (max-age sweep, all z) ---\n";
     $cleanup_deleted = 0;
+    $now = time();
     foreach ($buckets as $bucket) {
-        $ttl        = $bucket_ttl[$bucket];
+        $max_age    = $bucket_max_age[$bucket];
         $bucket_dir = "{$output_dir}/{$bucket}";
         if (!is_dir($bucket_dir)) continue;
 
-        for ($z = $max_zoom + 1; $z <= 20; $z++) {
+        for ($z = $min_zoom; $z <= $max_zoom + 2; $z++) {
             $z_dir = "{$bucket_dir}/{$z}";
             if (!is_dir($z_dir)) continue;
 
-            $x_dirs = glob("{$z_dir}/*", GLOB_ONLYDIR);
-            if (!$x_dirs) continue;
-            foreach ($x_dirs as $x_dir) {
-                $files = glob("{$x_dir}/*.mlt");
-                if (!$files) continue;
-                foreach ($files as $f) {
-                    if ((time() - filemtime($f)) >= $ttl) {
+            foreach (glob("{$z_dir}/*", GLOB_ONLYDIR) as $x_dir) {
+                foreach (glob("{$x_dir}/*.mlt") as $f) {
+                    if (($now - filemtime($f)) > $max_age) {
                         unlink($f);
                         $cleanup_deleted++;
                     }
@@ -382,7 +409,7 @@ if ($single_bucket === null) {
             @rmdir($z_dir);
         }
     }
-    echo "  Deleted {$cleanup_deleted} stale on-demand tiles.\n";
+    echo "  Deleted {$cleanup_deleted} tiles exceeding bucket max-age.\n";
     echo "--- End cleanup ---\n\n";
 }
 
