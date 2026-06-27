@@ -13,11 +13,23 @@ MapLibre can use this directly as a type:"vector" source URL:
       "url"  => "https://wifidb.net/api/tilejson.php?bucket=weekly"
   ]));
 
-The `tiles` array points directly to the pre-generated static tile files under
-out/tiles/ (MVT/PBF) or out/tiles-mlt/ (MLT).  Apache serves them with the
-correct Content-Type/Content-Encoding headers via the .htaccess in each directory.
-The mvtd.php / mltd.php daemons generate tiles z1–z19 for all buckets;
-no PHP tile-generation script is invoked per tile request.
+Parameters:
+  bucket   — required. One of: daily, weekly, monthly, 0to1year, 1to2year,
+             2to3year, legacy.
+  format   — optional. mvt (default) or mlt.
+  source   — optional. daemon (default) or api.
+             daemon: tile URLs point to pre-generated static files under
+                     out/tiles/ (MVT) or out/tiles-mlt/ (MLT). Apache serves
+                     them directly; no PHP is invoked per tile request.
+             api:    tile URLs point to mvt.php / mlt.php which generate tiles
+                     on-demand with Morton-curve spatial thinning and write
+                     results to the same disk cache. Use this when the daemon
+                     has not yet generated tiles for a zoom range, or when you
+                     need guaranteed freshness.
+  minzoom  — optional integer [0–19]. Default 1. Overrides the minzoom field
+             in the returned TileJSON (does not affect what the daemon has
+             pre-generated; use in combination with source=api if needed).
+  maxzoom  — optional integer [0–19]. Default 19. Must be ≥ minzoom.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -57,8 +69,8 @@ if (!array_key_exists($bucket, $bucket_meta)) {
 $base_url = rtrim($dbcore->URL_PATH, '/');
 
 // ── Format selection ─────────────────────────────────────────────────────────
-// ?format=mlt   → MapLibre Tile (MLT) descriptor, served by mlt.php
-// ?format=mvt   → Mapbox Vector Tile (PBF) descriptor (default), served by mvt.php
+// ?format=mlt   → MapLibre Tile (MLT) descriptor
+// ?format=mvt   → Mapbox Vector Tile (PBF) descriptor (default)
 //
 // The TileJSON "format" field is a MapLibre extension to TileJSON 3.0.0.
 // MapLibre GL JS ≥ 5.12 and MapLibre Native (Android ≥ 12.1.0 / iOS ≥ 6.2.0)
@@ -66,16 +78,44 @@ $base_url = rtrim($dbcore->URL_PATH, '/');
 $format = preg_replace('/[^a-z]/', '', strtolower((string)@$_REQUEST['format']));
 if ($format !== 'mlt') $format = 'mvt';   // default
 
-// ── Tile URL ─────────────────────────────────────────────────────────────────
-// Point directly to the pre-generated static tile files.  Apache serves them
-// with the correct Content-Type/Content-Encoding via out/tiles/.htaccess and
-// out/tiles-mlt/.htaccess.  No PHP tile-generation script is involved.
-if ($format === 'mlt') {
-    $tiles_url = $base_url . '/out/tiles-mlt/' . $bucket . '/{z}/{x}/{y}.mlt';
-} else {
-    $tiles_url = $base_url . '/out/tiles/' . $bucket . '/{z}/{x}/{y}.pbf';
+// ── Source selection ─────────────────────────────────────────────────────────
+// ?source=daemon  → tile URLs point to pre-generated static files (default)
+//                   Apache serves them directly; no PHP per tile request.
+// ?source=api     → tile URLs point to mvt.php / mlt.php for on-demand
+//                   generation with Morton spatial thinning + disk cache.
+$source = preg_replace('/[^a-z]/', '', strtolower((string)@$_REQUEST['source']));
+if ($source !== 'api') $source = 'daemon';   // default
+
+// ── Zoom range ───────────────────────────────────────────────────────────────
+// ?minzoom=N  (integer 0–19, default 1)
+// ?maxzoom=N  (integer 0–19, default 19, must be ≥ minzoom)
+$minzoom_param = filter_input(INPUT_GET, 'minzoom', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 19]]);
+$maxzoom_param = filter_input(INPUT_GET, 'maxzoom', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 19]]);
+$tile_minzoom  = ($minzoom_param !== false && $minzoom_param !== null) ? (int)$minzoom_param : 1;
+$tile_maxzoom  = ($maxzoom_param !== false && $maxzoom_param !== null) ? (int)$maxzoom_param : 19;
+if ($tile_minzoom > $tile_maxzoom) {
+    http_response_code(400);
+    echo json_encode(['error' => 'minzoom must be less than or equal to maxzoom']);
+    exit;
 }
-$tile_maxzoom = 19;
+
+// ── Tile URL ─────────────────────────────────────────────────────────────────
+if ($source === 'api') {
+    // On-demand PHP generation — same disk cache as the daemon.
+    $api_base = $base_url . '/api';
+    if ($format === 'mlt') {
+        $tiles_url = $api_base . '/mlt.php?z={z}&x={x}&y={y}&bucket=' . $bucket;
+    } else {
+        $tiles_url = $api_base . '/mvt.php?z={z}&x={x}&y={y}&bucket=' . $bucket;
+    }
+} else {
+    // Pre-generated static files served directly by Apache.
+    if ($format === 'mlt') {
+        $tiles_url = $base_url . '/out/tiles-mlt/' . $bucket . '/{z}/{x}/{y}.mlt';
+    } else {
+        $tiles_url = $base_url . '/out/tiles/' . $bucket . '/{z}/{x}/{y}.pbf';
+    }
+}
 
 $tilejson = [
     'tilejson'      => '3.0.0',
@@ -85,14 +125,14 @@ $tilejson = [
     'attribution'   => '<a href="https://wifidb.net">© WifiDB contributors</a>',
     'scheme'        => 'xyz',
     'tiles'         => [$tiles_url],
-    'minzoom'       => 1,
+    'minzoom'       => $tile_minzoom,
     'maxzoom'       => $tile_maxzoom,
     'bounds'        => [-180.0, -85.051129, 180.0, 85.051129],
     'vector_layers' => [
         [
             'id'          => $bucket,
             'description' => $bucket_meta[$bucket]['desc'],
-            'minzoom'     => 0,
+            'minzoom'     => $tile_minzoom,
             'maxzoom'     => $tile_maxzoom,
             'fields'      => [
                 'sectype'       => 'Number',  // 0=unknown, 1=open, 2=WEP, 3=secure

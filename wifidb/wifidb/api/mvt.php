@@ -26,6 +26,7 @@ define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
 include('../lib/mvt.inc.php');
+include('../lib/spatial.inc.php');  // assign_feature_minzoom
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -141,31 +142,25 @@ $add_value = function(string $type, $raw) use (&$values_bytes, &$values_idx): in
     return $values_idx[$key];
 };
 
-// ── Zoom-based point thinning ─────────────────────────────────────────────────
-// Assigns each point to a grid cell and keeps one point per (cell, sectype).
-// Thinning kicks in below z=12 (two zoom levels later than before), and the
-// cell key includes the security type so open/WEP/secure APs at the same
-// location each get their own slot — matching tippecanoe's per-type behaviour.
-//   z=12+: cell_size=1  (no thinning)
-//   z=11:  cell_size=2  (2×2 px cells, 1 per sectype)
-//   z=9:   cell_size=8
-//   z=7:   cell_size=32 (128 cells/axis → ≤49 152 pts/tile across 3 sectypes)
-//   z=4:   cell_size=256 (16 cells/axis → ≤768 pts/tile across 3 sectypes)
-$cell_size  = max(1, 1 << max(0, 12 - $z));
-$seen_cells = [];
+// ── Morton-curve spatial thinning (lib/spatial.inc.php) ──────────────────────
+// assign_feature_minzoom() Morton-sorts the rows, then assigns each AP a
+// feature_minzoom based on the gap to its nearest spatial neighbour in the
+// sorted order.  APs in dense clusters get a high minzoom and are skipped at
+// the current zoom level, producing spatially uniform coverage without grid
+// artefacts.  drop_scale_pixels=1.5 matches the daemon setting so the API
+// fallback renders consistently with daemon-pre-generated tiles.
+$drop_scale_pixels = 1.5;
+assign_feature_minzoom($rows, $z, $z + 4, $drop_scale_pixels);
+// (min=$z so nothing is filtered out at z=0; max=$z+4 reserves headroom for
+//  dense clusters — they will be skipped since feature_minzoom > $z.)
 
 $features = [];
 
 // BboxDateArray returns ap_info arrays with 'lat'/'lon' already in decimal degrees.
 foreach ($rows as $row) {
-    [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
+    if ($row['feature_minzoom'] > $z) continue;  // skip dense cluster members
 
-    // Skip if another point already occupies this grid cell.
-    if ($cell_size > 1) {
-        $cell_key = (int)($px / $cell_size) . ':' . (int)($py / $cell_size) . ':' . (int)$row['sectype'];
-        if (isset($seen_cells[$cell_key])) continue;
-        $seen_cells[$cell_key] = true;
-    }
+    [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
 
     // Build flat [key_idx, val_idx, ...] tags array.
     $tags = [

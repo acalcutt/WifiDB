@@ -31,6 +31,7 @@ define("SWITCH_EXTRAS", "api");
 include('../lib/init.inc.php');
 include('../lib/mvt.inc.php');    // tile_bounds_dd, dd2dm, bucket_date_window, project_to_tile
 include('../lib/mlt.inc.php');    // mlt_encode_tile, MLT_EXTENT
+include('../lib/spatial.inc.php');  // assign_feature_minzoom
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -101,24 +102,20 @@ $result = $dbcore->export->BboxDateArray(
 $rows = $result['data'];
 
 // ── Build MLT ─────────────────────────────────────────────────────────────────
-// Apply the same zoom-based density thinning used in mvt.php and mltd.php:
-// assign each AP to a grid cell; keep one AP per (cell, sectype).
-//   z=12+: cell_size=1  (no thinning)
-//   z=11:  cell_size=2
-//   z=9:   cell_size=8
-//   z=4:   cell_size=256
-$cell_size  = max(1, 1 << max(0, 12 - $z));
-$seen_cells = [];
-$features   = [];
+// ── Morton-curve spatial thinning (lib/spatial.inc.php) ──────────────────────
+// Same approach as the daemon: Morton-sort the rows, assign feature_minzoom
+// from the gap to each AP's nearest spatial neighbour, then skip dense cluster
+// members at the current zoom level.  drop_scale_pixels=1.5 matches the
+// daemon setting so on-demand tiles render consistently with pre-generated ones.
+$drop_scale_pixels = 1.5;
+assign_feature_minzoom($rows, $z, $z + 4, $drop_scale_pixels);
+
+$features = [];
 
 foreach ($rows as $row) {
-    [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
+    if ($row['feature_minzoom'] > $z) continue;  // skip dense cluster members
 
-    if ($cell_size > 1) {
-        $cell_key = (int)($px / $cell_size) . ':' . (int)($py / $cell_size) . ':' . (int)$row['sectype'];
-        if (isset($seen_cells[$cell_key])) continue;
-        $seen_cells[$cell_key] = true;
-    }
+    [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
 
     $features[] = [
         'id'            => (int)$row['id'],

@@ -9,12 +9,17 @@ static HTTP URLs so Apache serves tile files directly — completely bypassing
 PHP processing per tile and eliminating the per-request database query that
 made dynamic generation too slow for dense areas (e.g. MA/AZ with 800k APs).
 
-Architecture — query-first approach:
-  For each bucket the daemon makes ONE paginated DB query (50k rows/page) to
-  fetch all APs in the bucket's date window.  The results are binned into a
-  per-tile map entirely in PHP, then each non-empty tile is encoded and written.
-  This replaces the old per-tile query loop that issued millions of DB queries
-  for world-coverage runs.  DB round-trips drop from O(tiles) to O(AP_count/50k).
+Architecture — single-scan, index-binned:
+  For each bucket the daemon makes ONE ordered scan of the bucket's APs using
+  keyset pagination (WHERE AP_ID > last_id ORDER BY AP_ID LIMIT page_size).
+  Keyset pagination keeps every page O(page_size) regardless of scan depth —
+  unlike OFFSET/FETCH, which on a 9 M-row scan grew to 1300 s per 50 k page.
+
+  Rows are stored ONCE in a flat $aps array.  For each zoom level the daemon
+  builds a $tile_map of integer INDICES into $aps (not full row copies); the
+  tile encoder reads $aps[$idx] when assembling each tile.  This avoids the
+  7 GB+ memory blow-up that the original per-zoom row-copy design caused for
+  the legacy bucket, while keeping the DB cost at exactly one scan per bucket.
 
 Run via cron — suggested schedule:
   # Regenerate all tiles nightly (off-peak)
@@ -49,6 +54,7 @@ if ($daemon_config['wifidb_install'] === '') {
 }
 require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 require $daemon_config['wifidb_install'].'/lib/mvt.inc.php';
+require $daemon_config['wifidb_install'].'/lib/spatial.inc.php';  // morton_encode, assign_feature_minzoom
 
 $dbcore->daemon_name    = 'MVT Tile Generator';
 $dbcore->lastedit       = '2024-06-23';
@@ -103,6 +109,15 @@ $data_bbox = [
 // Rows fetched per DB round-trip during the bulk AP fetch.
 // 50000 is a safe default; increase if your server has fast network to the DB.
 $page_size = 50000;
+
+// ── Z-order thinning scale ────────────────────────────────────────────────────
+// Controls how aggressively the Morton-curve spatial sort thins features at low
+// zoom levels.  An AP appears at zoom z only when its Morton gap to its nearest
+// spatial neighbour exceeds (drop_scale_pixels)² × (1 tile-pixel)² in Morton
+// space.  1.0 = show as soon as APs are non-overlapping; 2.0 = require 2-pixel
+// separation (halves feature count per zoom step, matching tippecanoe's default
+// --drop-densest-as-needed behaviour at gamma=1 with droprate≈2).
+$drop_scale_pixels = 1.5;
 
 // Output directory — must be web-accessible.  The .htaccess in this directory
 // sets the correct Content-Type/Content-Encoding headers for .pbf files.
@@ -165,20 +180,24 @@ echo "Writable   : " . (is_writable(dirname($output_dir)) ? 'YES' : 'NO — chec
 function ts(): string { return date('[Y-m-d H:i:s] '); }
 
 // ── Encode a tile from pre-fetched AP rows ────────────────────────────────────
-// $aps is an array of rows already in decimal-degree lat/lon (as returned by
-// BboxDateArray after dm2dd conversion).  No DB query is made here.
+// $idxs is the list of indices into the shared $all_aps array that the caller
+// has determined belong to this tile.  No DB query is made here.  Storing only
+// indices in the per-zoom tile_map (instead of full row copies) cuts memory
+// usage roughly in half for large buckets.
 // Uses tippecanoe-style drop-densest-as-needed thinning.
 function encode_tile_from_points(
     int    $z, int $x, int $y,
     string $bucket,
-    array  $aps
+    array  $idxs,
+    array  $all_aps
 ): ?string {
 
     // Project all APs to pixel coordinates within this tile.
     $points = [];
-    foreach ($aps as $ap) {
+    foreach ($idxs as $idx) {
+        $ap = $all_aps[$idx];
         [$px, $py] = project_to_tile((float)$ap['lat'], (float)$ap['lon'], $z, $x, $y);
-        $points[] = ['ap' => $ap, 'px' => $px, 'py' => $py];
+        $points[] = ['idx' => $idx, 'px' => $px, 'py' => $py];
     }
 
     // ── Density grid (32×32 cells ≈ 128 px/cell in 4096-extent tile) ─────────
@@ -225,7 +244,7 @@ function encode_tile_from_points(
     $seen_pixel      = [];
 
     foreach ($points as $pt) {
-        $ap = $pt['ap'];
+        $ap = $all_aps[$pt['idx']];
         $px = $pt['px'];
         $py = $pt['py'];
 
@@ -294,17 +313,17 @@ foreach ($buckets as $bucket) {
     $ttl          = $bucket_ttl[$bucket];
     $bucket_start = microtime(true);
 
-    // ── Zoom-first streaming approach ─────────────────────────────────────────
-    // Rather than fetching all APs into a single giant array and then iterating
-    // zoom levels (which for legacy requires 7 GB+ of PHP memory), we iterate
-    // zoom levels first.  For each zoom level we page through the DB, bin each
-    // page's rows into the tile_map, and write tiles at the end.  Only one
-    // page-worth of raw rows plus one zoom level's tile_map is live in memory
-    // at any time.  The cost is N_zooms × N_pages DB queries instead of
-    // N_pages, but the I/O is fast and the memory savings are enormous.
+    // ── Single-scan architecture (keyset-paginated) ──────────────────────────
+    // One ordered scan of the bucket's APs (using BboxDateArray with $last_id
+    // keyset pagination — flat O(page_size) per page, independent of depth).
+    // Rows are stored once in $aps; per-zoom $tile_map holds INTEGER INDICES
+    // into $aps, not row copies, so memory grows ~linearly with row count.
     //
-    // The data-driven deletion sweep (Step 3) still works correctly because the
-    // full tile_map for the zoom level is built before the sweep runs.
+    // For the 9 M-row legacy bucket this avoids both pitfalls of the previous
+    // designs:
+    //   • Old per-zoom-streaming: 19× the DB scan, slow OFFSET pagination.
+    //   • Original single-pass:   $tile_map duplicated full rows per zoom →
+    //                             7 GB+ memory blow-up.
 
     [$start_date, $end_date] = bucket_date_window($bucket);
 
@@ -313,78 +332,110 @@ foreach ($buckets as $bucket) {
     $lon_min_dm = dd2dm($data_bbox['lon_min']);
     $lon_max_dm = dd2dm($data_bbox['lon_max']);
 
-    // Quick AP-count check: fetch first page to see if bucket has any data.
-    $first = $dbcore->export->BboxDateArray(
-        $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-        $start_date, $end_date, 0, 1
-    );
-    if (empty($first['data'])) {
+    echo ts() . "[{$bucket}] Fetching APs (keyset pagination)...\n";
+
+    $aps       = [];
+    $last_id   = 0;
+    while (true) {
+        $result = $dbcore->export->BboxDateArray(
+            $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+            $start_date, $end_date,
+            null, $page_size, $last_id
+        );
+        $rows = $result['data'] ?? [];
+        if (empty($rows)) break;
+
+        foreach ($rows as $row) {
+            $lat = (float)$row['lat'];
+            $lon = (float)$row['lon'];
+            if ($lat == 0.0 && $lon == 0.0) {
+                // Skip but still advance $last_id below.
+                $rid = (int)$row['id'];
+                if ($rid > $last_id) $last_id = $rid;
+                continue;
+            }
+
+            $rid = (int)$row['id'];
+            if ($rid > $last_id) $last_id = $rid;
+
+            $aps[] = [
+                'id'            => $rid,
+                'lat'           => $lat,
+                'lon'           => $lon,
+                'alt'           => (string)$row['alt'],
+                'sectype'       => (int)$row['sectype'],
+                'chan'          => (int)$row['chan'],
+                'radio'         => (string)$row['radio'],
+                'mac'           => (string)$row['mac'],
+                'user'          => (string)$row['user'],
+                'ssid'          => (string)$row['ssid'],
+                'auth'          => (string)$row['auth'],
+                'encry'         => (string)$row['encry'],
+                'nt'            => (string)$row['nt'],
+                'btx'           => (string)$row['btx'],
+                'otx'           => (string)$row['otx'],
+                'fa'            => (string)$row['fa'],
+                'la'            => (string)$row['la'],
+                'points'        => (int)$row['points'],
+                'high_gps_sig'  => (int)$row['high_gps_sig'],
+                'high_gps_rssi' => (int)$row['high_gps_rssi'],
+                'manuf'         => (string)$row['manuf'],
+            ];
+        }
+        echo ts() . "[{$bucket}]   ... " . count($aps) . " APs fetched\n";
+        if (count($rows) < $page_size) break;  // last page
+    }
+
+    $ap_count = count($aps);
+    if ($ap_count === 0) {
         echo ts() . "[{$bucket}] Skipping — no APs in bucket.\n\n";
         continue;
     }
 
-    echo ts() . "[{$bucket}] Starting z{$min_zoom}–z{$max_zoom} (streaming per zoom)...\n";
+    echo ts() . "[{$bucket}] {$ap_count} APs total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
+
+    // ── Z-order spatial sort + feature_minzoom assignment ───────────────────
+    // assign_feature_minzoom() (lib/spatial.inc.php) encodes each AP as a
+    // 56-bit Morton index, sorts the array once, then assigns feature_minzoom
+    // from the gap to each AP's Morton-order predecessor.  See spatial.inc.php
+    // for the full algorithm description and tippecanoe attribution.
+    {
+        $sort_s  = microtime(true);
+        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, $drop_scale_pixels);
+        $snaps   = [];
+        foreach ([1, 5, 7, 10, 13, 14] as $zs) {
+            if ($zs >= $min_zoom && $zs <= $max_zoom) {
+                $snaps[] = "z≤{$zs}:" . number_format($fmz_cum[$zs]);
+            }
+        }
+        $sort_e = round(microtime(true) - $sort_s, 1);
+        echo ts() . "[{$bucket}] Morton sort + feature_minzoom done ({$sort_e}s). "
+            . "APs visible by zoom: " . implode(', ', $snaps) . "\n";
+    }
 
     $bucket_written = 0;
     $bucket_total   = 0;
 
     for ($z = $min_zoom; $z <= $max_zoom; $z++) {
-        $z_start   = microtime(true);
-        $tile_map  = [];  // [tx][ty] => [ap, ...]
-        $offset    = 0;
-        $ap_count  = 0;
+        $z_start  = microtime(true);
+        $tile_map = [];  // [tx][ty] => [idx, ...]
 
-        // ── Stream pages for this zoom level ──────────────────────────────────
-        while (true) {
-            $result = $dbcore->export->BboxDateArray(
-                $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-                $start_date, $end_date,
-                $offset, $page_size
-            );
-            $rows = $result['data'] ?? [];
-            if (empty($rows)) break;
-
-            foreach ($rows as $row) {
-                $lat = (float)$row['lat'];
-                $lon = (float)$row['lon'];
-                if ($lat == 0.0 && $lon == 0.0) continue;
-
-                $tx = lon_to_tile_x($lon, $z);
-                $ty = lat_to_tile_y($lat, $z);
-                $tile_map[$tx][$ty][] = [
-                    'id'            => (int)$row['id'],
-                    'lat'           => $lat,
-                    'lon'           => $lon,
-                    'alt'           => (string)$row['alt'],
-                    'sectype'       => (int)$row['sectype'],
-                    'chan'           => (int)$row['chan'],
-                    'radio'         => (string)$row['radio'],
-                    'mac'           => (string)$row['mac'],
-                    'user'          => (string)$row['user'],
-                    'ssid'          => (string)$row['ssid'],
-                    'auth'          => (string)$row['auth'],
-                    'encry'         => (string)$row['encry'],
-                    'nt'            => (string)$row['nt'],
-                    'btx'           => (string)$row['btx'],
-                    'otx'           => (string)$row['otx'],
-                    'fa'            => (string)$row['fa'],
-                    'la'            => (string)$row['la'],
-                    'points'        => (int)$row['points'],
-                    'high_gps_sig'  => (int)$row['high_gps_sig'],
-                    'high_gps_rssi' => (int)$row['high_gps_rssi'],
-                    'manuf'         => (string)$row['manuf'],
-                ];
-                $ap_count++;
-            }
-            $offset += count($rows);
-            if (count($rows) < $page_size) break;
+        // ── Bin AP indices into tiles for this zoom level ─────────────────────
+        // Skip APs whose feature_minzoom exceeds the current zoom: they are in
+        // dense clusters that should only appear at closer zooms.  This is the
+        // O(N×Z) → O(N) reduction; at z=1–7 only a tiny fraction of APs pass.
+        foreach ($aps as $idx => $ap) {
+            if ($ap['feature_minzoom'] > $z) continue;
+            $tx = lon_to_tile_x($ap['lon'], $z);
+            $ty = lat_to_tile_y($ap['lat'], $z);
+            $tile_map[$tx][$ty][] = $idx;
         }
 
         $z_written = $z_skipped = $z_empty = 0;
 
-        // ── Write tiles for this zoom ──────────────────────────────────────────
+        // ── Write tiles for this zoom ─────────────────────────────────────────
         foreach ($tile_map as $tx => $y_map) {
-            foreach ($y_map as $ty => $tile_aps) {
+            foreach ($y_map as $ty => $tile_idxs) {
                 $bucket_total++;
                 $grand_total++;
 
@@ -398,7 +449,7 @@ foreach ($buckets as $bucket) {
                     continue;
                 }
 
-                $gz_bytes = encode_tile_from_points($z, $tx, $ty, $bucket, $tile_aps);
+                $gz_bytes = encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
 
                 if ($gz_bytes === null) {
                     if (file_exists($tile_file)) unlink($tile_file);
@@ -435,9 +486,11 @@ foreach ($buckets as $bucket) {
         }
 
         $z_elapsed = round(microtime(true) - $z_start, 1);
-        echo ts() . "[{$bucket}] z={$z}: {$z_written} written, {$z_skipped} skipped, {$z_empty} empty, {$ap_count} APs — {$z_elapsed}s\n";
+        echo ts() . "[{$bucket}] z={$z}: {$z_written} written, {$z_skipped} skipped, {$z_empty} empty — {$z_elapsed}s\n";
         unset($tile_map);
     }
+
+    unset($aps);
 
     $bucket_elapsed = round(microtime(true) - $bucket_start, 1);
     echo ts() . "[{$bucket}] Done — {$bucket_written}/{$bucket_total} tiles written in {$bucket_elapsed}s\n\n";

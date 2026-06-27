@@ -392,14 +392,64 @@ class export extends dbcore
 	 * the storage format used in wifi_gps.  Pass null for start_date or end_date
 	 * to leave that bound open.  Returns the same ap_info array format as the
 	 * other export functions so GeoJSON/MVT callers get consistent output.
+	 *
+	 * Pagination modes:
+	 *   $from = null, $last_id = null   → one-shot TOP(n)/LIMIT n, no ordering
+	 *                                     (used by per-tile callers).
+	 *   $from = int                     → OFFSET/FETCH pagination (legacy; slow
+	 *                                     at deep offsets — avoid for large scans).
+	 *   $last_id = int                  → keyset pagination: WHERE AP_ID > ?
+	 *                                     ORDER BY AP_ID LIMIT n.  Stays O(n)
+	 *                                     per page no matter how deep — required
+	 *                                     for million-row daemon scans.  Pass
+	 *                                     0 (or any int <= smallest AP_ID) to
+	 *                                     start; pass the max AP_ID returned
+	 *                                     from the previous page to advance.
 	 */
 	public function BboxDateArray($lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
 	                               $start_date = null, $end_date = null,
-	                               $from = null, $inc = 5000)
+	                               $from = null, $inc = 5000, $last_id = null)
 	{
 		$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
 
 		if ($this->sql->service === 'sqlsrv') {
+			// ── Keyset pagination branch (daemon scans, large date windows) ──
+			// Drive from wifi_ap ordered by AP_ID (PK clustered index) so each
+			// page is a cheap range-seek + nested-loop lookup that early-terminates
+			// at TOP(n).  Independent of scan depth — unlike OFFSET/FETCH which
+			// re-sorts the full join on every page.
+			if ($last_id !== null) {
+				$sql = "SELECT TOP (" . (int)$inc . ") wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR,
+				               wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,
+				               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
+				               wGPS.Lat AS Lat, wGPS.Lon AS Lon, wGPS.Alt AS Alt,
+				               wf.file_user
+				        FROM wifi_ap AS wap
+				        INNER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID
+				        LEFT  JOIN files    AS wf   ON wf.id        = wap.File_ID
+				        WHERE wap.AP_ID > ?
+				          AND wap.HighGps_ID IS NOT NULL
+				          AND wap.points     IS NOT NULL
+				          AND wGPS.Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				          AND wGPS.Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))";
+
+				// Rebuild params: keyset needs (last_id, bbox...) in that order.
+				$params = [(int)$last_id, $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
+
+				if ($start_date !== null && $end_date !== null) {
+					$sql .= ' AND wap.la >= ? AND wap.la < ?';
+					$params[] = $start_date;
+					$params[] = $end_date;
+				} elseif ($start_date !== null) {
+					$sql .= ' AND wap.la >= ?';
+					$params[] = $start_date;
+				} elseif ($end_date !== null) {
+					$sql .= ' AND wap.la < ?';
+					$params[] = $end_date;
+				}
+
+				$sql .= ' ORDER BY wap.AP_ID OPTION (LOOP JOIN, FORCE ORDER)';
+			} else {
 			// Drive from the GPS bbox subquery so SQL Server uses nested loops
 			// through IX_wifi_ap_HighGps_covering into wifi_ap rather than
 			// scanning millions of date-range wifi_ap rows and hash-joining to wifi_gps.
@@ -455,6 +505,7 @@ class export extends dbcore
 				      . ' OFFSET ' . (int)$from . ' ROWS FETCH NEXT ' . (int)$inc . ' ROWS ONLY'
 				      . ' OPTION (LOOP JOIN, FORCE ORDER)';
 			}
+			} // end of OFFSET/one-shot branch
 
 		} else {
 			// MySQL
@@ -471,6 +522,11 @@ class export extends dbcore
 			          AND wGPS.Lat BETWEEN ? AND ?
 			          AND wGPS.Lon BETWEEN ? AND ?";
 
+			if ($last_id !== null) {
+				$sql .= ' AND wap.AP_ID > ?';
+				$params[] = (int)$last_id;
+			}
+
 			if ($start_date !== null && $end_date !== null) {
 				$sql .= ' AND wap.la >= ? AND wap.la < ?';
 				$params[] = $start_date;
@@ -483,7 +539,10 @@ class export extends dbcore
 				$params[] = $end_date;
 			}
 
-			if ($from !== null) {
+			if ($last_id !== null) {
+				// Keyset pagination: ordered scan along PK; no OFFSET cost.
+				$sql .= ' ORDER BY wap.AP_ID LIMIT ' . (int)$inc;
+			} elseif ($from !== null) {
 				$sql .= ' ORDER BY wap.AP_ID LIMIT ' . (int)$from . ',' . (int)$inc;
 			} else {
 				$sql .= ' ORDER BY wap.AP_ID LIMIT ' . (int)$inc;
