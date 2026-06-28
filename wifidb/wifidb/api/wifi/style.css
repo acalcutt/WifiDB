@@ -1,0 +1,15 @@
+/*
+style.css: standalone stylesheet for the legacy Vistumbler PNG signal-graph pages
+(details.php, genline.php, index.php, ver.php). These pages predate WifiDB's theme
+system and are kept self-contained on purpose, independent of themes/.
+*/
+.style2 {
+	text-align: center;
+	border-width: 1;
+}
+.style3 {
+	text-align: center;
+	color: #000000;
+	background-color: #477DA9;
+	font-weight: bold;
+}

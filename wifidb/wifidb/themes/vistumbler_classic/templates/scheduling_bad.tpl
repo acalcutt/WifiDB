@@ -76,7 +76,7 @@
 						{foreachelse}
 						<tr align="center"><td class="light-centered" colspan="5">No rejected files.</td></tr>
 						{/foreach}
-						<tr class="sub_head"><td colspan="12" align="center">{$pages_together}</td></tr>
+						<tr class="sub_head"><td colspan="12" align="center">{$pages_together|default:""}</td></tr>
 					</table>
 				</div>
 			</div>

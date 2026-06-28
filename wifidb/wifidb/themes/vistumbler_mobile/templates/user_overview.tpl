@@ -169,7 +169,7 @@ if not, write to the
 							{/foreach}
 						</tbody>
 					</table>
-{$pages_together}
+{$pages_together|default:""}
 				</div>
 			</div>
 {include file="footer.tpl"}

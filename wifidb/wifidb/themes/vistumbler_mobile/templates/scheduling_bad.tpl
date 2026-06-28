@@ -36,7 +36,7 @@
 						<tr class="badrow"><td class="header"></td><td class="{$badfile.class}">{$badfile.error|escape:'htmlall'}</td><td class="{$badfile.class}"></td><td class="{$badfile.class}">{$badfile.date|escape:'htmlall'}</td><td class="{$badfile.class}">{$badfile.size|escape:'htmlall'}</td><td class="{$badfile.class}">{$badfile.user|escape:'htmlall'}</td><td class="{$badfile.class}"></td><td class="{$badfile.class}"></td></tr>
 						{if not $smarty.foreach.bad.last}<tr class="content-centered"><th colspan="6"><br/></th></tr>{/if}
 						{foreachelse}<tr align="center"><td class="light-centered" colspan="5">No rejected files.</td></tr>{/foreach}
-						<tr class="sub_head"><td colspan="12" align="center">{$pages_together}</td></tr>
+						<tr class="sub_head"><td colspan="12" align="center">{$pages_together|default:""}</td></tr>
 					</table>
 				</div>
 			</div>

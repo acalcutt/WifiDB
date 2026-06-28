@@ -181,18 +181,18 @@ class export extends dbcore
 		$prepf->execute();
 		$file_array = $prepf->fetch(2) ?: array();
 		$file_info = array(
-			"id" => $file_array['id'],
-			"file" => $file_array['file_orig'],
-			"user" => $file_array['file_user'],
-			"date" => $file_array['file_date'],
-			"title" => $file_array['title'],
-			"notes" => $file_array['notes'],
-			"hash" => $file_array['hash'],
-			"validgps" => $file_array['ValidGPS'],
-			"aps" => $file_array['aps'],
-			"gps" => $file_array['gps'],
-			"size" => $file_array['size'],
-			"NewAPPercent" => $file_array['NewAPPercent'],
+			"id" => $file_array['id'] ?? null,
+			"file" => $file_array['file_orig'] ?? null,
+			"user" => $file_array['file_user'] ?? null,
+			"date" => $file_array['file_date'] ?? null,
+			"title" => $file_array['title'] ?? null,
+			"notes" => $file_array['notes'] ?? null,
+			"hash" => $file_array['hash'] ?? null,
+			"validgps" => $file_array['ValidGPS'] ?? null,
+			"aps" => $file_array['aps'] ?? null,
+			"gps" => $file_array['gps'] ?? null,
+			"size" => $file_array['size'] ?? null,
+			"NewAPPercent" => $file_array['NewAPPercent'] ?? null,
 		);
 
 		#Get AP Info — single JOIN query replaces the original two-query N+1 pattern.
@@ -995,18 +995,18 @@ class export extends dbcore
 		$prepf->execute();
 		$file_array = $prepf->fetch(2) ?: array();
 		$file_info = array(
-			"id" => $file_array['id'],
-			"file" => $file_array['file_orig'],
-			"user" => $file_array['file_user'],
-			"date" => $file_array['file_date'],
-			"title" => $file_array['title'],
-			"notes" => $file_array['notes'],
-			"hash" => $file_array['hash'],			
-			"validgps" => $file_array['ValidGPS'],
-			"aps" => $file_array['aps'],
-			"gps" => $file_array['gps'],
-			"size" => $file_array['size'],
-			"NewAPPercent" => $file_array['NewAPPercent'],		
+			"id" => $file_array['id'] ?? null,
+			"file" => $file_array['file_orig'] ?? null,
+			"user" => $file_array['file_user'] ?? null,
+			"date" => $file_array['file_date'] ?? null,
+			"title" => $file_array['title'] ?? null,
+			"notes" => $file_array['notes'] ?? null,
+			"hash" => $file_array['hash'] ?? null,
+			"validgps" => $file_array['ValidGPS'] ?? null,
+			"aps" => $file_array['aps'] ?? null,
+			"gps" => $file_array['gps'] ?? null,
+			"size" => $file_array['size'] ?? null,
+			"NewAPPercent" => $file_array['NewAPPercent'] ?? null,
 		);
 
 		#Get Cell Info

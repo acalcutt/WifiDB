@@ -22,7 +22,7 @@ if not, write to the
 				{include file="topmenu.tpl"}
 				<div class="center">
 					<h1>User List</h1>
-{$pages_together}
+{$pages_together|default:""}
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
@@ -130,7 +130,7 @@ if not, write to the
 							{/foreach}
 						</tbody>
 					</table>
-{$pages_together}
+{$pages_together|default:""}
 				</div>			
 			</div>
 {include file="footer.tpl"}

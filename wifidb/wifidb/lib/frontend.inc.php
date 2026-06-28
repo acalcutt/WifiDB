@@ -434,6 +434,8 @@ class frontend extends dbcore
 
 	function GeneratePages($total_rows, $from, $inc, $sort, $ord, $func="", $user="", $ssid="", $mac="", $chan="", $radio="", $auth="", $encry="", $view="", $id="")
 	{
+		if(!is_numeric($inc) || $inc <= 0){$inc = 1;}
+
 		if($ssid=="" && $mac=="" && $chan=="" && $radio=="" && $auth=="" && $encry=="")
 		{
 			$no_search = 0;

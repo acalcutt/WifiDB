@@ -14,7 +14,7 @@ You should have received a copy of the GNU General Public License along with thi
 <br/><br/>
 <b>{$points|number_format} Points</b>
 <br/><br/>
-{$pages_together}
+{$pages_together|default:""}
 					<table class="content_table"">
 						<tr class="header">
 							<td class="header">
@@ -163,7 +163,7 @@ You should have received a copy of the GNU General Public License along with thi
 						</tr>
 						{/foreach}
 					</table>
-{$pages_together}
+{$pages_together|default:""}
 				</div>
 			</div>
 {include file="footer.tpl"}

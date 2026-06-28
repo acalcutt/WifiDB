@@ -424,7 +424,6 @@ if(!$use_cache) {
 		$auth_chart_data[] = array(
 			'month' => $row['month'],
 			'auth_open_pct' => $auth_open_pct,
-			'auth_wep_pct' => $auth_wep_pct,
 			'auth_owe_pct' => $auth_owe_pct,
 			'auth_wpa_pct' => $auth_wpa_pct,
 			'auth_wpa2_pct' => $auth_wpa2_pct,

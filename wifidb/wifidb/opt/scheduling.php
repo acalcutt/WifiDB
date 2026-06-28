@@ -36,7 +36,7 @@ if(!in_array($sort, $sorts)){$sort = "file_date";}
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
-if(!is_numeric($inc)){$inc = 250;}
+if(!is_numeric($inc) || $inc <= 0){$inc = 250;}
 
 $TZone = null;
 // prefer explicit client cookie, then configured default, else try to auto-detect

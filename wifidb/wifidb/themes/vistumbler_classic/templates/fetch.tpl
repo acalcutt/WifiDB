@@ -98,7 +98,7 @@ if not, write to the
 							</tr>
 							<tr class="sub_head">
 								<td colspan="12" align="center">
-								 {$pages_together}
+								 {$pages_together|default:""}
 								</td>
 							</tr>
 						</tbody>
@@ -193,7 +193,7 @@ if not, write to the
 						{/foreach}
 						<tr class="sub_head">
 							<td colspan="12" align="center">
-							 {$pages_together}
+							 {$pages_together|default:""}
 							</td>
 						</tr>
 					</table>

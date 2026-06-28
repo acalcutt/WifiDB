@@ -12,7 +12,7 @@ include('functions.php');
 $lastedit="2010-June-13";
 ?>
 <title>Vistumbler to PNG Signal Graph <?php echo $ver['wifi']; ?> Beta - ---RanInt---</title>
-<link rel="stylesheet" href="https://wifidb.net/themes/vistumbler_classic/styles.css">
+<link rel="stylesheet" href="style.css">
 <body topmargin="10" leftmargin="0" rightmargin="0" bottommargin="10" marginwidth="10" marginheight="10">
 <div align="center">
 <table border="0" width="75%" cellspacing="10" cellpadding="2">
