@@ -195,14 +195,25 @@ class export extends dbcore
 			"NewAPPercent" => $file_array['NewAPPercent'],		
 		);
 
-		#Get AP Info
-		$sql = "SELECT wifi_hist.AP_ID, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID, MAX(wifi_hist.New) AS new, MIN(wifi_hist.Hist_Date) as fa, MAX(wifi_hist.Hist_Date) as la, COUNT(wifi_hist.Hist_Date) As list_points\n"
-			. "FROM wifi_hist\n"
-			. "LEFT JOIN wifi_ap ON wifi_hist.AP_ID = wifi_ap.AP_ID\n"
-			. "WHERE wifi_hist.File_ID = ?";
-		if($only_new == 1){$sql .= " AND wifi_hist.New = 1";}	
-		if($valid_gps){$sql .= " AND wifi_ap.HighGps_ID IS NOT NULL";}
-		$sql .= "\nGROUP BY wifi_hist.AP_ID, wifi_ap.SSID, wifi_ap.BSSID, wifi_ap.AUTH, wifi_ap.ENCR, wifi_ap.RADTYPE, wifi_ap.NETTYPE, wifi_ap.CHAN, wifi_ap.points, wifi_ap.HighGps_ID\n"
+		#Get AP Info — single JOIN query replaces the original two-query N+1 pattern.
+		# The original code did one query to get wifi_hist+wifi_ap rows, then a separate
+		# SELECT per row to fetch wifi_gps coords and file_user.  This merges everything
+		# into a single query at the cost of a larger GROUP BY list.
+		$sql = "SELECT wh.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.HighGps_ID,\n"
+			. "wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
+			. "wGPS.Lat As Lat, wGPS.Lon As Lon, wGPS.Alt As Alt,\n"
+			. "wf.file_user AS file_user,\n"
+			. "MAX(wh.New) AS new, COUNT(wh.Hist_Date) As list_points\n"
+			. "FROM wifi_hist AS wh\n"
+			. "LEFT JOIN wifi_ap  AS wap  ON wh.AP_ID    = wap.AP_ID\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+			. "LEFT JOIN files    AS wf   ON wf.id       = wap.File_ID\n"
+			. "WHERE wh.File_ID = ?";
+		if($only_new == 1){$sql .= " AND wh.New = 1";}
+		if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
+		$sql .= "\nGROUP BY wh.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.HighGps_ID,\n"
+			. "wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
+			. "wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.file_user\n"
 			. "ORDER BY {$sort} {$ord}";
 		if($from !== NULL && $inc !== NULL){
 			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
@@ -213,67 +224,51 @@ class export extends dbcore
 		$prep_AP_IDS->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prep_AP_IDS->execute();
 		$filepointer = $prep_AP_IDS->fetchAll();
-		foreach($filepointer as $array)
+		foreach($filepointer as $ap)
 		{
-			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
-				. "wf.file_user AS file_user\n"
-				. "FROM wifi_ap AS wap\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-				. "WHERE wap.AP_ID = ?";
-			$result = $this->sql->conn->prepare($sql);
-			$result->bindParam(1, $array['AP_ID'], PDO::PARAM_INT);
-			$result->execute();
-			$appointer = $result->fetchAll();
-			foreach($appointer as $ap)
-			{
-				if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
-				if($array['new'] == 1){$new='New';}else{$new='Update';}
-				#Get AP GeoJSON
-				$ap_info = array(
-				"id" => $ap['AP_ID'],
-				"nu" => $new,
-				"new_ap" => $new_ap,
-				"named" => $named,
-				"mac" => $ap['BSSID'],
-				"ssid" => $this->formatSSID($ap['SSID']),
-				"chan" => $ap['CHAN'],
-				"radio" => $ap['RADTYPE'],
-				"nt" => $ap['NETTYPE'],
-				"sectype" => $ap['SECTYPE'],
-				"auth" => $ap['AUTH'],
-				"encry" => $ap['ENCR'],
-				"btx" => $ap['BTX'],
-				"otx" => $ap['OTX'],
-				"fa" => $ap['fa'],
-				"la" => $ap['la'],
-				"points" => $array['points'],
-				"list_points" => $array['list_points'],
-				"high_sig" => $ap['high_sig'],
-				"high_rssi" => $ap['high_rssi'],
-				"high_gps_sig" => $ap['high_gps_sig'],
-				"high_gps_rssi" => $ap['high_gps_rssi'],
-				"lat" => $this->convert->dm2dd($ap['Lat']),
-				"lon" => $this->convert->dm2dd($ap['Lon']),
-				"lat_dm" => $ap['Lat'],
-				"lon_dm" => $ap['Lon'],
-				"validgps" => $validgps,
-				"alt" => $ap['Alt'],
-				"manuf"=>$this->findManuf($ap['BSSID']),
-				"user" => $ap['file_user'],
-				);
-				$ap_array[] = $ap_info;
-				$apcount++;
-				
-				$latlon_info = array(
-				"lat" => $this->convert->dm2dd($ap['Lat']),
-				"long" => $this->convert->dm2dd($ap['Lon']),
-				);
-				$latlon_array[] = $latlon_info;
-			}
+			if($ap['Lat'] == '' && $ap['Lon'] == ''){$validgps=0;}else{$validgps=1;}
+			if($ap['new'] == 1){$new='New';}else{$new='Update';}
+			#Get AP GeoJSON
+			$ap_info = array(
+			"id" => $ap['AP_ID'],
+			"nu" => $new,
+			"new_ap" => $new_ap,
+			"named" => $named,
+			"mac" => $ap['BSSID'],
+			"ssid" => $this->formatSSID($ap['SSID']),
+			"chan" => $ap['CHAN'],
+			"radio" => $ap['RADTYPE'],
+			"nt" => $ap['NETTYPE'],
+			"sectype" => $ap['SECTYPE'],
+			"auth" => $ap['AUTH'],
+			"encry" => $ap['ENCR'],
+			"btx" => $ap['BTX'],
+			"otx" => $ap['OTX'],
+			"fa" => $ap['fa'],
+			"la" => $ap['la'],
+			"points" => $ap['points'],
+			"list_points" => $ap['list_points'],
+			"high_sig" => $ap['high_sig'],
+			"high_rssi" => $ap['high_rssi'],
+			"high_gps_sig" => $ap['high_gps_sig'],
+			"high_gps_rssi" => $ap['high_gps_rssi'],
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"lon" => $this->convert->dm2dd($ap['Lon']),
+			"lat_dm" => $ap['Lat'],
+			"lon_dm" => $ap['Lon'],
+			"validgps" => $validgps,
+			"alt" => $ap['Alt'],
+			"manuf"=>$this->findManuf($ap['BSSID']),
+			"user" => $ap['file_user'],
+			);
+			$ap_array[] = $ap_info;
+			$apcount++;
+			
+			$latlon_info = array(
+			"lat" => $this->convert->dm2dd($ap['Lat']),
+			"long" => $this->convert->dm2dd($ap['Lon']),
+			);
+			$latlon_array[] = $latlon_info;
 		}
 
 		$ret_data = array(
