@@ -25,6 +25,28 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `admin_jobs`
+--
+
+CREATE TABLE `admin_jobs` (
+  `id` int(11) NOT NULL,
+  `job_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_id` int(11) NOT NULL,
+  `target_table` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `requested_by` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` datetime NOT NULL,
+  `started_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `error_message` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `nodename` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `pid` int(11) DEFAULT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `annunc`
 --
 
@@ -1793,12 +1815,10 @@ CREATE TABLE `cell_hist` (
   `cell_hist_id` bigint(20) NOT NULL,
   `cell_id` bigint(20) NOT NULL,
   `file_id` bigint(20) DEFAULT NULL,
-  `rssi` int(11) NOT NULL,
-  `lat` decimal(9,4) NOT NULL,
-  `lon` decimal(9,4) NOT NULL,
-  `alt` decimal(7,2) NOT NULL,
-  `accuracy` decimal(10,2) NOT NULL,
-  `hist_date` datetime(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `gps_id` bigint(20) DEFAULT NULL,
+  `rssi` int(11) DEFAULT NULL,
+  `hist_date` datetime(3) DEFAULT NULL,
+  `new` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2206,6 +2226,26 @@ CREATE TABLE `manufacturers` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pm`
+--
+
+CREATE TABLE `pm` (
+  `id` bigint(20) NOT NULL,
+  `thread_id` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `user1` bigint(20) DEFAULT NULL,
+  `user2` bigint(20) DEFAULT NULL,
+  `user1read` tinyint(1) DEFAULT 0,
+  `user2read` tinyint(1) DEFAULT 0,
+  `user1del` tinyint(1) DEFAULT 0,
+  `user2del` tinyint(1) DEFAULT 0,
+  `stimestamp` datetime(3) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `schedule`
 --
 
@@ -2345,7 +2385,8 @@ CREATE TABLE `user_info` (
   `foes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `website` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `Vis_ver` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `apikey` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+  `apikey` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `import_require_login` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -2489,6 +2530,15 @@ CREATE TABLE `wifi_hist` (
 --
 
 --
+-- Indexes for table `admin_jobs`
+--
+ALTER TABLE `admin_jobs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `status` (`status`),
+  ADD KEY `target_id` (`target_id`),
+  ADD KEY `created_at` (`created_at`);
+
+--
 -- Indexes for table `annunc`
 --
 ALTER TABLE `annunc`
@@ -2513,7 +2563,11 @@ ALTER TABLE `cell_carriers`
 -- Indexes for table `cell_hist`
 --
 ALTER TABLE `cell_hist`
-  ADD PRIMARY KEY (`cell_hist_id`);
+  ADD PRIMARY KEY (`cell_hist_id`),
+  ADD KEY `cell_id` (`cell_id`),
+  ADD KEY `file_id` (`file_id`),
+  ADD KEY `gps_id` (`gps_id`),
+  ADD KEY `hist_date` (`hist_date`);
 
 --
 -- Indexes for table `cell_id`
@@ -2657,6 +2711,12 @@ ALTER TABLE `manufacturers`
   ADD UNIQUE KEY `BSSID` (`BSSID`);
 
 --
+-- Indexes for table `pm`
+--
+ALTER TABLE `pm`
+  ADD PRIMARY KEY (`id`);
+
+--
 -- Indexes for table `schedule`
 --
 ALTER TABLE `schedule`
@@ -2757,6 +2817,12 @@ ALTER TABLE `wifi_hist`
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `admin_jobs`
+--
+ALTER TABLE `admin_jobs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `annunc`
@@ -2889,6 +2955,12 @@ ALTER TABLE `log`
 --
 ALTER TABLE `manufacturers`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pm`
+--
+ALTER TABLE `pm`
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `schedule`
