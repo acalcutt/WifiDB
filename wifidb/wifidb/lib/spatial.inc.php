@@ -92,14 +92,42 @@ function morton_encode(float $lat, float $lon): int {
  * @param  int    $max_zoom           Highest zoom level to generate.
  * @param  float  $drop_scale_pixels  Minimum pixel gap before an AP is shown
  *                                    (1.5 matches tippecanoe default behaviour).
+ * @param  int    $cap_feature_minzoom  Hard cap on feature_minzoom (default 1 = $min_zoom).
+ *                                    Set to $min_zoom for exact tippecanoe
+ *                                    --drop-densest-as-needed equivalence: every
+ *                                    AP is a candidate at every zoom; the tile
+ *                                    encoder's per-tile density sort + 1.5 MB
+ *                                    budget decides what is actually included.
+ *                                    Raise (e.g. to 13) only if RAM is tight:
+ *                                    low-zoom tiles for 1.5 M-AP buckets can
+ *                                    require 300-500 MB peak per tile.
  * @return array  [z => cumulative_ap_count] keyed by zoom level, for logging.
  */
 function assign_feature_minzoom(
     array &$aps,
     int    $min_zoom,
     int    $max_zoom,
-    float  $drop_scale_pixels
+    float  $drop_scale_pixels,
+    int    $cap_feature_minzoom = 1
 ): array {
+    // Fast path: when the cap ≤ min_zoom every AP is visible at every zoom level
+    // (equivalent to tippecanoe --drop-densest-as-needed with no pre-filtering).
+    // Skip the O(N log N) Morton sort entirely and assign feature_minzoom = min_zoom
+    // to all APs.  The per-tile encoder in encode_tile_from_points() performs the
+    // actual density-based dropping on a per-tile basis, exactly as tippecanoe does.
+    if ($cap_feature_minzoom <= $min_zoom) {
+        foreach ($aps as &$ap) {
+            $ap['feature_minzoom'] = $min_zoom;
+        }
+        unset($ap);
+        $fmz_cum = [];
+        $total   = count($aps);
+        for ($z = $min_zoom; $z <= $max_zoom; $z++) {
+            $fmz_cum[$z] = $total;
+        }
+        return $fmz_cum;
+    }
+
     // Step 1: encode each AP as a Morton index.
     foreach ($aps as &$ap) {
         $ap['_morton'] = morton_encode((float)$ap['lat'], (float)$ap['lon']);
@@ -123,6 +151,10 @@ function assign_feature_minzoom(
             $fmz = max($min_zoom, min($max_zoom, $fmz));
         }
         $ap['feature_minzoom'] = $fmz;
+        if ($fmz > $cap_feature_minzoom) {
+            $ap['feature_minzoom'] = $cap_feature_minzoom;
+            $fmz = $cap_feature_minzoom;
+        }
         $fmz_raw[$fmz]         = ($fmz_raw[$fmz] ?? 0) + 1;
         $prev_m                = $ap['_morton'];
     }

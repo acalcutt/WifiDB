@@ -436,15 +436,12 @@ class createGeoJSON
 					[20, 20]
 					]
 				},
-				'circle-color': {
-					'property': 'sectype',
-					'type': 'interval',
-					'stops': [
-						[1, '".$open_color."'],
-						[2, '".$wep_color."'],
-						[3, '".$sec_color."']
-					]
-				},
+				'circle-color': [
+					'case',
+					['==', ['get', 'sectype'], 2], '".$wep_color."',
+					['==', ['get', 'sectype'], 3], '".$sec_color."',
+					'".$open_color."'
+				],
 				'circle-opacity': ".$opacity.",
 				'circle-blur': ".$blur."
 			}
@@ -553,6 +550,7 @@ class createGeoJSON
 	{
 		if($data_source_layer){$layer_lname = $data_source_layer;}else{$layer_lname = $data_source;};
 		$layer_source = "\n
+		if (!map.getLayer('".$layer_lname."')) {
 		map.addLayer({
 			'id': '".$layer_lname."',
 			'type': 'circle',
@@ -567,7 +565,8 @@ class createGeoJSON
 				'circle-opacity': ".$opacity.",
 				'circle-blur': ".$blur."
 			}
-		});";
+		});
+		}";
 
 		$ret_data = array(
 		"layer_source" => $layer_source,
@@ -577,4 +576,301 @@ class createGeoJSON
 		return $ret_data;
 	}
 
+	// ── Internal tile source helpers ──────────────────────────────────────────
+	// These three methods replace the old "WifiDB" / "WifiDB_newest" shared
+	// GeoJSON sources (which depended on the external tiles.wifidb.net tileserver)
+	// with per-bucket vector tile sources served by the local mvtd/mltd daemons
+	// via tilejson.php → out/tiles/{bucket}/.
+
+	/**
+	 * Create a MapLibre vector-tile source + circle layer for one history bucket.
+	 * Source ID and layer ID are both "WifiDB_{$bucket}" so they match the
+	 * toggle-button IDs already in map.tpl.
+	 *
+	 * @param string $bucket       Bucket key, e.g. "weekly", "0to1year", "10yrplus"
+	 * @param string $open_color   Circle colour for open networks  (sectype = 1)
+	 * @param string $wep_color    Circle colour for WEP networks   (sectype = 2)
+	 * @param string $sec_color    Circle colour for secure networks (sectype = 3)
+	 * @param float  $base_radius  Base value for circle-radius stops
+	 * @param float  $opacity      circle-opacity
+	 * @param float  $blur         circle-blur
+	 * @param string $visibility   'visible' or 'none'
+	 * @return array ['layer_source' => JS string, 'layer_name' => layer/source ID]
+	 */
+	public function CreateMvtBucketLayers(
+		string $bucket,
+		string $open_color  = '#1aff66',
+		string $wep_color   = '#ffad33',
+		string $sec_color   = '#ff1a1a',
+		float  $base_radius = 2,
+		float  $opacity     = 1,
+		float  $blur        = 0.5,
+		string $visibility  = 'none'
+	): array {
+		$source_id    = 'WifiDB_' . $bucket;
+		$layer_source = "\n
+		if (!map.getSource('" . $source_id . "')) {
+			map.addSource('" . $source_id . "', {
+				type: 'vector',
+				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $bucket . "'
+			});
+		}
+		if (!map.getLayer('" . $source_id . "')) {
+		map.addLayer({
+			'id': '" . $source_id . "',
+			'type': 'circle',
+			'source': '" . $source_id . "',
+			'source-layer': '" . $bucket . "',
+			'layout': {
+				'visibility': '" . $visibility . "'
+			},
+			'paint': {
+				'circle-radius': {
+					'base': " . $base_radius . ",
+					'stops': [[1,1.5],[4,2],[12,2],[20,20]]
+				},
+				'circle-color': [
+					'case',
+					['==', ['get', 'sectype'], 2], '" . $wep_color . "',
+					['==', ['get', 'sectype'], 3], '" . $sec_color . "',
+					'" . $open_color . "'
+				],
+				'circle-opacity': " . $opacity . ",
+				'circle-blur': " . $blur . "
+			}
+		});
+		}";
+		return ['layer_source' => $layer_source, 'layer_name' => $source_id];
+	}
+
+	/**
+	 * Create MapLibre symbol (label) layers for one history bucket.
+	 * Label IDs are "WifiDB_{$bucket}-{type}" (e.g. "WifiDB_weekly-ssid") so
+	 * the toggle_label() JS function in map.tpl can show/hide them correctly.
+	 *
+	 * @return string Raw JS to append to $layer_source_all
+	 */
+	public function CreateMvtBucketLabelLayers(
+		string $bucket,
+		string $font       = 'Open Sans Regular',
+		int    $size       = 10,
+		string $visibility = 'none'
+	): string {
+		$source_id    = 'WifiDB_' . $bucket;
+		$source_layer = $bucket;
+		$fields = [
+			'ssid'          => '{ssid}',
+			'mac'           => '{mac}',
+			'chan'          => '{chan}',
+			'fa'            => '{fa}',
+			'la'            => '{la}',
+			'points'        => '{points}',
+			'high_gps_sig'  => '{high_gps_sig}',
+			'high_gps_rssi' => '{high_gps_rssi}',
+		];
+		$out = '';
+		foreach ($fields as $type => $field) {
+			$out .= "\n
+		if (!map.getLayer('" . $source_id . "-" . $type . "')) {
+		map.addLayer({
+			'id': '" . $source_id . "-" . $type . "',
+			'source': '" . $source_id . "',
+			'source-layer': '" . $source_layer . "',
+			'type': 'symbol',
+			'layout': {
+				'text-field': '" . $field . "',
+				'text-font': ['" . $font . "'],
+				'text-size': " . $size . ",
+				'visibility': '" . $visibility . "'
+			},
+			'paint': {
+				'text-halo-blur': 1,
+				'text-color': '#000000',
+				'text-halo-width': 2,
+				'text-halo-color': '#FFFFFF'
+			}
+		});
+		}";
+		}
+		return $out;
+	}
+
+	/**
+	 * Create a MapLibre vector-tile source + heatmap layer for one history bucket.
+	 * Layer ID is "WifiDB_{$bucket}-heatmap".
+	 *
+	 * @return array ['layer_source' => JS string, 'layer_name' => layer ID]
+	 */
+	public function CreateMvtBucketHeatmap(string $bucket, string $visibility = 'visible'): array {
+		$source_id    = 'WifiDB_' . $bucket;
+		$layer_id     = $source_id . '-heatmap';
+		$layer_source = "\n
+		map.addSource('" . $source_id . "', {
+			type: 'vector',
+			url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $bucket . "'
+		});
+		map.addLayer({
+			'id': '" . $layer_id . "',
+			'type': 'heatmap',
+			'source': '" . $source_id . "',
+			'source-layer': '" . $bucket . "',
+			'layout': {
+				'visibility': '" . $visibility . "'
+			},
+			'paint': {
+				'heatmap-color': ['interpolate',['linear'],['heatmap-density'],
+					0,'rgba(33,102,172,0)',0.3,'rgb(103,169,207)',
+					0.6,'rgb(209,229,240)',0.9,'rgb(253,219,199)',
+					1.2,'rgb(239,138,98)',1.5,'rgb(178,24,43)'
+				],
+				'heatmap-radius': ['interpolate',['linear'],['zoom'],0,2,9,20]
+			}
+		});";
+		return ['layer_source' => $layer_source, 'layer_name' => $layer_id];
+	}
+	// ── Cell network MVT helpers ──────────────────────────────────────────────
+	// Replace the old GeoJSON-based cell layer (WifiDB_cells source from
+	// tiles.wifidb.net style) with a per-source vector tile source served
+	// by cell_mvtd.php / cell_mvt.php via tilejson.php?bucket=cell_networks.
+	//
+	// Source ID: WifiDB_cells  (unchanged — matches existing popup/click handlers)
+	// Layer ID:  cell_networks (unchanged — matches toggle button ID)
+	// Source-layer: cell_networks
+
+	/**
+	 * Create a MapLibre vector-tile source + circle layer for the cell_networks bucket.
+	 */
+	public function CreateMvtCellLayers(string $visibility = 'visible'): array {
+		$cell_buckets = ['cell_daily','cell_weekly','cell_monthly',
+		                 'cell_0to1year','cell_1to2year','cell_2to3year',
+		                 'cell_3to5year','cell_5to10year','cell_10yrplus'];
+		$combined = '';
+		foreach ($cell_buckets as $cb) {
+			$src = 'WifiDB_' . $cb;
+			$combined .= "\n
+		if (!map.getSource('" . $src . "')) {
+			map.addSource('" . $src . "', {
+				type: 'vector',
+				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $cb . "'
+			});
+		}
+		if (!map.getLayer('" . $cb . "')) {
+		map.addLayer({
+			'id': '" . $cb . "',
+			'type': 'circle',
+			'source': '" . $src . "',
+			'source-layer': '" . $cb . "',
+			'layout': {
+				'visibility': '" . $visibility . "'
+			},
+			'paint': {
+				'circle-radius': {
+					'base': 2.25,
+					'stops': [[1,1.5],[4,2],[12,2],[20,20]]
+				},
+				'circle-color': '#885FCD',
+				'circle-opacity': 1,
+				'circle-blur': 0.5
+			}
+		});
+		}";
+		}
+		$layer_names_js = "'cell_daily','cell_weekly','cell_monthly','cell_0to1year','cell_1to2year','cell_2to3year','cell_3to5year','cell_5to10year','cell_10yrplus'";
+		return ['layer_source' => $combined, 'layer_names_js' => $layer_names_js, 'layer_name' => 'cell_networks'];
+	}
+
+	/**
+	 * Create MapLibre symbol (label) layers for all 9 cell bucket layers.
+	 * Label IDs are "{bucket}-{type}" matching the toggle_label() convention.
+	 */
+	public function CreateMvtCellLabelLayers(
+		string $font       = 'Open Sans Regular',
+		int    $size       = 10,
+		string $visibility = 'none'
+	): string {
+		$cell_buckets = ['cell_daily','cell_weekly','cell_monthly',
+		                 'cell_0to1year','cell_1to2year','cell_2to3year',
+		                 'cell_3to5year','cell_5to10year','cell_10yrplus'];
+		// type key → tile property
+		$fields = [
+			'ssid'          => '{ssid}',
+			'mac'           => '{mac}',
+			'chan'          => '{chan}',
+			'fa'            => '{fa}',
+			'la'            => '{la}',
+			'points'        => '{points}',
+			'high_gps_rssi' => '{rssi}',
+			'high_gps_sig'  => '{rssi}',
+		];
+		$out = '';
+		foreach ($cell_buckets as $cb) {
+			$src = 'WifiDB_' . $cb;
+			foreach ($fields as $type => $field) {
+				$out .= "\n
+		if (!map.getLayer('" . $cb . "-" . $type . "')) {
+		map.addLayer({
+			'id': '" . $cb . "-" . $type . "',
+			'source': '" . $src . "',
+			'source-layer': '" . $cb . "',
+			'type': 'symbol',
+			'layout': {
+				'text-field': '" . $field . "',
+				'text-font': ['" . $font . "'],
+				'text-size': " . $size . ",
+				'visibility': '" . $visibility . "'
+			},
+			'paint': {
+				'text-halo-blur': 1,
+				'text-color': '#000000',
+				'text-halo-width': 2,
+				'text-halo-color': '#FFFFFF'
+			}
+		});
+		}";
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * Create a MapLibre vector-tile source + heatmap layer for all 9 cell bucket layers.
+	 * Layer IDs are "{bucket}-heatmap".
+	 */
+	public function CreateMvtCellHeatmap(string $visibility = 'visible'): array {
+		$cell_buckets = ['cell_daily','cell_weekly','cell_monthly',
+		                 'cell_0to1year','cell_1to2year','cell_2to3year',
+		                 'cell_3to5year','cell_5to10year','cell_10yrplus'];
+		$combined = '';
+		foreach ($cell_buckets as $cb) {
+			$src = 'WifiDB_' . $cb;
+			$combined .= "\n
+		if (!map.getSource('" . $src . "')) {
+			map.addSource('" . $src . "', {
+				type: 'vector',
+				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $cb . "'
+			});
+		}
+		if (!map.getLayer('" . $cb . "-heatmap')) {
+		map.addLayer({
+			'id': '" . $cb . "-heatmap',
+			'type': 'heatmap',
+			'source': '" . $src . "',
+			'source-layer': '" . $cb . "',
+			'layout': {
+				'visibility': '" . $visibility . "'
+			},
+			'paint': {
+				'heatmap-color': ['interpolate',['linear'],['heatmap-density'],
+					0,'rgba(33,102,172,0)',0.3,'rgb(103,169,207)',
+					0.6,'rgb(209,229,240)',0.9,'rgb(253,219,199)',
+					1.2,'rgb(239,138,98)',1.5,'rgb(178,24,43)'
+				],
+				'heatmap-radius': ['interpolate',['linear'],['zoom'],0,2,9,20]
+			}
+		});
+		}";
+		}
+		$heatmap_names_js = "'cell_daily-heatmap','cell_weekly-heatmap','cell_monthly-heatmap','cell_0to1year-heatmap','cell_1to2year-heatmap','cell_2to3year-heatmap','cell_3to5year-heatmap','cell_5to10year-heatmap','cell_10yrplus-heatmap'";
+		return ['layer_source' => $combined, 'layer_names_js' => $heatmap_names_js, 'layer_name' => 'cell_networks-heatmap'];
+	}
 }

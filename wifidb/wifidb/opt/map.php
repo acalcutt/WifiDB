@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 error_reporting(1);
 @ini_set('display_errors', 1);
 /*
@@ -71,6 +71,55 @@ $dbcore->smarty->assign('inc', $inc);
 
 $func=$_REQUEST['func'];
 $dbcore->smarty->assign('func', $func);
+
+// ── Internal-tile history layer helpers ──────────────────────────────────────
+// Builds MapLibre source + layer JS for all 9 history buckets using the local
+// mvtd/mltd daemon tiles (tilejson.php → out/tiles/).  Replaces the old
+// shared "WifiDB" / "WifiDB_newest" GeoJSON sources that depended on the
+// external tiles.wifidb.net tileserver.
+
+/**
+ * Build circle layers for all 9 history buckets.
+ * $colored=true  → graduated colours matching MaplibreWifiExtensions.cs BucketColors
+ * $colored=false → flat dark-green (used by detail views that hide these layers)
+ * Returns ['source'=>JS_string, 'names'=>"'WifiDB_10yrplus','WifiDB_5to10year',..."]
+ */
+function mvt_history_layers($cGeoJSON, bool $colored, string $visibility): array {
+	$f  = '#00802b'; $fw = '#cc7a00'; $fs = '#b30000';  // flat colour (hidden views)
+	$specs = [  // oldest → newest so newest renders on top
+		'10yrplus'  => $colored ? ['#005c1f','#996000','#800000',3]    : [$f,$fw,$fs,3],
+		'5to10year' => $colored ? ['#00802b','#cc7a00','#b30000',3]    : [$f,$fw,$fs,3],
+		'3to5year'  => $colored ? ['#009933','#d98000','#c00000',2.75] : [$f,$fw,$fs,2.75],
+		'2to3year'  => $colored ? ['#00b33c','#e68a00','#cc0000',2.75] : [$f,$fw,$fs,2.75],
+		'1to2year'  => $colored ? ['#00e64d','#ff9900','#e60000',2.5]  : [$f,$fw,$fs,2.5],
+		'0to1year'  => $colored ? ['#1aff66','#ffad33','#ff1a1a',2]    : [$f,$fw,$fs,2],
+		'monthly'   => $colored ? ['#1aff66','#ffad33','#ff1a1a',2]    : [$f,$fw,$fs,2],
+		'weekly'    => $colored ? ['#1aff66','#ffad33','#ff1a1a',2]    : [$f,$fw,$fs,2],
+	];
+	$source = ''; $names = [];
+	foreach ($specs as $bucket => [$oc,$wc,$sc,$rad]) {
+		$r       = $cGeoJSON->CreateMvtBucketLayers($bucket, $oc, $wc, $sc, $rad, 1, 0.5, $visibility);
+		$source .= $r['layer_source'];
+		$source .= $cGeoJSON->CreateMvtBucketLabelLayers($bucket);
+		$names[] = "'".$r['layer_name']."'";
+	}
+	return ['source' => $source, 'names' => implode(',', $names)];
+}
+
+/**
+ * Build heatmap layers for all 9 history buckets.
+ */
+function mvt_history_heatmap_layers($cGeoJSON, string $visibility): array {
+	$buckets = ['10yrplus','5to10year','3to5year','2to3year','1to2year','0to1year','monthly','weekly'];
+	$source = ''; $names = [];
+	foreach ($buckets as $bucket) {
+		$r       = $cGeoJSON->CreateMvtBucketHeatmap($bucket, $visibility);
+		$source .= $r['layer_source'];
+		$names[] = "'".$r['layer_name']."'";
+	}
+	return ['source' => $source, 'names' => implode(',', $names)];
+}
+
 switch($func)
 {
 	case "wifidbmap":
@@ -93,28 +142,11 @@ switch($func)
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"visible");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"visible");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00b33c","#e68a00","#cc0000",2.75,1,0.5,"visible");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00e64d","#ff9900","#e60000",2.5,1,0.5,"visible");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#1aff66","#ffad33","#ff1a1a",2,1,0.5,"visible");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#1aff66","#ffad33","#ff1a1a",2,1,0.5,"visible");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#1aff66","#ffad33","#ff1a1a",2,1,0.5,"visible");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
-
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("visible");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, true, 'visible');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name']);
@@ -129,9 +161,8 @@ switch($func)
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"visible");
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
-
-		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = $layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -157,22 +188,10 @@ switch($func)
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";
-		$layer_cell = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_cells","cell_networks","visible");
-		$layer_legacy = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB","WifiDB_Legacy","visible");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB","WifiDB_2to3year","visible");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB","WifiDB_1to2year","visible");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_newest","WifiDB_0to1year","visible");
-		$layer_monthly = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_newest","WifiDB_monthly","visible");
-		$layer_weekly = $dbcore->createGeoJSON->CreateHeatMapLayer("WifiDB_newest","WifiDB_weekly","visible");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
-
-
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellHeatmap("visible");
+		$hist = mvt_history_heatmap_layers($dbcore->createGeoJSON, 'visible');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
 
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateHeatMapLayer($dgs['layer_name']);
@@ -184,10 +203,8 @@ switch($func)
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
 
-
-
-		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = $layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -238,28 +255,11 @@ switch($func)
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 
 		#Create Map Layers
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00b33c","#e68a00","#cc0000",2.75,1,0.5,"none");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00e64d","#ff9900","#e60000",2.5,1,0.5,"none");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#1aff66","#ffad33","#ff1a1a",2,1,0.5,"none");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#1aff66","#ffad33","#ff1a1a",2,1,0.5,"none");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#1aff66","#ffad33","#ff1a1a",2,1,0.5,"none");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
-		
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
@@ -276,13 +276,12 @@ switch($func)
 
 		$uags = $dbcore->createGeoJSON->CreateUserAllGeoJsonSource($user, $from, $inc);
 		$ml = $dbcore->createGeoJSON->CreateApLayer($uags['layer_name']);
-		
 		$layer_source_all .= $uags['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($uags['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$layer_name = "'".$uags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$layer_name = "'".$uags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = $layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -354,29 +353,12 @@ switch($func)
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
-		
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $dgs['layer_source'];
@@ -396,15 +378,14 @@ switch($func)
 		$layer_source_all .= $cl['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer($clgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		
 		$mlgs = $dbcore->createGeoJSON->CreateListGeoJsonSource($id, $from, $inc);
 		$ml = $dbcore->createGeoJSON->CreateApLayer($mlgs['layer_name']);
 		$layer_source_all .= $mlgs['layer_source'];
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($mlgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$layer_name = "'".$mlgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$clgs['layer_name']."','".$layer_cell['layer_name']."'";
+		$layer_name = "'".$mlgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = "'".$clgs['layer_name']."',".$layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -455,29 +436,12 @@ switch($func)
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
-		
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $dgs['layer_source'];
@@ -497,8 +461,8 @@ switch($func)
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($ags['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$layer_name = "'".$ags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$layer_name = "'".$ags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = $layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -614,29 +578,12 @@ switch($func)
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
-		
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $dgs['layer_source'];
@@ -656,8 +603,8 @@ switch($func)
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer($ags['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$ags['layer_name']."','".$layer_cell['layer_name']."'";
+		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = "'".$ags['layer_name']."',".$layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -773,28 +720,11 @@ switch($func)
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}	
 		$centerpoint =  "[".$longitude.",".$latitude."]";
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
-
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
@@ -815,8 +745,8 @@ switch($func)
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lags['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$layer_name = "'".$lags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$layer_name = "'".$lags['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = $layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
@@ -873,29 +803,12 @@ switch($func)
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 		
-		$layer_cell = $dbcore->createGeoJSON->CreateCellLayer("WifiDB_cells","cell_networks","#885FCD",2.25,1,0.5,"none");
-		$layer_legacy = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_Legacy","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_2_3 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_2to3year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_1_2 = $dbcore->createGeoJSON->CreateApLayer("WifiDB","WifiDB_1to2year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_0_1 = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_0to1year","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_monthly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_monthly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_weekly = $dbcore->createGeoJSON->CreateApLayer("WifiDB_newest","WifiDB_weekly","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
-		$layer_source_all = $layer_cell['layer_source'];
-		$layer_source_all .= $layer_legacy['layer_source'];
-		$layer_source_all .= $layer_2_3['layer_source'];
-		$layer_source_all .= $layer_1_2['layer_source'];
-		$layer_source_all .= $layer_0_1['layer_source'];
-		$layer_source_all .= $layer_monthly['layer_source'];
-		$layer_source_all .= $layer_weekly['layer_source'];
+		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
+		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
+		$layer_source_all  = $layer_cell['layer_source'];
+		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
-		$layer_source_all .= $dbcore->createGeoJSON->CreateCellLabelLayer("WifiDB_cells", "cell_networks", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_Legacy", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_2to3year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB", "WifiDB_1to2year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_0to1year", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_monthly", "Open Sans Regular", 10, "none");
-		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer("WifiDB_newest", "WifiDB_weekly", "Open Sans Regular", 10, "none");
-		
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#00802b","#cc7a00","#b30000",3,1,0.5,"none");
 		$layer_source_all .= $dgs['layer_source'];
@@ -915,8 +828,8 @@ switch($func)
 		$layer_source_all .= $ml['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($lsgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
-		$layer_name = "'".$lsgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."','".$layer_weekly['layer_name']."','".$layer_monthly['layer_name']."','".$layer_0_1['layer_name']."','".$layer_1_2['layer_name']."','".$layer_2_3['layer_name']."','".$layer_legacy['layer_name']."'";
-		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+		$layer_name = "'".$lsgs['layer_name']."','".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
+		$cell_layer_name = $layer_cell['layer_names_js'];
 		
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);

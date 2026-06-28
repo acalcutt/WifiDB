@@ -36,9 +36,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 $z = filter_input(INPUT_GET, 'z', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 20]]);
 $x = filter_input(INPUT_GET, 'x', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
 $y = filter_input(INPUT_GET, 'y', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-$bucket = preg_replace('/[^a-z0-9]/', '', strtolower((string)@$_REQUEST['bucket']));
+$bucket = preg_replace('/[^a-z0-9_]/', '', strtolower((string)@$_REQUEST['bucket']));
 
-$valid_buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', 'legacy'];
+$valid_buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
+                  'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
 
 if ($z === false || $z === null || $x === false || $x === null || $y === false || $y === null) {
     http_response_code(400); header('Content-Type: application/json');
@@ -62,13 +63,24 @@ if (!in_array($bucket, $valid_buckets, true)) {
 // flag mainly controls whether z13+ on-demand tiles are cached on disk.
 define('TILE_DISK_CACHE', true);
 $bucket_ttl = [
-    'daily'    =>     3600,  //  1 hour
-    'weekly'   =>    86400,  //  1 day
-    'monthly'  =>   604800,  //  1 week
-    '0to1year' =>  2592000,  //  30 days
-    '1to2year' =>  2592000,
-    '2to3year' =>  2592000,
-    'legacy'   =>  2592000,
+    'daily'     =>     3600,  //  1 hour
+    'weekly'    =>    86400,  //  1 day
+    'monthly'   =>   604800,  //  1 week
+    '0to1year'  =>  2592000,  //  30 days
+    '1to2year'  =>  2592000,
+    '2to3year'  =>  2592000,
+    '3to5year'  =>  2592000,
+    '5to10year' =>  2592000,
+    '10yrplus'  =>  2592000,
+    'cell_daily'     =>     3600,
+    'cell_weekly'    =>    86400,
+    'cell_monthly'   =>   604800,
+    'cell_0to1year'  =>  2592000,
+    'cell_1to2year'  =>  2592000,
+    'cell_2to3year'  =>  2592000,
+    'cell_3to5year'  =>  2592000,
+    'cell_5to10year' =>  2592000,
+    'cell_10yrplus'  =>  2592000,
 ];
 $cache_ttl  = $bucket_ttl[$bucket] ?? 86400;
 $tile_dir   = rtrim($dbcore->PATH, '/') . '/out/tiles/' . $bucket . '/' . $z . '/' . $x;
@@ -92,7 +104,9 @@ $lat_max_dm = dd2dm($lat_max);
 $lon_min_dm = dd2dm($lon_min);
 $lon_max_dm = dd2dm($lon_max);
 
-[$start_date, $end_date] = bucket_date_window($bucket);
+$is_cell     = (strpos($bucket, 'cell_') === 0);
+$base_bucket = $is_cell ? substr($bucket, 5) : $bucket;
+[$start_date, $end_date] = bucket_date_window($base_bucket);
 
 // ── Query via shared export function ─────────────────────────────────────────
 // Scale the fetch limit with zoom level — the bbox is larger at low zoom so
@@ -104,112 +118,171 @@ $lon_max_dm = dd2dm($lon_max);
 //   z<=7:  50 000 rows (capped)
 $query_limit = ($z >= 12) ? 5000 : min(50000, 5000 << max(0, 12 - $z));
 
-$result = $dbcore->export->BboxDateArray(
-    $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-    $start_date, $end_date,
-    null, $query_limit
-);
+if ($is_cell) {
+    $result = $dbcore->export->BboxCellArray(
+        $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+        $query_limit, null, $start_date, $end_date
+    );
+} else {
+    $result = $dbcore->export->BboxDateArray(
+        $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+        $start_date, $end_date,
+        null, $query_limit
+    );
+}
 $rows = $result['data'];
 
-// ── Build MVT ─────────────────────────────────────────────────────────────────
-// Fixed property key order — must match the indices used in tags arrays below.
-$keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
-             'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
-             'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
-             'lat', 'lon', 'alt', 'manuf', 'id_str'];
-$keys_idx = array_flip($keys);   // name → index
-
-// Value deduplication: store encoded Value message content, keyed by "type:raw".
-$values_bytes = [];  // ordered Value message byte strings
-$values_idx   = [];  // "type:raw" => index
-
-/**
- * Return the index of a value in the values table, adding it if new.
- * @param string $type  'int' or 'str'
- * @param mixed  $raw   The raw PHP value
- */
-$add_value = function(string $type, $raw) use (&$values_bytes, &$values_idx): int {
+// ── Per-tile spatial thinning + gzip retry loop ───────────────────────────────
+// Mirrors encode_tile_from_points() / encode_cell_tile_from_mvt() in mvtd.php:
+//   1. Project rows to tile pixels + compute per-tile Morton index.
+//   2. Sort by Morton index, compute gap to predecessor.
+//   3. Re-sort by gap descending (sparsest APs first).
+//   4. Deduplicate same-pixel [+ same-sectype for WiFi].
+//   5. Encode → gzip; if >750 KB, keep floor(keep × 750000/size), retry ≤5×.
+$add_value_fn = function(string $type, $raw, array &$vbytes, array &$vidx): int {
     $key = $type . ':' . $raw;
-    if (!isset($values_idx[$key])) {
-        $values_idx[$key] = count($values_bytes);
-        // Encode as a Value proto message (just the inner fields — the Layer will frame it).
-        if ($type === 'int') {
-            $values_bytes[] = pb_field_varint(4, (int)$raw);   // int_value = field 4
-        } else {
-            $values_bytes[] = pb_field_string(1, (string)$raw); // string_value = field 1
-        }
+    if (!isset($vidx[$key])) {
+        $vidx[$key] = count($vbytes);
+        $vbytes[]   = ($type === 'int') ? pb_field_varint(4, (int)$raw) : pb_field_string(1, (string)$raw);
     }
-    return $values_idx[$key];
+    return $vidx[$key];
 };
 
-// ── Morton-curve spatial thinning (lib/spatial.inc.php) ──────────────────────
-// assign_feature_minzoom() Morton-sorts the rows, then assigns each AP a
-// feature_minzoom based on the gap to its nearest spatial neighbour in the
-// sorted order.  APs in dense clusters get a high minzoom and are skipped at
-// the current zoom level, producing spatially uniform coverage without grid
-// artefacts.  drop_scale_pixels=1.5 matches the daemon setting so the API
-// fallback renders consistently with daemon-pre-generated tiles.
-$drop_scale_pixels = 1.5;
-assign_feature_minzoom($rows, $z, $z + 4, $drop_scale_pixels);
-// (min=$z so nothing is filtered out at z=0; max=$z+4 reserves headroom for
-//  dense clusters — they will be skipped since feature_minzoom > $z.)
-
-$features = [];
-
-// BboxDateArray returns ap_info arrays with 'lat'/'lon' already in decimal degrees.
+// Step 1: project + per-tile Morton index.
+$pts = [];
 foreach ($rows as $row) {
-    if ($row['feature_minzoom'] > $z) continue;  // skip dense cluster members
-
     [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
-
-    // Build flat [key_idx, val_idx, ...] tags array.
-    $tags = [
-        $keys_idx['sectype'],      $add_value('int', (int)$row['sectype']),
-        $keys_idx['chan'],          $add_value('int', (int)$row['chan']),
-        $keys_idx['radio'],        $add_value('str', (string)$row['radio']),
-        $keys_idx['mac'],          $add_value('str', (string)$row['mac']),
-        $keys_idx['user'],         $add_value('str', (string)$row['user']),
-        $keys_idx['ssid'],         $add_value('str', (string)$row['ssid']),
-        $keys_idx['auth'],         $add_value('str', (string)$row['auth']),
-        $keys_idx['encry'],        $add_value('str', (string)$row['encry']),
-        $keys_idx['nt'],           $add_value('str', (string)$row['nt']),
-        $keys_idx['btx'],          $add_value('str', (string)$row['btx']),
-        $keys_idx['otx'],          $add_value('str', (string)$row['otx']),
-        $keys_idx['fa'],           $add_value('str', (string)$row['fa']),
-        $keys_idx['la'],           $add_value('str', (string)$row['la']),
-        $keys_idx['points'],       $add_value('int', (int)$row['points']),
-        $keys_idx['high_gps_sig'], $add_value('int', (int)$row['high_gps_sig']),
-        $keys_idx['high_gps_rssi'],$add_value('int', (int)$row['high_gps_rssi']),
-        $keys_idx['lat'],          $add_value('str', (string)$row['lat']),
-        $keys_idx['lon'],          $add_value('str', (string)$row['lon']),
-        $keys_idx['alt'],          $add_value('str', (string)$row['alt']),
-        $keys_idx['manuf'],        $add_value('str', (string)$row['manuf']),
-        $keys_idx['id_str'],       $add_value('str', (string)$row['id']),
-    ];
-
-    $features[] = mvt_encode_point_feature((int)$row['id'], $px, $py, $tags);
+    $pts[] = ['row' => $row, 'px' => $px, 'py' => $py,
+              'morton' => morton_encode((float)$row['lat'], (float)$row['lon'])];
 }
 
-$layer_bytes = mvt_encode_layer($bucket, $features, $keys, $values_bytes);
-$tile_bytes  = mvt_encode_tile($layer_bytes);
+// Step 2: Morton sort + gap to predecessor.
+usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+$prev_m = PHP_INT_MIN;
+foreach ($pts as &$pt) {
+    $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+    $prev_m    = $pt['morton'];
+}
+unset($pt);
+
+// Step 3: sort by gap descending (sparsest first).
+usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
+
+// Step 4: dedup same-pixel [+ same-sectype for WiFi].
+$seen    = [];
+$deduped = [];
+foreach ($pts as $pt) {
+    $k = $is_cell
+        ? ($pt['px'] . ':' . $pt['py'])
+        : ($pt['px'] . ':' . $pt['py'] . ':' . (int)$pt['row']['sectype']);
+    if (!isset($seen[$k])) { $seen[$k] = true; $deduped[] = $pt; }
+}
+unset($seen, $pts);
+
+// Step 5: encode → gzip retry loop (target ≤750 KB, matching tippecanoe -M 750000).
+$max_gz_bytes = 750000;
+$keep         = count($deduped);
+$gz_bytes     = null;
+$has_features = false;
+
+if ($keep > 0) {
+    if ($is_cell) {
+        $enc_keys = ['mac', 'ssid', 'authmode', 'chan', 'type',
+                     'fa', 'la', 'points', 'rssi', 'user', 'id_str'];
+    } else {
+        $enc_keys = ['sectype', 'chan', 'radio', 'mac', 'user',
+                     'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
+                     'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
+                     'lat', 'lon', 'alt', 'manuf', 'id_str'];
+    }
+    $enc_keys_idx = array_flip($enc_keys);
+
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
+        $vbytes = []; $vidx = [];
+        $av = function(string $t, $v) use (&$vbytes, &$vidx, $add_value_fn): int {
+            return $add_value_fn($t, $v, $vbytes, $vidx);
+        };
+
+        $features = [];
+        foreach ($subset as $pt) {
+            $row = $pt['row'];
+            if ($is_cell) {
+                $tags = [
+                    $enc_keys_idx['mac'],      $av('str', (string)$row['mac']),
+                    $enc_keys_idx['ssid'],     $av('str', (string)$row['ssid']),
+                    $enc_keys_idx['authmode'], $av('str', (string)$row['authmode']),
+                    $enc_keys_idx['chan'],      $av('str', (string)$row['chan']),
+                    $enc_keys_idx['type'],     $av('str', (string)$row['type']),
+                    $enc_keys_idx['fa'],       $av('str', (string)$row['fa']),
+                    $enc_keys_idx['la'],       $av('str', (string)$row['la']),
+                    $enc_keys_idx['points'],   $av('int', (int)$row['points']),
+                    $enc_keys_idx['rssi'],     $av('int', (int)$row['rssi']),
+                    $enc_keys_idx['user'],     $av('str', (string)$row['user']),
+                    $enc_keys_idx['id_str'],   $av('str', (string)$row['id']),
+                ];
+            } else {
+                $tags = [
+                    $enc_keys_idx['sectype'],       $av('int', (int)$row['sectype']),
+                    $enc_keys_idx['chan'],           $av('int', (int)$row['chan']),
+                    $enc_keys_idx['radio'],         $av('str', (string)$row['radio']),
+                    $enc_keys_idx['mac'],           $av('str', (string)$row['mac']),
+                    $enc_keys_idx['user'],          $av('str', (string)$row['user']),
+                    $enc_keys_idx['ssid'],          $av('str', (string)$row['ssid']),
+                    $enc_keys_idx['auth'],          $av('str', (string)$row['auth']),
+                    $enc_keys_idx['encry'],         $av('str', (string)$row['encry']),
+                    $enc_keys_idx['nt'],            $av('str', (string)$row['nt']),
+                    $enc_keys_idx['btx'],           $av('str', (string)$row['btx']),
+                    $enc_keys_idx['otx'],           $av('str', (string)$row['otx']),
+                    $enc_keys_idx['fa'],            $av('str', (string)$row['fa']),
+                    $enc_keys_idx['la'],            $av('str', (string)$row['la']),
+                    $enc_keys_idx['points'],        $av('int', (int)$row['points']),
+                    $enc_keys_idx['high_gps_sig'],  $av('int', (int)$row['high_gps_sig']),
+                    $enc_keys_idx['high_gps_rssi'], $av('int', (int)$row['high_gps_rssi']),
+                    $enc_keys_idx['lat'],           $av('str', (string)$row['lat']),
+                    $enc_keys_idx['lon'],           $av('str', (string)$row['lon']),
+                    $enc_keys_idx['alt'],           $av('str', (string)$row['alt']),
+                    $enc_keys_idx['manuf'],         $av('str', (string)$row['manuf']),
+                    $enc_keys_idx['id_str'],        $av('str', (string)$row['id']),
+                ];
+            }
+            $features[] = mvt_encode_point_feature((int)$row['id'], $pt['px'], $pt['py'], $tags);
+        }
+
+        if (empty($features)) break;
+
+        $layer_bytes  = mvt_encode_layer($bucket, $features, $enc_keys, $vbytes);
+        $tile_bytes   = mvt_encode_tile($layer_bytes);
+        $gz_bytes     = gzencode($tile_bytes, 6);
+        $has_features = true;
+
+        $sz = strlen($gz_bytes);
+        if ($sz <= $max_gz_bytes) break;
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        if ($new_keep >= $keep) break;
+        $keep = $new_keep;
+    }
+}
+
+if ($gz_bytes === null) {
+    // No features — return an empty but valid gzip tile; don't cache.
+    $gz_bytes = gzencode(mvt_encode_tile(mvt_encode_layer($bucket, [], [], [])), 6);
+}
 
 // ── Response ──────────────────────────────────────────────────────────────────
-// Gzip-compress before caching and sending.
-$tile_bytes_gz = gzencode($tile_bytes, 6);
-
 // Only persist to disk when caching is enabled and there is actual data.
 // Empty tiles are never cached so the daemon's cleanup pass doesn't need to
 // remove on-demand empties.  Set TILE_DISK_CACHE=false to disable entirely.
-if (TILE_DISK_CACHE && !empty($features)) {
+if (TILE_DISK_CACHE && $has_features) {
     if (!is_dir($tile_dir)) { @mkdir($tile_dir, 0775, true); }
-    @file_put_contents($tile_file, $tile_bytes_gz);
+    @file_put_contents($tile_file, $gz_bytes);
 }
 
 header('Content-Type: application/x-protobuf');
 header('Content-Encoding: gzip');
 header('Vary: Accept-Encoding');
-header('Cache-Control: public, max-age=' . (empty($features) ? 60 : $cache_ttl));
-header('Content-Length: ' . strlen($tile_bytes_gz));
+header('Cache-Control: public, max-age=' . ($has_features ? $cache_ttl : 60));
+header('Content-Length: ' . strlen($gz_bytes));
 header('X-Tile-Cache: MISS');
 
-echo $tile_bytes_gz;
+echo $gz_bytes;

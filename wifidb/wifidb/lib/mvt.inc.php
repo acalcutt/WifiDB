@@ -156,19 +156,35 @@ function dd2dm(float $dd): float {
 
 /**
  * Return [start_date, end_date] strings (Y-m-d H:i:s, UTC) for a bucket.
- * Either may be null for open-ended ranges (daily has no end, legacy has no start).
+ * Either may be null for open-ended ranges (daily has no end, 10yrplus has no start).
  * Mirrors the intervals used across mvtd.php, mvt.php, and geojsond.php.
+ *
+ * Buckets (newest → oldest):
+ *   daily      last 36 hours
+ *   weekly     36 h – 7 days
+ *   monthly    7 days – 1 month
+ *   0to1year   1 month – 1 year
+ *   1to2year   1 – 2 years
+ *   2to3year   2 – 3 years
+ *   3to5year   3 – 5 years   (post-spike slump, ~2021–2023)
+ *   5to10year  5 – 10 years  (growth ramp + 2021 spike, ~2016–2021)
+ *   10yrplus   10+ years     (sparse pre-2016 data)
+ *   legacy     alias → same as 3to5year + 5to10year + 10yrplus combined (3yr+),
+ *              kept for backward-compatibility with opt/map.php and other callers.
  */
 function bucket_date_window(string $bucket): array {
     $now     = new DateTime('now', new DateTimeZone('UTC'));
     $windows = [
-        'daily'    => ['PT36H', null   ],
-        'weekly'   => ['P7D',   'PT36H'],
-        'monthly'  => ['P1M',   'P7D'  ],
-        '0to1year' => ['P1Y',   'P1M'  ],
-        '1to2year' => ['P2Y',   'P1Y'  ],
-        '2to3year' => ['P3Y',   'P2Y'  ],
-        'legacy'   => [null,    'P3Y'  ],
+        'daily'     => ['PT36H', null   ],
+        'weekly'    => ['P7D',   'PT36H'],
+        'monthly'   => ['P1M',   'P7D'  ],
+        '0to1year'  => ['P1Y',   'P1M'  ],
+        '1to2year'  => ['P2Y',   'P1Y'  ],
+        '2to3year'  => ['P3Y',   'P2Y'  ],
+        '3to5year'  => ['P5Y',   'P3Y'  ],  // post-spike slump (~2021–2023)
+        '5to10year' => ['P10Y',  'P5Y'  ],  // growth ramp + 2021 spike (~2016–2021)
+        '10yrplus'  => [null,    'P10Y' ],  // sparse pre-2016 data
+        'legacy'    => [null,    'P3Y'  ],  // backward-compat alias (covers 3yr+)
     ];
     [$start_ivl, $end_ivl] = $windows[$bucket];
     $start_date = $end_date = null;

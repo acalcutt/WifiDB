@@ -110,7 +110,7 @@ $data_bbox = [
 // 50000 is a safe default; increase if your server has fast network to the DB.
 $page_size = 50000;
 
-// ── Z-order thinning scale ────────────────────────────────────────────────────
+// Z-order thinning scale ────────────────────────────────────────────────────
 // Controls how aggressively the Morton-curve spatial sort thins features at low
 // zoom levels.  An AP appears at zoom z only when its Morton gap to its nearest
 // spatial neighbour exceeds (drop_scale_pixels)² × (1 tile-pixel)² in Morton
@@ -118,6 +118,31 @@ $page_size = 50000;
 // separation (halves feature count per zoom step, matching tippecanoe's default
 // --drop-densest-as-needed behaviour at gamma=1 with droprate≈2).
 $drop_scale_pixels = 1.5;
+
+// Hard cap on feature_minzoom — controls the tippecanoe-equivalent behaviour.
+//
+// The Morton gap formula can assign feature_minzoom=15–19 to APs in very
+// dense buckets (e.g. 1.5 M APs, Phoenix/AZ peak period) causing entire
+// tiles at z=12–14 to have zero qualifying APs → blank squares even though
+// the area has data.
+//
+// Set to $min_zoom (= 1) for exact --drop-densest-as-needed equivalence:
+// every AP is a candidate at every zoom level; encode_tile_from_points()
+// performs the per-tile density sort and fills the 1.5 MB byte budget from
+// sparsest-to-densest — densest features are dropped only when a specific
+// tile is over-full, exactly as tippecanoe does.  No tile is ever blank
+// because of the pre-filter alone.
+//
+// Trade-off: the binning loop at z=1–5 now iterates ALL APs (e.g. 1.5 M)
+// instead of the formula-thinned subset.  The loop itself is fast integer
+// arithmetic; the encoder's usort on the resulting large tile candidates
+// (≈ 400 K APs per z=1 tile for a 1.5 M bucket) needs ~300–500 MB of RAM
+// and ~1–2 s per tile.  Ensure memory_limit is set high enough in php.ini
+// (e.g. 2048 M) before running the daemon on large buckets.
+//
+// Raise toward 13–14 if RAM is limited or if low-zoom tile generation is too
+// slow; the missing-squares problem only affects z ≥ cap value.
+$cap_feature_minzoom = 1;
 
 // Output directory — must be web-accessible.  The .htaccess in this directory
 // sets the correct Content-Type/Content-Encoding headers for .pbf files.
@@ -127,13 +152,25 @@ $output_dir = rtrim($dbcore->PATH, '/') . '/out/tiles';
 // Tiles whose file mtime is newer than this are skipped on incremental runs.
 // Use --force on the command line to bypass and regenerate everything.
 $bucket_ttl = [
-    'daily'    =>     3600,  //  1 hour
-    'weekly'   =>    86400,  //  1 day
-    'monthly'  =>   604800,  //  1 week
-    '0to1year' =>  2592000,  //  30 days
-    '1to2year' =>  2592000,
-    '2to3year' =>  2592000,
-    'legacy'   =>  2592000,
+    'daily'     =>     3600,  //  1 hour
+    'weekly'    =>    86400,  //  1 day
+    'monthly'   =>   604800,  //  1 week
+    '0to1year'  =>  2592000,  //  30 days
+    '1to2year'  =>  2592000,
+    '2to3year'  =>  2592000,
+    '3to5year'  =>  2592000,
+    '5to10year' =>  2592000,
+    '10yrplus'  =>  2592000,
+    // Cell network buckets — same cadence as corresponding WiFi AP buckets.
+    'cell_daily'     =>     3600,
+    'cell_weekly'    =>    86400,
+    'cell_monthly'   =>   604800,
+    'cell_0to1year'  =>  2592000,
+    'cell_1to2year'  =>  2592000,
+    'cell_2to3year'  =>  2592000,
+    'cell_3to5year'  =>  2592000,
+    'cell_5to10year' =>  2592000,
+    'cell_10yrplus'  =>  2592000,
 ];
 
 // Per-bucket maximum tile age in seconds.
@@ -143,19 +180,28 @@ $bucket_ttl = [
 // of the window.  This prevents disk accumulation when the daemon skips a run
 // or a tile falls permanently below the AP threshold.
 $bucket_max_age = [
-    'daily'    =>    172800,  //  2 days   (bucket window: 1 day)
-    'weekly'   =>   1209600,  //  14 days  (bucket window: 7 days)
-    'monthly'  =>   5184000,  //  60 days  (bucket window: ~30 days)
-    '0to1year' =>  31536000,  //  1 year
-    '1to2year' =>  31536000,  //  1 year
-    '2to3year' =>  31536000,  //  1 year
-    'legacy'   =>  31536000,  //  1 year
+    'daily'     =>    172800,  //  2 days   (bucket window: 1 day)
+    'weekly'    =>   1209600,  //  14 days  (bucket window: 7 days)
+    'monthly'   =>   5184000,  //  60 days  (bucket window: ~30 days)
+    '0to1year'  =>  31536000,  //  1 year
+    '1to2year'  =>  31536000,  //  1 year
+    '2to3year'  =>  31536000,  //  1 year
+    '3to5year'  =>  63072000,  //  2 years
+    '5to10year' =>  63072000,  //  2 years
+    '10yrplus'  =>  63072000,  //  2 years
+    'cell_daily'     =>    172800,
+    'cell_weekly'    =>   1209600,
+    'cell_monthly'   =>   5184000,
+    'cell_0to1year'  =>  31536000,
+    'cell_1to2year'  =>  31536000,
+    'cell_2to3year'  =>  31536000,
+    'cell_3to5year'  =>  63072000,
+    'cell_5to10year' =>  63072000,
+    'cell_10yrplus'  =>  63072000,
 ];
 
-// Maximum features per tile before the density thinning budget kicks in.
-// The tile encoder's 1.5 MB uncompressed layer budget handles this automatically;
-// this constant is kept for reference but is no longer a per-zoom DB limit.
-// The bulk fetch retrieves all APs once; thinning happens in PHP per tile.
+// Maximum features per tile for reference; actual per-tile dropping is done
+// by the encoder's Morton-gap sort + 750 KB gzip retry loop (tippecanoe-style).
 define('MAX_FEATURES_PER_TILE', 50000);
 
 // ── CLI flags ─────────────────────────────────────────────────────────────────
@@ -192,107 +238,250 @@ function encode_tile_from_points(
     array  $all_aps
 ): ?string {
 
-    // Project all APs to pixel coordinates within this tile.
-    $points = [];
+    // ── Step 1: project to tile pixels + compute per-tile Morton index ────────
+    // Morton index is computed fresh per-tile (not from the global sort) so that
+    // gap calculations reflect intra-tile spatial density, not global density.
+    $pts = [];
     foreach ($idxs as $idx) {
         $ap = $all_aps[$idx];
         [$px, $py] = project_to_tile((float)$ap['lat'], (float)$ap['lon'], $z, $x, $y);
-        $points[] = ['idx' => $idx, 'px' => $px, 'py' => $py];
+        $pts[] = [
+            'idx'    => $idx,
+            'px'     => $px,
+            'py'     => $py,
+            'morton' => morton_encode((float)$ap['lat'], (float)$ap['lon']),
+        ];
     }
 
-    // ── Density grid (32×32 cells ≈ 128 px/cell in 4096-extent tile) ─────────
-    $density_res = 32;
-    $cell_px     = (float)MVT_EXTENT / $density_res;
-    $cell_count  = [];
-    foreach ($points as &$pt) {
-        $cx       = min($density_res - 1, (int)($pt['px'] / $cell_px));
-        $cy       = min($density_res - 1, (int)($pt['py'] / $cell_px));
-        $ck       = $cx * $density_res + $cy;
-        $pt['ck'] = $ck;
-        $cell_count[$ck] = ($cell_count[$ck] ?? 0) + 1;
+    // ── Step 2: sort by Morton index, then compute gap to predecessor ─────────
+    // Gap = distance to nearest spatial neighbour in Morton order.
+    // Large gap → isolated AP (sparse); small gap → dense cluster.
+    usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+    $prev_m = PHP_INT_MIN;
+    foreach ($pts as &$pt) {
+        $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+        $prev_m    = $pt['morton'];
     }
     unset($pt);
 
-    // Sort: sparsest cells first; densest dropped when byte budget is full.
-    usort($points, function($a, $b) use ($cell_count) {
-        return $cell_count[$a['ck']] - $cell_count[$b['ck']];
-    });
+    // ── Step 3: re-sort by gap descending — sparsest (largest gap) first ──────
+    // This matches tippecanoe's "keep the sparsest X%" drop strategy: when we
+    // slice to the first $keep elements we keep the most isolated APs and drop
+    // the densest cluster members.
+    usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
 
-    // ── Build MVT layer within the 1.5 MB uncompressed budget ─────────────────
-    $keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
-                  'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
-                  'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
-                  'lat', 'lon', 'alt', 'manuf', 'id_str'];
-    $keys_idx = array_flip($keys);
-    $values_bytes = [];
-    $values_idx   = [];
-
-    $add_value = function(string $type, $raw) use (&$values_bytes, &$values_idx): int {
-        $key = $type . ':' . $raw;
-        if (!isset($values_idx[$key])) {
-            $values_idx[$key] = count($values_bytes);
-            $values_bytes[] = ($type === 'int')
-                ? pb_field_varint(4, (int)$raw)
-                : pb_field_string(1, (string)$raw);
+    // ── Step 4: deduplicate same-pixel + same-sectype ─────────────────────────
+    // Because pts is sorted sparsest-first, the first occurrence of any
+    // pixel+sectype is always the sparsest representative — correct behaviour.
+    $seen    = [];
+    $deduped = [];
+    foreach ($pts as $pt) {
+        $ap  = $all_aps[$pt['idx']];
+        $k   = $pt['px'] . ':' . $pt['py'] . ':' . (int)$ap['sectype'];
+        if (!isset($seen[$k])) {
+            $seen[$k]  = true;
+            $deduped[] = $pt;
         }
-        return $values_idx[$key];
-    };
+    }
+    unset($seen, $pts);
 
-    $max_layer_bytes = 1500000;
-    $est_size        = 20;
-    $features        = [];
-    $seen_pixel      = [];
+    if (empty($deduped)) return null;
 
-    foreach ($points as $pt) {
-        $ap = $all_aps[$pt['idx']];
-        $px = $pt['px'];
-        $py = $pt['py'];
+    // ── Step 5: encode → gzip, retry loop (tippecanoe --drop-densest-as-needed)
+    // Target: compressed tile ≤ 750 KB, matching tippecanoe's -M 750000.
+    // On each retry we keep only floor(keep × 750000/actual_size) features,
+    // always taking from the front of $deduped (= sparsest first).
+    $max_gz_bytes = 750000;
+    $keep         = count($deduped);
+    $gz_bytes     = null;
 
-        $pixel_key = $px . ':' . $py . ':' . (int)$ap['sectype'];
-        if (isset($seen_pixel[$pixel_key])) continue;
-        $seen_pixel[$pixel_key] = true;
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
 
-        $tags = [
-            $keys_idx['sectype'],      $add_value('int', (int)$ap['sectype']),
-            $keys_idx['chan'],          $add_value('int', (int)$ap['chan']),
-            $keys_idx['radio'],        $add_value('str', (string)$ap['radio']),
-            $keys_idx['mac'],          $add_value('str', (string)$ap['mac']),
-            $keys_idx['user'],         $add_value('str', (string)$ap['user']),
-            $keys_idx['ssid'],         $add_value('str', (string)$ap['ssid']),
-            $keys_idx['auth'],         $add_value('str', (string)$ap['auth']),
-            $keys_idx['encry'],        $add_value('str', (string)$ap['encry']),
-            $keys_idx['nt'],           $add_value('str', (string)$ap['nt']),
-            $keys_idx['btx'],          $add_value('str', (string)$ap['btx']),
-            $keys_idx['otx'],          $add_value('str', (string)$ap['otx']),
-            $keys_idx['fa'],           $add_value('str', (string)$ap['fa']),
-            $keys_idx['la'],           $add_value('str', (string)$ap['la']),
-            $keys_idx['points'],       $add_value('int', (int)$ap['points']),
-            $keys_idx['high_gps_sig'], $add_value('int', (int)$ap['high_gps_sig']),
-            $keys_idx['high_gps_rssi'],$add_value('int', (int)$ap['high_gps_rssi']),
-            $keys_idx['lat'],          $add_value('str', (string)$ap['lat']),
-            $keys_idx['lon'],          $add_value('str', (string)$ap['lon']),
-            $keys_idx['alt'],          $add_value('str', (string)$ap['alt']),
-            $keys_idx['manuf'],        $add_value('str', (string)$ap['manuf']),
-            $keys_idx['id_str'],       $add_value('str', (string)$ap['id']),
-        ];
-        $feat      = mvt_encode_point_feature((int)$ap['id'], $px, $py, $tags);
-        $feat_cost = strlen($feat) + 3;
+        // ── Build MVT layer for this subset ───────────────────────────────────
+        $keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
+                      'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
+                      'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
+                      'lat', 'lon', 'alt', 'manuf', 'id_str'];
+        $keys_idx     = array_flip($keys);
+        $values_bytes = [];
+        $values_idx   = [];
 
-        if ($est_size + $feat_cost > $max_layer_bytes) break;
+        $add_value = function(string $type, $raw) use (&$values_bytes, &$values_idx): int {
+            $key = $type . ':' . $raw;
+            if (!isset($values_idx[$key])) {
+                $values_idx[$key] = count($values_bytes);
+                $values_bytes[]   = ($type === 'int')
+                    ? pb_field_varint(4, (int)$raw)
+                    : pb_field_string(1, (string)$raw);
+            }
+            return $values_idx[$key];
+        };
 
-        $features[] = $feat;
-        $est_size  += $feat_cost;
+        $features = [];
+        foreach ($subset as $pt) {
+            $ap   = $all_aps[$pt['idx']];
+            $tags = [
+                $keys_idx['sectype'],       $add_value('int', (int)$ap['sectype']),
+                $keys_idx['chan'],           $add_value('int', (int)$ap['chan']),
+                $keys_idx['radio'],         $add_value('str', (string)$ap['radio']),
+                $keys_idx['mac'],           $add_value('str', (string)$ap['mac']),
+                $keys_idx['user'],          $add_value('str', (string)$ap['user']),
+                $keys_idx['ssid'],          $add_value('str', (string)$ap['ssid']),
+                $keys_idx['auth'],          $add_value('str', (string)$ap['auth']),
+                $keys_idx['encry'],         $add_value('str', (string)$ap['encry']),
+                $keys_idx['nt'],            $add_value('str', (string)$ap['nt']),
+                $keys_idx['btx'],           $add_value('str', (string)$ap['btx']),
+                $keys_idx['otx'],           $add_value('str', (string)$ap['otx']),
+                $keys_idx['fa'],            $add_value('str', (string)$ap['fa']),
+                $keys_idx['la'],            $add_value('str', (string)$ap['la']),
+                $keys_idx['points'],        $add_value('int', (int)$ap['points']),
+                $keys_idx['high_gps_sig'],  $add_value('int', (int)$ap['high_gps_sig']),
+                $keys_idx['high_gps_rssi'], $add_value('int', (int)$ap['high_gps_rssi']),
+                $keys_idx['lat'],           $add_value('str', (string)$ap['lat']),
+                $keys_idx['lon'],           $add_value('str', (string)$ap['lon']),
+                $keys_idx['alt'],           $add_value('str', (string)$ap['alt']),
+                $keys_idx['manuf'],         $add_value('str', (string)$ap['manuf']),
+                $keys_idx['id_str'],        $add_value('str', (string)$ap['id']),
+            ];
+            $features[] = mvt_encode_point_feature((int)$ap['id'], $pt['px'], $pt['py'], $tags);
+        }
+
+        if (empty($features)) return null;
+
+        $layer_bytes = mvt_encode_layer($bucket, $features, $keys, $values_bytes);
+        $tile_bytes  = mvt_encode_tile($layer_bytes);
+        $gz_bytes    = gzencode($tile_bytes, 6);
+
+        $sz = strlen($gz_bytes);
+        if ($sz <= $max_gz_bytes) break;
+
+        // Tile too large — log and scale down proportionally, same as tippecanoe.
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        $pct      = round(100.0 * $new_keep / count($deduped), 2);
+        echo "  tile {$z}/{$x}/{$y} size is {$sz} >{$max_gz_bytes}; keeping sparsest {$pct}% ({$new_keep}/{$keep})\n";
+        if ($new_keep >= $keep) break; // no progress; accept oversized tile
+        $keep = $new_keep;
     }
 
-    if (empty($features)) return null;
+    return $gz_bytes;
+}
 
-    $layer_bytes = mvt_encode_layer($bucket, $features, $keys, $values_bytes);
-    $tile_bytes  = mvt_encode_tile($layer_bytes);
-    return gzencode($tile_bytes, 6);
+// ── Cell tile encoder ────────────────────────────────────────────────────────
+// Mirrors encode_tile_from_points() — same Morton-gap sort + 750 KB retry loop.
+// Layer name = $bucket (e.g. 'cell_daily'); pixel dedup uses px:py (no sectype).
+function encode_cell_tile_from_mvt(
+    int    $z, int $x, int $y,
+    string $bucket,
+    array  $idxs,
+    array  $all_cells
+): ?string {
+
+    // ── Step 1: project + per-tile Morton index ───────────────────────────────
+    $pts = [];
+    foreach ($idxs as $idx) {
+        $cell = $all_cells[$idx];
+        [$px, $py] = project_to_tile((float)$cell['lat'], (float)$cell['lon'], $z, $x, $y);
+        $pts[] = [
+            'idx'    => $idx,
+            'px'     => $px,
+            'py'     => $py,
+            'morton' => morton_encode((float)$cell['lat'], (float)$cell['lon']),
+        ];
+    }
+
+    // ── Step 2: Morton sort + gap ─────────────────────────────────────────────
+    usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+    $prev_m = PHP_INT_MIN;
+    foreach ($pts as &$pt) {
+        $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+        $prev_m    = $pt['morton'];
+    }
+    unset($pt);
+
+    // ── Step 3: sort by gap descending (sparsest first) ───────────────────────
+    usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
+
+    // ── Step 4: deduplicate same pixel (no sectype for cell data) ─────────────
+    $seen    = [];
+    $deduped = [];
+    foreach ($pts as $pt) {
+        $k = $pt['px'] . ':' . $pt['py'];
+        if (!isset($seen[$k])) {
+            $seen[$k]  = true;
+            $deduped[] = $pt;
+        }
+    }
+    unset($seen, $pts);
+
+    if (empty($deduped)) return null;
+
+    // ── Step 5: encode → gzip retry loop ─────────────────────────────────────
+    $max_gz_bytes = 750000;
+    $keep         = count($deduped);
+    $gz_bytes     = null;
+
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
+
+        $keys     = ['mac', 'ssid', 'authmode', 'chan', 'type',
+                     'fa', 'la', 'points', 'rssi', 'user', 'id_str'];
+        $keys_idx     = array_flip($keys);
+        $values_bytes = [];
+        $values_idx   = [];
+
+        $add_value = function(string $type, $raw) use (&$values_bytes, &$values_idx): int {
+            $key = $type . ':' . $raw;
+            if (!isset($values_idx[$key])) {
+                $values_idx[$key] = count($values_bytes);
+                $values_bytes[]   = ($type === 'int')
+                    ? pb_field_varint(4, (int)$raw)
+                    : pb_field_string(1, (string)$raw);
+            }
+            return $values_idx[$key];
+        };
+
+        $features = [];
+        foreach ($subset as $pt) {
+            $cell = $all_cells[$pt['idx']];
+            $tags = [
+                $keys_idx['mac'],      $add_value('str', (string)$cell['mac']),
+                $keys_idx['ssid'],     $add_value('str', (string)$cell['ssid']),
+                $keys_idx['authmode'], $add_value('str', (string)$cell['authmode']),
+                $keys_idx['chan'],     $add_value('str', (string)$cell['chan']),
+                $keys_idx['type'],     $add_value('str', (string)$cell['type']),
+                $keys_idx['fa'],       $add_value('str', (string)$cell['fa']),
+                $keys_idx['la'],       $add_value('str', (string)$cell['la']),
+                $keys_idx['points'],   $add_value('int', (int)$cell['points']),
+                $keys_idx['rssi'],     $add_value('int', (int)$cell['rssi']),
+                $keys_idx['user'],     $add_value('str', (string)$cell['user']),
+                $keys_idx['id_str'],   $add_value('str', (string)$cell['id']),
+            ];
+            $features[] = mvt_encode_point_feature((int)$cell['id'], $pt['px'], $pt['py'], $tags);
+        }
+
+        if (empty($features)) return null;
+
+        $layer_bytes = mvt_encode_layer($bucket, $features, $keys, $values_bytes);
+        $tile_bytes  = mvt_encode_tile($layer_bytes);
+        $gz_bytes    = gzencode($tile_bytes, 6);
+
+        $sz = strlen($gz_bytes);
+        if ($sz <= $max_gz_bytes) break;
+
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        $pct      = round(100.0 * $new_keep / count($deduped), 2);
+        echo "  tile {$z}/{$x}/{$y} size is {$sz} >{$max_gz_bytes}; keeping sparsest {$pct}% ({$new_keep}/{$keep})\n";
+        if ($new_keep >= $keep) break;
+        $keep = $new_keep;
+    }
+
+    return $gz_bytes;
 }
 
 // ── Main generation loop ──────────────────────────────────────────────────────
-$buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', 'legacy'];
+$buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
+            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
 
 if ($single_bucket !== null) {
     if (!in_array($single_bucket, $buckets)) {
@@ -314,85 +503,96 @@ foreach ($buckets as $bucket) {
     $bucket_start = microtime(true);
 
     // ── Single-scan architecture (keyset-paginated) ──────────────────────────
-    // One ordered scan of the bucket's APs (using BboxDateArray with $last_id
-    // keyset pagination — flat O(page_size) per page, independent of depth).
-    // Rows are stored once in $aps; per-zoom $tile_map holds INTEGER INDICES
-    // into $aps, not row copies, so memory grows ~linearly with row count.
-    //
-    // For the 9 M-row legacy bucket this avoids both pitfalls of the previous
-    // designs:
-    //   • Old per-zoom-streaming: 19× the DB scan, slow OFFSET pagination.
-    //   • Original single-pass:   $tile_map duplicated full rows per zoom →
-    //                             7 GB+ memory blow-up.
-
-    [$start_date, $end_date] = bucket_date_window($bucket);
+    $is_cell = (strpos($bucket, 'cell_') === 0);
+    $base_bucket = $is_cell ? substr($bucket, 5) : $bucket;  // 'cell_daily' → 'daily'
+    [$start_date, $end_date] = bucket_date_window($base_bucket);
 
     $lat_min_dm = dd2dm($data_bbox['lat_min']);
     $lat_max_dm = dd2dm($data_bbox['lat_max']);
     $lon_min_dm = dd2dm($data_bbox['lon_min']);
     $lon_max_dm = dd2dm($data_bbox['lon_max']);
 
-    echo ts() . "[{$bucket}] Fetching APs (keyset pagination)...\n";
+    $label = $is_cell ? 'cells' : 'APs';
+    echo ts() . "[{$bucket}] Fetching {$label} (keyset pagination)...\n";
 
     $aps       = [];
     $last_id   = 0;
     while (true) {
-        $result = $dbcore->export->BboxDateArray(
-            $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-            $start_date, $end_date,
-            null, $page_size, $last_id
-        );
+        if ($is_cell) {
+            $result = $dbcore->export->BboxCellArray(
+                $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+                $page_size, $last_id, $start_date, $end_date
+            );
+        } else {
+            $result = $dbcore->export->BboxDateArray(
+                $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+                $start_date, $end_date,
+                null, $page_size, $last_id
+            );
+        }
         $rows = $result['data'] ?? [];
         if (empty($rows)) break;
 
         foreach ($rows as $row) {
             $lat = (float)$row['lat'];
             $lon = (float)$row['lon'];
-            if ($lat == 0.0 && $lon == 0.0) {
-                // Skip but still advance $last_id below.
-                $rid = (int)$row['id'];
-                if ($rid > $last_id) $last_id = $rid;
-                continue;
-            }
-
             $rid = (int)$row['id'];
             if ($rid > $last_id) $last_id = $rid;
+            if ($lat == 0.0 && $lon == 0.0) continue;
 
-            $aps[] = [
-                'id'            => $rid,
-                'lat'           => $lat,
-                'lon'           => $lon,
-                'alt'           => (string)$row['alt'],
-                'sectype'       => (int)$row['sectype'],
-                'chan'          => (int)$row['chan'],
-                'radio'         => (string)$row['radio'],
-                'mac'           => (string)$row['mac'],
-                'user'          => (string)$row['user'],
-                'ssid'          => (string)$row['ssid'],
-                'auth'          => (string)$row['auth'],
-                'encry'         => (string)$row['encry'],
-                'nt'            => (string)$row['nt'],
-                'btx'           => (string)$row['btx'],
-                'otx'           => (string)$row['otx'],
-                'fa'            => (string)$row['fa'],
-                'la'            => (string)$row['la'],
-                'points'        => (int)$row['points'],
-                'high_gps_sig'  => (int)$row['high_gps_sig'],
-                'high_gps_rssi' => (int)$row['high_gps_rssi'],
-                'manuf'         => (string)$row['manuf'],
-            ];
+            if ($is_cell) {
+                $aps[] = [
+                    'id'       => $rid,
+                    'lat'      => $lat,
+                    'lon'      => $lon,
+                    'mac'      => (string)$row['mac'],
+                    'ssid'     => (string)$row['ssid'],
+                    'authmode' => (string)$row['authmode'],
+                    'chan'     => (string)$row['chan'],
+                    'type'     => (string)$row['type'],
+                    'fa'       => (string)$row['fa'],
+                    'la'       => (string)$row['la'],
+                    'points'   => (int)$row['points'],
+                    'rssi'     => (int)$row['rssi'],
+                    'user'     => (string)$row['user'],
+                ];
+            } else {
+                $aps[] = [
+                    'id'            => $rid,
+                    'lat'           => $lat,
+                    'lon'           => $lon,
+                    'alt'           => (string)$row['alt'],
+                    'sectype'       => (int)$row['sectype'],
+                    'chan'          => (int)$row['chan'],
+                    'radio'         => (string)$row['radio'],
+                    'mac'           => (string)$row['mac'],
+                    'user'          => (string)$row['user'],
+                    'ssid'          => (string)$row['ssid'],
+                    'auth'          => (string)$row['auth'],
+                    'encry'         => (string)$row['encry'],
+                    'nt'            => (string)$row['nt'],
+                    'btx'           => (string)$row['btx'],
+                    'otx'           => (string)$row['otx'],
+                    'fa'            => (string)$row['fa'],
+                    'la'            => (string)$row['la'],
+                    'points'        => (int)$row['points'],
+                    'high_gps_sig'  => (int)$row['high_gps_sig'],
+                    'high_gps_rssi' => (int)$row['high_gps_rssi'],
+                    'manuf'         => (string)$row['manuf'],
+                ];
+            }
         }
-        echo ts() . "[{$bucket}]   ... " . count($aps) . " APs fetched\n";
+        echo ts() . "[{$bucket}]   ... " . count($aps) . " {$label} fetched\n";
         if (count($rows) < $page_size) break;  // last page
     }
 
     $ap_count = count($aps);
     if ($ap_count === 0) {
-        echo ts() . "[{$bucket}] Skipping — no APs in bucket.\n\n";
+        echo ts() . "[{$bucket}] Skipping — no {$label} in bucket.\n\n";
         continue;
     }
 
-    echo ts() . "[{$bucket}] {$ap_count} APs total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
+    echo ts() . "[{$bucket}] {$ap_count} {$label} total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
 
     // ── Z-order spatial sort + feature_minzoom assignment ───────────────────
     // assign_feature_minzoom() (lib/spatial.inc.php) encodes each AP as a
@@ -401,7 +601,7 @@ foreach ($buckets as $bucket) {
     // for the full algorithm description and tippecanoe attribution.
     {
         $sort_s  = microtime(true);
-        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, $drop_scale_pixels);
+        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, $drop_scale_pixels, $cap_feature_minzoom);
         $snaps   = [];
         foreach ([1, 5, 7, 10, 13, 14] as $zs) {
             if ($zs >= $min_zoom && $zs <= $max_zoom) {
@@ -443,13 +643,16 @@ foreach ($buckets as $bucket) {
                 $tile_file = "{$tile_dir}/{$ty}.pbf";
 
                 if (!$force_regen && file_exists($tile_file)
+                    && filesize($tile_file) >= 20          // 20 B = minimum valid gzip stream; smaller = truncated write
                     && (time() - filemtime($tile_file)) < $ttl) {
                     $z_skipped++;
                     $grand_skipped++;
                     continue;
                 }
 
-                $gz_bytes = encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
+                $gz_bytes = $is_cell
+                    ? encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps)
+                    : encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
 
                 if ($gz_bytes === null) {
                     if (file_exists($tile_file)) unlink($tile_file);

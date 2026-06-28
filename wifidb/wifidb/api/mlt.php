@@ -10,7 +10,7 @@ MapLibre's type:"vector" source when the TileJSON includes "format":"mlt".
 
 URL:  /api/mlt.php?z={z}&x={x}&y={y}&bucket={bucket}
 
-  bucket — one of: daily, weekly, monthly, 0to1year, 1to2year, 2to3year, legacy
+  bucket — one of: daily, weekly, monthly, 0to1year, 1to2year, 2to3year, 3to5year, 5to10year, 10yrplus
 
 The MLT tile contains a single feature table whose name matches the bucket
 parameter.  Fields: sectype (int), chan (int), radio (string), mac (string),
@@ -41,9 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 $z = filter_input(INPUT_GET, 'z', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 20]]);
 $x = filter_input(INPUT_GET, 'x', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
 $y = filter_input(INPUT_GET, 'y', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0]]);
-$bucket = preg_replace('/[^a-z0-9]/', '', strtolower((string)@$_REQUEST['bucket']));
+$bucket = preg_replace('/[^a-z0-9_]/', '', strtolower((string)@$_REQUEST['bucket']));
 
-$valid_buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', 'legacy'];
+$valid_buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
+                  'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
 
 if ($z === false || $z === null || $x === false || $x === null || $y === false || $y === null) {
     http_response_code(400); header('Content-Type: application/json');
@@ -59,13 +60,24 @@ if (!in_array($bucket, $valid_buckets, true)) {
 // This is the same directory mltd.php writes pre-generated tiles to.
 define('TILE_DISK_CACHE', true);
 $bucket_ttl = [
-    'daily'    =>     3600,  //  1 hour
-    'weekly'   =>    86400,  //  1 day
-    'monthly'  =>   604800,  //  1 week
-    '0to1year' =>  2592000,  //  30 days
-    '1to2year' =>  2592000,
-    '2to3year' =>  2592000,
-    'legacy'   =>  2592000,
+    'daily'     =>     3600,  //  1 hour
+    'weekly'    =>    86400,  //  1 day
+    'monthly'   =>   604800,  //  1 week
+    '0to1year'  =>  2592000,  //  30 days
+    '1to2year'  =>  2592000,
+    '2to3year'  =>  2592000,
+    '3to5year'  =>  2592000,
+    '5to10year' =>  2592000,
+    '10yrplus'  =>  2592000,
+    'cell_daily'     =>     3600,
+    'cell_weekly'    =>    86400,
+    'cell_monthly'   =>   604800,
+    'cell_0to1year'  =>  2592000,
+    'cell_1to2year'  =>  2592000,
+    'cell_2to3year'  =>  2592000,
+    'cell_3to5year'  =>  2592000,
+    'cell_5to10year' =>  2592000,
+    'cell_10yrplus'  =>  2592000,
 ];
 $cache_ttl  = $bucket_ttl[$bucket] ?? 86400;
 $tile_dir   = rtrim($dbcore->PATH, '/') . '/out/tiles-mlt/' . $bucket . '/' . $z . '/' . $x;
@@ -89,59 +101,113 @@ $lat_max_dm = dd2dm($lat_max);
 $lon_min_dm = dd2dm($lon_min);
 $lon_max_dm = dd2dm($lon_max);
 
-[$start_date, $end_date] = bucket_date_window($bucket);
+$is_cell     = (strpos($bucket, 'cell_') === 0);
+$base_bucket = $is_cell ? substr($bucket, 5) : $bucket;
+[$start_date, $end_date] = bucket_date_window($base_bucket);
 
 // ── Query via shared export function ─────────────────────────────────────────
 $query_limit = ($z >= 12) ? 5000 : min(50000, 5000 << max(0, 12 - $z));
 
-$result = $dbcore->export->BboxDateArray(
-    $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-    $start_date, $end_date,
-    null, $query_limit
-);
+if ($is_cell) {
+    $result = $dbcore->export->BboxCellArray(
+        $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+        $query_limit, null, $start_date, $end_date
+    );
+} else {
+    $result = $dbcore->export->BboxDateArray(
+        $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+        $start_date, $end_date,
+        null, $query_limit
+    );
+}
 $rows = $result['data'];
 
-// ── Build MLT ─────────────────────────────────────────────────────────────────
-// ── Morton-curve spatial thinning (lib/spatial.inc.php) ──────────────────────
-// Same approach as the daemon: Morton-sort the rows, assign feature_minzoom
-// from the gap to each AP's nearest spatial neighbour, then skip dense cluster
-// members at the current zoom level.  drop_scale_pixels=1.5 matches the
-// daemon setting so on-demand tiles render consistently with pre-generated ones.
-$drop_scale_pixels = 1.5;
-assign_feature_minzoom($rows, $z, $z + 4, $drop_scale_pixels);
-
-$features = [];
+// ── Per-tile spatial thinning (32×32 density grid, matches mltd.php) ──────────
+// Mirrors encode_mlt_tile_from_points() / encode_cell_mlt_tile_from_points():
+//   1. Project rows to tile pixels + assign 32×32 density-grid cell.
+//   2. Sort by cell density ascending (sparsest cells first).
+//   3. Deduplicate same-pixel [+ same-sectype for WiFi] + 1.5 MB byte-budget cap.
+//   4. mlt_encode_tile() + gzip.
+$density_res = 32;
+$cell_px     = (float)MLT_EXTENT / $density_res;
+$pts         = [];
+$cell_count  = [];
 
 foreach ($rows as $row) {
-    if ($row['feature_minzoom'] > $z) continue;  // skip dense cluster members
-
     [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
+    $cx  = min($density_res - 1, (int)($px / $cell_px));
+    $cy  = min($density_res - 1, (int)($py / $cell_px));
+    $ck  = $cx * $density_res + $cy;
+    $pts[] = ['row' => $row, 'px' => $px, 'py' => $py, 'ck' => $ck];
+    $cell_count[$ck] = ($cell_count[$ck] ?? 0) + 1;
+}
 
-    $features[] = [
-        'id'            => (int)$row['id'],
-        'x'             => $px,
-        'y'             => $py,
-        'sectype'       => (int)$row['sectype'],
-        'chan'           => (int)$row['chan'],
-        'radio'         => (string)$row['radio'],
-        'mac'           => (string)$row['mac'],
-        'user'          => (string)$row['user'],
-        'ssid'          => (string)$row['ssid'],
-        'auth'          => (string)$row['auth'],
-        'encry'         => (string)$row['encry'],
-        'nt'            => (string)$row['nt'],
-        'btx'           => (string)$row['btx'],
-        'otx'           => (string)$row['otx'],
-        'fa'            => (string)$row['fa'],
-        'la'            => (string)$row['la'],
-        'points'        => (int)$row['points'],
-        'high_gps_sig'  => (int)$row['high_gps_sig'],
-        'high_gps_rssi' => (int)$row['high_gps_rssi'],
-        'lat'           => (string)$row['lat'],
-        'lon'           => (string)$row['lon'],
-        'alt'           => (string)$row['alt'],
-        'manuf'         => (string)$row['manuf'],
-    ];
+// Sort: sparsest cells first.
+usort($pts, function($a, $b) use ($cell_count) {
+    return $cell_count[$a['ck']] <=> $cell_count[$b['ck']];
+});
+
+// Dedup + byte-budget cap (~38 bytes/feature, 1.5 MB uncompressed).
+$max_tile_bytes = 1500000;
+$est_size       = 0;
+$features       = [];
+$seen_pixel     = [];
+
+foreach ($pts as $pt) {
+    $row = $pt['row'];
+    $px  = $pt['px'];
+    $py  = $pt['py'];
+
+    $pixel_key = $is_cell ? ($px . ':' . $py) : ($px . ':' . $py . ':' . (int)$row['sectype']);
+    if (isset($seen_pixel[$pixel_key])) continue;
+    $seen_pixel[$pixel_key] = true;
+
+    if ($est_size + 38 > $max_tile_bytes) break;
+    $est_size += 38;
+
+    if ($is_cell) {
+        $features[] = [
+            'id'       => (int)$row['id'],
+            'x'        => $px,
+            'y'        => $py,
+            'mac'      => (string)$row['mac'],
+            'ssid'     => (string)$row['ssid'],
+            'authmode' => (string)$row['authmode'],
+            'chan'     => (string)$row['chan'],
+            'type'     => (string)$row['type'],
+            'fa'       => (string)$row['fa'],
+            'la'       => (string)$row['la'],
+            'points'   => (int)$row['points'],
+            'rssi'     => (int)$row['rssi'],
+            'user'     => (string)$row['user'],
+        ];
+    } else {
+        $features[] = [
+            'id'            => (int)$row['id'],
+            'x'             => $px,
+            'y'             => $py,
+            'sectype'       => (int)$row['sectype'],
+            'chan'           => (int)$row['chan'],
+            'radio'         => (string)$row['radio'],
+            'mac'           => (string)$row['mac'],
+            'user'          => (string)$row['user'],
+            'ssid'          => (string)$row['ssid'],
+            'auth'          => (string)$row['auth'],
+            'encry'         => (string)$row['encry'],
+            'nt'            => (string)$row['nt'],
+            'btx'           => (string)$row['btx'],
+            'otx'           => (string)$row['otx'],
+            'fa'            => (string)$row['fa'],
+            'la'            => (string)$row['la'],
+            'points'        => (int)$row['points'],
+            'high_gps_sig'  => (int)$row['high_gps_sig'],
+            'high_gps_rssi' => (int)$row['high_gps_rssi'],
+            'lat'           => (string)$row['lat'],
+            'lon'           => (string)$row['lon'],
+            'alt'           => (string)$row['alt'],
+            'manuf'         => (string)$row['manuf'],
+        ];
+    }
 }
 
 // ── Response ──────────────────────────────────────────────────────────────────

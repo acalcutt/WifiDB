@@ -82,17 +82,31 @@ $page_size = 50000;
 // same feature sets.
 $drop_scale_pixels = 1.5;
 
+// Must match $cap_feature_minzoom in mvtd.php.  See mvtd.php for description.
+$cap_feature_minzoom = 1;
+
 // Output directory — parallel to out/tiles/ but for .mlt files.
 $output_dir = rtrim($dbcore->PATH, '/') . '/out/tiles-mlt';
 
 $bucket_ttl = [
-    'daily'    =>     3600,  //  1 hour
-    'weekly'   =>    86400,  //  1 day
-    'monthly'  =>   604800,  //  1 week
-    '0to1year' =>  2592000,  //  30 days
-    '1to2year' =>  2592000,
-    '2to3year' =>  2592000,
-    'legacy'   =>  2592000,
+    'daily'     =>     3600,  //  1 hour
+    'weekly'    =>    86400,  //  1 day
+    'monthly'   =>   604800,  //  1 week
+    '0to1year'  =>  2592000,  //  30 days
+    '1to2year'  =>  2592000,
+    '2to3year'  =>  2592000,
+    '3to5year'  =>  2592000,
+    '5to10year' =>  2592000,
+    '10yrplus'  =>  2592000,
+    'cell_daily'     =>     3600,
+    'cell_weekly'    =>    86400,
+    'cell_monthly'   =>   604800,
+    'cell_0to1year'  =>  2592000,
+    'cell_1to2year'  =>  2592000,
+    'cell_2to3year'  =>  2592000,
+    'cell_3to5year'  =>  2592000,
+    'cell_5to10year' =>  2592000,
+    'cell_10yrplus'  =>  2592000,
 ];
 
 // Per-bucket maximum tile age in seconds.
@@ -101,13 +115,24 @@ $bucket_ttl = [
 // own time window so stale tiles are purged once the data has fully rolled out
 // of the window.
 $bucket_max_age = [
-    'daily'    =>    172800,  //  2 days   (bucket window: 1 day)
-    'weekly'   =>   1209600,  //  14 days  (bucket window: 7 days)
-    'monthly'  =>   5184000,  //  60 days  (bucket window: ~30 days)
-    '0to1year' =>  31536000,  //  1 year
-    '1to2year' =>  31536000,  //  1 year
-    '2to3year' =>  31536000,  //  1 year
-    'legacy'   =>  31536000,  //  1 year
+    'daily'     =>    172800,  //  2 days   (bucket window: 1 day)
+    'weekly'    =>   1209600,  //  14 days  (bucket window: 7 days)
+    'monthly'   =>   5184000,  //  60 days  (bucket window: ~30 days)
+    '0to1year'  =>  31536000,  //  1 year
+    '1to2year'  =>  31536000,  //  1 year
+    '2to3year'  =>  31536000,  //  1 year
+    '3to5year'  =>  63072000,  //  2 years
+    '5to10year' =>  63072000,  //  2 years
+    '10yrplus'  =>  63072000,  //  2 years
+    'cell_daily'     =>    172800,
+    'cell_weekly'    =>   1209600,
+    'cell_monthly'   =>   5184000,
+    'cell_0to1year'  =>  31536000,
+    'cell_1to2year'  =>  31536000,
+    'cell_2to3year'  =>  31536000,
+    'cell_3to5year'  =>  63072000,
+    'cell_5to10year' =>  63072000,
+    'cell_10yrplus'  =>  63072000,
 ];
 
 // ── CLI flags ─────────────────────────────────────────────────────────────────
@@ -222,8 +247,72 @@ function encode_mlt_tile_from_points(
     return gzencode($mlt_bytes, 6);
 }
 
+// ── Cell tile encoder (MLT version) ────────────────────────────────────────────────
+// Mirrors encode_mlt_tile_from_points() but for cell_* buckets.
+function encode_cell_mlt_tile_from_points(
+    int    $z, int $x, int $y,
+    string $bucket,
+    array  $idxs,
+    array  $all_cells
+): ?string {
+    $points = [];
+    foreach ($idxs as $idx) {
+        $cell = $all_cells[$idx];
+        [$px, $py] = project_to_tile((float)$cell['lat'], (float)$cell['lon'], $z, $x, $y);
+        $points[] = ['idx' => $idx, 'px' => $px, 'py' => $py];
+    }
+    $density_res = 32;
+    $cell_px     = (float)MLT_EXTENT / $density_res;
+    $cell_count  = [];
+    foreach ($points as &$pt) {
+        $cx       = min($density_res - 1, (int)($pt['px'] / $cell_px));
+        $cy       = min($density_res - 1, (int)($pt['py'] / $cell_px));
+        $ck       = $cx * $density_res + $cy;
+        $pt['ck'] = $ck;
+        $cell_count[$ck] = ($cell_count[$ck] ?? 0) + 1;
+    }
+    unset($pt);
+    usort($points, function($a, $b) use ($cell_count) {
+        return $cell_count[$a['ck']] - $cell_count[$b['ck']];
+    });
+    $max_tile_bytes = 1500000;
+    $est_size       = 0;
+    $features       = [];
+    $seen_pixel     = [];
+    foreach ($points as $pt) {
+        $cell = $all_cells[$pt['idx']];
+        $px   = $pt['px'];
+        $py   = $pt['py'];
+        $pixel_key = $px . ':' . $py;
+        if (isset($seen_pixel[$pixel_key])) continue;
+        $seen_pixel[$pixel_key] = true;
+        if ($est_size + 38 > $max_tile_bytes) break;
+        $est_size += 38;
+        $features[] = [
+            'id'       => (int)$cell['id'],
+            'x'        => $px,
+            'y'        => $py,
+            'mac'      => (string)$cell['mac'],
+            'ssid'     => (string)$cell['ssid'],
+            'authmode' => (string)$cell['authmode'],
+            'chan'     => (string)$cell['chan'],
+            'type'     => (string)$cell['type'],
+            'fa'       => (string)$cell['fa'],
+            'la'       => (string)$cell['la'],
+            'points'   => (int)$cell['points'],
+            'rssi'     => (int)$cell['rssi'],
+            'user'     => (string)$cell['user'],
+        ];
+    }
+    if (empty($features)) return null;
+    $mlt_bytes = mlt_encode_tile($bucket, $features);
+    if ($mlt_bytes === '') return null;
+    return gzencode($mlt_bytes, 6);
+}
+
 // ── Main generation loop ──────────────────────────────────────────────────────
-$buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', 'legacy'];
+$buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
+            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
 
 if ($single_bucket !== null) {
     if (!in_array($single_bucket, $buckets)) {
@@ -251,70 +340,96 @@ foreach ($buckets as $bucket) {
     // not row copies, so memory grows ~linearly with row count.  See mvtd.php
     // for the design rationale (same architecture).
 
-    [$start_date, $end_date] = bucket_date_window($bucket);
+    $is_cell = (strpos($bucket, 'cell_') === 0);
+    $base_bucket = $is_cell ? substr($bucket, 5) : $bucket;
+    [$start_date, $end_date] = bucket_date_window($base_bucket);
 
     $lat_min_dm = dd2dm($data_bbox['lat_min']);
     $lat_max_dm = dd2dm($data_bbox['lat_max']);
     $lon_min_dm = dd2dm($data_bbox['lon_min']);
     $lon_max_dm = dd2dm($data_bbox['lon_max']);
 
-    echo ts() . "[{$bucket}] Fetching APs (keyset pagination)...\n";
+    $label = $is_cell ? 'cells' : 'APs';
+    echo ts() . "[{$bucket}] Fetching {$label} (keyset pagination)...\n";
 
     $aps       = [];
     $last_id   = 0;
     while (true) {
-        $result = $dbcore->export->BboxDateArray(
-            $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
-            $start_date, $end_date,
-            null, $page_size, $last_id
-        );
+        if ($is_cell) {
+            $result = $dbcore->export->BboxCellArray(
+                $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+                $page_size, $last_id, $start_date, $end_date
+            );
+        } else {
+            $result = $dbcore->export->BboxDateArray(
+                $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+                $start_date, $end_date,
+                null, $page_size, $last_id
+            );
+        }
         $rows = $result['data'] ?? [];
         if (empty($rows)) break;
 
         foreach ($rows as $row) {
             $lat = (float)$row['lat'];
             $lon = (float)$row['lon'];
-
             $rid = (int)$row['id'];
             if ($rid > $last_id) $last_id = $rid;
-
             if ($lat == 0.0 && $lon == 0.0) continue;
 
-            $aps[] = [
-                'id'            => $rid,
-                'lat'           => $lat,
-                'lon'           => $lon,
-                'alt'           => (string)$row['alt'],
-                'sectype'       => (int)$row['sectype'],
-                'chan'          => (int)$row['chan'],
-                'radio'         => (string)$row['radio'],
-                'mac'           => (string)$row['mac'],
-                'user'          => (string)$row['user'],
-                'ssid'          => (string)$row['ssid'],
-                'auth'          => (string)$row['auth'],
-                'encry'         => (string)$row['encry'],
-                'nt'            => (string)$row['nt'],
-                'btx'           => (string)$row['btx'],
-                'otx'           => (string)$row['otx'],
-                'fa'            => (string)$row['fa'],
-                'la'            => (string)$row['la'],
-                'points'        => (int)$row['points'],
-                'high_gps_sig'  => (int)$row['high_gps_sig'],
-                'high_gps_rssi' => (int)$row['high_gps_rssi'],
-                'manuf'         => (string)$row['manuf'],
-            ];
+            if ($is_cell) {
+                $aps[] = [
+                    'id'       => $rid,
+                    'lat'      => $lat,
+                    'lon'      => $lon,
+                    'mac'      => (string)$row['mac'],
+                    'ssid'     => (string)$row['ssid'],
+                    'authmode' => (string)$row['authmode'],
+                    'chan'     => (string)$row['chan'],
+                    'type'     => (string)$row['type'],
+                    'fa'       => (string)$row['fa'],
+                    'la'       => (string)$row['la'],
+                    'points'   => (int)$row['points'],
+                    'rssi'     => (int)$row['rssi'],
+                    'user'     => (string)$row['user'],
+                ];
+            } else {
+                $aps[] = [
+                    'id'            => $rid,
+                    'lat'           => $lat,
+                    'lon'           => $lon,
+                    'alt'           => (string)$row['alt'],
+                    'sectype'       => (int)$row['sectype'],
+                    'chan'          => (int)$row['chan'],
+                    'radio'         => (string)$row['radio'],
+                    'mac'           => (string)$row['mac'],
+                    'user'          => (string)$row['user'],
+                    'ssid'          => (string)$row['ssid'],
+                    'auth'          => (string)$row['auth'],
+                    'encry'         => (string)$row['encry'],
+                    'nt'            => (string)$row['nt'],
+                    'btx'           => (string)$row['btx'],
+                    'otx'           => (string)$row['otx'],
+                    'fa'            => (string)$row['fa'],
+                    'la'            => (string)$row['la'],
+                    'points'        => (int)$row['points'],
+                    'high_gps_sig'  => (int)$row['high_gps_sig'],
+                    'high_gps_rssi' => (int)$row['high_gps_rssi'],
+                    'manuf'         => (string)$row['manuf'],
+                ];
+            }
         }
-        echo ts() . "[{$bucket}]   ... " . count($aps) . " APs fetched\n";
+        echo ts() . "[{$bucket}]   ... " . count($aps) . " {$label} fetched\n";
         if (count($rows) < $page_size) break;
     }
 
     $ap_count = count($aps);
     if ($ap_count === 0) {
-        echo ts() . "[{$bucket}] Skipping — no APs in bucket.\n\n";
+        echo ts() . "[{$bucket}] Skipping — no {$label} in bucket.\n\n";
         continue;
     }
 
-    echo ts() . "[{$bucket}] {$ap_count} APs total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
+    echo ts() . "[{$bucket}] {$ap_count} {$label} total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
 
     // ── Z-order spatial sort + feature_minzoom assignment ───────────────────
     // assign_feature_minzoom() (lib/spatial.inc.php) encodes each AP as a
@@ -323,7 +438,7 @@ foreach ($buckets as $bucket) {
     // for the full algorithm description and tippecanoe attribution.
     {
         $sort_s  = microtime(true);
-        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, $drop_scale_pixels);
+        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, $drop_scale_pixels, $cap_feature_minzoom);
         $snaps   = [];
         foreach ([1, 5, 7, 10, 13, 14] as $zs) {
             if ($zs >= $min_zoom && $zs <= $max_zoom) {
@@ -363,13 +478,16 @@ foreach ($buckets as $bucket) {
                 $tile_file = "{$tile_dir}/{$ty}.mlt";
 
                 if (!$force_regen && file_exists($tile_file)
+                    && filesize($tile_file) >= 20          // 20 B = minimum valid gzip stream; smaller = truncated write
                     && (time() - filemtime($tile_file)) < $ttl) {
                     $z_skipped++;
                     $grand_skipped++;
                     continue;
                 }
 
-                $gz_bytes = encode_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
+                $gz_bytes = $is_cell
+                    ? encode_cell_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps)
+                    : encode_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
 
                 if ($gz_bytes === null) {
                     if (file_exists($tile_file)) unlink($tile_file);

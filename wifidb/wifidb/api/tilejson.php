@@ -15,7 +15,7 @@ MapLibre can use this directly as a type:"vector" source URL:
 
 Parameters:
   bucket   — required. One of: daily, weekly, monthly, 0to1year, 1to2year,
-             2to3year, legacy.
+             2to3year, 3to5year, 5to10year, 10yrplus.
   format   — optional. mvt (default) or mlt.
   source   — optional. daemon (default) or api.
              daemon: tile URLs point to pre-generated static files under
@@ -48,16 +48,27 @@ header('Content-Type: application/json');
 header('Cache-Control: public, max-age=300'); // 5-minute cache on the metadata
 
 // ── Input validation ─────────────────────────────────────────────────────────
-$bucket = preg_replace('/[^a-z0-9]/', '', strtolower((string)@$_REQUEST['bucket']));
+$bucket = preg_replace('/[^a-z0-9_]/', '', strtolower((string)@$_REQUEST['bucket']));
 
 $bucket_meta = [
-    'daily'    => ['name' => 'WifiDB Daily',    'desc' => 'WiFi APs active in the last 36 hours'],
-    'weekly'   => ['name' => 'WifiDB Weekly',   'desc' => 'WiFi APs active in the last 7 days'],
-    'monthly'  => ['name' => 'WifiDB Monthly',  'desc' => 'WiFi APs active 1 week – 1 month ago'],
-    '0to1year' => ['name' => 'WifiDB 0-1 Year', 'desc' => 'WiFi APs active 1 month – 1 year ago'],
-    '1to2year' => ['name' => 'WifiDB 1-2 Year', 'desc' => 'WiFi APs active 1 – 2 years ago'],
-    '2to3year' => ['name' => 'WifiDB 2-3 Year', 'desc' => 'WiFi APs active 2 – 3 years ago'],
-    'legacy'   => ['name' => 'WifiDB Legacy',   'desc' => 'WiFi APs last active more than 3 years ago'],
+    'daily'     => ['name' => 'WifiDB Daily',      'desc' => 'WiFi APs active in the last 36 hours'],
+    'weekly'    => ['name' => 'WifiDB Weekly',     'desc' => 'WiFi APs active in the last 7 days'],
+    'monthly'   => ['name' => 'WifiDB Monthly',    'desc' => 'WiFi APs active 1 week – 1 month ago'],
+    '0to1year'  => ['name' => 'WifiDB 0-1 Year',   'desc' => 'WiFi APs active 1 month – 1 year ago'],
+    '1to2year'  => ['name' => 'WifiDB 1-2 Year',   'desc' => 'WiFi APs active 1 – 2 years ago'],
+    '2to3year'  => ['name' => 'WifiDB 2-3 Year',   'desc' => 'WiFi APs active 2 – 3 years ago'],
+    '3to5year'  => ['name' => 'WifiDB 3-5 Year',   'desc' => 'WiFi APs active 3 – 5 years ago'],
+    '5to10year' => ['name' => 'WifiDB 5-10 Year',  'desc' => 'WiFi APs active 5 – 10 years ago'],
+    '10yrplus'      => ['name' => 'WifiDB 10+ Year',       'desc' => 'WiFi APs last active more than 10 years ago'],
+    'cell_daily'     => ['name' => 'WifiDB Cell Daily',     'desc' => 'Cell towers active in the last 36 hours'],
+    'cell_weekly'    => ['name' => 'WifiDB Cell Weekly',    'desc' => 'Cell towers active in the last 7 days'],
+    'cell_monthly'   => ['name' => 'WifiDB Cell Monthly',   'desc' => 'Cell towers active 1 week – 1 month ago'],
+    'cell_0to1year'  => ['name' => 'WifiDB Cell 0-1 Year',  'desc' => 'Cell towers active 1 month – 1 year ago'],
+    'cell_1to2year'  => ['name' => 'WifiDB Cell 1-2 Year',  'desc' => 'Cell towers active 1–2 years ago'],
+    'cell_2to3year'  => ['name' => 'WifiDB Cell 2-3 Year',  'desc' => 'Cell towers active 2–3 years ago'],
+    'cell_3to5year'  => ['name' => 'WifiDB Cell 3-5 Year',  'desc' => 'Cell towers active 3–5 years ago'],
+    'cell_5to10year' => ['name' => 'WifiDB Cell 5-10 Year', 'desc' => 'Cell towers active 5–10 years ago'],
+    'cell_10yrplus'  => ['name' => 'WifiDB Cell 10+ Year',  'desc' => 'Cell towers last active more than 10 years ago'],
 ];
 
 if (!array_key_exists($bucket, $bucket_meta)) {
@@ -100,8 +111,10 @@ if ($tile_minzoom > $tile_maxzoom) {
 }
 
 // ── Tile URL ─────────────────────────────────────────────────────────────────
+// cell_* buckets use the same URL patterns as AP buckets.
+$is_cell = (strpos($bucket, 'cell_') === 0);
+
 if ($source === 'api') {
-    // On-demand PHP generation — same disk cache as the daemon.
     $api_base = $base_url . '/api';
     if ($format === 'mlt') {
         $tiles_url = $api_base . '/mlt.php?z={z}&x={x}&y={y}&bucket=' . $bucket;
@@ -160,6 +173,29 @@ $tilejson = [
         ],
     ],
 ];
+
+// cell_* buckets have different fields than WiFi AP buckets.
+if ($is_cell) {
+    $tilejson['vector_layers'] = [[
+        'id'          => $bucket,
+        'description' => $bucket_meta[$bucket]['desc'],
+        'minzoom'     => $tile_minzoom,
+        'maxzoom'     => $tile_maxzoom,
+        'fields'      => [
+            'mac'      => 'String',  // MCCMNC_LAC_CELLID
+            'ssid'     => 'String',  // network/operator name
+            'authmode' => 'String',  // authentication mode
+            'chan'      => 'String',  // channel / frequency band
+            'type'     => 'String',  // cell type (e.g. LTE, GSM, CDMA)
+            'fa'       => 'String',  // first seen datetime
+            'la'       => 'String',  // last seen datetime
+            'points'   => 'Number',  // total observation points
+            'rssi'     => 'Number',  // best GPS RSSI reading
+            'user'     => 'String',  // submitting username
+            'id_str'   => 'String',  // cell database ID (string form)
+        ],
+    ]];
+}
 
 // Add format field for MLT tiles (MapLibre extension to TileJSON 3.0.0).
 if ($format === 'mlt') {

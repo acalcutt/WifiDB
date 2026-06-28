@@ -853,6 +853,140 @@ class export extends dbcore
 		return $ret_data;
 	}
 
+	/**
+	 * Fetch cell towers within a lat/lon bounding box (DM format), excluding BT/BLE.
+	 * Supports both MySQL and MSSQL (SQL Server).
+	 *
+	 * $lat_min_dm/$lat_max_dm/$lon_min_dm/$lon_max_dm — bounding box in NMEA DM format.
+	 * $inc      — max rows to return.
+	 * $last_id  — keyset pagination cursor (cell_id of last row from previous page).
+	 *             Pass null for the first page or for one-shot on-demand tile requests.
+	 *
+	 * Returns ['count' => int, 'data' => [row, ...], 'latlon_array' => [...]]
+	 * Each row has: id, mac, ssid, authmode, chan, type, fa, la, points, rssi, lat, lon, user
+	 */
+	public function BboxCellArray($lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm,
+	                               $inc = 5000, $last_id = null,
+	                               $start_date = null, $end_date = null)
+	{
+		if ($this->sql->service === 'sqlsrv') {
+			if ($last_id !== null) {
+				// ── Keyset pagination (daemon bulk scan) ────────────────────────
+				// Drive from cell_id PK ordered by cell_id; bbox applied as filter.
+				$sql = "SELECT TOP (" . (int)$inc . ")
+				               ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
+				               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
+				               g.Lat AS lat, g.Lon AS lon, f.file_user AS [user]
+				        FROM cell_id AS ci
+				        INNER JOIN wifi_gps AS g ON g.GPS_ID = ci.highgps_id
+				        INNER JOIN files    AS f ON f.id     = ci.file_id
+				        WHERE ci.cell_id > ?
+				          AND ci.highgps_id IS NOT NULL
+				          AND ci.type NOT IN ('BT','BLE')
+				          AND g.Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				          AND g.Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))";
+				$params = [(int)$last_id, $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
+				if ($start_date !== null && $end_date !== null) {
+					$sql .= ' AND ci.la >= ? AND ci.la < ?';
+					$params[] = $start_date; $params[] = $end_date;
+				} elseif ($start_date !== null) {
+					$sql .= ' AND ci.la >= ?'; $params[] = $start_date;
+				} elseif ($end_date !== null) {
+					$sql .= ' AND ci.la < ?'; $params[] = $end_date;
+				}
+				$sql .= ' ORDER BY ci.cell_id OPTION (LOOP JOIN, FORCE ORDER)';
+			} else {
+				// ── One-shot bbox (on-demand tile request) ──────────────────────
+				// Drive from GPS bbox sub-query; TOP + no ORDER BY for early termination.
+				$sql = "SELECT TOP (" . (int)$inc . ")
+				               ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
+				               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
+				               g.Lat AS lat, g.Lon AS lon, f.file_user AS [user]
+				        FROM (SELECT GPS_ID, Lat, Lon
+				              FROM wifi_gps
+				              WHERE Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				                AND Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				             ) AS g
+				        INNER JOIN cell_id AS ci ON ci.highgps_id = g.GPS_ID
+				        INNER JOIN files   AS f  ON f.id          = ci.file_id
+				        WHERE ci.highgps_id IS NOT NULL
+				          AND ci.type NOT IN ('BT','BLE')";
+				$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
+				if ($start_date !== null && $end_date !== null) {
+					$sql .= ' AND ci.la >= ? AND ci.la < ?';
+					$params[] = $start_date; $params[] = $end_date;
+				} elseif ($start_date !== null) {
+					$sql .= ' AND ci.la >= ?'; $params[] = $start_date;
+				} elseif ($end_date !== null) {
+					$sql .= ' AND ci.la < ?'; $params[] = $end_date;
+				}
+				$sql .= ' OPTION (LOOP JOIN, FORCE ORDER)';
+			}
+		} else {
+			// ── MySQL ────────────────────────────────────────────────────────────
+			$sql = "SELECT ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
+			               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
+			               g.Lat AS lat, g.Lon AS lon, f.file_user AS `user`
+			        FROM cell_id AS ci
+			        INNER JOIN wifi_gps AS g ON g.GPS_ID = ci.highgps_id
+			        INNER JOIN files    AS f ON f.id     = ci.file_id
+			        WHERE ci.highgps_id IS NOT NULL
+			          AND ci.type NOT IN ('BT','BLE')
+			          AND g.Lat BETWEEN ? AND ?
+			          AND g.Lon BETWEEN ? AND ?";
+			$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
+
+			if ($last_id !== null) {
+				$sql .= ' AND ci.cell_id > ?';
+				$params[] = (int)$last_id;
+			}
+			if ($start_date !== null && $end_date !== null) {
+				$sql .= ' AND ci.la >= ? AND ci.la < ?';
+				$params[] = $start_date; $params[] = $end_date;
+			} elseif ($start_date !== null) {
+				$sql .= ' AND ci.la >= ?'; $params[] = $start_date;
+			} elseif ($end_date !== null) {
+				$sql .= ' AND ci.la < ?'; $params[] = $end_date;
+			}
+			$sql .= ' ORDER BY ci.cell_id LIMIT ' . (int)$inc;
+		}
+
+		$prep = $this->sql->conn->prepare($sql);
+		foreach ($params as $i => $val) {
+			$prep->bindValue($i + 1, $val, PDO::PARAM_STR);
+		}
+		$prep->execute();
+		$fetch_rows = $prep->fetchAll();
+
+		$cell_array   = [];
+		$latlon_array = [];
+		foreach ($fetch_rows as $row) {
+			$cell_info = [
+				'id'       => (int)$row['cell_id'],
+				'mac'      => (string)$row['mac'],
+				'ssid'     => $this->formatSSID((string)$row['ssid']),
+				'authmode' => (string)$row['authmode'],
+				'chan'      => (string)$row['chan'],
+				'type'     => (string)$row['type'],
+				'fa'       => (string)$row['fa'],
+				'la'       => (string)$row['la'],
+				'points'   => (int)$row['points'],
+				'rssi'     => (int)$row['rssi'],
+				'lat'      => $this->convert->dm2dd($row['lat']),
+				'lon'      => $this->convert->dm2dd($row['lon']),
+				'user'     => (string)$row['user'],
+			];
+			$cell_array[]   = $cell_info;
+			$latlon_array[] = ['lat' => $cell_info['lat'], 'long' => $cell_info['lon']];
+		}
+
+		return [
+			'count'        => count($cell_array),
+			'data'         => $cell_array,
+			'latlon_array' => $latlon_array,
+		];
+	}
+
 	public function CellUserListArray($file_id, $from = NULL, $inc = NULL, $sort = "cell_id", $ord = "DESC", $named=0, $new_ap=0, $only_new=0, $valid_gps = 0, $exclude = "'BT','BLE'", $include = "")
 	{
 		$latlon_array = array();

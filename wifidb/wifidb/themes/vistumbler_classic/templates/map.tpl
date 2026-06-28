@@ -133,8 +133,10 @@ if not, write to the
 															<button class="toggle-button" id="WifiDB_0to1year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Year</button>
 															<button class="toggle-button" id="WifiDB_1to2year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 1-2 year</button>
 															<button class="toggle-button" id="WifiDB_2to3year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 2-3 year</button>
-															<button class="toggle-button" id="WifiDB_Legacy" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3+ year</button>
-															<button class="toggle-button" id="cell_networks" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Networks</button>
+									<button class="toggle-button" id="WifiDB_3to5year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 3-5 year</button>
+									<button class="toggle-button" id="WifiDB_5to10year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 5-10 year</button>
+									<button class="toggle-button" id="WifiDB_10yrplus" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 10+ year</button>
+															<button class="toggle-button" id="cell_networks" onClick="toggle_cell_group(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Networks</button>
 {/if}
 														</div>
 													</span>
@@ -600,6 +602,32 @@ if not, write to the
 			}
 		}
 
+		function toggle_cell_group(btn_id) {
+			var cellBuckets = ['cell_daily','cell_weekly','cell_monthly',
+			                   'cell_0to1year','cell_1to2year','cell_2to3year',
+			                   'cell_3to5year','cell_5to10year','cell_10yrplus'];
+			var el = document.getElementById(btn_id);
+			var btext = el.firstChild.data;
+			btext = btext.replace("Show", "").replace("Hide", "");
+			var point_labels = document.getElementById('pointlabels');
+			var point_labels_selected = point_labels ? point_labels.options[point_labels.selectedIndex].value : 'none';
+			var currentVis = 'none';
+			for (var i = 0; i < cellBuckets.length; i++) {
+				try {
+					var v = map.getLayoutProperty(cellBuckets[i], 'visibility');
+					if (v !== undefined) { currentVis = v; break; }
+				} catch(e) {}
+			}
+			var newVis = (currentVis === 'visible') ? 'none' : 'visible';
+			for (var i = 0; i < cellBuckets.length; i++) {
+				try { map.setLayoutProperty(cellBuckets[i], 'visibility', newVis); } catch(e) {}
+				if (point_labels_selected && point_labels_selected !== 'none') {
+					try { map.setLayoutProperty(cellBuckets[i] + '-' + point_labels_selected, 'visibility', newVis); } catch(e) {}
+				}
+			}
+			el.firstChild.data = (newVis === 'visible' ? 'Hide' : 'Show') + btext;
+		}
+
 		function toggle_track(clicked_id) {
 			var el = document.getElementById(clicked_id);
 			if (track) {
@@ -895,13 +923,14 @@ if not, write to the
 		map.on('style.load', function() {
 			// Reset toggle buttons since the layers reset on style change
 {if $func eq "wifidbmap" || $func eq "user_list"}
-			var toggleButtonIds = ['WifiDB_weekly', 'WifiDB_monthly', 'WifiDB_0to1year', 'WifiDB_1to2year', 'WifiDB_2to3year', 'WifiDB_Legacy', 'cell_networks'];
+			var toggleButtonIds = ['WifiDB_weekly', 'WifiDB_monthly', 'WifiDB_0to1year', 'WifiDB_1to2year', 'WifiDB_2to3year', 'WifiDB_3to5year', 'WifiDB_5to10year', 'WifiDB_10yrplus', 'cell_networks'];
 			for (var index in toggleButtonIds) {
 				var clicked_id = toggleButtonIds[index];
 				var el = document.getElementById(clicked_id);
+				if (!el) { continue; } // button absent in this view or stale cache
 				var btext = el.firstChild.data;
-				var btext = btext.replace("Show", "");
-				var btext = btext.replace("Hide", "");
+				btext = btext.replace("Show", "");
+				btext = btext.replace("Hide", "");
 				el.firstChild.data = "{if $default_hidden eq 1}Show{else}Hide{/if}" + btext;
 			} 
 {/if}
