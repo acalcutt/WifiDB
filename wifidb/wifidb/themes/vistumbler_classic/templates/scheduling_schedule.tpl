@@ -27,7 +27,7 @@ if not, write to the
 				{/literal}
 				<!-- Top menu counts (kept outside .center) -->
 				<p class="center">
-					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if $wifidb_login_priv_name == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
+					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if ($wifidb_login_priv_name|default:"") == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
 				</p>
 				<!-- Schedule Display Settings moved outside of .center so JS replacements don't overwrite user selections -->
 				<table class="content_table">
@@ -79,7 +79,7 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_schedule from=$wifidb_schedules}
 						<tr class="{$wifidb_schedule.color}">
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if $wifidb_login_priv_name == "Administrator"} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a> <a href="{$wifidb_host_url}opt/admin_action.php?action=run_schedule_now&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Run Now">&#9658;</a>{/if}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if ($wifidb_login_priv_name|default:"") == "Administrator"} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a> <a href="{$wifidb_host_url}opt/admin_action.php?action=run_schedule_now&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Run Now">&#9658;</a>{/if}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval|escape:'htmlall'} minutes</td>
@@ -108,7 +108,7 @@ if not, write to the
 							<th class="header-centered">MEM</th>
 							<th class="header-centered">CMD</th>
 							<th class="header-centered">UPDATED</th>
-							{if $wifidb_login_priv_name == "Administrator"}<th class="header-centered">ACTION</th>{/if}
+							{if ($wifidb_login_priv_name|default:"") == "Administrator"}<th class="header-centered">ACTION</th>{/if}
 						</tr>
 						{foreach item=wifidb_daemon from=$wifidb_daemons}
 						<tr class="{$wifidb_daemon.color}">
@@ -119,7 +119,7 @@ if not, write to the
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidmem|escape:'htmlall'}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.pidcmd|escape:'htmlall'}</td>
 							<td class="{$wifidb_daemon.color}">{$wifidb_daemon.lastupdatetime_local|escape:'htmlall'}</td>
-							{if $wifidb_login_priv_name == "Administrator"}
+							{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 							<td class="{$wifidb_daemon.color}">
 								{if $wifidb_daemon.pid == 0 || $wifidb_daemon.color == 'red' || $wifidb_daemon.color == 'yellow'}
 								<a href="{$wifidb_host_url}opt/admin_action.php?action=delete_daemon_pid&amp;pidfile={$wifidb_daemon.pidfile|escape:'url'}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Delete this PID record and file">&#x2716;</a>

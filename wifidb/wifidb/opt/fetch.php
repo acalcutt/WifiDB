@@ -72,6 +72,7 @@ switch($func)
 		$prep->execute();
 		$fpointer = $prep->fetchAll();
 		$file_array = array();
+		$apcount = 0;
 		foreach($fpointer as $file)
 		{
 			$sql1 = "SELECT cell_hist.rssi, cell_hist.hist_date, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch\n"

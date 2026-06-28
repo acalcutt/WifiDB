@@ -1,5 +1,5 @@
 <title>Vistumbler to PNG Signal Graph Version History - ---RanInt---</title>
-<link rel="stylesheet" href="/css/site4.0.css">
+<link rel="stylesheet" href="https://wifidb.net/themes/vistumbler_classic/styles.css">
 <body topmargin="10" leftmargin="0" rightmargin="0" bottommargin="10" marginwidth="10" marginheight="10">
 <div align="center">
 <table border="0" width="75%" cellspacing="10" cellpadding="2">
@@ -182,7 +182,7 @@
 </td>
 </tr>
 <tr>
-<td bgcolor="#315573" height="23"><a href="/pictures/moon.png"><img border="0" src="/pictures/moon_tn.PNG"></a></td>
+<td bgcolor="#315573" height="23"><a href="https://wifidb.net/img/moon.png"><img border="0" src="https://wifidb.net/img/moon_tn.png"></a></td>
 <td bgcolor="#315573" width="0">
 
 </td>

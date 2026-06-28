@@ -502,7 +502,7 @@ $lastuser = $result->fetch(2);
 $lastid = $lastuser['id'];
 $lastusername =  htmlspecialchars($lastuser['file_user'], ENT_QUOTES, 'UTF-8');
 $lasttitle = htmlspecialchars($lastuser['title'], ENT_QUOTES, 'UTF-8');
-$lastdate = htmlspecialchars($lastuser['date'], ENT_QUOTES, 'UTF-8');
+$lastdate = htmlspecialchars($lastuser['file_date'], ENT_QUOTES, 'UTF-8');
 $list_validgps = $lastuser['ValidGPS'];
 if($lastdate == ""){$lastdate = date("Y-m-d H:i:s");}
 

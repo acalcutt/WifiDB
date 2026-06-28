@@ -26,7 +26,7 @@ if not, write to the
 				<script>document.addEventListener('DOMContentLoaded', function(){ if(typeof schedulingLiveInit === 'function'){ schedulingLiveInit({func:'importing', interval:15000}); }});</script>
 				{/literal}
 				<div class="center">
-					<span class="nowrap"><b><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></b></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if $wifidb_login_priv_name == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
+					<span class="nowrap"><b><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></b></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if ($wifidb_login_priv_name|default:"") == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
 					<table class="content_table">
 						<tr class="header-centered">
 							<th colspan="6" align="center">Files being imported</th>
@@ -44,7 +44,7 @@ if not, write to the
 						<tr class="{$wifidb_imp.color}">
 							<td class="{$wifidb_imp.color}"></td>
 							<td class="{$wifidb_imp.color}">{$wifidb_imp.id|escape:'htmlall'}
-								{if $wifidb_login_priv_name == "Administrator"}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 									&nbsp;<a href="{$wifidb_host_url}opt/admin_action.php?action=reset_failed_file&amp;file_id={$wifidb_imp.id}&amp;return={$wifidb_host_url}opt/scheduling.php" title="Reset and Re-import this file" style="font-size: 16px; margin-right:6px;">&#x21bb;</a>
 									<a href="{$wifidb_host_url}opt/admin_action.php?action=delete_failed_file&amp;file_id={$wifidb_imp.id}&amp;return={$wifidb_host_url}opt/scheduling.php" title="Delete this file (permanent)" style="font-size: 16px; color: #cc0000;">&#x1F5D1;</a>
 								{/if}

@@ -179,7 +179,7 @@ class export extends dbcore
 		$prepf = $this->sql->conn->prepare($sql);
 		$prepf->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prepf->execute();
-		$file_array = $prepf->fetch(2);
+		$file_array = $prepf->fetch(2) ?: array();
 		$file_info = array(
 			"id" => $file_array['id'],
 			"file" => $file_array['file_orig'],
@@ -187,12 +187,12 @@ class export extends dbcore
 			"date" => $file_array['file_date'],
 			"title" => $file_array['title'],
 			"notes" => $file_array['notes'],
-			"hash" => $file_array['hash'],			
+			"hash" => $file_array['hash'],
 			"validgps" => $file_array['ValidGPS'],
 			"aps" => $file_array['aps'],
 			"gps" => $file_array['gps'],
 			"size" => $file_array['size'],
-			"NewAPPercent" => $file_array['NewAPPercent'],		
+			"NewAPPercent" => $file_array['NewAPPercent'],
 		);
 
 		#Get AP Info — single JOIN query replaces the original two-query N+1 pattern.
@@ -993,7 +993,7 @@ class export extends dbcore
 		$prepf = $this->sql->conn->prepare($sql);
 		$prepf->bindParam(1,$file_id, PDO::PARAM_INT);
 		$prepf->execute();
-		$file_array = $prepf->fetch(2);
+		$file_array = $prepf->fetch(2) ?: array();
 		$file_info = array(
 			"id" => $file_array['id'],
 			"file" => $file_array['file_orig'],
@@ -1386,8 +1386,8 @@ class export extends dbcore
 			#Get the last full export id
 			$sql = "SELECT last_export_file FROM settings WHERE id = 1";
 			$id_query = $this->sql->conn->query($sql);
-			$id_fetch = $id_query->fetch(2);
-			$last_export_file = $id_fetch['last_export_file'];
+			$id_fetch = $id_query->fetch(2) ?: array();
+			$last_export_file = isset($id_fetch['last_export_file']) ? $id_fetch['last_export_file'] : 0;
 
 			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY file_user ASC";
 			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE completed = 1 And ValidGPS = 1 And file_user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";

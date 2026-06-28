@@ -30,6 +30,7 @@ $func = (empty($_GET['func'])) ? "" : $_GET['func'];
 $type = "schedule";
 $subject = "New WiFiDB Import waiting...";
 $mesg = "";
+$message = "";
 
 if($dbcore->rebuild === 1 || @$dbcore->username == 'admin')
 {
@@ -45,7 +46,6 @@ if(@$dbcore->username == 'admin')
 {
 	$mesg = '';
 }
-$dbcore->smarty->assign('import_button', $import_button);
 
 //Switchboard for import file or index form to upload file
 switch($func)
@@ -63,14 +63,14 @@ switch($func)
 		$stmt = $dbcore->sql->conn->prepare($sql);
 		$stmt->bindParam(1, $user, PDO::PARAM_STR);
 		$stmt->execute();
-		$array = $stmt->fetch(2);
-		if($array['username'] == $dbcore->sec->username and $dbcore->login_check)
+		$array = $stmt->fetch(2) ?: array();
+		if(isset($array['username']) && $array['username'] == $dbcore->sec->username and $dbcore->login_check)
 		{
 			$mesg .= "<h2>You need to be logged in to import to a user that has a login.<br> Go <a class='links' href='".$GLOBALS['hosturl']."login.php?return=/import/'>login</a> and then import again.</h2>";
 		}
 		else
 		{
-			$total_files = count($_FILES['upload']['name']);
+			$total_files = isset($_FILES['upload']['name']) ? count($_FILES['upload']['name']) : 0;
 			if($total_files)
 			{
 				for( $i=0 ; $i < $total_files ; $i++ ) 

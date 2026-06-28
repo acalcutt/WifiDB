@@ -128,7 +128,7 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
-								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.user|escape:'htmlall'}">{$wifidb_assoc.file_user|escape:'htmlall'}</a></td>
+								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.file_user|escape:'htmlall'}">{$wifidb_assoc.file_user|escape:'htmlall'}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id|escape:'htmlall'}">{$wifidb_assoc.file|escape:'htmlall'}</a></td>
 								<td class="light"><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.id|escape:'htmlall'}">{$wifidb_assoc.title|escape:'htmlall'}</a></td>
 								<td class="light">{$wifidb_assoc.notes|escape:'htmlall'}</td>
@@ -152,7 +152,6 @@ if not, write to the
 						</tbody>
 						<tbody id="Row{$wifidb_assoc.id}" style="display:none">
 							<tr class="header">
-								<th class="header">Signal</th>
 								<th class="header">RSSI</th>
 								<th class="header">Lat</th>
 								<th class="header">Long</th>
@@ -163,7 +162,6 @@ if not, write to the
 							</tr>
 							{foreach item=wifidb_cid_gps from=$wifidb_assoc.signals}
 							<tr class="{cycle values="light,dark"}">
-								<td>{$wifidb_cid_gps.Sig|escape:'htmlall'}</td>
 								<td>{$wifidb_cid_gps.rssi|escape:'htmlall'}</td>
 								<td>{$wifidb_cid_gps.Lat|escape:'htmlall'}</td>
 								<td>{$wifidb_cid_gps.Lon|escape:'htmlall'}</td>
@@ -177,13 +175,13 @@ if not, write to the
 						{if not $smarty.foreach.outer.last}
 						<tbody>
 						<tr">
-							<th colspan="9"><br/></th>
+							<th colspan="8"><br/></th>
 						</tr>
 						</tbody>
 						{/if}
 						{foreachelse}
 						<tr class="light-centered">
-							<td colspan="9"> There are no files associated this AP :/</td>
+							<td colspan="8"> There are no files associated this AP :/</td>
 						</tr>    
 						{/foreach}
 						<tr class="sub_head">

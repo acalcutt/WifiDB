@@ -998,7 +998,7 @@ switch($func)
 		$importing_row = array();
 		$n=0;
 
-		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_importing ORDER BY {$sort} {$ord}";
+		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user, importing, ap, tot FROM files_importing ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= " LIMIT {$from},{$inc}";}
 		else if($dbcore->sql->service == "sqlsrv"){$sql .= " OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		

@@ -56,6 +56,7 @@ if($_POST['line'] === 'line')
 {
 	$ret = $dbcore->graphs->wifigraphbar( $apdata );
 }
+$dbcore->smarty->assign('wifidb_page_label', 'Graph Results');
 $dbcore->smarty->assign("AP_data", $apdata);
 $dbcore->smarty->assign("graph_ret", $ret);
 $dbcore->smarty->display("graph_results.tpl");

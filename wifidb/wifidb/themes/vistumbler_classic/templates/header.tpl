@@ -15,7 +15,7 @@
   });
 
 {/literal}
-  gtag('config', 'G-S1ZD9TQYZK', {ldelim} 'ip_version': '{$ip_version}' {rdelim});
+  gtag('config', 'G-S1ZD9TQYZK', {ldelim} 'ip_version': '{$ip_version|default:""}' {rdelim});
 {literal}
 </script>
 {/literal}
@@ -24,12 +24,12 @@
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/sceditor.min.js"></script>
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/icons/monocons.js"></script>
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/formats/bbcode.js"></script>
-        <title>Wireless DataBase  {$wifidb_version_label}  --&gt; {$wifidb_page_label}</title>
+        <title>Wireless DataBase  {$wifidb_version_label|default:""}  --&gt; {$wifidb_page_label|default:""}</title>
         {$wifidb_seo_content|default:""}
         <meta name="viewport" content="width=device-width, initial-scale=1">
         
         <!-- Open Graph -->
-        <meta property="og:title" content="{$wifidb_page_label} | Vistumbler WiFiDB" />
+        <meta property="og:title" content="{$wifidb_page_label|default:""} | Vistumbler WiFiDB" />
         <meta property="og:type" content="website" />
         <meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI}" />
         <meta property="og:image" content="{$themeurl}img/logo.png" />
@@ -44,8 +44,8 @@
     <body style="background-color: #145285" {$redirect_html}>
         <!-- Cookie consent & consent-mode helper (shared) -->
         <script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
-        {$install_header}
-        {$wifidb_announce_header}
+        {$install_header|default:""}
+        {$wifidb_announce_header|default:""}
         
         <table style="width: 90%; " class="no_border" align="center">
             <tr>
@@ -88,7 +88,7 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
-                                {if $wifidb_login_priv_name == "Administrator"}
+                                {if ($wifidb_login_priv_name|default:"") == "Administrator"}
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
                                 {/if}
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></div>
@@ -128,10 +128,10 @@
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
-                                {if $wifidb_login_logged_in == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a>{/if}
+                                {if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a>{/if}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
-                                <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">{$wifidb_login_label|default:'login'}</a>
+                                <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri|default:""}">{$wifidb_login_label|default:'login'}</a>
                             </td>
                             <!-- ---------------------------- -->
                             <td style="width: 10px" class="cell_top_right">

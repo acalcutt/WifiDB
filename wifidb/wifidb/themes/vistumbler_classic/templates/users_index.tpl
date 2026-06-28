@@ -86,13 +86,13 @@ if not, write to the
 										<a href="?func=allusers&sort=NewAPPercent&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'NewAPPercent' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
-								{if $wifidb_login_logged_in == 1}
+								{if ($wifidb_login_logged_in|default:0) == 1}
 								<th class="header" width="75px">
 									<div>Actions</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
 								</th>
 								{/if}
-								{if $wifidb_login_priv_name == "Administrator"}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 								<th class="header" width="75px">
 									<div>Admin</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif"></div>
@@ -122,8 +122,8 @@ if not, write to the
 								<td class="{$wifidb_users.class}">{$wifidb_users.apcount|number_format:0}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.gpscount|number_format:0}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.newappercent}%</td>
-								{if $wifidb_login_logged_in == 1}<td class="{$wifidb_users.class}">{if $wifidb_users.regid}<a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_users.regid}"><img  title="Message [{$wifidb_users.user}]" width="20px" src="{$themeurl}img/send-message.png"></a>{/if}</td>{/if}
-								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
+								{if ($wifidb_login_logged_in|default:0) == 1}<td class="{$wifidb_users.class}">{if $wifidb_users.regid}<a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_users.regid}"><img  title="Message [{$wifidb_users.user}]" width="20px" src="{$themeurl}img/send-message.png"></a>{/if}</td>{/if}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
 							</tr>
 							{foreachelse}
 								There are no Imports, go find some of them wifis, I hear they have yummy packets.

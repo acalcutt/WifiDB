@@ -44,10 +44,10 @@ if not, write to the
 								<th class="header">Efficiency</th>
 								<th class="header">First Import</th>
 								<th class="header">Last Import</th>
-								{if $wifidb_login_logged_in == 1 and $wifidb_user_details.regid}
+								{if ($wifidb_login_logged_in|default:0) == 1 and $wifidb_user_details.regid}
 								<th class="header">Actions</th>
 								{/if}
-								{if $wifidb_login_priv_name == "Administrator"}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 								<th class="header">Admin</th>
 								{/if}
 							</tr>
@@ -59,8 +59,8 @@ if not, write to the
 								<td class="light">{$wifidb_user_details.NewAPPercent|escape:'htmlall'}%</td>
 								<td class="light">{$wifidb_user_details.first_import_date|escape:'htmlall'}</td>
 								<td class="light">{$wifidb_user_details.newest_date|escape:'htmlall'}</td>
-								{if $wifidb_login_logged_in == 1 and $wifidb_user_details.regid}<td class="light"><a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_user_details.regid}"><img  title="Message [{$wifidb_user_details.user|escape:'htmlall'}]" width="20px" src="{$themeurl}img/send-message.png" alt="Send message"></a></td>{/if}
-								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
+								{if ($wifidb_login_logged_in|default:0) == 1 and $wifidb_user_details.regid}<td class="light"><a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_user_details.regid}"><img  title="Message [{$wifidb_user_details.user|escape:'htmlall'}]" width="20px" src="{$themeurl}img/send-message.png" alt="Send message"></a></td>{/if}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
 							</tr>
 						</tbody>
 					</table>
@@ -68,7 +68,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="subheading">
-								<th class="subheading" {if $wifidb_login_priv_name == "Administrator"}colspan="10"{else}colspan="9"{/if}>Imported Files</th>
+								<th class="subheading" {if ($wifidb_login_priv_name|default:"") == "Administrator"}colspan="10"{else}colspan="9"{/if}>Imported Files</th>
 							</tr>
 							<tr class="header">
 								<th class="header" width="75px">
@@ -131,7 +131,7 @@ if not, write to the
 										<a href="?func=alluserlists&user={$wifidb_user_details.user|escape:'htmlall'}&sort=date&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'date' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}" alt="Sort descending"></a>
 									</div>
 								</th>
-								{if $wifidb_login_priv_name == "Administrator"}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 								<th class="header" width="150px">
 									<div>Admin</div>
 									<div><img height="15" width="15" border="0" src="{$themeurl}img/1x1_transparent.gif" alt=""></div>
@@ -161,7 +161,7 @@ if not, write to the
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.gps|number_format:0|escape:'htmlall'}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.efficiency|escape:'htmlall'}%</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.date|escape:'htmlall'}</td>
-								{if $wifidb_login_priv_name == "Administrator"}<td class="{$wifidb_user_prev.class}">
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}<td class="{$wifidb_user_prev.class}">
 									<a href="{$wifidb_host_url}opt/admin_action.php?action=reset_file&amp;file_id={$wifidb_user_prev.id}&amp;return={$wifidb_host_url}opt/userstats.php?func=alluserlists%26user={$wifidb_user_details.user|escape:'url'}" title="Reset and Re-import this file" style="font-size: 16px; margin-right:6px;">&#x21bb;</a>
 									<a href="{$wifidb_host_url}opt/admin_action.php?action=delete_file&amp;file_id={$wifidb_user_prev.id}&amp;return={$wifidb_host_url}opt/userstats.php?func=alluserlists%26user={$wifidb_user_details.user|escape:'url'}" title="Delete this file (permanent)" style="font-size: 16px; color: #cc0000;">&#x1F5D1;</a>
 								</td>{/if}

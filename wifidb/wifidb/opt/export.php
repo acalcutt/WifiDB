@@ -23,14 +23,14 @@ $func=$_GET['func'];
 switch($func)
 {
 	case "user_all":
-		define("SWITCH_SCREEN", "HTML");
 		define("SWITCH_EXTRAS", "export");
 		include('../lib/init.inc.php');
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		if((int)@$_REQUEST['xml'] === 1){$xml = 1;}else{$xml = 0;}#output json instead of creating a download
+		$from	=	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 		$inc	=	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
-		if ($from == ""){$from = 0;}	
+		if ($from == ""){$from = 0;}
 		if ($inc == ""){$inc = 25000;}
 
 		$sql = "SELECT Count(AP_ID) As ap_count\n"
@@ -45,6 +45,7 @@ switch($func)
 		if($ap_count > $inc)
 		{
 			$ldivs = ceil($ap_count / $inc);
+			$dbcore->smarty->assign('wifidb_page_label', 'KMZ Export Segments');
 			$dbcore->smarty->assign('user', $user);
 			$dbcore->smarty->assign('inc', $inc);
 			$dbcore->smarty->assign('count', $ap_count);

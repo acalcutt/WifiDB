@@ -62,11 +62,11 @@ if not, write to the
 							{if $wifidb_ap.BTx}<tr><td class="header" width="112">BTx</td><td class="light" width="439">{$wifidb_ap.BTx|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.OTx}<tr><td class="header" width="112">OTx</td><td class="light" width="439">{$wifidb_ap.OTx|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.flags}<tr><td class="header" width="112">Flags</td><td class="light" width="439">{$wifidb_ap.flags|escape:'htmlall'}</td></tr>{/if}
-							{if $wifidb_ap.NT}<tr><td class="header" width="112">Network Type</td><td class="light" width="439">{$wifidb_ap.NT|escape:'htmlall'}</td></tr>{/if}
+							{if $wifidb_ap.nt}<tr><td class="header" width="112">Network Type</td><td class="light" width="439">{$wifidb_ap.nt|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.lat_dm}<tr><td class="header" width="112">Latitude</td><td class="light" width="439">{$wifidb_ap.lat_dm|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.lon_dm}<tr><td class="header" width="112">Longitude</td><td class="light" width="439">{$wifidb_ap.lon_dm|escape:'htmlall'}</td></tr>{/if}
-							{if $wifidb_ap.FA}<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.FA|escape:'htmlall'}</td></tr>{/if}
-							{if $wifidb_ap.LA}<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.LA|escape:'htmlall'}</td></tr>{/if}
+							{if $wifidb_ap.fa}<tr><td class="header" width="112">First Active</td><td class="light" width="439">{$wifidb_ap.fa|escape:'htmlall'}</td></tr>{/if}
+							{if $wifidb_ap.la}<tr><td class="header" width="112">Last Active</td><td class="light" width="439">{$wifidb_ap.la|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.high_rssi}<tr><td class="header" width="112">High RSSI</td><td class="light" width="439">{$wifidb_ap.high_rssi|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.high_gps_rssi}<tr><td class="header" width="112">High RSSI w/GPS</td><td class="light" width="439">{$wifidb_ap.high_gps_rssi|escape:'htmlall'}</td></tr>{/if}
 							{if $wifidb_ap.points}<tr><td class="header" width="112">Points</td><td class="light" width="439">{$wifidb_ap.points|number_format:0|escape:'htmlall'}</td></tr>{/if}
@@ -228,8 +228,8 @@ if not, write to the
 											<td>{$wifidb_gi.admin2name|escape:'htmlall'}</td>
 											<td>{$wifidb_gi.country_code|escape:'htmlall'}</td>
 											<td>{$wifidb_gi.timezone|escape:'htmlall'}</td>
-											<td>{$wifidb_gi.latitude|escape:'htmlall'}</td>
-											<td>{$wifidb_gi.longitude|escape:'htmlall'}</td>
+											<td>{$wifidb_gi.lat_dm|escape:'htmlall'}</td>
+											<td>{$wifidb_gi.lon_dm|escape:'htmlall'}</td>
 											<td>{$wifidb_gi.miles|string_format:"%.2f"|escape:'htmlall'}mi</td>
 											<td>{$wifidb_gi.kilometers|string_format:"%.2f"|escape:'htmlall'}km</td>
 										</tr>

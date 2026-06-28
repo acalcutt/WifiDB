@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></li>
-						{if $wifidb_login_priv_name == "Administrator"}
+						{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></li>
 						{/if}
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></li>

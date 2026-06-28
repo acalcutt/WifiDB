@@ -56,10 +56,14 @@ switch($func)
 		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$pre_page_list = $dbcore->sql->conn->query($sql);
 
+		$row_color = 0;
 		$n=0;
 		$wifidb_aps_all = array();
 		while ( $array = $pre_page_list->fetch(2) )
 		{
+			if($row_color == 1){$row_color = 0; $color = "light";}else{$row_color = 1; $color = "dark";}
+
+			$wifidb_aps_all[$n]['class'] = $color;
 			$wifidb_aps_all[$n]['id'] = $array['cell_id'];
 			$wifidb_aps_all[$n]['authmode'] = $array['authmode'];
 			$wifidb_aps_all[$n]['mac'] = $array['mac'];
@@ -123,6 +127,9 @@ switch($func)
 		$wifidb_aps_all = array();
 		while ( $array = $pre_page_list->fetch(2) )
 		{
+			if($row_color == 1){$row_color = 0; $color = "light";}else{$row_color = 1; $color = "dark";}
+
+			$wifidb_aps_all[$n]['class'] = $color;
 			$wifidb_aps_all[$n]['id'] = $array['cell_id'];
 			$wifidb_aps_all[$n]['authmode'] = $array['authmode'];
 			$wifidb_aps_all[$n]['mac'] = $array['mac'];

@@ -42,6 +42,7 @@ if(!function_exists('WiFiDBexception_handler')) {
 				$smarty->assign('wifidb_theme', $theme);
 				$smarty->assign('wifidb_host_url', $URL_PATH);
 				$smarty->assign('wifidb_error_mesg', $trace);
+				$smarty->assign('wifidb_page_label', 'Error');
 				$smarty->display("error.tpl");
 				break;
 

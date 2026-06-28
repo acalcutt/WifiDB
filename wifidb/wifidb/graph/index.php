@@ -27,9 +27,9 @@ define("SWITCH_EXTRAS", "graph");
 
 include('../lib/init.inc.php');
 
-$func=$_REQUEST['func'];
-$row = (int)($_REQUEST['row'] ? $_REQUEST['row']: 0);
-$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
+$func = isset($_REQUEST['func']) ? $_REQUEST['func'] : '';
+$row = (int)(isset($_REQUEST['row']) && $_REQUEST['row'] ? $_REQUEST['row']: 0);
+$id = (int)(isset($_REQUEST['id']) && $_REQUEST['id'] ? $_REQUEST['id']: 0);
 	
 if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"

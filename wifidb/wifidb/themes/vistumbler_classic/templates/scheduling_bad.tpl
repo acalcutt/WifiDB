@@ -21,7 +21,7 @@
 				<script>document.addEventListener('DOMContentLoaded', function(){ if(typeof schedulingLiveInit === 'function'){ schedulingLiveInit({func:'bad', interval:15000}); }});</script>
 				{/literal}
 				<div class="center">
-					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if $wifidb_login_priv_name == "Administrator"} | <span class="nowrap"><b><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></b></span>{/if}
+					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if ($wifidb_login_priv_name|default:"") == "Administrator"} | <span class="nowrap"><b><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></b></span>{/if}
 					<table class="content_table">
 						<tr class="header-centered">
 							<th colspan="8" align="center">Files Rejected / Bad Imports</th>
@@ -39,7 +39,7 @@
 						<tr class="badrow">
 							<td class="header"></td>
 							<td class="{$badfile.class} idcol">{$badfile.id}
-								{if $wifidb_login_priv_name == "Administrator"}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}
 									&nbsp;<a href="{$wifidb_host_url}opt/admin_action.php?action=reset_files_bad&amp;file_id={$badfile.id}&amp;return={$wifidb_host_url}opt/scheduling.php?func=bad" title="Reset and Re-import this bad file" style="font-size: 16px; margin-right:6px;">&#x21bb;</a>
 									&nbsp;<a href="{$wifidb_host_url}opt/admin_action.php?action=edit_files_bad&amp;file_id={$badfile.id}&amp;return={$wifidb_host_url}opt/scheduling.php?func=bad" title="Edit this bad file" style="font-size: 16px; margin-right:6px;">&#9998;</a>
 								{/if}

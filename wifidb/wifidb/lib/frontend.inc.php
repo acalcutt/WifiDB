@@ -216,8 +216,8 @@ class frontend extends dbcore
 			$vres->bindParam(1, $userfetch['file_user']);
 			$vres->execute();
 			$vfetch = $vres->fetch(1);
-			$regid = $vfetch[0];
-			
+			$regid = $vfetch ? $vfetch[0] : null;
+
 			$this->all_users_data[] = array(
 				"class" => $class,			
 				"rowid" => $rowid,
@@ -306,7 +306,7 @@ class frontend extends dbcore
 						"la"   => htmlspecialchars($array['la'], ENT_QUOTES, 'UTF-8'),
 						"points"   => $array['points'],
 						"lat"   => htmlspecialchars($array['Lat'], ENT_QUOTES, 'UTF-8'),
-						"lon"   => htmlspecialchars($array['Long'], ENT_QUOTES, 'UTF-8')
+						"lon"   => htmlspecialchars($array['Lon'], ENT_QUOTES, 'UTF-8')
 						);
 		}
 		$prep['allaps'] = $apprep;
@@ -376,7 +376,7 @@ class frontend extends dbcore
 		$vres->bindParam(1, $username);
 		$vres->execute();
 		$vfetch = $vres->fetch(1);
-		$regid = $vfetch[0];
+		$regid = $vfetch ? $vfetch[0] : null;
 
 		#Get All Imports for User
 		$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user LIKE ? And file_date != '' And completed = 1 ORDER BY $sort $ord";

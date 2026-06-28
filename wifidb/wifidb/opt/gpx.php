@@ -50,6 +50,7 @@ switch($func)
 		if($ap_count > $inc)
 		{
 			$ldivs = ceil($ap_count / $inc);
+			$dbcore->smarty->assign('wifidb_page_label', 'GPX Export Segments');
 			$dbcore->smarty->assign('user', $user);
 			$dbcore->smarty->assign('inc', $inc);
 			$dbcore->smarty->assign('count', $ap_count);
