@@ -2,16 +2,51 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
 
 cd ${0%/*}
-if ps -ef | grep -v grep | grep geojson.php ; then
-	echo GeoJSON Daemon Already Running! Exiting!
+
+timestamp=$(date +%s)
+
+# ── AP history GeoJSON (geojsond) ─────────────────────────────────────────────
+# Optional: pass a filename as the first argument to process only that export.
+# Example:  ./update_geojson WifiDB_weekly.json
+FILE_ARG="${1:-}"
+
+if [ -n "$FILE_ARG" ]; then
+    LOCKFILE_GJ="/tmp/geojsond_${FILE_ARG}.lock"
+    FILE_OPT="--file ${FILE_ARG}"
+    LOG_GJ="../log/geojson/geojsond_${FILE_ARG}_${timestamp}.log"
 else
-	echo Starting GeoJSON Daemon...
-		timestamp=$(date +%s)
-        php ../daemon/geojsond.php -o -v > ../log/geojson/geojsond_${timestamp}.log &
+    LOCKFILE_GJ="/tmp/geojsond_all.lock"
+    FILE_OPT=""
+    LOG_GJ="../log/geojson/geojsond_${timestamp}.log"
+fi
+
+exec 9>"$LOCKFILE_GJ"
+if ! flock -n 9; then
+    echo "GeoJSON Daemon already running for [${FILE_ARG:-all}]. Skipping."
+else
+    echo "Starting GeoJSON Daemon [${FILE_ARG:-all}]..."
+    php ../daemon/geojsond.php $FILE_OPT > "$LOG_GJ" &
+    echo "Launched PID $! — log: $LOG_GJ"
+fi
+
+# ── Cell GeoJSON (cell_geojsond) ──────────────────────────────────────────────
+# Only run the cell daemon when processing all files (no file filter specified).
+if [ -z "$FILE_ARG" ]; then
+    LOCKFILE_CJ="/tmp/cell_geojsond.lock"
+    LOG_CJ="../log/geojson/cell_geojsond_${timestamp}.log"
+
+    exec 8>"$LOCKFILE_CJ"
+    if ! flock -n 8; then
+        echo "Cell GeoJSON Daemon already running. Skipping."
+    else
+        echo "Starting Cell GeoJSON Daemon..."
+        php ../daemon/cell_geojsond.php > "$LOG_CJ" &
+        echo "Launched PID $! — log: $LOG_CJ"
+    fi
 fi
 
 echo "Cleaning up old logs..."
-find ../log/geojson/ -mtime +1 -type f -delete
+find ../log/geojson/ -mtime +7 -type f -delete
 
 echo "Done. Exiting."
 exit 0

@@ -71,58 +71,103 @@ else if($dbcore->sql->service == "sqlsrv")
 		];
 	}
 
+// ── CLI flags ─────────────────────────────────────────────────────────────────
+// --file FILENAME   Process only the named output file (e.g. WifiDB_weekly.json).
+//                   Run multiple instances in parallel from an external wrapper
+//                   to maximise throughput; each holds its own DB connection.
+$argv_safe   = $argv ?? [];
+$single_file = null;
+for ($_i = 1, $_nc = count($argv_safe); $_i < $_nc; $_i++) {
+    if ($argv_safe[$_i] === '--file') {
+        $single_file = $argv_safe[++$_i] ?? null;
+    }
+}
+
+$page_size = 100000;
+$out_dir   = rtrim($daemon_config['wifidb_install'], '/') . '/out/geojson/';
+
 foreach ($exports as list($filename, $sql)) {
-    echo "\r\nfilename: $filename; sql: $sql; \r\n";
-	$Import_Map_Data="";
-	for ($i = 0; TRUE; $i++) {
-		error_log("Processing pass $i");
-		$row_count = 100000;	
-		$offset = $i*$row_count ;
-		$prep = $dbcore->sql->conn->prepare($sql);
-		$prep->bindParam(1, $offset, PDO::PARAM_INT);
-		$prep->bindParam(2, $row_count, PDO::PARAM_INT);
-		$prep->execute();
-		$appointer = $prep->fetchAll();
-		foreach($appointer as $ap)
-		{	
-			#Get AP KML
-			$ap_info = array(
-			"id" => $ap['AP_ID'],
-			"new_ap" => 1,
-			"named" => 0,
-			"mac" => $ap['BSSID'],
-			"ssid" => $ap['SSID'],
-			"chan" => $ap['CHAN'],
-			"radio" => $ap['RADTYPE'],
-			"nt" => $ap['NETTYPE'],
-			"sectype" => $ap['SECTYPE'],
-			"auth" => $ap['AUTH'],
-			"encry" => $ap['ENCR'],
-			"btx" => $ap['BTX'],
-			"otx" => $ap['OTX'],
-			"fa" => $ap['fa'],
-			"la" => $ap['la'],
-			"points" => $ap['points'],
-			"high_gps_sig" => $ap['high_gps_sig'],
-			"high_gps_rssi" => $ap['high_gps_rssi'],
-			"lat" => $dbcore->convert->dm2dd($ap['Lat']),
-			"lon" => $dbcore->convert->dm2dd($ap['Lon']),
-			"alt" => $ap['Alt'],
-			"manuf"=>$dbcore->findManuf($ap['BSSID']),
-			"user" => $ap['file_user']
-			);
-			if($Import_Map_Data !== ''){$Import_Map_Data .=',';};
-			$Import_Map_Data .=$dbcore->createGeoJSON->CreateApFeature($ap_info, 1);
-		}
-		$number_of_rows = $prep->rowCount();
-		echo $number_of_rows."\r\n";
-		if ($number_of_rows !== $row_count) {break;}
-	}
-	$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
-	#echo json_encode($geojson, JSON_NUMERIC_CHECK);
-	$fp = fopen($daemon_config['wifidb_install'].'out/geojson/'.$filename, 'w');
-	fwrite($fp, $results);
-	fclose($fp);
+    if ($single_file !== null && $filename !== $single_file) continue;
+
+    // Convert to keyset pagination: insert AND AP_ID > ? before ORDER BY,
+    // drop the OFFSET ? / LIMIT ?, ? placeholder so only 2 params remain.
+    if ($dbcore->sql->service === 'mysql') {
+        $ksql = str_replace(
+            'ORDER BY wap.AP_ID LIMIT ?,?',
+            'AND wap.AP_ID > ? ORDER BY wap.AP_ID LIMIT ?',
+            $sql
+        );
+    } else {
+        $ksql = str_replace(
+            'ORDER BY [wap].[AP_ID] OFFSET ? ROWS FETCH NEXT ? ROWS ONLY',
+            'AND wap.AP_ID > ? ORDER BY [wap].[AP_ID] OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY',
+            $sql
+        );
+    }
+
+    $out_file = $out_dir . $filename;
+    $tmp_file = $out_file . '.tmp';
+
+    echo "\nProcessing: {$filename}\n";
+
+    $fp = fopen($tmp_file, 'w');
+    if ($fp === false) { echo "Cannot open tmp file: {$tmp_file} — skipping.\n"; continue; }
+
+    fwrite($fp, '{"type":"FeatureCollection","features":[');
+    $first   = true;
+    $last_id = 0;
+    $total   = 0;
+
+    while (true) {
+        $prep = $dbcore->sql->conn->prepare($ksql);
+        $prep->bindParam(1, $last_id,   PDO::PARAM_INT);
+        $prep->bindParam(2, $page_size, PDO::PARAM_INT);
+        $prep->execute();
+        $appointer = $prep->fetchAll(PDO::FETCH_ASSOC);
+        $count     = count($appointer);
+
+        foreach ($appointer as $ap) {
+            $ap_info = [
+                'id'            => $ap['AP_ID'],
+                'new_ap'        => 1,
+                'named'         => 0,
+                'mac'           => $ap['BSSID'],
+                'ssid'          => $ap['SSID'],
+                'chan'          => $ap['CHAN'],
+                'radio'         => $ap['RADTYPE'],
+                'nt'            => $ap['NETTYPE'],
+                'sectype'       => $ap['SECTYPE'],
+                'auth'          => $ap['AUTH'],
+                'encry'         => $ap['ENCR'],
+                'btx'           => $ap['BTX'],
+                'otx'           => $ap['OTX'],
+                'fa'            => $ap['fa'],
+                'la'            => $ap['la'],
+                'points'        => $ap['points'],
+                'high_gps_sig'  => $ap['high_gps_sig'],
+                'high_gps_rssi' => $ap['high_gps_rssi'],
+                'lat'           => $dbcore->convert->dm2dd($ap['Lat']),
+                'lon'           => $dbcore->convert->dm2dd($ap['Lon']),
+                'alt'           => $ap['Alt'],
+                'manuf'         => $dbcore->findManuf($ap['BSSID']),
+                'user'          => $ap['file_user'],
+            ];
+            $feature = $dbcore->createGeoJSON->CreateApFeature($ap_info, 1);
+            if (!$first) fwrite($fp, ',');
+            fwrite($fp, $feature);
+            $first   = false;
+            $last_id = (int)$ap['AP_ID'];
+        }
+
+        $total += $count;
+        echo "  last_id={$last_id}  rows={$count}  total={$total}\n";
+        if ($count < $page_size) break;
+    }
+
+    fwrite($fp, "\n]}");
+    fclose($fp);
+    rename($tmp_file, $out_file);
+    echo "  Done: {$out_file}\n";
 }
 
 unlink($dbcore->pid_file);
