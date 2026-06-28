@@ -2,16 +2,38 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
 
 cd ${0%/*}
-if ps -ef | grep -v grep | grep mltd.php ; then
-    echo MLT Tile Daemon Already Running! Exiting!
+
+# Optional: pass a bucket name as the first argument to process only that bucket.
+# If omitted, all buckets are processed sequentially (same as before).
+# Example:  ./update_mlt daily
+#           ./update_mlt cell_weekly
+BUCKET="${1:-}"
+
+if [ -n "$BUCKET" ]; then
+    LOCKFILE="/tmp/mltd_${BUCKET}.lock"
+    BUCKET_ARG="--bucket ${BUCKET}"
+    LOG_SUFFIX="_${BUCKET}"
 else
-    echo Starting MLT Tile Daemon...
-        timestamp=$(date +%s)
-        php ../daemon/mltd.php > ../log/mvt/mltd_${timestamp}.log &
+    LOCKFILE="/tmp/mltd_all.lock"
+    BUCKET_ARG=""
+    LOG_SUFFIX=""
 fi
 
+timestamp=$(date +%s)
+LOGFILE="../log/mlt/mltd${LOG_SUFFIX}_${timestamp}.log"
+
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    echo "MLT Tile Daemon already running for [${BUCKET:-all}]. Exiting."
+    exit 0
+fi
+
+echo "Starting MLT Tile Daemon [${BUCKET:-all}]..."
+php ../daemon/mltd.php $BUCKET_ARG > "$LOGFILE" &
+echo "Launched PID $! — log: $LOGFILE"
+
 echo "Cleaning up old logs..."
-find ../log/mvt/ -mtime +7 -type f -delete
+find ../log/mlt/ -mtime +7 -type f -delete
 
 echo "Done. Exiting."
 exit 0

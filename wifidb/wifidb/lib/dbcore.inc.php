@@ -115,6 +115,10 @@ class dbcore
 		$this->languages = $this->lang;
 		$this->dBmMaxSignal = $config['dBmMaxSignal'];
 		$this->dBmDissociationSignal = $config['dBmDissociationSignal'];
+
+		$this->tile_min_zoom    = isset($config['tile_min_zoom'])    ? (int)$config['tile_min_zoom']    : 1;
+		$this->tile_max_zoom    = isset($config['tile_max_zoom'])    ? (int)$config['tile_max_zoom']    : 19;
+		$this->tile_max_gz_bytes = isset($config['tile_max_gz_bytes']) ? (int)$config['tile_max_gz_bytes'] : 750000;
 	}
 
 	##############################

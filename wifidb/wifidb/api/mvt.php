@@ -179,8 +179,8 @@ foreach ($pts as $pt) {
 }
 unset($seen, $pts);
 
-// Step 5: encode → gzip retry loop (target ≤750 KB, matching tippecanoe -M 750000).
-$max_gz_bytes = 750000;
+// Step 5: encode → gzip retry loop (target ≤ tile_max_gz_bytes from config.inc.php).
+$max_gz_bytes = $dbcore->tile_max_gz_bytes;
 $keep         = count($deduped);
 $gz_bytes     = null;
 $has_features = false;

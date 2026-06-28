@@ -178,27 +178,25 @@ class createGeoJSON
 					'visibility': '".$visibility."'
 				},
 				'paint': {
-					'heatmap-radius': 4
-				},
-				'heatmap-color': 
-				[
-					'interpolate',
-					['linear'],
-					['heatmap-density'],
-					0, 'rgba(33,102,172,0)',
-					0.3, 'rgb(103,169,207)',
-					0.6, 'rgb(209,229,240)',
-					0.9, 'rgb(253,219,199)',
-					1.2, 'rgb(239,138,98)',
-					1.5, 'rgb(178,24,43)',
-				], 
-				'heatmap-radius': [
-					'interpolate',
-					['linear'],
-					['zoom'],
-					0, 2,
-					9, 20
-				],
+					'heatmap-color': [
+						'interpolate',
+						['linear'],
+						['heatmap-density'],
+						0, 'rgba(33,102,172,0)',
+						0.3, 'rgb(103,169,207)',
+						0.6, 'rgb(209,229,240)',
+						0.9, 'rgb(253,219,199)',
+						1.2, 'rgb(239,138,98)',
+						1.5, 'rgb(178,24,43)'
+					],
+					'heatmap-radius': [
+						'interpolate',
+						['linear'],
+						['zoom'],
+						0, 2,
+						9, 20
+					]
+				}
 			})";
 
 		
@@ -467,27 +465,11 @@ class createGeoJSON
 				'visibility': '".$visibility."'
 			},
 			'paint': {
-				'circle-radius': {
-					'base': 2,
-					'stops': [
-					[1, 1],
-					[5, 2],
-					[10, 3],
-					[20, 20]
-					]
-				},
-				'circle-color': {
-					'property': 'rssi',
-					'stops': [
-						[-120, '#464646'],
-						[-100, '#E42F00'],
-						[-88, '#FF0000'],
-						[-74, '#FF9200'],
-						[-64, '#FFEC00'],
-						[-52, '#80FF00'],
-						[-40, '#0D7600']
-					]
-				},
+				'circle-radius': ['interpolate',['exponential',2],['zoom'],1,1,5,2,10,3,20,20],
+				'circle-color': ['interpolate',['linear'],['get','rssi'],
+					-120,'#464646',-100,'#E42F00',-88,'#FF0000',
+					-74,'#FF9200',-64,'#FFEC00',-52,'#80FF00',-40,'#0D7600'
+				],
 				'circle-opacity': ".$opacity.",
 				'circle-blur': ".$blur."
 			}
@@ -513,26 +495,11 @@ class createGeoJSON
 				'visibility': '".$visibility."'
 			},
 			'paint': {
-				'circle-radius': {
-					'base': 2,
-					'stops': [
-					[1, 1],
-					[5, 2],
-					[10, 3],
-					[20, 20]
-					]
-				},
-				'circle-color': {
-					'property': 'rssi',
-					'stops': [
-						[-140, '#E42F00'],
-						[-120, '#FF0000'],
-						[-100, '#FF9200'],
-						[-80, '#FFEC00'],
-						[-60, '#80FF00'],
-						[-44, '#0D7600']
-					]
-				},
+				'circle-radius': ['interpolate',['exponential',2],['zoom'],1,1,5,2,10,3,20,20],
+				'circle-color': ['interpolate',['linear'],['get','rssi'],
+					-140,'#E42F00',-120,'#FF0000',-100,'#FF9200',
+					-80,'#FFEC00',-60,'#80FF00',-44,'#0D7600'
+				],
 				'circle-opacity': ".$opacity.",
 				'circle-blur': ".$blur."
 			}
@@ -705,10 +672,12 @@ class createGeoJSON
 		$source_id    = 'WifiDB_' . $bucket;
 		$layer_id     = $source_id . '-heatmap';
 		$layer_source = "\n
-		map.addSource('" . $source_id . "', {
-			type: 'vector',
-			url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $bucket . "'
-		});
+		if (!map.getSource('" . $source_id . "')) {
+			map.addSource('" . $source_id . "', {
+				type: 'vector',
+				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $bucket . "'
+			});
+		}
 		map.addLayer({
 			'id': '" . $layer_id . "',
 			'type': 'heatmap',

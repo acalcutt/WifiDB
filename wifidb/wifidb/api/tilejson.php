@@ -98,12 +98,12 @@ $source = preg_replace('/[^a-z]/', '', strtolower((string)@$_REQUEST['source']))
 if ($source !== 'api') $source = 'daemon';   // default
 
 // ── Zoom range ───────────────────────────────────────────────────────────────
-// ?minzoom=N  (integer 0–19, default 1)
-// ?maxzoom=N  (integer 0–19, default 19, must be ≥ minzoom)
+// ?minzoom=N  (integer 0–19, defaults to config 'tile_min_zoom')
+// ?maxzoom=N  (integer 0–19, defaults to config 'tile_max_zoom', must be ≥ minzoom)
 $minzoom_param = filter_input(INPUT_GET, 'minzoom', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 19]]);
 $maxzoom_param = filter_input(INPUT_GET, 'maxzoom', FILTER_VALIDATE_INT, ['options' => ['min_range' => 0, 'max_range' => 19]]);
-$tile_minzoom  = ($minzoom_param !== false && $minzoom_param !== null) ? (int)$minzoom_param : 1;
-$tile_maxzoom  = ($maxzoom_param !== false && $maxzoom_param !== null) ? (int)$maxzoom_param : 19;
+$tile_minzoom  = ($minzoom_param !== false && $minzoom_param !== null) ? (int)$minzoom_param : $dbcore->tile_min_zoom;
+$tile_maxzoom  = ($maxzoom_param !== false && $maxzoom_param !== null) ? (int)$maxzoom_param : $dbcore->tile_max_zoom;
 if ($tile_minzoom > $tile_maxzoom) {
     http_response_code(400);
     echo json_encode(['error' => 'minzoom must be less than or equal to maxzoom']);

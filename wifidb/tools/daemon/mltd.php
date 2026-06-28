@@ -63,8 +63,8 @@ if (true) {
 }
 
 // ── Configuration ─────────────────────────────────────────────────────────────
-$min_zoom = 1;
-$max_zoom = 19;   // z1-z19 matches the tippecanoe PMTiles export.
+$min_zoom = $dbcore->tile_min_zoom;   // configured in config.inc.php 'tile_min_zoom'
+$max_zoom = $dbcore->tile_max_zoom;   // configured in config.inc.php 'tile_max_zoom'
 
 $data_bbox = [
     'lat_min' => -85.0,
@@ -153,161 +153,195 @@ echo "Writable   : " . (is_writable(dirname($output_dir)) ? 'YES' : 'NO — chec
 function ts(): string { return date('[Y-m-d H:i:s] '); }
 
 // ── Encode a tile from pre-fetched AP rows (MLT version) ─────────────────────
-// Mirrors encode_tile_from_points() in mvtd.php but writes MLT instead of MVT.
-// Applies the same 32×32 density-grid thinning and 1.5 MB byte-budget cap.
-// $idxs is the list of indices into the shared $all_aps array.  Returns gzip-
-// compressed MLT bytes, or null if the tile has no usable points.
+// Mirrors encode_tile_from_points() in mvtd.php exactly, but writes MLT instead
+// of MVT.  Same algorithm: per-tile Morton-gap sort, pixel+sectype dedup, then
+// gzip retry loop keeping sparsest features until tile ≤ $max_gz_bytes.
 function encode_mlt_tile_from_points(
     int    $z, int $x, int $y,
     string $bucket,
     array  $idxs,
-    array  $all_aps
+    array  $all_aps,
+    int    $max_gz_bytes = 750000
 ): ?string {
 
-    // Project all APs to pixel coordinates within this tile.
-    $points = [];
+    // Step 1: project to tile pixels + per-tile Morton index.
+    $pts = [];
     foreach ($idxs as $idx) {
         $ap = $all_aps[$idx];
         [$px, $py] = project_to_tile((float)$ap['lat'], (float)$ap['lon'], $z, $x, $y);
-        $points[] = ['idx' => $idx, 'px' => $px, 'py' => $py];
-    }
-
-    // ── Density grid (32×32 cells ≈ 128 px/cell in 4096-extent tile) ─────────
-    $density_res = 32;
-    $cell_px     = (float)MLT_EXTENT / $density_res;
-    $cell_count  = [];
-    foreach ($points as &$pt) {
-        $cx       = min($density_res - 1, (int)($pt['px'] / $cell_px));
-        $cy       = min($density_res - 1, (int)($pt['py'] / $cell_px));
-        $ck       = $cx * $density_res + $cy;
-        $pt['ck'] = $ck;
-        $cell_count[$ck] = ($cell_count[$ck] ?? 0) + 1;
-    }
-    unset($pt);
-
-    // Sort: sparsest cells first; densest dropped when budget is exhausted.
-    usort($points, function($a, $b) use ($cell_count) {
-        return $cell_count[$a['ck']] - $cell_count[$b['ck']];
-    });
-
-    // ── Collect features within the 1.5 MB uncompressed byte budget ──────────
-    // MLT encodes all features column-by-column after collection, so we use a
-    // rough per-feature estimate (id=4, x/y=4, props≈30 → ~38 bytes) to cap
-    // total feature count before the final encode step.
-    $max_tile_bytes = 1500000;
-    $est_size       = 0;
-    $features       = [];
-    $seen_pixel     = [];
-
-    foreach ($points as $pt) {
-        $ap = $all_aps[$pt['idx']];
-        $px = $pt['px'];
-        $py = $pt['py'];
-
-        // Deduplicate: same pixel + sectype → skip.
-        $pixel_key = $px . ':' . $py . ':' . (int)$ap['sectype'];
-        if (isset($seen_pixel[$pixel_key])) continue;
-        $seen_pixel[$pixel_key] = true;
-
-        if ($est_size + 38 > $max_tile_bytes) break;
-        $est_size += 38;
-
-        $features[] = [
-            'id'            => (int)$ap['id'],
-            'x'             => $px,
-            'y'             => $py,
-            'sectype'       => (int)$ap['sectype'],
-            'chan'           => (int)$ap['chan'],
-            'radio'         => $ap['radio'],
-            'mac'           => $ap['mac'],
-            'user'          => $ap['user'],
-            'ssid'          => $ap['ssid'],
-            'auth'          => $ap['auth'],
-            'encry'         => $ap['encry'],
-            'nt'            => $ap['nt'],
-            'btx'           => $ap['btx'],
-            'otx'           => $ap['otx'],
-            'fa'            => $ap['fa'],
-            'la'            => $ap['la'],
-            'points'        => (int)$ap['points'],
-            'high_gps_sig'  => (int)$ap['high_gps_sig'],
-            'high_gps_rssi' => (int)$ap['high_gps_rssi'],
-            'lat'           => (string)$ap['lat'],
-            'lon'           => (string)$ap['lon'],
-            'alt'           => $ap['alt'],
-            'manuf'         => $ap['manuf'],
+        $pts[] = [
+            'idx'    => $idx,
+            'px'     => $px,
+            'py'     => $py,
+            'morton' => morton_encode((float)$ap['lat'], (float)$ap['lon']),
         ];
     }
 
-    if (empty($features)) return null;
+    // Step 2: Morton sort + gap to predecessor.
+    usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+    $prev_m = PHP_INT_MIN;
+    foreach ($pts as &$pt) {
+        $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+        $prev_m    = $pt['morton'];
+    }
+    unset($pt);
 
-    $mlt_bytes = mlt_encode_tile($bucket, $features);
-    if ($mlt_bytes === '') return null;
+    // Step 3: sort by gap descending (sparsest first).
+    usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
 
-    return gzencode($mlt_bytes, 6);
+    // Step 4: deduplicate same-pixel + same-sectype.
+    $seen    = [];
+    $deduped = [];
+    foreach ($pts as $pt) {
+        $ap = $all_aps[$pt['idx']];
+        $k  = $pt['px'] . ':' . $pt['py'] . ':' . (int)$ap['sectype'];
+        if (!isset($seen[$k])) { $seen[$k] = true; $deduped[] = $pt; }
+    }
+    unset($seen, $pts);
+
+    if (empty($deduped)) return null;
+
+    // Step 5: encode → gzip retry loop (target ≤ $max_gz_bytes).
+    $keep     = count($deduped);
+    $gz_bytes = null;
+
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset   = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
+        $features = [];
+        foreach ($subset as $pt) {
+            $ap = $all_aps[$pt['idx']];
+            $features[] = [
+                'id'            => (int)$ap['id'],
+                'x'             => $pt['px'],
+                'y'             => $pt['py'],
+                'sectype'       => (int)$ap['sectype'],
+                'chan'           => (int)$ap['chan'],
+                'radio'         => $ap['radio'],
+                'mac'           => $ap['mac'],
+                'user'          => $ap['user'],
+                'ssid'          => $ap['ssid'],
+                'auth'          => $ap['auth'],
+                'encry'         => $ap['encry'],
+                'nt'            => $ap['nt'],
+                'btx'           => $ap['btx'],
+                'otx'           => $ap['otx'],
+                'fa'            => $ap['fa'],
+                'la'            => $ap['la'],
+                'points'        => (int)$ap['points'],
+                'high_gps_sig'  => (int)$ap['high_gps_sig'],
+                'high_gps_rssi' => (int)$ap['high_gps_rssi'],
+                'lat'           => (string)$ap['lat'],
+                'lon'           => (string)$ap['lon'],
+                'alt'           => $ap['alt'],
+                'manuf'         => $ap['manuf'],
+            ];
+        }
+
+        if (empty($features)) return null;
+        $mlt_bytes = mlt_encode_tile($bucket, $features);
+        if ($mlt_bytes === '') return null;
+        $gz_bytes  = gzencode($mlt_bytes, 6);
+
+        $sz = strlen($gz_bytes);
+        if ($sz <= $max_gz_bytes) break;
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        $pct      = round(100.0 * $new_keep / count($deduped), 2);
+        echo "  tile {$z}/{$x}/{$y} size is {$sz} >{$max_gz_bytes}; keeping sparsest {$pct}% ({$new_keep}/{$keep})\n";
+        if ($new_keep >= $keep) break;
+        $keep = $new_keep;
+    }
+
+    return $gz_bytes;
 }
 
-// ── Cell tile encoder (MLT version) ────────────────────────────────────────────────
-// Mirrors encode_mlt_tile_from_points() but for cell_* buckets.
+// ── Cell tile encoder (MLT version) ──────────────────────────────────────────
+// Mirrors encode_cell_tile_from_mvt() in mvtd.php — same Morton-gap sort +
+// gzip retry loop, no sectype in pixel dedup (cell data has none).
 function encode_cell_mlt_tile_from_points(
     int    $z, int $x, int $y,
     string $bucket,
     array  $idxs,
-    array  $all_cells
+    array  $all_cells,
+    int    $max_gz_bytes = 750000
 ): ?string {
-    $points = [];
+
+    // Step 1: project to tile pixels + per-tile Morton index.
+    $pts = [];
     foreach ($idxs as $idx) {
         $cell = $all_cells[$idx];
         [$px, $py] = project_to_tile((float)$cell['lat'], (float)$cell['lon'], $z, $x, $y);
-        $points[] = ['idx' => $idx, 'px' => $px, 'py' => $py];
-    }
-    $density_res = 32;
-    $cell_px     = (float)MLT_EXTENT / $density_res;
-    $cell_count  = [];
-    foreach ($points as &$pt) {
-        $cx       = min($density_res - 1, (int)($pt['px'] / $cell_px));
-        $cy       = min($density_res - 1, (int)($pt['py'] / $cell_px));
-        $ck       = $cx * $density_res + $cy;
-        $pt['ck'] = $ck;
-        $cell_count[$ck] = ($cell_count[$ck] ?? 0) + 1;
-    }
-    unset($pt);
-    usort($points, function($a, $b) use ($cell_count) {
-        return $cell_count[$a['ck']] - $cell_count[$b['ck']];
-    });
-    $max_tile_bytes = 1500000;
-    $est_size       = 0;
-    $features       = [];
-    $seen_pixel     = [];
-    foreach ($points as $pt) {
-        $cell = $all_cells[$pt['idx']];
-        $px   = $pt['px'];
-        $py   = $pt['py'];
-        $pixel_key = $px . ':' . $py;
-        if (isset($seen_pixel[$pixel_key])) continue;
-        $seen_pixel[$pixel_key] = true;
-        if ($est_size + 38 > $max_tile_bytes) break;
-        $est_size += 38;
-        $features[] = [
-            'id'       => (int)$cell['id'],
-            'x'        => $px,
-            'y'        => $py,
-            'mac'      => (string)$cell['mac'],
-            'ssid'     => (string)$cell['ssid'],
-            'authmode' => (string)$cell['authmode'],
-            'chan'     => (string)$cell['chan'],
-            'type'     => (string)$cell['type'],
-            'fa'       => (string)$cell['fa'],
-            'la'       => (string)$cell['la'],
-            'points'   => (int)$cell['points'],
-            'rssi'     => (int)$cell['rssi'],
-            'user'     => (string)$cell['user'],
+        $pts[] = [
+            'idx'    => $idx,
+            'px'     => $px,
+            'py'     => $py,
+            'morton' => morton_encode((float)$cell['lat'], (float)$cell['lon']),
         ];
     }
-    if (empty($features)) return null;
-    $mlt_bytes = mlt_encode_tile($bucket, $features);
-    if ($mlt_bytes === '') return null;
-    return gzencode($mlt_bytes, 6);
+
+    // Step 2: Morton sort + gap to predecessor.
+    usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+    $prev_m = PHP_INT_MIN;
+    foreach ($pts as &$pt) {
+        $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+        $prev_m    = $pt['morton'];
+    }
+    unset($pt);
+
+    // Step 3: sort by gap descending (sparsest first).
+    usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
+
+    // Step 4: deduplicate same pixel (no sectype for cell data).
+    $seen    = [];
+    $deduped = [];
+    foreach ($pts as $pt) {
+        $k = $pt['px'] . ':' . $pt['py'];
+        if (!isset($seen[$k])) { $seen[$k] = true; $deduped[] = $pt; }
+    }
+    unset($seen, $pts);
+
+    if (empty($deduped)) return null;
+
+    // Step 5: encode → gzip retry loop.
+    $keep     = count($deduped);
+    $gz_bytes = null;
+
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset   = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
+        $features = [];
+        foreach ($subset as $pt) {
+            $cell = $all_cells[$pt['idx']];
+            $features[] = [
+                'id'       => (int)$cell['id'],
+                'x'        => $pt['px'],
+                'y'        => $pt['py'],
+                'mac'      => (string)$cell['mac'],
+                'ssid'     => (string)$cell['ssid'],
+                'authmode' => (string)$cell['authmode'],
+                'chan'      => (string)$cell['chan'],
+                'type'     => (string)$cell['type'],
+                'fa'       => (string)$cell['fa'],
+                'la'       => (string)$cell['la'],
+                'points'   => (int)$cell['points'],
+                'rssi'     => (int)$cell['rssi'],
+                'user'     => (string)$cell['user'],
+            ];
+        }
+
+        if (empty($features)) return null;
+        $mlt_bytes = mlt_encode_tile($bucket, $features);
+        if ($mlt_bytes === '') return null;
+        $gz_bytes  = gzencode($mlt_bytes, 6);
+
+        $sz = strlen($gz_bytes);
+        if ($sz <= $max_gz_bytes) break;
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        $pct      = round(100.0 * $new_keep / count($deduped), 2);
+        echo "  tile {$z}/{$x}/{$y} size is {$sz} >{$max_gz_bytes}; keeping sparsest {$pct}% ({$new_keep}/{$keep})\n";
+        if ($new_keep >= $keep) break;
+        $keep = $new_keep;
+    }
+
+    return $gz_bytes;
 }
 
 // ── Main generation loop ──────────────────────────────────────────────────────
@@ -486,8 +520,8 @@ foreach ($buckets as $bucket) {
                 }
 
                 $gz_bytes = $is_cell
-                    ? encode_cell_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps)
-                    : encode_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
+                    ? encode_cell_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes)
+                    : encode_mlt_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
 
                 if ($gz_bytes === null) {
                     if (file_exists($tile_file)) unlink($tile_file);
@@ -541,11 +575,10 @@ $grand_elapsed = round(microtime(true) - $run_start, 1);
 // the bucket's max age.  This is separate from the data-driven deletion in the
 // main loop: that removes tiles with no APs in the current run; this removes
 // tiles that are simply too old relative to the bucket window.
-if ($single_bucket === null) {
-    echo ts() . "--- Stale tile cleanup (max-age sweep, all z) ---\n";
-    $cleanup_deleted = 0;
-    $now = time();
-    foreach ($buckets as $bucket) {
+echo ts() . "--- Stale tile cleanup (max-age sweep, all z) ---\n";
+$cleanup_deleted = 0;
+$now = time();
+foreach ($buckets as $bucket) {
         $max_age    = $bucket_max_age[$bucket];
         $bucket_dir = "{$output_dir}/{$bucket}";
         if (!is_dir($bucket_dir)) continue;
@@ -567,8 +600,7 @@ if ($single_bucket === null) {
         }
     }
     echo "  Deleted {$cleanup_deleted} tiles exceeding bucket max-age.\n";
-    echo "--- End cleanup ---\n\n";
-}
+echo "--- End cleanup ---\n\n";
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
 echo "Total tiles considered : {$grand_total}\n";

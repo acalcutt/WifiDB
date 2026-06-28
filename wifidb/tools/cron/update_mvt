@@ -2,13 +2,39 @@
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/unison
 
 cd ${0%/*}
-if ps -ef | grep -v grep | grep mvtd.php ; then
-    echo MVT Tile Daemon Already Running! Exiting!
+
+# Optional: pass a bucket name as the first argument to process only that bucket.
+# If omitted, all buckets are processed sequentially (same as before).
+# Example:  ./update_mvt daily
+#           ./update_mvt cell_weekly
+BUCKET="${1:-}"
+
+if [ -n "$BUCKET" ]; then
+    # Per-bucket lock: multiple buckets can run in parallel safely.
+    LOCKFILE="/tmp/mvtd_${BUCKET}.lock"
+    BUCKET_ARG="--bucket ${BUCKET}"
+    LOG_SUFFIX="_${BUCKET}"
 else
-    echo Starting MVT Tile Daemon...
-        timestamp=$(date +%s)
-        php ../daemon/mvtd.php > ../log/mvt/mvtd_${timestamp}.log &
+    # Full-run lock: single instance covering all buckets.
+    LOCKFILE="/tmp/mvtd_all.lock"
+    BUCKET_ARG=""
+    LOG_SUFFIX=""
 fi
+
+timestamp=$(date +%s)
+LOGFILE="../log/mvt/mvtd${LOG_SUFFIX}_${timestamp}.log"
+
+# flock acquires an exclusive lock on $LOCKFILE.
+# -n = non-blocking: exit immediately if already locked (another instance running).
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    echo "MVT Tile Daemon already running for [${BUCKET:-all}]. Exiting."
+    exit 0
+fi
+
+echo "Starting MVT Tile Daemon [${BUCKET:-all}]..."
+php ../daemon/mvtd.php $BUCKET_ARG > "$LOGFILE" &
+echo "Launched PID $! — log: $LOGFILE"
 
 echo "Cleaning up old logs..."
 find ../log/mvt/ -mtime +7 -type f -delete

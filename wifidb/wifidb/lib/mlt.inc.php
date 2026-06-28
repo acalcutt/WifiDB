@@ -57,9 +57,10 @@ define('MLT_LOG_RLE',                3);
 define('MLT_LOG_MORTON',             4);
 
 // ── Physical level technique ordinals (bits 1-0 of encoding byte) ────────────
+// Must match C++ PhysicalLevelTechnique enum: NONE=0, FAST_PFOR=1, VARINT=2, ALP=3
 define('MLT_PHYS_NONE',    0);   // raw bytes — no compression
-define('MLT_PHYS_VARINT',  1);
-define('MLT_PHYS_FASTPFOR',2);
+define('MLT_PHYS_FASTPFOR',1);   // FastPFOR (not used by this encoder; maplibre-native builds with MLT_WITH_FASTPFOR=OFF)
+define('MLT_PHYS_VARINT',  2);   // VarInt (protobuf-compatible)
 
 // ── Column type codes (from MltTypeMap.Tag0x01) ───────────────────────────────
 // IDs (logical type = ID, stored as u32 or u64)

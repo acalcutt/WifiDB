@@ -122,96 +122,118 @@ if ($is_cell) {
 }
 $rows = $result['data'];
 
-// ── Per-tile spatial thinning (32×32 density grid, matches mltd.php) ──────────
-// Mirrors encode_mlt_tile_from_points() / encode_cell_mlt_tile_from_points():
-//   1. Project rows to tile pixels + assign 32×32 density-grid cell.
-//   2. Sort by cell density ascending (sparsest cells first).
-//   3. Deduplicate same-pixel [+ same-sectype for WiFi] + 1.5 MB byte-budget cap.
-//   4. mlt_encode_tile() + gzip.
-$density_res = 32;
-$cell_px     = (float)MLT_EXTENT / $density_res;
-$pts         = [];
-$cell_count  = [];
+// ── Per-tile spatial thinning + gzip retry loop ───────────────────────────────
+// Mirrors encode_mlt_tile_from_points() / encode_cell_mlt_tile_from_points()
+// in mltd.php exactly — same algorithm as mvt.php:
+//   1. Project rows to tile pixels + per-tile Morton index.
+//   2. Sort by Morton index, compute gap to predecessor.
+//   3. Re-sort by gap descending (sparsest first).
+//   4. Deduplicate same-pixel [+ same-sectype for WiFi].
+//   5. Encode → gzip; if > tile_max_gz_bytes, keep floor(keep × max/size), retry ≤5×.
 
+// Step 1: project + per-tile Morton index.
+$pts = [];
 foreach ($rows as $row) {
     [$px, $py] = project_to_tile((float)$row['lat'], (float)$row['lon'], $z, $x, $y);
-    $cx  = min($density_res - 1, (int)($px / $cell_px));
-    $cy  = min($density_res - 1, (int)($py / $cell_px));
-    $ck  = $cx * $density_res + $cy;
-    $pts[] = ['row' => $row, 'px' => $px, 'py' => $py, 'ck' => $ck];
-    $cell_count[$ck] = ($cell_count[$ck] ?? 0) + 1;
+    $pts[] = ['row' => $row, 'px' => $px, 'py' => $py,
+              'morton' => morton_encode((float)$row['lat'], (float)$row['lon'])];
 }
 
-// Sort: sparsest cells first.
-usort($pts, function($a, $b) use ($cell_count) {
-    return $cell_count[$a['ck']] <=> $cell_count[$b['ck']];
-});
+// Step 2: Morton sort + gap to predecessor.
+usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+$prev_m = PHP_INT_MIN;
+foreach ($pts as &$pt) {
+    $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+    $prev_m    = $pt['morton'];
+}
+unset($pt);
 
-// Dedup + byte-budget cap (~38 bytes/feature, 1.5 MB uncompressed).
-$max_tile_bytes = 1500000;
-$est_size       = 0;
-$features       = [];
-$seen_pixel     = [];
+// Step 3: sort by gap descending (sparsest first).
+usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
 
+// Step 4: dedup same-pixel [+ same-sectype for WiFi].
+$seen    = [];
+$deduped = [];
 foreach ($pts as $pt) {
-    $row = $pt['row'];
-    $px  = $pt['px'];
-    $py  = $pt['py'];
+    $k = $is_cell
+        ? ($pt['px'] . ':' . $pt['py'])
+        : ($pt['px'] . ':' . $pt['py'] . ':' . (int)$pt['row']['sectype']);
+    if (!isset($seen[$k])) { $seen[$k] = true; $deduped[] = $pt; }
+}
+unset($seen, $pts);
 
-    $pixel_key = $is_cell ? ($px . ':' . $py) : ($px . ':' . $py . ':' . (int)$row['sectype']);
-    if (isset($seen_pixel[$pixel_key])) continue;
-    $seen_pixel[$pixel_key] = true;
+// Step 5: encode → gzip retry loop (target ≤ tile_max_gz_bytes from config).
+$max_gz_bytes = $dbcore->tile_max_gz_bytes;
+$keep         = count($deduped);
+$mlt_bytes_gz = null;
+$has_features = false;
 
-    if ($est_size + 38 > $max_tile_bytes) break;
-    $est_size += 38;
+if ($keep > 0) {
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset   = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
+        $features = [];
+        foreach ($subset as $pt) {
+            $row = $pt['row'];
+            if ($is_cell) {
+                $features[] = [
+                    'id'       => (int)$row['id'],
+                    'x'        => $pt['px'],
+                    'y'        => $pt['py'],
+                    'mac'      => (string)$row['mac'],
+                    'ssid'     => (string)$row['ssid'],
+                    'authmode' => (string)$row['authmode'],
+                    'chan'     => (string)$row['chan'],
+                    'type'     => (string)$row['type'],
+                    'fa'       => (string)$row['fa'],
+                    'la'       => (string)$row['la'],
+                    'points'   => (int)$row['points'],
+                    'rssi'     => (int)$row['rssi'],
+                    'user'     => (string)$row['user'],
+                ];
+            } else {
+                $features[] = [
+                    'id'            => (int)$row['id'],
+                    'x'             => $pt['px'],
+                    'y'             => $pt['py'],
+                    'sectype'       => (int)$row['sectype'],
+                    'chan'           => (int)$row['chan'],
+                    'radio'         => (string)$row['radio'],
+                    'mac'           => (string)$row['mac'],
+                    'user'          => (string)$row['user'],
+                    'ssid'          => (string)$row['ssid'],
+                    'auth'          => (string)$row['auth'],
+                    'encry'         => (string)$row['encry'],
+                    'nt'            => (string)$row['nt'],
+                    'btx'           => (string)$row['btx'],
+                    'otx'           => (string)$row['otx'],
+                    'fa'            => (string)$row['fa'],
+                    'la'            => (string)$row['la'],
+                    'points'        => (int)$row['points'],
+                    'high_gps_sig'  => (int)$row['high_gps_sig'],
+                    'high_gps_rssi' => (int)$row['high_gps_rssi'],
+                    'lat'           => (string)$row['lat'],
+                    'lon'           => (string)$row['lon'],
+                    'alt'           => (string)$row['alt'],
+                    'manuf'         => (string)$row['manuf'],
+                ];
+            }
+        }
 
-    if ($is_cell) {
-        $features[] = [
-            'id'       => (int)$row['id'],
-            'x'        => $px,
-            'y'        => $py,
-            'mac'      => (string)$row['mac'],
-            'ssid'     => (string)$row['ssid'],
-            'authmode' => (string)$row['authmode'],
-            'chan'     => (string)$row['chan'],
-            'type'     => (string)$row['type'],
-            'fa'       => (string)$row['fa'],
-            'la'       => (string)$row['la'],
-            'points'   => (int)$row['points'],
-            'rssi'     => (int)$row['rssi'],
-            'user'     => (string)$row['user'],
-        ];
-    } else {
-        $features[] = [
-            'id'            => (int)$row['id'],
-            'x'             => $px,
-            'y'             => $py,
-            'sectype'       => (int)$row['sectype'],
-            'chan'           => (int)$row['chan'],
-            'radio'         => (string)$row['radio'],
-            'mac'           => (string)$row['mac'],
-            'user'          => (string)$row['user'],
-            'ssid'          => (string)$row['ssid'],
-            'auth'          => (string)$row['auth'],
-            'encry'         => (string)$row['encry'],
-            'nt'            => (string)$row['nt'],
-            'btx'           => (string)$row['btx'],
-            'otx'           => (string)$row['otx'],
-            'fa'            => (string)$row['fa'],
-            'la'            => (string)$row['la'],
-            'points'        => (int)$row['points'],
-            'high_gps_sig'  => (int)$row['high_gps_sig'],
-            'high_gps_rssi' => (int)$row['high_gps_rssi'],
-            'lat'           => (string)$row['lat'],
-            'lon'           => (string)$row['lon'],
-            'alt'           => (string)$row['alt'],
-            'manuf'         => (string)$row['manuf'],
-        ];
+        if (empty($features)) break;
+        $mlt_bytes    = mlt_encode_tile($bucket, $features);
+        $mlt_bytes_gz = gzencode($mlt_bytes, 6);
+        $has_features = true;
+
+        $sz = strlen($mlt_bytes_gz);
+        if ($sz <= $max_gz_bytes) break;
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        if ($new_keep >= $keep) break;
+        $keep = $new_keep;
     }
 }
 
 // ── Response ──────────────────────────────────────────────────────────────────
-if (empty($features)) {
+if (!$has_features) {
     // Return an empty-tile response; do not cache so the next request retries.
     header('Content-Type: application/vnd.mapbox-vector-tile');
     header('Cache-Control: public, max-age=60');
@@ -219,9 +241,6 @@ if (empty($features)) {
     http_response_code(204);
     exit;
 }
-
-$mlt_bytes    = mlt_encode_tile($bucket, $features);
-$mlt_bytes_gz = gzencode($mlt_bytes, 6);
 
 if (TILE_DISK_CACHE) {
     if (!is_dir($tile_dir)) { @mkdir($tile_dir, 0775, true); }

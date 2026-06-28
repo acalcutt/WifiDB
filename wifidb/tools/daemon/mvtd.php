@@ -88,10 +88,8 @@ if (true) {
 // ── Configuration ─────────────────────────────────────────────────────────────
 // Adjust to match your data coverage and server capacity.
 
-$min_zoom = 1;
-$max_zoom = 19;   // z1-z19 matches the tippecanoe PMTiles export.
-                  // z13-z19 tiles are small-bbox and fast to generate per-tile.
-                  // On-demand fallback (mvt.php) still handles any cache misses.
+$min_zoom = $dbcore->tile_min_zoom;   // configured in config.inc.php 'tile_min_zoom'
+$max_zoom = $dbcore->tile_max_zoom;   // configured in config.inc.php 'tile_max_zoom'
 
 // Bounding box for the AP fetch query.
 // APs outside this box are excluded from tile generation.
@@ -235,7 +233,8 @@ function encode_tile_from_points(
     int    $z, int $x, int $y,
     string $bucket,
     array  $idxs,
-    array  $all_aps
+    array  $all_aps,
+    int    $max_gz_bytes = 750000
 ): ?string {
 
     // ── Step 1: project to tile pixels + compute per-tile Morton index ────────
@@ -288,8 +287,8 @@ function encode_tile_from_points(
     if (empty($deduped)) return null;
 
     // ── Step 5: encode → gzip, retry loop (tippecanoe --drop-densest-as-needed)
-    // Target: compressed tile ≤ 750 KB, matching tippecanoe's -M 750000.
-    // On each retry we keep only floor(keep × 750000/actual_size) features,
+    // Target: compressed tile ≤ $max_gz_bytes (from config.inc.php 'tile_max_gz_bytes').
+    // On each retry we keep only floor(keep × max_gz_bytes/actual_size) features,
     // always taking from the front of $deduped (= sparsest first).
     $max_gz_bytes = 750000;
     $keep         = count($deduped);
@@ -368,13 +367,14 @@ function encode_tile_from_points(
 }
 
 // ── Cell tile encoder ────────────────────────────────────────────────────────
-// Mirrors encode_tile_from_points() — same Morton-gap sort + 750 KB retry loop.
+// Mirrors encode_tile_from_points() — same Morton-gap sort + gzip retry loop.
 // Layer name = $bucket (e.g. 'cell_daily'); pixel dedup uses px:py (no sectype).
 function encode_cell_tile_from_mvt(
     int    $z, int $x, int $y,
     string $bucket,
     array  $idxs,
-    array  $all_cells
+    array  $all_cells,
+    int    $max_gz_bytes = 750000
 ): ?string {
 
     // ── Step 1: project + per-tile Morton index ───────────────────────────────
@@ -651,8 +651,8 @@ foreach ($buckets as $bucket) {
                 }
 
                 $gz_bytes = $is_cell
-                    ? encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps)
-                    : encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps);
+                    ? encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes)
+                    : encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
 
                 if ($gz_bytes === null) {
                     if (file_exists($tile_file)) unlink($tile_file);
@@ -708,11 +708,10 @@ $grand_elapsed = round(microtime(true) - $run_start, 1);
 // this removes tiles that are simply too old relative to the bucket window,
 // e.g. after the daemon was down for a while, or tiles written by mvt.php
 // on-demand before the daemon covered those zoom levels.
-if ($single_bucket === null) {
-    echo ts() . "--- Stale tile cleanup (max-age sweep, all z) ---\n";
-    $cleanup_deleted = 0;
-    $now = time();
-    foreach ($buckets as $bucket) {
+echo ts() . "--- Stale tile cleanup (max-age sweep, all z) ---\n";
+$cleanup_deleted = 0;
+$now = time();
+foreach ($buckets as $bucket) {
         $max_age    = $bucket_max_age[$bucket];
         $bucket_dir = "{$output_dir}/{$bucket}";
         if (!is_dir($bucket_dir)) continue;
@@ -734,8 +733,7 @@ if ($single_bucket === null) {
         }
     }
     echo "  Deleted {$cleanup_deleted} tiles exceeding bucket max-age.\n";
-    echo "--- End cleanup ---\n\n";
-}
+echo "--- End cleanup ---\n\n";
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
 echo "Total tiles considered : {$grand_total}\n";

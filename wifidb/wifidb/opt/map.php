@@ -144,7 +144,11 @@ switch($func)
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("visible");
 		$hist = mvt_history_layers($dbcore->createGeoJSON, true, 'visible');
-		$layer_source_all  = $layer_cell['layer_source'];
+		$heat = mvt_history_heatmap_layers($dbcore->createGeoJSON, 'none');
+		$heat_cell = $dbcore->createGeoJSON->CreateMvtCellHeatmap('none');
+		$layer_source_all  = $heat['source'];
+		$layer_source_all .= $heat_cell['layer_source'];
+		$layer_source_all .= $layer_cell['layer_source'];
 		$layer_source_all .= $hist['source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
@@ -355,7 +359,11 @@ switch($func)
 
 		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
 		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
-		$layer_source_all  = $layer_cell['layer_source'];
+		$heat = mvt_history_heatmap_layers($dbcore->createGeoJSON, 'none');
+		$heat_cell = $dbcore->createGeoJSON->CreateMvtCellHeatmap('none');
+		$layer_source_all  = $heat['source'];
+		$layer_source_all .= $heat_cell['layer_source'];
+		$layer_source_all .= $layer_cell['layer_source'];
 		$layer_source_all .= $hist['source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 

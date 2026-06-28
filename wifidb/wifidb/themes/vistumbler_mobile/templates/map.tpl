@@ -119,6 +119,7 @@
 															<button class="toggle-button" id="WifiDB_5to10year" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 5-10 year</button>
 															<button class="toggle-button" id="WifiDB_10yrplus" onClick="toggle_layer_button(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} 10+ year</button>
 															<button class="toggle-button" id="cell_networks" onClick="toggle_cell_group(this.id)">{if $default_hidden eq 1}Show{else}Hide{/if} Cell Networks</button>
+															<button class="toggle-button" id="heatmap_toggle" onClick="toggle_heatmap_group(this.id)">Show Heatmap</button>
 {/if}
 														</div>
 													</span>
@@ -571,6 +572,7 @@
 				if(clicked_id === 'latests'){
 					map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'none');
 				}
+				try { map.setLayoutProperty(clicked_id + '-heatmap', 'visibility', 'none'); } catch(e) {}
 				el.firstChild.data = "Show" + btext;
 				this.className = '';
 			} else {
@@ -586,6 +588,10 @@
 							map.setLayoutProperty(clicked_id + '-' + option_value, 'visibility', 'visible');
 						}
 					}
+				}
+				var htBtn = document.getElementById('heatmap_toggle');
+				if (htBtn && htBtn.firstChild.data.indexOf('Hide') === 0) {
+					try { map.setLayoutProperty(clicked_id + '-heatmap', 'visibility', 'visible'); } catch(e) {}
 				}
 				el.firstChild.data = "Hide" + btext;
 				this.className = 'active';
@@ -609,13 +615,42 @@
 				} catch(e) {}
 			}
 			var newVis = (currentVis === 'visible') ? 'none' : 'visible';
+			var htBtn = document.getElementById('heatmap_toggle');
+			var heatmapActive = htBtn && htBtn.firstChild.data.indexOf('Hide') === 0;
 			for (var i = 0; i < cellBuckets.length; i++) {
 				try { map.setLayoutProperty(cellBuckets[i], 'visibility', newVis); } catch(e) {}
 				if (point_labels_selected && point_labels_selected !== 'none') {
 					try { map.setLayoutProperty(cellBuckets[i] + '-' + point_labels_selected, 'visibility', newVis); } catch(e) {}
 				}
+				if (newVis === 'none' || heatmapActive) {
+					try { map.setLayoutProperty(cellBuckets[i] + '-heatmap', 'visibility', newVis); } catch(e) {}
+				}
 			}
 			el.firstChild.data = (newVis === 'visible' ? 'Hide' : 'Show') + btext;
+		}
+
+		function toggle_heatmap_group(btn_id) {
+			var heatmapLayers = [
+				'WifiDB_weekly-heatmap','WifiDB_monthly-heatmap',
+				'WifiDB_0to1year-heatmap','WifiDB_1to2year-heatmap','WifiDB_2to3year-heatmap',
+				'WifiDB_3to5year-heatmap','WifiDB_5to10year-heatmap','WifiDB_10yrplus-heatmap',
+				'cell_daily-heatmap','cell_weekly-heatmap','cell_monthly-heatmap',
+				'cell_0to1year-heatmap','cell_1to2year-heatmap','cell_2to3year-heatmap',
+				'cell_3to5year-heatmap','cell_5to10year-heatmap','cell_10yrplus-heatmap'
+			];
+			var el = document.getElementById(btn_id);
+			var currentVis = 'none';
+			for (var i = 0; i < heatmapLayers.length; i++) {
+				try {
+					var v = map.getLayoutProperty(heatmapLayers[i], 'visibility');
+					if (v !== undefined) { currentVis = v; break; }
+				} catch(e) {}
+			}
+			var newVis = (currentVis === 'visible') ? 'none' : 'visible';
+			for (var i = 0; i < heatmapLayers.length; i++) {
+				try { map.setLayoutProperty(heatmapLayers[i], 'visibility', newVis); } catch(e) {}
+			}
+			el.firstChild.data = (newVis === 'visible' ? 'Hide' : 'Show') + ' Heatmap';
 		}
 
 		function toggle_track(clicked_id) {
@@ -955,11 +990,12 @@
 						
 						if (i !== 0) text += '<hr>';
 						text += '<ul>';
-						if (feature.properties.id) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + feature.properties.id + '"><b>' + feature.properties.ssid + '</b></a></li>';
-						if (feature.properties.live_id) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
+						var apId = feature.properties.id_str || feature.properties.id;
+						if (apId && feature.properties.ssid) text += '<li>SSID: <a href="{$wifidb_host_url}opt/fetch.php?id=' + apId + '"><b>' + feature.properties.ssid + '</b></a></li>';
+						else if (feature.properties.ssid) text += '<li>SSID: <b>' + feature.properties.ssid + '</b></li>';
 						if (feature.properties.live_id) text += '<li>Live ID: <b>' + feature.properties.live_id + '</b></li>';
 						if (feature.properties.mac) text += '<li>Mac: <b>' + feature.properties.mac + '</b></li>';
-						if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + feature.properties.id + '"><b>' + feature.properties.points + '</b></a></li>';
+						if (feature.properties.points) text += '<li>Points: <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&id=' + apId + '"><b>' + feature.properties.points + '</b></a></li>'; 
 						if (feature.properties.signal) text += '<li>Signal: <b>' + feature.properties.signal + '</b></li>';
 						if (feature.properties.rssi) text += '<li>RSSI: <b>' + feature.properties.rssi + '</b></li>';
 						if (feature.properties.chan) text += '<li>Channel: <b>' + feature.properties.chan + '</b></li>';
