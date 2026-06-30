@@ -1340,7 +1340,7 @@ class export extends dbcore
 				$prep_geonames = $this->sql->conn->prepare($sql);
 				$prep_geonames->bindParam(1, $admin1);
 				$prep_geonames->execute();
-				$Admin1Array = $prep_geonames->fetch(2);
+				$Admin1Array = $prep_geonames->fetch(2) ?: array();
 
 				$admin2 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'].".".$GeonamesArray['admin2_code'];
 				if($this->sql->service == "mysql")
@@ -1350,7 +1350,7 @@ class export extends dbcore
 				$prep_geonames = $this->sql->conn->prepare($sql);
 				$prep_geonames->bindParam(1, $admin2);
 				$prep_geonames->execute();
-				$Admin2Array = $prep_geonames->fetch(2);
+				$Admin2Array = $prep_geonames->fetch(2) ?: array();
 				
 				$list_geonames[]= array(
 					'id'=>$GeonamesArray['id'],
@@ -1363,8 +1363,8 @@ class export extends dbcore
 					'lon'=>htmlspecialchars(number_format($GeonamesArray['longitude'],7), ENT_QUOTES, 'UTF-8'),
 					'lat_dm'=>htmlspecialchars($this->convert->all2dm(number_format($GeonamesArray['latitude'],7)), ENT_QUOTES, 'UTF-8'),
 					'lon_dm'=>htmlspecialchars($this->convert->all2dm(number_format($GeonamesArray['longitude'],7)), ENT_QUOTES, 'UTF-8'),
-					'admin1name'=>htmlspecialchars($Admin1Array['name'], ENT_QUOTES, 'UTF-8'),
-					'admin2name'=>htmlspecialchars($Admin2Array['name'], ENT_QUOTES, 'UTF-8')
+					'admin1name'=>htmlspecialchars($Admin1Array['name'] ?? '', ENT_QUOTES, 'UTF-8'),
+					'admin2name'=>htmlspecialchars($Admin2Array['name'] ?? '', ENT_QUOTES, 'UTF-8')
 				);
 			}
 		}

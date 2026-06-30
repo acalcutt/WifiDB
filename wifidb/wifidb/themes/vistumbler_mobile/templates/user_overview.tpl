@@ -60,7 +60,7 @@ if not, write to the
 								<td class="light">{$wifidb_user_details.first_import_date|escape:'htmlall'}</td>
 								<td class="light">{$wifidb_user_details.newest_date|escape:'htmlall'}</td>
 								{if ($wifidb_login_logged_in|default:0) == 1 and $wifidb_user_details.regid}<td class="light"><a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_user_details.regid}"><img  title="Message [{$wifidb_user_details.user|escape:'htmlall'}]" width="20px" src="{$themeurl}img/send-message.png" alt="Message {$wifidb_user_details.user|escape:'htmlall'}"></a></td>{/if}
-								{if ($wifidb_login_priv_name|default:"") == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
+								{if ($wifidb_login_priv_name|default:"") == "Administrator"}<td class="light"></td>{/if}
 							</tr>
 						</tbody>
 					</table>
