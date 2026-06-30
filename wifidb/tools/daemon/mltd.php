@@ -107,6 +107,9 @@ $bucket_ttl = [
     'cell_3to5year'  =>  2592000,
     'cell_5to10year' =>  2592000,
     'cell_10yrplus'  =>  2592000,
+    // Combined all-ages heatmap-only buckets — see mvtd.php for rationale.
+    'heatmap'        =>   604800,  //  1 week
+    'cell_heatmap'   =>   604800,
 ];
 
 // Per-bucket maximum tile age in seconds.
@@ -133,6 +136,8 @@ $bucket_max_age = [
     'cell_3to5year'  =>  63072000,
     'cell_5to10year' =>  63072000,
     'cell_10yrplus'  =>  63072000,
+    'heatmap'        =>   5184000,  //  60 days
+    'cell_heatmap'   =>   5184000,
 ];
 
 // ── CLI flags ─────────────────────────────────────────────────────────────────
@@ -227,6 +232,7 @@ function encode_mlt_tile_from_points(
                 'otx'           => $ap['otx'],
                 'fa'            => $ap['fa'],
                 'la'            => $ap['la'],
+                'age_days'      => (int)$ap['age_days'],
                 'points'        => (int)$ap['points'],
                 'high_gps_sig'  => (int)$ap['high_gps_sig'],
                 'high_gps_rssi' => (int)$ap['high_gps_rssi'],
@@ -321,6 +327,7 @@ function encode_cell_mlt_tile_from_points(
                 'type'     => (string)$cell['type'],
                 'fa'       => (string)$cell['fa'],
                 'la'       => (string)$cell['la'],
+                'age_days' => (int)$cell['age_days'],
                 'points'   => (int)$cell['points'],
                 'rssi'     => (int)$cell['rssi'],
                 'user'     => (string)$cell['user'],
@@ -346,7 +353,8 @@ function encode_cell_mlt_tile_from_points(
 
 // ── Main generation loop ──────────────────────────────────────────────────────
 $buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
-            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
+            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus',
+            'heatmap', 'cell_heatmap'];
 
 if ($single_bucket !== null) {
     if (!in_array($single_bucket, $buckets)) {
@@ -423,6 +431,7 @@ foreach ($buckets as $bucket) {
                     'type'     => (string)$row['type'],
                     'fa'       => (string)$row['fa'],
                     'la'       => (string)$row['la'],
+                    'age_days' => mvt_age_days((string)$row['la']),
                     'points'   => (int)$row['points'],
                     'rssi'     => (int)$row['rssi'],
                     'user'     => (string)$row['user'],
@@ -446,6 +455,7 @@ foreach ($buckets as $bucket) {
                     'otx'           => (string)$row['otx'],
                     'fa'            => (string)$row['fa'],
                     'la'            => (string)$row['la'],
+                    'age_days'      => mvt_age_days((string)$row['la']),
                     'points'        => (int)$row['points'],
                     'high_gps_sig'  => (int)$row['high_gps_sig'],
                     'high_gps_rssi' => (int)$row['high_gps_rssi'],

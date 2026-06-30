@@ -39,7 +39,8 @@ $y = filter_input(INPUT_GET, 'y', FILTER_VALIDATE_INT, ['options' => ['min_range
 $bucket = preg_replace('/[^a-z0-9_]/', '', strtolower((string)@$_REQUEST['bucket']));
 
 $valid_buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
-                  'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
+                  'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus',
+                  'heatmap', 'cell_heatmap'];
 
 if ($z === false || $z === null || $x === false || $x === null || $y === false || $y === null) {
     http_response_code(400); header('Content-Type: application/json');
@@ -81,6 +82,8 @@ $bucket_ttl = [
     'cell_3to5year'  =>  2592000,
     'cell_5to10year' =>  2592000,
     'cell_10yrplus'  =>  2592000,
+    'heatmap'        =>   604800,  //  1 week — see mvtd.php for rationale
+    'cell_heatmap'   =>   604800,
 ];
 $cache_ttl  = $bucket_ttl[$bucket] ?? 86400;
 $tile_dir   = rtrim($dbcore->PATH, '/') . '/out/tiles/' . $bucket . '/' . $z . '/' . $x;
@@ -186,6 +189,9 @@ $gz_bytes     = null;
 $has_features = false;
 
 if ($keep > 0) {
+    // The combined 'heatmap'/'cell_heatmap' buckets additionally carry
+    // 'age_days' so the client can drive heatmap-weight by recency.
+    $is_heatmap = ($bucket === 'heatmap' || $bucket === 'cell_heatmap');
     if ($is_cell) {
         $enc_keys = ['mac', 'ssid', 'authmode', 'chan', 'type',
                      'fa', 'la', 'points', 'rssi', 'user', 'id_str'];
@@ -195,6 +201,7 @@ if ($keep > 0) {
                      'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
                      'lat', 'lon', 'alt', 'manuf', 'id_str'];
     }
+    if ($is_heatmap) $enc_keys[] = 'age_days';
     $enc_keys_idx = array_flip($enc_keys);
 
     for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
@@ -221,6 +228,10 @@ if ($keep > 0) {
                     $enc_keys_idx['user'],     $av('str', (string)$row['user']),
                     $enc_keys_idx['id_str'],   $av('str', (string)$row['id']),
                 ];
+                if ($is_heatmap) {
+                    $tags[] = $enc_keys_idx['age_days'];
+                    $tags[] = $av('int', mvt_age_days((string)$row['la']));
+                }
             } else {
                 $tags = [
                     $enc_keys_idx['sectype'],       $av('int', (int)$row['sectype']),
@@ -245,6 +256,10 @@ if ($keep > 0) {
                     $enc_keys_idx['manuf'],         $av('str', (string)$row['manuf']),
                     $enc_keys_idx['id_str'],        $av('str', (string)$row['id']),
                 ];
+                if ($is_heatmap) {
+                    $tags[] = $enc_keys_idx['age_days'];
+                    $tags[] = $av('int', mvt_age_days((string)$row['la']));
+                }
             }
             $features[] = mvt_encode_point_feature((int)$row['id'], $pt['px'], $pt['py'], $tags);
         }

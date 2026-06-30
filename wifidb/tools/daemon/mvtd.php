@@ -169,6 +169,12 @@ $bucket_ttl = [
     'cell_3to5year'  =>  2592000,
     'cell_5to10year' =>  2592000,
     'cell_10yrplus'  =>  2592000,
+    // Combined all-ages heatmap-only buckets. A full unbounded scan is much
+    // more expensive than any single age bucket, so this regenerates on a
+    // 'monthly'-equivalent cadence rather than 'daily' — see mvt.inc.php
+    // bucket_date_window()'s 'heatmap' entry for the unbounded date window.
+    'heatmap'        =>   604800,  //  1 week
+    'cell_heatmap'   =>   604800,
 ];
 
 // Per-bucket maximum tile age in seconds.
@@ -196,6 +202,8 @@ $bucket_max_age = [
     'cell_3to5year'  =>  63072000,
     'cell_5to10year' =>  63072000,
     'cell_10yrplus'  =>  63072000,
+    'heatmap'        =>   5184000,  //  60 days
+    'cell_heatmap'   =>   5184000,
 ];
 
 // Maximum features per tile for reference; actual per-tile dropping is done
@@ -298,10 +306,14 @@ function encode_tile_from_points(
         $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
 
         // ── Build MVT layer for this subset ───────────────────────────────────
+        // The combined 'heatmap' bucket additionally carries 'age_days' so the
+        // client can drive heatmap-weight by recency from a single source.
+        $is_heatmap = ($bucket === 'heatmap');
         $keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
                       'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
                       'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
                       'lat', 'lon', 'alt', 'manuf', 'id_str'];
+        if ($is_heatmap) $keys[] = 'age_days';
         $keys_idx     = array_flip($keys);
         $values_bytes = [];
         $values_idx   = [];
@@ -343,6 +355,10 @@ function encode_tile_from_points(
                 $keys_idx['manuf'],         $add_value('str', (string)$ap['manuf']),
                 $keys_idx['id_str'],        $add_value('str', (string)$ap['id']),
             ];
+            if ($is_heatmap) {
+                $tags[] = $keys_idx['age_days'];
+                $tags[] = $add_value('int', (int)$ap['age_days']);
+            }
             $features[] = mvt_encode_point_feature((int)$ap['id'], $pt['px'], $pt['py'], $tags);
         }
 
@@ -424,8 +440,10 @@ function encode_cell_tile_from_mvt(
     for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
         $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
 
+        $is_heatmap = ($bucket === 'cell_heatmap');
         $keys     = ['mac', 'ssid', 'authmode', 'chan', 'type',
                      'fa', 'la', 'points', 'rssi', 'user', 'id_str'];
+        if ($is_heatmap) $keys[] = 'age_days';
         $keys_idx     = array_flip($keys);
         $values_bytes = [];
         $values_idx   = [];
@@ -457,6 +475,10 @@ function encode_cell_tile_from_mvt(
                 $keys_idx['user'],     $add_value('str', (string)$cell['user']),
                 $keys_idx['id_str'],   $add_value('str', (string)$cell['id']),
             ];
+            if ($is_heatmap) {
+                $tags[] = $keys_idx['age_days'];
+                $tags[] = $add_value('int', (int)$cell['age_days']);
+            }
             $features[] = mvt_encode_point_feature((int)$cell['id'], $pt['px'], $pt['py'], $tags);
         }
 
@@ -481,7 +503,8 @@ function encode_cell_tile_from_mvt(
 
 // ── Main generation loop ──────────────────────────────────────────────────────
 $buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
-            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
+            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus',
+            'heatmap', 'cell_heatmap'];
 
 if ($single_bucket !== null) {
     if (!in_array($single_bucket, $buckets)) {
@@ -552,6 +575,7 @@ foreach ($buckets as $bucket) {
                     'type'     => (string)$row['type'],
                     'fa'       => (string)$row['fa'],
                     'la'       => (string)$row['la'],
+                    'age_days' => mvt_age_days((string)$row['la']),
                     'points'   => (int)$row['points'],
                     'rssi'     => (int)$row['rssi'],
                     'user'     => (string)$row['user'],
@@ -575,6 +599,7 @@ foreach ($buckets as $bucket) {
                     'otx'           => (string)$row['otx'],
                     'fa'            => (string)$row['fa'],
                     'la'            => (string)$row['la'],
+                    'age_days'      => mvt_age_days((string)$row['la']),
                     'points'        => (int)$row['points'],
                     'high_gps_sig'  => (int)$row['high_gps_sig'],
                     'high_gps_rssi' => (int)$row['high_gps_rssi'],

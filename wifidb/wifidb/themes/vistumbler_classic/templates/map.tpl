@@ -580,7 +580,6 @@ if not, write to the
 				if(clicked_id === 'latests'){
 					map.setLayoutProperty(clicked_id + '-latest', 'visibility', 'none');
 				}
-				try { map.setLayoutProperty(clicked_id + '-heatmap', 'visibility', 'none'); } catch(e) {}
 				el.firstChild.data = "Show" + btext;
 				this.className = '';
 			} else {
@@ -596,10 +595,6 @@ if not, write to the
 							map.setLayoutProperty(clicked_id + '-' + option_value, 'visibility', 'visible');
 						}
 					}
-				}
-				var htBtn = document.getElementById('heatmap_toggle');
-				if (htBtn && htBtn.firstChild.data.indexOf('Hide') === 0) {
-					try { map.setLayoutProperty(clicked_id + '-heatmap', 'visibility', 'visible'); } catch(e) {}
 				}
 				el.firstChild.data = "Hide" + btext;
 				this.className = 'active';
@@ -623,29 +618,17 @@ if not, write to the
 				} catch(e) {}
 			}
 			var newVis = (currentVis === 'visible') ? 'none' : 'visible';
-			var htBtn = document.getElementById('heatmap_toggle');
-			var heatmapActive = htBtn && htBtn.firstChild.data.indexOf('Hide') === 0;
 			for (var i = 0; i < cellBuckets.length; i++) {
 				try { map.setLayoutProperty(cellBuckets[i], 'visibility', newVis); } catch(e) {}
 				if (point_labels_selected && point_labels_selected !== 'none') {
 					try { map.setLayoutProperty(cellBuckets[i] + '-' + point_labels_selected, 'visibility', newVis); } catch(e) {}
-				}
-				if (newVis === 'none' || heatmapActive) {
-					try { map.setLayoutProperty(cellBuckets[i] + '-heatmap', 'visibility', newVis); } catch(e) {}
 				}
 			}
 			el.firstChild.data = (newVis === 'visible' ? 'Hide' : 'Show') + btext;
 		}
 
 		function toggle_heatmap_group(btn_id) {
-			var heatmapLayers = [
-				'WifiDB_weekly-heatmap','WifiDB_monthly-heatmap',
-				'WifiDB_0to1year-heatmap','WifiDB_1to2year-heatmap','WifiDB_2to3year-heatmap',
-				'WifiDB_3to5year-heatmap','WifiDB_5to10year-heatmap','WifiDB_10yrplus-heatmap',
-				'cell_daily-heatmap','cell_weekly-heatmap','cell_monthly-heatmap',
-				'cell_0to1year-heatmap','cell_1to2year-heatmap','cell_2to3year-heatmap',
-				'cell_3to5year-heatmap','cell_5to10year-heatmap','cell_10yrplus-heatmap'
-			];
+			var heatmapLayers = ['WifiDB_heatmap-heatmap', 'WifiDB_cell_heatmap-heatmap'];
 			var el = document.getElementById(btn_id);
 			var currentVis = 'none';
 			for (var i = 0; i < heatmapLayers.length; i++) {

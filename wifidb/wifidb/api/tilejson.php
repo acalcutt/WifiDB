@@ -69,6 +69,8 @@ $bucket_meta = [
     'cell_3to5year'  => ['name' => 'WifiDB Cell 3-5 Year',  'desc' => 'Cell towers active 3–5 years ago'],
     'cell_5to10year' => ['name' => 'WifiDB Cell 5-10 Year', 'desc' => 'Cell towers active 5–10 years ago'],
     'cell_10yrplus'  => ['name' => 'WifiDB Cell 10+ Year',  'desc' => 'Cell towers last active more than 10 years ago'],
+    'heatmap'        => ['name' => 'WifiDB Heatmap (All Ages)',      'desc' => 'All WiFi APs, all ages combined, recency-weighted via age_days'],
+    'cell_heatmap'   => ['name' => 'WifiDB Cell Heatmap (All Ages)', 'desc' => 'All cell towers, all ages combined, recency-weighted via age_days'],
 ];
 
 if (!array_key_exists($bucket, $bucket_meta)) {
@@ -195,6 +197,12 @@ if ($is_cell) {
             'id_str'   => 'String',  // cell database ID (string form)
         ],
     ]];
+}
+
+// The combined 'heatmap'/'cell_heatmap' buckets additionally carry 'age_days'
+// (days since last active) for the client's heatmap-weight expression.
+if ($bucket === 'heatmap' || $bucket === 'cell_heatmap') {
+    $tilejson['vector_layers'][0]['fields']['age_days'] = 'Number';
 }
 
 // Add format field for MLT tiles (MapLibre extension to TileJSON 3.0.0).

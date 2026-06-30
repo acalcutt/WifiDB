@@ -171,6 +171,9 @@ function dd2dm(float $dd): float {
  *   10yrplus   10+ years     (sparse pre-2016 data)
  *   legacy     alias → same as 3to5year + 5to10year + 10yrplus combined (3yr+),
  *              kept for backward-compatibility with opt/map.php and other callers.
+ *   heatmap    unbounded — every age combined into one source, for the
+ *              all-ages heatmap layer (per-feature recency is carried via
+ *              the 'age_days' tag instead of a bucket date window).
  */
 function bucket_date_window(string $bucket): array {
     $now     = new DateTime('now', new DateTimeZone('UTC'));
@@ -185,6 +188,7 @@ function bucket_date_window(string $bucket): array {
         '5to10year' => ['P10Y',  'P5Y'  ],  // growth ramp + 2021 spike (~2016–2021)
         '10yrplus'  => [null,    'P10Y' ],  // sparse pre-2016 data
         'legacy'    => [null,    'P3Y'  ],  // backward-compat alias (covers 3yr+)
+        'heatmap'   => [null,    null   ],  // all ages, unbounded
     ];
     [$start_ivl, $end_ivl] = $windows[$bucket];
     $start_date = $end_date = null;
@@ -197,4 +201,18 @@ function bucket_date_window(string $bucket): array {
         $end_date = $d->format('Y-m-d H:i:s');
     }
     return [$start_date, $end_date];
+}
+
+/**
+ * Days between a row's last-active timestamp and now — used as the
+ * 'age_days' feature tag on the combined 'heatmap'/'cell_heatmap' buckets so
+ * the client can weight heatmap-density by recency (heatmap-weight) without
+ * needing per-age-bucket layers. Returns 0 for unparseable/empty input.
+ */
+function mvt_age_days(string $la): int {
+    if ($la === '') return 0;
+    $ts = strtotime($la);
+    if ($ts === false) return 0;
+    $days = (int)floor((time() - $ts) / 86400);
+    return max(0, $days);
 }

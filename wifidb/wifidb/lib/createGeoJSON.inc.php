@@ -182,12 +182,12 @@ class createGeoJSON
 						'interpolate',
 						['linear'],
 						['heatmap-density'],
-						0, 'rgba(33,102,172,0)',
-						0.3, 'rgb(103,169,207)',
-						0.6, 'rgb(209,229,240)',
-						0.9, 'rgb(253,219,199)',
-						1.2, 'rgb(239,138,98)',
-						1.5, 'rgb(178,24,43)'
+						0,    'rgba(33,102,172,0)',
+						0.3,  'rgb(103,169,207)',
+						0.5,  'rgb(209,229,240)',
+						0.7,  'rgb(253,219,199)',
+						0.85, 'rgb(239,138,98)',
+						1,    'rgb(178,24,43)'
 					],
 					'heatmap-radius': [
 						'interpolate',
@@ -426,11 +426,11 @@ class createGeoJSON
 			},
 			'paint': {
 				'circle-radius': {
-					'base': ".$base_radius.",
+					'base': 1.5,
 					'stops': [
-					[1, 1.5],
-					[4, 2],
-					[12, 2],
+					[1, ".($base_radius * 0.5)."],
+					[4, ".$base_radius."],
+					[12, ".$base_radius."],
 					[20, 20]
 					]
 				},
@@ -593,8 +593,8 @@ class createGeoJSON
 			},
 			'paint': {
 				'circle-radius': {
-					'base': " . $base_radius . ",
-					'stops': [[1,1.5],[4,2],[12,2],[20,20]]
+					'base': 1.5,
+					'stops': [[1," . ($base_radius * 0.5) . "],[4," . $base_radius . "],[12," . $base_radius . "],[20,20]]
 				},
 				'circle-color': [
 					'case',
@@ -666,11 +666,20 @@ class createGeoJSON
 	 * Create a MapLibre vector-tile source + heatmap layer for one history bucket.
 	 * Layer ID is "WifiDB_{$bucket}-heatmap".
 	 *
+	 * $weight_field, when non-empty, names a numeric tile property (e.g. the
+	 * 'age_days' tag carried by the combined 'heatmap'/'cell_heatmap' buckets)
+	 * used to drive heatmap-weight by recency — recent points contribute full
+	 * weight, older points fade out. Left empty for the existing per-age-bucket
+	 * heatmap layers, which have no per-feature age spread to weight by.
+	 *
 	 * @return array ['layer_source' => JS string, 'layer_name' => layer ID]
 	 */
-	public function CreateMvtBucketHeatmap(string $bucket, string $visibility = 'visible'): array {
+	public function CreateMvtBucketHeatmap(string $bucket, string $visibility = 'visible', string $weight_field = ''): array {
 		$source_id    = 'WifiDB_' . $bucket;
 		$layer_id     = $source_id . '-heatmap';
+		$weight_paint = ($weight_field !== '')
+			? "'heatmap-weight': ['interpolate',['linear'],['get','" . $weight_field . "'],0,1,3650,0.05],"
+			: '';
 		$layer_source = "\n
 		if (!map.getSource('" . $source_id . "')) {
 			map.addSource('" . $source_id . "', {
@@ -687,15 +696,35 @@ class createGeoJSON
 				'visibility': '" . $visibility . "'
 			},
 			'paint': {
+				" . $weight_paint . "
 				'heatmap-color': ['interpolate',['linear'],['heatmap-density'],
 					0,'rgba(33,102,172,0)',0.3,'rgb(103,169,207)',
-					0.6,'rgb(209,229,240)',0.9,'rgb(253,219,199)',
-					1.2,'rgb(239,138,98)',1.5,'rgb(178,24,43)'
+					0.5,'rgb(209,229,240)',0.7,'rgb(253,219,199)',
+					0.85,'rgb(239,138,98)',1,'rgb(178,24,43)'
 				],
 				'heatmap-radius': ['interpolate',['linear'],['zoom'],0,2,9,20]
 			}
 		});";
 		return ['layer_source' => $layer_source, 'layer_name' => $layer_id];
+	}
+
+	/**
+	 * Create the single combined all-ages WiFi heatmap layer (bucket 'heatmap'),
+	 * weighted by recency via the 'age_days' tile property. Replaces stacking
+	 * 9 separate per-bucket heatmap layers, which only showed the topmost
+	 * bucket's data where ages overlapped spatially.
+	 */
+	public function CreateWifiHeatmapAllAges(string $visibility = 'visible'): array {
+		return $this->CreateMvtBucketHeatmap('heatmap', $visibility, 'age_days');
+	}
+
+	/**
+	 * Create the single combined all-ages cell-tower heatmap layer
+	 * (bucket 'cell_heatmap'), weighted by recency via 'age_days'.
+	 * Replaces stacking 9 separate per-bucket cell heatmap layers.
+	 */
+	public function CreateCellHeatmapAllAges(string $visibility = 'visible'): array {
+		return $this->CreateMvtBucketHeatmap('cell_heatmap', $visibility, 'age_days');
 	}
 	// ── Cell network MVT helpers ──────────────────────────────────────────────
 	// Replace the old GeoJSON-based cell layer (WifiDB_cells source from
@@ -710,11 +739,22 @@ class createGeoJSON
 	 * Create a MapLibre vector-tile source + circle layer for the cell_networks bucket.
 	 */
 	public function CreateMvtCellLayers(string $visibility = 'visible'): array {
-		$cell_buckets = ['cell_daily','cell_weekly','cell_monthly',
-		                 'cell_0to1year','cell_1to2year','cell_2to3year',
-		                 'cell_3to5year','cell_5to10year','cell_10yrplus'];
+		// Oldest → newest so newest (cell_daily) renders on top.
+		// Color and radius graduate: newest = lightest purple + largest,
+		// oldest = darkest purple + smallest — matching VistumblerMAUI BucketStyles.
+		$cell_specs = [
+			'cell_10yrplus'  => ['#3d2266', 1.5],
+			'cell_5to10year' => ['#4d2b80', 2.0],
+			'cell_3to5year'  => ['#5e3599', 2.25],
+			'cell_2to3year'  => ['#6f40b3', 2.5],
+			'cell_1to2year'  => ['#7a4dc0', 2.75],
+			'cell_0to1year'  => ['#885fcd', 3.0],
+			'cell_monthly'   => ['#885fcd', 3.0],
+			'cell_weekly'    => ['#9d78d8', 3.0],
+			'cell_daily'     => ['#b296e3', 3.0],
+		];
 		$combined = '';
-		foreach ($cell_buckets as $cb) {
+		foreach ($cell_specs as $cb => [$color, $radius]) {
 			$src = 'WifiDB_' . $cb;
 			$combined .= "\n
 		if (!map.getSource('" . $src . "')) {
@@ -734,10 +774,10 @@ class createGeoJSON
 			},
 			'paint': {
 				'circle-radius': {
-					'base': 2.25,
-					'stops': [[1,1.5],[4,2],[12,2],[20,20]]
+					'base': 1.5,
+					'stops': [[1," . ($radius * 0.5) . "],[4," . $radius . "],[12," . $radius . "],[20,20]]
 				},
-				'circle-color': '#885FCD',
+				'circle-color': '" . $color . "',
 				'circle-opacity': 1,
 				'circle-blur': 0.5
 			}
@@ -831,8 +871,8 @@ class createGeoJSON
 			'paint': {
 				'heatmap-color': ['interpolate',['linear'],['heatmap-density'],
 					0,'rgba(33,102,172,0)',0.3,'rgb(103,169,207)',
-					0.6,'rgb(209,229,240)',0.9,'rgb(253,219,199)',
-					1.2,'rgb(239,138,98)',1.5,'rgb(178,24,43)'
+					0.5,'rgb(209,229,240)',0.7,'rgb(253,219,199)',
+					0.85,'rgb(239,138,98)',1,'rgb(178,24,43)'
 				],
 				'heatmap-radius': ['interpolate',['linear'],['zoom'],0,2,9,20]
 			}

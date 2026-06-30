@@ -44,7 +44,8 @@ $y = filter_input(INPUT_GET, 'y', FILTER_VALIDATE_INT, ['options' => ['min_range
 $bucket = preg_replace('/[^a-z0-9_]/', '', strtolower((string)@$_REQUEST['bucket']));
 
 $valid_buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
-                  'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus'];
+                  'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus',
+                  'heatmap', 'cell_heatmap'];
 
 if ($z === false || $z === null || $x === false || $x === null || $y === false || $y === null) {
     http_response_code(400); header('Content-Type: application/json');
@@ -78,6 +79,8 @@ $bucket_ttl = [
     'cell_3to5year'  =>  2592000,
     'cell_5to10year' =>  2592000,
     'cell_10yrplus'  =>  2592000,
+    'heatmap'        =>   604800,  //  1 week — see mvtd.php for rationale
+    'cell_heatmap'   =>   604800,
 ];
 $cache_ttl  = $bucket_ttl[$bucket] ?? 86400;
 $tile_dir   = rtrim($dbcore->PATH, '/') . '/out/tiles-mlt/' . $bucket . '/' . $z . '/' . $x;
@@ -186,6 +189,7 @@ if ($keep > 0) {
                     'type'     => (string)$row['type'],
                     'fa'       => (string)$row['fa'],
                     'la'       => (string)$row['la'],
+                    'age_days' => mvt_age_days((string)$row['la']),
                     'points'   => (int)$row['points'],
                     'rssi'     => (int)$row['rssi'],
                     'user'     => (string)$row['user'],
@@ -208,6 +212,7 @@ if ($keep > 0) {
                     'otx'           => (string)$row['otx'],
                     'fa'            => (string)$row['fa'],
                     'la'            => (string)$row['la'],
+                    'age_days'      => mvt_age_days((string)$row['la']),
                     'points'        => (int)$row['points'],
                     'high_gps_sig'  => (int)$row['high_gps_sig'],
                     'high_gps_rssi' => (int)$row['high_gps_rssi'],

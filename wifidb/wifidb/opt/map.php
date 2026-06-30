@@ -86,35 +86,21 @@ $dbcore->smarty->assign('func', $func);
  */
 function mvt_history_layers($cGeoJSON, bool $colored, string $visibility): array {
 	$f  = '#00802b'; $fw = '#cc7a00'; $fs = '#b30000';  // flat colour (hidden views)
-	$specs = [  // oldest → newest so newest renders on top
-		'10yrplus'  => $colored ? ['#005c1f','#996000','#800000',3]    : [$f,$fw,$fs,3],
-		'5to10year' => $colored ? ['#00802b','#cc7a00','#b30000',3]    : [$f,$fw,$fs,3],
-		'3to5year'  => $colored ? ['#009933','#d98000','#c00000',2.75] : [$f,$fw,$fs,2.75],
-		'2to3year'  => $colored ? ['#00b33c','#e68a00','#cc0000',2.75] : [$f,$fw,$fs,2.75],
-		'1to2year'  => $colored ? ['#00e64d','#ff9900','#e60000',2.5]  : [$f,$fw,$fs,2.5],
-		'0to1year'  => $colored ? ['#1aff66','#ffad33','#ff1a1a',2]    : [$f,$fw,$fs,2],
-		'monthly'   => $colored ? ['#1aff66','#ffad33','#ff1a1a',2]    : [$f,$fw,$fs,2],
-		'weekly'    => $colored ? ['#1aff66','#ffad33','#ff1a1a',2]    : [$f,$fw,$fs,2],
+	$specs = [  // oldest → newest so newest renders on top; newest = largest + brightest
+		'10yrplus'  => $colored ? ['#005c1f','#996000','#800000',1.5]  : [$f,$fw,$fs,1.5],
+		'5to10year' => $colored ? ['#00802b','#cc7a00','#b30000',2]    : [$f,$fw,$fs,2],
+		'3to5year'  => $colored ? ['#009933','#d98000','#c00000',2.25] : [$f,$fw,$fs,2.25],
+		'2to3year'  => $colored ? ['#00b33c','#e68a00','#cc0000',2.5]  : [$f,$fw,$fs,2.5],
+		'1to2year'  => $colored ? ['#00e64d','#ff9900','#e60000',2.75] : [$f,$fw,$fs,2.75],
+		'0to1year'  => $colored ? ['#1aff66','#ffad33','#ff1a1a',3]    : [$f,$fw,$fs,3],
+		'monthly'   => $colored ? ['#1aff66','#ffad33','#ff1a1a',3]    : [$f,$fw,$fs,3],
+		'weekly'    => $colored ? ['#1aff66','#ffad33','#ff1a1a',3]    : [$f,$fw,$fs,3],
 	];
 	$source = ''; $names = [];
 	foreach ($specs as $bucket => [$oc,$wc,$sc,$rad]) {
 		$r       = $cGeoJSON->CreateMvtBucketLayers($bucket, $oc, $wc, $sc, $rad, 1, 0.5, $visibility);
 		$source .= $r['layer_source'];
 		$source .= $cGeoJSON->CreateMvtBucketLabelLayers($bucket);
-		$names[] = "'".$r['layer_name']."'";
-	}
-	return ['source' => $source, 'names' => implode(',', $names)];
-}
-
-/**
- * Build heatmap layers for all 9 history buckets.
- */
-function mvt_history_heatmap_layers($cGeoJSON, string $visibility): array {
-	$buckets = ['10yrplus','5to10year','3to5year','2to3year','1to2year','0to1year','monthly','weekly'];
-	$source = ''; $names = [];
-	foreach ($buckets as $bucket) {
-		$r       = $cGeoJSON->CreateMvtBucketHeatmap($bucket, $visibility);
-		$source .= $r['layer_source'];
 		$names[] = "'".$r['layer_name']."'";
 	}
 	return ['source' => $source, 'names' => implode(',', $names)];
@@ -144,22 +130,22 @@ switch($func)
 		$centerpoint =  "[".$longitude.",".$latitude."]";
 		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("visible");
 		$hist = mvt_history_layers($dbcore->createGeoJSON, true, 'visible');
-		$heat = mvt_history_heatmap_layers($dbcore->createGeoJSON, 'none');
-		$heat_cell = $dbcore->createGeoJSON->CreateMvtCellHeatmap('none');
-		$layer_source_all  = $heat['source'];
+		$heat = $dbcore->createGeoJSON->CreateWifiHeatmapAllAges('none');
+		$heat_cell = $dbcore->createGeoJSON->CreateCellHeatmapAllAges('none');
+		$layer_source_all  = $heat['layer_source'];
 		$layer_source_all .= $heat_cell['layer_source'];
 		$layer_source_all .= $layer_cell['layer_source'];
 		$layer_source_all .= $hist['source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateMvtCellLabelLayers();
 
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
-		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name']);
+		$dl = $dbcore->createGeoJSON->CreateApLayer($dgs['layer_name'],"","#1aff66","#ffad33","#ff1a1a",3,1,0.5,"visible");
 		$layer_source_all .= $dgs['layer_source'];
 		$layer_source_all .= $dl['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateApLabelLayer($dgs['layer_name'],"", "Open Sans Regular", 10, "none");
 
 		$lgs = $dbcore->createGeoJSON->CreateLatestGeoJsonSource();
-		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name']);
+		$ll = $dbcore->createGeoJSON->CreateApLayer($lgs['layer_name'],"","#1aff66","#ffad33","#ff1a1a",3,1,0.5,"visible");
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
 		$layer_source_all .= $dbcore->createGeoJSON->CreateLabelLayer($lgs['layer_name'],"","latest","{ssid}","Open Sans Regular",10,"visible");
@@ -192,10 +178,10 @@ switch($func)
 		if (empty($bearing)){$bearing = 0;}
 		if (empty($pitch)){$pitch = 0;}
 		$centerpoint =  "[".$longitude.",".$latitude."]";
-		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellHeatmap("visible");
-		$hist = mvt_history_heatmap_layers($dbcore->createGeoJSON, 'visible');
+		$layer_cell = $dbcore->createGeoJSON->CreateCellHeatmapAllAges("visible");
+		$hist = $dbcore->createGeoJSON->CreateWifiHeatmapAllAges('visible');
 		$layer_source_all  = $layer_cell['layer_source'];
-		$layer_source_all .= $hist['source'];
+		$layer_source_all .= $hist['layer_source'];
 
 		$dgs = $dbcore->createGeoJSON->CreateDailyGeoJsonSource();
 		$dl = $dbcore->createGeoJSON->CreateHeatMapLayer($dgs['layer_name']);
@@ -207,9 +193,9 @@ switch($func)
 		$layer_source_all .= $lgs['layer_source'];
 		$layer_source_all .= $ll['layer_source'];
 
-		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."',".$hist['names'];
-		$cell_layer_name = $layer_cell['layer_names_js'];
-		
+		$layer_name = "'".$lgs['layer_name']."','".$dgs['layer_name']."','".$hist['layer_name']."'";
+		$cell_layer_name = "'".$layer_cell['layer_name']."'";
+
 		$dbcore->smarty->assign('layer_source_all', $layer_source_all);
 		$dbcore->smarty->assign('layer_name', $layer_name);
 		$dbcore->smarty->assign('cell_layer_name', $cell_layer_name);
@@ -359,9 +345,9 @@ switch($func)
 
 		$layer_cell = $dbcore->createGeoJSON->CreateMvtCellLayers("none");
 		$hist = mvt_history_layers($dbcore->createGeoJSON, false, 'none');
-		$heat = mvt_history_heatmap_layers($dbcore->createGeoJSON, 'none');
-		$heat_cell = $dbcore->createGeoJSON->CreateMvtCellHeatmap('none');
-		$layer_source_all  = $heat['source'];
+		$heat = $dbcore->createGeoJSON->CreateWifiHeatmapAllAges('none');
+		$heat_cell = $dbcore->createGeoJSON->CreateCellHeatmapAllAges('none');
+		$layer_source_all  = $heat['layer_source'];
 		$layer_source_all .= $heat_cell['layer_source'];
 		$layer_source_all .= $layer_cell['layer_source'];
 		$layer_source_all .= $hist['source'];

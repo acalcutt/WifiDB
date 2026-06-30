@@ -505,8 +505,9 @@ function mlt_column_type_bytes(int $type_code, string $name = '', array $childre
 /**
  * Encode one WifiDB feature table (one age bucket) as an MLT tile.
  *
- * $layer_name: the bucket name used as the MLT layer/FeatureTable name.
- * $features:   array of AP rows, each with:
+ * $layer_name: the bucket name used as the MLT layer/FeatureTable name. Buckets
+ *   prefixed 'cell_' use the cell-tower schema below; all others use the AP schema.
+ * $features:   array of rows. AP rows (non-'cell_' buckets), each with:
  *   'id'            => int      Feature ID (UINT_32)
  *   'x'             => int      Tile-coordinate x (0..extent-1)
  *   'y'             => int      Tile-coordinate y (0..extent-1)
@@ -530,6 +531,26 @@ function mlt_column_type_bytes(int $type_code, string $name = '', array $childre
  *   'lon'           => string   Longitude string  (nullable)
  *   'alt'           => string   Altitude string   (nullable)
  *   'manuf'         => string   Manufacturer      (nullable)
+ *   'age_days'      => int      Days since last active (optional, defaults to
+ *                                0; only populated by the combined 'heatmap'
+ *                                bucket, for heatmap-weight on the client).
+ *
+ * Cell rows ('cell_*' buckets), each with:
+ *   'id'       => int      Feature ID (UINT_32)
+ *   'x'        => int      Tile-coordinate x (0..extent-1)
+ *   'y'        => int      Tile-coordinate y (0..extent-1)
+ *   'points'   => int      Point count      (INT_32)
+ *   'rssi'     => int      Best GPS RSSI    (INT_32)
+ *   'age_days' => int      Days since last active (optional, defaults to 0)
+ *   'mac'      => string   MCCMNC_LAC_CELLID (nullable)
+ *   'ssid'     => string   Network/operator name (nullable)
+ *   'authmode' => string   Authentication mode (nullable)
+ *   'chan'     => string   Channel / frequency band (nullable)
+ *   'type'     => string   Cell type, e.g. LTE/GSM/CDMA (nullable)
+ *   'fa'       => string   First seen date   (nullable)
+ *   'la'       => string   Last seen date    (nullable)
+ *   'user'     => string   Contributor username (nullable)
+ *
  * $extent:    Tile coordinate extent (default 4096, must match projection).
  *
  * Returns raw MLT bytes for one FeatureTable block (NOT gzip-compressed).
@@ -539,37 +560,60 @@ function mlt_encode_tile(string $layer_name, array $features, int $extent = MLT_
     $n = count($features);
     if ($n === 0) return '';
 
+    $is_cell = (strpos($layer_name, 'cell_') === 0);
+
     // ── Tile metadata (embedded FeatureTableMetadata) ─────────────────────────
-    // Column schema matches the tippecanoe PMTiles export: 21 property fields
-    // plus the implicit ID and geometry columns.
-    $columns = [
-        // ID: UINT_32, not nullable (typeCode = 0, no name)
-        ['type' => MLT_COL_ID_U32],
-        // Geometry: not nullable (typeCode = 4, no name)
-        ['type' => MLT_COL_GEOMETRY],
-        // Non-nullable integer scalars
-        ['type' => MLT_COL_INT32,       'name' => 'sectype'],
-        ['type' => MLT_COL_INT32,       'name' => 'chan'],
-        ['type' => MLT_COL_INT32,       'name' => 'points'],
-        ['type' => MLT_COL_INT32,       'name' => 'high_gps_sig'],
-        ['type' => MLT_COL_INT32,       'name' => 'high_gps_rssi'],
-        // Nullable string properties
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'radio'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'mac'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'user'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'ssid'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'auth'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'encry'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'nt'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'btx'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'otx'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'fa'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'la'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'lat'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'lon'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'alt'],
-        ['type' => MLT_COL_STRING_NULL, 'name' => 'manuf'],
-    ];
+    if ($is_cell) {
+        $columns = [
+            ['type' => MLT_COL_ID_U32],
+            ['type' => MLT_COL_GEOMETRY],
+            // Non-nullable integer scalars
+            ['type' => MLT_COL_INT32,       'name' => 'points'],
+            ['type' => MLT_COL_INT32,       'name' => 'rssi'],
+            ['type' => MLT_COL_INT32,       'name' => 'age_days'],
+            // Nullable string properties
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'mac'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'ssid'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'authmode'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'chan'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'type'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'fa'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'la'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'user'],
+        ];
+    } else {
+        // Column schema matches the tippecanoe PMTiles export: 21 property fields
+        // plus the implicit ID and geometry columns.
+        $columns = [
+            // ID: UINT_32, not nullable (typeCode = 0, no name)
+            ['type' => MLT_COL_ID_U32],
+            // Geometry: not nullable (typeCode = 4, no name)
+            ['type' => MLT_COL_GEOMETRY],
+            // Non-nullable integer scalars
+            ['type' => MLT_COL_INT32,       'name' => 'sectype'],
+            ['type' => MLT_COL_INT32,       'name' => 'chan'],
+            ['type' => MLT_COL_INT32,       'name' => 'points'],
+            ['type' => MLT_COL_INT32,       'name' => 'high_gps_sig'],
+            ['type' => MLT_COL_INT32,       'name' => 'high_gps_rssi'],
+            ['type' => MLT_COL_INT32,       'name' => 'age_days'],
+            // Nullable string properties
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'radio'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'mac'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'user'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'ssid'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'auth'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'encry'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'nt'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'btx'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'otx'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'fa'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'la'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'lat'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'lon'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'alt'],
+            ['type' => MLT_COL_STRING_NULL, 'name' => 'manuf'],
+        ];
+    }
 
     $meta = mlt_varint(strlen($layer_name)) . $layer_name
           . mlt_varint($extent)
@@ -585,73 +629,117 @@ function mlt_encode_tile(string $layer_name, array $features, int $extent = MLT_
     // ── Feature table body ────────────────────────────────────────────────────
     // Column order must match metadata order above.
 
-    $ids       = []; $points_xy = [];
-    $sectypes  = []; $chans     = []; $pointcnts = []; $sig = []; $rssi = [];
-    $radios    = []; $macs      = []; $users  = [];
-    $ssids     = []; $auths     = []; $encrys = []; $nts = [];
-    $btxs      = []; $otxs      = [];
-    $fas       = []; $las       = [];
-    $lats      = []; $lons      = []; $alts   = []; $manufs = [];
+    if ($is_cell) {
+        $ids       = []; $points_xy = [];
+        $pointcnts = []; $rssis     = []; $age_days = [];
+        $macs      = []; $ssids     = []; $authmodes = [];
+        $chans     = []; $types     = []; $fas = []; $las = []; $users = [];
 
-    foreach ($features as $f) {
-        $ids[]       = (int)$f['id'];
-        $points_xy[] = ['x' => (int)$f['x'], 'y' => (int)$f['y']];
-        $sectypes[]  = (int)$f['sectype'];
-        $chans[]     = (int)$f['chan'];
-        $pointcnts[] = (int)$f['points'];
-        $sig[]       = (int)$f['high_gps_sig'];
-        $rssi[]      = (int)$f['high_gps_rssi'];
-        $radios[]    = isset($f['radio'])  ? $f['radio']  : null;
-        $macs[]      = isset($f['mac'])    ? $f['mac']    : null;
-        $users[]     = isset($f['user'])   ? $f['user']   : null;
-        $ssids[]     = isset($f['ssid'])   ? $f['ssid']   : null;
-        $auths[]     = isset($f['auth'])   ? $f['auth']   : null;
-        $encrys[]    = isset($f['encry'])  ? $f['encry']  : null;
-        $nts[]       = isset($f['nt'])     ? $f['nt']     : null;
-        $btxs[]      = isset($f['btx'])    ? $f['btx']    : null;
-        $otxs[]      = isset($f['otx'])    ? $f['otx']    : null;
-        $fas[]       = isset($f['fa'])     ? $f['fa']     : null;
-        $las[]       = isset($f['la'])     ? $f['la']     : null;
-        $lats[]      = isset($f['lat'])    ? $f['lat']    : null;
-        $lons[]      = isset($f['lon'])    ? $f['lon']    : null;
-        $alts[]      = isset($f['alt'])    ? $f['alt']    : null;
-        $manufs[]    = isset($f['manuf'])  ? $f['manuf']  : null;
+        foreach ($features as $f) {
+            $ids[]       = (int)$f['id'];
+            $points_xy[] = ['x' => (int)$f['x'], 'y' => (int)$f['y']];
+            $pointcnts[] = (int)$f['points'];
+            $rssis[]     = (int)$f['rssi'];
+            $age_days[]  = isset($f['age_days']) ? (int)$f['age_days'] : 0;
+            $macs[]      = isset($f['mac'])      ? $f['mac']      : null;
+            $ssids[]     = isset($f['ssid'])     ? $f['ssid']     : null;
+            $authmodes[] = isset($f['authmode']) ? $f['authmode'] : null;
+            $chans[]     = isset($f['chan'])     ? $f['chan']     : null;
+            $types[]     = isset($f['type'])     ? $f['type']     : null;
+            $fas[]       = isset($f['fa'])       ? $f['fa']       : null;
+            $las[]       = isset($f['la'])       ? $f['la']       : null;
+            $users[]     = isset($f['user'])     ? $f['user']     : null;
+        }
+
+        $id_col     = mlt_int_stream($ids, false, MLT_PST_DATA, MLT_DICT_NONE);
+        $geom_col   = mlt_encode_geometry_column($points_xy);
+        $points_col = mlt_int_stream($pointcnts, true, MLT_PST_DATA, MLT_DICT_NONE);
+        $rssi_col   = mlt_int_stream($rssis,     true, MLT_PST_DATA, MLT_DICT_NONE);
+        $age_col    = mlt_int_stream($age_days,  true, MLT_PST_DATA, MLT_DICT_NONE);
+        $mac_col      = mlt_encode_string_column($macs,      true);
+        $ssid_col     = mlt_encode_string_column($ssids,     true);
+        $authmode_col = mlt_encode_string_column($authmodes, true);
+        $chan_col     = mlt_encode_string_column($chans,     true);
+        $type_col     = mlt_encode_string_column($types,     true);
+        $fa_col       = mlt_encode_string_column($fas,       true);
+        $la_col       = mlt_encode_string_column($las,       true);
+        $user_col     = mlt_encode_string_column($users,     true);
+
+        $body = $id_col . $geom_col
+              . $points_col . $rssi_col . $age_col
+              . $mac_col . $ssid_col . $authmode_col . $chan_col . $type_col
+              . $fa_col . $la_col . $user_col;
+    } else {
+        $ids       = []; $points_xy = [];
+        $sectypes  = []; $chans     = []; $pointcnts = []; $sig = []; $rssi = []; $age_days = [];
+        $radios    = []; $macs      = []; $users  = [];
+        $ssids     = []; $auths     = []; $encrys = []; $nts = [];
+        $btxs      = []; $otxs      = [];
+        $fas       = []; $las       = [];
+        $lats      = []; $lons      = []; $alts   = []; $manufs = [];
+
+        foreach ($features as $f) {
+            $ids[]       = (int)$f['id'];
+            $points_xy[] = ['x' => (int)$f['x'], 'y' => (int)$f['y']];
+            $sectypes[]  = (int)$f['sectype'];
+            $chans[]     = (int)$f['chan'];
+            $pointcnts[] = (int)$f['points'];
+            $sig[]       = (int)$f['high_gps_sig'];
+            $rssi[]      = (int)$f['high_gps_rssi'];
+            $age_days[]  = isset($f['age_days']) ? (int)$f['age_days'] : 0;
+            $radios[]    = isset($f['radio'])  ? $f['radio']  : null;
+            $macs[]      = isset($f['mac'])    ? $f['mac']    : null;
+            $users[]     = isset($f['user'])   ? $f['user']   : null;
+            $ssids[]     = isset($f['ssid'])   ? $f['ssid']   : null;
+            $auths[]     = isset($f['auth'])   ? $f['auth']   : null;
+            $encrys[]    = isset($f['encry'])  ? $f['encry']  : null;
+            $nts[]       = isset($f['nt'])     ? $f['nt']     : null;
+            $btxs[]      = isset($f['btx'])    ? $f['btx']    : null;
+            $otxs[]      = isset($f['otx'])    ? $f['otx']    : null;
+            $fas[]       = isset($f['fa'])     ? $f['fa']     : null;
+            $las[]       = isset($f['la'])     ? $f['la']     : null;
+            $lats[]      = isset($f['lat'])    ? $f['lat']    : null;
+            $lons[]      = isset($f['lon'])    ? $f['lon']    : null;
+            $alts[]      = isset($f['alt'])    ? $f['alt']    : null;
+            $manufs[]    = isset($f['manuf'])  ? $f['manuf']  : null;
+        }
+
+        // ID column — UINT_32, no stream count prefix.
+        $id_col      = mlt_int_stream($ids, false, MLT_PST_DATA, MLT_DICT_NONE);
+        // Geometry column — [varint numStreams] + streams.
+        $geom_col    = mlt_encode_geometry_column($points_xy);
+        // Non-nullable integer columns — INT_32 signed, no stream count prefix.
+        $sectype_col = mlt_int_stream($sectypes,  true, MLT_PST_DATA, MLT_DICT_NONE);
+        $chan_col     = mlt_int_stream($chans,     true, MLT_PST_DATA, MLT_DICT_NONE);
+        $points_col  = mlt_int_stream($pointcnts, true, MLT_PST_DATA, MLT_DICT_NONE);
+        $sig_col     = mlt_int_stream($sig,       true, MLT_PST_DATA, MLT_DICT_NONE);
+        $rssi_col    = mlt_int_stream($rssi,      true, MLT_PST_DATA, MLT_DICT_NONE);
+        $age_col     = mlt_int_stream($age_days,  true, MLT_PST_DATA, MLT_DICT_NONE);
+        // Nullable string columns — [varint numStreams] + present + data streams.
+        $radio_col   = mlt_encode_string_column($radios,  true);
+        $mac_col     = mlt_encode_string_column($macs,    true);
+        $user_col    = mlt_encode_string_column($users,   true);
+        $ssid_col    = mlt_encode_string_column($ssids,   true);
+        $auth_col    = mlt_encode_string_column($auths,   true);
+        $encry_col   = mlt_encode_string_column($encrys,  true);
+        $nt_col      = mlt_encode_string_column($nts,     true);
+        $btx_col     = mlt_encode_string_column($btxs,    true);
+        $otx_col     = mlt_encode_string_column($otxs,    true);
+        $fa_col      = mlt_encode_string_column($fas,     true);
+        $la_col      = mlt_encode_string_column($las,     true);
+        $lat_col     = mlt_encode_string_column($lats,    true);
+        $lon_col     = mlt_encode_string_column($lons,    true);
+        $alt_col     = mlt_encode_string_column($alts,    true);
+        $manuf_col   = mlt_encode_string_column($manufs,  true);
+
+        $body = $id_col . $geom_col
+              . $sectype_col . $chan_col . $points_col . $sig_col . $rssi_col . $age_col
+              . $radio_col . $mac_col . $user_col
+              . $ssid_col . $auth_col . $encry_col . $nt_col
+              . $btx_col . $otx_col
+              . $fa_col . $la_col
+              . $lat_col . $lon_col . $alt_col . $manuf_col;
     }
-
-    // ID column — UINT_32, no stream count prefix.
-    $id_col      = mlt_int_stream($ids, false, MLT_PST_DATA, MLT_DICT_NONE);
-    // Geometry column — [varint numStreams] + streams.
-    $geom_col    = mlt_encode_geometry_column($points_xy);
-    // Non-nullable integer columns — INT_32 signed, no stream count prefix.
-    $sectype_col = mlt_int_stream($sectypes,  true, MLT_PST_DATA, MLT_DICT_NONE);
-    $chan_col     = mlt_int_stream($chans,     true, MLT_PST_DATA, MLT_DICT_NONE);
-    $points_col  = mlt_int_stream($pointcnts, true, MLT_PST_DATA, MLT_DICT_NONE);
-    $sig_col     = mlt_int_stream($sig,       true, MLT_PST_DATA, MLT_DICT_NONE);
-    $rssi_col    = mlt_int_stream($rssi,      true, MLT_PST_DATA, MLT_DICT_NONE);
-    // Nullable string columns — [varint numStreams] + present + data streams.
-    $radio_col   = mlt_encode_string_column($radios,  true);
-    $mac_col     = mlt_encode_string_column($macs,    true);
-    $user_col    = mlt_encode_string_column($users,   true);
-    $ssid_col    = mlt_encode_string_column($ssids,   true);
-    $auth_col    = mlt_encode_string_column($auths,   true);
-    $encry_col   = mlt_encode_string_column($encrys,  true);
-    $nt_col      = mlt_encode_string_column($nts,     true);
-    $btx_col     = mlt_encode_string_column($btxs,    true);
-    $otx_col     = mlt_encode_string_column($otxs,    true);
-    $fa_col      = mlt_encode_string_column($fas,     true);
-    $la_col      = mlt_encode_string_column($las,     true);
-    $lat_col     = mlt_encode_string_column($lats,    true);
-    $lon_col     = mlt_encode_string_column($lons,    true);
-    $alt_col     = mlt_encode_string_column($alts,    true);
-    $manuf_col   = mlt_encode_string_column($manufs,  true);
-
-    $body = $id_col . $geom_col
-          . $sectype_col . $chan_col . $points_col . $sig_col . $rssi_col
-          . $radio_col . $mac_col . $user_col
-          . $ssid_col . $auth_col . $encry_col . $nt_col
-          . $btx_col . $otx_col
-          . $fa_col . $la_col
-          . $lat_col . $lon_col . $alt_col . $manuf_col;
 
     // ── Wrap in FeatureTable envelope ─────────────────────────────────────────
     // Layout: [varint tagLength][varint tag=1][metadata][body]
