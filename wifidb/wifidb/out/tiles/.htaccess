@@ -6,20 +6,36 @@
 # and Content-Encoding: gzip.  Without these headers, MapLibre silently shows
 # no tiles.
 #
+# IMPORTANT: these headers must NOT use "Header always set" — "always" forces
+# them onto Apache's own error responses too (e.g. the 404 HTML page Apache
+# serves for a z/x/y with no data, which is the common case at the edges of
+# coverage). A client that honors Content-Encoding: gzip will then try to
+# gzip-decode that HTML 404 body, fail ("incorrect header check"), and drop
+# the tile's geometry entirely — indistinguishable from a real rendering bug.
+#
+# Plain "Header set" (no condition) is NOT reliable here either: on Apache
+# 2.4.41 it still applied gzip/protobuf headers to 404s whenever the request
+# matched an EXISTING zoom/x directory but a missing y file within it (i.e. a
+# "real" 404 from the core handler, as opposed to a request whose parent
+# directory doesn't exist at all, which takes a different internal path and
+# was unaffected). That's an internal/version-dependent distinction, not
+# something to depend on. Use an explicit expr= condition on the final
+# response status instead — unambiguous regardless of how the 404 arose.
+#
 # Deploy this file to: /srv/www/virtual/wifidb.net/out/tiles/.htaccess
 # Ensure mod_headers is enabled:  a2enmod headers && systemctl reload apache2
 
 <IfModule mod_headers.c>
     <FilesMatch "\.pbf$">
-        Header always set Content-Type    "application/x-protobuf"
-        Header always set Content-Encoding "gzip"
-        Header always set Vary            "Accept-Encoding"
-        Header always set Access-Control-Allow-Origin "*"
-        Header always set Access-Control-Allow-Methods "GET, OPTIONS"
+        Header set Content-Type    "application/x-protobuf" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Content-Encoding "gzip" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Vary            "Accept-Encoding" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Access-Control-Allow-Origin "*" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Access-Control-Allow-Methods "GET, OPTIONS" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
         # Cache-Control is set per-bucket by cache busting via mtime.
         # Allow browsers/proxies to cache tiles for 24 hours; daily bucket
         # tiles will be regenerated hourly so the URL content changes.
-        Header always set Cache-Control   "public, max-age=86400"
+        Header set Cache-Control   "public, max-age=86400" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
     </FilesMatch>
 </IfModule>
 

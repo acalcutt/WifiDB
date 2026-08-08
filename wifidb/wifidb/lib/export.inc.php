@@ -20,15 +20,16 @@ if not, write to the
 */
 class export extends dbcore
 {
-	public function __construct($config, $createGPXObj, $createKMLObj, $createGeoJSONObj, $convertObj, $ZipObj){
-		parent::__construct($config);
+	public function __construct($config, $createGPXObj, $createKMLObj, $createGeoJSONObj, $convertObj, $ZipObj, $sql = null){
+		parent::__construct($config, $sql);
 
 		$this->convert = $convertObj;
 		$this->createGPX = $createGPXObj;
 		$this->createKML = $createKMLObj;
 		$this->createGeoJSON = $createGeoJSONObj;
 		$this->Zip = $ZipObj;
-		$this->wdbmail = new wdbmail($config);
+		// Reuse this object's connection for the mailer rather than opening another.
+		$this->wdbmail = new wdbmail($config, $this->sql);
 		$this->daemon_folder_stats = array();
 		$this->named = 0;
 		$this->month_names  = array(

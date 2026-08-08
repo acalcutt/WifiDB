@@ -29,7 +29,14 @@ class SQL
 		}
 		else if($this->service == "sqlsrv")
 		{
-			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database.';TrustServerCertificate=true';
+			// LoginTimeout: bound how long a connect can block when SQL Server is
+			// unreachable, instead of hanging on the OS TCP timeout (tens of
+			// seconds) and piling up PHP-FPM workers + Apache threads until the
+			// box exhausts MaxRequestWorkers. 15s is short enough to keep pile-up
+			// in check but long enough to survive a busy-but-alive server's slow
+			// pre-login/TLS handshake -- 3s was too aggressive and produced
+			// intermittent SQLSTATE 08001 "error during handshakes before login".
+			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database.';TrustServerCertificate=true;LoginTimeout=15';
 			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
 			$this->conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 			$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

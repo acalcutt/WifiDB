@@ -117,30 +117,27 @@ $page_size = 50000;
 // --drop-densest-as-needed behaviour at gamma=1 with droprate≈2).
 $drop_scale_pixels = 1.5;
 
-// Hard cap on feature_minzoom — controls the tippecanoe-equivalent behaviour.
+// Hard cap on feature_minzoom, set per-bucket.
 //
-// The Morton gap formula can assign feature_minzoom=15–19 to APs in very
-// dense buckets (e.g. 1.5 M APs, Phoenix/AZ peak period) causing entire
-// tiles at z=12–14 to have zero qualifying APs → blank squares even though
-// the area has data.
+// For most buckets, cap=1 (= $min_zoom) takes the fast path in
+// assign_feature_minzoom(): no Morton sort, all APs get feature_minzoom=1,
+// and per-tile encoding does all density thinning.  At ≤ 1.5 M APs each
+// z=1 tile candidate list is ≈ 400 K APs → ~1–2 s per tile, manageable.
 //
-// Set to $min_zoom (= 1) for exact --drop-densest-as-needed equivalence:
-// every AP is a candidate at every zoom level; encode_tile_from_points()
-// performs the per-tile density sort and fills the 1.5 MB byte budget from
-// sparsest-to-densest — densest features are dropped only when a specific
-// tile is over-full, exactly as tippecanoe does.  No tile is ever blank
-// because of the pre-filter alone.
+// The heatmap buckets combine ALL age windows (~9 M+ APs).  With cap=1
+// all 9 M APs end up as candidates in each of the 4 z=1 tiles (~2.4 M
+// each), and per-tile usort + the large $aps array together exhaust the
+// server's 15 GB RAM → swap-thrash → 20+ hours for z=1 alone.
 //
-// Trade-off: the binning loop at z=1–5 now iterates ALL APs (e.g. 1.5 M)
-// instead of the formula-thinned subset.  The loop itself is fast integer
-// arithmetic; the encoder's usort on the resulting large tile candidates
-// (≈ 400 K APs per z=1 tile for a 1.5 M bucket) needs ~300–500 MB of RAM
-// and ~1–2 s per tile.  Ensure memory_limit is set high enough in php.ini
-// (e.g. 2048 M) before running the daemon on large buckets.
-//
-// Raise toward 13–14 if RAM is limited or if low-zoom tile generation is too
-// slow; the missing-squares problem only affects z ≥ cap value.
-$cap_feature_minzoom = 1;
+// cap=7 makes the Morton sort run, assigning feature_minzoom based on
+// spatial density.  Globally-sparse APs get feature_minzoom=1–6 and remain
+// in low-zoom tiles; the dense MA/AZ clusters get feature_minzoom=7 and
+// only appear at z≥7.  Low-zoom candidate sets drop from ~2.4 M per tile
+// to ~50 K–200 K globally, keeping per-tile usort sub-second.
+$bucket_cap_fmz = [
+    'heatmap'      => 7,
+    'cell_heatmap' => 7,
+];
 
 // Output directory — must be web-accessible.  The .htaccess in this directory
 // sets the correct Content-Type/Content-Encoding headers for .pbf files.
@@ -382,6 +379,107 @@ function encode_tile_from_points(
     return $gz_bytes;
 }
 
+// ── Heatmap-only WiFi tile encoder ───────────────────────────────────────────
+// Used exclusively for the 'heatmap' bucket (all ages combined, ~9 M APs).
+// Encodes only sectype + age_days per feature (2 fields vs 22 in the regular
+// encoder).  Combined with cap_feature_minzoom=7 and the minimal $aps field
+// set, this keeps both RAM and per-tile CPU manageable for large datasets.
+// Algorithm identical to encode_tile_from_points(): Morton-gap sort → sparsest-
+// first dedup → gzip retry loop.
+function encode_heatmap_tile_from_points(
+    int    $z, int $x, int $y,
+    string $bucket,
+    array  $idxs,
+    array  $all_aps,
+    int    $max_gz_bytes = 750000
+): ?string {
+
+    $pts = [];
+    foreach ($idxs as $idx) {
+        $ap = $all_aps[$idx];
+        [$px, $py] = project_to_tile((float)$ap['lat'], (float)$ap['lon'], $z, $x, $y);
+        $pts[] = [
+            'idx'    => $idx,
+            'px'     => $px,
+            'py'     => $py,
+            'morton' => morton_encode((float)$ap['lat'], (float)$ap['lon']),
+        ];
+    }
+
+    usort($pts, fn($a, $b) => $a['morton'] <=> $b['morton']);
+    $prev_m = PHP_INT_MIN;
+    foreach ($pts as &$pt) {
+        $pt['gap'] = ($prev_m === PHP_INT_MIN) ? PHP_INT_MAX : ($pt['morton'] - $prev_m);
+        $prev_m    = $pt['morton'];
+    }
+    unset($pt);
+
+    usort($pts, fn($a, $b) => $b['gap'] <=> $a['gap']);
+
+    $seen    = [];
+    $deduped = [];
+    foreach ($pts as $pt) {
+        $ap = $all_aps[$pt['idx']];
+        $k  = $pt['px'] . ':' . $pt['py'] . ':' . (int)$ap['sectype'];
+        if (!isset($seen[$k])) {
+            $seen[$k]  = true;
+            $deduped[] = $pt;
+        }
+    }
+    unset($seen, $pts);
+
+    if (empty($deduped)) return null;
+
+    $keys     = ['sectype', 'age_days'];
+    $keys_idx = array_flip($keys);
+    $keep     = count($deduped);
+    $gz_bytes = null;
+
+    for ($attempt = 0; $attempt < 5 && $keep >= 1; $attempt++) {
+        $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
+
+        $values_bytes = [];
+        $values_idx   = [];
+        $add_value = function(string $type, $raw) use (&$values_bytes, &$values_idx): int {
+            $key = $type . ':' . $raw;
+            if (!isset($values_idx[$key])) {
+                $values_idx[$key] = count($values_bytes);
+                $values_bytes[]   = ($type === 'int')
+                    ? pb_field_varint(4, (int)$raw)
+                    : pb_field_string(1, (string)$raw);
+            }
+            return $values_idx[$key];
+        };
+
+        $features = [];
+        foreach ($subset as $pt) {
+            $ap   = $all_aps[$pt['idx']];
+            $tags = [
+                $keys_idx['sectype'],  $add_value('int', (int)$ap['sectype']),
+                $keys_idx['age_days'], $add_value('int', (int)$ap['age_days']),
+            ];
+            $features[] = mvt_encode_point_feature((int)$ap['id'], $pt['px'], $pt['py'], $tags);
+        }
+
+        if (empty($features)) return null;
+
+        $layer_bytes = mvt_encode_layer($bucket, $features, $keys, $values_bytes);
+        $tile_bytes  = mvt_encode_tile($layer_bytes);
+        $gz_bytes    = gzencode($tile_bytes, 6);
+
+        $sz = strlen($gz_bytes);
+        if ($sz <= $max_gz_bytes) break;
+
+        $new_keep = max(1, (int)floor($keep * $max_gz_bytes / $sz));
+        $pct      = round(100.0 * $new_keep / count($deduped), 2);
+        echo "  tile {$z}/{$x}/{$y} size is {$sz} >{$max_gz_bytes}; keeping sparsest {$pct}% ({$new_keep}/{$keep})\n";
+        if ($new_keep >= $keep) break;
+        $keep = $new_keep;
+    }
+
+    return $gz_bytes;
+}
+
 // ── Cell tile encoder ────────────────────────────────────────────────────────
 // Mirrors encode_tile_from_points() — same Morton-gap sort + gzip retry loop.
 // Layer name = $bucket (e.g. 'cell_daily'); pixel dedup uses px:py (no sectype).
@@ -529,6 +627,7 @@ foreach ($buckets as $bucket) {
     $is_cell = (strpos($bucket, 'cell_') === 0);
     $base_bucket = $is_cell ? substr($bucket, 5) : $bucket;  // 'cell_daily' → 'daily'
     [$start_date, $end_date] = bucket_date_window($base_bucket);
+    $cap_feature_minzoom = $bucket_cap_fmz[$bucket] ?? 1;
 
     $lat_min_dm = dd2dm($data_bbox['lat_min']);
     $lat_max_dm = dd2dm($data_bbox['lat_max']);
@@ -579,6 +678,17 @@ foreach ($buckets as $bucket) {
                     'points'   => (int)$row['points'],
                     'rssi'     => (int)$row['rssi'],
                     'user'     => (string)$row['user'],
+                ];
+            } elseif ($bucket === 'heatmap') {
+                // Heatmap tiles only need position + recency + security type.
+                // Storing 5 fields instead of 22 for ~9 M APs cuts peak RAM
+                // from ~12 GB to ~2 GB, preventing swap-thrash on 15 GB servers.
+                $aps[] = [
+                    'id'       => $rid,
+                    'lat'      => $lat,
+                    'lon'      => $lon,
+                    'age_days' => mvt_age_days((string)$row['la']),
+                    'sectype'  => (int)$row['sectype'],
                 ];
             } else {
                 $aps[] = [
@@ -675,9 +785,13 @@ foreach ($buckets as $bucket) {
                     continue;
                 }
 
-                $gz_bytes = $is_cell
-                    ? encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes)
-                    : encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+                if ($is_cell) {
+                    $gz_bytes = encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+                } elseif ($bucket === 'heatmap') {
+                    $gz_bytes = encode_heatmap_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+                } else {
+                    $gz_bytes = encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+                }
 
                 if ($gz_bytes === null) {
                     if (file_exists($tile_file)) unlink($tile_file);

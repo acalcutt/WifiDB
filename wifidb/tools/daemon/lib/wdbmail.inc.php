@@ -22,7 +22,7 @@ if not, write to the
 
 class wdbmail
 {
-    function __construct($config)
+    function __construct($config, $sql = null)
     {
 		$this->URL_PATH				 	= $config['hosturl'].$config['root'].'/';
 		$this->wifidb_email_updates	 	= $config['wifidb_email_updates'];
@@ -48,7 +48,7 @@ class wdbmail
 		$this->XMailer					= $config['XMailer'];
 		
 		$this->sec					  	= new security($this, $config);
-		$this->sql					  	= new SQL($config);
+		$this->sql					  	= ($sql !== null) ? $sql : new SQL($config);
 		
 		$this->mail 					= new PHPMailer();
 		$this->mail->isSMTP();										// Set mailer to use SMTP			

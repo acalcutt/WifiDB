@@ -78,7 +78,10 @@ if($config['srvc'] == "mysql")
 }
 else if($config['srvc'] == "sqlsrv")
 {
-	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].';TrustServerCertificate=true';
+	// LoginTimeout=15: bound connect time when SQL is down without being so tight
+	// it aborts a busy-but-alive server's handshake (3s caused SQLSTATE 08001).
+	// See SQL.inc.php for the full rationale.
+	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].';TrustServerCertificate=true;LoginTimeout=15';
 	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
 	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 	$sql = "SELECT TOP 1 [version] FROM [settings]";
@@ -160,14 +163,18 @@ spl_autoload_register('autoload_function');
  * @param mixed $SQL Optional SQL object for apiv2
  */
 function initExportComponents($dbcore, $config, $SQL = null) {
-	$dbcore->convert = ($SQL !== null) ? new convert($config, $SQL) : new convert($config);
+	// Share ONE SQL connection across all export components (convert/export/wdbmail
+	// all extend or use dbcore) instead of each opening its own. Prefer an
+	// explicitly-passed $SQL, else reuse the core object's existing connection.
+	// This is what stops the per-request connection storm that hit SQL Server with
+	// 08001 "too busy" under map.php load.
+	$sql = ($SQL !== null) ? $SQL : (isset($dbcore->sql) ? $dbcore->sql : null);
+	$dbcore->convert = new convert($config, $sql);
 	$dbcore->Zip = new Zip;
 	$dbcore->createGPX = new createGPX($dbcore->URL_PATH);
 	$dbcore->createKML = new createKML($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
 	$dbcore->createGeoJSON = new createGeoJSON($dbcore->URL_PATH, $dbcore->kml_out, $dbcore->daemon_out, $dbcore->convert, 5);
-	$dbcore->export = ($SQL !== null)
-		? new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, NULL, $SQL)
-		: new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip);
+	$dbcore->export = new export($config, $dbcore->createGPX, $dbcore->createKML, $dbcore->createGeoJSON, $dbcore->convert, $dbcore->Zip, $sql);
 }
 
 try

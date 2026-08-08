@@ -22,10 +22,15 @@ if not, write to the
 class dbcore
 {
 	public $cli;
-	public function __construct($config = NULL)
+	public function __construct($config = NULL, $sql = null)
 	{
 		if($config === NULL){throw new Exception("DBCore construct value is NULL.");}
-		$this->sql						= new SQL($config);
+		// Reuse a shared SQL connection when one is passed in, instead of opening a
+		// fresh TDS connection for every dbcore-derived object in a request. Under
+		// map.php traffic the per-object connection churn (frontend + convert +
+		// export + wdbmail, each a separate connect) overwhelmed SQL Server's
+		// connection-accept rate -> SQLSTATE 08001. Passing null keeps old behavior.
+		$this->sql						= ($sql !== null) ? $sql : new SQL($config);
 		$this->verbose					= 0;
 		$this->mesg						= "";
 		$this->switches					= array(SWITCH_SCREEN, SWITCH_EXTRAS);

@@ -12,15 +12,27 @@
 # pre-generated tiles before falling back to on-demand generation).  This
 # .htaccess is only needed if you configure Apache to serve .mlt files directly
 # and bypass PHP entirely for pre-generated zoom levels.
+#
+# IMPORTANT: these headers must NOT use "Header always set" — "always" forces
+# them onto Apache's own error responses too (e.g. the 404 HTML page for a
+# z/x/y with no data). A client that honors Content-Encoding: gzip will then
+# try to gzip-decode that HTML 404 body, fail, and drop the tile's geometry
+# entirely.
+#
+# Plain "Header set" (no condition) is NOT reliable either: on Apache 2.4.41
+# it still applied these headers to 404s whenever the request matched an
+# EXISTING zoom/x directory but a missing y file within it (confirmed via
+# out/tiles/ — see that directory's .htaccess for the full story). Use an
+# explicit expr= condition on the final response status instead.
 
 <IfModule mod_headers.c>
     <FilesMatch "\.mlt$">
-        Header always set Content-Type    "application/vnd.mapbox-vector-tile"
-        Header always set Content-Encoding "gzip"
-        Header always set Vary            "Accept-Encoding"
-        Header always set Access-Control-Allow-Origin "*"
-        Header always set Access-Control-Allow-Methods "GET, OPTIONS"
-        Header always set Cache-Control   "public, max-age=86400"
+        Header set Content-Type    "application/vnd.mapbox-vector-tile" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Content-Encoding "gzip" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Vary            "Accept-Encoding" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Access-Control-Allow-Origin "*" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Access-Control-Allow-Methods "GET, OPTIONS" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+        Header set Cache-Control   "public, max-age=86400" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
     </FilesMatch>
 </IfModule>
 
