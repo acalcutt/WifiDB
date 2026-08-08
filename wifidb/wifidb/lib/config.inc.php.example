@@ -125,6 +125,15 @@ $config = array
 	#'db'				  	=>   'wifi',
 	#'db_user'			   =>   'wdbuser',
 	#'db_pwd'				=>   'supersecretpw',
+	#PostgreSQL Server
+	#'srvc'				  =>   'pgsql',
+	#'driver'				=>   'pgsql',
+	#'port'					=>   5432,
+	#'host'				  =>   'localhost',
+	#'db'				  	=>   'wifi',
+	#'db_user'			   =>   'wdbuser',
+	#'db_pwd'				=>   'supersecretpw',
+	#'charset'/'collate'/'engine' below are MySQL-only and ignored by sqlsrv/pgsql.
 	'charset'			   =>   'utf8mb4',
 	'collate'			   =>   'utf8mb4_unicode_ci',
 	'engine'				=>   'innodb',

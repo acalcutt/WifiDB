@@ -86,6 +86,13 @@ else if($config['srvc'] == "sqlsrv")
 	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 	$sql = "SELECT TOP 1 [version] FROM [settings]";
 }
+else if($config['srvc'] == "pgsql")
+{
+	// See SQL.inc.php for why client_encoding is UTF8 rather than $config['charset'].
+	$dsn = $config['srvc'].':host='.$config['host'].';port='.$config['port'].';dbname='.$config['db'].";options='--client_encoding=UTF8';connect_timeout=15";
+	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
+	$sql = "SELECT version FROM settings LIMIT 1";
+}
 
 $res = $conn->query($sql);
 $fetch = $res->fetch(2);

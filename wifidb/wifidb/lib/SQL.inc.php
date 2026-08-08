@@ -20,6 +20,18 @@ class SQL
 			);
 			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
 		}
+		else if($this->service == "pgsql")
+		{
+			// connect_timeout mirrors the sqlsrv LoginTimeout below: bound how long
+			// a connect can block when the server is unreachable instead of hanging
+			// on the OS TCP timeout and piling up PHP-FPM workers.
+			// client_encoding is hard-coded to UTF8 rather than taken from
+			// $config['charset'] -- that key holds the MySQL name ('utf8mb4'),
+			// which Postgres does not recognise.
+			$dsn = $this->service.':host='.$this->host.';port='.$this->port.';dbname='.$this->database.";options='--client_encoding=UTF8';connect_timeout=15";
+			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
+			$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		}
 		else if($this->service == "sqlsrv" && $this->driver == "dblib")
 		{
 			$dsn = $this->driver.":host=".$this->host.":".$this->port.";dbname=".$this->database;
@@ -41,6 +53,25 @@ class SQL
 			$this->conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 			$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		}
+	}
+
+	/**
+	 * Quote a dynamic identifier -- a caller-supplied sort column, typically --
+	 * for the active driver.
+	 *
+	 * Only pgsql actually needs this. MySQL and SQL Server match column names
+	 * case-insensitively, so "ORDER BY AP_ID" finds the AP_ID column either way;
+	 * Postgres folds the unquoted name to "ap_id" and errors out. Returning the
+	 * name untouched for the other two keeps their query text byte-identical to
+	 * what is running today.
+	 */
+	function sortIdent($name)
+	{
+		if($this->service == "pgsql")
+		{
+			return '"'.str_replace('"', '""', $name).'"';
+		}
+		return $name;
 	}
 
 	function checkError($line=0, $file="")
@@ -76,6 +107,19 @@ class SQL
 				$e->errorInfo[1] == 1205
 			);
 		}
+		else if($this->service == "pgsql")
+		{
+			// 40P01 = deadlock_detected, 40001 = serialization_failure. Both are
+			// transient and safe to retry. Postgres reports SQLSTATE as a string
+			// ('40P01' is not numeric), so compare as strings rather than using the
+			// numeric driver codes the mysql/sqlsrv branches key off.
+			return (
+				$e instanceof PDOException &&
+				$pdo->getAttribute(PDO::ATTR_DRIVER_NAME) == 'pgsql' &&
+				($e->errorInfo[0] === '40P01' || $e->errorInfo[0] === '40001')
+			);
+		}
+		return false;
 	}
 	
 	public function isPDOException(PDO $pdo, $e): bool
