@@ -461,7 +461,8 @@ switch($action)
 		}
 
 		// Get schedule info for confirmation (include pidfile for cleanup)
-		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.interval, schedule.status, schedule.pid, schedule.pidfile FROM schedule WHERE schedule.id = ?";
+		// "interval" is a reserved word in Postgres and must be quoted there;
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.".$dbcore->sql->ident('interval').", schedule.status, schedule.pid, schedule.pidfile FROM schedule WHERE schedule.id = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $schedule_id, PDO::PARAM_INT);
 		$prep->execute();

@@ -56,22 +56,33 @@ class SQL
 	}
 
 	/**
-	 * Quote a dynamic identifier -- a caller-supplied sort column, typically --
-	 * for the active driver.
+	 * Quote an identifier for the active driver.
 	 *
-	 * Only pgsql actually needs this. MySQL and SQL Server match column names
-	 * case-insensitively, so "ORDER BY AP_ID" finds the AP_ID column either way;
-	 * Postgres folds the unquoted name to "ap_id" and errors out. Returning the
-	 * name untouched for the other two keeps their query text byte-identical to
-	 * what is running today.
+	 * Only pgsql needs this. MySQL and SQL Server match column names
+	 * case-insensitively, so "WHERE File_ID = ?" finds the File_ID column either
+	 * way; Postgres folds the unquoted name to "file_id" and errors out.
+	 * Returning the name untouched for the other two keeps their query text
+	 * byte-identical to what is running today, so a single shared query string
+	 * can serve all three drivers.
+	 *
+	 * Use it for one-off references in otherwise portable statements, and for
+	 * caller-supplied identifiers such as a sort column. A query that differs
+	 * from the MySQL/MSSQL form by more than a few identifiers should get its
+	 * own pgsql branch instead -- that stays easier to read.
 	 */
-	function sortIdent($name)
+	function ident($name)
 	{
 		if($this->service == "pgsql")
 		{
 			return '"'.str_replace('"', '""', $name).'"';
 		}
 		return $name;
+	}
+
+	/** Back-compat alias for ident(). */
+	function sortIdent($name)
+	{
+		return $this->ident($name);
 	}
 
 	function checkError($line=0, $file="")

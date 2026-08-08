@@ -600,7 +600,7 @@ switch($func)
 
 		$schedule_row = array();
 		$n=0;
-		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.interval, schedule.status, schedule.nextrun, schedule.logfile, schedule.pidfile, schedule.pid AS schedpid,\n"
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.".$dbcore->sql->ident('interval')." , schedule.status, schedule.nextrun, schedule.logfile, schedule.pidfile, schedule.pid AS schedpid,\n"
 			. "daemon_pid_stats.pid, daemon_pid_stats.pidtime, daemon_pid_stats.pidcpu, daemon_pid_stats.pidmem, daemon_pid_stats.pidcmd, daemon_pid_stats.date AS pidud\n"
 			. "FROM schedule\n"
 			. "LEFT OUTER JOIN daemon_pid_stats ON daemon_pid_stats.pidfile = schedule.pidfile\n"

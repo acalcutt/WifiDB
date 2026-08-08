@@ -143,7 +143,7 @@ if($File_ID)
 	{
 		try 
 		{
-			$sqlhp = "DELETE FROM wifi_hist WHERE File_ID = ?";
+			$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 			$resgps->execute();	
@@ -160,7 +160,7 @@ if($File_ID)
 	{
 		try 
 		{
-			$sqlhp = "DELETE FROM wifi_ap WHERE File_ID = ?";
+			$sqlhp = "DELETE FROM wifi_ap WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 			$resgps->execute();
@@ -176,7 +176,7 @@ if($File_ID)
 	{
 		try 
 		{
-			$sqlhp = "DELETE FROM wifi_gps WHERE File_ID = ?";
+			$sqlhp = "DELETE FROM wifi_gps WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 			$resgps->execute();
