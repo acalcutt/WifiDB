@@ -182,6 +182,9 @@ class frontend extends dbcore
 	#===================================#
 	Public function AllUsers($sort = "file_user", $ord = "ASC", $from = 0, $inc = 250)
 	{
+		// $sort is also handed to GeneratePages() to build paging URLs, so quote a
+		// copy for the SQL rather than mutating the original.
+		$sort_sql = $this->sql->sortIdent($sort);
 		#Total Users
 		$sql = "SELECT COUNT(DISTINCT file_user)\n"
 			. "FROM files\n"
@@ -194,12 +197,27 @@ class frontend extends dbcore
 		$flip = 0;
 		$rowid = $from;
 		
-		$sql = "SELECT file_user, Count(id) As FileCount, MAX(ValidGPS) As ValidGPS, SUM(aps) As ApCount, SUM(gps) As GpsCount,AVG(NewAPPercent) As NewAPPercent,MIN(file_date) As FirstImport,MAX(file_date) As LastImport\n"
-			. "FROM files\n"
-			. "WHERE completed = 1\n"
-			. "GROUP BY file_user\n"
-			. "ORDER BY $sort $ord\n";
+		if($this->sql->service == "pgsql")
+		{
+			// Postgres lower-cases unquoted identifiers *and* unquoted aliases, so
+			// both the ValidGPS/NewAPPercent columns and every alias this method
+			// reads back by name ($userfetch['FileCount'], ...) must be quoted.
+			$sql = 'SELECT file_user, Count(id) As "FileCount", MAX("ValidGPS") As "ValidGPS", SUM(aps) As "ApCount", SUM(gps) As "GpsCount",AVG("NewAPPercent") As "NewAPPercent",MIN(file_date) As "FirstImport",MAX(file_date) As "LastImport"'."\n"
+				. "FROM files\n"
+				. "WHERE completed = 1\n"
+				. "GROUP BY file_user\n"
+				. "ORDER BY $sort_sql $ord\n";
+		}
+		else
+		{
+			$sql = "SELECT file_user, Count(id) As FileCount, MAX(ValidGPS) As ValidGPS, SUM(aps) As ApCount, SUM(gps) As GpsCount,AVG(NewAPPercent) As NewAPPercent,MIN(file_date) As FirstImport,MAX(file_date) As LastImport\n"
+				. "FROM files\n"
+				. "WHERE completed = 1\n"
+				. "GROUP BY file_user\n"
+				. "ORDER BY $sort_sql $ord\n";
+		}
 		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
+		else if($this->sql->service == "pgsql"){$sql .= "LIMIT $inc OFFSET $from";}
 		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$result = $this->sql->conn->query($sql);
 		$result->execute();
@@ -243,25 +261,47 @@ class frontend extends dbcore
 	{
 		if($user == ""){return 0;}
 
+		// See AllUsers(): $sort is reused for paging URLs, so quote a copy.
+		$sort_sql = $this->sql->sortIdent($sort);
 		$prep = array();
 		$apprep = array();
 		$prep['allaps'] = array();
 		$prep['user'] = $user;
 
-		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
-			. "FROM wifi_hist\n"
-			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
-			. "WHERE files.file_user LIKE ?";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT COUNT(DISTINCT "AP_ID")'."\n"
+					. "FROM wifi_hist\n"
+					. 'INNER JOIN files ON files.id = wifi_hist."File_ID"'."\n"
+					. "WHERE files.file_user LIKE ?";
+			}
+		else
+			{
+				$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
+					. "FROM wifi_hist\n"
+					. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
+					. "WHERE files.file_user LIKE ?";
+			}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
 		$rows = $result->fetch(1);
 		$prep['total_aps'] = $rows[0];
 
-		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
-			. "FROM wifi_hist\n"
-			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
-			. "WHERE files.file_user LIKE ? And wifi_hist.New = 1";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT COUNT(DISTINCT "AP_ID")'."\n"
+					. "FROM wifi_hist\n"
+					. 'INNER JOIN files ON files.id = wifi_hist."File_ID"'."\n"
+					. 'WHERE files.file_user LIKE ? And wifi_hist."New" = 1';
+			}
+		else
+			{
+				$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
+					. "FROM wifi_hist\n"
+					. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
+					. "WHERE files.file_user LIKE ? And wifi_hist.New = 1";
+			}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -269,15 +309,30 @@ class frontend extends dbcore
 		$prep['new_aps'] = $rows[0];
 		$flip = 0;
 
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon\n"
-			. "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-			. "WHERE f.file_user LIKE ? And f.completed = 1\n"
-			. "ORDER BY $sort $ord\n";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points,'."\n"
+					. 'wGPS."Lat" As "Lat",'."\n"
+					. 'wGPS."Lon" As "Lon"'."\n"
+					. 'FROM wifi_ap AS wap'."\n"
+					. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
+					. 'LEFT JOIN files AS f ON f.id = wap."File_ID"'."\n"
+					. 'WHERE f.file_user LIKE ? And f.completed = 1'."\n"
+					. "ORDER BY $sort_sql $ord\n";
+			}
+		else
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
+					. "WHERE f.file_user LIKE ? And f.completed = 1\n"
+					. "ORDER BY $sort_sql $ord\n";
+			}
 		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
+		else if($this->sql->service == "pgsql"){$sql .= "LIMIT $inc OFFSET $from";}
 		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
@@ -322,8 +377,13 @@ class frontend extends dbcore
 	function UsersLists($username = "", $sort = "id", $ord = "DESC", $from = 0, $inc = 100)
 	{
 		if($username == ""){return 0;}
-		
-		$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user LIKE ? And ValidGPS = 1";
+
+		// See AllUsers(): $sort is reused for paging URLs, so quote a copy.
+		$sort_sql = $this->sql->sortIdent($sort);
+		if($this->sql->service == "pgsql")
+			{$sql = 'SELECT COUNT(id) AS "ApCount" FROM files WHERE file_user LIKE ? And "ValidGPS" = 1';}
+		else
+			{$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user LIKE ? And ValidGPS = 1";}
 		$globeprep = $this->sql->conn->prepare($sql);
 		$globeprep->bindParam(1, $username, PDO::PARAM_STR);
 		$globeprep->execute();
@@ -331,17 +391,30 @@ class frontend extends dbcore
 		if($globeprepfetch['ApCount'] !== "0"){$user_validgps = 1;}else{$user_validgps = 0;}
 		
 		#Total APs
-		$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user like ? GROUP BY file_user";
+		if($this->sql->service == "pgsql")
+			{$sql = 'SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG("NewAPPercent") As "NewAPPercent" FROM files WHERE file_user like ? GROUP BY file_user';}
+		else
+			{$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user like ? GROUP BY file_user";}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
 		$user_counts = $result->fetch(2);
 
 		#New APs
-		$sql = "SELECT COUNT(AP_ID)\n"
-			. "FROM wifi_ap\n"
-			. "INNER JOIN files ON files.id = wifi_ap.File_ID\n"
-			. "WHERE files.file_user LIKE ?";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT COUNT("AP_ID")'."\n"
+					. "FROM wifi_ap\n"
+					. 'INNER JOIN files ON files.id = wifi_ap."File_ID"'."\n"
+					. "WHERE files.file_user LIKE ?";
+			}
+		else
+			{
+				$sql = "SELECT COUNT(AP_ID)\n"
+					. "FROM wifi_ap\n"
+					. "INNER JOIN files ON files.id = wifi_ap.File_ID\n"
+					. "WHERE files.file_user LIKE ?";
+			}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -372,6 +445,12 @@ class frontend extends dbcore
 					. "FROM [user_info]\n"
 					. "WHERE [username] like ? And [validated] = 0";
 			}
+		else if($this->sql->service == "pgsql")
+			{
+				$sql = "SELECT id\n"
+					. "FROM user_info\n"
+					. "WHERE username like ? And validated = 0";
+			}
 		$vres = $this->sql->conn->prepare($sql);
 		$vres->bindParam(1, $username);
 		$vres->execute();
@@ -379,8 +458,12 @@ class frontend extends dbcore
 		$regid = $vfetch ? $vfetch[0] : null;
 
 		#Get All Imports for User
-		$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user LIKE ? And file_date != '' And completed = 1 ORDER BY $sort $ord";
+		if($this->sql->service == "pgsql")
+			{$sql1 = 'SELECT id, file_orig, title, notes, file_date, aps, gps, "ValidGPS", "NewAPPercent" FROM files WHERE file_user LIKE ? And file_date != \'\' And completed = 1 ORDER BY '."$sort_sql $ord";}
+		else
+			{$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user LIKE ? And file_date != '' And completed = 1 ORDER BY $sort_sql $ord";}
 		if($this->sql->service == "mysql"){$sql1 .= " LIMIT $from, $inc";}
+		else if($this->sql->service == "pgsql"){$sql1 .= " LIMIT $inc OFFSET $from";}
 		else if($this->sql->service == "sqlsrv"){$sql1 .= " OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		
 		$other_imports = $this->sql->conn->prepare($sql1);

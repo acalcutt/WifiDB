@@ -66,6 +66,17 @@ class api extends dbcore
 					. "WHERE [latitude] LIKE '".$lat_search."%' AND [longitude] LIKE '".$long_search."%' ORDER BY [kilometers] ASC";
 				#echo $sql;
 			}
+		else if($this->sql->service == "pgsql")
+			{
+				// geonames.latitude/longitude are varchar. MySQL and SQL Server
+				// implicitly convert them for radians(); Postgres does not, so the
+				// casts here are required, not cosmetic.
+				$sql = "SELECT id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
+					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS miles,\n"
+					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS kilometers\n"
+					. "FROM geonames \n"
+					. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC LIMIT 1";
+			}
 		$geoname_res = $this->sql->conn->query($sql);
 		$GeonamesArray = $geoname_res->fetch(2);
 		if($GeonamesArray['id'])
@@ -75,6 +86,8 @@ class api extends dbcore
 				{$sql = "SELECT `name` FROM `geonames_admin1` WHERE `admin1` = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "SELECT [name] FROM [geonames_admin1] WHERE [admin1] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "SELECT name FROM geonames_admin1 WHERE admin1 = ?";}
 			$prep_geonames = $this->sql->conn->prepare($sql);
 			$prep_geonames->bindParam(1, $admin1, PDO::PARAM_STR);
 			$prep_geonames->execute();
@@ -85,6 +98,8 @@ class api extends dbcore
 				{$sql = "SELECT `name` FROM `geonames_admin2` WHERE `admin2` = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "SELECT [name] FROM [geonames_admin2] WHERE [admin2] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "SELECT name FROM geonames_admin2 WHERE admin2 = ?";}
 			$prep_geonames = $this->sql->conn->prepare($sql);
 			$prep_geonames->bindParam(1, $admin2, PDO::PARAM_STR);
 			$prep_geonames->execute();
@@ -94,6 +109,8 @@ class api extends dbcore
 				{$sql = "SELECT Country FROM geonames_country_names WHERE ISO LIKE ? LIMIT 1";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 Country FROM geonames_country_names WHERE ISO LIKE ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = 'SELECT "Country" FROM geonames_country_names WHERE "ISO" LIKE ? LIMIT 1';}
 			$country_res = $this->sql->conn->prepare($sql);
 			$code = $GeonamesArray['country_code']."%";
 			$country_res->bindParam(1, $code, PDO::PARAM_STR);
@@ -140,25 +157,25 @@ class api extends dbcore
 		}
 		else
 		{
-			if($this->sql->service == "mysql")
+			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 				{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
 			else if($this->sql->service == "sqlsrv")
 				{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
 			$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-			if($this->sql->service == "mysql")
+			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 				{$imp_prep = $this->sql->conn->prepare("SELECT hash FROM files_importing WHERE hash = ? LIMIT 1");}
 			else if($this->sql->service == "sqlsrv")
 				{$imp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_importing WHERE hash = ?");}
 			$imp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-			if($this->sql->service == "mysql")
+			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 				{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
 			else if($this->sql->service == "sqlsrv")
 				{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
 			$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
 
-			if($this->sql->service == "mysql")
+			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 				{$bad_prep = $this->sql->conn->prepare("SELECT hash FROM files_bad WHERE hash = ? LIMIT 1");}
 			else if($this->sql->service == "sqlsrv")
 				{$bad_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_bad WHERE hash = ?");}
@@ -212,12 +229,12 @@ class api extends dbcore
 		$filename	= $details['file_name'];
 		$file_orig	= $details['file_orig'];
 
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
 			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
 		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
 		else if($this->sql->service == "sqlsrv")
 			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
@@ -299,6 +316,8 @@ class api extends dbcore
 						{$sql = "INSERT INTO files_tmp(file, file_orig, file_date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 					else if($this->sql->service == "sqlsrv")
 						{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					else if($this->sql->service == "pgsql")
+						{$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
 					$result = $this->sql->conn->prepare( $sql );
 					$result->bindValue(1, $filename, PDO::PARAM_STR);
@@ -336,7 +355,7 @@ class api extends dbcore
 		$ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['auth'].$data['encry']);
 
 				
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{
 				$sql = "SELECT id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, long FROM
 						live_aps
@@ -634,6 +653,14 @@ class api extends dbcore
 						. "WHERE wifi_ap.HighGps_ID IS NOT NULL AND wifi_ap.BSSID LIKE ?\n"
 						. "ORDER BY wifi_gps.NumOfSats DESC";
 				}
+			else if($this->sql->service == "pgsql")
+				{
+					$sql = 'SELECT wifi_gps."Lat", wifi_gps."Lon", wifi_gps."Alt", wifi_gps."NumOfSats", wifi_gps."GPS_Date"'."\n"
+						. "FROM wifi_ap\n"
+						. 'INNER JOIN wifi_gps ON wifi_gps."GPS_ID" = wifi_ap."HighGps_ID"'."\n"
+						. 'WHERE wifi_ap."HighGps_ID" IS NOT NULL AND wifi_ap."BSSID" LIKE ?'."\n"
+						. 'ORDER BY wifi_gps."NumOfSats" DESC LIMIT 1';
+				}
 
 			$result =   $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $macandsig[1]);
@@ -701,7 +728,11 @@ class api extends dbcore
 		// optional gps-only clause
 		$gps_clause = "";
 		if ($gpsOnly) {
-			$gps_clause = " AND wifi_ap.HighGps_ID IS NOT NULL";
+			if ($this->sql->service == "pgsql") {
+				$gps_clause = ' AND wifi_ap."HighGps_ID" IS NOT NULL';
+			} else {
+				$gps_clause = " AND wifi_ap.HighGps_ID IS NOT NULL";
+			}
 		}
 
 		// If SQL Server, use ROW_NUMBER() for paging; otherwise use MySQL-style LIMIT
@@ -738,8 +769,40 @@ class api extends dbcore
 			$prep2->bindParam(7, $rn_low, PDO::PARAM_INT);
 			$prep2->bindParam(8, $rn_high, PDO::PARAM_INT);
 			$prep2->execute();
+		} else if ($this->sql->service == "pgsql") {
+			// Same shape as the MySQL query below, but every mixed-case column has
+			// to be quoted and paging is "LIMIT count OFFSET start" rather than
+			// MySQL's "LIMIT start, count" -- note the reversed bind order.
+			$sql2 = 'SELECT
+					   wifi_ap."AP_ID" AS "AP_ID", wifi_ap."AP_ID" AS id,
+					   wifi_ap."BSSID" AS "BSSID", wifi_ap."BSSID" AS mac,
+					   wifi_ap."SSID" AS ssid,
+					   wifi_ap."CHAN" AS chan, wifi_ap."AUTH" AS auth, wifi_ap."ENCR" AS encry,
+					   wifi_ap."SECTYPE" AS sectype, wifi_ap."RADTYPE" AS radio, wifi_ap."NETTYPE" AS "NT",
+					   wifi_ap."BTX" AS "BTx", wifi_ap."OTX" AS "OTx", wifi_ap."FLAGS" AS "FLAGS",
+					   wifi_ap."HighGps_ID" AS "HighGps_ID", wifi_ap."File_ID" AS "File_ID",
+					   wifi_ap.high_sig AS high_sig, wifi_ap.high_rssi AS high_rssi,
+					   wifi_ap.high_gps_sig AS high_gps_sig, wifi_ap.high_gps_rssi AS high_gps_rssi,
+					   wifi_ap.ap_hash AS ap_hash, wifi_ap.points AS points,
+					   wifi_ap.fa AS "FA", wifi_ap.la AS "LA", wifi_ap."ModDate" AS "ModDate",
+					   wifi_gps."Lat" AS gps_lat, wifi_gps."Lon" AS gps_lon
+				FROM wifi_ap
+				LEFT JOIN wifi_gps ON wifi_ap."HighGps_ID" = wifi_gps."GPS_ID"
+				WHERE wifi_ap."SSID" LIKE ? AND wifi_ap."BSSID" LIKE ? AND wifi_ap."RADTYPE" LIKE ? AND wifi_ap."CHAN"::text LIKE ? AND wifi_ap."AUTH" LIKE ? AND wifi_ap."ENCR" LIKE ?' . $gps_clause . '
+				ORDER BY wifi_ap."ModDate" DESC LIMIT ? OFFSET ?';
+
+			$prep2 = $this->sql->conn->prepare($sql2);
+			$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
+			$prep2->bindParam(2, $mac, PDO::PARAM_STR);
+			$prep2->bindParam(3, $radio, PDO::PARAM_STR);
+			$prep2->bindParam(4, $chan, PDO::PARAM_STR);
+			$prep2->bindParam(5, $auth, PDO::PARAM_STR);
+			$prep2->bindParam(6, $encry, PDO::PARAM_STR);
+			$prep2->bindParam(7, $inc, PDO::PARAM_INT);
+			$prep2->bindParam(8, $from, PDO::PARAM_INT);
+			$prep2->execute();
 		} else {
-			$sql2 = "SELECT 
+			$sql2 = "SELECT
 					   wifi_ap.AP_ID AS AP_ID, wifi_ap.AP_ID AS id,
 					   wifi_ap.BSSID AS BSSID, wifi_ap.BSSID AS mac,
 					   wifi_ap.SSID AS ssid,
