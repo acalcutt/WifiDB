@@ -40,7 +40,7 @@ $config = array
 	'GeoNamesLoopGiveUp'	=>   5000,
 	'reserved_users'		=>   'wifidb:recover:root:system:admin:hack:virus',
 	'dBmMaxSignal'		  =>   '-30',
-	'dBmDissociationSignal'.=>   '-85',
+	'dBmDissociationSignal' =>   '-85',
 	'verbose'			   =>   1,
 	'EnableAPIKey'		  =>   0,
 	#----------SMTP Settings------------#
