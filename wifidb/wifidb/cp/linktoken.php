@@ -18,6 +18,8 @@ if($dbcore->sql->service == "mysql")
     {$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
     {$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
+else if($dbcore->sql->service == "pgsql")
+    {$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 $result = $dbcore->sql->conn->prepare($sql0);
 $result->bindParam(1, $username, PDO::PARAM_STR);
 $result->execute();

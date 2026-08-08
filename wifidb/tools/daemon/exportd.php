@@ -158,6 +158,8 @@ While(1)
 		{$sql = "SELECT `apswithgps` FROM `settings` WHERE `node_name` = ? LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql = "SELECT TOP 1 [apswithgps] FROM [settings] WHERE [node_name] = ?";}
+	else if($dbcore->sql->service == "pgsql")
+		{$sql = "SELECT apswithgps FROM settings WHERE node_name = ? LIMIT 1";}
 	$prep5 = $dbcore->sql->conn->prepare($sql);
 	$prep5->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 	$prep5->execute();
@@ -191,6 +193,8 @@ While(1)
 			{$sqlup2 = "UPDATE `settings` SET `apswithgps` = ? WHERE `node_name` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sqlup2 = "UPDATE [settings] SET [apswithgps] = ? WHERE [node_name] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sqlup2 = "UPDATE settings SET apswithgps = ? WHERE node_name = ?";}
 		$prep6 = $dbcore->sql->conn->prepare($sqlup2);
 		$prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
 		$prep6->bindParam(2, $dbcore->node_name, PDO::PARAM_STR);

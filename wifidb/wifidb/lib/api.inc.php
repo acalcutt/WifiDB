@@ -316,8 +316,6 @@ class api extends dbcore
 						{$sql = "INSERT INTO files_tmp(file, file_orig, file_date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 					else if($this->sql->service == "sqlsrv")
 						{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-					else if($this->sql->service == "pgsql")
-						{$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 
 					$result = $this->sql->conn->prepare( $sql );
 					$result->bindValue(1, $filename, PDO::PARAM_STR);

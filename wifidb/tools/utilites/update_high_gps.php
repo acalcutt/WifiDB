@@ -15,6 +15,8 @@ if($dbcore->sql->service == "mysql")
 	}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT [AP_ID], [FirstHist_ID], [LastHist_ID], [HighRSSI_ID], [HighSig_ID], [HighGps_ID] FROM [wifi_ap] ORDER BY [AP_ID] ASC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT \"AP_ID\", \"FirstHist_ID\", \"LastHist_ID\", \"HighRSSI_ID\", \"HighSig_ID\", \"HighGps_ID\" FROM wifi_ap ORDER BY \"AP_ID\" ASC";}
 $result = $dbcore->sql->conn->query($sql);
 
 echo "Rows that need updating: ".$result->rowCount()."\r\n";
@@ -79,6 +81,8 @@ while($ap = $result->fetch(1))
 			{$sqlu = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sqlu = "UPDATE [wifi_ap] SET [FirstHist_ID] = ? , [LastHist_ID] = ? , [HighRSSI_ID] = ?, [HighSig_ID] = ? , [HighGps_ID] = ? WHERE [AP_ID] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sqlu = "UPDATE wifi_ap SET \"FirstHist_ID\" = ? , \"LastHist_ID\" = ? , \"HighRSSI_ID\" = ?, \"HighSig_ID\" = ? , \"HighGps_ID\" = ? WHERE \"AP_ID\" = ?";}
 		echo "UPDATE `wifi_ap` SET `FirstHist_ID` = $FA_id , `LastHist_ID` = $LA_id , `HighRSSI_ID` = $HighRSSI_id, `HighSig_ID` = $HighSig_id , `HighGps_ID` = $HighGps_id WHERE `AP_ID` = $AP_ID\r\n";
 		$prep = $dbcore->sql->conn->prepare($sqlu);
 		$prep->bindParam(1, $FA_id, PDO::PARAM_INT);

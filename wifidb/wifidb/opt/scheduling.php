@@ -528,6 +528,8 @@ switch($func)
 			{$sql = "SELECT * FROM settings WHERE id = '1'";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT * FROM [settings] WHERE [id] = '1'";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT * FROM settings WHERE id = '1'";}
 		$result = $dbcore->sql->conn->query($sql);
 		$file_array = $result->fetch(2);
 		$timezone_opt = '';
@@ -666,6 +668,8 @@ switch($func)
 			{$sql = "SELECT * FROM daemon_pid_stats ORDER BY nodename ASC";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT * FROM [daemon_pid_stats] ORDER BY [nodename] ASC";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT * FROM daemon_pid_stats ORDER BY nodename ASC";}
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
@@ -747,6 +751,8 @@ switch($func)
 			{$sql = "SELECT id, job_type, status, created_at, started_at, completed_at FROM admin_jobs WHERE created_at >= ? ORDER BY created_at DESC LIMIT 50";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 50 id, job_type, status, created_at, started_at, completed_at FROM admin_jobs WHERE created_at >= ? ORDER BY created_at DESC";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT id, job_type, status, created_at, started_at, completed_at FROM admin_jobs WHERE created_at >= ? ORDER BY created_at DESC LIMIT 50";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $today_start, PDO::PARAM_STR);
 		$prep->execute();

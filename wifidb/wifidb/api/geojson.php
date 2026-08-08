@@ -84,6 +84,8 @@ switch($func)
 			{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT \"SSID\" FROM wifi_ap WHERE \"AP_ID\" = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -149,6 +151,8 @@ switch($func)
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT title FROM files WHERE id = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -172,6 +176,8 @@ switch($func)
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT title FROM files WHERE id = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -206,6 +212,8 @@ switch($func)
 				{$sql = "SELECT file_date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY file_date DESC LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 [file_date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [file_date] DESC";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT file_date FROM files WHERE completed = 1 AND \"ValidGPS\" = 1 ORDER BY file_date DESC LIMIT 1";}
 			$date_query = $dbcore->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$start_date = date('Y-m-d',strtotime($date_fetch['file_date']));

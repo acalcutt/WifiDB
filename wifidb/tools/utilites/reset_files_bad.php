@@ -21,6 +21,8 @@ if($dbcore->sql->service == "mysql")
     {$sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, error_msg FROM files_bad WHERE id = ? LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
     {$sql = "SELECT TOP 1 [id], [file_name], [file_orig], [file_user], [otherusers], [notes], [title], [size], [file_date], [hash], [converted], [prev_ext], [type], [error_msg] FROM [files_bad] WHERE [id] = ?";}
+else if($dbcore->sql->service == "pgsql")
+    {$sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, error_msg FROM files_bad WHERE id = ? LIMIT 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $bad_id, PDO::PARAM_INT);
 $prep->execute();
@@ -36,6 +38,8 @@ if($dbcore->sql->service == "mysql")
     {$sql = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
     {$sql = "SELECT TOP 1 [id] FROM [files] WHERE [hash] = ?";}
+else if($dbcore->sql->service == "pgsql")
+    {$sql = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $hash, PDO::PARAM_STR);
 $prep->execute();
@@ -51,6 +55,8 @@ if($dbcore->sql->service == "mysql")
     {$sql = "SELECT id FROM files_tmp WHERE hash = ? LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
     {$sql = "SELECT TOP 1 [id] FROM [files_tmp] WHERE [hash] = ?";}
+else if($dbcore->sql->service == "pgsql")
+    {$sql = "SELECT id FROM files_tmp WHERE hash = ? LIMIT 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $hash, PDO::PARAM_STR);
 $prep->execute();
@@ -82,6 +88,8 @@ while($retry){
             {$sql = "DELETE FROM files_bad WHERE id = ?";}
         else if($dbcore->sql->service == "sqlsrv")
             {$sql = "DELETE FROM [files_bad] WHERE [id] = ?";}
+        else if($dbcore->sql->service == "pgsql")
+            {$sql = "DELETE FROM files_bad WHERE id = ?";}
         $res = $dbcore->sql->conn->prepare($sql);
         $res->bindParam(1, $bad_id, PDO::PARAM_INT);
         $res->execute();

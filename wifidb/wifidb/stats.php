@@ -496,6 +496,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT id, file_user, title, file_date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT TOP 1 id, file_user, title, file_date, ValidGPS FROM files WHERE completed = 1 ORDER BY id DESC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT id, file_user, title, file_date, \"ValidGPS\" FROM files WHERE completed = 1 ORDER BY id DESC LIMIT 1";}
 $result = $dbcore->sql->conn->query($sql);
 $lastuser = $result->fetch(2);
 $lastid = $lastuser['id'];
@@ -510,6 +512,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT ValidGPS FROM files WHERE file_user LIKE ? And ValidGPS = 1 LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT TOP 1 ValidGPS FROM files WHERE file_user LIKE ? And ValidGPS = 1";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT \"ValidGPS\" FROM files WHERE file_user LIKE ? And \"ValidGPS\" = 1 LIMIT 1";}
 $prep = $dbcore->sql->conn->prepare($sql);
 $prep->bindParam(1, $lastusername, PDO::PARAM_STR);
 $prep->execute();
@@ -521,6 +525,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT AP_ID,SSID,HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT TOP 1 AP_ID,SSID,HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL ORDER BY AP_ID DESC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT \"AP_ID\",\"SSID\",\"HighGps_ID\" FROM wifi_ap WHERE fa IS NOT NULL ORDER BY \"AP_ID\" DESC LIMIT 1";}
 $result = $dbcore->sql->conn->query($sql);
 $lastap_array = $result->fetch(2);
 
@@ -533,6 +539,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT file_user FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY id DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT TOP 1 file_user FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY id DESC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT file_user FROM files WHERE completed = 1 AND \"ValidGPS\" = 1 ORDER BY id DESC LIMIT 1";}
 $result = $dbcore->sql->conn->query($sql);
 $lastuser_withgps = $result->fetch(2);
 $lastusername_withgps = $lastuser_withgps && isset($lastuser_withgps['file_user']) ? htmlspecialchars($lastuser_withgps['file_user'], ENT_QUOTES, 'UTF-8') : '';
@@ -542,6 +550,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT AP_ID,SSID FROM wifi_ap WHERE HighGps_ID IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT TOP 1 AP_ID,SSID FROM wifi_ap WHERE HighGps_ID IS NOT NULL ORDER BY AP_ID DESC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT \"AP_ID\",\"SSID\" FROM wifi_ap WHERE \"HighGps_ID\" IS NOT NULL ORDER BY \"AP_ID\" DESC LIMIT 1";}
 $result = $dbcore->sql->conn->query($sql);
 $lastap_withgps = $result->fetch(2);
 $lastap_id_withgps = $lastap_withgps && isset($lastap_withgps['AP_ID']) ? $lastap_withgps['AP_ID'] : '';
@@ -552,6 +562,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT id, title FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY id DESC LIMIT 1";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT TOP 1 id, title FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY id DESC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT id, title FROM files WHERE completed = 1 AND \"ValidGPS\" = 1 ORDER BY id DESC LIMIT 1";}
 $result = $dbcore->sql->conn->query($sql);
 $lastimport_withgps = $result->fetch(2);
 $lastimport_id_withgps = $lastimport_withgps && isset($lastimport_withgps['id']) ? $lastimport_withgps['id'] : '';
