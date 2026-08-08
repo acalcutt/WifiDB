@@ -287,7 +287,7 @@ class security
 		$max			=   strlen($base)-1;
 		$activatecode	=   '';
 		mt_srand((double)microtime()*1000000);
-		while( strlen($activatecode) < $len ){$activatecode .= $base{mt_rand(0,$max)};}
+		while( strlen($activatecode) < $len ){$activatecode .= $base[mt_rand(0,$max)];}
 		return $activatecode;
 	}
 

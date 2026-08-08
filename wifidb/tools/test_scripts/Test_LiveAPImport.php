@@ -63,7 +63,7 @@ function gen_str($len = 10)
     $key            =   '';
     mt_srand((double)microtime()*1000000);
     while(strlen($key) < $len+1)
-    {$key.=$base{mt_rand(0,$max)};}
+    {$key.=$base[mt_rand(0,$max)];}
     return $key;
 }
 
@@ -74,7 +74,7 @@ function gen_mac()
     $key            =   '';
     mt_srand((double)microtime()*1000000);
     while(strlen($key) < 13)
-    {$key.=$base{mt_rand(0,$max)};}
+    {$key.=$base[mt_rand(0,$max)];}
     return $key;
 }
 

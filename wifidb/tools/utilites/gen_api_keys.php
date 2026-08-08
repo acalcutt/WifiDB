@@ -65,7 +65,7 @@ function gen_key()
 	$key            =   '';
 	mt_srand((double)microtime()*1000000);
 	while(strlen($key) < $seed_len_gen+1)
-	{$key.=$base{mt_rand(0,$max)};}
+	{$key.=$base[mt_rand(0,$max)];}
 	return $key;
 }
 function prep()
