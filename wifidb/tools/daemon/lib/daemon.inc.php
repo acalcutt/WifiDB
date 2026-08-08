@@ -603,14 +603,50 @@ class daemon extends wdbcli
 		
 		
 		
-		if($this->sql->service == "sqlsrv")
-		{			
+		if($this->sql->service == "pgsql")
+		{
+			// Postgres equivalent of the MERGE below. files_tmp.hash already carries
+			// a unique constraint (files_tmp$hash), so DO NOTHING reproduces the
+			// "WHEN NOT MATCHED THEN INSERT" arm exactly.
 			$retry = true;
 			while ($retry)
 			{
-				try 
+				try
 				{
-					
+					$sql = "INSERT INTO files_tmp (type, file_name, file_orig, file_date, file_user, notes, title, size, hash)\n"
+						. "VALUES (:type, :file_name, :file_orig, :file_date, :file_user, :notes, :title, :size, :hash)\n"
+						. "ON CONFLICT (hash) DO NOTHING";
+
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':type', $type);
+					$prep->bindParam(':file_name', $file);
+					$prep->bindParam(':file_orig', $file_orig);
+					$prep->bindParam(':file_date', $date);
+					$prep->bindParam(':file_user', $user);
+					$prep->bindParam(':notes', $notes);
+					$prep->bindParam(':title', $title);
+					$prep->bindParam(':size', $size1);
+					$prep->bindParam(':hash', $hash);
+
+					$prep->execute();
+					$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				}
+			}
+		}
+		else if($this->sql->service == "sqlsrv")
+		{
+			$retry = true;
+			while ($retry)
+			{
+				try
+				{
+
 					$sql = "MERGE INTO files_tmp WITH (HOLDLOCK)\n"
 						. "	USING (SELECT :s_hash AS hash) AS newcell (hash)\n"
 						. "		ON files_tmp.hash = newcell.hash\n"

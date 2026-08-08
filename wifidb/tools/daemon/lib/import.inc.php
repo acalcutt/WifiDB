@@ -117,6 +117,51 @@ class import extends dbcore
 					}
 				}
 			}
+			else if($this->sql->service == "pgsql")
+			{
+				// Postgres equivalent of the MERGE above. cell_hash is
+				// md5(mac+ssid+authmode+chan+type), i.e. exactly the tuple the MERGE
+				// matches on, so conflicting on the unique cell_hash index is the
+				// same test. "xmax = 0" is the standard way to tell an inserted row
+				// from an updated one; it is turned into the INSERT/UPDATE string
+				// here so the caller's comparison stays unchanged.
+				$retry = true;
+				while ($retry)
+				{
+					try
+					{
+						$sql = "INSERT INTO cell_id (file_id, mac, ssid, authmode, chan, type, cell_hash, \"ModDate\")\n"
+							. "VALUES (:file_id, :mac, :ssid, :authmode, :chan, :type, :cell_hash, CURRENT_TIMESTAMP)\n"
+							. "ON CONFLICT (cell_hash) DO UPDATE SET \"ModDate\" = CURRENT_TIMESTAMP\n"
+							. "RETURNING cell_id, CASE WHEN xmax = 0 THEN 'INSERT' ELSE 'UPDATE' END AS action";
+
+						$prep = $this->sql->conn->prepare($sql);
+						$prep->bindParam(':file_id', $file_id);
+						$prep->bindParam(':mac', $cells['bssid']);
+						$prep->bindParam(':ssid', $cells['ssid']);
+						$prep->bindParam(':authmode', $cells['flags']);
+						$prep->bindParam(':chan', $cells['chan']);
+						$prep->bindParam(':type', $cells['type']);
+						$prep->bindParam(':cell_hash', $cells['cell_hash']);
+
+						$prep->execute();
+						$addresult = $prep->fetch(2);
+						$cell_id = $addresult['cell_id'];
+						$ap_action = $addresult['action'];
+						if($ap_action == "INSERT")
+						{
+							$new = 1;
+							$NewCells++;
+						}
+						$retry = false;
+					}
+					catch (Exception $e)
+					{
+						$retry = $this->sql->isPDOException($this->sql->conn, $e);
+						$cell_id = 0;
+					}
+				}
+			}
 			else if($this->sql->service == "mysql")
 			{
 				// For MySQL, use REPLACE INTO for atomic upsert
@@ -573,8 +618,52 @@ class import extends dbcore
 	private function InsertAp($File_ID, $BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS)
 	{
 		$ap_hash = md5($SSID.$BSSID.$CHAN.$SECTYPE.$AUTH.$ENCR);
-		
-		if($this->sql->service == "sqlsrv")
+
+		if($this->sql->service == "pgsql")
+		{
+			// Postgres equivalent of the MERGE below. ap_hash is
+			// md5(SSID+BSSID+CHAN+SECTYPE+AUTH+ENCR), exactly the tuple the MERGE
+			// matches on, so conflicting on the unique ap_hash index is the same
+			// test. The action column is aliased "$action" -- legal as a quoted
+			// identifier in Postgres -- so the caller reads the same key it does
+			// for sqlsrv. Note it is built with single quotes to stop PHP
+			// interpolating $action.
+			$retry = true;
+			while ($retry)
+			{
+				try
+				{
+					$sql = 'INSERT INTO wifi_ap ("BSSID", "SSID", "CHAN", "AUTH", "ENCR", "SECTYPE", "RADTYPE", "NETTYPE", "BTX", "OTX", "FLAGS", ap_hash, "File_ID", "ModDate")'."\n"
+						. 'VALUES (:BSSID, :SSID, :CHAN, :AUTH, :ENCR, :SECTYPE, :RADTYPE, :NETTYPE, :BTX, :OTX, :FLAGS, :ap_hash, :File_ID, CURRENT_TIMESTAMP)'."\n"
+						. 'ON CONFLICT (ap_hash) DO UPDATE SET "ModDate" = CURRENT_TIMESTAMP'."\n"
+						. 'RETURNING "AP_ID", CASE WHEN xmax = 0 THEN \'INSERT\' ELSE \'UPDATE\' END AS "$action", "RADTYPE", "FLAGS"';
+
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':BSSID', $BSSID, PDO::PARAM_STR);
+					$prep->bindParam(':SSID', $SSID, PDO::PARAM_STR);
+					$prep->bindParam(':CHAN', $CHAN, PDO::PARAM_INT);
+					$prep->bindParam(':AUTH', $AUTH, PDO::PARAM_STR);
+					$prep->bindParam(':ENCR', $ENCR, PDO::PARAM_STR);
+					$prep->bindParam(':SECTYPE', $SECTYPE, PDO::PARAM_INT);
+					$prep->bindParam(':RADTYPE', $RADTYPE, PDO::PARAM_STR);
+					$prep->bindParam(':NETTYPE', $NETTYPE, PDO::PARAM_STR);
+					$prep->bindParam(':BTX', $BTX, PDO::PARAM_STR);
+					$prep->bindParam(':OTX', $OTX, PDO::PARAM_STR);
+					$prep->bindParam(':FLAGS', $FLAGS, PDO::PARAM_STR);
+					$prep->bindParam(':ap_hash', $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(':File_ID', $File_ID, PDO::PARAM_INT);
+					$prep->execute();
+					$return = $prep->fetch(2);
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					$return = 0;
+				}
+			}
+		}
+		else if($this->sql->service == "sqlsrv")
 		{			
 			$retry = true;
 			while ($retry)

@@ -122,10 +122,19 @@ idx_re = re.compile(
     r'CREATE (UNIQUE )?NONCLUSTERED INDEX \[([^\]]+)\] ON \[dbo\]\.\[([^\]]+)\]\s*'
     r'\((.*?)\)\s*(?:INCLUDE\((.*?)\)\s*)?(?:WHERE \((.*?)\)\s*)?WITH \(PAD_INDEX', re.S)
 
+# These two are non-unique on MSSQL, where the importer upserts with
+# MERGE ... ON (the tuple the hash is derived from). Postgres has no MERGE in
+# the versions we target, so the importer uses INSERT ... ON CONFLICT (hash),
+# which requires a unique index. ap_hash is md5(SSID+BSSID+CHAN+SECTYPE+AUTH+
+# ENCR) and cell_hash is md5(mac+ssid+authmode+chan+type) -- exactly the MERGE
+# match keys -- so uniqueness here enforces an invariant the application already
+# assumes rather than adding a new one.
+FORCE_UNIQUE = {'IX_wifi_ap_ap_hash', 'IX_cell_id_cell_hash'}
+
 raw_indexes = []
 for m in idx_re.finditer(src):
     raw_indexes.append({
-        'unique': bool(m.group(1)),
+        'unique': bool(m.group(1)) or m.group(2) in FORCE_UNIQUE,
         'name': m.group(2),
         'table': m.group(3),
         'keys': parse_key_cols(m.group(4)),

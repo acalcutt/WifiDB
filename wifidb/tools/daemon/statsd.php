@@ -155,6 +155,11 @@ function updateCache($dbcore, $cache_key, $cache_data) {
 	if($dbcore->sql->service == "mysql") {
 		$sql = "INSERT INTO stats_cache (cache_key, cache_data, updated_at) VALUES (?, ?, ?)
 				ON DUPLICATE KEY UPDATE cache_data = VALUES(cache_data), updated_at = VALUES(updated_at)";
+	} else if($dbcore->sql->service == "pgsql") {
+		// stats_cache.cache_key already carries a unique constraint
+		// (UQ_stats_cache_key), so it is the conflict target directly.
+		$sql = "INSERT INTO stats_cache (cache_key, cache_data, updated_at) VALUES (?, ?, ?)
+				ON CONFLICT (cache_key) DO UPDATE SET cache_data = EXCLUDED.cache_data, updated_at = EXCLUDED.updated_at";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "MERGE INTO stats_cache AS target
 				USING (SELECT ? AS cache_key, ? AS cache_data, ? AS updated_at) AS source
@@ -248,6 +253,24 @@ function generateStatsCache($dbcore) {
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
 				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		// to_char() is the Postgres equivalent of MySQL DATE_FORMAT / T-SQL FORMAT.
+		// fa is a timestamp, so "NOT LIKE '1970-01-01%'" needs an explicit ::text.
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month,
+			COUNT(*) as new_count,
+			SUM(CASE WHEN \"SECTYPE\" = 1 THEN 1 ELSE 0 END) as open_count,
+			SUM(CASE WHEN \"SECTYPE\" = 2 THEN 1 ELSE 0 END) as wep_count,
+			SUM(CASE WHEN \"SECTYPE\" = 3 THEN 1 ELSE 0 END) as secure_count,
+			/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+			SUM(CASE WHEN \"SECTYPE\" = 1  OR \"SECTYPE\" = 2 THEN 1 ELSE 0 END) as auth_open_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA2%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA%' AND \"AUTH\" NOT LIKE '%WPA2%' AND \"AUTH\" NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count
+		FROM wifi_ap
+		WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND \"BSSID\" <> '00:00:00:00:00:00'
+		GROUP BY to_char(fa, 'YYYY-MM')
+		ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month,
 			COUNT(*) as new_count,
@@ -321,6 +344,12 @@ function generateStatsCache($dbcore) {
 				FROM cell_id
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
+				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month, COUNT(*) as new_count
+				FROM cell_id
+				WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')
+				GROUP BY to_char(fa, 'YYYY-MM')
 				ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month, COUNT(*) as new_count

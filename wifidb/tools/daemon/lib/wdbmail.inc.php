@@ -323,12 +323,42 @@ Go here to reset it to one you choose:
 				}
 			}
 		}
-		else if($this->sql->service == "sqlsrv")
-		{			
+		else if($this->sql->service == "pgsql")
+		{
+			// Postgres equivalent of the MERGE below. user_validate.username already
+			// carries a unique constraint (user_validate$username), so it can be the
+			// conflict target directly.
 			$retry = true;
 			while ($retry)
 			{
-				try 
+				try
+				{
+					$sql = "INSERT INTO user_validate (username, code, \"date\")\n"
+						. "VALUES (:username, :code, CURRENT_TIMESTAMP)\n"
+						. "ON CONFLICT (username) DO UPDATE SET \"date\" = CURRENT_TIMESTAMP, code = :ucode\n"
+						. "RETURNING id";
+
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':ucode', $validate_code, PDO::PARAM_STR);
+					$prep->bindParam(':username', $username, PDO::PARAM_STR);
+					$prep->bindParam(':code', $validate_code, PDO::PARAM_STR);
+					$prep->execute();
+					$return = $prep->fetch(2);
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					$return = 0;
+				}
+			}
+		}
+		else if($this->sql->service == "sqlsrv")
+		{
+			$retry = true;
+			while ($retry)
+			{
+				try
 				{
 					$sql = "MERGE INTO user_validate WITH (HOLDLOCK)\n"
 						. "	USING (SELECT :susername AS susername) AS newvald\n"
