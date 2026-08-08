@@ -353,6 +353,13 @@ switch($func)
 					. "WHERE [wifi_ap].[HighGps_ID] IS NOT NULL\n"
 					. "ORDER BY [wifi_ap].[AP_ID] DESC";
 			}
+		else if($dbcore->sql->service == "pgsql")
+			{
+				$sql = "SELECT wifi_ap.\"ModDate\"\n"
+					. "FROM wifi_ap\n"
+					. "WHERE wifi_ap.\"HighGps_ID\" IS NOT NULL\n"
+					. "ORDER BY wifi_ap.\"AP_ID\" DESC LIMIT 1";
+			}
 		$result = $dbcore->sql->conn->query($sql);
 		$ap_array = $result->fetch(2);
 

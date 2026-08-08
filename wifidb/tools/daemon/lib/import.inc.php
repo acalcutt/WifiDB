@@ -853,6 +853,13 @@ class import extends dbcore
 						. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
 						. "WHERE [wifi_hist].[File_ID] = ? And [wifi_gps].[GPS_ID] IS NOT NULL And [wifi_gps].[Lat] != '0.0000'";
 				}
+				else if($this->sql->service == "pgsql")
+				{
+					$sql = "SELECT wifi_hist.\"Hist_ID\"\n"
+						. "FROM wifi_hist\n"
+						. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+						. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"GPS_ID\" IS NOT NULL And wifi_gps.\"Lat\" != '0.0000' LIMIT 1";
+				}
 				$prepvgps = $this->sql->conn->prepare($sql);
 				$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
 				$prepvgps->execute();
@@ -976,6 +983,14 @@ class import extends dbcore
 								. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
 								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, wifi_hist.Hist_ID ASC";
 						}
+					else if($this->sql->service == "pgsql")
+						{
+							$sql = "SELECT wifi_hist.GPS_ID, wifi_hist.RSSI, wifi_hist.Sig\n"
+								. "FROM wifi_hist\n"
+								. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
+								. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
+								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, wifi_hist.Hist_ID ASC LIMIT 1";
+						}
 					$hgp = $this->sql->conn->prepare($sql);
 					$hgp->bindParam(1, $ap_id, PDO::PARAM_INT);
 					$hgp->execute();
@@ -1093,6 +1108,14 @@ class import extends dbcore
 						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.GPS_ID\n"
 						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
 						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, cell_hist.cell_hist_id ASC";
+				}
+				else if($this->sql->service == "pgsql")
+				{
+					$sql = "SELECT cell_hist.gps_id, cell_hist.rssi\n"
+						. "FROM cell_hist\n"
+						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.GPS_ID\n"
+						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
+						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, cell_hist.cell_hist_id ASC LIMIT 1";
 				}
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);

@@ -97,6 +97,13 @@ switch($func)
 						. "WHERE\n"
 						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
 				}
+			else if($dbcore->sql->service == "pgsql")
+				{
+					$sql = "SELECT Count(AP_ID) As ap_count\n"
+						. "FROM wifi_ap\n"
+						. "WHERE\n"
+						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND user LIKE ?)";
+				}
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
@@ -239,6 +246,13 @@ switch($func)
 							. "FROM [wifi_hist]\n"
 							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
+				else if($dbcore->sql->service == "pgsql")
+					{
+						$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+							. "FROM wifi_hist\n"
+							. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+							. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);

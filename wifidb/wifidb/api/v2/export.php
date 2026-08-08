@@ -190,6 +190,13 @@ switch($func)
 							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
 					}
+				else if($dbcore->sql->service == "pgsql")
+					{
+						$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+							. "FROM wifi_hist\n"
+							. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+							. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
+					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
 				$result->execute();
@@ -254,6 +261,13 @@ switch($func)
 							. "FROM [wifi_hist]\n"
 							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
+				else if($dbcore->sql->service == "pgsql")
+					{
+						$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+							. "FROM wifi_hist\n"
+							. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+							. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
@@ -375,6 +389,13 @@ switch($func)
 								. "FROM [wifi_hist]\n"
 								. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 								. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+						}
+					else if($dbcore->sql->service == "pgsql")
+						{
+							$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+								. "FROM wifi_hist\n"
+								. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+								. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 						}
 					$result = $dbcore->sql->conn->prepare($sql);
 					$result->bindParam(1, $id, PDO::PARAM_INT);
