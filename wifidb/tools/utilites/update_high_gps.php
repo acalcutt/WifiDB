@@ -62,6 +62,25 @@ while($ap = $result->fetch(1))
 			. "FROM [wifi_ap] As [wap]\n"
 			. "WHERE [wap].[AP_ID] = ?";
 	}
+	else if($dbcore->sql->service == "pgsql")
+	{
+		// Derived from the MySQL arm rather than the sqlsrv one: the sqlsrv query
+		// above has ", [wifi_hist].[Hist_ID] ASC" stranded outside the subquery's
+		// ORDER BY, which is a syntax error there.
+		$sqlhp = "SELECT \n"
+			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"Hist_Date\" ASC, \"Hist_ID\" ASC LIMIT 1) As \"FA_id\",\n"
+			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"Hist_Date\" DESC, \"Hist_ID\" ASC LIMIT 1) As \"LA_id\",\n"
+			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"Sig\" DESC, \"Hist_Date\" DESC, \"Hist_ID\" ASC LIMIT 1) As \"HighSig_id\",\n"
+			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"RSSI\" DESC, \"Hist_Date\" DESC, \"Hist_ID\" ASC LIMIT 1) As \"HighRSSI_id\",\n"
+			. "(SELECT wifi_hist.\"GPS_ID\"\n"
+			. "    FROM wifi_hist\n"
+			. "    INNER JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+			. "    WHERE wifi_hist.\"AP_ID\" = wap.\"AP_ID\" And wifi_hist.\"Hist_Date\" IS NOT NULL And wifi_gps.\"Lat\" != 0.0000\n"
+			. "    ORDER BY wifi_hist.\"RSSI\" DESC, wifi_hist.\"Hist_Date\" DESC, wifi_gps.\"NumOfSats\" DESC, wifi_hist.\"Hist_ID\" ASC\n"
+			. "    LIMIT 1) As \"HighGps_id\"\n"
+			. "FROM wifi_ap As wap\n"
+			. "WHERE wap.\"AP_ID\" = ?";
+	}
 
 	$resgps = $dbcore->sql->conn->prepare($sqlhp);
 	$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
