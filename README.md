@@ -18,7 +18,10 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 	* ZipArchive class  
 	* SQLiteDatabase class  
 	* bcmath class  
-* Microsoft SQL 2019 or Later (needed for UTF8 Support)  
+* One of the supported databases:  
+	* Microsoft SQL 2019 or Later (needed for UTF8 Support) -- the reference deployment  
+	* PostgreSQL 11 or later (needed for covering indexes) -- support in progress, see below  
+	* MySQL / MariaDB  
 * Apache 2.4 or later  
 * A Web-browser (doh!)  
 
@@ -36,6 +39,28 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 	7.) Create a mssql user that has access to the database created in the previous step  
 	8.) Update your daemon config file, [tools]/daemon.config.inc.php  
 	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php  
+
+  PostgreSQL (work in progress)
+  --------------
+	PostgreSQL support is being added alongside the existing MySQL and MSSQL
+	back-ends. Set 'srvc' and 'driver' to 'pgsql' (port 5432) in config.inc.php,
+	then create the database with:
+
+		createdb wifi
+		psql -d wifi -f blank_db.pgsql
+
+	Unlike blank_db.sqlsrv there is no database name to search-and-replace --
+	blank_db.pgsql does not reference one.
+
+	Note on identifier case: the schema keeps mixed-case names (GPS_ID, ModDate,
+	ValidGPS, Country, ...) because the PHP layer reads result rows by those exact
+	keys. MySQL and SQL Server match column names case-insensitively; PostgreSQL
+	folds unquoted identifiers to lower case. blank_db.pgsql therefore creates
+	every identifier double-quoted, and the pgsql query branches must double-quote
+	any mixed-case column they reference. A plain lower-case name needs no quoting.
+
+	Status: the schema, the PDO connection layer and the core library queries are
+	converted. The remaining query sites are listed by tools/utilites/pg_audit.py.
 	
   To Import Manually:  
 	cd [tools]/daemon  
