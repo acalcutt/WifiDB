@@ -118,7 +118,7 @@ class misc
         $ssids = array();
         $number = array();
         echo "Select from Pointers Table\r\n";
-        $sql = "SELECT * FROM `wifi_ap`";
+        $sql = "SELECT * FROM wifi_ap";
         $result = $this->sql->conn->query($sql);
         $total_rows = $result->rowCount();
         if($total_rows != 0)
@@ -134,7 +134,10 @@ class misc
             echo "Find out the number of each SSID\r\n";
             foreach($ssids as $key=>$ssid)
             {
-                $sql = "SELECT * FROM `wifi_ap` WHERE `ssid` LIKE '$ssid'";
+                if($this->sql->service == "pgsql")
+                    {$sql = 'SELECT * FROM wifi_ap WHERE "SSID" LIKE '."'$ssid'";}
+                else
+                    {$sql = "SELECT * FROM wifi_ap WHERE SSID LIKE '$ssid'";}
                 $result = $this->sql->conn->query($sql);
                 $total_rows = $result->rowCount();
                 $num_ssid[]	= array( 0=>$total_rows, 1=>$ssid);

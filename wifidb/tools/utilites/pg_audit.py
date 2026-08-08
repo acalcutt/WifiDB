@@ -61,14 +61,21 @@ for dirpath, dirnames, filenames in os.walk(ROOT):
         path = os.path.join(dirpath, fn)
         text = open(path, encoding='utf-8', errors='replace').read()
         lines = text.split('\n')
-        # Track which lines sit inside an "else if (... == \"pgsql\")" block by
-        # brace depth; good enough for this codebase's one-liner branch style.
-        pg_until = -1
+        # A flagged line counts as handled when a pgsql branch sits near it. The
+        # dialect branches in this codebase are written as adjacent if/else arms,
+        # so "a pgsql arm within COVER lines" is a good proxy for "this query site
+        # has a Postgres variant" -- much better than trying to parse brace depth.
+        # Deliberately tight. A pgsql arm sits within a dozen lines of the query it
+        # covers; a wider window silently absorbs neighbouring statements that
+        # still need converting.
+        COVER = 14
+        pg_lines = [i for i, l in enumerate(lines) if 'pgsql' in l]
+
+        def covered(i):
+            return any(abs(i - p) <= COVER for p in pg_lines)
+
         for i, line in enumerate(lines):
-            if 'pgsql' in line:
-                pg_until = i + (1 if line.rstrip().endswith(')') else 0)
-                continue
-            if i <= pg_until:
+            if 'pgsql' in line or covered(i):
                 continue
             if not SQL_HINT.search(line):
                 continue

@@ -524,7 +524,10 @@ class dbcore
 		}
 		$manuf_mac = strtoupper(substr($mac, 0, 6));
 		
-		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");
+		if($this->sql->service == "pgsql")
+			{$result = $this->sql->conn->prepare('SELECT "Manufacturer" FROM manufacturers WHERE "BSSID" = ?');}
+		else
+			{$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");}
 		$result->bindParam(1, $manuf_mac, PDO::PARAM_STR);
 		$result->execute();
 		$fetch = $result->fetch(2);
