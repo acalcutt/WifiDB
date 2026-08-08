@@ -25,7 +25,7 @@ $user = @$parm['user'];
 if($all_users)
 {
     echo "Going to clear out the GPS data from the pointers table.\r\n";
-    $sql = "SELECT id, username FROM `user_info`";
+    $sql = "SELECT id, username FROM user_info";
     $result = $dbcore->sql->conn->query($sql);
     while($users_array = $result->fetch_array(1))
     {
@@ -36,7 +36,7 @@ if($all_users)
         $key = $dbcore->sec->GenerateKey();
         echo "API Key: ".$key."\r\n";
 
-        $update = "UPDATE `user_info` SET `apikey` = '$key' WHERE `id` = '$id'";
+        $update = "UPDATE user_info SET apikey = '$key' WHERE id = '$id'";
         if($conn->query($update))
         {
             echo "Updated users APIkey.\r\n";$good++;
@@ -56,7 +56,7 @@ if($all_users)
     $id = $users_array['id'];
     $key = $dbcore->sec->GenerateKey();
     echo "API Key: ".$key."\r\n";
-    $update = "UPDATE `user_info` SET `apikey` = '$key' WHERE `id` = '$id'";
+    $update = "UPDATE user_info SET apikey = '$key' WHERE id = '$id'";
     if($conn->query($update))
     {
         echo "Updated users APIkey.\r\n";

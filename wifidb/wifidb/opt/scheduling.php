@@ -33,6 +33,9 @@ $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 $sorts=array("file_date","id");
 if(!in_array($sort, $sorts)){$sort = "file_date";}
+// $sort is also passed to GeneratePages() for the paging links, so the SQL
+// uses a quoted copy -- Postgres would fold a bare mixed-case sort column.
+$sort_sql = $dbcore->sql->ident($sort);
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}
@@ -815,11 +818,12 @@ switch($func)
 	case 'done':
 	
 	
-		$sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ValidGPS, size, NewAPPercent, hash \n"
+		$sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ".$dbcore->sql->ident('ValidGPS').", size, ".$dbcore->sql->ident('NewAPPercent').", hash \n"
 			. "FROM files\n"
 			. "WHERE completed = 1\n";
-		if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort} {$ord} LIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort_sql} {$ord} LIMIT {$from},{$inc}";}
+	else if($dbcore->sql->service == "pgsql"){$sql .= "ORDER BY {$sort_sql} {$ord} LIMIT {$inc} OFFSET {$from}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort_sql} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$result = $dbcore->sql->conn->query($sql);
 		$class_f = 0;
 		$files_all = array();
@@ -883,8 +887,9 @@ switch($func)
 		$waiting_row = array();
 		$n=0;
 		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_tmp\n";
-		if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort} {$ord} LIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort_sql} {$ord} LIMIT {$from},{$inc}";}
+	else if($dbcore->sql->service == "pgsql"){$sql .= "ORDER BY {$sort_sql} {$ord} LIMIT {$inc} OFFSET {$from}";}
+		else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort_sql} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
@@ -950,8 +955,9 @@ switch($func)
 			$n=0;
 			$class_f = 0;
 			$sql = "SELECT id, file_name, file_orig, file_user, notes, title, file_date, size, hash, type, error_msg FROM files_bad\n";
-			if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort} {$ord} LIMIT {$from},{$inc}";} 
-			else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+			if($dbcore->sql->service == "mysql"){$sql .= "ORDER BY {$sort_sql} {$ord} LIMIT {$from},{$inc}";}
+	else if($dbcore->sql->service == "pgsql"){$sql .= "ORDER BY {$sort_sql} {$ord} LIMIT {$inc} OFFSET {$from}";} 
+			else if($dbcore->sql->service == "sqlsrv"){$sql .= "ORDER BY {$sort_sql} {$ord} OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 			$result_1 = $dbcore->sql->conn->query($sql);
 			while ($newArray = $result_1->fetch(2))
 			{
@@ -1013,6 +1019,7 @@ switch($func)
 
 		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user, importing, ap, tot FROM files_importing ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= " LIMIT {$from},{$inc}";}
+	else if($dbcore->sql->service == "pgsql"){$sql .= " LIMIT {$inc} OFFSET {$from}";}
 		else if($dbcore->sql->service == "sqlsrv"){$sql .= " OFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
 		
 		$result_1 = $dbcore->sql->conn->query($sql);
