@@ -37,6 +37,9 @@ $end_date = filter_input(INPUT_GET, 'end_date', FILTER_SANITIZE_STRING);
 # Handle preset date ranges
 $today = date('Y-m-d');
 $date_filter_sql = "";
+// Postgres will not LIKE-compare a timestamp; MySQL and SQL Server convert
+// implicitly. $fa_txt keeps the shared queries below usable on all three.
+$fa_txt = ($dbcore->sql->service == "pgsql") ? "fa::text" : "fa";
 $date_filter_label = "All Time";
 $use_cache = true; // Use cache for "All Time" view
 
@@ -232,7 +235,8 @@ if(!$use_cache) {
 	$top_cell_list = array();
 	$top_bt_list = array();
 	#Get SECTYPE and AP Counts
-	$sql = "SELECT SECTYPE, count(AP_ID) AS ap_count FROM wifi_ap WHERE BSSID <> '00:00:00:00:00:00' AND fa IS NOT NULL AND fa NOT LIKE '1970-01-01%'".$date_filter_sql." GROUP BY SECTYPE";
+	$sec_c = $dbcore->sql->ident('SECTYPE'); $ap_c = $dbcore->sql->ident('AP_ID'); $bssid_c = $dbcore->sql->ident('BSSID');
+	$sql = "SELECT ".$sec_c.", count(".$ap_c.") AS ap_count FROM wifi_ap WHERE ".$bssid_c." <> '00:00:00:00:00:00' AND fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%'".$date_filter_sql." GROUP BY ".$sec_c;
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$seclist = $result->fetchAll();
@@ -248,7 +252,7 @@ if(!$use_cache) {
 	}
 
 	#Get Cell Tower counts by type
-	$sql = "SELECT type, count(cell_id) AS cell_count FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')".$date_filter_sql." GROUP BY type";
+	$sql = "SELECT type, count(cell_id) AS cell_count FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')".$date_filter_sql." GROUP BY type";
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$celllist = $result->fetchAll();
@@ -259,7 +263,7 @@ if(!$use_cache) {
 	}
 
 	#Get Bluetooth counts by type
-	$sql = "SELECT type, count(cell_id) AS bt_count FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')".$date_filter_sql." GROUP BY type";
+	$sql = "SELECT type, count(cell_id) AS bt_count FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')".$date_filter_sql." GROUP BY type";
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$btlist = $result->fetchAll();
@@ -272,6 +276,12 @@ if(!$use_cache) {
 	# Get Top N WiFi APs by points (most observations)
 	if($dbcore->sql->service == "mysql") {
 		$sql = "SELECT AP_ID, SSID, BSSID, AUTH, ENCR, points, HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%'".$date_filter_sql." ORDER BY points DESC LIMIT ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $top_n, PDO::PARAM_INT);
+		$prep->execute();
+		$top_wifi_list = $prep->fetchAll(2);
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT \"AP_ID\", \"SSID\", \"BSSID\", \"AUTH\", \"ENCR\", points, \"HighGps_ID\" FROM wifi_ap WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%'".$date_filter_sql." ORDER BY points DESC LIMIT ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $top_n, PDO::PARAM_INT);
 		$prep->execute();
@@ -299,6 +309,12 @@ if(!$use_cache) {
 		$prep->bindParam(1, $top_n, PDO::PARAM_INT);
 		$prep->execute();
 		$top_cell_list = $prep->fetchAll(2);
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')".$date_filter_sql." ORDER BY points DESC LIMIT ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $top_n, PDO::PARAM_INT);
+		$prep->execute();
+		$top_cell_list = $prep->fetchAll(2);
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT TOP ".$top_n." cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')".$date_filter_sql." ORDER BY points DESC";
 		$result = $dbcore->sql->conn->query($sql);
@@ -317,6 +333,12 @@ if(!$use_cache) {
 	# Get Top N Bluetooth Devices by points (most observations)
 	if($dbcore->sql->service == "mysql") {
 		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')".$date_filter_sql." ORDER BY points DESC LIMIT ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $top_n, PDO::PARAM_INT);
+		$prep->execute();
+		$top_bt_list = $prep->fetchAll(2);
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')".$date_filter_sql." ORDER BY points DESC LIMIT ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $top_n, PDO::PARAM_INT);
 		$prep->execute();
@@ -353,6 +375,23 @@ if(!$use_cache) {
 			FROM wifi_ap
 			WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'".$date_filter_sql."
 			GROUP BY DATE_FORMAT(fa, '%Y-%m')
+			ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		// to_char() is the Postgres equivalent of DATE_FORMAT / FORMAT.
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month,
+			COUNT(*) as new_count,
+			SUM(CASE WHEN \"SECTYPE\" = 1 THEN 1 ELSE 0 END) as open_count,
+			SUM(CASE WHEN \"SECTYPE\" = 2 THEN 1 ELSE 0 END) as wep_count,
+			SUM(CASE WHEN \"SECTYPE\" = 3 THEN 1 ELSE 0 END) as secure_count,
+			/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+			SUM(CASE WHEN \"SECTYPE\" = 1  OR \"SECTYPE\" = 2 THEN 1 ELSE 0 END) as auth_open_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA2%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA%' AND \"AUTH\" NOT LIKE '%WPA2%' AND \"AUTH\" NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count
+			FROM wifi_ap
+			WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND \"BSSID\" <> '00:00:00:00:00:00'".$date_filter_sql."
+			GROUP BY to_char(fa, 'YYYY-MM')
 			ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month,
@@ -438,6 +477,12 @@ if(!$use_cache) {
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')".$date_filter_sql."
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
 				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month, COUNT(*) as new_count
+				FROM cell_id
+				WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')".$date_filter_sql."
+				GROUP BY to_char(fa, 'YYYY-MM')
+				ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month, COUNT(*) as new_count
 				FROM cell_id
@@ -464,6 +509,12 @@ if(!$use_cache) {
 				FROM cell_id
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')".$date_filter_sql."
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
+				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month, COUNT(*) as new_count
+				FROM cell_id
+				WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')".$date_filter_sql."
+				GROUP BY to_char(fa, 'YYYY-MM')
 				ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month, COUNT(*) as new_count
