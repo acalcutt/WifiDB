@@ -63,31 +63,113 @@ if (!in_array($bucket, $valid_buckets, true)) {
 // be served from disk by Apache before this script is even invoked, so this
 // flag mainly controls whether z13+ on-demand tiles are cached on disk.
 define('TILE_DISK_CACHE', true);
-$bucket_ttl = [
-    'daily'     =>     3600,  //  1 hour
-    'weekly'    =>    86400,  //  1 day
-    'monthly'   =>   604800,  //  1 week
-    '0to1year'  =>  2592000,  //  30 days
-    '1to2year'  =>  2592000,
-    '2to3year'  =>  2592000,
-    '3to5year'  =>  2592000,
-    '5to10year' =>  2592000,
-    '10yrplus'  =>  2592000,
-    'cell_daily'     =>     3600,
-    'cell_weekly'    =>    86400,
-    'cell_monthly'   =>   604800,
-    'cell_0to1year'  =>  2592000,
-    'cell_1to2year'  =>  2592000,
-    'cell_2to3year'  =>  2592000,
-    'cell_3to5year'  =>  2592000,
-    'cell_5to10year' =>  2592000,
-    'cell_10yrplus'  =>  2592000,
-    'heatmap'        =>   604800,  //  1 week — see mvtd.php for rationale
-    'cell_heatmap'   =>   604800,
-];
-$cache_ttl  = $bucket_ttl[$bucket] ?? 86400;
-$tile_dir   = rtrim($dbcore->PATH, '/') . '/out/tiles/' . $bucket . '/' . $z . '/' . $x;
+$cache_ttl  = mvt_bucket_ttl($bucket);
+$tile_dirs  = mvt_tile_dirs($dbcore);
+$tile_dir   = $tile_dirs['tiles'] . '/' . $bucket . '/' . $z . '/' . $x;
 $tile_file  = $tile_dir . '/' . $y . '.pbf';
+
+// ── Archive buckets ───────────────────────────────────────────────────────────
+// Buckets wider than a week are served out of the .pmtiles archive mvtd wrote
+// and never reach the query below.  That is the point of them: past a week's
+// worth of data $query_limit starts truncating the per-tile query, so a live
+// answer would be quick, cached, and missing APs with nothing to say so.
+//
+// The archive is complete by construction, so a tile it does not hold is a
+// tile with no data — answered with the same empty-but-valid tile the dynamic
+// path returns, rather than an error a client would have to interpret.
+if (mvt_bucket_output($bucket, $dbcore) === 'pmtiles') {
+    include_once('../lib/pmtiles.inc.php');
+
+    $archive = mvt_archive_file($tile_dirs['archives'], $bucket);
+    if (!is_file($archive)) {
+        // Nothing to fall back to: the dynamic path is exactly what this
+        // bucket cannot use.  Say so rather than serving a plausible tile.
+        error_log("mvt.php: no archive for bucket '{$bucket}' at {$archive}");
+        http_response_code(503);
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store');
+        echo json_encode(['error' => "Archive for bucket '{$bucket}' has not been generated yet"]);
+        exit;
+    }
+
+    try {
+        // The header and root directory are the same for every tile in a
+        // build, so parse them once per build rather than once per request.
+        // Keyed on mtime: a new archive is renamed over the old one, and every
+        // offset in the previous index becomes wrong the moment it lands.
+        $index    = null;
+        $have_apc = function_exists('apcu_fetch');
+        $apc_key  = 'wifidb_pmtiles_' . $bucket . '_' . filemtime($archive);
+        if ($have_apc) {
+            $found = false;
+            $cached = apcu_fetch($apc_key, $found);
+            if ($found) { $index = $cached; }
+        }
+
+        $reader = new PMTilesReader($archive, $index);
+        if ($have_apc && $index === null) {
+            apcu_store($apc_key, $reader->index(), 3600);
+        }
+
+        $header    = $reader->header();
+        $gz_bytes  = $reader->tile($z, $x, $y);
+        $has_tile  = ($gz_bytes !== null);
+        if (!$has_tile) {
+            $gz_bytes = gzencode(mvt_encode_tile(mvt_encode_layer($bucket, [], [], [])), 6);
+        }
+
+        // A strong ETag, fingerprinted from the archive's contents rather than
+        // its mtime.  Every node serves a byte-identical copy of a given build
+        // but receives it at its own time, so an mtime-derived validator would
+        // change as a client's requests moved between nodes behind the load
+        // balancer -- turning a cache hit into a re-download, and breaking the
+        // range-request path outright for anything reading the archive
+        // directly.  These two counters change on every rebuild and on no
+        // other occasion, and cost nothing: they are already parsed, and
+        // cached alongside the rest of the index.
+        $etag = sprintf(
+            '"%s-%x-%x-%d-%d-%d"',
+            $bucket,
+            $header['tile_data_bytes'],
+            $header['addressed_tiles_count'],
+            $z, $x, $y
+        );
+        header('ETag: ' . $etag);
+
+        // Trim the weak prefix and any quotes a proxy may have re-wrapped, and
+        // accept a list, since a client may offer several.
+        $if_none_match = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
+        if ($if_none_match !== '') {
+            foreach (explode(',', $if_none_match) as $candidate) {
+                if (trim(preg_replace('/^W\//', '', trim($candidate))) === $etag) {
+                    http_response_code(304);
+                    header('Cache-Control: public, max-age=' . ($has_tile ? $cache_ttl : 60));
+                    exit;
+                }
+            }
+        }
+
+        header('Content-Type: application/x-protobuf');
+        // Taken from the archive rather than assumed: mvtd stores tiles
+        // already gzipped, but the header is what says so.
+        if ($header['tile_compression'] === PMTILES_COMPRESSION_GZIP) {
+            header('Content-Encoding: gzip');
+            header('Vary: Accept-Encoding');
+        }
+        header('Cache-Control: public, max-age=' . ($has_tile ? $cache_ttl : 60));
+        header('Content-Length: ' . strlen($gz_bytes));
+        header('X-Tile-Cache: ' . ($has_tile ? 'ARCHIVE' : 'ARCHIVE-EMPTY'));
+        echo $gz_bytes;
+        exit;
+    } catch (PMTilesException $e) {
+        error_log("mvt.php: {$archive}: {$e->getMessage()}");
+        http_response_code(500);
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store');
+        echo json_encode(['error' => 'Tile archive could not be read']);
+        exit;
+    }
+}
 
 if (TILE_DISK_CACHE && file_exists($tile_file) && (time() - filemtime($tile_file)) < $cache_ttl) {
     header('Content-Type: application/x-protobuf');

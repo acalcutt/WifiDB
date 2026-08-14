@@ -55,6 +55,7 @@ if ($daemon_config['wifidb_install'] === '') {
 require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 require $daemon_config['wifidb_install'].'/lib/mvt.inc.php';
 require $daemon_config['wifidb_install'].'/lib/spatial.inc.php';  // morton_encode, assign_feature_minzoom
+require $daemon_config['wifidb_install'].'/lib/pmtiles.inc.php';  // PMTilesWriter
 
 $dbcore->daemon_name    = 'MVT Tile Generator';
 $dbcore->lastedit       = '2024-06-23';
@@ -108,100 +109,26 @@ $data_bbox = [
 // 50000 is a safe default; increase if your server has fast network to the DB.
 $page_size = 50000;
 
-// Z-order thinning scale ────────────────────────────────────────────────────
-// Controls how aggressively the Morton-curve spatial sort thins features at low
-// zoom levels.  An AP appears at zoom z only when its Morton gap to its nearest
-// spatial neighbour exceeds (drop_scale_pixels)² × (1 tile-pixel)² in Morton
-// space.  1.0 = show as soon as APs are non-overlapping; 2.0 = require 2-pixel
-// separation (halves feature count per zoom step, matching tippecanoe's default
-// --drop-densest-as-needed behaviour at gamma=1 with droprate≈2).
-$drop_scale_pixels = 1.5;
 
-// Hard cap on feature_minzoom, set per-bucket.
+
+// Output directories, from mvt.inc.php so api/mvt.php reads from exactly where
+// this writes.  They default to the install directory, which is right when the
+// daemon runs on the web server: the .htaccess under out/tiles sets the
+// Content-Type and Content-Encoding headers .pbf files need.  Override them in
+// config.inc.php when generation runs elsewhere — a generator on a separate
+// host writes millions of files, and they do not belong in the checkout.
+$tile_dirs   = mvt_tile_dirs($dbcore);
+$output_dir  = $tile_dirs['tiles'];
+$archive_dir = $tile_dirs['archives'];
+
+// Which buckets become archives is decided by mvt_bucket_output(); see there
+// for why the line falls between weekly and monthly.
 //
-// For most buckets, cap=1 (= $min_zoom) takes the fast path in
-// assign_feature_minzoom(): no Morton sort, all APs get feature_minzoom=1,
-// and per-tile encoding does all density thinning.  At ≤ 1.5 M APs each
-// z=1 tile candidate list is ≈ 400 K APs → ~1–2 s per tile, manageable.
-//
-// The heatmap buckets combine ALL age windows (~9 M+ APs).  With cap=1
-// all 9 M APs end up as candidates in each of the 4 z=1 tiles (~2.4 M
-// each), and per-tile usort + the large $aps array together exhaust the
-// server's 15 GB RAM → swap-thrash → 20+ hours for z=1 alone.
-//
-// cap=7 makes the Morton sort run, assigning feature_minzoom based on
-// spatial density.  Globally-sparse APs get feature_minzoom=1–6 and remain
-// in low-zoom tiles; the dense MA/AZ clusters get feature_minzoom=7 and
-// only appear at z≥7.  Low-zoom candidate sets drop from ~2.4 M per tile
-// to ~50 K–200 K globally, keeping per-tile usort sub-second.
-$bucket_cap_fmz = [
-    'heatmap'      => 7,
-    'cell_heatmap' => 7,
-];
-
-// Output directory — must be web-accessible.  The .htaccess in this directory
-// sets the correct Content-Type/Content-Encoding headers for .pbf files.
-$output_dir = rtrim($dbcore->PATH, '/') . '/out/tiles';
-
-// Per-bucket regeneration TTL in seconds.
-// Tiles whose file mtime is newer than this are skipped on incremental runs.
-// Use --force on the command line to bypass and regenerate everything.
-$bucket_ttl = [
-    'daily'     =>     3600,  //  1 hour
-    'weekly'    =>    86400,  //  1 day
-    'monthly'   =>   604800,  //  1 week
-    '0to1year'  =>  2592000,  //  30 days
-    '1to2year'  =>  2592000,
-    '2to3year'  =>  2592000,
-    '3to5year'  =>  2592000,
-    '5to10year' =>  2592000,
-    '10yrplus'  =>  2592000,
-    // Cell network buckets — same cadence as corresponding WiFi AP buckets.
-    'cell_daily'     =>     3600,
-    'cell_weekly'    =>    86400,
-    'cell_monthly'   =>   604800,
-    'cell_0to1year'  =>  2592000,
-    'cell_1to2year'  =>  2592000,
-    'cell_2to3year'  =>  2592000,
-    'cell_3to5year'  =>  2592000,
-    'cell_5to10year' =>  2592000,
-    'cell_10yrplus'  =>  2592000,
-    // Combined all-ages heatmap-only buckets. A full unbounded scan is much
-    // more expensive than any single age bucket, so this regenerates on a
-    // 'monthly'-equivalent cadence rather than 'daily' — see mvt.inc.php
-    // bucket_date_window()'s 'heatmap' entry for the unbounded date window.
-    'heatmap'        =>   604800,  //  1 week
-    'cell_heatmap'   =>   604800,
-];
-
-// Per-bucket maximum tile age in seconds.
-// Any tile file older than this is deleted during the cleanup sweep, regardless
-// of whether the daemon would regenerate it.  Set to roughly 2× the bucket's
-// own time window so stale tiles are purged once the data has fully rolled out
-// of the window.  This prevents disk accumulation when the daemon skips a run
-// or a tile falls permanently below the AP threshold.
-$bucket_max_age = [
-    'daily'     =>    172800,  //  2 days   (bucket window: 1 day)
-    'weekly'    =>   1209600,  //  14 days  (bucket window: 7 days)
-    'monthly'   =>   5184000,  //  60 days  (bucket window: ~30 days)
-    '0to1year'  =>  31536000,  //  1 year
-    '1to2year'  =>  31536000,  //  1 year
-    '2to3year'  =>  31536000,  //  1 year
-    '3to5year'  =>  63072000,  //  2 years
-    '5to10year' =>  63072000,  //  2 years
-    '10yrplus'  =>  63072000,  //  2 years
-    'cell_daily'     =>    172800,
-    'cell_weekly'    =>   1209600,
-    'cell_monthly'   =>   5184000,
-    'cell_0to1year'  =>  31536000,
-    'cell_1to2year'  =>  31536000,
-    'cell_2to3year'  =>  31536000,
-    'cell_3to5year'  =>  63072000,
-    'cell_5to10year' =>  63072000,
-    'cell_10yrplus'  =>  63072000,
-    'heatmap'        =>   5184000,  //  60 days
-    'cell_heatmap'   =>   5184000,
-];
+// Archives cost the TTL skip below: a .pmtiles file is written once, whole, so
+// there is no per-tile mtime to compare and every run regenerates the bucket.
+// At a 30-day TTL that is what happens anyway; at daily's one hour it would
+// mean rebuilding sixteen times a day, which is the other half of the reason
+// daily and weekly stay flat.
 
 // Maximum features per tile for reference; actual per-tile dropping is done
 // by the encoder's Morton-gap sort + 750 KB gzip retry loop (tippecanoe-style).
@@ -222,9 +149,18 @@ for ($_i = 1, $_nc = count($argv_safe); $_i < $_nc; $_i++) {
     }
 }
 
-echo "Output dir : {$output_dir}\n";
-echo "Dir exists : " . (is_dir($output_dir) ? 'YES' : 'NO — will be created on first non-empty tile') . "\n";
-echo "Writable   : " . (is_writable(dirname($output_dir)) ? 'YES' : 'NO — check permissions!') . "\n\n";
+// Both destinations, because which one a bucket uses is decided per bucket
+// rather than on the command line. Naming only the flat tree made a run look
+// misconfigured whenever it wrote an archive instead.
+echo "Flat tiles : {$output_dir}  ("
+    . (is_dir($output_dir) ? 'exists' : 'will be created')
+    . ", " . (is_writable(dirname($output_dir)) ? 'writable' : 'NOT WRITABLE') . ")
+";
+echo "Archives   : {$archive_dir}  ("
+    . (is_dir($archive_dir) ? 'exists' : 'will be created')
+    . ", " . (is_writable(dirname($archive_dir)) ? 'writable' : 'NOT WRITABLE') . ")
+
+";
 
 function ts(): string { return date('[Y-m-d H:i:s] '); }
 
@@ -305,12 +241,10 @@ function encode_tile_from_points(
         // ── Build MVT layer for this subset ───────────────────────────────────
         // The combined 'heatmap' bucket additionally carries 'age_days' so the
         // client can drive heatmap-weight by recency from a single source.
+        // From mvt.inc.php, so the tile's tags and the archive's declared
+        // vector_layers cannot describe different things.
         $is_heatmap = ($bucket === 'heatmap');
-        $keys     = ['sectype', 'chan', 'radio', 'mac', 'user',
-                      'ssid', 'auth', 'encry', 'nt', 'btx', 'otx',
-                      'fa', 'la', 'points', 'high_gps_sig', 'high_gps_rssi',
-                      'lat', 'lon', 'alt', 'manuf', 'id_str'];
-        if ($is_heatmap) $keys[] = 'age_days';
+        $keys         = array_keys(mvt_bucket_fields($bucket));
         $keys_idx     = array_flip($keys);
         $values_bytes = [];
         $values_idx   = [];
@@ -430,7 +364,7 @@ function encode_heatmap_tile_from_points(
 
     if (empty($deduped)) return null;
 
-    $keys     = ['sectype', 'age_days'];
+    $keys     = array_keys(mvt_bucket_fields($bucket));
     $keys_idx = array_flip($keys);
     $keep     = count($deduped);
     $gz_bytes = null;
@@ -539,9 +473,7 @@ function encode_cell_tile_from_mvt(
         $subset = ($keep === count($deduped)) ? $deduped : array_slice($deduped, 0, $keep);
 
         $is_heatmap = ($bucket === 'cell_heatmap');
-        $keys     = ['mac', 'ssid', 'authmode', 'chan', 'type',
-                     'fa', 'la', 'points', 'rssi', 'user', 'id_str'];
-        if ($is_heatmap) $keys[] = 'age_days';
+        $keys         = array_keys(mvt_bucket_fields($bucket));
         $keys_idx     = array_flip($keys);
         $values_bytes = [];
         $values_idx   = [];
@@ -620,14 +552,27 @@ $grand_deleted = 0;
 $run_start = microtime(true);
 
 foreach ($buckets as $bucket) {
-    $ttl          = $bucket_ttl[$bucket];
+    $ttl          = mvt_bucket_ttl($bucket);
     $bucket_start = microtime(true);
 
     // ── Single-scan architecture (keyset-paginated) ──────────────────────────
     $is_cell = (strpos($bucket, 'cell_') === 0);
     $base_bucket = $is_cell ? substr($bucket, 5) : $bucket;  // 'cell_daily' → 'daily'
     [$start_date, $end_date] = bucket_date_window($base_bucket);
-    $cap_feature_minzoom = $bucket_cap_fmz[$bucket] ?? 1;
+    $cap_feature_minzoom = mvt_bucket_cap_fmz($bucket);
+    $mode = mvt_bucket_output($bucket, $dbcore);
+
+    // ── Not this node's job ─────────────────────────────────────────────
+    // Archives are generated on one node and mirrored to the rest; see
+    // mvt_generates_archives() for why two generators cannot share a swarm.
+    // Checked here, before the scan, so a subscriber's cron entry costs a
+    // process start rather than a pass over nine million rows.
+    if ($mode === 'pmtiles' && !mvt_generates_archives($dbcore, 'mvt')) {
+        echo ts() . "[{$bucket}] Skipping — this node receives the MVT archive rather than building it.
+
+";
+        continue;
+    }
 
     $lat_min_dm = dd2dm($data_bbox['lat_min']);
     $lat_max_dm = dd2dm($data_bbox['lat_max']);
@@ -639,6 +584,7 @@ foreach ($buckets as $bucket) {
 
     $aps       = [];
     $last_id   = 0;
+    $newest_la = '';
     while (true) {
         if ($is_cell) {
             $result = $dbcore->export->BboxCellArray(
@@ -661,6 +607,10 @@ foreach ($buckets as $bucket) {
             $rid = (int)$row['id'];
             if ($rid > $last_id) $last_id = $rid;
             if ($lat == 0.0 && $lon == 0.0) continue;
+            // Newest 'last active' in the bucket, for the change check.
+            if (isset($row['la']) && (string)$row['la'] > $newest_la) {
+                $newest_la = (string)$row['la'];
+            }
 
             if ($is_cell) {
                 $aps[] = [
@@ -722,9 +672,43 @@ foreach ($buckets as $bucket) {
     }
 
     $ap_count = count($aps);
-    if ($ap_count === 0) {
-        echo ts() . "[{$bucket}] Skipping — no {$label} in bucket.\n\n";
+    if ($ap_count === 0 && $mode === 'dir') {
+        echo ts() . "[{$bucket}] Skipping - no {$label} in bucket.\n\n";
         continue;
+    }
+
+    // Has anything changed since the last build?
+    //
+    // The archive records what it was made from, so it is its own state file:
+    // nothing beside it to fall out of step, and the answer travels with the
+    // archive when it is mirrored. Checked after the scan, because that is when
+    // the count is known, and before tiling, which is the expensive half.
+    //
+    // A count alone cannot see one AP added and another removed in the same
+    // window, so the newest last-active timestamp is compared with it. Both
+    // come out of the scan already done.
+    $fingerprint = $ap_count . ':' . $newest_la;
+    if ($mode === 'pmtiles' && !$force_regen) {
+        $existing = mvt_archive_file($archive_dir, $bucket);
+        if (is_file($existing)) {
+            try {
+                $was = (new PMTilesReader($existing))->metadata()['wifidb'] ?? null;
+                if (is_array($was) && ($was['fingerprint'] ?? null) === $fingerprint) {
+                    echo ts() . "[{$bucket}] Unchanged since the last build "
+                        . "({$ap_count} {$label}) - keeping the current archive.\n\n";
+                    unset($aps);
+                    continue;
+                }
+            } catch (PMTilesException $e) {
+                // An unreadable archive is a reason to rebuild, not to stop.
+                echo ts() . "[{$bucket}] Could not read the current archive: {$e->getMessage()}\n";
+            }
+        }
+    }
+
+    if ($ap_count === 0) {
+        echo ts() . "[{$bucket}] No {$label} - writing an empty archive, so the "
+            . "bucket stops showing the previous build.\n";
     }
 
     echo ts() . "[{$bucket}] {$ap_count} {$label} total. Generating tiles z{$min_zoom}–z{$max_zoom}...\n";
@@ -734,9 +718,9 @@ foreach ($buckets as $bucket) {
     // 56-bit Morton index, sorts the array once, then assigns feature_minzoom
     // from the gap to each AP's Morton-order predecessor.  See spatial.inc.php
     // for the full algorithm description and tippecanoe attribution.
-    {
+    if ($ap_count > 0) {
         $sort_s  = microtime(true);
-        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, $drop_scale_pixels, $cap_feature_minzoom);
+        $fmz_cum = assign_feature_minzoom($aps, $min_zoom, $max_zoom, MVT_DROP_SCALE_PIXELS, $cap_feature_minzoom);
         $snaps   = [];
         foreach ([1, 5, 7, 10, 13, 14] as $zs) {
             if ($zs >= $min_zoom && $zs <= $max_zoom) {
@@ -750,6 +734,38 @@ foreach ($buckets as $bucket) {
 
     $bucket_written = 0;
     $bucket_total   = 0;
+
+    // ── Open the archive, when this bucket is written as one ────────────────
+    // Built beside its destination and renamed into place at the end, so a run
+    // that dies part-way leaves the previous archive serving rather than a
+    // truncated file that reads as an empty bucket.
+    $writer      = null;
+    $archive_tmp = null;
+    if ($mode === 'pmtiles') {
+        if (!is_dir($archive_dir) && !mkdir($archive_dir, 0775, true)) {
+            echo ts() . "[{$bucket}] Cannot create {$archive_dir} — skipping.\n\n";
+            unset($aps);
+            continue;
+        }
+        $archive_tmp  = "{$archive_dir}/{$bucket}.pmtiles.building";
+        $writer = new PMTilesWriter($archive_tmp, [
+            'tile_type' => PMTILES_TYPE_MVT,
+            // Tiles are gzipped by the encoders above and stored exactly as
+            // they come out, so this declares what is already there rather
+            // than asking for a second round of compression.
+            'tile_compression' => PMTILES_COMPRESSION_GZIP,
+            'min_zoom' => $min_zoom,
+            'max_zoom' => $max_zoom,
+            'bounds'   => [
+                $data_bbox['lon_min'], $data_bbox['lat_min'],
+                $data_bbox['lon_max'], $data_bbox['lat_max'],
+            ],
+            // WifiDB tiles are essentially never byte-identical to one
+            // another, so a hash of every distinct tile would cost gigabytes
+            // to catch nothing.  Runs of identical tiles still collapse.
+            'dedupe' => false,
+        ]);
+    }
 
     for ($z = $min_zoom; $z <= $max_zoom; $z++) {
         $z_start  = microtime(true);
@@ -768,52 +784,84 @@ foreach ($buckets as $bucket) {
 
         $z_written = $z_skipped = $z_empty = 0;
 
-        // ── Write tiles for this zoom ─────────────────────────────────────────
+        // ── Decide the order tiles are written in ─────────────────────────────
+        // A flat tree does not care, but a PMTiles archive must be written in
+        // ascending tile id order — the reader binary-searches the directory,
+        // so an unordered archive does not fail, it silently cannot find tiles
+        // that are present.  Tile ids are zoom-major, so this zoom loop is
+        // already correct at the top level; within a zoom, Hilbert order is
+        // not x-then-y, hence the sort.  It sorts coordinates, not tiles, so
+        // it costs nothing next to encoding.
+        $order = [];
         foreach ($tile_map as $tx => $y_map) {
             foreach ($y_map as $ty => $tile_idxs) {
-                $bucket_total++;
-                $grand_total++;
+                $order[] = ($mode === 'pmtiles')
+                    ? [pmtiles_zxy_to_tileid($z, $tx, $ty), $tx, $ty]
+                    : [0, $tx, $ty];
+            }
+        }
+        if ($mode === 'pmtiles') {
+            usort($order, fn($a, $b) => $a[0] <=> $b[0]);
+        }
 
-                $tile_dir  = "{$output_dir}/{$bucket}/{$z}/{$tx}";
-                $tile_file = "{$tile_dir}/{$ty}.pbf";
+        // ── Write tiles for this zoom ─────────────────────────────────────────
+        foreach ($order as [$tile_id, $tx, $ty]) {
+            $tile_idxs = $tile_map[$tx][$ty];
+            $bucket_total++;
+            $grand_total++;
 
-                if (!$force_regen && file_exists($tile_file)
-                    && filesize($tile_file) >= 20          // 20 B = minimum valid gzip stream; smaller = truncated write
-                    && (time() - filemtime($tile_file)) < $ttl) {
-                    $z_skipped++;
-                    $grand_skipped++;
-                    continue;
-                }
+            $tile_dir  = "{$output_dir}/{$bucket}/{$z}/{$tx}";
+            $tile_file = "{$tile_dir}/{$ty}.pbf";
 
-                if ($is_cell) {
-                    $gz_bytes = encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
-                } elseif ($bucket === 'heatmap') {
-                    $gz_bytes = encode_heatmap_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
-                } else {
-                    $gz_bytes = encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
-                }
+            // The TTL skip needs a per-tile mtime, which only a flat tree has.
+            // An archive is written whole or not at all, so every tile in it
+            // is encoded on every run.
+            if ($mode === 'dir' && !$force_regen && file_exists($tile_file)
+                && filesize($tile_file) >= 20          // 20 B = minimum valid gzip stream; smaller = truncated write
+                && (time() - filemtime($tile_file)) < $ttl) {
+                $z_skipped++;
+                $grand_skipped++;
+                continue;
+            }
 
-                if ($gz_bytes === null) {
-                    if (file_exists($tile_file)) unlink($tile_file);
-                    $z_empty++;
-                    $grand_empty++;
-                    continue;
-                }
+            if ($is_cell) {
+                $gz_bytes = encode_cell_tile_from_mvt($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+            } elseif ($bucket === 'heatmap') {
+                $gz_bytes = encode_heatmap_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+            } else {
+                $gz_bytes = encode_tile_from_points($z, $tx, $ty, $bucket, $tile_idxs, $aps, $dbcore->tile_max_gz_bytes);
+            }
 
-                if (!is_dir($tile_dir)) mkdir($tile_dir, 0775, true);
-                if (file_put_contents($tile_file, $gz_bytes) !== false) {
-                    $z_written++;
-                    $bucket_written++;
-                    $grand_written++;
-                } else {
-                    echo "  [ERROR] Failed to write {$tile_file}\n";
-                }
+            if ($gz_bytes === null) {
+                if ($mode === 'dir' && file_exists($tile_file)) unlink($tile_file);
+                $z_empty++;
+                $grand_empty++;
+                continue;
+            }
+
+            if ($mode === 'pmtiles') {
+                $writer->add($z, $tx, $ty, $gz_bytes);
+                $z_written++;
+                $bucket_written++;
+                $grand_written++;
+                continue;
+            }
+
+            if (!is_dir($tile_dir)) mkdir($tile_dir, 0775, true);
+            if (file_put_contents($tile_file, $gz_bytes) !== false) {
+                $z_written++;
+                $bucket_written++;
+                $grand_written++;
+            } else {
+                echo "  [ERROR] Failed to write {$tile_file}\n";
             }
         }
 
         // ── Delete tiles that existed before but have no APs now ──────────────
+        // Only meaningful for a flat tree.  An archive is replaced whole, so a
+        // tile that no longer has APs is gone by virtue of not being written.
         $z_dir = "{$output_dir}/{$bucket}/{$z}";
-        if (is_dir($z_dir)) {
+        if ($mode === 'dir' && is_dir($z_dir)) {
             foreach (glob("{$z_dir}/*", GLOB_ONLYDIR) as $x_dir) {
                 $tx = (int)basename($x_dir);
                 foreach (glob("{$x_dir}/*.pbf") as $pbf) {
@@ -834,6 +882,58 @@ foreach ($buckets as $bucket) {
 
     unset($aps);
 
+    // ── Close the archive and swap it into place ────────────────────────────
+    if ($mode === 'pmtiles') {
+        try {
+            $writer->finalize([
+                'name'        => $bucket,
+                'format'      => 'pbf',
+                'type'        => 'overlay',
+                'description' => "WifiDB {$bucket}",
+                'attribution' => '<a href="https://wifidb.net/" target="_blank">&copy; WifiDB</a> '
+                    . date('Y-m-d'),
+                'generated'   => gmdate('c'),
+                // What this build was made from, read back by the next run
+                // to decide whether rebuilding would change anything.
+                'wifidb'      => [
+                    'ap_count'    => $ap_count,
+                    'newest_la'   => $newest_la,
+                    'fingerprint' => $fingerprint,
+                ],
+                // The layer name is the bucket, matching what mvt_encode_layer()
+                // wrote into every tile, and the fields come from the same call
+                // the encoders used for their tag keys.
+                'vector_layers' => [[
+                    'id'          => $bucket,
+                    'description' => "WifiDB {$bucket}",
+                    'minzoom'     => $min_zoom,
+                    'maxzoom'     => $max_zoom,
+                    'fields'      => mvt_bucket_fields($bucket),
+                ]],
+            ]);
+
+            // rename() is atomic within a filesystem, so a reader either has
+            // the whole previous archive or the whole new one, never a mixture.
+            // A dated name plus a stable hard link — see mvt_publish_archive()
+            // for why a stable filename on its own is imported once by
+            // pmtiles-swarm's watcher and never again.
+            $keep      = isset($dbcore->tile_archive_keep) ? (int)$dbcore->tile_archive_keep : 2;
+            $published = mvt_publish_archive($archive_tmp, $archive_dir, $bucket, $keep);
+            if ($published === null) {
+                echo "  [ERROR] Could not publish {$archive_tmp} into {$archive_dir}\n";
+            } else {
+                $mb = round(filesize($published) / 1048576, 1);
+                echo ts() . "[{$bucket}] Archive written: {$published} ({$mb} MB)\n";
+            }
+        } catch (PMTilesException $e) {
+            // An empty bucket throws rather than leaving a valid-looking
+            // archive with nothing in it; either way the previous one stays.
+            echo ts() . "[{$bucket}] Archive not written: {$e->getMessage()}\n";
+            @unlink($archive_tmp);
+        }
+        $writer = null;
+    }
+
     $bucket_elapsed = round(microtime(true) - $bucket_start, 1);
     echo ts() . "[{$bucket}] Done — {$bucket_written}/{$bucket_total} tiles written in {$bucket_elapsed}s\n\n";
 }
@@ -851,7 +951,7 @@ echo ts() . "--- Stale tile cleanup (max-age sweep, all z) ---\n";
 $cleanup_deleted = 0;
 $now = time();
 foreach ($buckets as $bucket) {
-        $max_age    = $bucket_max_age[$bucket];
+        $max_age    = mvt_bucket_max_age($bucket);
         $bucket_dir = "{$output_dir}/{$bucket}";
         if (!is_dir($bucket_dir)) continue;
 

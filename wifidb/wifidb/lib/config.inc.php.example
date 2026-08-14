@@ -40,7 +40,7 @@ $config = array
 	'GeoNamesLoopGiveUp'	=>   5000,
 	'reserved_users'		=>   'wifidb:recover:root:system:admin:hack:virus',
 	'dBmMaxSignal'		  =>   '-30',
-	'dBmDissociationSignal'.=>   '-85',
+	'dBmDissociationSignal'	=>   '-85',
 	'verbose'			   =>   1,
 	'EnableAPIKey'		  =>   0,
 	#----------SMTP Settings------------#
@@ -72,6 +72,58 @@ $config = array
 	'apache_user'		   =>   'www-data',
 	'apache_group'		  =>   'www-data',
 	'pid_file_loc'		  =>   '/var/run/wifidb/',
+
+	#---------------- Tile Generation Settings ----------------#
+	# Controls tile zoom range and per-tile size limit for mvtd, mltd,
+	# mvt.php, mlt.php, and tilejson.php.  Change here to affect all.
+	'tile_min_zoom'			=>   1,    // lowest zoom level generated/served
+	'tile_max_zoom'			=>   19,   // highest zoom level generated/served
+	'tile_max_gz_bytes'		=>   750000, // max gzip bytes per tile (750 KB)
+
+	# Where generated tiles land.  Both default to the install directory, which
+	# is correct when the daemon runs on the web server.  Set them when it does
+	# not — a generator on a separate host writes millions of files, and they
+	# do not belong in the checkout.
+	# Exactly ONE node in a cluster generates archives; the rest subscribe to it
+	# through pmtiles-swarm.  Two nodes building independently produce different
+	# bytes for the same bucket — the attribution and 'generated' fields carry
+	# the run date, age_days is measured from the scan — so they would seed two
+	# swarms, publish competing BEP 46 records, and serve disagreeing ETags.
+	# Set false on the subscribers: their daemons then skip archived buckets
+	# before the database scan, and flat buckets carry on generating as usual.
+	'tile_archive_generate'		=>   1,
+	# MLT archives, off by default: nothing reads MLT from a PMTiles archive yet
+	# and building one is a full extra pass over the bucket.
+	'tile_mlt_archive_generate'	=>   0,
+	'tile_archive_keep'			=>   2,    // dated builds retained per bucket
+
+	'tile_output_dir'		=>   '',   // flat .pbf tree; '' = {install}/out/tiles
+	'tile_archive_dir'		=>   '',   // MVT .pmtiles; '' = {install}/out/pmtiles
+	'tile_mlt_output_dir'	=>   '',   // flat .mlt tree; '' = {install}/out/tiles-mlt
+	'tile_mlt_archive_dir'	=>   '',   // MLT .pmtiles; '' = {install}/out/pmtiles-mlt
+
+	# pmtiles-swarm publishing the archives, if any.  With this set,
+	# tilejson.php?source=daemon redirects archived buckets to
+	# {url}/latest/{prefix}{bucket}/tiles.json, which resolves to the newest
+	# build and carries its magnet link.  Leave empty to serve archives through
+	# api/mvt.php instead, which needs nothing but the .pmtiles file on disk.
+	'tile_swarm_url'			=>   '',   // e.g. 'https://swarm.example.org'
+	'tile_swarm_category_prefix'=>   'wifidb-',
+
+	# The swarm's BEP 46 publishing key, public half, 64 hex characters.
+	# Shown by `pmtiles-swarm status`, or in the console's settings screen.
+	# With it set, tilejson.php publishes a per-category mutable magnet: the
+	# one handle that names the category rather than a build, resolves through
+	# the DHT, and therefore keeps working when every HTTP endpoint here is
+	# unreachable.  Public half only — it is meant to be given out.
+	'tile_swarm_public_key'		=>   '',
+
+	# Public URL of the archive directory, i.e. what webSeedBase points at.
+	# With it set, tilejson.php also publishes a pmtiles:// URL that MapLibre
+	# GL JS reads directly, taking both WifiDB and the swarm out of the request
+	# path.  Readers of this URL must be pinned to one node — see the .htaccess
+	# in the archive directory for why.
+	'tile_archive_url'			=>   '',   // e.g. 'https://wifidb.net/out/pmtiles'
 
 	#-------------Themes Settings--------------#
 	'default_theme'		 =>   'vistumbler_mobile',

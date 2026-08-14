@@ -40,6 +40,10 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "api");
 
 include('../lib/init.inc.php');
+// Functions, not a class, so the autoloader in init.inc.php does not reach
+// it. Without this every request fatals and returns an HTML error page,
+// which a client reports as 'Unexpected token <' rather than as a 500.
+include_once('../lib/mvt.inc.php');
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -116,13 +120,51 @@ if ($tile_minzoom > $tile_maxzoom) {
 // cell_* buckets use the same URL patterns as AP buckets.
 $is_cell = (strpos($bucket, 'cell_') === 0);
 
-if ($source === 'api') {
-    $api_base = $base_url . '/api';
-    if ($format === 'mlt') {
-        $tiles_url = $api_base . '/mlt.php?z={z}&x={x}&y={y}&bucket=' . $bucket;
-    } else {
-        $tiles_url = $api_base . '/mvt.php?z={z}&x={x}&y={y}&bucket=' . $bucket;
+$is_archive  = (mvt_bucket_output($bucket, $dbcore) === 'pmtiles');
+$swarm_url   = mvt_swarm_tilejson_url($dbcore, $bucket);
+$api_base    = $base_url . '/api';
+$api_tiles   = ($format === 'mlt')
+    ? $api_base . '/mlt.php?z={z}&x={x}&y={y}&bucket=' . $bucket
+    : $api_base . '/mvt.php?z={z}&x={x}&y={y}&bucket=' . $bucket;
+
+// ── source=daemon for an archived bucket ─────────────────────────────────────
+// There is no {z}/{x}/{y} file to link to inside a .pmtiles archive, so the
+// static URL pattern below has no equivalent.  Hand the client to the swarm
+// instead: /latest/{category}/tiles.json resolves to the newest build and
+// points at immutable, content-addressed tile URLs, which is a better answer
+// than the static path ever was — those could not be cached for long, because
+// the bytes behind them changed on every regeneration.
+//
+// Redirecting rather than copying the swarm's answer keeps one description of
+// a build in existence.  It also delivers the torrent block in the swarm's
+// response body, so a torrent-aware client gets the magnet without WifiDB
+// having to learn the infohash of a build it did not publish.
+if ($source === 'daemon' && $is_archive && $swarm_url !== null) {
+    header('Location: ' . $swarm_url, true, 302);
+    // Matches the max-age the swarm sets on the document being redirected to;
+    // no point holding the pointer longer than the thing it points at.
+    header('Cache-Control: public, max-age=300');
+    header('Content-Type: application/json');
+    // A 302 body is not usually read, but this one is worth filling in: the
+    // magnet is what a client needs precisely when following the redirect
+    // fails, and putting it here means it is on the last response we control.
+    $body = [
+        'tilejson_url' => $swarm_url,
+        'note'         => 'Archived buckets are served by pmtiles-swarm; follow tilejson_url.',
+    ];
+    $magnet = mvt_swarm_magnet($dbcore, $bucket);
+    if ($magnet !== null) {
+        $body['magnet'] = $magnet;
     }
+    echo json_encode($body, JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+if ($source === 'api' || $is_archive) {
+    // Archived buckets with no swarm configured land here too: api/mvt.php and
+    // api/mlt.php read the archive directly, so this works on a standalone
+    // install with nothing else running.
+    $tiles_url = $api_tiles;
 } else {
     // Pre-generated static files served directly by Apache.
     if ($format === 'mlt') {
@@ -143,66 +185,58 @@ $tilejson = [
     'minzoom'       => $tile_minzoom,
     'maxzoom'       => $tile_maxzoom,
     'bounds'        => [-180.0, -85.051129, 180.0, 85.051129],
+    // From mvt.inc.php — the same call the tile encoders build their tag keys
+    // from, and the same one written into each archive's own metadata.  This
+    // used to be three hand-maintained lists here (AP, cell, and the heatmap
+    // addition), which is three chances to describe a field the tiles do not
+    // carry, or to omit one they do.  Bucket shape is decided there.
     'vector_layers' => [
         [
             'id'          => $bucket,
             'description' => $bucket_meta[$bucket]['desc'],
             'minzoom'     => $tile_minzoom,
             'maxzoom'     => $tile_maxzoom,
-            'fields'      => [
-                'sectype'       => 'Number',  // 0=unknown, 1=open, 2=WEP, 3=secure
-                'chan'           => 'Number',  // WiFi channel
-                'points'        => 'Number',  // total observation points
-                'high_gps_sig'  => 'Number',  // best GPS signal strength
-                'high_gps_rssi' => 'Number',  // best GPS RSSI
-                'radio'         => 'String',  // radio type (e.g. "802.11n", "802.11ax")
-                'mac'           => 'String',  // BSSID
-                'user'          => 'String',  // submitting username
-                'ssid'          => 'String',  // network name
-                'auth'          => 'String',  // auth method (e.g. "WPA2-Personal")
-                'encry'         => 'String',  // encryption (e.g. "CCMP", "TKIP")
-                'nt'            => 'String',  // network type (e.g. "Infrastructure")
-                'btx'           => 'String',  // basic transmit rates
-                'otx'           => 'String',  // optional transmit rates
-                'fa'            => 'String',  // first seen datetime
-                'la'            => 'String',  // last seen datetime
-                'lat'           => 'String',  // latitude (decimal degrees string)
-                'lon'           => 'String',  // longitude (decimal degrees string)
-                'alt'           => 'String',  // altitude (metres string)
-                'manuf'         => 'String',  // MAC manufacturer name
-                'id_str'        => 'String',  // AP database ID (string form)
-            ],
+            'fields'      => mvt_bucket_fields($bucket),
         ],
     ],
 ];
 
-// cell_* buckets have different fields than WiFi AP buckets.
-if ($is_cell) {
-    $tilejson['vector_layers'] = [[
-        'id'          => $bucket,
-        'description' => $bucket_meta[$bucket]['desc'],
-        'minzoom'     => $tile_minzoom,
-        'maxzoom'     => $tile_maxzoom,
-        'fields'      => [
-            'mac'      => 'String',  // MCCMNC_LAC_CELLID
-            'ssid'     => 'String',  // network/operator name
-            'authmode' => 'String',  // authentication mode
-            'chan'      => 'String',  // channel / frequency band
-            'type'     => 'String',  // cell type (e.g. LTE, GSM, CDMA)
-            'fa'       => 'String',  // first seen datetime
-            'la'       => 'String',  // last seen datetime
-            'points'   => 'Number',  // total observation points
-            'rssi'     => 'Number',  // best GPS RSSI reading
-            'user'     => 'String',  // submitting username
-            'id_str'   => 'String',  // cell database ID (string form)
-        ],
-    ]];
+// Where the archive for this bucket can be had, when a swarm is configured.
+// Present on every response for an archived bucket, including source=api, so
+// it is discoverable without having to follow a redirect to find it.
+if ($is_archive && $swarm_url !== null) {
+    $tilejson['swarm'] = [
+        'category' => mvt_swarm_category($dbcore, $bucket),
+        'tilejson' => $swarm_url,
+    ];
+
+    // The per-category BEP 46 magnet, which is the fallback that survives this
+    // endpoint.  Everything else here is an HTTP URL and stops working when the
+    // server behind it does; a mutable magnet resolves through the DHT, names
+    // the category rather than a build, and therefore stays correct across
+    // every regeneration.  A client that stored it once can still find the
+    // current archive with nothing of ours reachable.
+    $magnet = mvt_swarm_magnet($dbcore, $bucket);
+    if ($magnet !== null) {
+        $tilejson['swarm']['magnet'] = $magnet;
+
+        // Ready to paste into a style's source. The fragment is never sent in
+        // an HTTP request, so a client that knows nothing about torrents
+        // fetches the TileJSON and ignores it, while a torrent-aware one has
+        // the magnet before the first request — and still has it if that
+        // request fails.
+        $tilejson['swarm']['source_url'] = $swarm_url . '#' . $magnet;
+    }
 }
 
-// The combined 'heatmap'/'cell_heatmap' buckets additionally carry 'age_days'
-// (days since last active) for the client's heatmap-weight expression.
-if ($bucket === 'heatmap' || $bucket === 'cell_heatmap') {
-    $tilejson['vector_layers'][0]['fields']['age_days'] = 'Number';
+// The archive addressed directly, for a client that would rather range-read it
+// than ask an endpoint for tiles.  MapLibre GL JS understands pmtiles:// with
+// no help from us, so this removes both WifiDB and the swarm from the request
+// path entirely — and carries the same magnet in its fragment, so a
+// torrent-aware client can take the swarm route from the same one URL.
+$pmtiles_url = mvt_archive_pmtiles_url($dbcore, $bucket);
+if ($pmtiles_url !== null) {
+    $tilejson['pmtiles'] = ['url' => $pmtiles_url];
 }
 
 // Add format field for MLT tiles (MapLibre extension to TileJSON 3.0.0).

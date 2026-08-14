@@ -60,31 +60,100 @@ if (!in_array($bucket, $valid_buckets, true)) {
 // Tiles are stored in out/tiles-mlt/{bucket}/{z}/{x}/{y}.mlt (gzip-compressed MLT).
 // This is the same directory mltd.php writes pre-generated tiles to.
 define('TILE_DISK_CACHE', true);
-$bucket_ttl = [
-    'daily'     =>     3600,  //  1 hour
-    'weekly'    =>    86400,  //  1 day
-    'monthly'   =>   604800,  //  1 week
-    '0to1year'  =>  2592000,  //  30 days
-    '1to2year'  =>  2592000,
-    '2to3year'  =>  2592000,
-    '3to5year'  =>  2592000,
-    '5to10year' =>  2592000,
-    '10yrplus'  =>  2592000,
-    'cell_daily'     =>     3600,
-    'cell_weekly'    =>    86400,
-    'cell_monthly'   =>   604800,
-    'cell_0to1year'  =>  2592000,
-    'cell_1to2year'  =>  2592000,
-    'cell_2to3year'  =>  2592000,
-    'cell_3to5year'  =>  2592000,
-    'cell_5to10year' =>  2592000,
-    'cell_10yrplus'  =>  2592000,
-    'heatmap'        =>   604800,  //  1 week — see mvtd.php for rationale
-    'cell_heatmap'   =>   604800,
-];
-$cache_ttl  = $bucket_ttl[$bucket] ?? 86400;
-$tile_dir   = rtrim($dbcore->PATH, '/') . '/out/tiles-mlt/' . $bucket . '/' . $z . '/' . $x;
+$cache_ttl  = mvt_bucket_ttl($bucket);
+$tile_dirs  = mvt_tile_dirs($dbcore);
+$tile_dir   = $tile_dirs['tiles_mlt'] . '/' . $bucket . '/' . $z . '/' . $x;
 $tile_file  = $tile_dir . '/' . $y . '.mlt';
+
+// ── Archive buckets ───────────────────────────────────────────────────────────
+// The MLT half of the same split api/mvt.php makes: buckets wider than a week
+// are served out of the .pmtiles archive mltd wrote and never reach the query
+// below, because past a week's data $query_limit starts truncating the
+// per-tile query and a live answer would be quick, cached and short of APs.
+//
+// The archive is complete by construction, so a tile it does not hold is a
+// tile with no data, answered the way the dynamic path answers one.
+if (mvt_bucket_output($bucket, $dbcore) === 'pmtiles') {
+    include_once('../lib/pmtiles.inc.php');
+
+    $archive = mvt_archive_file($tile_dirs['archives_mlt'], $bucket);
+    if (!is_file($archive)) {
+        error_log("mlt.php: no archive for bucket '{$bucket}' at {$archive}");
+        http_response_code(503);
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store');
+        echo json_encode(['error' => "Archive for bucket '{$bucket}' has not been generated yet"]);
+        exit;
+    }
+
+    try {
+        // Header and root directory parsed once per build rather than once per
+        // request, keyed on mtime because a new archive is renamed over the old
+        // one and every offset in the previous index becomes wrong on arrival.
+        $index    = null;
+        $have_apc = function_exists('apcu_fetch');
+        $apc_key  = 'wifidb_pmtiles_mlt_' . $bucket . '_' . filemtime($archive);
+        if ($have_apc) {
+            $found  = false;
+            $cached = apcu_fetch($apc_key, $found);
+            if ($found) { $index = $cached; }
+        }
+
+        $reader = new PMTilesReader($archive, $index);
+        if ($have_apc && $index === null) {
+            apcu_store($apc_key, $reader->index(), 3600);
+        }
+
+        $header   = $reader->header();
+        $mlt_gz   = $reader->tile($z, $x, $y);
+        $has_tile = ($mlt_gz !== null);
+
+        // A strong ETag fingerprinted from the archive's contents, not its
+        // mtime: every node holds a byte-identical copy of a build but
+        // receives it at its own time, so an mtime-derived validator would
+        // change as requests moved between nodes behind the load balancer.
+        $etag = sprintf(
+            '"mlt-%s-%x-%x-%d-%d-%d"',
+            $bucket,
+            $header['tile_data_bytes'],
+            $header['addressed_tiles_count'],
+            $z, $x, $y
+        );
+        header('ETag: ' . $etag);
+
+        $if_none_match = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
+        if ($if_none_match !== '') {
+            foreach (explode(',', $if_none_match) as $candidate) {
+                if (trim(preg_replace('/^W\//', '', trim($candidate))) === $etag) {
+                    http_response_code(304);
+                    header('Cache-Control: public, max-age=' . ($has_tile ? $cache_ttl : 60));
+                    exit;
+                }
+            }
+        }
+
+        header('Content-Type: application/vnd.mapbox-vector-tile');
+        if ($has_tile && $header['tile_compression'] === PMTILES_COMPRESSION_GZIP) {
+            header('Content-Encoding: gzip');
+            header('Vary: Accept-Encoding');
+        }
+        header('Cache-Control: public, max-age=' . ($has_tile ? $cache_ttl : 60));
+        header('Content-Length: ' . ($has_tile ? strlen($mlt_gz) : 0));
+        header('X-Tile-Cache: ' . ($has_tile ? 'ARCHIVE' : 'ARCHIVE-EMPTY'));
+        // An empty MLT tile has no agreed encoding the way an empty MVT layer
+        // does, so absence is a zero-length body — matching what this endpoint
+        // already returns when a tile has no features.
+        if ($has_tile) { echo $mlt_gz; }
+        exit;
+    } catch (PMTilesException $e) {
+        error_log("mlt.php: {$archive}: {$e->getMessage()}");
+        http_response_code(500);
+        header('Content-Type: application/json');
+        header('Cache-Control: no-store');
+        echo json_encode(['error' => 'Tile archive could not be read']);
+        exit;
+    }
+}
 
 if (TILE_DISK_CACHE && file_exists($tile_file) && (time() - filemtime($tile_file)) < $cache_ttl) {
     header('Content-Type: application/vnd.mapbox-vector-tile');

@@ -1,0 +1,114 @@
+#!/bin/sh
+# link_archive — give a mirrored archive the stable name api/mvt.php expects
+# Copyright (C) 2026 Andrew Calcutt
+#
+# On the node that generates archives, mvt_publish_archive() writes
+# {bucket}-YYYYMMDD.pmtiles and hard-links {bucket}.pmtiles at it, and
+# api/mvt.php opens that stable name. A node that *receives* archives has
+# neither: pmtiles-swarm subscriptions have no latestLink, and with
+# savePathLayout "infohash" the file lands in a directory named after its
+# infohash. Without this the endpoint answers 503 for every archived bucket
+# while the data sits on disk a few directories away.
+#
+# Run from pmtiles-swarm as an onComplete hook, so it fires when the download
+# has finished rather than when the torrent was announced:
+#
+#   "hooks": {
+#     "onComplete": {
+#       "command": "/srv/www/wdbtools-prod/tools/cron/link_archive",
+#       "args": ["%F", "%L"]
+#     }
+#   }
+#
+#   $1  %F  full path to the completed archive
+#   $2  %L  its first category, e.g. wifidb-cell-monthly
+#
+# Hard links, not symlinks: the swarm may later retire the dated name, and a
+# hard link keeps the data alive by holding a reference to the same inode. A
+# symlink would dangle, and the endpoint would 503 with the bytes still there.
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation; Version 2 of the License.
+
+set -eu
+
+# Where api/mvt.php looks — must match tile_archive_dir in config.inc.php.
+ARCHIVE_DIR="${WIFIDB_ARCHIVE_DIR:-/srv/www/virtual/wifidb.net/out/pmtiles}"
+
+# Categories carry a prefix so they cannot collide with other tilesets on the
+# node; bucket names do not. Must match tile_swarm_category_prefix.
+PREFIX="${WIFIDB_CATEGORY_PREFIX:-wifidb-}"
+
+log() { echo "[link_archive] $*" >&2; }
+
+file="${1:-}"
+category="${2:-}"
+
+if [ -z "$file" ] || [ -z "$category" ]; then
+    log "usage: link_archive <archive-path> <category>"
+    exit 2
+fi
+
+if [ ! -f "$file" ]; then
+    log "not a file, ignoring: $file"
+    exit 0
+fi
+
+# Only archives this site owns. The node may carry openmaptiles or protomaps
+# builds from elsewhere, and those have no bucket to be named after.
+case "$category" in
+    "$PREFIX"*) ;;
+    *)
+        log "not ours, ignoring: $category"
+        exit 0
+        ;;
+esac
+
+# wifidb-cell-monthly -> cell_monthly. mvt_swarm_category() built the category
+# by replacing underscores with hyphens, so this reverses exactly that; the
+# bucket names themselves contain no hyphens.
+bucket=$(printf '%s' "${category#"$PREFIX"}" | tr '-' '_')
+
+# Reject anything that is not a plain bucket name before it reaches a path.
+case "$bucket" in
+    *[!a-z0-9_]* | '' | *..*)
+        log "refusing suspicious bucket name from category '$category'"
+        exit 1
+        ;;
+esac
+
+target="$ARCHIVE_DIR/$bucket.pmtiles"
+
+if [ ! -d "$ARCHIVE_DIR" ]; then
+    mkdir -p "$ARCHIVE_DIR" || { log "cannot create $ARCHIVE_DIR"; exit 1; }
+fi
+
+# Already pointing at these bytes? Comparing inodes rather than paths, because
+# the same archive can be announced more than once and relinking would be a
+# needless unlink/link of a file being served.
+if [ -e "$target" ]; then
+    if [ "$(stat -c '%i' "$target" 2>/dev/null)" = "$(stat -c '%i' "$file" 2>/dev/null)" ]; then
+        log "$bucket already links to this build"
+        exit 0
+    fi
+fi
+
+# Link beside the target and rename over it. ln refuses to overwrite, and
+# unlinking first would leave a window with no archive at all — which the
+# endpoint reports as 503, since for these buckets a missing archive is an
+# error rather than something to answer from the database.
+tmp="$target.linking.$$"
+trap 'rm -f "$tmp"' EXIT
+
+if ! ln -f "$file" "$tmp" 2>/dev/null; then
+    # Different filesystem: the swarm's savePath is not under the web root.
+    # Copy to the temporary name and rename, so the swap is still atomic.
+    log "cross-device, copying instead of linking: $file"
+    cp "$file" "$tmp" || { log "copy failed"; exit 1; }
+fi
+
+mv -f "$tmp" "$target" || { log "could not move into place: $target"; exit 1; }
+trap - EXIT
+
+log "$bucket -> $(basename "$file")"

@@ -1,0 +1,76 @@
+# WifiDB PMTiles Archive Directory
+# Apache configuration for the .pmtiles archives written by mvtd.php.
+#
+# Unlike out/tiles/, the files here are not fetched whole by a browser. They
+# are read with HTTP Range requests — by pmtiles-swarm as a torrent web seed,
+# and by any client using the pmtiles:// protocol. That makes three headers
+# load-bearing that do not matter for ordinary tiles: Accept-Ranges, an ETag
+# the client can actually read, and CORS.
+#
+# Deploy to: /srv/www/virtual/wifidb.net/out/pmtiles/.htaccess
+# Requires:  a2enmod headers && systemctl reload apache2
+#
+# ── The one that will bite on the second server ──────────────────────────────
+# Apache derives ETags from file metadata, and pmtiles.js throws EtagMismatch
+# if the validator changes between range requests while reading one archive
+# (js/src/index.ts). Two servers holding byte-identical archives received at
+# different times produce different ETags, so a client whose requests are
+# balanced across both fails part-way through a read.
+#
+# FileETag below removes the inode, which differs between servers by
+# definition. That leaves mtime and size — so the SYNC MUST PRESERVE MTIMES.
+# Use rsync -t (or -a, which implies it). A copy that does not preserve them
+# reintroduces exactly the bug this is here to prevent.
+#
+# Serving these archives through pmtiles-swarm instead avoids the problem
+# outright: it emits a content-addressed ETag that is identical on every node
+# regardless of when the file landed.
+
+FileETag MTime Size
+
+# The directory listing would otherwise expose every retired build.
+Options -Indexes
+
+<IfModule mod_mime.c>
+    # The MIME type recommended by the PMTiles v3 specification.
+    AddType application/vnd.pmtiles .pmtiles
+</IfModule>
+
+<IfModule mod_headers.c>
+    <FilesMatch "\.pmtiles$">
+        # Byte ranges are the whole access pattern here. Apache serves them for
+        # static files by default; this states it for anything that asks first.
+        Header set Accept-Ranges "bytes" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+
+        # A browser reading an archive cross-origin needs both of these. The
+        # second is easy to miss and fails in a confusing way: without ETag
+        # exposed, JavaScript cannot see the header at all, so pmtiles.js loses
+        # its only means of noticing the archive changed underneath it and
+        # silently mixes bytes from two builds.
+        Header set Access-Control-Allow-Origin  "*"
+        Header set Access-Control-Allow-Methods "GET, HEAD, OPTIONS"
+        Header set Access-Control-Allow-Headers "Range, If-None-Match"
+        Header set Access-Control-Expose-Headers "ETag, Content-Length, Content-Range, Accept-Ranges"
+
+        # Deliberately short. The dated filenames are immutable and could be
+        # cached for a year, but {bucket}.pmtiles is a stable name whose
+        # contents change on every build. Revalidation is cheap — a 304 costs
+        # one round trip — and serving a stale archive body against a fresh
+        # directory is not a failure a client can detect.
+        Header set Cache-Control "public, max-age=300, must-revalidate" "expr=%{REQUEST_STATUS} =~ /^[23]\d\d$/"
+    </FilesMatch>
+</IfModule>
+
+# Build state, not output. mvtd writes {bucket}.pmtiles.building and the
+# writer's own scratch files alongside the finished archive, because an atomic
+# rename requires the same filesystem. A half-written archive served to a
+# client parses as a valid header pointing at bytes that are not there yet.
+<FilesMatch "\.(building|tmp)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
