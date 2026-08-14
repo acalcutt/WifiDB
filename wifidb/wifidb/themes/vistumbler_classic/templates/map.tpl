@@ -190,7 +190,32 @@ if not, write to the
 
 							</div>
 
-							<script>
+							<script type="module">
+		// maplibre-gl 6 is ESM only and exports no default, so this namespace
+		// import is what stands in for the `maplibregl` global this file used
+		// to get from a <script src>. Bare specifiers resolve through the
+		// import map emitted by opt/map.php; the files are in lib/js.
+		import * as maplibregl from 'maplibre-gl';
+		import mlcontour from 'maplibre-contour';
+		import MaplibreInspect from '@maplibre/maplibre-gl-inspect';
+		import { Protocol } from 'pmtiles';
+
+		// Lets a style name a pmtiles:// source, so a bucket archive can be
+		// read directly rather than through a tile endpoint. Registered before
+		// any map is constructed, because MapLibre resolves source URLs while
+		// building the style.
+		//
+		// `metadata: true` makes the protocol build its TileJSON from the
+		// archive's own metadata — the vector_layers mvtd wrote — instead of
+		// the minimal header-derived one, so layer names and fields come from
+		// the archive rather than being restated here.
+		//
+		// pmtiles-torrent, when it is loaded, registers a TorrentSource on this
+		// same protocol under the archive's URL. It does not replace any of
+		// this: register and the swarm serves the bytes, do not and the
+		// identical URL falls back to HTTP range reads.
+		const pmtilesProtocol = new Protocol({ metadata: true });
+		maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile);
 
 		//Maplibre map object
 		var map = new maplibregl.Map({
@@ -515,6 +540,14 @@ if not, write to the
 
 		//Inspect Button
 		map.addControl(new MaplibreInspect({
+			// maplibre-gl 6 exports no global, so the plugin cannot construct a
+			// Popup for itself. It asks for a ready-made one rather than for the
+			// namespace -- `popup`, not `maplibregl`, which its own message says
+			// and which is easy to read past.
+			popup: new maplibregl.Popup({
+				closeButton: false,
+				closeOnClick: false,
+			}),
 			showMapPopupOnHover: false,
 			showInspectMapPopupOnHover: false,
 			selectThreshold: 5
@@ -767,6 +800,17 @@ if not, write to the
 {/if}
 
 		function init() {
+			// Only when the style change actually took our layers with it.
+			//
+			// This runs on style load so the WifiDB layers can be re-added after
+			// a basemap switch, which discards them. MaplibreInspect also calls
+			// setStyle, but as a *diff* update -- our sources survive it, the
+			// event fires anyway, and every addSource below then throws
+			// "already exists". Asking whether the layers are still there
+			// distinguishes the two without having to know who called.
+			if (map.getStyle().layers.some((l) => l.id.indexOf('WifiDB_') === 0)) {
+				return;
+			}
 {$layer_source_all}
 			toggle_label();
 		};
@@ -973,7 +1017,25 @@ if not, write to the
 				map.resize();
 			});
 		});
-							</script>
+							
+		// ── Reachable from inline handlers ────────────────────────────────
+		// A module has its own scope, so a function declared here is invisible
+		// to an onClick attribute in the HTML above — the handler runs in
+		// global scope and sees nothing. Under the old classic <script> these
+		// were globals by default; they have to be published deliberately now.
+		//
+		// Only these seven, because only these are named by an on* attribute.
+		// Anything else stays module-scoped, which is the point of the module.
+		Object.assign(window, {
+			toggle_layer_button,
+			toggle_cell_group,
+			toggle_heatmap_group,
+			toggle_track,
+			toggleFollowLatest,
+			track_download,
+			searchadr,
+		});
+</script>
 						</td>
 					</tr>
 				</table>

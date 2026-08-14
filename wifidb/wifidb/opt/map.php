@@ -23,6 +23,11 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
+// Functions, not a class, so the autoloader in init.inc.php does not reach it.
+// createGeoJSON needs mvt_archive_pmtiles_url() to address an archived bucket
+// as pmtiles://; without this include it silently falls back to the tilejson
+// endpoint for every bucket, which works but never uses the archives.
+include_once('../lib/mvt.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'Network Map');
 
 
@@ -41,13 +46,45 @@ if (preg_match('~MSIE|Internet Explorer~i', $ua) || (strpos($ua, 'Trident/7.0; r
 
 
 $terrain = 1;
-#$wifidb_meta_header = '<link href="https://unpkg.com/maplibre-gl@4.0.0-pre.6/dist/maplibre-gl.css" rel="stylesheet" />';
-$wifidb_meta_header = '<link href="'.$dbcore->tileserver_gl_url.'/maplibre-gl.css" rel="stylesheet" />';
-$wifidb_meta_header .= '<link rel="stylesheet" type="text/css" href="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.css" />';
-$wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-contour@0.0.5/dist/index.min.js"></script>';
-#$wifidb_meta_header .= '<script src="https://unpkg.com/maplibre-gl@4.0.0-pre.6/dist/maplibre-gl.js"></script>';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl.js"></script>';
-$wifidb_meta_header .= '<script src="'.$dbcore->tileserver_gl_url.'/maplibre-gl-inspect.js"></script>';
+
+// ── Map libraries ────────────────────────────────────────────────────────────
+// Served from lib/js rather than from the tileserver or a CDN. Three reasons:
+// the map keeps working when the tileserver is down, the version is pinned by
+// this repository instead of by whatever another service happens to deploy,
+// and no third party sees a request for every map view.
+//
+// maplibre-gl 6 has no UMD build — dist/ is .mjs only, so there is no
+// maplibre global and the map template is a module. `pmtiles` imports
+// `fflate` by bare specifier, which a browser cannot resolve on its own, hence
+// the import map below. Mapping rather than rewriting the files keeps the
+// vendored copies byte-identical to what npm published; see lib/js/VENDORED.md.
+//
+// The import map MUST come before any module script, and there may be only one
+// per document.
+$js = $dbcore->URL_PATH . 'lib/js';
+
+$wifidb_meta_header  = '<link rel="stylesheet" href="'.$js.'/maplibre-gl/maplibre-gl.css" />';
+$wifidb_meta_header .= '<link rel="stylesheet" href="'.$js.'/maplibre-gl-inspect/maplibre-gl-inspect.css" />';
+$wifidb_meta_header .= '<script type="importmap">'.json_encode([
+	'imports' => [
+		'maplibre-gl'                   => $js.'/maplibre-gl/maplibre-gl.mjs',
+		'pmtiles'                       => $js.'/pmtiles/index.js',
+		'fflate'                        => $js.'/fflate/browser.js',
+		'maplibre-contour'              => $js.'/maplibre-contour/index.mjs',
+		'@maplibre/maplibre-gl-inspect' => $js.'/maplibre-gl-inspect/maplibre-gl-inspect.mjs',
+	],
+], JSON_UNESCAPED_SLASHES).'</script>';
+
+// Where the archived buckets live, for the map template's sources. Null when
+// nothing is configured, in which case the template falls back to the tile
+// endpoints — which read the same archives, just server-side.
+$dbcore->smarty->assign('wifidb_tilejson_url', $dbcore->URL_PATH.'api/tilejson.php');
+$dbcore->smarty->assign('wifidb_archive_url',
+	(isset($dbcore->tile_archive_url) && $dbcore->tile_archive_url !== '')
+		? rtrim($dbcore->tile_archive_url, '/') : '');
+$dbcore->smarty->assign('wifidb_swarm_key',
+	isset($dbcore->tile_swarm_public_key) ? $dbcore->tile_swarm_public_key : '');
+
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);
 $dbcore->smarty->assign('wifidb_meta_header', $wifidb_meta_header);

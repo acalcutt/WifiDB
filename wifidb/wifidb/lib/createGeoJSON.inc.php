@@ -21,6 +21,33 @@ if not, write to the
 class createGeoJSON
 {
 
+	/**
+	 * Where a bucket's vector tiles come from.
+	 *
+	 * Archived buckets are addressed as pmtiles:// when a public archive URL is
+	 * configured, so the browser range-reads the archive and neither WifiDB nor
+	 * the swarm sits in the tile path. The magnet rides in the fragment, which
+	 * is never sent in a request: inert to a plain client, and everything
+	 * pmtiles-torrent needs to serve the same archive from the swarm instead.
+	 *
+	 * Everything else — the flat daily and weekly buckets, and any install with
+	 * no archive URL set — keeps the tilejson.php endpoint it has always used.
+	 * Only the URL changes; the layer name inside the archive is the bucket, the
+	 * same name tilejson.php reports, so every source-layer and paint property
+	 * below is untouched either way.
+	 */
+	private function bucketSourceUrl(string $bucket): string
+	{
+		global $dbcore;
+		if (isset($dbcore) && function_exists('mvt_archive_pmtiles_url')) {
+			$direct = mvt_archive_pmtiles_url($dbcore, $bucket);
+			if ($direct !== null) {
+				return $direct;
+			}
+		}
+		return $this->URL_BASE . 'api/tilejson.php?bucket=' . $bucket;
+	}
+
 	public function __construct($URL_PATH, $GeoJSON_out, $daemon_out, $convertObj, $tilldead = 5)
 	{
 		$this->URL_BASE	 =   $URL_PATH;
@@ -579,7 +606,7 @@ class createGeoJSON
 		if (!map.getSource('" . $source_id . "')) {
 			map.addSource('" . $source_id . "', {
 				type: 'vector',
-				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $bucket . "'
+				url: '" . $this->bucketSourceUrl($bucket) . "'
 			});
 		}
 		if (!map.getLayer('" . $source_id . "')) {
@@ -684,7 +711,7 @@ class createGeoJSON
 		if (!map.getSource('" . $source_id . "')) {
 			map.addSource('" . $source_id . "', {
 				type: 'vector',
-				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $bucket . "'
+				url: '" . $this->bucketSourceUrl($bucket) . "'
 			});
 		}
 		map.addLayer({
@@ -760,7 +787,7 @@ class createGeoJSON
 		if (!map.getSource('" . $src . "')) {
 			map.addSource('" . $src . "', {
 				type: 'vector',
-				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $cb . "'
+				url: '" . $this->bucketSourceUrl($cb) . "'
 			});
 		}
 		if (!map.getLayer('" . $cb . "')) {
@@ -856,7 +883,7 @@ class createGeoJSON
 		if (!map.getSource('" . $src . "')) {
 			map.addSource('" . $src . "', {
 				type: 'vector',
-				url: '" . $this->URL_BASE . "api/tilejson.php?bucket=" . $cb . "'
+				url: '" . $this->bucketSourceUrl($cb) . "'
 			});
 		}
 		if (!map.getLayer('" . $cb . "-heatmap')) {
