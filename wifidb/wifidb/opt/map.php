@@ -105,6 +105,38 @@ $swarm_param = isset($_GET['swarm']) ? trim($_GET['swarm']) : null;
 $swarm_on = ($swarm_param === null || $swarm_param === '')
 	? !empty($dbcore->tile_swarm_browser)
 	: ($swarm_param !== '0');
+// What this request resolved, for the console, behind ?swarmdebug=1.
+//
+// The web path and the CLI build $dbcore differently and read the same files,
+// so a setting that is present for one and absent for the other is invisible
+// from either side alone. Everything here is already public -- URLs the page
+// hands out and a key meant to be given away -- and it is off unless asked for.
+$swarm_debug = isset($_GET['swarmdebug']) && $_GET['swarmdebug'] !== '0';
+if ($swarm_debug) {
+    $probe_bucket = mvt_buckets()[0];
+    $probe_row    = mvt_swarm_cached_archive($dbcore, $probe_bucket);
+    $dbcore->smarty->assign('wifidb_swarm_debug', json_encode([
+        'dbcoreClass'   => get_class($dbcore),
+        'swarmOn'       => $swarm_on,
+        'swarmParam'    => $swarm_param,
+        'tileSwarmUrl'  => $dbcore->tile_swarm_url        ?? '(unset)',
+        'tileArchiveUrl'=> $dbcore->tile_archive_url      ?? '(unset)',
+        'categoryPrefix'=> $dbcore->tile_swarm_category_prefix ?? '(unset)',
+        'swarmBrowser'  => $dbcore->tile_swarm_browser    ?? '(unset)',
+        'probeBucket'   => $probe_bucket,
+        'probeCategory' => mvt_swarm_category($dbcore, $probe_bucket) ?? '(null)',
+        'probeCached'   => $probe_row === null
+            ? '(no row)'
+            : ['infohash' => $probe_row['infohash'] ?? null,
+               'hasMagnet' => !empty($probe_row['mutable_magnet'])],
+        'probeTilejson' => mvt_swarm_tilejson_url($dbcore, $probe_bucket) ?? '(null)',
+        'sourceCount'   => count(mvt_swarm_browser_sources($dbcore)),
+        // The reason the cache read gave up, when it did. Null here with
+        // '(no row)' above means the table really is empty for this bucket.
+        'cacheError'    => mvt_swarm_last_error(),
+    ], JSON_UNESCAPED_SLASHES));
+}
+
 $dbcore->smarty->assign('wifidb_swarm_sources',
 	json_encode($swarm_on ? mvt_swarm_browser_sources($dbcore) : [], JSON_UNESCAPED_SLASHES));
 

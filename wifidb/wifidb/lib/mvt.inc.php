@@ -673,6 +673,17 @@ function mvt_swarm_infohash_max_age($dbcore): int {
  *
  * See tools/daemon/swarm_index.php for what fills this in.
  */
+/**
+ * Why the last cache read or write failed, or null if none has.
+ *
+ * The reads return null for "nothing cached", which is the right answer for
+ * the caller and a useless one for anybody trying to work out why. This keeps
+ * the reason where a diagnostic can find it.
+ */
+function mvt_swarm_last_error(): ?string {
+    return $GLOBALS['mvt_swarm_last_error'] ?? null;
+}
+
 function mvt_swarm_cached_archive($dbcore, string $bucket): ?array {
     try {
         $stmt = $dbcore->sql->conn->prepare(
@@ -688,6 +699,12 @@ function mvt_swarm_cached_archive($dbcore, string $bucket): ?array {
         // A missing table is the state every install is in until the schema is
         // updated, and it must degrade to "no cached build" rather than taking
         // the map page down with it.
+        //
+        // Recorded rather than only swallowed. Returning null for every kind of
+        // failure means a permission denial, a missing table and an empty table
+        // are indistinguishable at the point it matters -- which has cost more
+        // than one afternoon. mvt_swarm_last_error() gets the reason back.
+        $GLOBALS['mvt_swarm_last_error'] = $e->getMessage();
         return null;
     }
 

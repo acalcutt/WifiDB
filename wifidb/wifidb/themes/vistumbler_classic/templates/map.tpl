@@ -199,6 +199,12 @@ if not, write to the
 		import mlcontour from 'maplibre-contour';
 		import MaplibreInspect from '@maplibre/maplibre-gl-inspect';
 		import { Protocol } from 'pmtiles';
+{if ($wifidb_swarm_debug|default:'') ne ''}
+		// ?swarmdebug=1 -- what the server resolved for this request. Printed
+		// whether or not any sources came back, since an empty list is exactly
+		// the case worth explaining.
+		console.info('[wifidb-swarm] server:', {$wifidb_swarm_debug});
+{/if}
 {if ($wifidb_swarm_sources|default:'[]') ne '[]'}
 		// Pulls in WebTorrent, so it is imported only when there is a swarm
 		// configured to make use of it.
