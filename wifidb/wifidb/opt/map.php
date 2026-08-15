@@ -111,6 +111,14 @@ $swarm_on = ($swarm_param === null || $swarm_param === '')
 // so a setting that is present for one and absent for the other is invisible
 // from either side alone. Everything here is already public -- URLs the page
 // hands out and a key meant to be given away -- and it is off unless asked for.
+// How long a browser may wait for a peer to answer, in seconds, for the one
+// question timeouts cannot settle: whether anything answers at all. Clamped,
+// and only ever longer than the default -- this is a debugging budget, not a
+// way to make the map wait less.
+$swarm_wait = isset($_GET['swarmwait']) ? (int)$_GET['swarmwait'] : 0;
+$swarm_wait = ($swarm_wait > 0 && $swarm_wait <= 600) ? $swarm_wait : 0;
+$dbcore->smarty->assign('wifidb_swarm_wait_ms', $swarm_wait * 1000);
+
 $swarm_debug = isset($_GET['swarmdebug']) && $_GET['swarmdebug'] !== '0';
 if ($swarm_debug) {
     $probe_bucket = mvt_buckets()[0];

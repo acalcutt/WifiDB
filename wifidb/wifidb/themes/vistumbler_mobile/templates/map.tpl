@@ -226,6 +226,12 @@
 		const swarmReady = enableSwarm({
 			protocol: pmtilesProtocol,
 			archives: {$wifidb_swarm_sources|default:'[]'},
+{if ($wifidb_swarm_wait_ms|default:0) > 0}
+			// ?swarmwait=<seconds> -- a debugging budget, to find out whether a
+			// peer ever answers rather than how long one takes.
+			metadataTimeoutMs: {$wifidb_swarm_wait_ms},
+			batchTimeoutMs: {$wifidb_swarm_wait_ms},
+{/if}
 		}).then(function (handle) {
 			window.wifidbSwarm = handle;
 			return handle;

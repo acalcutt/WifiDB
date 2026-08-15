@@ -197,7 +197,7 @@ async function release(engine) {
  * @param {Function} log Where to report what happened.
  * @returns {Promise<object|null>} An unregistered source, or null.
  */
-async function joinArchive(archive, client, lib, log) {
+async function joinArchive(archive, client, lib, log, metadataTimeoutMs) {
   const block = await fetchTorrentBlock(archive.tilejson);
   if (!block) {
     log(`${archive.bucket}: no TileJSON from the swarm, staying on HTTP`);
@@ -221,7 +221,7 @@ async function joinArchive(archive, client, lib, log) {
   try {
     info = await Promise.race([
       engine.ready(),
-      expire(METADATA_TIMEOUT_MS, `${archive.bucket} metadata`),
+      expire(metadataTimeoutMs, `${archive.bucket} metadata`),
     ]);
   } catch (error) {
     log(`${archive.bucket}: ${error.message}, staying on HTTP`);
@@ -257,7 +257,16 @@ async function joinArchive(archive, client, lib, log) {
  * @returns {Promise<object|null>} A handle for inspection, or null if the
  *   swarm was unusable.
  */
-export async function enableSwarm({ protocol, archives, log }) {
+export async function enableSwarm({
+  protocol,
+  archives,
+  log,
+  // Overridable so a long wait can be tried without editing this file: the
+  // question "does a peer ever answer" needs a different budget from the one a
+  // map should wait on, and guessing at it from timeouts alone is slow.
+  metadataTimeoutMs = METADATA_TIMEOUT_MS,
+  batchTimeoutMs = BATCH_TIMEOUT_MS,
+}) {
   const report = log ?? ((message) => console.info(`[swarm] ${message}`));
   if (!Array.isArray(archives) || archives.length === 0) {
     return null;
@@ -293,7 +302,7 @@ export async function enableSwarm({ protocol, archives, log }) {
   const registered = [];
 
   const pending = archives.map((archive) =>
-    joinArchive(archive, client, lib, report)
+    joinArchive(archive, client, lib, report, metadataTimeoutMs)
       .catch((error) => {
         report(`${archive.bucket}: ${error.message}, staying on HTTP`);
         return null;
@@ -319,7 +328,7 @@ export async function enableSwarm({ protocol, archives, log }) {
     // A deadline on the batch rather than a timeout per archive: what is being
     // bounded is how long the map waits, and one slow archive must not be able
     // to hold up either the others or the layers.
-    new Promise((resolve) => setTimeout(resolve, BATCH_TIMEOUT_MS)),
+    new Promise((resolve) => setTimeout(resolve, batchTimeoutMs)),
   ]);
   deadlinePassed = true;
 
