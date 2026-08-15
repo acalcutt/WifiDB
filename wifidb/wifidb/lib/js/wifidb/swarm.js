@@ -67,16 +67,29 @@ import { PMTiles } from 'pmtiles';
 /** How long to wait for a category's TileJSON before giving up on it. */
 const TILEJSON_TIMEOUT_MS = 5000;
 /**
- * How long any single archive may take to produce torrent metadata.
+ * How long to wait for a torrent's metainfo before giving up on it.
  *
- * This is what a map costs when the swarm's HTTP is up but its peers are not:
- * the basemap draws immediately either way, and the WifiDB layers wait this
- * long before giving up and loading over HTTP. Generous enough for a tracker
- * announce and a WebRTC handshake, short enough not to look broken.
+ * Generous, because a browser has the slowest possible route to it: connect a
+ * WebSocket to a tracker, announce, wait for a peer list, complete a WebRTC
+ * offer/answer with a seeder, and only then receive the metainfo over BEP 9.
+ * Eight seconds looked reasonable and was not -- every archive timed out on a
+ * working swarm, which reads as "the swarm is broken" rather than "the swarm
+ * was not finished".
+ *
+ * Costs nothing when it is wrong: the map has already drawn by then, and an
+ * archive still arriving is simply one that has not started serving yet.
  */
-const METADATA_TIMEOUT_MS = 8000;
-/** Backstop on the batch as a whole, for an archive that hangs some other way. */
-const BATCH_TIMEOUT_MS = 10000;
+const METADATA_TIMEOUT_MS = 30000;
+/**
+ * How long the map waits before drawing, whatever the swarm is still doing.
+ *
+ * Shorter than the metadata timeout on purpose, and no longer a deadline for
+ * the archives themselves: one that arrives after this is registered anyway
+ * and starts serving from that point, because transformRequest is consulted
+ * on every tile request rather than once when a source is resolved. So this
+ * bounds only how long a person stares at an empty map.
+ */
+const BATCH_TIMEOUT_MS = 8000;
 /**
  * Pieces held in memory per archive. PMTiles clusters tiles in Hilbert order,
  * so a piece fetched for one tile usually holds its neighbours -- which makes
@@ -287,12 +300,17 @@ export async function enableSwarm({ protocol, archives, log }) {
       })
       .then((result) => {
         if (!result) return;
-        if (deadlinePassed) {
-          report(`${result.bucket}: ready too late, releasing`);
-          return release(result.engine);
-        }
+        // Registered even after the deadline. The deadline bounds how long the
+        // map waits before drawing, not how long an archive is useful for:
+        // transformRequest is consulted on every tile request, so one that
+        // joins at twenty seconds simply starts serving from then on. This
+        // used to release them, which was right when the binding lived in the
+        // style's source URL and was resolved once -- it is not any more.
         protocol.add(new PMTiles(result.source));
         registered.push(result);
+        if (deadlinePassed) {
+          report(`${result.bucket}: joined late, serving from here on`);
+        }
       }),
   );
 
