@@ -183,6 +183,11 @@
 		import mlcontour from 'maplibre-contour';
 		import MaplibreInspect from '@maplibre/maplibre-gl-inspect';
 		import { Protocol } from 'pmtiles';
+{if ($wifidb_swarm_sources|default:'[]') ne '[]'}
+		// Pulls in WebTorrent, so it is imported only when there is a swarm
+		// configured to make use of it.
+		import { enableSwarm } from 'wifidb-swarm';
+{/if}
 
 		// Lets a style name a pmtiles:// source, so a bucket archive can be
 		// read directly rather than through a tile endpoint. Registered before
@@ -200,6 +205,28 @@
 		// identical URL falls back to HTTP range reads.
 		const pmtilesProtocol = new Protocol({ metadata: true });
 		maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile);
+
+{if ($wifidb_swarm_sources|default:'[]') ne '[]'}
+		// Joins each archive's swarm and registers it on the protocol above.
+		// Resolves either way -- an archive the swarm cannot serve is simply
+		// left unregistered and read over HTTP -- and init() waits on it,
+		// because the protocol binds an HTTP source to any URL it does not
+		// already know by the time the layers ask for it.
+		//
+		// Published to window so the transport can be checked from a console:
+		// wifidbSwarm.stats() reports peers and bytes per bucket, which is the
+		// difference between a swarm read and an HTTP read that merely passed
+		// through this code.
+		const swarmReady = enableSwarm({
+			protocol: pmtilesProtocol,
+			archives: {$wifidb_swarm_sources|default:'[]'},
+		}).then(function (handle) {
+			window.wifidbSwarm = handle;
+			return handle;
+		});
+{else}
+		const swarmReady = Promise.resolve(null);
+{/if}
 		var demSource = new mlcontour.DemSource({
 			url: 'https://tiles.wifidb.net/data/jaxa_terrarium/{literal}{z}/{x}/{y}{/literal}.png',
 			encoding: 'terrarium',
@@ -212,7 +239,25 @@
 		maplibregl.setWorkerCount(6)
 
 		//Maplibre map object
+		// Routes a tile through the swarm when the archive it names has been
+		// joined, and returns every other URL untouched. Sources stay ordinary
+		// https TileJSON, so MapLibre parses them itself and anything else
+		// reading this style -- maplibre-gl-inspect included -- keeps working;
+		// registering a protocol for `https` would capture styles, glyphs and
+		// sprites as well, and the pass-through case would mean reimplementing
+		// the loader.
+		//
+		// Reads window.wifidbSwarm rather than closing over the handle: the
+		// batch resolves after the map is constructed, and a tile requested
+		// before then is simply fetched over HTTP, which is correct.
+		function swarmTransformRequest(url) {
+			var swarm = window.wifidbSwarm;
+			if (!swarm || typeof swarm.rewrite !== 'function') return { url: url };
+			return { url: swarm.rewrite(url) };
+		}
+
 		var map = new maplibregl.Map({
+			transformRequest: swarmTransformRequest,
 			container: 'map',
 			style: '{$tileserver_gl_url}/styles/{$style}/style.json',
 			center: {$centerpoint},
@@ -1082,7 +1127,12 @@
 				if (!map.isStyleLoaded()) {
 					setTimeout(waiting, 200);
 				} else {
-					init();
+					// The layers cannot go in until the swarm has had its
+					// chance to register, because whichever source binds to an
+					// archive's URL first is the one every later read uses.
+					// Already settled on a basemap switch, so this only defers
+					// the first style load.
+					swarmReady.then(init);
 				}
 			};
 			waiting();

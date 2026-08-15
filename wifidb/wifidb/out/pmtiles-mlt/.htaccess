@@ -17,20 +17,23 @@
 # ── The one that will bite on the second server ──────────────────────────────
 # Apache derives ETags from file metadata, and pmtiles.js throws EtagMismatch
 # if the validator changes between range requests while reading one archive
-# (js/src/index.ts). Two servers holding byte-identical archives received at
-# different times produce different ETags, so a client whose requests are
-# balanced across both fails part-way through a read.
+# (js/src/index.ts). Two servers holding byte-identical archives produce
+# different ETags unless every component of the validator is a function of the
+# content, so a client whose requests are balanced across both fails part-way
+# through a read.
 #
-# FileETag below removes the inode, which differs between servers by
-# definition. That leaves mtime and size — so the SYNC MUST PRESERVE MTIMES.
-# Use rsync -t (or -a, which implies it). A copy that does not preserve them
-# reintroduces exactly the bug this is here to prevent.
+# Inode differs between servers by definition. Mtime does too, once the
+# archives arrive over BitTorrent: mtime is not in the metainfo and is not
+# transmitted, so a delivered file is stamped with the moment its download
+# finished. That was survivable while rsync -a did the copying, because rsync
+# preserves mtimes; it is not survivable now, and no configuration of the
+# mirror can make it so.
 #
-# Serving these archives through pmtiles-swarm instead avoids the problem
-# outright: it emits a content-addressed ETag that is identical on every node
-# regardless of when the file landed.
+# So: size alone. It is the only metadata both nodes derive from the same
+# bytes. See out/pmtiles/.htaccess for what that costs, and for the three
+# conditions that have to hold before `FileETag MTime Size` can come back.
 
-FileETag MTime Size
+FileETag Size
 
 # The directory listing would otherwise expose every retired build.
 Options -Indexes

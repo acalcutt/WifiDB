@@ -733,7 +733,124 @@ check('a tile URL built from it still resolves back to the archive', (function (
 check('the magnet contains no unescaped slash to confuse that regex',
     strpos(substr(mvt_swarm_magnet($keyed, 'monthly'), 8), '/') === false);
 
+// ── What the browser is handed to join the swarm with ────────────────────────
+
+section('Reading the archives from a browser');
+
+check('nothing is offered without an archive URL',
+    mvt_swarm_browser_sources($keyed) === []);
+
+$browser = mvt_swarm_browser_sources($direct);
+
+check('every generated archive is offered', count($browser) === count(mvt_buckets()),
+    count($browser) . ' of ' . count(mvt_buckets()));
+
+// The whole registration turns on this string. The protocol looks up whatever
+// follows pmtiles:// and silently constructs an HTTP source when nothing
+// matches, so a key that is merely close produces a map that works, shows no
+// error, and never touches the swarm.
+check('the key is the style URL with the scheme removed', (function () use ($browser, $direct) {
+    foreach ($browser as $entry) {
+        if ('pmtiles://' . $entry['key'] !== mvt_archive_pmtiles_url($direct, $entry['bucket'])) {
+            return false;
+        }
+    }
+    return $browser !== [];
+})());
+
+check('the key keeps the fragment, which is what the protocol keys on', (function () use ($browser) {
+    return strpos($browser[0]['key'], '#magnet:?xs=urn:btpk:') !== false;
+})());
+
+// A browser has no DHT, so the mutable magnet in the fragment resolves to
+// nothing there. The swarm's own TileJSON is where the joinable infohash
+// magnet comes from, which is why each entry carries that URL as well.
+check('each entry names the swarm category document', (function () use ($browser, $direct) {
+    foreach ($browser as $entry) {
+        if ($entry['tilejson'] !== mvt_swarm_tilejson_url($direct, $entry['bucket'])) {
+            return false;
+        }
+    }
+    return true;
+})());
+
+check('a flat bucket is left out, having no archive to join', (function () use ($direct) {
+    $flat = clone $direct;
+    $flat->tile_flat_buckets = 'daily,weekly';
+    $offered = array_column(mvt_swarm_browser_sources($flat), 'bucket');
+    return !in_array('daily', $offered, true)
+        && !in_array('weekly', $offered, true)
+        && in_array('monthly', $offered, true);
+})());
+
 if ($have_src) {
+    // The daemons and the map must agree on what exists. A bucket in one list
+    // and not the other is an archive that never generates, or a source the
+    // page never offers -- neither of which shows up as an error.
+    foreach (['mvtd', 'mltd'] as $file) {
+        check("{$file} takes its bucket list from mvt.inc.php",
+            strpos($src[$file], '$buckets = mvt_buckets()') !== false);
+    }
+
+    $mp = @file_get_contents("{$root}/wifidb/opt/map.php");
+    check('map.php offers the browser sources to the template',
+        $mp !== false && strpos($mp, 'mvt_swarm_browser_sources') !== false);
+    check('and leaves the swarm off unless it is configured on',
+        $mp !== false && strpos($mp, 'tile_swarm_browser') !== false);
+    check('the import map can resolve what the swarm module imports', (function () use ($mp) {
+        if ($mp === false) return false;
+        foreach (['webtorrent', 'pmtiles-torrent', 'pmtiles-torrent/webtorrent',
+                  'wifidb-swarm'] as $specifier) {
+            if (strpos($mp, "'{$specifier}'") === false) return false;
+        }
+        return true;
+    })());
+
+    foreach (['vistumbler_mobile', 'vistumbler_classic'] as $theme) {
+        $tpl = @file_get_contents("{$root}/wifidb/themes/{$theme}/templates/map.tpl");
+        if ($tpl === false) continue;
+        // Registering after the layers are added does nothing at all: the
+        // protocol has already bound an HTTP source to the archive's URL and
+        // caches it for the life of the page.
+        check("{$theme}: the layers wait for the swarm to register",
+            strpos($tpl, 'swarmReady.then(init)') !== false
+                && strpos($tpl, "\t\t\t\t\tinit();") === false);
+        // Both branches must define it, or a map with no swarm configured
+        // throws ReferenceError before it draws anything.
+        check("{$theme}: swarmReady exists whether or not a swarm is configured",
+            strpos($tpl, 'const swarmReady = Promise.resolve(null)') !== false
+                && strpos($tpl, 'const swarmReady = enableSwarm(') !== false);
+        // 220 KB of WebTorrent on every map view, for a feature that is off.
+        check("{$theme}: the swarm module is imported only when it is used",
+            preg_match('/\{if \$wifidb_swarm_sources ne \'\[\]\'\}\s*(?:\/\/[^\n]*\n\s*)*import \{ enableSwarm \}/', $tpl) === 1);
+    }
+
+    $swarm_js = @file_get_contents("{$root}/wifidb/lib/js/wifidb/swarm.js");
+    check('the swarm module exists', $swarm_js !== false);
+    if ($swarm_js !== false) {
+        // Protocol.add() is a commitment, not a hint: once a source is bound
+        // there is no path back to HTTP, so an archive whose metadata never
+        // arrives would take its bucket's tiles down rather than just fail to
+        // accelerate them.
+        check('it waits for metadata before registering anything',
+            strpos($swarm_js, 'engine.ready()') !== false
+                && strpos($swarm_js, 'protocol.add') > strpos($swarm_js, 'deadlinePassed'));
+        check('it releases archives that arrive after the deadline',
+            strpos($swarm_js, 'ready too late') !== false);
+        // A static import is evaluated with the map's own module graph, so a
+        // WebTorrent that throws on load would take the map down with it
+        // rather than merely failing to accelerate anything.
+        check('it loads WebTorrent lazily, so a bad load cannot break the map',
+            strpos($swarm_js, "import('webtorrent')") !== false
+                && preg_match("/^import .*'webtorrent'/m", $swarm_js) === 0);
+        // Both halves matter: an infohash to join, and a websocket tracker to
+        // find peers through. Announced only to udp:// trackers, a perfectly
+        // healthy swarm has no peer a browser can reach.
+        check('it rejects a magnet a browser cannot act on',
+            strpos($swarm_js, "startsWith('urn:btih:')") !== false
+                && strpos($swarm_js, "startsWith('wss://')") !== false);
+    }
+
     $tj = @file_get_contents("{$root}/wifidb/api/tilejson.php");
     check('tilejson.php offers the pmtiles:// URL',
         $tj !== false && strpos($tj, 'mvt_archive_pmtiles_url') !== false);

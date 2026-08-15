@@ -91,6 +91,24 @@ $config = array
 	# swarms, publish competing BEP 46 records, and serve disagreeing ETags.
 	# Set false on the subscribers: their daemons then skip archived buckets
 	# before the database scan, and flat buckets carry on generating as usual.
+	# Which node builds the archives.  Exactly one should, or each builds its
+	# own bytes for the same bucket: different infohashes, nothing shared,
+	# competing BEP 46 records under one salt, and ETags that disagree the
+	# moment a load balancer moves a client between them.
+	#
+	# 1 or 0 for a single node.  Where this file is SYNCED between nodes it
+	# cannot say different things on each, so name the node instead.  Compared
+	# against the machine's HOSTNAME first, because that is the one identity a
+	# sync cannot copy -- wifidb_nodename lives in daemon.config.inc.php, which
+	# is usually inside the synced tree and therefore reads the same on both.
+	# It is still accepted where it is genuinely distinct.
+	#
+	#   'tile_archive_generate' => 'http-01',
+	#   'tile_archive_generate' => 'http-01, http-03',   // a list is fine
+	#
+	# Leaving it at 1 everywhere and relying on the other node having no cron
+	# entry works, and is invisible: nothing there says it must not generate, so
+	# the day somebody adds that entry the two quietly start competing.
 	'tile_archive_generate'		=>   1,
 	# MLT archives, off by default: nothing reads MLT from a PMTiles archive yet
 	# and building one is a full extra pass over the bucket.
@@ -111,12 +129,44 @@ $config = array
 	'tile_swarm_category_prefix'=>   'wifidb-',
 
 	# The swarm's BEP 46 publishing key, public half, 64 hex characters.
-	# Shown by `pmtiles-swarm status`, or in the console's settings screen.
-	# With it set, tilejson.php publishes a per-category mutable magnet: the
-	# one handle that names the category rather than a build, resolves through
-	# the DHT, and therefore keeps working when every HTTP endpoint here is
-	# unreachable.  Public half only — it is meant to be given out.
+	#
+	# OPTIONAL, and normally left empty.  tools/cron/update_swarm_index reads
+	# the key out of the swarm's own TileJSON, where the public half already
+	# appears, and caches it in swarm_archives — so there is nothing to copy by
+	# hand and nothing to update when the key is rotated.  Set it only to pin a
+	# specific key; a value here overrides whatever the swarm advertises.
+	#
+	# Either way, what it buys is a per-category mutable magnet: the one handle
+	# that names the category rather than a build, resolves through the DHT, and
+	# therefore keeps working when every HTTP endpoint here is unreachable.
+	# Public half only — it is meant to be given out.
 	'tile_swarm_public_key'		=>   '',
+
+	# How old a cached infohash may be, in days, before the magnet stops
+	# carrying it and falls back to the public key alone.  The key resolves
+	# through the DHT and never goes stale; the infohash names one build and is
+	# there so a browser -- which has no DHT -- has something to join without
+	# first fetching the document the magnet is attached to.  Past some point
+	# that build has been retired, and pointing a client at a swarm that no
+	# longer exists is worse than sending it to the key alone.  Measured from
+	# when the build last changed, not when the swarm was last reachable.
+	# Zero or less never drops it.  Filled in by tools/cron/update_swarm_index.
+	'tile_swarm_infohash_max_days'=> 30,
+
+	# Let a browser read the archives out of the swarm over WebTorrent,
+	# instead of fetching every byte from this server.  Off by default: it
+	# pulls in a WebTorrent bundle, and an empty source list is the whole off
+	# switch -- the template imports nothing and the map behaves exactly as it
+	# did before any of this existed.
+	#
+	# Needs tile_archive_url set, since that is the URL the browser reads.
+	#
+	# Overridable per request without a config change, which is the only way
+	# to see what the swarm is actually contributing:
+	#
+	#   map.php?...&swarm=1   force on
+	#   map.php?...&swarm=0   force off
+	'tile_swarm_browser'		=>   0,
 
 	# Public URL of the archive directory, i.e. what webSeedBase points at.
 	# With it set, tilejson.php also publishes a pmtiles:// URL that MapLibre

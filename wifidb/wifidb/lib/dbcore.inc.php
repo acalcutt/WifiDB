@@ -124,6 +124,41 @@ class dbcore
 		$this->tile_min_zoom    = isset($config['tile_min_zoom'])    ? (int)$config['tile_min_zoom']    : 1;
 		$this->tile_max_zoom    = isset($config['tile_max_zoom'])    ? (int)$config['tile_max_zoom']    : 19;
 		$this->tile_max_gz_bytes = isset($config['tile_max_gz_bytes']) ? (int)$config['tile_max_gz_bytes'] : 750000;
+
+		// Everything the tile and archive code reads off $dbcore.
+		//
+		// Carried across one by one because that is how this constructor works
+		// -- there is no loop copying $config wholesale -- and a setting that
+		// is not listed here does not exist as far as the rest of the code is
+		// concerned. It does not warn: every reader is written as
+		// `isset($dbcore->x) ? ... : default`, so an unmapped setting silently
+		// takes its fallback and the config file appears to be ignored. That is
+		// exactly what happened to the whole tile_swarm_* group, which had
+		// never been mapped at all, so tile_swarm_url read as unset and the
+		// swarm integration was inert no matter what the file said.
+		//
+		// Left as strings rather than cast: the paths are paths, and
+		// tile_archive_generate deliberately takes either a flag or a node
+		// name -- see mvt_generates_archives().
+		foreach ([
+			'tile_output_dir',
+			'tile_archive_dir',
+			'tile_mlt_output_dir',
+			'tile_mlt_archive_dir',
+			'tile_archive_generate',
+			'tile_mlt_archive_generate',
+			'tile_archive_keep',
+			'tile_archive_url',
+			'tile_swarm_url',
+			'tile_swarm_category_prefix',
+			'tile_swarm_public_key',
+			'tile_swarm_infohash_max_days',
+			'tile_swarm_browser',
+		] as $tile_setting) {
+			if (isset($config[$tile_setting])) {
+				$this->$tile_setting = $config[$tile_setting];
+			}
+		}
 	}
 
 	##############################

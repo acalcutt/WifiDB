@@ -39,8 +39,22 @@ class createGeoJSON
 	private function bucketSourceUrl(string $bucket): string
 	{
 		global $dbcore;
-		if (isset($dbcore) && function_exists('mvt_archive_pmtiles_url')) {
-			$direct = mvt_archive_pmtiles_url($dbcore, $bucket);
+		if (isset($dbcore) && function_exists('mvt_swarm_tilejson_url')) {
+			// The swarm's per-category document, with the magnet in its fragment.
+			//
+			// An ordinary https URL rather than the pmtiles:// one this used to
+			// hand back, for two reasons. It follows the newest build instead of
+			// naming a file, so a style holding it survives a rebuild. And every
+			// other consumer of the style can read it: maplibre-gl-inspect fetches
+			// source URLs directly to find their vector_layers, and a scheme it
+			// does not know produced two console errors per source per redraw --
+			// thousands of them -- while it fell back to guessing from the layers.
+			//
+			// Nothing is given up by dropping the scheme: swarm.js still reads the
+			// archives out of the swarm, but binds by infohash and rewrites the
+			// tile URLs through MapLibre's transformRequest instead of relying on
+			// the source URL to carry a protocol prefix. See map.tpl.
+			$direct = mvt_swarm_tilejson_url($dbcore, $bucket);
 			if ($direct !== null) {
 				return $direct;
 			}

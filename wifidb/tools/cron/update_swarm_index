@@ -1,0 +1,48 @@
+#!/bin/bash
+# update_swarm_index — record which archive build the swarm currently holds
+# Copyright (C) 2026 Andrew Calcutt
+#
+# The map page carries a magnet in the fragment of every archived bucket's
+# source URL, and that magnet needs the current infohash to be joinable from a
+# browser. This asks the swarm for it and caches the answer, so a page render
+# never waits on the swarm and never breaks when it is down.
+#
+# Cheap and idempotent — a couple of HTTP requests per bucket that has a build.
+# Run it a little more often than archives are published:
+#
+#   */15 * * * * /path/to/tools/cron/update_swarm_index
+#
+# A failed run changes nothing. The last known build stays in the table and
+# keeps being published, which is the whole point of caching it.
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+
+LOCKFILE="/tmp/swarm_index.lock"
+LOGFILE="../log/swarm_index.log"
+
+# Non-blocking: if the last run is somehow still going, this one is not needed.
+exec 9>"$LOCKFILE"
+if ! flock -n 9; then
+    echo "swarm index refresh already running. Exiting."
+    exit 0
+fi
+
+mkdir -p ../log
+
+# This node's own swarm, not the public name. tile_swarm_url is where a browser
+# should go, and behind a load balancer that resolves to either node — so
+# refreshing from it can record the neighbour's build as this one's.
+SWARM_URL="${WIFIDB_SWARM_URL:-http://127.0.0.1:8090}"
+
+php ../daemon/swarm_index.php --url "$SWARM_URL" >> "$LOGFILE" 2>&1
+status=$?
+
+# Keep the log from growing without bound; there is nothing here worth keeping
+# once the next run has said the same thing.
+if [ -f "$LOGFILE" ] && [ "$(wc -c < "$LOGFILE")" -gt 1048576 ]; then
+    tail -c 262144 "$LOGFILE" > "$LOGFILE.trimmed" && mv "$LOGFILE.trimmed" "$LOGFILE"
+fi
+
+exit $status

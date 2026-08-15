@@ -670,6 +670,31 @@ CREATE TABLE [dbo].[share_waypoints](
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
 GO
+/****** Object:  Table [dbo].[swarm_archives]    Script Date: 8/14/2026 12:00:00 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[swarm_archives](
+	[bucket] [nvarchar](64) NOT NULL,
+	[category] [nvarchar](128) NOT NULL,
+	[infohash] [char](40) NOT NULL,
+	[magnet] [nvarchar](max) NULL,
+	[style_url] [nvarchar](1024) NULL,
+	[archive_name] [nvarchar](255) NULL,
+	[archive_size] [bigint] NULL,
+	[built_at] [datetime2](3) NULL,
+	[public_key] [char](64) NULL,
+	[salt] [nvarchar](128) NULL,
+	[mutable_magnet] [nvarchar](max) NULL,
+	[updated_at] [datetime2](3) NOT NULL,
+	[checked_at] [datetime2](3) NOT NULL,
+ CONSTRAINT [PK_swarm_archives] PRIMARY KEY CLUSTERED 
+(
+	[bucket] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
 /****** Object:  Table [dbo].[stats_cache]    Script Date: 6/28/2026 4:25:19 PM ******/
 SET ANSI_NULLS ON
 GO

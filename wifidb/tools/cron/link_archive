@@ -11,17 +11,28 @@
 # while the data sits on disk a few directories away.
 #
 # Run from pmtiles-swarm as an onComplete hook, so it fires when the download
-# has finished rather than when the torrent was announced:
+# has finished rather than when the torrent was announced.
 #
-#   "hooks": {
+# TOP LEVEL of the config file, not nested under a "hooks" key — pmtiles-swarm
+# reads config.onComplete, and anything under config.hooks is ignored in
+# silence: no error, no warning, and no clue that the hook was never armed.
+#
+#   {
 #     "onComplete": {
 #       "command": "/srv/www/wdbtools-prod/tools/cron/link_archive",
-#       "args": ["%F", "%L"]
+#       "args": ["%F", "%L", "%I"]
 #     }
 #   }
 #
+# It logs "will run ... on completion" at startup when it has been read, which
+# is the quickest way to tell whether the config took.
+#
 #   $1  %F  full path to the completed archive
 #   $2  %L  its first category, e.g. wifidb-cell-monthly
+#   $3  %I  its infohash — optional, and only used to record which build is
+#           current so the map page can publish a joinable magnet without
+#           asking the swarm. Omit it and the linking below still works; the
+#           cron refresher will pick the build up within its interval.
 #
 # Hard links, not symlinks: the swarm may later retire the dated name, and a
 # hard link keeps the data alive by holding a reference to the same inode. A
@@ -78,6 +89,25 @@ case "$bucket" in
         ;;
 esac
 
+# Record which build this is, so the map page can publish a magnet a browser
+# can join without first fetching the document that magnet is attached to.
+#
+# Before the linking below, and before its early exit: the link may already
+# point at these bytes while the database has never been told about them, which
+# is the state every install is in the first time this runs.
+#
+# Best effort, always. Linking the archive is this script's job and the swarm
+# is waiting on its exit code; a database that is down, or a table that has not
+# been created yet, must not turn a successful download into a failed hook. The
+# cron refresher covers anything missed here.
+infohash="${3:-}"
+if [ -n "$infohash" ]; then
+    if ! php "${0%/*}/../daemon/swarm_index.php" --record \
+            --bucket "$bucket" --infohash "$infohash" >/dev/null 2>&1; then
+        log "could not record $bucket at $infohash; the refresher will catch it"
+    fi
+fi
+
 target="$ARCHIVE_DIR/$bucket.pmtiles"
 
 if [ ! -d "$ARCHIVE_DIR" ]; then
@@ -104,8 +134,17 @@ trap 'rm -f "$tmp"' EXIT
 if ! ln -f "$file" "$tmp" 2>/dev/null; then
     # Different filesystem: the swarm's savePath is not under the web root.
     # Copy to the temporary name and rename, so the swap is still atomic.
+    #
+    # -p, and it is load-bearing rather than tidiness. Apache derives its ETag
+    # partly from mtime, and pmtiles-swarm restores the *origin's* mtime on a
+    # delivered archive precisely so two nodes serving the same bytes serve the
+    # same validator. A plain cp stamps the copy with the moment it ran, which
+    # differs on every node and throws that away silently — the archives would
+    # be byte-identical and the ETags would not match, which is the
+    # EtagMismatch this whole arrangement exists to prevent. A hard link needs
+    # nothing, since it is the same inode.
     log "cross-device, copying instead of linking: $file"
-    cp "$file" "$tmp" || { log "copy failed"; exit 1; }
+    cp -p "$file" "$tmp" || { log "copy failed"; exit 1; }
 fi
 
 mv -f "$tmp" "$target" || { log "could not move into place: $target"; exit 1; }

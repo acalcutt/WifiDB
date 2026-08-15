@@ -24,9 +24,9 @@ define("SWITCH_EXTRAS", "export");
 
 include('../lib/init.inc.php');
 // Functions, not a class, so the autoloader in init.inc.php does not reach it.
-// createGeoJSON needs mvt_archive_pmtiles_url() to address an archived bucket
-// as pmtiles://; without this include it silently falls back to the tilejson
-// endpoint for every bucket, which works but never uses the archives.
+// createGeoJSON needs mvt_swarm_tilejson_url() to address an archived bucket
+// by category; without this include it silently falls back to the per-bucket
+// tilejson endpoint, which works but never reaches the archives.
 include_once('../lib/mvt.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'Network Map');
 
@@ -72,6 +72,13 @@ $wifidb_meta_header .= '<script type="importmap">'.json_encode([
 		'fflate'                        => $js.'/fflate/browser.js',
 		'maplibre-contour'              => $js.'/maplibre-contour/index.mjs',
 		'@maplibre/maplibre-gl-inspect' => $js.'/maplibre-gl-inspect/maplibre-gl-inspect.mjs',
+		// Only fetched when the map actually imports wifidb-swarm, which it
+		// does only when there is a swarm to read from.  webtorrent is 220 KB,
+		// so this staying unused matters.
+		'webtorrent'                    => $js.'/webtorrent/webtorrent.min.js',
+		'pmtiles-torrent'               => $js.'/pmtiles-torrent/index.js',
+		'pmtiles-torrent/webtorrent'    => $js.'/pmtiles-torrent/webtorrent.js',
+		'wifidb-swarm'                  => $js.'/wifidb/swarm.js',
 	],
 ], JSON_UNESCAPED_SLASHES).'</script>';
 
@@ -84,6 +91,22 @@ $dbcore->smarty->assign('wifidb_archive_url',
 		? rtrim($dbcore->tile_archive_url, '/') : '');
 $dbcore->smarty->assign('wifidb_swarm_key',
 	isset($dbcore->tile_swarm_public_key) ? $dbcore->tile_swarm_public_key : '');
+
+// ── Reading the archives out of the swarm ────────────────────────────────────
+// Off unless tile_swarm_browser is set, and overridable per request with
+// ?swarm=1 / ?swarm=0 so it can be compared against plain HTTP on the same
+// page without a config change — which is the only way to tell what the swarm
+// is actually contributing.
+//
+// An empty list is the whole off switch: the template imports nothing, so the
+// WebTorrent bundle is never fetched and the map behaves exactly as it did
+// before any of this existed.
+$swarm_param = isset($_GET['swarm']) ? trim($_GET['swarm']) : null;
+$swarm_on = ($swarm_param === null || $swarm_param === '')
+	? !empty($dbcore->tile_swarm_browser)
+	: ($swarm_param !== '0');
+$dbcore->smarty->assign('wifidb_swarm_sources',
+	json_encode($swarm_on ? mvt_swarm_browser_sources($dbcore) : [], JSON_UNESCAPED_SLASHES));
 
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);

@@ -176,6 +176,29 @@ function dd2dm(float $dd): float {
  *              the 'age_days' tag instead of a bucket date window).
  */
 /**
+ * Every bucket the daemons generate, AP buckets then their cell counterparts
+ * then the two combined heatmaps.
+ *
+ * The daemons iterate this, and opt/map.php walks it to work out which archives
+ * a browser could join.  One list, because a bucket present in one place and
+ * absent from another is not a visible error: it is an archive that quietly
+ * never generates, or a source the page never offers.
+ *
+ * 'legacy' is deliberately absent.  It is an alias kept for callers that still
+ * ask for it by name, not a bucket anything generates.
+ */
+function mvt_buckets(): array {
+    return [
+        'daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year',
+        '3to5year', '5to10year', '10yrplus',
+        'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year',
+        'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year',
+        'cell_10yrplus',
+        'heatmap', 'cell_heatmap',
+    ];
+}
+
+/**
  * How a bucket is stored: 'dir' for a flat .pbf tree, 'pmtiles' for a single
  * archive.
  *
@@ -265,12 +288,26 @@ function mvt_swarm_category($dbcore, string $bucket): ?string {
  * torrent block — infohash and magnet — which is how a torrent-aware client
  * joins the swarm without WifiDB ever having to know the infohash.
  */
-function mvt_swarm_tilejson_url($dbcore, string $bucket): ?string {
+function mvt_swarm_tilejson_url($dbcore, string $bucket, bool $with_magnet = true): ?string {
     $category = mvt_swarm_category($dbcore, $bucket);
     if ($category === null) {
         return null;
     }
-    return rtrim($dbcore->tile_swarm_url, '/') . '/latest/' . rawurlencode($category) . '/tiles.json';
+
+    $url = rtrim($dbcore->tile_swarm_url, '/')
+        . '/latest/' . rawurlencode($category) . '/tiles.json';
+
+    if (!$with_magnet) {
+        return $url;
+    }
+
+    // The magnet in the fragment, which is what makes one URL enough.  A
+    // fragment is never sent in a request, so an ordinary client fetches this
+    // document over HTTP and never sees it, while a swarm-aware one has
+    // something to join before it makes any call at all -- and can therefore
+    // still start when this server cannot answer.
+    $magnet = mvt_swarm_magnet($dbcore, $bucket);
+    return $magnet === null ? $url : $url . '#' . $magnet;
 }
 
 /**
@@ -307,6 +344,53 @@ function mvt_archive_pmtiles_url($dbcore, string $bucket): ?string {
 }
 
 /**
+ * What a browser needs in order to read the archives out of the swarm instead
+ * of over HTTP: one entry per bucket that has both an archive URL and a swarm
+ * category, empty when either is unconfigured.
+ *
+ * `key` is the style's source URL with `pmtiles://` removed, because that is
+ * the exact string the PMTiles protocol keys its source registry on — derived
+ * here from the same function that builds the URL, so the two cannot drift
+ * apart into the silent HTTP fallback a mismatched key produces.
+ *
+ * `tilejson` is the swarm's per-category document rather than anything WifiDB
+ * serves, and it stays the client's source of truth even though the fragment
+ * on `key` now carries a joinable infohash too.  The document says which build
+ * is current; the fragment says which one was current when the page was
+ * rendered, which is a fallback for a client that cannot fetch the document
+ * rather than a substitute for doing so.  Preferring the fragment would mean
+ * serving tiles from a superseded build for as long as anybody still seeds it.
+ * See lib/js/wifidb/swarm.js.
+ */
+function mvt_swarm_browser_sources($dbcore): array {
+    $sources = [];
+    foreach (mvt_buckets() as $bucket) {
+        $tilejson = mvt_swarm_tilejson_url($dbcore, $bucket);
+        if ($tilejson === null) {
+            continue;
+        }
+
+        $cached = mvt_swarm_cached_archive($dbcore, $bucket);
+        $infohash = $cached === null
+            ? null
+            : strtolower(trim((string)$cached['infohash']));
+        if ($infohash === null || !preg_match('/^[0-9a-f]{40}$/', $infohash)) {
+            // Nothing cached for this bucket yet.  The source is still worth
+            // offering -- it reads over HTTP like any other -- but there is
+            // nothing for the browser to join, so it is not listed here.
+            continue;
+        }
+
+        $sources[] = [
+            'bucket'   => $bucket,
+            'infohash' => $infohash,
+            'tilejson' => $tilejson,
+        ];
+    }
+    return $sources;
+}
+
+/**
  * The stable path to a bucket's current archive — the hard link every build
  * repoints, so callers never have to list the directory or know the date.
  */
@@ -335,13 +419,55 @@ function mvt_archive_file(string $root, string $bucket): string {
  * @param string $which 'mvt' or 'mlt'.
  */
 function mvt_generates_archives($dbcore, string $which = 'mvt'): bool {
-    if ($which === 'mlt') {
-        // Off by default: nothing reads MLT out of a PMTiles archive yet, and
-        // building one is a full extra pass over the bucket.
-        return isset($dbcore->tile_mlt_archive_generate)
-            && (bool)$dbcore->tile_mlt_archive_generate;
+    $setting = $which === 'mlt'
+        ? ($dbcore->tile_mlt_archive_generate ?? 0)
+        : ($dbcore->tile_archive_generate ?? 1);
+
+    // A node name rather than a flag, which is what makes this usable when the
+    // configuration is synced between nodes and therefore cannot say different
+    // things on each.
+    //
+    //   'tile_archive_generate' => 'http-01'
+    //   'tile_archive_generate' => 'http-01, http-03'
+    //
+    // The alternative in a synced setup is to leave the flag on everywhere and
+    // rely on the second node simply not having a cron entry.  That works, and
+    // it is invisible: nothing on that node says it must not generate, so the
+    // day somebody adds the entry for an unrelated reason, two nodes start
+    // building the same buckets independently -- different bytes, different
+    // infohashes, competing BEP 46 records under one salt, and ETags that
+    // disagree.  Naming the node puts the intent where it can be read.
+    if (is_string($setting) || is_array($setting)) {
+        $allowed = is_array($setting)
+            ? $setting
+            : preg_split('/[\s,]+/', trim($setting), -1, PREG_SPLIT_NO_EMPTY);
+
+        // The hostname first, because it is the only identity here that cannot
+        // be synced away.  wifidb_nodename lives in daemon.config.inc.php,
+        // which sits under the tree rsync copies between nodes -- so on a
+        // synced pair both machines report the same one, and comparing against
+        // it would answer the same on each, which is the entire thing this
+        // form exists to avoid.  It is still accepted, for installs where it
+        // is genuinely distinct.
+        $names = array_filter([
+            gethostname() ?: null,
+            isset($dbcore->node_name) ? (string)$dbcore->node_name : null,
+        ]);
+
+        foreach ($names as $name) {
+            if (in_array($name, $allowed, true)) {
+                return true;
+            }
+        }
+
+        // Nothing matched, including the case where this node has no identity
+        // to offer at all.  No rather than yes: generating where it was not
+        // asked for is the failure that is expensive to undo, and the daemon
+        // says plainly which it decided.
+        return false;
     }
-    return !isset($dbcore->tile_archive_generate) || (bool)$dbcore->tile_archive_generate;
+
+    return (bool)$setting;
 }
 
 /**
@@ -387,6 +513,18 @@ function mvt_publish_archive(string $tmp, string $dir, string $bucket, int $keep
         // Hard links fail across filesystems and on some network shares.
         // A copy costs the space but keeps the stable name working.
         @copy($dated, $stable);
+
+        // copy() does not carry the timestamp over, and a hard link does — so
+        // without this the stable name's mtime depends on which of the two
+        // paths was taken. Apache derives its ETag partly from mtime, and
+        // pmtiles-swarm goes to some trouble to make a mirror's copy of an
+        // archive carry the origin's, precisely so two nodes serving the same
+        // bytes serve the same validator. A fresh timestamp here throws that
+        // away for the one name clients actually read.
+        $built = @filemtime($dated);
+        if ($built !== false) {
+            @touch($stable, $built);
+        }
     }
 
     // Retire older builds, newest kept. Sorting by name works because the
@@ -401,17 +539,193 @@ function mvt_publish_archive(string $tmp, string $dir, string $bucket, int $keep
 }
 
 /**
- * The BEP 46 mutable magnet for a bucket's archive, or null when no swarm
- * public key is configured.
+ * Records what the swarm currently holds for a bucket.
  *
- * This is the one handle that outlives everything else.  An infohash names a
- * specific build and changes on every regeneration; a mutable magnet names the
- * category and resolves, through the DHT, to whichever archive is current.  It
- * is built from the public key and the salt alone, and pmtiles-swarm salts each
- * record with the category name, so this is computable here with no request to
- * the swarm — which is the point.  A client holding this magnet can find the
- * current archive when tilejson.php, wifidb.net and the swarm's HTTP endpoint
- * are all unreachable, because the DHT is none of them.
+ * Upserts, and only moves `updated_at` when the infohash actually changed —
+ * which is what makes "this build is three weeks old" distinguishable from
+ * "we last managed to ask three weeks ago".  `checked_at` always moves, so a
+ * silent refresher and a broken one look different.
+ *
+ * Returns true when something was written, false when it could not be.  A
+ * failure is never fatal: the caller's job is to keep the cache warm, and a
+ * cache that cannot be written is a cache that keeps its last value, which is
+ * the behaviour that matters.
+ */
+function mvt_swarm_record_archive($dbcore, string $bucket, array $archive): bool {
+    $infohash = strtolower(trim((string)($archive['infohash'] ?? '')));
+    if (!preg_match('/^[0-9a-f]{40}$/', $infohash)) {
+        return false;
+    }
+    if (!preg_match('/^[a-z0-9_]+$/', $bucket)) {
+        return false;
+    }
+
+    $category     = (string)($archive['category'] ?? '');
+    $magnet       = isset($archive['magnet']) ? (string)$archive['magnet'] : null;
+    $style_url    = isset($archive['style_url']) ? (string)$archive['style_url'] : null;
+    $name         = isset($archive['name']) ? (string)$archive['name'] : null;
+    $size         = isset($archive['size']) ? (int)$archive['size'] : null;
+    $built_at     = isset($archive['built_at']) ? (string)$archive['built_at'] : null;
+
+    // Read, then update or insert, rather than ON DUPLICATE KEY UPDATE or
+    // MERGE.  This branch runs on both MySQL and SQL Server and those spell an
+    // upsert differently — as they do IF() and COALESCE-over-VALUES(), both of
+    // which this needed.  Deciding in PHP keeps one statement pair that either
+    // engine will take, and makes the two rules below readable rather than
+    // buried in dialect.
+    $existing = mvt_swarm_cached_archive($dbcore, $bucket);
+
+    // Only the fields this caller actually knows.  One that has the infohash
+    // and nothing else — the onComplete hook, handed a path and a category and
+    // never a magnet — must not blank what the poller filled in.  Recording
+    // what you know should never erase what somebody else knew.
+    $known = array(
+        'category'       => $category !== '' ? $category : null,
+        'magnet'         => $magnet,
+        'style_url'      => $style_url,
+        'archive_name'   => $name,
+        'archive_size'   => $size,
+        'built_at'       => $built_at,
+        'public_key'     => isset($archive['public_key']) ? (string)$archive['public_key'] : null,
+        'salt'           => isset($archive['salt']) ? (string)$archive['salt'] : null,
+        'mutable_magnet' => isset($archive['mutable_magnet']) ? (string)$archive['mutable_magnet'] : null,
+    );
+    $known = array_filter($known, static function ($value) {
+        return $value !== null && $value !== '';
+    });
+
+    try {
+        if ($existing === null) {
+            $columns = array_merge(array('bucket', 'infohash'), array_keys($known));
+            $values  = array_merge(array($bucket, $infohash), array_values($known));
+            $sql = 'INSERT INTO swarm_archives (' . implode(', ', $columns)
+                 . ', updated_at, checked_at) VALUES ('
+                 . implode(', ', array_fill(0, count($columns), '?'))
+                 . ', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)';
+            $stmt = $dbcore->sql->conn->prepare($sql);
+            $stmt->execute($values);
+            return true;
+        }
+
+        $sets   = array('infohash = ?', 'checked_at = CURRENT_TIMESTAMP');
+        $values = array($infohash);
+        foreach ($known as $column => $value) {
+            $sets[]   = $column . ' = ?';
+            $values[] = $value;
+        }
+
+        // Only when the build actually moved.  Rewriting this on every poll
+        // would make every row look freshly built and quietly defeat the age
+        // check that drops a retired infohash.
+        if (strtolower((string)$existing['infohash']) !== $infohash) {
+            $sets[] = 'updated_at = CURRENT_TIMESTAMP';
+        }
+
+        $values[] = $bucket;
+        $stmt = $dbcore->sql->conn->prepare(
+            'UPDATE swarm_archives SET ' . implode(', ', $sets) . ' WHERE bucket = ?'
+        );
+        $stmt->execute($values);
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
+ * Notes that a bucket was checked and found unchanged.
+ *
+ * Separate from recording a build, because "the swarm answered and nothing has
+ * changed" and "the swarm did not answer" are different states and only one of
+ * them should move `checked_at`.
+ */
+function mvt_swarm_touch_archive($dbcore, string $bucket): bool {
+    try {
+        $stmt = $dbcore->sql->conn->prepare(
+            'UPDATE swarm_archives SET checked_at = CURRENT_TIMESTAMP WHERE bucket = ?'
+        );
+        $stmt->bindParam(1, $bucket, PDO::PARAM_STR);
+        $stmt->execute();
+        return true;
+    } catch (Exception $e) {
+        return false;
+    }
+}
+
+/**
+ * How old a cached infohash may be before it is left out of the magnet, in
+ * days.  Zero or less means never drop it.
+ */
+function mvt_swarm_infohash_max_age($dbcore): int {
+    if (!isset($dbcore->tile_swarm_infohash_max_days)) {
+        return 30;
+    }
+    return (int)$dbcore->tile_swarm_infohash_max_days;
+}
+
+/**
+ * The last thing the swarm told us about a bucket's archive, or null.
+ *
+ * A cache, not a source of truth: the swarm decides which build is current,
+ * and this is the most recent answer it gave.  Reading it costs one indexed
+ * lookup and never touches the network, which is the whole point — a page
+ * render must not wait on the swarm, and must not break when it is down.
+ *
+ * See tools/daemon/swarm_index.php for what fills this in.
+ */
+function mvt_swarm_cached_archive($dbcore, string $bucket): ?array {
+    try {
+        $stmt = $dbcore->sql->conn->prepare(
+            'SELECT bucket, category, infohash, magnet, style_url, archive_name,
+                    archive_size, built_at, public_key, salt, mutable_magnet,
+                    updated_at, checked_at
+               FROM swarm_archives WHERE bucket = ?'
+        );
+        $stmt->bindParam(1, $bucket, PDO::PARAM_STR);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // A missing table is the state every install is in until the schema is
+        // updated, and it must degrade to "no cached build" rather than taking
+        // the map page down with it.
+        return null;
+    }
+
+    return $row === false ? null : $row;
+}
+
+/**
+ * The magnet for a bucket's archive, or null when no swarm public key is
+ * configured.
+ *
+ * Carries two identifiers, and they do different jobs:
+ *
+ *   xs=urn:btpk:  the public key.  The one handle that outlives everything
+ *                 else — an infohash names a specific build and changes on
+ *                 every regeneration, while this names the category and
+ *                 resolves, through the DHT, to whichever archive is current.
+ *                 Computed from the key and the salt alone, so it is available
+ *                 with no request to the swarm and stays valid when
+ *                 tilejson.php, wifidb.net and the swarm's HTTP endpoint are
+ *                 all unreachable, because the DHT is none of them.
+ *
+ *   xt=urn:btih:  the build that was current when the cache was last filled.
+ *                 A browser has no DHT and cannot resolve the key, so without
+ *                 this it would have to fetch the very document this magnet is
+ *                 attached to before it could join anything — which is exactly
+ *                 what putting a magnet in the fragment exists to avoid.
+ *
+ * The infohash is deliberately the cached one rather than a fresh lookup.  It
+ * is a fallback for a client that cannot reach the TileJSON, so buying it with
+ * a request to the swarm on every page render would be paying for the failure
+ * case in the success case.
+ *
+ * It is also dropped once it is older than tile_swarm_infohash_max_days: past
+ * some point a build has been retired, and pointing a client at a swarm that
+ * no longer exists is worse than sending it to the key alone.  Note this is
+ * measured from when the cache last *changed*, not when it was last checked —
+ * a swarm that has been unreachable for a week has not made the build it last
+ * reported any older.
  *
  * Format matches mutableMagnet() in pmtiles-swarm's src/mutable.js.  Web seeds
  * are deliberately omitted: those belong to a particular build, and this URI
@@ -422,20 +736,75 @@ function mvt_swarm_magnet($dbcore, string $bucket): ?string {
     if ($category === null) {
         return null;
     }
-    if (!isset($dbcore->tile_swarm_public_key) || $dbcore->tile_swarm_public_key === '') {
-        return null;
+
+    $cached = mvt_swarm_cached_archive($dbcore, $bucket);
+
+    // Is the cached build recent enough to be worth pointing anyone at? Past
+    // some age it has been retired, and a magnet naming a swarm that no longer
+    // exists is worse than one naming only the key. Measured from when the
+    // build last CHANGED, not when the swarm was last reachable — an outage
+    // does not make a build older.
+    $fresh = false;
+    if ($cached !== null) {
+        $max_days = mvt_swarm_infohash_max_age($dbcore);
+        $age_days = null;
+        if (!empty($cached['updated_at'])) {
+            $changed = strtotime((string)$cached['updated_at']);
+            if ($changed !== false) {
+                $age_days = (time() - $changed) / 86400;
+            }
+        }
+        $fresh = $max_days <= 0 || $age_days === null || $age_days <= $max_days;
+    }
+
+    // What the swarm itself published, verbatim. Preferred over rebuilding the
+    // string here because the format is the swarm's to define — it carries the
+    // current infohash, the key, the salt, the display name and any web seeds,
+    // and it has already changed shape once. Reconstructing it means keeping
+    // two implementations in step across two repositories, and the one here
+    // would fail quietly by producing a magnet that merely looks right.
+    if ($fresh && !empty($cached['mutable_magnet'])) {
+        return (string)$cached['mutable_magnet'];
+    }
+
+    // Nothing published to copy, so assemble one. Either the swarm was asked
+    // and had no mutable record, or — much more usually — the onComplete hook
+    // recorded this build a moment ago and knows only its infohash, the
+    // refresher not having run since. Dropping the infohash here would throw
+    // away exactly what the hook exists to deliver early.
+    $key = '';
+    if (isset($dbcore->tile_swarm_public_key) && $dbcore->tile_swarm_public_key !== '') {
+        $key = strtolower(trim((string)$dbcore->tile_swarm_public_key));
+    } elseif ($cached !== null && !empty($cached['public_key'])) {
+        // Discovered rather than configured: the public half is in every
+        // TileJSON the swarm serves, so the refresher reads it from there
+        // instead of asking an operator to copy 64 hex characters correctly.
+        $key = strtolower(trim((string)$cached['public_key']));
     }
 
     // An ed25519 public key is 32 bytes, so 64 hex characters. Anything else
     // would produce a magnet that looks valid and resolves to nothing.
-    $key = strtolower(trim($dbcore->tile_swarm_public_key));
     if (!preg_match('/^[0-9a-f]{64}$/', $key)) {
         return null;
     }
 
-    return 'magnet:?xs=urn:btpk:' . $key
-        . '&dn=' . rawurlencode($category)
-        . '&s=' . rawurlencode($category);
+    $salt = $cached !== null && !empty($cached['salt'])
+        ? (string)$cached['salt']
+        : $category;
+
+    $magnet = 'magnet:?';
+    $infohash = $cached === null
+        ? null
+        : strtolower(trim((string)$cached['infohash']));
+    if ($fresh && $infohash !== null && preg_match('/^[0-9a-f]{40}$/', $infohash)) {
+        // First, because that is where a client looks for something to join
+        // and a good many stop reading once they have found it.
+        $magnet .= 'xt=urn:btih:' . $infohash . '&';
+    }
+
+    return $magnet . 'xs=urn:btpk:' . $key
+        . '&dn=' . rawurlencode($salt)
+        . '&s=' . rawurlencode($salt);
 }
 
 /**

@@ -2,6 +2,9 @@
 
 Copied verbatim from npm — do not edit. Each keeps its own LICENSE alongside it.
 
+`wifidb/` is the exception: WifiDB's own modules, under this repository's
+licence, and the only directory here that may be edited.
+
 | directory | package | version |
 |---|---|---|
 | `maplibre-gl-inspect/` | `@maplibre/maplibre-gl-inspect` | 1.8.2 |
@@ -9,6 +12,21 @@ Copied verbatim from npm — do not edit. Each keeps its own LICENSE alongside i
 | `maplibre-contour/` | `maplibre-contour` | 0.1.0 |
 | `maplibre-gl/` | `maplibre-gl` | 6.3.0 |
 | `pmtiles/` | `pmtiles` | 4.5.0 |
+| `pmtiles-torrent/` | `pmtiles-torrent` | 0.4.4 |
+| `webtorrent/` | `webtorrent` | 3.0.21 |
+
+## The swarm libraries
+
+`pmtiles-torrent/` and `webtorrent/` are loaded only when `tile_swarm_browser`
+is on and there are archives to join — the import in `map.tpl` is inside a
+Smarty conditional for that reason. WebTorrent alone is 220 KB, which is not
+worth spending on every map view for a feature that is off.
+
+`pmtiles-torrent` ships `index.js`, `webtorrent.js` and the `chunk-*.js` that
+both import by relative path. All three have to stay in this directory, and the
+chunk's name changes with its contents, so copy the set rather than individual
+files. These came from the sibling `pmtiles-torrent` repository — `npm run
+build` there, then copy `dist/esm/`.
 
 ## Why ESM, and why an import map
 

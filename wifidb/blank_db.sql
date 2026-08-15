@@ -2298,6 +2298,24 @@ INSERT INTO `settings` (`id`, `daemon_state`, `version`, `apswithgps`, `last_exp
 -- Table structure for table `stats_cache`
 --
 
+CREATE TABLE `swarm_archives` (
+  `bucket` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `category` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `infohash` char(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `magnet` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `style_url` varchar(1024) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `archive_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `archive_size` bigint(20) UNSIGNED DEFAULT NULL,
+  `built_at` timestamp NULL DEFAULT NULL,
+  `public_key` char(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `salt` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mutable_magnet` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `checked_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
 CREATE TABLE `stats_cache` (
   `cache_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
   `cache_data` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -2733,6 +2751,12 @@ ALTER TABLE `settings`
 --
 ALTER TABLE `stats_cache`
   ADD PRIMARY KEY (`cache_key`);
+
+--
+-- Indexes for table `swarm_archives`
+--
+ALTER TABLE `swarm_archives`
+  ADD PRIMARY KEY (`bucket`);
 
 --
 -- Indexes for table `share_waypoints`

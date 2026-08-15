@@ -532,9 +532,7 @@ function encode_cell_tile_from_mvt(
 }
 
 // ── Main generation loop ──────────────────────────────────────────────────────
-$buckets = ['daily', 'weekly', 'monthly', '0to1year', '1to2year', '2to3year', '3to5year', '5to10year', '10yrplus',
-            'cell_daily', 'cell_weekly', 'cell_monthly', 'cell_0to1year', 'cell_1to2year', 'cell_2to3year', 'cell_3to5year', 'cell_5to10year', 'cell_10yrplus',
-            'heatmap', 'cell_heatmap'];
+$buckets = mvt_buckets();
 
 if ($single_bucket !== null) {
     if (!in_array($single_bucket, $buckets)) {
