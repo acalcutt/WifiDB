@@ -367,6 +367,24 @@ canvas {
     padding: 0 .25em;
 }
 
+/* The swarm readout, on its own line below the buttons: archives joined,
+   seeds, peers, bytes moved.  Smaller than a button label because it changes
+   every couple of seconds and should not pull the eye off the controls above
+   it.  It lives inside #all_controls, so it collapses with them. */
+.swarm-status {
+    padding: 0 .25em 2px;
+    font-size: 11px;
+    font-family: Arial;
+    white-space: nowrap;
+}
+
+/* Nothing to say yet -- before the module has run, or when there are no
+   sources.  Left out of the layout entirely rather than holding an empty line
+   above the buttons and pushing the whole control row down. */
+.swarm-status:empty {
+    display: none;
+}
+
 .latest-button {
     background-color: #73add5;
 }

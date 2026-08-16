@@ -159,10 +159,27 @@ $config = array
 	# switch -- the template imports nothing and the map behaves exactly as it
 	# did before any of this existed.
 	#
+	# Four states, because offering the feature and turning it on stopped
+	# being the same question once the map grew a toggle for it:
+	#
+	#   0 / 'off'     not offered.  No toggle, no sources, nothing loaded.
+	#   'manual'      offered and off.  The toggle is there; nothing is
+	#                 fetched until a visitor presses it.
+	#   'auto'        offered, and on unless the browser reports a metered or
+	#                 very slow connection -- Data Saver, cellular, 2g.  The
+	#                 detection is client-side and its limits are worth
+	#                 reading before relying on it: see the header comment in
+	#                 lib/js/wifidb/swarm-control.js.
+	#   1 / 'on'      offered and on, whatever the connection looks like.
+	#
+	# Whatever is set here is only the default.  A visitor's own choice, made
+	# with the toggle, is remembered in their browser and wins over it.
+	#
 	# Needs tile_archive_url set, since that is the URL the browser reads.
 	#
 	# Overridable per request without a config change, which is the only way
-	# to see what the swarm is actually contributing:
+	# to see what the swarm is actually contributing.  Beats both the setting
+	# and any remembered choice, and is not itself remembered:
 	#
 	#   map.php?...&swarm=1   force on
 	#   map.php?...&swarm=0   force off

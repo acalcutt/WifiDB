@@ -391,6 +391,45 @@ function mvt_swarm_browser_sources($dbcore): array {
 }
 
 /**
+ * How the browser swarm is offered, as one of 'off', 'manual', 'auto' or 'on'.
+ *
+ * `tile_swarm_browser` started as a flag and is now four states, because "is
+ * the feature available" and "is it on by default" stopped being the same
+ * question once there was a toggle on the page:
+ *
+ *   off     not offered.  No sources are rendered, the template imports
+ *           nothing, and the map is byte-for-byte what it was before any of
+ *           this existed.  Still what 0 and an unset value mean.
+ *   manual  offered and off.  The toggle is there; nothing loads until it is
+ *           pressed.
+ *   auto    offered, and on unless the browser says the connection is metered.
+ *           See lib/js/wifidb/swarm-control.js -- the detection is client-side
+ *           because none of what it reads is visible from here.
+ *   on      offered and on, which is what 1 has always meant.
+ *
+ * An unrecognised value reads as 'off' rather than guessing.  That is a silent
+ * fallback of exactly the kind that cost hours here before, so the resolved
+ * mode is printed by ?swarmdebug=1: when the config says one thing and the page
+ * does another, that is the first place to look.
+ */
+function mvt_swarm_browser_mode($dbcore): string {
+    if (!isset($dbcore->tile_swarm_browser)) {
+        return 'off';
+    }
+    $value = strtolower(trim((string)$dbcore->tile_swarm_browser));
+    if ($value === '1' || $value === 'on' || $value === 'true' || $value === 'yes') {
+        return 'on';
+    }
+    if ($value === 'auto') {
+        return 'auto';
+    }
+    if ($value === 'manual' || $value === 'optin' || $value === 'opt-in') {
+        return 'manual';
+    }
+    return 'off';
+}
+
+/**
  * The stable path to a bucket's current archive — the hard link every build
  * repoints, so callers never have to list the directory or know the date.
  */

@@ -70,7 +70,27 @@ if not, write to the
 												<td style="width: 40px"></td>
 												<td>
 													<span id="all_controls" class="all_controls">
+{if ($wifidb_swarm_sources|default:'[]') ne '[]'}
+														<!-- Above the controls rather than below them: these figures
+														     refresh every two seconds, and a number ticking away
+														     underneath a row of buttons pulls the eye down off them.
+														     Inside #all_controls, so it collapses with the buttons when
+														     the controls are hidden.
+														     :empty in the stylesheet matters more here than it did below
+														     the row -- an empty div above the controls would push them
+														     down by a line until the module has something to say. -->
+														<div class="swarm-status" id="swarm_status"></div>
+{/if}
 														<div>
+{if ($wifidb_swarm_sources|default:'[]') ne '[]'}
+															<!-- Reads the bucket archives from other browsers over BitTorrent
+															     rather than from wifidb.net.  First in the row, ahead of the
+															     style selector.
+															     No onClick: the handler is bound in the module below, which is
+															     also what decides the initial state, so the label here is only
+															     what shows before that runs. -->
+															<button class="toggle-button" id="swarm_toggle" type="button">Swarm</button>
+{/if}
 															<span class="inline nowrap controls-icon">Map Style:
 																<select id="styles" class="dropdownSelect">
 																  <option value="WDB_OSM"{if $style eq "WDB_OSM"} selected{/if}>3D</option>
@@ -206,9 +226,10 @@ if not, write to the
 		console.info('[wifidb-swarm] server:', {$wifidb_swarm_debug});
 {/if}
 {if ($wifidb_swarm_sources|default:'[]') ne '[]'}
-		// Pulls in WebTorrent, so it is imported only when there is a swarm
-		// configured to make use of it.
-		import { enableSwarm } from 'wifidb-swarm';
+		// Policy and the toggle, which is all this is: WebTorrent sits behind a
+		// dynamic import inside it and is not fetched until something actually
+		// turns the swarm on.
+		import { attachSwarmControl } from 'wifidb-swarm-control';
 {/if}
 
 		// Lets a style name a pmtiles:// source, so a bucket archive can be
@@ -229,28 +250,37 @@ if not, write to the
 		maplibregl.addProtocol('pmtiles', pmtilesProtocol.tile);
 
 {if ($wifidb_swarm_sources|default:'[]') ne '[]'}
-		// Joins each archive's swarm and registers it on the protocol above.
+		// Decides whether this connection should be reading from the swarm at
+		// all, binds the toggle that overrides that, and joins each archive's
+		// swarm behind the protocol above whenever it is on.
+		//
 		// Resolves either way -- an archive the swarm cannot serve is simply
 		// left unregistered and read over HTTP -- and init() waits on it,
 		// because the protocol binds an HTTP source to any URL it does not
-		// already know by the time the layers ask for it.
+		// already know by the time the layers ask for it. It resolves at once
+		// when the swarm starts off, and switching it on later never blocks
+		// anything: the layers are already in by then and an archive that
+		// registers afterwards starts serving on the next tile request.
 		//
-		// Published to window so the transport can be checked from a console:
-		// wifidbSwarm.stats() reports peers and bytes per bucket, which is the
-		// difference between a swarm read and an HTTP read that merely passed
-		// through this code.
-		const swarmReady = enableSwarm({
+		// The handle is published to window.wifidbSwarm by the control rather
+		// than here, because it now comes and goes with the toggle.
+		// wifidbSwarm.stats() reports peers, web seeds and bytes per bucket --
+		// and peers counted apart from web seeds is the difference between a
+		// swarm read and an HTTP read that merely passed through this code.
+		const swarmReady = attachSwarmControl({
 			protocol: pmtilesProtocol,
 			archives: {$wifidb_swarm_sources|default:'[]'},
+			// manual, auto or on, from tile_swarm_browser. 'off' never reaches
+			// here -- it renders no sources, so this whole block is absent.
+			mode: '{$wifidb_swarm_mode|default:"off"}',
+			button: document.getElementById('swarm_toggle'),
+			status: document.getElementById('swarm_status'),
 {if $wifidb_swarm_wait_ms}
 			// ?swarmwait=<seconds> -- a debugging budget, to find out whether a
 			// peer ever answers rather than how long one takes.
 			metadataTimeoutMs: {$wifidb_swarm_wait_ms},
 			batchTimeoutMs: {$wifidb_swarm_wait_ms},
 {/if}
-		}).then(function (handle) {
-			window.wifidbSwarm = handle;
-			return handle;
 		});
 {else}
 		const swarmReady = Promise.resolve(null);

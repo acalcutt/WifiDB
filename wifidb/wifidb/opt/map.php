@@ -72,9 +72,13 @@ $wifidb_meta_header .= '<script type="importmap">'.json_encode([
 		'fflate'                        => $js.'/fflate/browser.js',
 		'maplibre-contour'              => $js.'/maplibre-contour/index.mjs',
 		'@maplibre/maplibre-gl-inspect' => $js.'/maplibre-gl-inspect/maplibre-gl-inspect.mjs',
-		// Only fetched when the map actually imports wifidb-swarm, which it
-		// does only when there is a swarm to read from.  webtorrent is 220 KB,
-		// so this staying unused matters.
+		// Policy and the toggle. Small, and loaded whenever the swarm is
+		// offered at all, because something has to decide whether to turn it
+		// on and to draw the control that says so.
+		'wifidb-swarm-control'          => $js.'/wifidb/swarm-control.js',
+		// The transport, and everything it drags in. Only fetched once
+		// something turns the swarm on -- swarm-control imports it lazily and
+		// webtorrent alone is 220 KB, so this staying unused matters.
 		'webtorrent'                    => $js.'/webtorrent/webtorrent.min.js',
 		'pmtiles-torrent'               => $js.'/pmtiles-torrent/index.js',
 		'pmtiles-torrent/webtorrent'    => $js.'/pmtiles-torrent/webtorrent.js',
@@ -93,18 +97,32 @@ $dbcore->smarty->assign('wifidb_swarm_key',
 	isset($dbcore->tile_swarm_public_key) ? $dbcore->tile_swarm_public_key : '');
 
 // ── Reading the archives out of the swarm ────────────────────────────────────
-// Off unless tile_swarm_browser is set, and overridable per request with
-// ?swarm=1 / ?swarm=0 so it can be compared against plain HTTP on the same
-// page without a config change — which is the only way to tell what the swarm
-// is actually contributing.
+// Two decisions, and only the first belongs here.
 //
-// An empty list is the whole off switch: the template imports nothing, so the
-// WebTorrent bundle is never fetched and the map behaves exactly as it did
-// before any of this existed.
+// Whether the swarm is OFFERED is this file's: it decides whether the source
+// list is rendered at all, and an empty list is still the whole off switch —
+// the template imports nothing, the WebTorrent bundle is never fetched, and the
+// map behaves exactly as it did before any of this existed.
+//
+// Whether it is ON is the browser's, in lib/js/wifidb/swarm-control.js. It has
+// to be: the default rule turns on saveData, connection type and effective
+// type, none of which are visible from PHP, and the visitor's own choice lives
+// in localStorage where the server never sees it. So the mode is passed through
+// and resolved there, with precedence URL → stored choice → auto-detect.
+//
+// ?swarm=1 / ?swarm=0 still work and still take precedence over everything, so
+// the swarm can be compared against plain HTTP on the same page without a
+// config change — which is the only way to tell what it is actually
+// contributing. Read here as well as in the browser only so that ?swarm=1 can
+// force the sources out of a server that has the feature switched off entirely;
+// the on/off decision itself is not made twice.
 $swarm_param = isset($_GET['swarm']) ? trim($_GET['swarm']) : null;
-$swarm_on = ($swarm_param === null || $swarm_param === '')
-	? !empty($dbcore->tile_swarm_browser)
-	: ($swarm_param !== '0');
+$swarm_mode  = mvt_swarm_browser_mode($dbcore);
+if ($swarm_param === '1' && $swarm_mode === 'off') {
+	$swarm_mode = 'on';
+}
+$swarm_offered = ($swarm_mode !== 'off');
+$dbcore->smarty->assign('wifidb_swarm_mode', $swarm_mode);
 // What this request resolved, for the console, behind ?swarmdebug=1.
 //
 // The web path and the CLI build $dbcore differently and read the same files,
@@ -125,7 +143,11 @@ if ($swarm_debug) {
     $probe_row    = mvt_swarm_cached_archive($dbcore, $probe_bucket);
     $dbcore->smarty->assign('wifidb_swarm_debug', json_encode([
         'dbcoreClass'   => get_class($dbcore),
-        'swarmOn'       => $swarm_on,
+        // The resolved mode, not the raw setting: an unrecognised value in
+        // tile_swarm_browser reads as 'off' and nothing else would say so.
+        'swarmMode'     => $swarm_mode,
+        'swarmSetting'  => $dbcore->tile_swarm_browser ?? '(unset)',
+        'swarmOffered'  => $swarm_offered,
         'swarmParam'    => $swarm_param,
         'tileSwarmUrl'  => $dbcore->tile_swarm_url        ?? '(unset)',
         'tileArchiveUrl'=> $dbcore->tile_archive_url      ?? '(unset)',
@@ -146,7 +168,7 @@ if ($swarm_debug) {
 }
 
 $dbcore->smarty->assign('wifidb_swarm_sources',
-	json_encode($swarm_on ? mvt_swarm_browser_sources($dbcore) : [], JSON_UNESCAPED_SLASHES));
+	json_encode($swarm_offered ? mvt_swarm_browser_sources($dbcore) : [], JSON_UNESCAPED_SLASHES));
 
 $dbcore->smarty->assign('ie', $ie);
 $dbcore->smarty->assign('terrain', $terrain);

@@ -40,12 +40,31 @@ import { PMTiles } from 'pmtiles';
  * rebuilds -- and useless here, because WebTorrent implements neither BEP 46
  * nor a DHT at all. A browser has no UDP, so there is nothing for it to ask.
  *
- * What a browser can join is a swarm named by infohash, over WebRTC, through a
- * websocket tracker. pmtiles-swarm publishes exactly that in the `torrent`
- * block of the TileJSON it serves per category, so this fetches that document
- * and uses the plain `xt=urn:btih:` magnet out of it. The mutable magnet in the
- * fragment stays where it is: it costs nothing, it is what a client with a real
- * DHT would use, and it is the fallback if this endpoint ever disappears.
+ * So this fetches the category's TileJSON, whose `torrent` block pmtiles-swarm
+ * publishes with everything a browser can actually act on. The mutable magnet
+ * in the fragment stays where it is: it costs nothing, it is what a client with
+ * a real DHT would use, and it is the fallback if this endpoint disappears.
+ *
+ * ── What a browser is handed, and why the magnet is not enough ───────────────
+ *
+ * The obvious handle from that block is the plain `xt=urn:btih:` magnet, joined
+ * over WebRTC through a websocket tracker. That works, and it is not sufficient:
+ * a magnet names a swarm and carries no piece hashes, and the metainfo those
+ * live in can only come from a **peer**, over BEP 9. A web seed serves file
+ * payload and never metainfo.
+ *
+ * A browser that cannot reach a peer therefore cannot use the web seed either,
+ * however reachable that web seed is -- it holds bytes it has no way to verify.
+ * On a carrier network that blocks the websocket trackers, an archive with a
+ * perfectly healthy HTTPS web seed reports nought peers, nought web seeds, and
+ * serves nothing at all.
+ *
+ * The `torrent` block also names the .torrent itself, a few hundred bytes over
+ * the same HTTPS the TileJSON arrived on, and that carries the piece hashes,
+ * the trackers and the web seed together. Fetching it takes the peer off the
+ * critical path: the engine is ready the moment it is built, and the web seed
+ * alone can serve the archive. That is the preferred route, with the magnet
+ * kept for when it is unavailable -- see chooseTorrentId.
  *
  * ── Why nothing is registered until metadata has arrived ─────────────────────
  *
@@ -56,16 +75,27 @@ import { PMTiles } from 'pmtiles';
  * down rather than merely fail to accelerate them.
  *
  * So each archive is joined first and registered only once its metadata is in
- * hand, and the whole batch runs against a deadline. Whatever is ready by then
- * is served from the swarm; everything else is left unregistered and loads over
- * HTTP exactly as it did before, which is also what happens when this module is
- * never loaded at all. Stragglers are destroyed rather than left running, since
- * an archive that missed the deadline can no longer be registered and would be
- * pulling pieces nobody will read.
+ * hand. Anything that never gets there is left unregistered and loads over HTTP
+ * exactly as it did before, which is also what happens when this module is
+ * never loaded at all.
+ *
+ * The batch deadline bounds only how long the caller waits before drawing. An
+ * archive arriving after it is still registered and still starts serving, so
+ * nothing is thrown away for being late -- see the note in the handoff about
+ * the version that did throw them away and reported a working swarm as broken.
  */
 
 /** How long to wait for a category's TileJSON before giving up on it. */
 const TILEJSON_TIMEOUT_MS = 5000;
+/**
+ * How long to wait for an archive's .torrent, and for the web seed check that
+ * decides whether the metainfo is worth having.
+ *
+ * Both are ordinary HTTPS requests against the same hosts the map already
+ * talks to, so a budget in seconds is generous. Neither is worth waiting on
+ * longer than the TileJSON that named them.
+ */
+const METAINFO_TIMEOUT_MS = 5000;
 /**
  * How long to wait for a torrent's metainfo before giving up on it.
  *
@@ -160,6 +190,127 @@ function isJoinable(magnet) {
 }
 
 /**
+ * Fetches an archive's .torrent, so this page holds the metainfo outright.
+ *
+ * This is the difference between working on a restricted network and not
+ * working at all, and the reason is worth stating plainly. A magnet names a
+ * swarm by infohash and nothing else; the piece hashes live in the metainfo,
+ * which a BitTorrent client can only obtain from a **peer**, over BEP 9. A web
+ * seed serves file payload and never metainfo, so it cannot bootstrap one.
+ *
+ * So a browser that cannot reach a peer -- a carrier network blocking the
+ * websocket trackers, a NAT no WebRTC candidate survives -- cannot use the web
+ * seed either, however reachable that web seed is. It has bytes it is not
+ * allowed to trust. Tested on a phone: nought peers, nought web seeds, both
+ * HTTPS endpoints answering perfectly the whole time.
+ *
+ * The .torrent removes the peer from the critical path entirely. It is a few
+ * hundred bytes over the same HTTPS the TileJSON came from, and it carries the
+ * piece hashes, the trackers and the web seed together.
+ *
+ * @param {string} url URL of the archive's .torrent.
+ * @returns {Promise<Uint8Array|null>} The metainfo, or null.
+ */
+async function fetchMetainfo(url) {
+  try {
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(METAINFO_TIMEOUT_MS),
+      // Names one build, like the document that pointed here.
+      cache: 'no-cache',
+    });
+    if (!response.ok) {
+      return null;
+    }
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Whether a web seed will actually answer this page.
+ *
+ * Holding the metainfo means the engine is ready the moment it is constructed,
+ * with no peer involved -- which removes the very thing that used to prove an
+ * archive was worth registering. Waiting for metadata was never only a wait: it
+ * was evidence that somebody out there could serve this archive, and an archive
+ * that failed to produce it stayed on HTTP. Registering on metainfo alone would
+ * throw that evidence away and bind a bucket to a source that may have nothing
+ * behind it, which does not fall back -- it stalls, and the tiles never draw.
+ *
+ * One request for one byte restores the evidence: a 206 proves the host is
+ * reachable, serves ranges, and permits this origin, which is everything the
+ * engine needs from it. Cheap enough to do per archive, and the alternative --
+ * fetching a whole piece to be sure -- would cost megabytes on exactly the
+ * connections this is meant to help.
+ *
+ * @param {string} url The web seed to try.
+ * @returns {Promise<boolean>} Whether it answered.
+ */
+async function probeWebSeed(url) {
+  try {
+    const response = await fetch(url, {
+      headers: { Range: 'bytes=0-0' },
+      signal: AbortSignal.timeout(METAINFO_TIMEOUT_MS),
+    });
+    return response.ok;
+  } catch {
+    // Unreachable, no CORS, or ranges refused. Indistinguishable from here and
+    // the same answer either way: not something to bind a bucket to.
+    return false;
+  }
+}
+
+/**
+ * Decides what to hand the engine, and says which way it went.
+ *
+ * Two routes, in order of how little they ask of the network:
+ *
+ *   metainfo  the .torrent over HTTPS, with a web seed confirmed to answer.
+ *             Needs no peer, no tracker and no WebRTC, so it survives a
+ *             network that blocks all three.
+ *   magnet    the infohash, joined over a websocket tracker. Needs a peer, and
+ *             the wait for metadata is what proves one exists.
+ *
+ * The magnet is not a lesser handle in general -- for a client with a DHT it is
+ * the better one, since it needs no host at all. It is lesser *here*, because a
+ * browser has no DHT and no UDP, and the one thing a magnet cannot supply is
+ * the one thing a browser cannot get anywhere else.
+ *
+ * @param {object} block The `torrent` block from the category's TileJSON.
+ * @param {string} bucket Named in the log line.
+ * @param {Function} log Where to report what happened.
+ * @returns {Promise<Uint8Array|string|null>} What to add, or null.
+ */
+async function chooseTorrentId(block, bucket, log) {
+  const webSeed = Array.isArray(block.webseeds) ? block.webseeds[0] : null;
+  if (typeof block.torrent === 'string' && block.torrent !== '' && webSeed) {
+    // Both at once: they are independent, and one round trip is enough of a
+    // delay to add to a map that has not drawn yet.
+    const [metainfo, answered] = await Promise.all([
+      fetchMetainfo(block.torrent),
+      probeWebSeed(webSeed),
+    ]);
+    if (metainfo && answered) {
+      log(`${bucket}: metainfo over HTTPS, web seed answering; no peer needed`);
+      return metainfo;
+    }
+    if (metainfo && !answered) {
+      // The metainfo is good and there is nothing proven to serve it. Falling
+      // through to the magnet rather than registering, because the magnet path
+      // still has to find a peer and so still proves somebody can serve this.
+      log(`${bucket}: web seed did not answer; falling back to the swarm`);
+    }
+  }
+
+  if (isJoinable(block.magnet)) {
+    return block.magnet;
+  }
+  log(`${bucket}: magnet is not joinable from a browser, staying on HTTP`);
+  return null;
+}
+
+/**
  * Rejects once the given number of milliseconds has passed.
  * @param {number} ms Delay.
  * @param {string} what Named in the rejection, for the log line.
@@ -203,12 +354,15 @@ async function joinArchive(archive, client, lib, log, metadataTimeoutMs) {
     log(`${archive.bucket}: no TileJSON from the swarm, staying on HTTP`);
     return null;
   }
-  if (!isJoinable(block.magnet)) {
-    log(`${archive.bucket}: magnet is not joinable from a browser, staying on HTTP`);
+  const torrentId = await chooseTorrentId(block, archive.bucket, log);
+  if (!torrentId) {
     return null;
   }
 
-  const engine = new lib.WebTorrentEngine(block.magnet, {
+  // Either a magnet string or the metainfo itself. WebTorrent's add() takes
+  // both, and the engine passes whatever it is given straight through, so this
+  // needs nothing from pmtiles-torrent that it did not already do.
+  const engine = new lib.WebTorrentEngine(torrentId, {
     client,
     // Deliberately no `resumePath`: it is the only part of this engine that
     // touches node:fs, and leaving it unset is what lets the package run
@@ -254,8 +408,11 @@ async function joinArchive(archive, client, lib, log, metadataTimeoutMs) {
  * @param {object} options.protocol The pmtiles Protocol the style reads through.
  * @param {Array<object>} options.archives `{bucket, key, tilejson}` per archive.
  * @param {Function} [options.log] Receives one line per archive.
- * @returns {Promise<object|null>} A handle for inspection, or null if the
- *   swarm was unusable.
+ * @returns {Promise<object|null>} A handle carrying `rewrite`, `stats` and
+ *   `destroy`, or null when there was nothing to join and no client to join it
+ *   with. A handle whose archives all failed is still a handle: `rewrite`
+ *   passes every URL through, which is the same thing null means, and one still
+ *   arriving can register against it.
  */
 export async function enableSwarm({
   protocol,
@@ -295,11 +452,14 @@ export async function enableSwarm({
   // without a listener they would surface as unhandled errors.
   client.on('error', (error) => report(`client: ${error.message}`));
 
-  // Set once the caller has been released, which is the moment registering
-  // stops being useful: the layers go in immediately afterwards, and the
-  // protocol binds an HTTP source to any URL it does not already know.
+  // Set once the caller has been released, so a late join can say so. Not a
+  // cutoff: registering stays useful afterwards, see below.
   let deadlinePassed = false;
+  let destroyed = false;
   const registered = [];
+  // Which archives are behind the protocol, by infohash. Populated as they
+  // arrive rather than built at the deadline, because arrivals after it count.
+  const joined = new Map();
 
   const pending = archives.map((archive) =>
     joinArchive(archive, client, lib, report, metadataTimeoutMs)
@@ -315,16 +475,35 @@ export async function enableSwarm({
         // joins at twenty seconds simply starts serving from then on. This
         // used to release them, which was right when the binding lived in the
         // style's source URL and was resolved once -- it is not any more.
+        if (destroyed) {
+          // Switched off while this was still joining. Nothing will read it.
+          release(result.engine);
+          return;
+        }
         protocol.add(new PMTiles(result.source));
         registered.push(result);
+        joined.set(result.infoHash, result);
         if (deadlinePassed) {
           report(`${result.bucket}: joined late, serving from here on`);
         }
       }),
   );
 
+  // Nothing joined and nothing still trying. Only then is the client certain
+  // to be useless -- checking this at the deadline instead would destroy it
+  // out from under archives that were still 20 seconds from arriving, which is
+  // the same mistake the batch deadline used to make with the ones that had
+  // already landed.
+  const settled = Promise.all(pending).then(() => {
+    if (registered.length === 0 && !destroyed) {
+      report('nothing joinable, staying on HTTP');
+      destroyed = true;
+      client.destroy();
+    }
+  });
+
   await Promise.race([
-    Promise.all(pending),
+    settled,
     // A deadline on the batch rather than a timeout per archive: what is being
     // bounded is how long the map waits, and one slow archive must not be able
     // to hold up either the others or the layers.
@@ -332,19 +511,39 @@ export async function enableSwarm({
   ]);
   deadlinePassed = true;
 
-  if (registered.length === 0) {
-    report('nothing joinable, staying on HTTP');
-    client.destroy();
-    return null;
-  }
-
-  // Which archives ended up behind the protocol, by infohash.
-  const joined = new Map(registered.map((entry) => [entry.infoHash, entry]));
-
   return {
     client,
     get archives() {
       return registered.map((entry) => entry.bucket);
+    },
+    /** How many of the archives offered are being served from the swarm. */
+    get joinedCount() {
+      return registered.length;
+    },
+    /** How many were offered, joined or not. */
+    get offeredCount() {
+      return archives.length;
+    },
+
+    /**
+     * Stops reading from the swarm and drops every peer connection.
+     *
+     * Clearing `joined` is what actually takes effect: rewrite() consults it
+     * per request, so the next tile goes back over HTTP whether or not anything
+     * still holds this handle. The sources stay registered on the protocol --
+     * pmtiles offers no way to withdraw one -- but with nothing rewritten to
+     * `pmtiles://`, nothing ever asks them for a tile.
+     */
+    destroy() {
+      if (destroyed) return;
+      destroyed = true;
+      joined.clear();
+      registered.length = 0;
+      try {
+        client.destroy();
+      } catch {
+        // Already gone. Nothing to release and nothing useful to say about it.
+      }
     },
 
     /**
@@ -382,13 +581,63 @@ export async function enableSwarm({
     /**
      * What the swarm has actually done, for telling a real swarm read apart
      * from a web-seed read that merely went through this code.
+     *
+     * Every connection is counted in exactly one of three buckets, and the
+     * split is the whole point of this function:
+     *
+     *   webSeeds  `wire.type === 'webSeed'` -- an HTTP range reader against the
+     *             generating node, dressed as a wire. WebTorrent's `numPeers`
+     *             is just `wires.length`, so a page pulling every byte from
+     *             wifidb.net over HTTP reports the same healthy peer count as
+     *             one genuinely trading pieces with browsers. This is the
+     *             number that makes those two distinguishable.
+     *   seeds     a real peer holding the whole archive. WebTorrent sets
+     *             `isSeeder` from `have-all` or a full bitfield.
+     *   peers     a real peer holding part of it.
+     *
+     * Bytes are summed off the torrents rather than read off the client,
+     * because the client has no such property: WebTorrent puts `downloaded`,
+     * `uploaded` and `received` on Torrent and gives the client only
+     * `progress`, `ratio` and the two speeds. Reading `client.downloaded` --
+     * which this did -- yields undefined, silently, and a readout that can
+     * never show a byte no matter how many arrive.
+     *
+     * `downloaded` is what the bitfield says is verified and held, so it is
+     * archive bytes; `received` is everything off the wire including overhead
+     * and duplicates. Both are kept because a large gap between them is worth
+     * seeing.
+     *
      * @returns {object} Totals plus a per-archive breakdown.
      */
     stats() {
+      let peers = 0;
+      let seeds = 0;
+      let webSeeds = 0;
+      let downloaded = 0;
+      let uploaded = 0;
+      let received = 0;
+      for (const torrent of client.torrents) {
+        for (const wire of torrent.wires || []) {
+          if (wire.type === 'webSeed') webSeeds++;
+          else if (wire.isSeeder) seeds++;
+          else peers++;
+        }
+        downloaded += torrent.downloaded || 0;
+        uploaded += torrent.uploaded || 0;
+        received += torrent.received || 0;
+      }
       return {
-        peers: client.torrents.reduce((sum, t) => sum + t.numPeers, 0),
-        downloaded: client.downloaded,
-        uploaded: client.uploaded,
+        peers,
+        seeds,
+        webSeeds,
+        downloaded,
+        uploaded,
+        received,
+        // The one number that cannot sit still while anything is happening,
+        // which is what makes a live readout legible as live.
+        downloadSpeed: client.downloadSpeed || 0,
+        joined: registered.length,
+        offered: archives.length,
         archives: registered.map((entry) => ({
           bucket: entry.bucket,
           infoHash: entry.infoHash,
