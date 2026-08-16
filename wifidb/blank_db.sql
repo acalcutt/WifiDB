@@ -2310,6 +2310,7 @@ CREATE TABLE `swarm_archives` (
   `public_key` char(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `salt` varchar(128) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `mutable_magnet` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `torrent_file` mediumtext COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `checked_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

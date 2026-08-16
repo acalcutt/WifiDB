@@ -282,13 +282,22 @@ async function probeWebSeed(url) {
  * @param {Function} log Where to report what happened.
  * @returns {Promise<Uint8Array|string|null>} What to add, or null.
  */
-async function chooseTorrentId(block, bucket, log) {
+async function chooseTorrentId(block, bucket, log, localTorrent) {
   const webSeed = Array.isArray(block.webseeds) ? block.webseeds[0] : null;
-  if (typeof block.torrent === 'string' && block.torrent !== '' && webSeed) {
+  // This site's own copy first, where it has one. Same origin as the page and
+  // as the web seed, so the whole read depends on one host rather than two and
+  // touches no cross-origin request at all -- which also means it survives the
+  // swarm node being unreachable, and there is no CORS left to misconfigure.
+  const metainfoUrl =
+    localTorrent ||
+    (typeof block.torrent === 'string' && block.torrent !== ''
+      ? block.torrent
+      : null);
+  if (metainfoUrl && webSeed) {
     // Both at once: they are independent, and one round trip is enough of a
     // delay to add to a map that has not drawn yet.
     const [metainfo, answered] = await Promise.all([
-      fetchMetainfo(block.torrent),
+      fetchMetainfo(metainfoUrl),
       probeWebSeed(webSeed),
     ]);
     if (metainfo && answered) {
@@ -354,7 +363,13 @@ async function joinArchive(archive, client, lib, log, metadataTimeoutMs) {
     log(`${archive.bucket}: no TileJSON from the swarm, staying on HTTP`);
     return null;
   }
-  const torrentId = await chooseTorrentId(block, archive.bucket, log);
+  const torrentId = await chooseTorrentId(
+    block,
+    archive.bucket,
+    log,
+    // Supplied by PHP from swarm_archives, where a copy has been cached.
+    archive.torrent,
+  );
   if (!torrentId) {
     return null;
   }

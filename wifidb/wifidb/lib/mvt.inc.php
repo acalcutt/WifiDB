@@ -301,13 +301,47 @@ function mvt_swarm_tilejson_url($dbcore, string $bucket, bool $with_magnet = tru
         return $url;
     }
 
-    // The magnet in the fragment, which is what makes one URL enough.  A
-    // fragment is never sent in a request, so an ordinary client fetches this
-    // document over HTTP and never sees it, while a swarm-aware one has
-    // something to join before it makes any call at all -- and can therefore
-    // still start when this server cannot answer.
-    $magnet = mvt_swarm_magnet($dbcore, $bucket);
-    return $magnet === null ? $url : $url . '#' . $magnet;
+    // Everything a swarm-aware client can act on, in the fragment.  A fragment
+    // is never sent in a request, so an ordinary client fetches this document
+    // over HTTP and never sees any of it, while one that understands torrents
+    // has what it needs before it makes a call at all.
+    //
+    // Three handles, and they are not a ladder from worse to better -- they
+    // fail in different directions:
+    //
+    //   the URL itself   works with every existing client, and needs this host.
+    //   torrent=         the metainfo, and needs this host too.  Not redundant
+    //                    with the above: a browser cannot obtain piece hashes
+    //                    any other way, since they come only from a peer over
+    //                    BEP 9, so this is the only handle that works from a
+    //                    browser on a network that blocks the trackers.
+    //   magnet=          needs no host at all, and needs a peer.  The better
+    //                    handle for a client with a DHT, the weaker one for a
+    //                    browser, which has neither DHT nor UDP.
+    //
+    // Ordered by what a client should reach for first when it can fetch.
+    $magnet  = mvt_swarm_magnet($dbcore, $bucket);
+    $torrent = mvt_swarm_torrent_url($dbcore, $bucket);
+
+    $parts = array();
+    if ($torrent !== null) {
+        $parts[] = 'torrent=' . rawurlencode($torrent);
+    }
+    if ($magnet !== null) {
+        $parts[] = 'magnet=' . rawurlencode($magnet);
+    }
+    if (!$parts) {
+        return $url;
+    }
+
+    // A lone magnet keeps the old bare form.  Every style already deployed
+    // carries `#magnet:?...`, and readers of those are entitled to go on
+    // finding what they were told to expect; the structured form appears only
+    // once there is more than one thing to say.
+    if ($torrent === null) {
+        return $url . '#' . $magnet;
+    }
+    return $url . '#' . implode('&', $parts);
 }
 
 /**
@@ -381,13 +415,73 @@ function mvt_swarm_browser_sources($dbcore): array {
             continue;
         }
 
-        $sources[] = [
+        $entry = [
             'bucket'   => $bucket,
             'infohash' => $infohash,
             'tilejson' => $tilejson,
         ];
+
+        // This site's own copy of the metainfo, where one is held.  The browser
+        // prefers it over the swarm's, which takes the swarm node out of the
+        // path entirely -- the web seed is already on this host, so with this
+        // the whole read is same-origin and no part of it depends on
+        // data.wifidb.net being reachable, or on CORS.
+        $torrent = mvt_swarm_torrent_url($dbcore, $bucket);
+        if ($torrent !== null) {
+            $entry['torrent'] = $torrent;
+        }
+
+        $sources[] = $entry;
     }
     return $sources;
+}
+
+/**
+ * The cached .torrent for a bucket, decoded, or null when none is held.
+ *
+ * @param $dbcore
+ * @param string $bucket Bucket name.
+ * @return string|null Raw bencoded metainfo.
+ */
+function mvt_swarm_torrent_file($dbcore, string $bucket): ?string {
+    $cached = mvt_swarm_cached_archive($dbcore, $bucket);
+    if ($cached === null || empty($cached['torrent_file'])) {
+        return null;
+    }
+    // strict, so a truncated or mangled column reads as "no metainfo" rather
+    // than as a few valid bytes followed by silence.  A .torrent that decodes
+    // to rubbish is worse than one that is absent: absent falls back to the
+    // magnet, rubbish is handed to a client that trusts it.
+    $raw = base64_decode((string)$cached['torrent_file'], true);
+    if ($raw === false || $raw === '' || $raw[0] !== 'd') {
+        return null;
+    }
+    return $raw;
+}
+
+/**
+ * This site's own URL for a bucket's .torrent, or null when none is cached.
+ *
+ * Same origin as the map and as the web seed, which is the point: with this in
+ * hand a browser reads an archive out of the swarm without addressing the swarm
+ * node at all, and without a cross-origin request anywhere in the path.
+ *
+ * @param $dbcore
+ * @param string $bucket Bucket name.
+ * @return string|null Absolute URL, or null.
+ */
+function mvt_swarm_torrent_url($dbcore, string $bucket): ?string {
+    // URL_PATH, which is what every other absolute URL here is built from --
+    // and which the CLI does not always have, since it builds $dbcore for a
+    // shell rather than for a request.  A caller that gets null because of that
+    // is a caller with nothing to put in a page anyway.
+    if (!isset($dbcore->URL_PATH) || $dbcore->URL_PATH === '') {
+        return null;
+    }
+    if (mvt_swarm_torrent_file($dbcore, $bucket) === null) {
+        return null;
+    }
+    return $dbcore->URL_PATH . 'api/torrent.php?bucket=' . rawurlencode($bucket);
 }
 
 /**
@@ -628,6 +722,21 @@ function mvt_swarm_record_archive($dbcore, string $bucket, array $archive): bool
         'public_key'     => isset($archive['public_key']) ? (string)$archive['public_key'] : null,
         'salt'           => isset($archive['salt']) ? (string)$archive['salt'] : null,
         'mutable_magnet' => isset($archive['mutable_magnet']) ? (string)$archive['mutable_magnet'] : null,
+        // The .torrent itself, base64.  Held rather than linked to because the
+        // metainfo is the one thing a browser cannot obtain any other way --
+        // piece hashes come only from a peer, over BEP 9, and a web seed serves
+        // payload and never metainfo.  A copy here means the archive stays
+        // readable from a browser when the swarm node that published it is
+        // unreachable, and means the whole read path is same-origin: the web
+        // seed is already on this host, so only the metainfo was elsewhere.
+        //
+        // Base64 rather than a blob deliberately.  Binding binary to
+        // varbinary(max) through PDO needs PARAM_LOB and SQLSRV_ENCODING_BINARY
+        // on SQL Server and nothing of the kind on MySQL, which would put a
+        // dialect branch into the one function written specifically to avoid
+        // them.  A base64 string binds identically on both, and 33% of a
+        // kilobyte is not worth a special case.
+        'torrent_file'   => isset($archive['torrent_file']) ? (string)$archive['torrent_file'] : null,
     );
     $known = array_filter($known, static function ($value) {
         return $value !== null && $value !== '';
@@ -728,7 +837,7 @@ function mvt_swarm_cached_archive($dbcore, string $bucket): ?array {
         $stmt = $dbcore->sql->conn->prepare(
             'SELECT bucket, category, infohash, magnet, style_url, archive_name,
                     archive_size, built_at, public_key, salt, mutable_magnet,
-                    updated_at, checked_at
+                    torrent_file, updated_at, checked_at
                FROM swarm_archives WHERE bucket = ?'
         );
         $stmt->bindParam(1, $bucket, PDO::PARAM_STR);

@@ -99,6 +99,22 @@ falls back to the public key alone, which is what it carried before any of this.
             salt nvarchar(128) NULL,
             mutable_magnet nvarchar(max) NULL;
 
+  And the cached metainfo, added later again:
+
+    MySQL:
+      ALTER TABLE swarm_archives
+        ADD torrent_file mediumtext DEFAULT NULL;
+
+    SQL Server:
+      ALTER TABLE swarm_archives
+        ADD torrent_file nvarchar(max) NULL;
+
+  mediumtext rather than text: the column holds the .torrent base64-encoded,
+  and the largest here is 67 KB raw, which encodes past TEXT's 65,535-byte
+  ceiling.  Base64 rather than a blob because binding binary through PDO needs
+  PARAM_LOB and SQLSRV_ENCODING_BINARY on SQL Server and nothing of the sort on
+  MySQL, and a string binds the same on both.
+
 Nothing here uses ON DUPLICATE KEY UPDATE or MERGE, because this branch runs on
 both engines and they spell an upsert differently; mvt_swarm_record_archive()
 reads and then updates or inserts, which either one takes.
@@ -234,6 +250,54 @@ function swarm_fetch(string $url): ?array {
 }
 
 /**
+ * Fetches an archive's .torrent, or null.
+ *
+ * Separate from swarm_fetch because this one wants bytes rather than JSON, and
+ * because it is worth being stricter about what it accepts: the result is
+ * stored and later handed to clients as metainfo, so anything that is not
+ * plainly a bencoded dictionary is refused here rather than cached and
+ * discovered by a browser.
+ *
+ * Bounded, because this reads a remote body into memory on a schedule. These
+ * are a kilobyte or two — the largest across every WifiDB bucket is 67 KB —
+ * and a ceiling four orders of magnitude above that still catches a swarm node
+ * answering with something that is not a .torrent at all.
+ *
+ * @param string $url Where the swarm published it.
+ * @return string|null Raw bencoded metainfo.
+ */
+function swarm_fetch_torrent(string $url): ?string {
+    $max = 4 * 1024 * 1024;
+    $context = stream_context_create([
+        'http' => [
+            'timeout' => 15,
+            'ignore_errors' => true,
+            'header' => "Accept: application/x-bittorrent\r\n",
+        ],
+    ]);
+
+    $body = @file_get_contents($url, false, $context, 0, $max + 1);
+    if ($body === false || $body === '') {
+        swarm_log("could not fetch the .torrent at $url");
+        return null;
+    }
+    if (strlen($body) > $max) {
+        swarm_log("$url answered with more than {$max} bytes; not a .torrent");
+        return null;
+    }
+    // A bencoded dictionary starts 'd' and a .torrent always has an info dict.
+    // Not a hash check: the URL is content-addressed by infohash, so the swarm
+    // either serves that exact build or answers 404 — there is no path by which
+    // the wrong archive's metainfo arrives here, only a path by which an error
+    // page does, and that is what this catches.
+    if ($body[0] !== 'd' || strpos($body, '4:info') === false) {
+        swarm_log("$url did not answer with a .torrent");
+        return null;
+    }
+    return $body;
+}
+
+/**
  * Records every bucket the swarm knows about.
  */
 function swarm_refresh($dbcore, ?string $override = null): int {
@@ -332,10 +396,35 @@ function swarm_refresh($dbcore, ?string $override = null): int {
             }
         }
 
+        // The .torrent itself, kept rather than linked to. It is what lets a
+        // browser read this archive without first finding a peer -- see
+        // api/torrent.php -- and what keeps it readable when the swarm node
+        // that published it is not answering.
+        //
+        // Fetched only when this build is new to us. The bytes are immutable
+        // for a given infohash, so re-downloading them on every poll would be
+        // twenty requests an hour for something that changes when a build does.
+        $torrent_file = null;
+        $torrent_url  = isset($torrent['torrent']) ? (string)$torrent['torrent'] : '';
+        if ($torrent_url !== '') {
+            $held = mvt_swarm_cached_archive($dbcore, $bucket);
+            $current = $held !== null
+                && strtolower(trim((string)$held['infohash'])) === $infohash
+                && !empty($held['torrent_file']);
+            if (!$current) {
+                $bytes = swarm_fetch_torrent($torrent_url);
+                if ($bytes !== null) {
+                    $torrent_file = base64_encode($bytes);
+                    swarm_log("$bucket: cached ".strlen($bytes)."B of metainfo");
+                }
+            }
+        }
+
         $ok = mvt_swarm_record_archive($dbcore, $bucket, array(
             'category'       => $category,
             'infohash'       => $infohash,
             'magnet'         => $magnet,
+            'torrent_file'   => $torrent_file,
             'mutable_magnet' => $mutable_magnet,
             'public_key'     => $public_key,
             'salt'           => $salt,

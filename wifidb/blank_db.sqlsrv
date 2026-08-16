@@ -687,6 +687,7 @@ CREATE TABLE [dbo].[swarm_archives](
 	[public_key] [char](64) NULL,
 	[salt] [nvarchar](128) NULL,
 	[mutable_magnet] [nvarchar](max) NULL,
+	[torrent_file] [nvarchar](max) NULL,
 	[updated_at] [datetime2](3) NOT NULL,
 	[checked_at] [datetime2](3) NOT NULL,
  CONSTRAINT [PK_swarm_archives] PRIMARY KEY CLUSTERED 
