@@ -336,7 +336,10 @@ export function attachSwarmControl({
         : `${formatBytes(s.downloaded)} in`,
     );
     if (s.uploaded) parts.push(`${formatBytes(s.uploaded)} out`);
-    status.textContent = parts.join(' · ');
+    // Non-breaking spaces inside each figure, ordinary ones around the
+    // separators: the line wraps, but only between figures, never inside
+    // "12 peers" or "1.4 MB in".
+    status.textContent = parts.map((p) => p.replace(/ /g, '\u00a0')).join(' · ');
   }
 
   function startPolling() {

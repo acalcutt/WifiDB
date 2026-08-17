@@ -562,7 +562,13 @@ canvas {
     padding: 0 .25em 2px;
     font-size: 11px;
     font-family: Arial;
-    white-space: nowrap;
+    /* Wraps on its own.  This line is rebuilt every couple of seconds and its
+       width changes with it, so on a narrow screen one that could not break set
+       the control column's minimum width and re-laid out the buttons under it
+       every time a figure gained a digit.  swarm-control.js joins each figure
+       with non-breaking spaces, so a break lands on a separator rather than
+       inside "12 peers". */
+    overflow-wrap: break-word;
 }
 
 /* Nothing to say yet -- before the module has run, or when there are no
