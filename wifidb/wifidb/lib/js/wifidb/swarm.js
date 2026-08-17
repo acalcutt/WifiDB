@@ -346,6 +346,72 @@ async function release(engine) {
 }
 
 /**
+ * Finds the torrent-capable sources in a style, by the convention in the
+ * fragment.
+ *
+ * A source URL of the form
+ *
+ *   https://host/latest/<category>/tiles.json#torrent=<url>&magnet=<magnet>
+ *
+ * says "there is a swarm behind this". The fragment is never sent in a request,
+ * so the same string is an ordinary TileJSON URL to MapLibre and to every other
+ * consumer of the style; only something that goes looking for it -- this --
+ * sees anything else. That is what makes it safe to put in a style file served
+ * to everybody.
+ *
+ * Discovery rather than a server-rendered list, because the styles are not
+ * ours. A basemap comes from a tileserver-gl instance and is edited there, and
+ * the alternative was a copy of its source list kept here and kept in step by
+ * hand. Anything that carries the handle is offered; anything that does not is
+ * left alone.
+ *
+ * `torrent=` is required and `magnet=` is not: a magnet on its own cannot get
+ * piece hashes to a browser, which is the whole reason the convention names the
+ * metainfo first. A source with only a magnet is therefore not a candidate.
+ *
+ * @param {object} style A MapLibre style object, from map.getStyle().
+ * @param {object} [options] Options.
+ * @param {Array<object>} [options.exclude] Archives already being handled,
+ *   matched on their TileJSON URL, so a bucket the server already listed is not
+ *   joined twice under two names.
+ * @returns {Array<object>} `{bucket, tilejson, torrent, magnet}` per source.
+ */
+export function archivesFromStyle(style, { exclude = [] } = {}) {
+  const seen = new Set(
+    (exclude ?? [])
+      .map((archive) => String(archive?.tilejson ?? '').split('#')[0])
+      .filter(Boolean),
+  );
+
+  const found = [];
+  for (const [id, source] of Object.entries(style?.sources ?? {})) {
+    const url = typeof source?.url === 'string' ? source.url : '';
+    const hash = url.indexOf('#');
+    if (hash < 0) continue;
+
+    const handles = new URLSearchParams(url.slice(hash + 1));
+    const torrent = handles.get('torrent');
+    if (!torrent) continue;
+
+    const tilejson = url.slice(0, hash);
+    // The same archive can appear under two source names in one style, and can
+    // also be one the server already listed. Either way it is one swarm and one
+    // engine; joining it twice would mean two clients fighting over one cache.
+    if (seen.has(tilejson)) continue;
+    seen.add(tilejson);
+
+    found.push({
+      bucket: id,
+      tilejson,
+      torrent,
+      magnet: handles.get('magnet') ?? undefined,
+    });
+  }
+  return found;
+}
+
+/**
+ * Joins one archive's swarm and builds a source for it./**
  * Joins one archive's swarm and builds a source for it.
  *
  * Deliberately stops short of registering: whether the result is still wanted
@@ -358,7 +424,15 @@ async function release(engine) {
  * @returns {Promise<object|null>} An unregistered source, or null.
  */
 async function joinArchive(archive, client, lib, log, metadataTimeoutMs) {
-  const block = await fetchTorrentBlock(archive.tilejson);
+  const block =
+    (await fetchTorrentBlock(archive.tilejson)) ??
+    // No document, or one without a torrent block. A source discovered from a
+    // style still has the handles from its fragment, and that is exactly the
+    // case the fragment exists for -- it is consulted when the document in
+    // front of it cannot be. Without them there is nothing left to try.
+    (archive.torrent || archive.magnet
+      ? { torrent: archive.torrent, magnet: archive.magnet, webseeds: [] }
+      : null);
   if (!block) {
     log(`${archive.bucket}: no TileJSON from the swarm, staying on HTTP`);
     return null;
@@ -562,6 +636,61 @@ export async function enableSwarm({
     },
 
     /**
+     * Joins more archives against the client this handle already owns.
+     *
+     * Separate from the initial batch because the two are discovered at
+     * different times and must not wait on each other. The batch comes from the
+     * server and is ready before the map is built; the style's own sources
+     * cannot be read until MapLibre has loaded the style, which is after. Making
+     * the batch wait for that would delay every layer on the page for the sake
+     * of an archive that can perfectly well arrive late.
+     *
+     * Arriving late costs nothing: `rewrite` is consulted on every tile request,
+     * so an archive registered at twenty seconds simply starts serving from the
+     * next one. Tiles fetched before then went over HTTP, which is correct.
+     *
+     * Anything already joined is skipped rather than joined twice -- one swarm
+     * wants one engine, and two would fight over one cache.
+     *
+     * @param {Array<object>} more `{bucket, tilejson, torrent, magnet}` each.
+     * @returns {Promise<number>} How many of them are now serving.
+     */
+    async join(more) {
+      if (destroyed || !Array.isArray(more) || more.length === 0) return 0;
+
+      const wanted = more.filter(
+        (archive) =>
+          !registered.some((held) => held.bucket === archive.bucket),
+      );
+      const results = await Promise.all(
+        wanted.map((archive) =>
+          joinArchive(archive, client, lib, report, metadataTimeoutMs).catch(
+            (error) => {
+              report(`${archive.bucket}: ${error.message}, staying on HTTP`);
+              return null;
+            },
+          ),
+        ),
+      );
+
+      let added = 0;
+      for (const result of results) {
+        if (!result) continue;
+        // Switched off while this was joining. Nothing will ever read it.
+        if (destroyed) {
+          release(result.engine);
+          continue;
+        }
+        protocol.add(new PMTiles(result.source));
+        registered.push(result);
+        joined.set(result.infoHash, result);
+        added += 1;
+      }
+      return added;
+    },
+
+    /**
+     * Rewrites a tile URL to read through the swarm, or leaves it alone.    /**
      * Rewrites a tile URL to read through the swarm, or leaves it alone.
      *
      * The map's sources are ordinary https TileJSON URLs, so MapLibre fetches

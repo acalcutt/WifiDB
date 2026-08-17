@@ -255,6 +255,13 @@ function formatBytes(bytes) {
  * @param {HTMLElement} [options.button] The toggle. Optional: the policy still
  *   applies without one, there is just no way to override it from the page.
  * @param {HTMLElement} [options.status] Where the readout goes.
+ * @param {Function} [options.discover] Called each time the swarm is switched
+ *   on, and awaited, to find archives the server did not list -- the style's
+ *   own torrent-capable sources, which cannot be read until MapLibre has loaded
+ *   the style. Returns `{bucket, tilejson, torrent, magnet}` per source. It runs
+ *   only while the swarm is on, which is what puts these sources under the same
+ *   switch as everything else: turning it off destroys the handle and takes
+ *   them with it, and turning it back on finds them again.
  * @param {number} [options.metadataTimeoutMs] Passed through to enableSwarm.
  * @param {number} [options.batchTimeoutMs] Passed through to enableSwarm.
  * @returns {Promise<object|null>} The swarm handle, or null if it started off.
@@ -262,6 +269,7 @@ function formatBytes(bytes) {
 export function attachSwarmControl({
   protocol,
   archives,
+  discover,
   mode,
   button,
   status,
@@ -370,6 +378,24 @@ export function attachSwarmControl({
     busy = false;
     if (handle) startPolling();
     render();
+
+    // After the handle is published and the caller released, never before.
+    // Whatever this finds has to wait for the map's style, and the initial
+    // batch must not: it is what the page gates its layers on. So these join
+    // in the background and start serving from the next tile request.
+    if (handle && typeof discover === 'function') {
+      Promise.resolve()
+        .then(() => discover())
+        .then((found) => (found?.length ? handle.join(found) : 0))
+        .then((added) => {
+          if (added > 0) render();
+        })
+        .catch(() => {
+          // A style that never loaded, or one with nothing in it. The swarm is
+          // already running on the server's own list and this was only ever an
+          // addition to it.
+        });
+    }
     return handle;
   }
 

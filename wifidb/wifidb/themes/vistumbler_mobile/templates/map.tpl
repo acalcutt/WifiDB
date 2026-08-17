@@ -254,6 +254,30 @@
 		const swarmReady = attachSwarmControl({
 			protocol: pmtilesProtocol,
 			archives: {$wifidb_swarm_sources|default:'[]'},
+			// The style's own torrent-capable sources, by the `#torrent=`
+			// convention. Read from the loaded style rather than listed here,
+			// because the style is not ours -- the basemap comes from
+			// tileserver-gl and is edited there, and a copy of its source list
+			// kept in this file would be a copy to keep in step by hand.
+			//
+			// Deferred to a function rather than passed as a value: the map
+			// does not exist yet on this line, and its style is not loaded for
+			// a while after that. The control calls this only once the swarm is
+			// on and the initial batch is done, so nothing here delays a layer,
+			// and an archive that joins late starts serving on the next tile.
+			discover: async () => {
+				await new Promise((resolve) => {
+					if (map.isStyleLoaded()) resolve();
+					else map.once('style.load', resolve);
+				});
+				const { archivesFromStyle } = await import('wifidb-swarm');
+				return archivesFromStyle(map.getStyle(), {
+					// The server's own list wins: those buckets are joined with
+					// this site's cached metainfo, which is same-origin and
+					// needs neither the swarm node nor CORS.
+					exclude: {$wifidb_swarm_sources|default:'[]'},
+				});
+			},
 			// manual, auto or on, from tile_swarm_browser. 'off' never reaches
 			// here -- it renders no sources, so this whole block is absent.
 			mode: '{$wifidb_swarm_mode|default:"off"}',
