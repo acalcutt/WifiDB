@@ -546,6 +546,17 @@ export async function enableSwarm({
   let deadlinePassed = false;
   let destroyed = false;
   const registered = [];
+  // What has been put to the swarm, joined or not, by bucket. The ratio in the
+  // readout is "of the archives we tried, how many are serving", so this has to
+  // grow when join() adds more -- it used to be the initial array's length,
+  // which read as 21/20 the moment a source discovered from the style joined.
+  //
+  // A set rather than a counter because a later discovery pass can offer an
+  // archive that was offered before and failed. Retrying it is right; counting
+  // it twice is not.
+  const offeredBuckets = new Set(
+    archives.map((archive) => archive.bucket).filter(Boolean),
+  );
   // Which archives are behind the protocol, by infohash. Populated as they
   // arrive rather than built at the deadline, because arrivals after it count.
   const joined = new Map();
@@ -611,7 +622,7 @@ export async function enableSwarm({
     },
     /** How many were offered, joined or not. */
     get offeredCount() {
-      return archives.length;
+      return offeredBuckets.size;
     },
 
     /**
@@ -662,6 +673,7 @@ export async function enableSwarm({
         (archive) =>
           !registered.some((held) => held.bucket === archive.bucket),
       );
+      for (const archive of wanted) offeredBuckets.add(archive.bucket);
       const results = await Promise.all(
         wanted.map((archive) =>
           joinArchive(archive, client, lib, report, metadataTimeoutMs).catch(
@@ -781,7 +793,7 @@ export async function enableSwarm({
         // which is what makes a live readout legible as live.
         downloadSpeed: client.downloadSpeed || 0,
         joined: registered.length,
-        offered: archives.length,
+        offered: offeredBuckets.size,
         archives: registered.map((entry) => ({
           bucket: entry.bucket,
           infoHash: entry.infoHash,
