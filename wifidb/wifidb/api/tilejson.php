@@ -205,10 +205,22 @@ $tilejson = [
 // Present on every response for an archived bucket, including source=api, so
 // it is discoverable without having to follow a redirect to find it.
 if ($is_archive && $swarm_url !== null) {
+    // tilejson is where the document is; source_url below is the same address with
+    // the handles attached. Keeping the plain one plain means a client that just
+    // wants to fetch it does not have to strip a fragment first.
     $tilejson['swarm'] = [
         'category' => mvt_swarm_category($dbcore, $bucket),
-        'tilejson' => $swarm_url,
+        'tilejson' => mvt_swarm_tilejson_url($dbcore, $bucket, false) ?? $swarm_url,
     ];
+
+    // The archive as WifiDB serves it, by bucket rather than by infohash. Named
+    // here rather than left only in the fragment below so it can be read without
+    // parsing one, and it outlives any single build: the content-addressed URL on
+    // the swarm changes with every rebuild, this one does not.
+    $torrent_url = mvt_swarm_torrent_url($dbcore, $bucket);
+    if ($torrent_url !== null) {
+        $tilejson['swarm']['torrent'] = $torrent_url;
+    }
 
     // The per-category BEP 46 magnet, which is the fallback that survives this
     // endpoint.  Everything else here is an HTTP URL and stops working when the
@@ -225,7 +237,13 @@ if ($is_archive && $swarm_url !== null) {
         // fetches the TileJSON and ignores it, while a torrent-aware one has
         // the magnet before the first request — and still has it if that
         // request fails.
-        $tilejson['swarm']['source_url'] = $swarm_url . '#' . $magnet;
+        //
+        // mvt_swarm_tilejson_url() already attached that fragment, so this is
+        // the same string the Location header above carries. It used to append
+        // '#' . $magnet on top, which produced a second '#' inside a fragment
+        // that already had one — leaving the magnet= value with a raw magnet
+        // and its tracker list glued to the end of it.
+        $tilejson['swarm']['source_url'] = $swarm_url;
     }
 }
 
