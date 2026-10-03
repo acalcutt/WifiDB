@@ -1914,7 +1914,8 @@ class import extends dbcore
 		{
 			return array(-1, "File was empty, or error opening file.");
 		}
-		$File_return	 = explode("\r\n", $file_contents);
+		# Vistumbler writes CRLF, but VistumblerMAUI on Android wrote LF only, so accept any line ending
+		$File_return	 = preg_split("/\r\n|\n|\r/", $file_contents);
 
 		# Now lets loop through the file and see what we have.
 		$this->verbosed("Compiling data from file to array:", 3);
@@ -1922,10 +1923,14 @@ class import extends dbcore
 		{
 			#Skip empty line
 			if($file_line == ""){continue;}
-			
-			#Skip commended line
+
+			#Skip commented line, unless it's an AP whose SSID starts with # (its second field is the BSSID)
 			$first_char = mb_substr(trim($file_line),0,1);
-			if($first_char == "#"){continue;}
+			if($first_char == "#")
+			{
+				$fields = explode("|", $file_line);
+				if(!isset($fields[1]) || !preg_match('/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/', $fields[1])){continue;}
+			}
 			
 			#Split data line
 			$file_line_exp = explode("|",$file_line);
