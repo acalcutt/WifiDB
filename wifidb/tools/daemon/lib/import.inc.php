@@ -52,6 +52,20 @@ class import extends dbcore
 		return (preg_match('/([a-fA-F0-9]{2}[:|\-]?){6}/', $bssid) == 1);
 	}
 	
+	#A VS1 file whose GPS ids start at 0 has them shifted up by one on import; shift a "GID,...\GID,..." signal list (or a v3 one, "GID,Sig-GID,Sig") to match
+	private function ShiftSignalGpsIds($signals, $separator = "\\")
+	{
+		$shifted = array();
+		foreach(explode($separator, $signals) as $reading)
+		{
+			$parts = explode(",", $reading);
+			if($parts[0] === "" || !is_numeric($parts[0])){continue;}
+			$parts[0] = (int) $parts[0] + 1;
+			$shifted[] = implode(",", $parts);
+		}
+		return implode($separator, $shifted);
+	}
+
 	private function ImportCellData($file_id, $file_importing_id, $cell_arr)
 	{
 		$cell_count = count($cell_arr);
@@ -119,8 +133,10 @@ class import extends dbcore
 			}
 			else if($this->sql->service == "mysql")
 			{
-				// For MySQL, use REPLACE INTO for atomic upsert
-				$sql = "REPLACE INTO cell_id (file_id, mac, ssid, authmode, chan, type, cell_hash, ModDate) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+				// Upsert on the cell_unique key. REPLACE INTO would delete a known cell and insert it under a new id,
+				// leaving its earlier history behind; LAST_INSERT_ID(cell_id) returns the existing id instead
+				$sql = "INSERT INTO cell_id (file_id, mac, ssid, authmode, chan, type, cell_hash, ModDate) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())"
+					. " ON DUPLICATE KEY UPDATE cell_id = LAST_INSERT_ID(cell_id), ModDate = NOW()";
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 				$prep->bindParam(2, $cells['bssid'], PDO::PARAM_STR);
@@ -131,7 +147,11 @@ class import extends dbcore
 				$prep->bindParam(7, $cells['cell_hash'], PDO::PARAM_STR);
 				$prep->execute();
 				$cell_id = $this->sql->conn->lastInsertId();
-				$ap_action = "INSERT"; // REPLACE always inserts
+				if($prep->rowCount() == 1)// 1 = inserted, 2 = an existing cell updated
+				{
+					$new = 1;
+					$NewCells++;
+				}
 			}
 			
 			if($cell_id != 0)
@@ -152,7 +172,7 @@ class import extends dbcore
 
 				$HighRSSIwGPS = -1000;
 				$Insert_Size = 0;
-				$Insert_Limit = 1; //SQL Server supports a maximum of 2100 parameters. 2100 / 6 parameters = 350
+				$Insert_Limit = 350; //SQL Server supports a maximum of 2100 parameters. 2100 / 6 parameters = 350
 				$SigCount = 0;
 				$ValArray = array();
 				foreach($cell_sig_exp as $key2=>$sig_gps_id)
@@ -179,7 +199,7 @@ class import extends dbcore
 						$gps_id = $fetchgidprep['GPS_ID'];
 						$datetime = $fetchgidprep['GPS_Date'];
 						$gps_lat = $fetchgidprep['Lat'];
-						$gps_lon = $fetchgidprep['Lat'];
+						$gps_lon = $fetchgidprep['Lon'];
 						if($gps_id != "")
 						{
 							if($gps_lat == ""){$gps_lat = "0.0000";}
@@ -210,8 +230,6 @@ class import extends dbcore
 							{
 								try {
 									$sql_prep = $sql.implode(',', $sqlArray);
-									echo $sql_prep."\r\n";
-									var_dump($paramArray);
 									$stmt = $this->sql->conn->prepare($sql_prep);
 									$stmt->execute($paramArray);
 									echo "Insert Size: $Insert_Size - $SigCount / $SigArrSize \r\n";
@@ -496,7 +514,7 @@ class import extends dbcore
 					$gps_id = $fetchgidprep['GPS_ID'];
 					$datetime = $fetchgidprep['GPS_Date'];
 					$gps_lat = $fetchgidprep['Lat'];
-					$gps_lon = $fetchgidprep['Lat'];
+					$gps_lon = $fetchgidprep['Lon'];
 					if($gps_id != "")
 					{
 						if($gps_lat == ""){$gps_lat = "0.0000";}
@@ -2014,6 +2032,7 @@ class import extends dbcore
 					#This is to generate a sanitized and sane array for each AP from the old VS1 format.
 					$ap_line = $file_line_exp;
 					$CleanedSignal = preg_replace("/[^0-9,-]/", "", $ap_line[12]); #Fix for old file with % in signal.
+					if($increment_ids){$CleanedSignal = $this->ShiftSignalGpsIds($CleanedSignal, "-");}#v3 readings are separated by -
 					$highestSignal = $this->FindHighestSig($CleanedSignal);
 					if($highestSignal == ""){$highestSignal = 0;}
 					$highestRSSI = $this->convert->Sig2dBm($highestSignal);
@@ -2041,6 +2060,7 @@ class import extends dbcore
 					#echo "---------------------15 columns!----------------";
 					#This is to generate a sanitized and sane array for each AP from the new VS1 format.
 					$ap_line = $file_line_exp;
+					if($increment_ids){$ap_line[14] = $this->ShiftSignalGpsIds($ap_line[14]);}
 					if(is_numeric($ap_line[10]))#Check if line 10 id HighSig or Manufacturer
 					{
 						#Detailed Export Version 4.0, Current vistumbler format (correctly formatted)
@@ -2119,19 +2139,7 @@ class import extends dbcore
 					$cell_type = strtoupper(trim($cell_line[0]));
 					if(!in_array($cell_type, array('BT','BLE','GSM','CDMA','WCDMA','LTE','NR')) || trim($cell_line[1]) == ""){continue 2;}
 					$cell_signals = $cell_line[9];
-					if($increment_ids)
-					{
-						#The GPS ids were shifted up by one above, so shift the readings' ids to match
-						$shifted = array();
-						foreach(explode("\\", $cell_signals) as $reading)
-						{
-							$parts = explode(",", $reading);
-							if($parts[0] === "" || !is_numeric($parts[0])){continue;}
-							$parts[0] = (int) $parts[0] + 1;
-							$shifted[] = implode(",", $parts);
-						}
-						$cell_signals = implode("\\", $shifted);
-					}
+					if($increment_ids){$cell_signals = $this->ShiftSignalGpsIds($cell_signals);}
 					$cell_bssid = trim($cell_line[1]);
 					$cell_ssid = $cell_line[2];
 					$cell_flags = $cell_line[3];
