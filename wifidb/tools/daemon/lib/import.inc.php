@@ -1927,17 +1927,7 @@ class import extends dbcore
 
 			#Skip commented line, unless it's an AP whose SSID starts with # (its second field is the BSSID)
 			$first_char = mb_substr(trim($file_line),0,1);
-			if(strpos($file_line, "#RADIO|") === 0)
-			{
-				#VistumblerMAUI 0.8.0 wrote cell towers and Bluetooth devices as "#RADIO|..." lines without the High RSSI field;
-				#read them as the 10-field Detailed Export Version 4.1 lines that replaced them
-				$fields = explode("|", $file_line);
-				if(count($fields) != 10){continue;}
-				array_splice($fields, 9, 0, array(""));
-				array_shift($fields);
-				$file_line = implode("|", $fields);
-			}
-			else if($first_char == "#")
+			if($first_char == "#")
 			{
 				$fields = explode("|", $file_line);
 				if(!isset($fields[1]) || !preg_match('/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/', $fields[1])){continue;}
