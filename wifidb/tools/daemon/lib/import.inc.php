@@ -1899,6 +1899,7 @@ class import extends dbcore
 		$increment_ids = 0;
 		$apdata = array();
 		$gdata = array();
+		$cdata = array();
 		# We need to check and see if the file location was passed, if not fail gracefully.
 		if($source == NULL)
 		{
@@ -1926,7 +1927,17 @@ class import extends dbcore
 
 			#Skip commented line, unless it's an AP whose SSID starts with # (its second field is the BSSID)
 			$first_char = mb_substr(trim($file_line),0,1);
-			if($first_char == "#")
+			if(strpos($file_line, "#RADIO|") === 0)
+			{
+				#VistumblerMAUI 0.8.0 wrote cell towers and Bluetooth devices as "#RADIO|..." lines without the High RSSI field;
+				#read them as the 10-field Detailed Export Version 4.1 lines that replaced them
+				$fields = explode("|", $file_line);
+				if(count($fields) != 10){continue;}
+				array_splice($fields, 9, 0, array(""));
+				array_shift($fields);
+				$file_line = implode("|", $fields);
+			}
+			else if($first_char == "#")
 			{
 				$fields = explode("|", $file_line);
 				if(!isset($fields[1]) || !preg_match('/^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$/', $fields[1])){continue;}
@@ -2111,6 +2122,51 @@ class import extends dbcore
 					$this->rssi_signals_flag = 1;
 					break;
 
+				case 10:
+					#Detailed Export Version 4.1: a cell tower or Bluetooth device, with the same fields as a WiGLE CSV row
+					#Type|Key|Name|Capabilities|Channel|Frequency|MfgrId|Manufacturer|High RSSI|GID,RSSI\GID,RSSI...
+					$cell_line = $file_line_exp;
+					$cell_type = strtoupper(trim($cell_line[0]));
+					if(!in_array($cell_type, array('BT','BLE','GSM','CDMA','WCDMA','LTE','NR')) || trim($cell_line[1]) == ""){continue 2;}
+					$cell_signals = $cell_line[9];
+					if($increment_ids)
+					{
+						#The GPS ids were shifted up by one above, so shift the readings' ids to match
+						$shifted = array();
+						foreach(explode("\\", $cell_signals) as $reading)
+						{
+							$parts = explode(",", $reading);
+							if($parts[0] === "" || !is_numeric($parts[0])){continue;}
+							$parts[0] = (int) $parts[0] + 1;
+							$shifted[] = implode(",", $parts);
+						}
+						$cell_signals = implode("\\", $shifted);
+					}
+					$cell_bssid = trim($cell_line[1]);
+					$cell_ssid = $cell_line[2];
+					$cell_flags = $cell_line[3];
+					$cell_chan = $cell_line[4];
+					#Keyed as import_wiglewificsv keys them, so a network listed twice merges
+					$cell_hash = md5($cell_bssid.$cell_ssid.$cell_flags.$cell_chan.$cell_type);
+					if(isset($cdata[$cell_hash]))
+					{
+						if($cell_signals !== ""){$cdata[$cell_hash]['signals'] .= ($cdata[$cell_hash]['signals'] !== "" ? "\\" : "").$cell_signals;}
+					}
+					else
+					{
+						$cdata[$cell_hash] = array(
+							'cell_hash' =>  $cell_hash,
+							'ssid'	  =>  $cell_ssid,
+							'bssid'	   =>  $cell_bssid,
+							'flags'   =>  $cell_flags,
+							'chan'	  =>  $cell_chan,
+							'freq'	  =>  $cell_line[5],
+							'type'	 =>  $cell_type,
+							'signals'   =>  $cell_signals
+						);
+					}
+					break;
+
 				default:
 					echo "Import Line Error---------------\r\n";
 					echo $file_line."\r\n";
@@ -2122,6 +2178,8 @@ class import extends dbcore
 		}
 
 		$AP_Import = $this->ImportApData($file_id, $file_importing_id, $gdata, $apdata, 1, 0);
+		#Cell towers and Bluetooth devices (VS1 4.1); after the APs, since their readings look up the GPS rows ImportApData stored
+		$Cell_Import = $this->ImportCellData($file_id, $file_importing_id, $cdata);
 		
 		#Find if file had Valid GPS
 		$this->UpdateFileValidGPS($file_id);
@@ -2131,9 +2189,9 @@ class import extends dbcore
 				'aps'=>$AP_Import['aps'],
 				'gps'=>$AP_Import['gps'],
 				'newaps'=>$AP_Import['newaps'],
-				'cells'=>0,
-				'cells_hist'=>0,
-				'newcells'=>0
+				'cells'=>$Cell_Import['cells'],
+				'cells_hist'=>$Cell_Import['cells_hist'],
+				'newcells'=>$Cell_Import['newcells']
 		);
 		return $ret;
 	}
