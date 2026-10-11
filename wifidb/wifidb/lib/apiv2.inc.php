@@ -362,6 +362,113 @@ class apiv2 extends dbcore
 		return 1;
 	}
 
+	/**
+	 * The signed-in user's profile: what opt/userstats.php?func=alluserlists shows (totals and imports), plus
+	 * new cells/Bluetooth and the user's files still waiting, importing or failed. Only for the account the
+	 * username and API key belong to (APILoginCheck), so the AnonCoward key and other users' keys get nothing.
+	 * Imports are paged by $from/$inc (at most 100), newest first.
+	 */
+	public function GetUserProfile($from = 0, $inc = 25)
+	{
+		if($this->sec->APILoginCheck($this->username, $this->apikey) != 1)
+		{
+			$this->mesg = array("error" => "A valid username and API key are required for the profile.");
+			return -1;
+		}
+		$user = $this->sec->username;
+		$from = max(0, (int) $from);
+		$inc = min(100, max(1, (int) $inc));
+		$mysql = ($this->sql->service == "mysql");
+
+		$prep = $this->sql->conn->prepare("SELECT join_date, last_login FROM user_info WHERE username = ?");
+		$prep->execute(array($user));
+		$account = $prep->fetch(2);
+
+		$prep = $this->sql->conn->prepare("SELECT COUNT(id) AS files, SUM(aps) AS aps, SUM(gps) AS gps, MIN(file_date) AS first_import, MAX(file_date) AS last_import, AVG(NewAPPercent) AS efficiency FROM files WHERE file_user = ? AND completed = 1");
+		$prep->execute(array($user));
+		$totals = $prep->fetch(2);
+
+		$prep = $this->sql->conn->prepare("SELECT COUNT(wifi_ap.AP_ID) FROM wifi_ap INNER JOIN files ON files.id = wifi_ap.File_ID WHERE files.file_user = ?");
+		$prep->execute(array($user));
+		$new_aps = (int) $prep->fetchColumn();
+
+		#Cells and Bluetooth devices first seen in the user's files (VS1 4.1, WiGLE CSV)
+		$prep = $this->sql->conn->prepare("SELECT cell_id.type AS type, COUNT(cell_id.cell_id) AS n FROM cell_id INNER JOIN files ON files.id = cell_id.file_id WHERE files.file_user = ? GROUP BY cell_id.type");
+		$prep->execute(array($user));
+		$new_cells = 0;
+		$new_bt = 0;
+		while($row = $prep->fetch(2))
+		{
+			if(in_array(strtoupper($row['type']), array('BT', 'BLE'))){$new_bt += (int) $row['n'];}else{$new_cells += (int) $row['n'];}
+		}
+
+		#Files not finished yet: waiting for the daemon, being imported (with AP progress), or failed
+		$prep = $this->sql->conn->prepare("SELECT id, file_orig, title, file_date, size, UPPER(hash) AS hash FROM files_tmp WHERE file_user = ? ORDER BY id");
+		$prep->execute(array($user));
+		$waiting = $prep->fetchAll(2);
+		$prep = $this->sql->conn->prepare("SELECT id, file_orig, title, file_date, size, UPPER(hash) AS hash, ap, tot FROM files_importing WHERE file_user = ? ORDER BY id");
+		$prep->execute(array($user));
+		$importing = $prep->fetchAll(2);
+		$sql = $mysql
+			? "SELECT id, file_orig, title, file_date, size, UPPER(hash) AS hash, error_msg FROM files_bad WHERE file_user = ? ORDER BY id DESC LIMIT 25"
+			: "SELECT TOP 25 id, file_orig, title, file_date, size, UPPER(hash) AS hash, error_msg FROM files_bad WHERE file_user = ? ORDER BY id DESC";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->execute(array($user));
+		$bad = $prep->fetchAll(2);
+
+		$sql = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent, UPPER(hash) AS hash FROM files WHERE file_user = ? AND completed = 1 ORDER BY id DESC";
+		$sql .= $mysql ? " LIMIT $from, $inc" : " OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";
+		$prep = $this->sql->conn->prepare($sql);
+		$prep->execute(array($user));
+		$imports = array();
+		while($row = $prep->fetch(2))
+		{
+			$imports[] = array(
+				'id' => (int) $row['id'],
+				'title' => $row['title'],
+				'file' => $row['file_orig'],
+				'notes' => $row['notes'],
+				'date' => $row['file_date'],
+				'aps' => (int) $row['aps'],
+				'gps' => (int) $row['gps'],
+				'valid_gps' => (int) $row['ValidGPS'],
+				'efficiency' => $row['NewAPPercent'] === null ? null : (int) $row['NewAPPercent'],
+				'hash' => $row['hash'],
+				'url' => $this->URL_PATH."opt/userstats.php?func=useraplist&row=".(int) $row['id']
+			);
+		}
+
+		$this->mesg['profile'] = array(
+			'username' => $user,
+			'join_date' => $account['join_date'],
+			'last_login' => $account['last_login'],
+			'url' => $this->URL_PATH."opt/userstats.php?func=alluserlists&user=".rawurlencode($user),
+			'totals' => array(
+				'files' => (int) $totals['files'],
+				'aps' => (int) $totals['aps'],
+				'gps' => (int) $totals['gps'],
+				'new_aps' => $new_aps,
+				'new_cells' => $new_cells,
+				'new_bt' => $new_bt,
+				'efficiency' => $totals['efficiency'] === null ? null : round((float) $totals['efficiency']),
+				'first_import' => $totals['first_import'],
+				'last_import' => $totals['last_import']
+			),
+			'queue' => array(
+				'waiting' => $waiting,
+				'importing' => $importing,
+				'bad' => $bad
+			),
+			'imports' => array(
+				'from' => $from,
+				'inc' => $inc,
+				'total' => (int) $totals['files'],
+				'rows' => $imports
+			)
+		);
+		return 1;
+	}
+
 	public function ImportVS1($details = array())
 	{
 		$user		= $details['user'];

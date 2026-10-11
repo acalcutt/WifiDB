@@ -71,6 +71,19 @@ curl -F "file=@myrun.csv" -F "title=My Run" https://yourserver/api/v2/import.php
 Example:
 GET /api/v2/schedule.php?func=waiting
 
+4) `profile.php` (POST, or GET)
+- Purpose: the signed-in user's own profile, what `opt/userstats.php?func=alluserlists` shows plus their files still in the queue. Used by VistumblerMAUI's Uploads page.
+- Required: `username` and `apikey`, which must belong to the same account. Anything else (no key, a wrong key, the anonymous key) returns `{"error": "..."}` and no data. Send them as POST fields so the key stays out of server logs.
+- Optional: `from` (default 0) and `inc` (default 25, at most 100) page the `imports` list, newest first.
+- Returns:
+  - `profile.username`, `join_date`, `last_login`, `url` (the user's page on this WifiDB)
+  - `profile.totals`: `files` (completed imports), `aps` and `gps` (summed over the imports), `new_aps` (APs first seen in the user's files), `new_cells` and `new_bt` (cell towers and Bluetooth devices first seen in them), `efficiency` (average new AP %), `first_import`, `last_import`
+  - `profile.queue`: `waiting` and `importing` (each `id`, `file_orig`, `title`, `file_date`, `size`, `hash`; importing adds `ap` and `tot`, the daemon's progress), and `bad` (the latest 25 failed files, with `error_msg`)
+  - `profile.imports`: `from`, `inc`, `total`, and `rows` (each `id`, `title`, `file`, `notes`, `date`, `aps`, `gps`, `valid_gps`, `efficiency`, `hash`, `url`)
+
+Example (curl):
+curl -d "username=you&apikey=YOURKEY&inc=10" https://yourserver/api/v2/profile.php
+
 ---
 If you want, I can add per-`func` schema examples for `export.php` (showing exact JSON or KML snippets) or produce curl examples that cover authorization and api-key usage in contexts where credentials are required.
 
