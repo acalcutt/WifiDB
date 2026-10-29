@@ -40,8 +40,8 @@ version 2 of the License, or (at your option) any later version.
 							</tr>
 							<tr class="light">
 								<td class="light" colspan="2" style="text-align: center; padding: 15px;">
-									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;pidfile={$pidfile|escape:'url'}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Delete</a>
-									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action|escape:'html':'UTF-8':false}&amp;pidfile={$pidfile|escape:'url'}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Delete</a>
+									<a href="{if $return_url}{$return_url|escape:'html':'UTF-8':false}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>
 							{elseif $action == 'reset_schedule'}
@@ -77,8 +77,8 @@ version 2 of the License, or (at your option) any later version.
 							</tr>
 							<tr class="light">
 								<td class="light" colspan="2" style="text-align: center; padding: 15px;">
-									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;schedule_id={$schedule_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #4a6fa5; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Reset</a>
-									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action|escape:'html':'UTF-8':false}&amp;schedule_id={$schedule_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #4a6fa5; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Reset</a>
+									<a href="{if $return_url}{$return_url|escape:'html':'UTF-8':false}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>
 							{elseif $action == 'run_schedule_now'}
@@ -114,8 +114,8 @@ version 2 of the License, or (at your option) any later version.
 							</tr>
 							<tr class="light">
 								<td class="light" colspan="2" style="text-align: center; padding: 15px;">
-									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;schedule_id={$schedule_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #2e8b57; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Run Now</a>
-									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action|escape:'html':'UTF-8':false}&amp;schedule_id={$schedule_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #2e8b57; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Run Now</a>
+									<a href="{if $return_url}{$return_url|escape:'html':'UTF-8':false}{else}{$wifidb_host_url}opt/scheduling.php?func=schedule{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>
 							{else}
@@ -149,8 +149,8 @@ version 2 of the License, or (at your option) any later version.
 							</tr>
 							<tr class="dark">
 								<td class="dark" colspan="2" style="text-align: center; padding: 15px;">
-									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action}&amp;file_id={$file_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">{if $action == 'reset_file'}Confirm Reset{elseif $action == 'delete_file'}Confirm Delete{/if}</a>
-									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
+									<a href="{$wifidb_host_url}opt/admin_action.php?action={$action|escape:'html':'UTF-8':false}&amp;file_id={$file_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">{if $action == 'reset_file'}Confirm Reset{elseif $action == 'delete_file'}Confirm Delete{/if}</a>
+									<a href="{if $return_url}{$return_url|escape:'html':'UTF-8':false}{else}{$wifidb_host_url}{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>
 							{/if}

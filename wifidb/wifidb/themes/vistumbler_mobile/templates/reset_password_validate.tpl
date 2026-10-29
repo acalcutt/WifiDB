@@ -15,9 +15,9 @@
 								<tr>
 									<td>Username</td>
 									<td>
-										<input type="text" name="username" value="{$username}" disabled>
-										<input type="hidden" name="usernameh" value="{$username}">
-										<input type="hidden" name="validate_code" value="{$validate_code}">
+										<input type="text" name="username" value="{$username|escape:'html':'UTF-8':false}" disabled>
+										<input type="hidden" name="usernameh" value="{$username|escape:'html':'UTF-8':false}">
+										<input type="hidden" name="validate_code" value="{$validate_code|escape:'html':'UTF-8':false}">
 									</td>
 								</tr>
 								<tr>

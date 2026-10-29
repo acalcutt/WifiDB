@@ -104,10 +104,10 @@ if not, write to the
 								<td class="{$wifidb_users.class}">{$wifidb_users.rowid}</td>
 								<td class="{$wifidb_users.class}">
 								{if $wifidb_users.validgps eq 1}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
-									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user|escape:'html':'UTF-8':false}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
+									<a href="{$wifidb_host_url}opt/geojson.php?func=user_all&from=0&inc=50000&user={$wifidb_users.user|escape:'html':'UTF-8':false}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user|escape:'html':'UTF-8':false}" title="Export to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&from=0&inc=25000&user={$wifidb_users.user|escape:'html':'UTF-8':false}" title="Export to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								{else}
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 									<img width="20px" src="{$themeurl}img/json_off.png">
@@ -115,14 +115,14 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/gpx_off.png">
 								{/if}
 								</td>
-								<td class="{$wifidb_users.class}"><a class="links" href="?func=alluserlists&user={$wifidb_users.user}">{$wifidb_users.user}</a></td>
+								<td class="{$wifidb_users.class}"><a class="links" href="?func=alluserlists&user={$wifidb_users.user|escape:'html':'UTF-8':false}">{$wifidb_users.user|escape:'html':'UTF-8':false}</a></td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.filecount|number_format:0}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.firstimport}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.lastimport}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.apcount|number_format:0}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.gpscount|number_format:0}</td>
 								<td class="{$wifidb_users.class}">{$wifidb_users.newappercent}%</td>
-								{if ($wifidb_login_logged_in|default:0) == 1}<td class="{$wifidb_users.class}">{if $wifidb_users.regid}<a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_users.regid}"><img  title="Message [{$wifidb_users.user}]" width="20px" src="{$themeurl}img/send-message.png"></a>{/if}</td>{/if}
+								{if ($wifidb_login_logged_in|default:0) == 1}<td class="{$wifidb_users.class}">{if $wifidb_users.regid}<a class="links" href="{$wifidb_host_url}cp/messages.php?func=sendmsg&to={$wifidb_users.regid}"><img  title="Message [{$wifidb_users.user|escape:'html':'UTF-8':false}]" width="20px" src="{$themeurl}img/send-message.png"></a>{/if}</td>{/if}
 								{if ($wifidb_login_priv_name|default:"") == "Administrator"}<td class="{$wifidb_users.class}"></td>{/if}
 							</tr>
 							{foreachelse}

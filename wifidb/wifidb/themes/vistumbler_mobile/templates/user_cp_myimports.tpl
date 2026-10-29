@@ -144,7 +144,7 @@ if not, write to the
 								{/if}
 								</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.id}</td>
-								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user}">{$wifidb_user_prev.file}</a></td>
+								<td class="{$wifidb_user_prev.class}"><a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_user_prev.id}&amp;user={$wifidb_user_details.user|escape:'html':'UTF-8':false}">{$wifidb_user_prev.file}</a></td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.title|escape:'htmlall'}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.notes|escape:'htmlall'}</td>
 								<td class="{$wifidb_user_prev.class}">{$wifidb_user_prev.aps|number_format:0|escape:'htmlall'}</td>

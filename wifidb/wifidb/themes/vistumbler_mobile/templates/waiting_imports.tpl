@@ -79,8 +79,8 @@ if not, write to the
 								</tr>
 								<tr style="background-color: lime">
 									<td align="center">{$wifidb_waiting.id}</td>
-									<td align="center">{$wifidb_waiting.filename}</td>
-									<td align="center">{$wifidb_waiting.title}</td>
+									<td align="center">{$wifidb_waiting.filename|escape:'html':'UTF-8':false}</td>
+									<td align="center">{$wifidb_waiting.title|escape:'html':'UTF-8':false}</td>
 									<td align="center">{$wifidb_waiting.date}</td>
 									<td align="center">{$wifidb_waiting.size}</td>
 								</tr>
@@ -91,7 +91,7 @@ if not, write to the
 								<tr style="background-color: lime">
 									<td></td>
 									<td align="center">{$wifidb_waiting.hash}</td><!--Mmm-->
-									<td align="center">{$wifidb_waiting.user}</td>
+									<td align="center">{$wifidb_waiting.user|escape:'html':'UTF-8':false}</td>
 									<td align="center">
 										<table align="center">
 											<tbody>

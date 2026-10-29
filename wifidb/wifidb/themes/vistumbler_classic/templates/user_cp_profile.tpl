@@ -24,11 +24,11 @@ if not, write to the
 					<table class="content_table">
 						<tr>
 							<th width="30%" class="dark">Email</th>
-							<td class="light"><input type="text" name="email" size="75%" value="{$user_cp_profile.email}"> Hide? <input name="h_email" type="checkbox" {$user_cp_profile.hide_email}></td>
+							<td class="light"><input type="text" name="email" size="75%" value="{$user_cp_profile.email|escape:'html':'UTF-8':false}"> Hide? <input name="h_email" type="checkbox" {$user_cp_profile.hide_email}></td>
 						</tr>
 						<tr>
 							<th width="30%" class="dark">Website</th>
-							<td class="light"><input type="text" name="website" size="75%" value="{$user_cp_profile.website}"></td>
+							<td class="light"><input type="text" name="website" size="75%" value="{$user_cp_profile.website|escape:'html':'UTF-8':false}"></td>
 						</tr>
 						<tr>
 							<th width="30%" class="dark">Vistumbler Version</th>

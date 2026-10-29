@@ -30,15 +30,15 @@ You should have received a copy of the GNU General Public License along with thi
                                 <form method="get" action="{$wifidb_host_url}stats.php" style="display: inline; margin-left: 20px;">
                                     <input type="hidden" name="top" value="{$top_n}">
                                     <input type="hidden" name="range" value="custom">
-                                    <label>From: <input type="date" name="start_date" value="{$start_date}" style="padding: 3px;"></label>
-                                    <label>To: <input type="date" name="end_date" value="{$end_date}" style="padding: 3px;"></label>
+                                    <label>From: <input type="date" name="start_date" value="{$start_date|escape:'html':'UTF-8':false}" style="padding: 3px;"></label>
+                                    <label>To: <input type="date" name="end_date" value="{$end_date|escape:'html':'UTF-8':false}" style="padding: 3px;"></label>
                                     <button type="submit" style="margin: 2px; padding: 5px 10px;">Apply</button>
                                 </form>
                             </td>
                         </tr>
                         {if $date_filter_label neq 'All Time'}
                         <tr>
-                            <td colspan="6" class="dark-centered"><strong>Showing: {$date_filter_label}</strong>{if $start_date} (from {$start_date}){/if}{if $end_date} (to {$end_date}){/if}</td>
+                            <td colspan="6" class="dark-centered"><strong>Showing: {$date_filter_label|escape:'html':'UTF-8':false}</strong>{if $start_date} (from {$start_date|escape:'html':'UTF-8':false}){/if}{if $end_date} (to {$end_date|escape:'html':'UTF-8':false}){/if}</td>
                         </tr>
                         {/if}
                     </tbody>
@@ -133,7 +133,7 @@ You should have received a copy of the GNU General Public License along with thi
                             {* AP data row: either two columns or a single colspan=2 *}
                             {if $new_ap_id_withgps neq '' && $new_ap_id_withgps neq $new_ap_id}
                                 <td class="dark-centered">
-                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
+                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid|escape:'html':'UTF-8':false}</a>
                                 {if $ap_validgps eq 1}
                                     <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                     <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
@@ -143,7 +143,7 @@ You should have received a copy of the GNU General Public License along with thi
                                 {/if}
                                 </td>
                                 <td class="dark-centered">
-                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id_withgps|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid_withgps}</a>
+                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id_withgps|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid_withgps|escape:'html':'UTF-8':false}</a>
                                 {if $new_ap_id_withgps}
                                     <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                     <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id_withgps|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
@@ -154,7 +154,7 @@ You should have received a copy of the GNU General Public License along with thi
                                 </td>
                             {else}
                                 <td class="dark-centered" colspan="2">
-                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid}</a>
+                                    <a href="{$wifidb_host_url}opt/fetch.php?id={$new_ap_id|escape:'htmlall'}" title="View AP Details">{$new_ap_ssid|escape:'html':'UTF-8':false}</a>
                                     {if $ap_validgps eq 1}
                                         <a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$new_ap_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                         <a href="{$wifidb_host_url}opt/map.php?func=exp_ap_sig&from=0&inc=50000&id={$new_ap_id|escape:'htmlall'}" title="Show Signals on Map"><img width="20px" src="{$themeurl}img/sigmap_on.png"></a>
@@ -168,7 +168,7 @@ You should have received a copy of the GNU General Public License along with thi
                             {* Import list data row: either two columns (any + withgps) or a single colspan covering both *}
                             {if $new_import_title_withgps neq '' && $new_import_title_withgps neq $new_import_title}
                                 <td class="dark-centered">
-                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title|escape:'html':'UTF-8':false}</a>
                                 {if $list_validgps eq 1}
                                     <a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                     <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
@@ -177,7 +177,7 @@ You should have received a copy of the GNU General Public License along with thi
                                 {/if}
                                 </td>
                                 <td class="dark-centered" colspan="2">
-                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id_withgps|escape:'htmlall'}"  title="View List Details">{$new_import_title_withgps}</a>
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id_withgps|escape:'htmlall'}"  title="View List Details">{$new_import_title_withgps|escape:'html':'UTF-8':false}</a>
                                 {if $new_import_id_withgps}
                                     <a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id_withgps|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                     <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id_withgps|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
@@ -187,7 +187,7 @@ You should have received a copy of the GNU General Public License along with thi
                                 </td>
                             {else}
                                 <td class="dark-centered" colspan="3">
-                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title}</a>
+                                    <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$new_import_id|escape:'htmlall'}"  title="View List Details">{$new_import_title|escape:'html':'UTF-8':false}</a>
                                 {if $list_validgps eq 1}
                                     <a href="{$wifidb_host_url}opt/map.php?func=user_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Show on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
                                     <a href="{$wifidb_host_url}api/geojson.php?func=exp_list&from=0&inc=50000&id={$new_import_id|escape:'htmlall'}" title="Export to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
@@ -234,11 +234,11 @@ You should have received a copy of the GNU General Public License along with thi
                         {/if}
                         </td>
                         <td class="{$rowclass}-centered">
-                            <a href="{$wifidb_host_url}opt/fetch.php?id={$wifi.id|escape:'htmlall'}" title="View AP Details">{$wifi.ssid}</a>
+                            <a href="{$wifidb_host_url}opt/fetch.php?id={$wifi.id|escape:'htmlall'}" title="View AP Details">{$wifi.ssid|escape:'html':'UTF-8':false}</a>
                         </td>
-                        <td class="{$rowclass}-centered">{$wifi.bssid}</td>
-                        <td class="{$rowclass}-centered">{$wifi.auth}</td>
-                        <td class="{$rowclass}-centered">{$wifi.encr}</td>
+                        <td class="{$rowclass}-centered">{$wifi.bssid|escape:'html':'UTF-8':false}</td>
+                        <td class="{$rowclass}-centered">{$wifi.auth|escape:'html':'UTF-8':false}</td>
+                        <td class="{$rowclass}-centered">{$wifi.encr|escape:'html':'UTF-8':false}</td>
                         <td class="{$rowclass}-centered">{$wifi.points|number_format}</td>
                         </tr>
                         {/foreach}
@@ -284,9 +284,9 @@ You should have received a copy of the GNU General Public License along with thi
                         {/if}
                         </td>
                         <td class="{$rowclass}-centered">
-                            <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$cell.id|escape:'htmlall'}" title="View Cell Details">{$cell.ssid}</a>
+                            <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$cell.id|escape:'htmlall'}" title="View Cell Details">{$cell.ssid|escape:'html':'UTF-8':false}</a>
                         </td>
-                        <td class="{$rowclass}-centered">{$cell.mac}</td>
+                        <td class="{$rowclass}-centered">{$cell.mac|escape:'html':'UTF-8':false}</td>
                         <td class="{$rowclass}-centered">{$cell.type}</td>
                         <td class="{$rowclass}-centered">{$cell.points|number_format}</td>
                         </tr>
@@ -333,9 +333,9 @@ You should have received a copy of the GNU General Public License along with thi
                         {/if}
                         </td>
                         <td class="{$rowclass}-centered">
-                            <a href="{$wifidb_host_url}opt/fetch.php?func=bt&id={$bt.id|escape:'htmlall'}" title="View Bluetooth Details">{$bt.ssid}</a>
+                            <a href="{$wifidb_host_url}opt/fetch.php?func=bt&id={$bt.id|escape:'htmlall'}" title="View Bluetooth Details">{$bt.ssid|escape:'html':'UTF-8':false}</a>
                         </td>
-                        <td class="{$rowclass}-centered">{$bt.mac}</td>
+                        <td class="{$rowclass}-centered">{$bt.mac|escape:'html':'UTF-8':false}</td>
                         <td class="{$rowclass}-centered">{$bt.type}</td>
                         <td class="{$rowclass}-centered">{$bt.points|number_format}</td>
                         </tr>

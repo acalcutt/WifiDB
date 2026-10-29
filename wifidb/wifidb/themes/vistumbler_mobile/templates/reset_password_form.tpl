@@ -11,7 +11,7 @@
 									<td>Username</td>
 									<td>
 										<input type="text" name="username">
-										<input type="hidden" name="token" value="{$token}">
+										<input type="hidden" name="token" value="{$token|escape:'html':'UTF-8':false}">
 									</td>
 								</tr>
 								<tr>

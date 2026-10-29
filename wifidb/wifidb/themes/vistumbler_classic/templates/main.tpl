@@ -46,7 +46,7 @@ if not, write to the
 						<img src="{$themeurl}img/users.png" style="vertical-align: middle;"/>
 						<span style="vertical-align: middle;">Users</span>
 					</a>					
-					<a class="links" title="Log In/Out" style="text-decoration: none;" href="{$wifidb_host_url}login.php{$wifidb_current_uri}">
+					<a class="links" title="Log In/Out" style="text-decoration: none;" href="{$wifidb_host_url}login.php{$wifidb_current_uri|escape:'html':'UTF-8':false}">
 						<img src="{$themeurl}img/user.png" style="vertical-align: middle;"/>
 						<span style="vertical-align: middle;">{$wifidb_login_label|default:'Login'}</span>
 					</a>

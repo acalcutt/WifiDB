@@ -24,80 +24,80 @@ You should have received a copy of the GNU General Public License along with thi
 							<td class="header">
 								<div>ID</div>
 								<div>
-									<a href="?func={$func}&sort=cell_id&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=cell_id&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=cell_id&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=cell_id&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>SSID</div>
 								<div>
-									<a href="?func={$func}&sort=ssid&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=ssid&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=ssid&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=ssid&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>MAC</div>
 								<div>
-									<a href="?func={$func}&sort=mac&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=mac&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=mac&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=mac&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>Channel</div>
 								<div>
-									<a href="?func={$func}&sort=chan&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=chan&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=chan&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=chan&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>AuthMode</div>
 								<div>
-									<a href="?func={$func}&sort=authmode&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=authmode&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=authmode&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=authmode&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>Type</div>
 								<div>
-									<a href="?func={$func}&sort=type&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=type&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=type&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=type&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>						
 							<td class="header">
 								<div>First Active</div>
 								<div>
-									<a href="?func={$func}&sort=fa&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=fa&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=fa&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=fa&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>Last Active</div>
 								<div>
-									<a href="?func={$func}&sort=la&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=la&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=la&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=la&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							{if $func eq 'cid'}
 							<td class="header">
 								<div>Network</div>
 								<div>
-									<a href="?func={$func}&sort=network&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=network&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=network&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=network&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							<td class="header">
 								<div>Country</div>
 								<div>
-									<a href="?func={$func}&sort=country&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=country&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=country&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=country&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 							{/if}
 							<td class="header">
 								<div>Points</div>
 								<div>
-									<a href="?func={$func}&sort=points&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-									<a href="?func={$func}&sort=points&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=points&ord=ASC&from={$from}&inc={$inc}"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+									<a href="?func={$func|escape:'html':'UTF-8':false}&sort=points&ord=DESC&from={$from}&inc={$inc}"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 								</div>
 							</td>
 						</tr>
@@ -122,7 +122,7 @@ You should have received a copy of the GNU General Public License along with thi
 								{$wifidb_ap.id|escape:'htmlall'}
 							</td>
 							<td class="cell_border">
-								<a class="links" href="{$wifidb_host_url}opt/fetch.php?func={$func}&id={$wifidb_ap.id}" title="View AP Details">{$wifidb_ap.ssid|escape:'htmlall'}</a>
+								<a class="links" href="{$wifidb_host_url}opt/fetch.php?func={$func|escape:'html':'UTF-8':false}&id={$wifidb_ap.id}" title="View AP Details">{$wifidb_ap.ssid|escape:'htmlall'}</a>
 							</td>
 							<td class="cell_border">
 								{$wifidb_ap.mac|escape:'htmlall'}

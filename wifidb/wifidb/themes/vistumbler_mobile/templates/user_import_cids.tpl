@@ -79,86 +79,86 @@ You should have received a copy of the GNU General Public License along with thi
 								<th class="header">
 									<div>New</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=new&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'new' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=new&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'new' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=new&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'new' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=new&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'new' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>ID</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=cell_id&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=cell_id&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=cell_id&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=cell_id&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'cell_id' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>SSID</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=ssid&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=ssid&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=ssid&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=ssid&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ssid' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Mac Address</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=mac&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=mac&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=mac&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=mac&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'mac' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Authmode</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=authmode&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=authmode&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=authmode&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=authmode&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'authmode' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Type</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=type&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=type&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=type&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=type&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'type' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Channel</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=chan&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=chan&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=chan&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=chan&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'chan' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>First Active</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=fa&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=fa&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=fa&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=fa&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Last Active</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=la&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=la&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=la&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=la&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Network</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=network&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=network&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=network&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=network&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'network' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Country</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=country&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=country&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=country&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=country&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'country' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Points (List / Total)</div>
 									<div>
-										<a href="?func={$func}&row={$file_info.id}&sort=list_points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'list_points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=list_points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'list_points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a> / <a href="?func={$func}&row={$file_info.id}&sort=points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func={$func}&row={$file_info.id}&sort=points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=list_points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'list_points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=list_points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'list_points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a> / <a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func={$func|escape:'html':'UTF-8':false}&row={$file_info.id}&sort=points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 							</tr>

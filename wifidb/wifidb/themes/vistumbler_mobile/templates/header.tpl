@@ -27,11 +27,11 @@
 	<!-- Open Graph -->
 	<meta property="og:title" content="{$wifidb_page_label|default:""} | Vistumbler WiFiDB" />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+	<meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 	<meta property="og:image" content="{$themeurl}img/logo.png" />
 	<meta property="og:description" content="Vistumbler WiFiDB is a global open-source wireless network database. Upload, map, and analyze WiFi access points." />
 
-	<link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+	<link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 
 	{$WebSocketScripts|default:""}
 	{$wifidb_meta_header|default:""}
@@ -72,7 +72,7 @@
 				<a href="http://www.wifidb.net/"><img alt="WifiDB Logo" src="{$themeurl}img/logo.png"></a>
 			</div>
 			<div class="righthead">
-				{if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a> | {/if}
+				{if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user|escape:'html':'UTF-8':false}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a> | {/if}
 				<a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri|default:""}">{$wifidb_login_label|default:'login'}</a>
 			</div>
 		</div>

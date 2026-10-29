@@ -27,21 +27,21 @@ if not, write to the
 							<ul class="wrapper">
 								<li class="form-row>
 									<label for="from_user">From</label><br />
-									<input type="text" id="from_user" name="from_user" disabled="disabled" value="{$touser.username}">
+									<input type="text" id="from_user" name="from_user" disabled="disabled" value="{$touser.username|escape:'html':'UTF-8':false}">
 									<input type="hidden" id="from_id" name="from_id" value="{$touser.id}">
 								</li>
 								<li class="form-row>
 									<label for="to_id">To</label><br />
 									<select id="to_id" name="to_id">
-										<option value="">{$fromuser.username}</option>
+										<option value="">{$fromuser.username|escape:'html':'UTF-8':false}</option>
 									{foreach $fromusers as $fromuser} 
-										<option value="{$fromuser.id}"{if $fromuser.id eq $to} selected{/if}>{$fromuser.username}</option>
+										<option value="{$fromuser.id}"{if $fromuser.id eq $to} selected{/if}>{$fromuser.username|escape:'html':'UTF-8':false}</option>
 									{/foreach}
 									</select>
 								</li>
 								<li class="form-row>
 									<label for="subject">Subject</label><br />
-									<input type="text" id="subject" name="subject" placeholder="Enter a subject..." value="{$title}">
+									<input type="text" id="subject" name="subject" placeholder="Enter a subject..." value="{$title|escape:'html':'UTF-8':false}">
 								</li>
 								<li>
 									<label for="message">Message</label><br />

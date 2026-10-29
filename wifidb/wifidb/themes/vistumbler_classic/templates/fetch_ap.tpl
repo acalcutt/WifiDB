@@ -33,7 +33,7 @@ if not, write to the
 					}
 				}
 				</script>
-                                <h1>{$wifidb_ap.ssid}<img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_ap_globe}.png"></h1>
+                                <h1>{$wifidb_ap.ssid|escape:'html':'UTF-8':false}<img width="20px" src="{$wifidb_host_url}img/globe_{$wifidb_ap_globe}.png"></h1>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0"></table>
                                 <table align="center" width="569" border="1" cellpadding="4" cellspacing="0">
                                     <colgroup>
@@ -44,18 +44,18 @@ if not, write to the
                                         <tr>
                                             <td class="style4" width="112"><p>MAC Address</p></td><td class="light" width="439"><p>{$wifidb_ap_mac}</p></td>
                                         </tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Manufacture</p></td><td class="light" width="439"><p>{$wifidb_ap.manuf}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112" height="26"><p>Authentication</p></td><td class="light" width="439"><p>{$wifidb_ap.auth}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Encryption Type</p></td><td class="light" width="439"><p>{$wifidb_ap.encry}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Radio Type</p></td><td class="light" width="439"><p>{$wifidb_ap.radio}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Channel #</p></td><td class="light" width="439"><p>{$wifidb_ap.chan}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Manufacture</p></td><td class="light" width="439"><p>{$wifidb_ap.manuf|escape:'html':'UTF-8':false}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112" height="26"><p>Authentication</p></td><td class="light" width="439"><p>{$wifidb_ap.auth|escape:'html':'UTF-8':false}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Encryption Type</p></td><td class="light" width="439"><p>{$wifidb_ap.encry|escape:'html':'UTF-8':false}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Radio Type</p></td><td class="light" width="439"><p>{$wifidb_ap.radio|escape:'html':'UTF-8':false}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Channel #</p></td><td class="light" width="439"><p>{$wifidb_ap.chan|escape:'html':'UTF-8':false}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>BTx</p></td><td class="light" width="439"><p>{$wifidb_ap.btx}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>OTx</p></td><td class="light" width="439"><p>{$wifidb_ap.otx}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Network Type</p></td><td class="light" width="439"><p>{$wifidb_ap.nt}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Network Type</p></td><td class="light" width="439"><p>{$wifidb_ap.nt|escape:'html':'UTF-8':false}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>First Active</p></td><td class="light" width="439"><p>{$wifidb_ap.fa}</p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Last Active</p></td><td class="light" width="439"><p>{$wifidb_ap.la}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label}</p></td></tr>
-                                        <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user}">{$wifidb_ap.user}</a></p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>Label</p></td><td class="light" width="439"><p>{$wifidb_ap.label|escape:'html':'UTF-8':false}</p></td></tr>
+                                        <tr valign="TOP"><td class="style4" width="112"><p>User</p></td><td class="light" width="439"><p><a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_ap.user|escape:'html':'UTF-8':false}">{$wifidb_ap.user|escape:'html':'UTF-8':false}</a></p></td></tr>
                                         <tr valign="TOP"><td class="style4" width="112"><p>Export:</p></td><td class="light" width="439"><a class="links" href="{$wifidb_host_url}graph/?row=1&amp;id={$wifidb_ap.id}">Graph Signal</a> [||] <a class="links" href="{$wifidb_host_url}opt/export.php?func=exp_all_signal,{$wifidb_ap.id}">KMZ</a></td>
                                         </tr>
                                     </tbody>
@@ -126,14 +126,14 @@ if not, write to the
                                             </td>
                                             <td>
                                                 <a class="links" 
-                                                   href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.username}">
-                                                    {$wifidb_assoc.username}
+                                                   href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_assoc.username|escape:'html':'UTF-8':false}">
+                                                    {$wifidb_assoc.username|escape:'html':'UTF-8':false}
                                                 </a>
                                             </td>
                                             <td>
                                                 <a class="links" 
                                                    href="{$wifidb_host_url}opt/userstats.php?func=useraplist&amp;row={$wifidb_assoc.title_id}">
-                                                    {$wifidb_assoc.title}
+                                                    {$wifidb_assoc.title|escape:'html':'UTF-8':false}
                                                 </a>
                                             </td>
                                             <td align="center">{$wifidb_assoc.aps}</td>

@@ -23,23 +23,23 @@ if not, write to the
 				<div class="center">
 					<h2>Graph Signal History</h2>
 					<form action="genline.php" method="post" enctype="multipart/form-data">
-						<input name="ssid" type="hidden" value="{$AP_data.ssid}">
-						<input name="mac" type="hidden" value="{$AP_data.mac}">
-						<input name="man" type="hidden" value="{$AP_data.man}">
-						<input name="auth" type="hidden" value="{$AP_data.auth}">
-						<input name="encry" type="hidden" value="{$AP_data.encry}">
-						<input name="radio" type="hidden" value="{$AP_data.radio}">
-						<input name="chan" type="hidden" value="{$AP_data.chan}">
+						<input name="ssid" type="hidden" value="{$AP_data.ssid|escape:'html':'UTF-8':false}">
+						<input name="mac" type="hidden" value="{$AP_data.mac|escape:'html':'UTF-8':false}">
+						<input name="man" type="hidden" value="{$AP_data.man|escape:'html':'UTF-8':false}">
+						<input name="auth" type="hidden" value="{$AP_data.auth|escape:'html':'UTF-8':false}">
+						<input name="encry" type="hidden" value="{$AP_data.encry|escape:'html':'UTF-8':false}">
+						<input name="radio" type="hidden" value="{$AP_data.radio|escape:'html':'UTF-8':false}">
+						<input name="chan" type="hidden" value="{$AP_data.chan|escape:'html':'UTF-8':false}">
 						<input name="lat" type="hidden" value="{$AP_data.lat}">
 						<input name="long" type="hidden" value="{$AP_data.long}">
 						<input name="btx" type="hidden" value="{$AP_data.btx}">
 						<input name="otx" type="hidden" value="{$AP_data.otx}">
 						<input name="fa" type="hidden" value="{$AP_data.fa}">
 						<input name="lu" type="hidden" value="{$AP_data.lu}">
-						<input name="nt" type="hidden" value="{$AP_data.nt}">
-						<input name="user" type="hidden" value="{$AP_data.user}">
+						<input name="nt" type="hidden" value="{$AP_data.nt|escape:'html':'UTF-8':false}">
+						<input name="user" type="hidden" value="{$AP_data.user|escape:'html':'UTF-8':false}">
 						<input name="sig" type="hidden" value="{$AP_data.sig}">
-						<input name="name" type="hidden" value="{$AP_data.name}">							
+						<input name="name" type="hidden" value="{$AP_data.name|escape:'html':'UTF-8':false}">							
 						<table class="content_table-centered">
 							<tr>
 								<th class="header">Graph Type</th>

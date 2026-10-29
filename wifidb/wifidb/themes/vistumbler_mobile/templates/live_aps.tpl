@@ -28,22 +28,22 @@ if not, write to the
 								Select Window of time to view:
 							</td>
 							<td class="header">
-								<a href="?sort={$sort}&ord={$ord}&from={$from}&to={$to}&view=1800">30 Minutes</a>
+								<a href="?sort={$sort|escape:'html':'UTF-8':false}&ord={$ord|escape:'html':'UTF-8':false}&from={$from}&to={$to}&view=1800">30 Minutes</a>
 							</td>
 							<td class="header">
-								<a href="?sort={$sort}&ord={$ord}&from={$from}&to={$to}&view=3600">60 Minutes</a>
+								<a href="?sort={$sort|escape:'html':'UTF-8':false}&ord={$ord|escape:'html':'UTF-8':false}&from={$from}&to={$to}&view=3600">60 Minutes</a>
 							</td>
 							<td class="header">
-								<a href="?sort={$sort}&ord={$ord}&from={$from}&to={$to}&view=7200">2 Hours</a>
+								<a href="?sort={$sort|escape:'html':'UTF-8':false}&ord={$ord|escape:'html':'UTF-8':false}&from={$from}&to={$to}&view=7200">2 Hours</a>
 							</td>
 							<td class="header">
-								<a href="?sort={$sort}&ord={$ord}&from={$from}&to={$to}&view=21600">6 Hours</a>
+								<a href="?sort={$sort|escape:'html':'UTF-8':false}&ord={$ord|escape:'html':'UTF-8':false}&from={$from}&to={$to}&view=21600">6 Hours</a>
 							</td>
 							<td class="header">
-								<a href="?sort={$sort}&ord={$ord}&from={$from}&to={$to}&view=86400">1 Day</a>
+								<a href="?sort={$sort|escape:'html':'UTF-8':false}&ord={$ord|escape:'html':'UTF-8':false}&from={$from}&to={$to}&view=86400">1 Day</a>
 							</td>
 							<td class="header">
-								<a href="?sort={$sort}&ord={$ord}&from={$from}&to={$to}&view=604800">1 Week</a>
+								<a href="?sort={$sort|escape:'html':'UTF-8':false}&ord={$ord|escape:'html':'UTF-8':false}&from={$from}&to={$to}&view=604800">1 Week</a>
 							</td>
 						</tr>
 					</table>
@@ -121,16 +121,16 @@ if not, write to the
 									<img width="20px" src="{$themeurl}img/globe_off.png">
 								{/if}
 								</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.ssid}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.mac}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.auth}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.encry}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.radio}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.chan}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.ssid|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.mac|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.auth|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.encry|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.radio|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.chan|escape:'html':'UTF-8':false}</td>
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.fa}</td>
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.la}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.username}</td>
-								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.label}</td>											
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.username|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.label|escape:'html':'UTF-8':false}</td>											
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.lat}</td>
 								<td class="{$wifidb_live_aps.class}">{$wifidb_live_aps.long}</td>											
 							</tr>

@@ -31,10 +31,10 @@
         <!-- Open Graph -->
         <meta property="og:title" content="{$wifidb_page_label|default:""} | Vistumbler WiFiDB" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+        <meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
         <meta property="og:image" content="{$themeurl}img/logo.png" />
         <meta property="og:description" content="Vistumbler WiFiDB is a global open-source wireless network database." />
-        <link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+        <link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 
         {$wifidb_meta_header}
         {$redirect_func}
@@ -128,7 +128,7 @@
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
-                                {if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a>{/if}
+                                {if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user|escape:'html':'UTF-8':false}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a>{/if}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
                                 <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri|default:""}">{$wifidb_login_label|default:'login'}</a>

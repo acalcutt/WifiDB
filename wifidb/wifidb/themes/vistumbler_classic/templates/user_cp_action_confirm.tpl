@@ -43,8 +43,8 @@ version 2 of the License, or (at your option) any later version.
 							</tr>
 							<tr class="light">
 								<td class="light" colspan="2" style="text-align: center; padding: 15px;">
-									<a href="{$wifidb_host_url}cp/user_action.php?action={$action}&amp;file_id={$file_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Delete</a>
-									<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}cp/index.php?func=myimports{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
+									<a href="{$wifidb_host_url}cp/user_action.php?action={$action|escape:'html':'UTF-8':false}&amp;file_id={$file_id}&amp;confirm=yes{if $return_url}&amp;return={$return_url|escape:'url'}{/if}" style="background-color: #cc0000; color: white; padding: 10px 20px; text-decoration: none; margin-right: 10px;">Confirm Delete</a>
+									<a href="{if $return_url}{$return_url|escape:'html':'UTF-8':false}{else}{$wifidb_host_url}cp/index.php?func=myimports{/if}" style="background-color: #666; color: white; padding: 10px 20px; text-decoration: none;">Cancel</a>
 								</td>
 							</tr>
 						</tbody>

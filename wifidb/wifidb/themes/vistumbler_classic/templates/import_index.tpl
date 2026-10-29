@@ -39,7 +39,7 @@ if not, write to the
 							<ul class="wrapper">
 								<li class="form-row"><label for="title">Title of Import:</label><input type="text" name="title" id="title" class="form-input"></li>
 								<li class="form-row"><label for="files">File(s):</label><input name="upload[]" type="file" id="files" multiple="multiple" class="form-input" /></li>
-								<li class="form-row"><label for="user">Username:</label><input type="text" name="user" id="user" {if $wifidb_login_user}value="{$wifidb_login_user}" readonly{/if} class="form-input"></li>
+								<li class="form-row"><label for="user">Username:</label><input type="text" name="user" id="user" {if $wifidb_login_user}value="{$wifidb_login_user|escape:'html':'UTF-8':false}" readonly{/if} class="form-input"></li>
 								<li class="form-row"><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><input type="text" name="otherusers" id="otherusers" class="form-input"></li>
 								<li class="form-row"><label for="notes">Notes:</label><textarea name="notes" id="notes" rows="4" cols="30" class="form-input"></textarea></li>
 								<li class="form-row"><label for="type">Import Type:</label>

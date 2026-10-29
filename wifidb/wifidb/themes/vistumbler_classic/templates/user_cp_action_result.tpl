@@ -24,7 +24,7 @@ version 2 of the License, or (at your option) any later version.
 							</tr>
 							<tr class="light">
 								<td class="light" style="text-align: center; padding: 15px;">
-									<a href="{$return_url}" style="background-color: #4a6fa5; color: white; padding: 10px 20px; text-decoration: none;">Return to My Imports</a>
+									<a href="{$return_url|escape:'html':'UTF-8':false}" style="background-color: #4a6fa5; color: white; padding: 10px 20px; text-decoration: none;">Return to My Imports</a>
 								</td>
 							</tr>
 						</tbody>

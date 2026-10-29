@@ -48,7 +48,7 @@ if not, write to the
                                 <tr class="{$wifidb_users.class}">
                                     <td align="center" onclick="expandcontract('Row{$wifidb_users.rowid}','ClickIcon{$wifidb_users.rowid}')" id="ClickIcon{$wifidb_users.rowid}" style="cursor: pointer; cursor: hand;">+</td>
                                     <td align="center">{$wifidb_users.id}</td>
-                                    <td align="center"><a class="links" href="?func=alluserlists&user={$wifidb_users.username}">{$wifidb_users.username}</a></td>
+                                    <td align="center"><a class="links" href="?func=alluserlists&user={$wifidb_users.username|escape:'html':'UTF-8':false}">{$wifidb_users.username|escape:'html':'UTF-8':false}</a></td>
                                     <td align="center">{$wifidb_users.imports}</td>
                                 </tr>
                                 <tbody id="Row{$wifidb_users.rowid}" style="display:none">
@@ -61,10 +61,10 @@ if not, write to the
                                 </tr>
                                     {foreach name=outer item=wifidb_import from=$wifidb_users.data}
                                 <tr class="{$wifidb_import.class}">
-                                    <td align="center"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.title}</a></td>
+                                    <td align="center"><a class="links" href="?func=useraplist&row={$wifidb_import.id}">{$wifidb_import.title|escape:'html':'UTF-8':false}</a></td>
                                     <td align="center">{$wifidb_import.aps}</td>
 									<td align="center">{$wifidb_import.NewAPPercent}</td>
-                                    <td align="center">{$wifidb_import.notes}</td>
+                                    <td align="center">{$wifidb_import.notes|escape:'html':'UTF-8':false}</td>
                                     <td align="center">{$wifidb_import.date}</td>
                                 </tr>
                                     {/foreach}

@@ -21,10 +21,10 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-				{$user} has {$count} APs, which is greater than the {$inc} AP kmz limit. Please pick a smaller segment below.<br/><br/>
+				{$user|escape:'html':'UTF-8':false} has {$count} APs, which is greater than the {$inc} AP kmz limit. Please pick a smaller segment below.<br/><br/>
 				The segments are ordered by ModDate, with the last modified APs first.<br/><br/>
 				{for $multiplier=1 to $ldivs}
-					<a class="links" href="{$wifidb_host_url}api/export.php?&xml={$xml}&func=exp_user_all&user={$user}&from={($multiplier-1)*$inc}&inc={$inc}">{$user} KMZ {$multiplier}</a><br/>
+					<a class="links" href="{$wifidb_host_url}api/export.php?&xml={$xml|escape:'html':'UTF-8':false}&func=exp_user_all&user={$user|escape:'html':'UTF-8':false}&from={($multiplier-1)*$inc}&inc={$inc}">{$user|escape:'html':'UTF-8':false} KMZ {$multiplier}</a><br/>
 				{/for}
 				<br/>
 			</div>
