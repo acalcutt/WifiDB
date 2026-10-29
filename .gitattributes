@@ -20,3 +20,8 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
+# Shell scripts, cron wrappers and the Proxmox template files run on Linux and break with CRLF
+*.sh text eol=lf
+wifidb/tools/cron/* text eol=lf
+proxmox/** text eol=lf
