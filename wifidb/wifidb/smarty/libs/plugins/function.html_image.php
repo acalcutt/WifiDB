@@ -21,7 +21,7 @@
  * - basedir     - (optional) - base directory for absolute paths, default is environment variable DOCUMENT_ROOT
  * - path_prefix - prefix for path output (optional, default empty)
  *
- * @link    http://www.smarty.net/manual/en/language.function.html.image.php {html_image}
+ * @link    https://www.smarty.net/manual/en/language.function.html.image.php {html_image}
  *          (Smarty online manual)
  * @author  Monte Ohrt <monte at ohrt dot com>
  * @author  credits to Duda <duda@big.hu>
@@ -75,7 +75,7 @@ function smarty_function_html_image($params, Smarty_Internal_Template $template)
                 break;
             case 'link':
             case 'href':
-                $prefix = '<a href="' . $_val . '">';
+                $prefix = '<a href="' . smarty_function_escape_special_chars($_val) . '">';
                 $suffix = '</a>';
                 break;
             default:
@@ -153,6 +153,11 @@ function smarty_function_html_image($params, Smarty_Internal_Template $template)
         $width = round($width * $_resize);
         $height = round($height * $_resize);
     }
-    return $prefix . '<img src="' . $path_prefix . $file . '" alt="' . $alt . '" width="' . $width . '" height="' .
-           $height . '"' . $extra . ' />' . $suffix;
+    // $alt and the pass-through attributes ($extra) are already escaped above;
+    // escape the remaining value-context params at output time so untrusted
+    // values cannot break out of the attribute (CWE-79). The unescaped $file/
+    // $width/$height are still used for getimagesize()/DPI math above.
+    return $prefix . '<img src="' . smarty_function_escape_special_chars($path_prefix . $file) . '" alt="' . $alt
+           . '" width="' . smarty_function_escape_special_chars($width) . '" height="'
+           . smarty_function_escape_special_chars($height) . '"' . $extra . ' />' . $suffix;
 }

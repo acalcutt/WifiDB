@@ -11,7 +11,7 @@
  * Name:     fetch
  * Purpose:  fetch file, web or ftp data and display results
  *
- * @link   http://www.smarty.net/manual/en/language.function.fetch.php {fetch}
+ * @link   https://www.smarty.net/manual/en/language.function.fetch.php {fetch}
  *         (Smarty online manual)
  * @author Monte Ohrt <monte at ohrt dot com>
  *
@@ -191,7 +191,24 @@ function smarty_function_fetch($params, $template)
             return;
         }
     } else {
-        $content = @file_get_contents($params[ 'file' ]);
+        if ($protocol && isset($template->smarty->security_policy)) {
+            // Remote resource (e.g. https://) reached through file_get_contents().
+            // isTrustedUri() only validates the initial URL, but file_get_contents()
+            // follows redirects by default, so an open redirect on an otherwise
+            // trusted host could be used to reach a non-trusted target (SSRF).
+            // Disable redirect-following while a security policy is in effect.
+            $context = stream_context_create(
+                array(
+                    'http' => array(
+                        'follow_location' => 0,
+                        'max_redirects'   => 1,
+                    ),
+                )
+            );
+            $content = @file_get_contents($params[ 'file' ], false, $context);
+        } else {
+            $content = @file_get_contents($params[ 'file' ]);
+        }
         if ($content === false) {
             throw new SmartyException("{fetch} cannot read resource '" . $params[ 'file' ] . "'");
         }

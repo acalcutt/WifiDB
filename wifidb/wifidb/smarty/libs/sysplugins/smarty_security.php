@@ -19,21 +19,9 @@
 /**
  * This class does contain the security settings
  */
+#[\AllowDynamicProperties]
 class Smarty_Security
 {
-    /**
-     * This determines how Smarty handles "<?php ... ?>" tags in templates.
-     * possible values:
-     * <ul>
-     *   <li>Smarty::PHP_PASSTHRU -> echo PHP tags as they are</li>
-     *   <li>Smarty::PHP_QUOTE    -> escape tags as entities</li>
-     *   <li>Smarty::PHP_REMOVE   -> remove php tags</li>
-     *   <li>Smarty::PHP_ALLOW    -> execute php tags</li>
-     * </ul>
-     *
-     * @var integer
-     */
-    public $php_handling = Smarty::PHP_PASSTHRU;
 
     /**
      * This is the list of template directories that are considered secure.
@@ -118,7 +106,7 @@ class Smarty_Security
      *
      * @var array
      */
-    public $php_modifiers = array('escape', 'count', 'nl2br',);
+    public $php_modifiers = array('escape', 'count', 'sizeof', 'nl2br',);
 
     /**
      * This is an array of allowed tags.
@@ -265,7 +253,7 @@ class Smarty_Security
      *
      * @param string $function_name
      * @param object $compiler compiler object
-     *
+     * @deprecated
      * @return boolean                 true if function is trusted
      */
     public function isTrustedPhpFunction($function_name, $compiler)
@@ -341,7 +329,7 @@ class Smarty_Security
      *
      * @param string $modifier_name
      * @param object $compiler compiler object
-     *
+     * @deprecated
      * @return boolean                 true if modifier is trusted
      */
     public function isTrustedPhpModifier($modifier_name, $compiler)
@@ -569,35 +557,6 @@ class Smarty_Security
     }
 
     /**
-     * Check if directory of file resource is trusted.
-     *
-     * @param string $filepath
-     *
-     * @return boolean         true if directory is trusted
-     * @throws SmartyException if PHP directory is not trusted
-     */
-    public function isTrustedPHPDir($filepath)
-    {
-        if (empty($this->trusted_dir)) {
-            throw new SmartyException("directory '{$filepath}' not allowed by security setting (no trusted_dir specified)");
-        }
-        // check if index is outdated
-        if (!$this->_trusted_dir || $this->_trusted_dir !== $this->trusted_dir) {
-            $this->_php_resource_dir = array();
-            $this->_trusted_dir = $this->trusted_dir;
-            foreach ((array)$this->trusted_dir as $directory) {
-                $directory = $this->smarty->_realpath($directory . '/', true);
-                $this->_php_resource_dir[ $directory ] = true;
-            }
-        }
-        $addPath = $this->_checkDir($filepath, $this->_php_resource_dir);
-        if ($addPath !== false) {
-            $this->_php_resource_dir = array_merge($this->_php_resource_dir, $addPath);
-        }
-        return true;
-    }
-
-    /**
      * Remove old directories and its sub folders, add new directories
      *
      * @param array $oldDir
@@ -631,12 +590,34 @@ class Smarty_Security
      */
     private function _checkDir($filepath, $dirs)
     {
-        $directory = dirname($this->smarty->_realpath($filepath, true)) . DIRECTORY_SEPARATOR;
+        // Resolve the canonical, symlink-free path of the requested file so that
+        // a symlink located inside a trusted directory cannot be abused to read
+        // a file outside of it (CWE-22 path traversal). Smarty::_realpath() only
+        // normalizes the path as a string and does not follow symlinks, so we
+        // fall back to it only when the file does not yet exist on disk (e.g.
+        // config/cache paths that are validated before being written).
+        $realpath = @realpath($filepath);
+        $resolved = $realpath !== false ? $realpath : $this->smarty->_realpath($filepath, true);
+        $directory = dirname($resolved) . DIRECTORY_SEPARATOR;
+
+        // Canonicalize the trusted directories the same way. This keeps
+        // legitimate symlinked deployment paths working (e.g. a Capistrano-style
+        // "current" release symlink, or macOS' /var -> /private/var): both the
+        // file and the trusted directories are compared after symlinks have been
+        // resolved.
+        $trusted = array();
+        foreach ($dirs as $dir => $unused) {
+            $trusted[ $dir ] = true;
+            if (($dirRealpath = @realpath($dir)) !== false) {
+                $trusted[ rtrim($dirRealpath, '\\/') . DIRECTORY_SEPARATOR ] = true;
+            }
+        }
+
         $_directory = array();
         if (!preg_match('#[\\\\/][.][.][\\\\/]#', $directory)) {
             while (true) {
                 // test if the directory is trusted
-                if (isset($dirs[ $directory ])) {
+                if (isset($trusted[ $directory ])) {
                     return $_directory;
                 }
                 // abort if we've reached root
