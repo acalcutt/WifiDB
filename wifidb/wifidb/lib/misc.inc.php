@@ -26,7 +26,6 @@ class misc
         $this->ver_array['Misc'] = array(
                                     "getTZ"                 =>	"1.0",
                                     "tar_file"              =>	"1.1",
-                                    "get_set"               =>	"1.0",
                                     "top_ssids"             =>  "1.1"
                                     );
     }
@@ -93,21 +92,6 @@ class misc
         {
             return 0;
         }
-    }
-
-    #======================#
-    #   Get Set values     #
-    #======================#
-    function get_set($table,$column)
-    {
-        $sql = "SHOW COLUMNS FROM $table LIKE '$column'";
-        if (!($ret = mysql_query($sql)))
-        die("Error: Could not show columns");
-
-        $line = mysql_fetch_assoc($ret);
-        $set = $line['Type'];
-        $set = substr($set,5,strlen($set)-7); // Remove "set(" at start and ");" at end
-        return preg_split("/','/",$set); // Split into and array
     }
 
     #===================================================================#
