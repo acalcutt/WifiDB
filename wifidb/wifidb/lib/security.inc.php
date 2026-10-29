@@ -329,7 +329,7 @@ class security
 				{$path  = '/'.trim($this->root, '/').'/';}
 				else{$path  = '/';}
 			}
-			if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), $cookie_timeout, $path, $this->domain, $this->ssl))
+			if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), array("expires" => $cookie_timeout, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax")))
 			{
 				$this->login_val = "cookie_fail";
 				$this->login_check = 0;
