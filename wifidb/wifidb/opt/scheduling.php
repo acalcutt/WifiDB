@@ -27,8 +27,8 @@ $cookie_path = (isset($dbcore->root) && $dbcore->root !== '') ? '/'.trim($dbcore
 
 $func = strtolower(filter_input(INPUT_GET, 'func', FILTER_SANITIZE_ENCODED));
 
-$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+$sort = wifidb_input_string(INPUT_GET, 'sort');
+$ord = wifidb_input_string(INPUT_GET, 'ord');
 $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 $sorts=array("file_date","id");

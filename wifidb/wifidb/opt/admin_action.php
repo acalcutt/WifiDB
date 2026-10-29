@@ -19,9 +19,9 @@ if($dbcore->sec->priv_name != "Administrator")
 	die("Access denied. Administrator privileges required.");
 }
 
-$action = filter_input(INPUT_GET, 'action', FILTER_SANITIZE_STRING);
+$action = wifidb_input_string(INPUT_GET, 'action');
 $file_id = filter_input(INPUT_GET, 'file_id', FILTER_SANITIZE_NUMBER_INT);
-$confirm = filter_input(INPUT_GET, 'confirm', FILTER_SANITIZE_STRING);
+$confirm = wifidb_input_string(INPUT_GET, 'confirm');
 $return_url = filter_input(INPUT_GET, 'return', FILTER_SANITIZE_URL);
 
 /**
@@ -343,17 +343,17 @@ switch($action)
 		// If form submitted (POST), perform update
 		if($_SERVER['REQUEST_METHOD'] === 'POST')
 		{
-			$post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
-			$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+			$post_title = wifidb_input_string(INPUT_POST, 'title');
+			$post_type = wifidb_input_string(INPUT_POST, 'type');
 
 			// Validate type against allowed import types
 			$allowed_types = array('vistumbler','ns1','wardrive','wiglewificsv','swardriving','kismet');
 			if(!in_array($post_type, $allowed_types)){
 				$post_type = '';
 			}
-			$post_file_user = filter_input(INPUT_POST, 'file_user', FILTER_SANITIZE_STRING);
-			$post_otherusers = filter_input(INPUT_POST, 'otherusers', FILTER_SANITIZE_STRING);
-			$post_notes = filter_input(INPUT_POST, 'notes', FILTER_SANITIZE_STRING);
+			$post_file_user = wifidb_input_string(INPUT_POST, 'file_user');
+			$post_otherusers = wifidb_input_string(INPUT_POST, 'otherusers');
+			$post_notes = wifidb_input_string(INPUT_POST, 'notes');
 
 			$sql = "UPDATE files_bad SET title = ?, type = ?, file_user = ?, otherusers = ?, notes = ? WHERE id = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
@@ -398,7 +398,7 @@ switch($action)
 		}
 
 	case "delete_daemon_pid":
-		$pidfile = filter_input(INPUT_GET, 'pidfile', FILTER_SANITIZE_STRING);
+		$pidfile = wifidb_input_string(INPUT_GET, 'pidfile');
 		if(empty($pidfile))
 		{
 			die("Invalid pidfile");

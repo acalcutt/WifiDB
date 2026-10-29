@@ -12,10 +12,10 @@ define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
-$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
-$user = filter_input(INPUT_GET, 'user', FILTER_SANITIZE_STRING);
-$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+$func = wifidb_input_string(INPUT_GET, 'func');
+$user = wifidb_input_string(INPUT_GET, 'user');
+$sort = wifidb_input_string(INPUT_GET, 'sort');
+$ord = wifidb_input_string(INPUT_GET, 'ord');
 $row = filter_input(INPUT_GET, 'row', FILTER_SANITIZE_NUMBER_INT);
 $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);

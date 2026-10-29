@@ -418,8 +418,8 @@ switch($func)
 			break;
 
 		case "exp_search":
-			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+			$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 			
 			if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 			if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}

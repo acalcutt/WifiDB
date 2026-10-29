@@ -23,11 +23,11 @@ define("SWITCH_SCREEN", "HTML");
 define("SWITCH_EXTRAS", "");
 require "../lib/init.inc.php";
 
-$ssid = filter_input(INPUT_GET, 'ssid', FILTER_SANITIZE_STRING);
-$mac = filter_input(INPUT_GET, 'mac', FILTER_SANITIZE_STRING);
-$auth = filter_input(INPUT_GET, 'auth', FILTER_SANITIZE_STRING);
-$encry = filter_input(INPUT_GET, 'encry', FILTER_SANITIZE_STRING);
-$radio = filter_input(INPUT_GET, 'radfio', FILTER_SANITIZE_STRING);
+$ssid = wifidb_input_string(INPUT_GET, 'ssid');
+$mac = wifidb_input_string(INPUT_GET, 'mac');
+$auth = wifidb_input_string(INPUT_GET, 'auth');
+$encry = wifidb_input_string(INPUT_GET, 'encry');
+$radio = wifidb_input_string(INPUT_GET, 'radfio');
 $chan = filter_input(INPUT_GET, 'chan', FILTER_SANITIZE_NUMBER_INT);
 
 if($ssid == "" && $mac == "" && $auth == "" && $encry == "" && $radio == "" && $chan == ""){die();}

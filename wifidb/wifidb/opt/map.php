@@ -180,7 +180,7 @@ $zoom = filter_input(INPUT_GET, 'zoom', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLA
 $bearing = filter_input(INPUT_GET, 'bearing', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
-$style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
+$style = wifidb_input_string(INPUT_GET, 'style');
 $styles = array("WDB_OSM","OpenMapTiles","protomaps","WDB_BASIC_OVERTURE","WDB_SAT");
 if(!in_array($style, $styles)){$style = "WDB_OSM";}
 
@@ -231,7 +231,7 @@ function mvt_history_layers($cGeoJSON, bool $colored, string $visibility): array
 switch($func)
 {
 	case "wifidbmap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -290,7 +290,7 @@ switch($func)
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "heatmap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -335,7 +335,7 @@ switch($func)
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
@@ -415,7 +415,7 @@ switch($func)
 	case "user_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
@@ -520,7 +520,7 @@ switch($func)
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "exp_ap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -596,7 +596,7 @@ switch($func)
 		break;
 
 	case "exp_ap_sig":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","signal","rssi","hist_date");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -675,7 +675,7 @@ switch($func)
 		break;
 
 	case "exp_cid":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -738,7 +738,7 @@ switch($func)
 		break;
 
 	case "exp_cell_sig":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","rssi","hist_date");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -818,7 +818,7 @@ switch($func)
 		break;
 
 	case "exp_live_ap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
@@ -879,13 +879,13 @@ switch($func)
 		break;
 		
 	case "exp_search":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		define("SWITCH_EXTRAS", "export");
-		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+		$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+		$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 
 		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
 		if(!in_array($sort, $sorts)){$sort = "ModDate";}

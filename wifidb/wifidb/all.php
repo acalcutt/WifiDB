@@ -12,13 +12,13 @@ define("SWITCH_EXTRAS", "");
 
 include('lib/init.inc.php');
 
-$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+$sort = wifidb_input_string(INPUT_GET, 'sort');
+$ord = wifidb_input_string(INPUT_GET, 'ord');
 $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 
 #security for order by, desc, to, from injections or incorrect values
-$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
+$func = wifidb_input_string(INPUT_GET, 'func');
 $ords=array("ASC","DESC");
 if(!in_array($ord, $ords)){$ord = "DESC";}
 if(!is_numeric($from)){$from = 0;}

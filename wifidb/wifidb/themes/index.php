@@ -26,10 +26,10 @@ include('../lib/init.inc.php');
 $func = '';
 $theme_post = '';
 
-$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
+$func = wifidb_input_string(INPUT_GET, 'func');
 if($func == 'change')
 {
-    $theme_post = @filter_input(INPUT_POST, 'theme', FILTER_SANITIZE_STRING);
+    $theme_post = @wifidb_input_string(INPUT_POST, 'theme');
     $cookie_path = (@$dbcore->root != '' ? '/'.$dbcore->root : '/');
     $theme_post = wifidb_resolve_theme($theme_post, $dbcore->PATH, $dbcore->theme);
     setcookie("wifidb_theme", $theme_post, array("expires" => time()+(86400 * 7), "path" => $cookie_path, "domain" => $dbcore->sec->domain, "secure" => (bool)$dbcore->sec->ssl, "httponly" => true, "samesite" => "Lax"));// 86400 = 1 day * 7 (for one week)

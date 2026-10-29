@@ -20,9 +20,9 @@ if(!$username)
 	die("Access denied. You must be logged in.");
 }
 
-$action = filter_input(INPUT_GET, 'action', FILTER_SANITIZE_STRING);
+$action = wifidb_input_string(INPUT_GET, 'action');
 $file_id = filter_input(INPUT_GET, 'file_id', FILTER_SANITIZE_NUMBER_INT);
-$confirm = filter_input(INPUT_GET, 'confirm', FILTER_SANITIZE_STRING);
+$confirm = wifidb_input_string(INPUT_GET, 'confirm');
 $return_url = filter_input(INPUT_GET, 'return', FILTER_SANITIZE_URL);
 
 /**

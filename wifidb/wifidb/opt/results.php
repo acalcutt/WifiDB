@@ -22,7 +22,7 @@ define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
-$func	=   filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
+$func	=   wifidb_input_string(INPUT_GET, 'func');
 
 if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'] === "%" or @$_REQUEST['chan'] === "%" or @$_REQUEST['auth'] === "%" or @$_REQUEST['encry'] === "%" )
 {
@@ -31,8 +31,8 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$dbcore->smarty->display('search_results.tpl');
 }else
 {
-	$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-	$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+	$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+	$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 	$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 	$inc   =	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 	$map_inc   =	filter_input(INPUT_GET, 'map_inc', FILTER_SANITIZE_NUMBER_INT);

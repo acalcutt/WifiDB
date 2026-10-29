@@ -43,7 +43,7 @@ foreach ($contents as $line)
 	$line = trim(str_replace (array("\r\n", "\n", "\r"), ' ', $line));
     echo $line."\r\n";
     $tab_array = explode("\t", $line);
-    $row = filter_var_array($tab_array, FILTER_SANITIZE_STRING);
+    $row = array_map("wifidb_sanitize_string", $tab_array);
     if(!@$row[1] || $line == 50)
     {
         continue;

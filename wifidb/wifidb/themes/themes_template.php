@@ -23,7 +23,7 @@ define("SWITCH_EXTRAS", "");
 
 include('../lib/init.inc.php');
 
-$theme = filter_input(INPUT_GET, 'theme', FILTER_SANITIZE_STRING);
+$theme = wifidb_input_string(INPUT_GET, 'theme');
 $theme_tn = $theme."/thumbnail.PNG";
 $theme_ss = $theme."/screenshot.PNG";
 $theme_details = file($theme.'/details.txt');

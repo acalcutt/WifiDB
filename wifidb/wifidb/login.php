@@ -220,7 +220,7 @@ switch($func)
 	break;
 
 	case "validate_user":
-		$validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
+		$validate_code = wifidb_input_string(INPUT_GET, 'validate_code');
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `code` = ?";}
@@ -364,7 +364,7 @@ switch($func)
 	
 	case "reset_password_validated":
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
-		$validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
+		$validate_code = wifidb_input_string(INPUT_GET, 'validate_code');
 
 		#Check if username and validation code exist
 		if($dbcore->sql->service == "mysql")
@@ -393,8 +393,8 @@ switch($func)
 	break;
 	
 	case "reset_password_finish":
-		$username = filter_input(INPUT_POST, 'usernameh', FILTER_SANITIZE_STRING);
-		$validate_code = filter_input(INPUT_POST, 'validate_code', FILTER_SANITIZE_STRING);
+		$username = wifidb_input_string(INPUT_POST, 'usernameh');
+		$validate_code = wifidb_input_string(INPUT_POST, 'validate_code');
 		$newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
 		$newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
 		

@@ -30,9 +30,9 @@ $top_n = filter_input(INPUT_GET, 'top', FILTER_SANITIZE_NUMBER_INT);
 if(!is_numeric($top_n) || $top_n < 1 || $top_n > 100){$top_n = 10;}
 
 # Get date range filter parameters
-$date_range = filter_input(INPUT_GET, 'range', FILTER_SANITIZE_STRING);
-$start_date = filter_input(INPUT_GET, 'start_date', FILTER_SANITIZE_STRING);
-$end_date = filter_input(INPUT_GET, 'end_date', FILTER_SANITIZE_STRING);
+$date_range = wifidb_input_string(INPUT_GET, 'range');
+$start_date = wifidb_input_string(INPUT_GET, 'start_date');
+$end_date = wifidb_input_string(INPUT_GET, 'end_date');
 
 # Handle preset date ranges
 $today = date('Y-m-d');
