@@ -1,0 +1,49 @@
+# Runs on the Docker-executor runner from gitlab-runner-install (tag: linux).
+# Every job starts from a plain php:<version>-cli image, so nothing needs to be installed on the runner.
+
+stages:
+  - lint
+  - test
+
+default:
+  tags: [linux]
+  interruptible: true
+
+variables:
+  COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
+
+# Supported PHP branches. 8.1 and earlier are out of security support.
+.php-matrix:
+  parallel:
+    matrix:
+      - PHP_VERSION: ["8.2", "8.3", "8.4"]
+  image: php:${PHP_VERSION}-cli
+
+# Any syntax error, removed-function fatal or deprecation notice from `php -l` fails the job.
+lint:
+  extends: .php-matrix
+  stage: lint
+  script:
+    - |
+      output=$(find wifidb -name "*.php" -exec sh -c 'for f; do php -l "$f"; done' sh {} + 2>&1 | grep -v '^No syntax errors' || true)
+      if [ -n "$output" ]; then echo "$output"; exit 1; fi
+      echo "All PHP files parse cleanly on PHP ${PHP_VERSION}."
+
+# Unit tests plus a compile of every Smarty template in both themes. No database or config file needed.
+phpunit:
+  extends: .php-matrix
+  stage: test
+  cache:
+    key: composer-${PHP_VERSION}
+    paths:
+      - .composer-cache/
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git unzip > /dev/null
+    - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --quiet
+    - composer install --no-interaction --no-progress --prefer-dist
+  script:
+    - vendor/bin/phpunit --log-junit phpunit-report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: phpunit-report.xml
