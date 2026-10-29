@@ -258,7 +258,7 @@ class security
 		#Create the user account
 		$salt			   = $this->GenerateKey(29);
 		$password_hashed	= crypt($password, '$2a$07$'.$salt.'$');
-		$uid				= implode(str_split($this->GenerateKey(25), 5), "-");
+		$uid				= implode("-", str_split($this->GenerateKey(25), 5));
 		$join_date		  = date($this->datetime_format);
 		$api_key			= $this->GenerateKey(64);
 
@@ -286,8 +286,7 @@ class security
 		$base			=   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
 		$max			=   strlen($base)-1;
 		$activatecode	=   '';
-		mt_srand((double)microtime()*1000000);
-		while( strlen($activatecode) < $len ){$activatecode .= $base{mt_rand(0,$max)};}
+		while( strlen($activatecode) < $len ){$activatecode .= $base[random_int(0,$max)];}
 		return $activatecode;
 	}
 
