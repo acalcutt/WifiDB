@@ -1,6 +1,6 @@
 <?php
 error_reporting(1);
-@ini_set('display_errors', 1);
+@ini_set('display_errors', 0);
 /*
 Copyright (C) 2021 Andrew Calcutt
 
