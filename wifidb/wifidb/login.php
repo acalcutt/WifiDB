@@ -415,8 +415,7 @@ switch($func)
 			if($newpassword === $newpassword2)
 			{
 				#Change the users password, validate them, and unlock account
-				$salt			   = $dbcore->sec->GenerateKey(29);
-				$password_hashed	= crypt($newpassword, '$2a$07$'.$salt.'$');
+				$password_hashed	= $dbcore->sec->HashPassword($newpassword);
 
 				if($dbcore->sql->service == "mysql")
 					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` LIKE ?";}

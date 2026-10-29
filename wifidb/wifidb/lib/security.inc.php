@@ -256,8 +256,7 @@ class security
 		}
 
 		#Create the user account
-		$salt			   = $this->GenerateKey(29);
-		$password_hashed	= crypt($password, '$2a$07$'.$salt.'$');
+		$password_hashed	= $this->HashPassword($password);
 		$uid				= implode("-", str_split($this->GenerateKey(25), 5));
 		$join_date		  = date($this->datetime_format);
 		$api_key			= $this->GenerateKey(64);
@@ -288,6 +287,11 @@ class security
 		$activatecode	=   '';
 		while( strlen($activatecode) < $len ){$activatecode .= $base[random_int(0,$max)];}
 		return $activatecode;
+	}
+
+	function HashPassword($password)
+	{
+		return password_hash($password, PASSWORD_BCRYPT, array("cost" => 12));
 	}
 
 	function GenerateSessionCookie($Bender_remember_me = 0, $authoritah = 0)
@@ -382,9 +386,17 @@ class security
 		$db_pass = $newArray['password'];
 		$fails = $newArray['login_fails'];
 		$this->username = $newArray['username'];
-		$pass_hash = crypt($password, $newArray['password']);
-		if($db_pass === $pass_hash)
+		if(password_verify($password, $db_pass))
 		{
+			# Upgrade hashes created with the old low-cost crypt() settings.
+			if(password_needs_rehash($db_pass, PASSWORD_BCRYPT, array("cost" => 12)))
+			{
+				$new_hash = $this->HashPassword($password);
+				$rehash = $this->sql->conn->prepare("UPDATE user_info SET password = ? WHERE id = ?");
+				$rehash->bindParam(1, $new_hash, PDO::PARAM_STR);
+				$rehash->bindParam(2, $id, PDO::PARAM_INT);
+				$rehash->execute();
+			}
 			if($this->GenerateSessionCookie($Bender_remember_me, $authoritah))
 			{
 				$date = date($this->datetime_format);
