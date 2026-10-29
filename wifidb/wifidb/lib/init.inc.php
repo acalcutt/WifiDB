@@ -22,6 +22,17 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
+// The theme name comes from a cookie and ends up in template/compile paths, so only accept an existing folder under themes/.
+if(!function_exists('wifidb_resolve_theme')) {
+	function wifidb_resolve_theme($requested, $install, $default)
+	{
+		if(is_string($requested) && preg_match('/^[A-Za-z0-9_-]+$/', $requested) && is_dir($install.'themes/'.$requested))
+		{
+			return $requested;
+		}
+		return $default;
+	}
+}
 if(!function_exists('WiFiDBexception_handler')) {
 	function WiFiDBexception_handler($err)
 	{
@@ -31,7 +42,7 @@ if(!function_exists('WiFiDBexception_handler')) {
 			case "html":
 				$WWW_DIR = $config['wifidb_install'];
 				$URL_PATH = $config['hosturl'].$config['root'].'/';
-				if (isset($_COOKIE['wifidb_theme']) && $_COOKIE['wifidb_theme'] != '') {$theme = $_COOKIE['wifidb_theme'];}else{$theme = $config['default_theme'];}
+				$theme = wifidb_resolve_theme(@$_COOKIE['wifidb_theme'], $config['wifidb_install'], $config['default_theme']);
 				
 				$smarty = new Smarty();
 				$smarty->template_dir = $config['wifidb_install'].'themes/'.$theme.'/templates/';

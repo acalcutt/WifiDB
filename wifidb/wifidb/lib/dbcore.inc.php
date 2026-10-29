@@ -77,7 +77,7 @@ class dbcore
 		$this->kml_htmlpath			 = $this->URL_PATH.$config['kml_out'];
 		$this->csv_out				  = $this->PATH.$config['csv_out'];
 		$this->csv_htmlpath			 = $this->URL_PATH.$config['csv_out'];		$this->tile_cache		   = $this->PATH.(isset($config['tile_cache']) ? $config['tile_cache'] : 'out/tile_cache/');
-		if (isset($_COOKIE['wifidb_theme']) && $_COOKIE['wifidb_theme'] != '') {$this->theme = $_COOKIE['wifidb_theme'];}else{$this->theme = $config['default_theme'];}
+		$this->theme = wifidb_resolve_theme(@$_COOKIE['wifidb_theme'], $config['wifidb_install'], $config['default_theme']);
 		$this->PATH_THEMES			  = $this->PATH.'themes/'.$this->theme;
 
 		$this->open_loc				 = $config['open_loc'];
