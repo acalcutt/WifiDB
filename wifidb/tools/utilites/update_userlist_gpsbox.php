@@ -22,10 +22,10 @@ foreach($fetch_imports as $import)
 	$Valid_Points = 0;
 	
 	$sql = "SELECT
-			  `wifi_gps`.`lat` AS `lat`, `wifi_gps`.`long` AS `long`
-			FROM `wifi_signals`
-			  LEFT JOIN `wifi_gps` ON `wifi_signals`.`gps_id` = `wifi_gps`.`id`
-			WHERE `wifi_signals`.`file_id` = '$file_id' AND `wifi_gps`.`lat` != '0.0000'";
+			  `wifi_gps`.`Lat` AS `lat`, `wifi_gps`.`Lon` AS `long`
+			FROM `wifi_hist`
+			  LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`
+			WHERE `wifi_hist`.`File_ID` = '$file_id' AND `wifi_gps`.`Lat` != '0.0000'";
 			
 	$result = $dbcore->sql->conn->query($sql);
 	while($latlon_fetch = $result->fetch(2))

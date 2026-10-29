@@ -37,8 +37,14 @@ if($rep == "y")
     $dbcore->sql->conn->query("TRUNCATE `wifi_ap`");
     #var_dump($dbcore->sql->conn->errorInfo());
 
-    echo "clearing wifi_signals\r\n";
-    $dbcore->sql->conn->query("TRUNCATE `wifi_signals`;");
+    echo "clearing wifi_hist\r\n";
+    $dbcore->sql->conn->query("TRUNCATE `wifi_hist`");
+
+    echo "clearing cell_id\r\n";
+    $dbcore->sql->conn->query("TRUNCATE `cell_id`");
+
+    echo "clearing cell_hist\r\n";
+    $dbcore->sql->conn->query("TRUNCATE `cell_hist`");
 }else
 {
     echo "you chose not to empty the database...\r\n";
