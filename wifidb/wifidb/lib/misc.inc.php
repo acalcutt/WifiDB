@@ -25,7 +25,6 @@ class misc
     {
         $this->ver_array['Misc'] = array(
                                     "getTZ"                 =>	"1.0",
-                                    "tar_file"              =>	"1.1",
                                     "top_ssids"             =>  "1.1"
                                     );
     }
@@ -68,30 +67,6 @@ class misc
                             '12'=>'Asia/Kamchatka'
                             );
             return $timezones[$offset];
-    }
-
-    #======================#
-    #   Tar a file up      #
-    #======================#
-    function tar_file($file)
-    {
-        $start = microtime(1);
-        $filename_exp = explode( ".", $file);
-        $filename_strip = $filename_exp[0];
-        $archive = $this->TOOLS_PATH."/backups/".$filename_strip.".tar.gz";
-        $script = "tar -czfv $archive $file";
-        $results = system($script,$retval);
-        if(!$results)
-        {
-            $stop = microtime(1);
-            $time = ($stop-$start);
-            $mbps = ((filesize($file)/1024)/1024)/$time;
-            $return = array( $results, $retval, $time, $mbps, $archive );
-            return $return;
-        }else
-        {
-            return 0;
-        }
     }
 
     #===================================================================#
