@@ -55,3 +55,7 @@ wifidb/.idea/encodings.xml
 .idea/vcs.xml
 .idea/WiFiDB.iml
 .idea/workspace.xml
+
+# PHPUnit and Composer
+/vendor/
+.phpunit.cache/
