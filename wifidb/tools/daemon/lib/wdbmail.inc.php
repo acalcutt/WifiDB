@@ -277,7 +277,7 @@ Go here to reset it to one you choose:
     #===================================#
     #   Email for user verification     #
     #===================================#
-    function mail_validation($function = 'validate_user', $to = '', $username = '', $message = '', $subject)
+    function mail_validation($function, $to, $username, $message, $subject)
     {
 		$date				=	date("Y-m-d H:i:s");
 		$validate_code = $this->sec->GenerateKey(48);

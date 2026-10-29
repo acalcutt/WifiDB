@@ -10,7 +10,7 @@ You should have received a copy of the GNU General Public License along with thi
 
 class import extends dbcore
 {
-	function __construct($config, $convert_obj = NULL, $verbose)
+	function __construct($config, $convert_obj, $verbose)
 	{
 		if($convert_obj === NULL)
 		{die("Convert Object is null...");}
@@ -1039,7 +1039,7 @@ class import extends dbcore
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 	}
 
-	public function import_wardrive3($source="", $file_id, $file_importing_id)
+	public function import_wardrive3($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1133,7 +1133,7 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_wardrive4($source="", $file_id, $file_importing_id)
+	public function import_wardrive4($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1242,7 +1242,7 @@ class import extends dbcore
 		return $ret;
 	}
 
-	public function import_swardriving($source="", $file_id, $file_importing_id)
+	public function import_swardriving($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1354,7 +1354,7 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_kismetnetxml($source="", $file_id, $file_importing_id)
+	public function import_kismetnetxml($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1600,7 +1600,7 @@ class import extends dbcore
 		}
 	}
 
-	public function import_wiglewificsv($source="", $file_id, $file_importing_id)
+	public function import_wiglewificsv($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1782,7 +1782,7 @@ class import extends dbcore
 		return $ret;
 	}
 		
-	public function import_vistumblercsv($source="", $file_id, $file_importing_id)
+	public function import_vistumblercsv($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1907,7 +1907,7 @@ class import extends dbcore
 		return $ret;
 	}
 
-	public function import_vs1($source="", $file_id, $file_importing_id)
+	public function import_vs1($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -2194,7 +2194,7 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_vistumblermdb($source="", $file_id, $file_importing_id)
+	public function import_vistumblermdb($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -2441,7 +2441,7 @@ class import extends dbcore
 		return $ret;
 	}
 
-	public function import_ns1($source="", $file_id, $file_importing_id)
+	public function import_ns1($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
