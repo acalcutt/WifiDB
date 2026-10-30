@@ -146,7 +146,7 @@ class frontend extends dbcore
 
 	function htmlheader()
 	{
-		if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
+		if((!defined('WIFIDB_INSTALL_FLAG') || WIFIDB_INSTALL_FLAG != "installing") && $this->sec->login_check)
 		{
 			$this->smarty->assign("login_val", "1");
 			$login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a>';
