@@ -56,7 +56,7 @@ $passwordOk = function () use ($dbcore, $username) {
 
 // Tells the member, in the site, that their sign-in protection changed: if it wasn't them they will see it.
 $tell = function ($title, $body) use ($dbcore, $username) {
-	$dbcore->wdbmail->notify('security', $title, $body, $dbcore->URL_PATH.'cp/security.php', '', array($username));
+	$dbcore->sec->Tell($username, $title, $body, $dbcore->URL_PATH.'cp/security.php');
 };
 
 $json = function ($data, $status = 200) {

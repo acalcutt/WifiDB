@@ -139,7 +139,7 @@ switch($func)
 		if($proof['via'] === 'recovery')
 		{
 			$left = $tf->RecoveryCodesLeft($user);
-			$dbcore->wdbmail->notify('security', 'A recovery code was used to sign in', "A recovery code was used to sign in to your account. You have $left left; you can make new ones under Preferences, Security. If this was not you, change your password.", $dbcore->URL_PATH.'cp/security.php', '', array($user));
+			$dbcore->sec->Tell($user, 'A recovery code was used to sign in', "A recovery code was used to sign in to your account. You have $left left; you can make new ones under Preferences, Security. If this was not you, change your password.", $dbcore->URL_PATH.'cp/security.php');
 		}
 		header('Location: '.$return);
 		exit;

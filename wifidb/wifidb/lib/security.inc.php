@@ -582,6 +582,21 @@ class security
 		exit;
 	}
 
+	/** Leaves the member an in-app notice about their own account (a method added, a recovery code used). Never throws. */
+	public function Tell($username, $title, $body, $link = '')
+	{
+		try
+		{
+			require_once dirname(__FILE__).'/notify.inc.php';
+			$notifier = new Notifier($this->sql->conn);
+			$notifier->Notify('security', $title, $body, $link, array($username));
+		}
+		catch(Throwable $e)
+		{
+			$this->logd("Could not leave a notice for ".$username.": ".$e->getMessage(), "error");
+		}
+	}
+
 	function APILoginCheck($username = '', $apikey = '')
 	{
 		if($username && $apikey)
