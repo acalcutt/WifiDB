@@ -186,7 +186,7 @@ switch($func)
 				case 1:
 					$subject = "Vistumbler WifiDB - User '$username' Created";
 					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n";
-					$dbcore->wdbmail->mail_users($message, $subject, "new_users", 0);
+					$dbcore->wdbmail->notify('new_user', $subject, $message, $dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user=".urlencode($username), 'new_users', null, "New member: $username");
 					#User created!, now if the admin has enabled Email Confirmation before a user can be used, send it out, other wise let them login.
 					if($dbcore->sec->email_validation)
 					{

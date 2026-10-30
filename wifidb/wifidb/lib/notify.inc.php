@@ -19,6 +19,7 @@ class Notifier
 	const TYPES = array(
 		'import_started'  => array('Your import started',       'owner',  1, true),
 		'import_finished' => array('Your import finished',      'owner',  1, true),
+		'import_failed'   => array('Your import failed',        'owner',  1, true),
 		'kmz'             => array('New KMZ export',            'all',    0, true),
 		'new_user'        => array('A new member joined',       'admins', 1, true),
 		'admin_alert'     => array('Errors and warnings',       'admins', 1, false),

@@ -234,14 +234,15 @@ Go here to reset it to one you choose:
      * @param string $type    a Notifier type (import_started, import_finished, kmz, new_user, admin_alert)
      * @param string $emailType what mail_users() filters on (schedule, import, kmz, new_users), '' for no e-mail
      * @param array|null $users members the in-app notification is about; null lets the type decide
+     * @param string|null $title short heading for the in-app notification (the e-mail subject is used if none)
      * @return int members told in-app
      */
-    function notify($type, $subject, $message, $link = '', $emailType = '', $users = null)
+    function notify($type, $subject, $message, $link = '', $emailType = '', $users = null, $title = null)
     {
         $told = 0;
         try
         {
-            $told = $this->notifier()->Notify($type, $subject, $message, $link, $users);
+            $told = $this->notifier()->Notify($type, $title !== null ? $title : $subject, $message, $link, $users);
         }
         catch (Throwable $e)
         {
