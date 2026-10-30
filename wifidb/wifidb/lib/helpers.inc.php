@@ -54,3 +54,22 @@ if(!function_exists('wifidb_js_string')) {
 		return json_encode((string)$value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
 	}
 }
+
+// A short-lived database connection from the web site's config, for small standalone pages (/health/ready, the signal
+// graph) that must not load the whole application. $timeout bounds connecting to the server.
+if(!function_exists('wifidb_pdo_from_config')) {
+	function wifidb_pdo_from_config($config, $timeout = 2)
+	{
+		if($config['srvc'] === 'sqlsrv')
+		{
+			$dsn = 'sqlsrv:Server=' . $config['host'] . ',' . (int)$config['port'] . ';Database=' . $config['db'] . ';TrustServerCertificate=true;LoginTimeout=' . (int)$timeout;
+			$options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+		}
+		else
+		{
+			$dsn = 'mysql:host=' . $config['host'] . ';port=' . (int)$config['port'] . ';dbname=' . $config['db'] . ';charset=' . $config['charset'];
+			$options = array(PDO::ATTR_TIMEOUT => (int)$timeout, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+		}
+		return new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+	}
+}
