@@ -96,6 +96,10 @@ check "the cron file is installed" docker exec "$ct1" sh -c 'test "$(grep -c upd
 check "a cron wrapper runs" docker exec "$ct1" su -s /bin/bash www-data -c '/opt/wifidb/tools/cron/import_files'
 check "uploads are on the data disk" docker exec "$ct1" sh -c 'test -L /var/www/wifidb/import && test -d /srv/wifidb-data/import/up'
 check "logs are on the data disk" docker exec "$ct1" sh -c 'test -L /opt/wifidb/tools/log && ls /srv/wifidb-data/log/import'
+for dir in /var/www/wifidb/import/up /var/www/wifidb/out/tiles /var/www/wifidb/out/pmtiles /srv/wifidb-data/log/import /var/www/wifidb/smarty/templates_c; do
+    check "www-data can write to $dir" docker exec "$ct1" su -s /bin/bash www-data -c "f=$dir/.write-test-\$\$ && echo x > \$f && rm \$f"
+done
+check "the config files are not world-readable" docker exec "$ct1" sh -c 'test "$(stat -c %a /var/www/wifidb/lib/config.inc.php)" = 640'
 check "the proxy's X-Forwarded-For is trusted" docker exec "$ct1" grep -q 'RemoteIPInternalProxy 10.0.0.1' /etc/apache2/conf-enabled/wifidb-proxy.conf
 check "no password is baked into the code tree" docker exec "$ct1" sh -c '! grep -rq testpw /var/www/wifidb/lib/config.inc.php'
 
