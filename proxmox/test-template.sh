@@ -17,7 +17,7 @@ ok() { echo "  ok   $*"; }
 bad() { echo "  FAIL $*"; fail=1; }
 check() { # check DESCRIPTION COMMAND...
     local desc=$1; shift
-    if "$@" >/dev/null 2>&1; then ok "$desc"; else bad "$desc"; fi
+    if "$@" >/dev/null 2>&1; then ok "$desc"; else bad "$desc"; return 1; fi
 }
 cleanup() {
     docker rm -f "wifidb-test-ct1-$id" "wifidb-test-ct2-$id" "$db" >/dev/null 2>&1 || true
@@ -72,7 +72,10 @@ if wait_firstboot "$ct1"; then ok "first boot finished"; else bad "first boot di
 
 log "checking the first container"
 for svc in apache2 cron wifidb-monitord wifidb-websocketd; do
-    check "$svc is active" docker exec "$ct1" systemctl is-active --quiet "$svc"
+    check "$svc is active" docker exec "$ct1" systemctl is-active --quiet "$svc" || {
+        docker exec "$ct1" systemctl status "$svc" --no-pager 2>&1 | head -12 | sed "s/^/       /"
+        docker exec "$ct1" journalctl -u "$svc" --no-pager 2>&1 | tail -12 | sed "s/^/       /"
+    }
 done
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
