@@ -71,7 +71,7 @@ if not, write to the
 						readOnly: true,
 						toolbar: '',
 						resizeMaxHeight: -1,
-						style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css',
+						style: '{$wifidb_host_url}lib/js/sceditor/minified/themes/content/default.min.css',
 						emoticonsRoot: '{$themeurl}img/'
 					});
 				</script>
