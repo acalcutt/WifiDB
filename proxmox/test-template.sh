@@ -103,6 +103,8 @@ done
 check "the config files are not world-readable" docker exec "$ct1" sh -c 'test "$(stat -c %a /var/www/wifidb/lib/config.inc.php)" = 640'
 check "the proxy's X-Forwarded-For is trusted" docker exec "$ct1" grep -q 'RemoteIPInternalProxy 10.0.0.1' /etc/apache2/conf-enabled/wifidb-proxy.conf
 check "no password is baked into the code tree" docker exec "$ct1" sh -c '! grep -rq testpw /var/www/wifidb/lib/config.inc.php'
+check "Smarty is the Composer-pinned version" docker exec "$ct1" sh -c 'grep -q "4.5.8" /var/www/wifidb/vendor/smarty/smarty/libs/Smarty.class.php'
+check "dev tools (PHPUnit) are not in the container" docker exec "$ct1" test ! -e /var/www/wifidb/vendor/phpunit
 
 log "keeping a setting on the data disk, then moving to a new container"
 docker exec "$ct1" sh -c 'echo "// marker" >> /srv/wifidb-data/config/web.overrides.php'

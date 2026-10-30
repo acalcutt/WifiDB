@@ -22,7 +22,7 @@ jobs:
       # Any syntax error, removed-function fatal or deprecation notice from `php -l` fails the job.
       - name: Lint
         run: |
-          output=$(find wifidb -name "*.php" -exec sh -c 'for f; do php -l "$f"; done' sh {} + 2>&1 | grep -v '^No syntax errors' || true)
+          output=$(find wifidb -name vendor -prune -o -name "*.php" -exec sh -c 'for f; do php -l "$f"; done' sh {} + 2>&1 | grep -v '^No syntax errors' || true)
           if [ -n "$output" ]; then echo "$output"; exit 1; fi
 
   phpunit:
@@ -40,4 +40,4 @@ jobs:
           tools: composer
       - run: composer install --no-interaction --no-progress --prefer-dist
       # Unit tests plus a compile of every Smarty template in both themes. No database or config file needed.
-      - run: vendor/bin/phpunit
+      - run: wifidb/wifidb/vendor/bin/phpunit

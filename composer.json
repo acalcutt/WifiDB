@@ -4,15 +4,17 @@
     "type": "project",
     "license": "GPL-2.0-only",
     "require": {
-        "php": ">=8.2"
+        "php": ">=8.2",
+        "smarty/smarty": "4.5.8"
     },
     "require-dev": {
         "phpunit/phpunit": "^11.5"
     },
     "config": {
+        "vendor-dir": "wifidb/wifidb/vendor",
         "sort-packages": true
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "wifidb/wifidb/vendor/bin/phpunit"
     }
 }

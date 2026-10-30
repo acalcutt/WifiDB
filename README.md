@@ -23,7 +23,8 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 * One of the following databases  
 	* MariaDB 10.6 or later (utf8mb4). MySQL is not supported: blank_db.sql uses index sizes that only MariaDB allows  
 	* Microsoft SQL Server 2019 or later (needed for UTF8 support)  
-* Apache 2.4 or later  
+* Apache 2.4 or later
+* Composer 2, to install Smarty (it is pinned to 4.5.8 in composer.json and composer.lock, not kept in the repository)  
 * A Web-browser (doh!)  
 
   Installation
@@ -35,7 +36,8 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 	2.) Set up a database server, MariaDB or Microsoft SQL Server (the free developer edition, windows or linux, will work fine)  
 	3.) Create tools directory (ex. /opt/wdbtools/)  
 	4.) Copy the /wifidb/tools folder from this repository into the tools directory created in the previous step  
-	5.) Copy the /wifidb/wifidb folder from this repository into your website root directory  
+	5.) Copy the /wifidb/wifidb folder from this repository into your website root directory, then install Smarty:  
+		composer install --no-dev   (run in the repository: it fills wifidb/wifidb/vendor, so run it before copying, or copy the vendor folder with the site)  
 	6.) Create a blank database (ex. wifi) and import the schema into it  
 		* MariaDB: import 'blank_db.sql'  
 		* SQL Server: import 'blank_db.sqlsrv' (Note: Replace all instances of 'prod_wifi' in blank_db.sqlsrv with what you named your database)  
@@ -60,7 +62,7 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 	* Install PHP 8.2 or later and make sure the extensions above are present.  
 	* Back up the user_info table first. Passwords are now stored with bcrypt cost 12. Existing passwords keep working  
 	  and each one is upgraded the next time its user logs in.  
-	* The bundled Smarty is now 4.5. Delete the contents of [webroot]/wifidb/smarty/templates_c/ so the templates recompile.  
+	* Smarty is now installed with Composer (pinned to 4.5.8): run composer install --no-dev, and a symlink to a numbered Smarty folder is no longer needed. Delete the contents of [webroot]/wifidb/smarty/templates_c/ so the templates recompile. The old wifidb/smarty/libs folder can be removed.  
 	* Themes are chosen from the folders in [webroot]/wifidb/themes/; a theme cookie naming anything else is ignored.  
 	* Some old utilities in [tools]/utilites were removed because they could not run against the current code.  
 

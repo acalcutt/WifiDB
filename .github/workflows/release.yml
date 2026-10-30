@@ -50,7 +50,7 @@ jobs:
       - name: Build the template
         run: |
           sudo apt-get install -y -q zstd
-          git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb
+          git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb composer.json composer.lock
           sudo bash proxmox/build-template.sh wifidb-src.tar.gz \
             "proxmox-files/WifiDB-v${{ needs.release-check.outputs.version }}-proxmox-amd64.tar.zst"
       - name: Boot-test it

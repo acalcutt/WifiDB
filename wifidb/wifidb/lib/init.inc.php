@@ -1,7 +1,11 @@
 <?php
 require(dirname(__FILE__).'/config.inc.php');
-require(dirname(__FILE__).'/../smarty/libs/Autoloader.php');
-Smarty_Autoloader::register();
+// Smarty comes from Composer (composer install --no-dev, which fills wifidb/vendor); see README.md
+if(!is_file(dirname(__FILE__).'/../vendor/autoload.php'))
+{
+	die("Smarty is not installed: run `composer install --no-dev` in the repository, or use the Proxmox template (README.md).\n");
+}
+require(dirname(__FILE__).'/../vendor/autoload.php');
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
 Copyright (C) 2022 Andrew Calcutt 2016 Phil Ferland

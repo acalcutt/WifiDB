@@ -14,7 +14,7 @@ repo=$(cd "$(dirname "$0")/../.." && pwd)
 mkdir -p "$out"
 cd "$repo"
 src=$(mktemp -d)/wifidb-src.tar.gz
-git archive --format=tar.gz -o "$src" HEAD wifidb
+git archive --format=tar.gz -o "$src" HEAD wifidb composer.json composer.lock
 
 # the template's name keeps the version's "+" out: v0.40.0-ci12-abc1234
 if [[ $version =~ ^(.*)\+ci([0-9]+)\.(.*)$ ]]; then

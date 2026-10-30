@@ -52,6 +52,12 @@ if [ "$sqlsrv" != "no" ]; then
     fi
 fi
 
+log "installing Smarty with Composer (the version pinned in composer.json and composer.lock)"
+apt-get install -y -q --no-install-recommends composer
+(cd "$src" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --no-interaction --no-progress --optimize-autoloader --classmap-authoritative)
+test -f "$src/wifidb/wifidb/vendor/autoload.php"
+apt-get purge -y -q composer >/dev/null && apt-get autoremove -y -q >/dev/null
+
 log "installing the application"
 install -d /var/www/wifidb /opt/wifidb/tools /opt/wifidb/sql
 rsync -a --delete "$src/wifidb/wifidb/" /var/www/wifidb/

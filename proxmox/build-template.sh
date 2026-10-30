@@ -5,8 +5,8 @@
 # usage (as root, on a Linux host with Docker):
 #   proxmox/build-template.sh SOURCE_TARBALL OUTPUT.tar.zst
 #
-# SOURCE_TARBALL is a `git archive` of the repository (it holds wifidb/wifidb, wifidb/tools and the blank_db files):
-#   git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb
+# SOURCE_TARBALL is a `git archive` of the repository (it holds wifidb/wifidb, wifidb/tools, the blank_db files and composer.json/composer.lock):
+#   git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb composer.json composer.lock
 #
 # How: boot proxmox/Dockerfile.base with systemd as PID 1, unpack the sources, run install-wifidb.sh, switch off
 # everything that needs the settings (wifidb-firstboot starts it), remove what must differ per container (SSH host

@@ -101,7 +101,7 @@ lint:
   rules: *ci-rules
   script:
     - |
-      output=$(find wifidb -name "*.php" -exec sh -c 'for f; do php -l "$f"; done' sh {} + 2>&1 | grep -v '^No syntax errors' || true)
+      output=$(find wifidb -name vendor -prune -o -name "*.php" -exec sh -c 'for f; do php -l "$f"; done' sh {} + 2>&1 | grep -v '^No syntax errors' || true)
       if [ -n "$output" ]; then echo "$output"; exit 1; fi
       echo "All PHP files parse cleanly on PHP ${PHP_VERSION}."
 
@@ -119,7 +119,7 @@ phpunit:
     - curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer --quiet
     - composer install --no-interaction --no-progress --prefer-dist
   script:
-    - vendor/bin/phpunit --log-junit phpunit-report.xml
+    - wifidb/wifidb/vendor/bin/phpunit --log-junit phpunit-report.xml
   artifacts:
     when: always
     reports:

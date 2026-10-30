@@ -2,8 +2,6 @@
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-require_once WIFIDB_WEB . '/smarty/libs/Autoloader.php';
-Smarty_Autoloader::register();
 
 // Compiling a template needs no data, so this catches syntax errors and unknown tags/modifiers
 // in every theme without running the application.

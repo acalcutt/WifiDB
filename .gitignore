@@ -56,6 +56,9 @@ wifidb/.idea/encodings.xml
 .idea/WiFiDB.iml
 .idea/workspace.xml
 
-# PHPUnit and Composer
-/vendor/
+# Composer packages (Smarty, and PHPUnit for development)
+/wifidb/wifidb/vendor/
 .phpunit.cache/
+# compiled and cached templates
+/wifidb/wifidb/smarty/templates_c/*
+!/wifidb/wifidb/smarty/templates_c/.gitkeep

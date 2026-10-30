@@ -16,7 +16,7 @@
 - **Tests and CI.** 172 PHPUnit tests (helpers, password and key generation, coordinate and signal conversions, and a
   compile of every Smarty template in both themes) and a lint of every PHP file, on PHP 8.2, 8.3, 8.4 and 8.5, for
   GitLab and GitHub.
-- **Smarty 4.5.8** (was 3.1.39).
+- **Smarty 4.5.8** (was 3.1.39), installed with Composer and pinned to that exact version in composer.json instead of being copied into the repository. Upgrading it is a one-line change plus a test run (the tests compile every template). The Proxmox template runs `composer install --no-dev` when it is built.
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
