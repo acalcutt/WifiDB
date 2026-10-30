@@ -27,6 +27,7 @@ class wdbmail
 {
     function __construct($config, $sql = null)
     {
+		$this->wifidb_install			= isset($config['wifidb_install']) ? rtrim($config['wifidb_install'], '/\\').'/' : null;
 		$this->URL_PATH				 	= $config['hosturl'].$config['root'].'/';
 		$this->wifidb_email_updates	 	= $config['wifidb_email_updates'];
 		$this->email_validation		 	= $config['email_validation'];
@@ -226,12 +227,66 @@ Go here to reset it to one you choose:
     }
 
     #===========================================================#
+    #   notify (in-app notification, and e-mail for whoever     #
+    #   also asked for it in their e-mail preferences)          #
+    #===========================================================#
+    /**
+     * @param string $type    a Notifier type (import_started, import_finished, kmz, new_user, admin_alert)
+     * @param string $emailType what mail_users() filters on (schedule, import, kmz, new_users), '' for no e-mail
+     * @param array|null $users members the in-app notification is about; null lets the type decide
+     * @return int members told in-app
+     */
+    function notify($type, $subject, $message, $link = '', $emailType = '', $users = null)
+    {
+        $told = 0;
+        try
+        {
+            $told = $this->notifier()->Notify($type, $subject, $message, $link, $users);
+        }
+        catch (Throwable $e)
+        {
+            // A notification that cannot be stored must not stop the import or export that raised it.
+            echo "Notification not stored: ".$e->getMessage()."\r\n";
+        }
+        if($emailType !== '') { $this->mail_users($message, $subject, $emailType, 0); }
+        return $told;
+    }
+
+    /** Tells the administrators something went wrong: in-app, and by e-mail as it always was. */
+    function alert($subject, $message, $link = '')
+    {
+        try
+        {
+            $this->notifier()->Notify('admin_alert', $subject, $message, $link);
+        }
+        catch (Throwable $e)
+        {
+            echo "Notification not stored: ".$e->getMessage()."\r\n";
+        }
+        return $this->mail_users($message, $subject, "import", 1);
+    }
+
+    function notifier()
+    {
+        if(!isset($this->notifier))
+        {
+            if(!class_exists('Notifier', false))
+            {
+                $file = ($this->wifidb_install !== null ? $this->wifidb_install : dirname(__DIR__, 3).'/wifidb/').'lib/notify.inc.php';
+                require_once $file;
+            }
+            $this->notifier = new Notifier($this->sql->conn);
+        }
+        return $this->notifier;
+    }
+
+    #===========================================================#
     #   mail_users (Emails the admins of the DB about updates)  #
     #===========================================================#
     function mail_users($contents = '', $subject = "WifiDB Notifications", $type = "none", $error_f = 0)
     {
-        if($type != 'none' or $type != '')
-        {	
+        if($type != 'none' and $type != '')
+        {
             if($this->wifidb_email_updates)
             {
 				#Add Signature, Unsubscribe
@@ -253,25 +308,31 @@ Go here to reset it to one you choose:
                 if(!$error_f){$sql .= " AND username NOT LIKE 'admin%'";}
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->execute();
+				// One member's bad address or a refused message must not stop everyone after them from being told.
+				$allSent = 1;
 				while ($userArray = $prep->fetch(2))
 				{
-					#Add recipient
-					$this->mail->addAddress($userArray['email']);
-
-					#Send email
-					if (!$this->mail->send()) {
-						echo "Mailer Error (" . str_replace("@", "&#64;", $userArray['email']) . ') ' . $this->mail->ErrorInfo . '<br />';
-						return 0;
-					}
-					else
+					try
 					{
-						//echo "Email sent to: ".$userArray['email']."\r\n";
+						#Add recipient
+						$this->mail->addAddress($userArray['email']);
+
+						#Send email
+						if (!$this->mail->send()) {
+							echo "Mailer Error (" . str_replace("@", "&#64;", $userArray['email']) . ') ' . $this->mail->ErrorInfo . '<br />';
+							$allSent = 0;
+						}
 					}
-					
+					catch (Exception $e)
+					{
+						echo "Mailer Error (" . str_replace("@", "&#64;", $userArray['email']) . ') ' . $e->getMessage() . '<br />';
+						$allSent = 0;
+					}
+
 					#Clear recipient
 					$this->mail->clearAddresses();
 				}
-				return 1;
+				return $allSent;
             }
 			else
             {
