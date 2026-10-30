@@ -150,6 +150,7 @@ install -m 0644 "$here/wifidb-websocketd.service" /etc/systemd/system/wifidb-web
 install -m 0644 "$here/wifidb.cron" /etc/cron.d/wifidb
 echo 'd /run/wifidb 0775 www-data www-data -' > /etc/tmpfiles.d/wifidb.conf
 install -m 0755 "$here/wifidb-firstboot" /usr/local/sbin/wifidb-firstboot
+install -m 0755 "$here/wifidb-dkim" /usr/local/sbin/wifidb-dkim
 install -m 0644 "$here/wifidb-firstboot.service" /etc/systemd/system/wifidb-firstboot.service
 systemctl daemon-reload
 

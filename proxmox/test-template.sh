@@ -119,6 +119,12 @@ done
 check "the config files are not world-readable" docker exec "$ct1" sh -c 'test "$(stat -c %a /var/www/wifidb/lib/config.inc.php)" = 640'
 check "the proxy's X-Forwarded-For is trusted" docker exec "$ct1" grep -q 'RemoteIPInternalProxy 10.0.0.1' /etc/apache2/conf-enabled/wifidb-proxy.conf
 check "no password is baked into the code tree" docker exec "$ct1" sh -c '! grep -rq testpw /var/www/wifidb/lib/config.inc.php'
+# DKIM: the helper makes a key with the right permissions, prints a record that parses, and never overwrites a key
+check "wifidb-dkim generate makes a key only root and www-data can read" docker exec "$ct1" sh -c 'wifidb-dkim generate testsel >/dev/null && test "$(stat -c "%a %U:%G" /srv/wifidb-data/config/dkim/testsel.pem)" = "640 root:www-data"'
+check "...and prints a DNS record that carries its public key" sh -c 'docker exec "$0" wifidb-dkim show testsel | grep -q "v=DKIM1; k=rsa; p=MII"' "$ct1"
+check "...and will not replace a key that exists" sh -c '! docker exec "$0" wifidb-dkim generate testsel >/dev/null 2>&1' "$ct1"
+check "the key is readable by the web server's user" docker exec "$ct1" su -s /bin/bash www-data -c 'test -r /srv/wifidb-data/config/dkim/testsel.pem'
+check "check_mail.php runs, and reports the placeholder mail settings as failed" sh -c 'out=$(docker exec "$0" su -s /bin/bash www-data -c "php /opt/wifidb/tools/utilites/check_mail.php" 2>&1); echo "$out" | grep -q "\[FAIL\]" && ! echo "$out" | grep -qi "fatal\|Uncaught"' "$ct1"
 check "Smarty is the Composer-pinned version" docker exec "$ct1" sh -c 'grep -q "4.5.8" /var/www/wifidb/vendor/smarty/smarty/libs/Smarty.class.php'
 check "dev tools (PHPUnit) are not in the container" docker exec "$ct1" test ! -e /var/www/wifidb/vendor/phpunit
 

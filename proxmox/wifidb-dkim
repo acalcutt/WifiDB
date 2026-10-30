@@ -1,0 +1,60 @@
+#!/bin/bash
+# Makes the DKIM key WiFiDB signs its mail with, and prints the DNS record to publish for it.
+#
+#   wifidb-dkim generate [selector]    make the key (2048-bit RSA) and print the record. Default selector: wifidb
+#   wifidb-dkim show [selector]        print the record for a key that exists
+#
+# The key goes in /srv/wifidb-data/config/dkim/<selector>.pem, on the data disk, so it survives an upgrade; only root
+# and the web server's user can read it. Then set, in /srv/wifidb-data/config/web.overrides.php:
+#   'DKIM_domain' => 'example.com', 'DKIM_selector' => 'wifidb',
+#   'DKIM_private' => '/srv/wifidb-data/config/dkim/wifidb.pem', 'DKIM_identity' => 'wifidb@example.com',
+# and check it all with:  sudo -u www-data php /opt/wifidb/tools/utilites/check_mail.php
+set -euo pipefail
+
+DIR=/srv/wifidb-data/config/dkim
+cmd=${1:-}
+selector=${2:-wifidb}
+case "$selector" in *[!A-Za-z0-9-]*|'') echo "the selector may only have letters, digits and dashes" >&2; exit 2 ;; esac
+key=$DIR/$selector.pem
+
+print_record() {
+    local p
+    p=$(openssl rsa -in "$key" -pubout -outform DER 2>/dev/null | base64 -w0)
+    [ -n "$p" ] || { echo "could not read $key" >&2; exit 1; }
+    local record="v=DKIM1; k=rsa; p=$p"
+    echo
+    echo "Publish this TXT record, at the name  $selector._domainkey.<your domain>  :"
+    echo
+    echo "  $record"
+    echo
+    echo "For a zone file (a TXT string may not be longer than 255 characters, so it is cut in pieces):"
+    echo
+    echo "$record" | fold -w 250 | sed 's/.*/  "&"/' | sed '1s/^/  (/' | sed '$s/$/)/'
+    echo
+    echo "Most DNS hosts (Cloudflare, Route 53, ...) take the first, single-line form as it is."
+}
+
+case "$cmd" in
+    generate)
+        if [ -e "$key" ]; then
+            echo "$key already exists; not replacing it (a new key means a new DNS record, and mail signed in between fails)." >&2
+            echo "Use 'wifidb-dkim show $selector' to print its record." >&2
+            exit 1
+        fi
+        install -d -m 0750 -o root -g www-data "$DIR"
+        umask 077
+        openssl genrsa -out "$key" 2048 2>/dev/null
+        chown root:www-data "$key"
+        chmod 0640 "$key"
+        echo "Made $key"
+        print_record
+        ;;
+    show)
+        [ -f "$key" ] || { echo "no key at $key; make one with: wifidb-dkim generate $selector" >&2; exit 1; }
+        print_record
+        ;;
+    *)
+        sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'
+        exit 2
+        ;;
+esac
