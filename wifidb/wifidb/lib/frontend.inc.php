@@ -77,6 +77,7 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_login_priv_name', $this->sec->priv_name);
 			$this->smarty->assign('wifidb_login_logged_in', $this->sec->login_check);
 			$this->smarty->assign('wifidb_message_unread_count', $this->GetMessageCount($this->sec->LoginUser));
+			$this->smarty->assign('wifidb_notification_unread_count', $this->GetNotificationCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
 			#$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
 			$this->htmlheader();
@@ -112,6 +113,22 @@ class frontend extends dbcore
 			$message_count = $array['unread_count'];
 		}
 		return $message_count;
+	}
+
+	// The count shown in the header. A missing table (a site that has not run its migrations yet) must not break the page.
+	function GetNotificationCount($username="")
+	{
+		if(!$username) { return 0; }
+		try
+		{
+			require_once dirname(__FILE__)."/notify.inc.php";
+			$notifier = new Notifier($this->sql->conn);
+			return $notifier->UnreadCount($username);
+		}
+		catch(Throwable $e)
+		{
+			return 0;
+		}
 	}
 
 	function GetAnnouncement()
