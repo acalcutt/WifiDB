@@ -125,6 +125,10 @@ $daemon = array(
     'WebSocketPort'      => 9000,
 );
 $dir = $e('DATA') . '/config';
+// The key that encrypts saved authenticator secrets: made once, and kept when the settings are regenerated, since
+// a new key would make every saved authenticator useless.
+$old = is_file("$dir/web.overrides.php") ? @include "$dir/web.overrides.php" : array();
+$web['two_factor_key'] = (is_array($old) && !empty($old['two_factor_key'])) ? $old['two_factor_key'] : base64_encode(random_bytes(32));
 file_put_contents("$dir/web.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($web, true) . ";\n");
 file_put_contents("$dir/daemon.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($daemon, true) . ";\n");
 PHP
@@ -231,6 +235,11 @@ else
         log "         existing node name in $ENV_FILE and run: WIFIDB_REGENERATE=1 systemctl restart wifidb-firstboot"
     fi
 fi
+
+# The schema above is the base; everything added since (two-factor sign-in, notifications, ...) is a numbered
+# migration. Several nodes starting at once is fine: each migration is claimed by one of them.
+log "applying database migrations"
+runuser -u www-data -- php /opt/wifidb/tools/utilites/migrate.php || die "the database migrations failed; see above. Fix the cause, then: systemctl restart wifidb-firstboot"
 
 # ── Start everything ─────────────────────────────────────────────────────────
 systemd-tmpfiles --create /etc/tmpfiles.d/wifidb.conf

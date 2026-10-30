@@ -23,6 +23,7 @@ class Notifier
 		'export'          => array('New map data exports',      'all',    0, true),
 		'new_user'        => array('A new member joined',       'admins', 1, true),
 		'admin_alert'     => array('Errors and warnings',       'admins', 1, false),
+		'security'        => array('Sign-in and security changes', 'owner',  1, false),
 	);
 
 	private $conn;

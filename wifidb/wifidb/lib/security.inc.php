@@ -46,6 +46,39 @@ class security
 		$this->domain	 = parse_url($this->URL_PATH, PHP_URL_HOST);
 		$folder = parse_url($this->URL_PATH, PHP_URL_PATH);
 		$this->PATH = $folder;
+		$this->two_factor_config = array(
+			'two_factor_key'    => isset($config['two_factor_key']) ? $config['two_factor_key'] : '',
+			'two_factor_issuer' => isset($config['two_factor_issuer']) ? $config['two_factor_issuer'] : 'WifiDB',
+			'hosturl'           => $this->HOSTURL,
+		);
+	}
+
+	# Two-factor sign-in: see lib/two_factor.inc.php
+	public $mfa_pending = false;   # the cookie is a real session whose password was right but whose second factor is not done
+	public $mfa_user = '';
+	public $mfa_session = '';
+	private $two_factor = null;
+	private $two_factor_config = array();
+
+	/** @return TwoFactor|null null if it can't be used (the tables are missing, the site hasn't been migrated yet) */
+	public function TwoFactor()
+	{
+		if($this->two_factor === null)
+		{
+			try
+			{
+				$dir = dirname(__FILE__);
+				require_once $dir.'/totp.inc.php';
+				require_once $dir.'/webauthn.inc.php';
+				require_once $dir.'/two_factor.inc.php';
+				$this->two_factor = new TwoFactor($this->sql->conn, $this->two_factor_config);
+			}
+			catch(Throwable $e)
+			{
+				return null;
+			}
+		}
+		return $this->two_factor;
 	}
 	
 	
@@ -408,6 +441,15 @@ class security
 				
 				$this->login_val = "good";
 				$this->login_check = 1;
+				if($this->StartSecondFactor($this->username))
+				{
+					# The password was right but this member asks for a second factor: the session grants nothing until it is done.
+					$this->login_val = "mfa_required";
+					$this->login_check = 0;
+					$this->logd("Password accepted for ".var_export($username, 1).", waiting for the second factor", "message");
+					$this->mesg[] = "A second factor is needed.";
+					return 1;
+				}
 				$this->logd("Login Successful for ".var_export($username, 1), "message");
 				$this->mesg[] = "User is logged in.";
 				return 1;
@@ -452,6 +494,74 @@ class security
 		}
 	}
 	
+	/**
+	 * Called with a session that has just been created. Does this member ask for a second factor at sign-in, and is
+	 * this computer one they chose to remember? @return bool true if the session has been made to wait for one
+	 */
+	private function StartSecondFactor($username)
+	{
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try
+		{
+			if(!$tf->AsksAtLogin($username)) { return false; }
+			$token = isset($_COOKIE['WiFiDB_device']) ? $_COOKIE['WiFiDB_device'] : '';
+			if($tf->DeviceTrusted($username, $token))
+			{
+				$tf->MfaDone($username, $this->SessionID);
+				return false;
+			}
+			$tf->MarkPending($username, $this->SessionID);
+			return true;
+		}
+		catch(Throwable $e)
+		{
+			# the tables aren't there (not migrated yet), so nobody can have two-factor set up
+			return false;
+		}
+	}
+
+	/**
+	 * Is this session waiting for its second factor, or old enough that it is due again? Either way it grants nothing.
+	 * @return bool
+	 */
+	private function SecondFactorPending($username, $sessionHash)
+	{
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try
+		{
+			if($tf->IsPending($username, $sessionHash)) { return true; }
+			if($tf->MfaStale($username, $sessionHash))
+			{
+				$tf->MarkPending($username, $sessionHash);
+				return true;
+			}
+		}
+		catch(Throwable $e)
+		{
+			return false;
+		}
+		return false;
+	}
+
+	/** "Remember this computer": a signed cookie that lets this member skip the second factor at sign-in for 30 days. */
+	public function RememberThisComputer($username)
+	{
+		$tf = $this->TwoFactor();
+		$token = $tf ? $tf->DeviceToken($username) : '';
+		if($token === '' || $this->cli) { return false; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		return setcookie('WiFiDB_device', $token, array("expires" => time() + TwoFactor::DEVICE_DAYS * 86400, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
+	}
+
+	public function ForgetThisComputer()
+	{
+		if($this->cli) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		setcookie('WiFiDB_device', '', array("expires" => time() - 3600, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
+	}
+
 	function APILoginCheck($username = '', $apikey = '')
 	{
 		if($username && $apikey)
@@ -537,6 +647,20 @@ class security
 		$login_id = $fetch['id'];
 		if($login_id)
 		{
+			if($this->SecondFactorPending($username, $cookie_pass))
+			{
+				# A real session, but its second factor isn't done: the page sees nobody signed in, and login.php can ask for it.
+				$this->mfa_pending = true;
+				$this->mfa_user = $username;
+				$this->mfa_session = $cookie_pass;
+				$this->LoginLabel = "";
+				$this->LoginUser = "";
+				$this->LoginUri = '?return='.urlencode($return_url);
+				$this->login_val = "mfa_pending";
+				$this->login_check = 0;
+				return -1;
+			}
+			$this->SessionID = $cookie_pass;   # the pages that change two-factor settings need to know which session they are
 			$this->check_privs();
 			$this->LoginLabel = "Logout";
 			$this->LoginUser = $username;

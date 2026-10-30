@@ -39,6 +39,11 @@ $config = array
 	'wifidb_email_updates'  =>   1,
 	'GeoNamesLoopGiveUp'	=>   5000,
 	'reserved_users'		=>   'wifidb:recover:root:system:admin:hack:virus',
+	// Two-factor sign-in (Preferences -> Security). The key encrypts authenticator secrets in the database; make one with
+	//   php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
+	// and keep it: with a different key the saved authenticators stop working. The Proxmox template makes one for you.
+	'two_factor_key'		=>   '',
+	'two_factor_issuer'		=>   'WifiDB',
 	'dBmMaxSignal'		  =>   '-30',
 	'dBmDissociationSignal'	=>   '-85',
 	'verbose'			   =>   1,
