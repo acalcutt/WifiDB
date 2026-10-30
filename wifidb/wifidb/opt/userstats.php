@@ -163,7 +163,7 @@ switch($func)
 			break;
 		#-------------
 		case "":
-			$dbcore->all_users();
+			$dbcore->AllUsers("file_user", "ASC", 0, 250);
 			$dbcore->smarty->assign('wifidb_imports_all' , $dbcore->all_users_data);
 			$dbcore->smarty->display('users_index.tpl');
 			break;
