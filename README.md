@@ -21,7 +21,7 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MyS
 		* pdo_mysql, for MySQL or MariaDB  
 		* pdo_sqlsrv and Microsoft's ODBC Driver 18 for SQL Server (msodbcsql18), for SQL Server  
 * One of the following databases  
-	* MySQL 8 or MariaDB 10.6 or later (utf8mb4)  
+	* MariaDB 10.6 or later (utf8mb4). MySQL 8 is not supported yet: blank_db.sql does not load there, because the unique key on cell_id is longer than MySQL allows (MariaDB allows it)  
 	* Microsoft SQL Server 2019 or later (needed for UTF8 support)  
 * Apache 2.4 or later  
 * A Web-browser (doh!)  
