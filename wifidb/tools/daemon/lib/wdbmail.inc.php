@@ -19,7 +19,10 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 
+// PHPMailer comes from Composer (pinned in composer.json); wifidb/lib/init.inc.php loads its autoloader.
+use PHPMailer\PHPMailer\PHPMailer;
 
+#[AllowDynamicProperties]
 class wdbmail
 {
     function __construct($config, $sql = null)

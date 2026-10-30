@@ -8,6 +8,8 @@ check_mail.php, checks the site's mail settings and, if asked, sends a test mess
 
 Exits 1 if anything failed. Docs: docs/email.md
 */
+use PHPMailer\PHPMailer\PHPMailer;
+
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
 if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to create and configure your [tools]/daemon.config.inc.php\r\n");}
@@ -39,8 +41,7 @@ foreach($argv as $i => $arg) { if($arg === '--send' && isset($argv[$i + 1])) { $
 if($to !== null)
 {
 	echo "\r\nSending a test message to $to ...\r\n";
-	require_once dirname(__FILE__).'/../daemon/lib/PHPMailer.inc.php';
-	require_once dirname(__FILE__).'/../daemon/lib/SMTP.inc.php';
+	require_once $root.'/vendor/autoload.php';   // PHPMailer, from Composer
 
 	$p = in_array('--signup', $argv) && isset($config['signup_smtp_host']) ? 'signup_smtp_' : 'smtp_';
 	$mail = new PHPMailer();
