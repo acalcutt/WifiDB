@@ -434,13 +434,12 @@ function prepareDemTile(promise, copy) {
     });
 }
 function prepareContourTile(promise) {
-    return promise.then(({ arrayBuffer }) => {
-        const clone = copy(arrayBuffer);
-        return {
-            arrayBuffer: clone,
-            transferrables: [clone],
-        };
-    });
+    // LocalDemManager returns a fresh buffer each time, so it is safe to
+    // transfer without copying again
+    return promise.then(({ arrayBuffer }) => ({
+        arrayBuffer,
+        transferrables: [arrayBuffer],
+    }));
 }
 let supportsOffscreenCanvas = null;
 function offscreenCanvasSupported() {
@@ -506,6 +505,10 @@ function onAbort(abortController, action) {
 function isAborted(abortController) {
     var _a;
     return Boolean((_a = abortController === null || abortController === void 0 ? void 0 : abortController.signal) === null || _a === void 0 ? void 0 : _a.aborted);
+}
+function parseUrl(url) {
+    const [, z, x, y] = /\/\/(\d+)\/(\d+)\/(\d+)/.exec(url) || [];
+    return [Number(z), Number(x), Number(y)];
 }
 
 let num = 0;
@@ -698,7 +701,7 @@ function getElevations(img, encoding, canvas, canvasContext) {
 }
 function decodeParsedImage(width, height, encoding, input) {
     const decoder = encoding === "mapbox"
-        ? (r, g, b) => -10000 + (r * 256 * 256 + g * 256 + b) * 0.1
+        ? (r, g, b) => -1e4 + (r * 256 * 256 + g * 256 + b) * 0.1
         : (r, g, b) => r * 256 + g + b / 256 - 32768;
     const data = new Float32Array(width * height);
     for (let i = 0; i < input.length; i += 4) {
@@ -707,7 +710,7 @@ function decodeParsedImage(width, height, encoding, input) {
     return { width, height, data };
 }
 
-const MIN_VALID_M = -12000;
+const MIN_VALID_M = -12e3;
 const MAX_VALID_M = 9000;
 function defaultIsValid(number) {
     return !isNaN(number) && number >= MIN_VALID_M && number <= MAX_VALID_M;
@@ -1426,7 +1429,7 @@ function writeBigVarint(val, pbf) {
         }
     }
 
-    if (val >= 0x10000000000000000 || val < -0x10000000000000000) {
+    if (val >= 0x10000000000000000 || val < -18446744073709552e3) {
         throw new Error('Given varint doesn\'t fit into 10 bytes');
     }
 
@@ -1724,9 +1727,8 @@ function encodeVectorTile(tile) {
 function writeLayer(layer, pbf) {
     if (!pbf)
         throw new Error("pbf undefined");
-    pbf.writeVarintField(15, 2);
-    pbf.writeStringField(1, layer.id || "");
-    pbf.writeVarintField(5, layer.extent || 4096);
+    pbf.writeStringField(1, layer.id || ""); // name (required, field 1)
+    // Write all features (field 2)
     const context = {
         keys: [],
         values: [],
@@ -1737,12 +1739,16 @@ function writeLayer(layer, pbf) {
         context.feature = feature;
         pbf.writeMessage(2, writeFeature, context);
     }
+    // Write all keys (field 3)
     for (const key of context.keys) {
         pbf.writeStringField(3, key);
     }
+    // Write all values (field 4)
     for (const value of context.values) {
         pbf.writeMessage(4, writeValue, value);
     }
+    pbf.writeVarintField(5, layer.extent || 4096); // extent (field 5)
+    pbf.writeVarintField(15, 2); // version (field 15, LAST)
 }
 function writeFeature(context, pbf) {
     const feature = context.feature;
@@ -2012,7 +2018,7 @@ class LocalDemManager {
     }
     fetchDem(z, x, y, options, abortController, timer) {
         return __awaiter(this, void 0, void 0, function* () {
-            const zoom = Math.min(z - (options.overzoom || 0), this.maxzoom);
+            const zoom = Math.max(0, Math.min(z - (options.overzoom || 0), this.maxzoom));
             const subZ = z - zoom;
             const div = 1 << subZ;
             const newX = Math.floor(x / div);
@@ -2028,7 +2034,7 @@ class LocalDemManager {
             return Promise.resolve({ arrayBuffer: new ArrayBuffer(0) });
         }
         const key = [z, x, y, encodeIndividualOptions(options)].join("/");
-        return this.contourCache.get(key, (_, childAbortController) => __awaiter(this, void 0, void 0, function* () {
+        const cached = this.contourCache.get(key, (_, childAbortController) => __awaiter(this, void 0, void 0, function* () {
             const max = 1 << z;
             const neighborPromises = [];
             for (let iy = y - 1; iy <= y + 1; iy++) {
@@ -2077,8 +2083,13 @@ class LocalDemManager {
                 },
             });
             mark === null || mark === void 0 ? void 0 : mark();
-            return { arrayBuffer: result.buffer };
+            return { arrayBuffer: result.slice().buffer };
         }), parentAbortController);
+        // maplibre transfers the buffer to its own worker, which would detach the
+        // copy held in the cache, so give each caller its own
+        return cached.then(({ arrayBuffer }) => ({
+            arrayBuffer: copy(arrayBuffer),
+        }));
     }
 }
 
@@ -2172,13 +2183,14 @@ exports.H = HeightTile;
 exports.L = LocalDemManager;
 exports.T = Timer;
 exports._ = __awaiter;
-exports.a = decodeOptions;
-exports.b = generateIsolines;
+exports.a = parseUrl;
+exports.b = decodeOptions;
 exports.c = decodeParsedImage;
 exports.d = defaultDecoder;
 exports.e = encodeOptions;
-exports.f = prepareContourTile;
+exports.f = generateIsolines;
 exports.g = getOptionsForZoom;
+exports.h = prepareContourTile;
 exports.p = prepareDemTile;
 
 }));
@@ -2208,7 +2220,7 @@ class WorkerDispatch {
         };
         this.fetchContourTile = (managerId, z, x, y, options, abortController, timer) => {
             var _a;
-            return actor.f(((_a = this.managers[managerId]) === null || _a === void 0 ? void 0 : _a.fetchContourTile(z, x, y, options, abortController, timer)) || noManager(managerId));
+            return actor.h(((_a = this.managers[managerId]) === null || _a === void 0 ? void 0 : _a.fetchContourTile(z, x, y, options, abortController, timer)) || noManager(managerId));
         };
     }
 }
@@ -2301,7 +2313,7 @@ class DemSource {
          * Callback to be used with maplibre addProtocol to re-use cached DEM tiles across sources.
          */
         this.sharedDemProtocolV4 = (request, abortController) => actor._(this, void 0, void 0, function* () {
-            const [z, x, y] = this.parseUrl(request.url);
+            const [z, x, y] = actor.a(request.url);
             const timer = new actor.T("main");
             let timing;
             try {
@@ -2330,8 +2342,8 @@ class DemSource {
             const timer = new actor.T("main");
             let timing;
             try {
-                const [z, x, y] = this.parseUrl(request.url);
-                const options = actor.a(request.url);
+                const [z, x, y] = actor.a(request.url);
+                const options = actor.b(request.url);
                 const data = yield this.manager.fetchContourTile(z, x, y, actor.g(options, z), abortController, timer);
                 timing = timer.finish(request.url);
                 return { data: data.arrayBuffer };
@@ -2373,14 +2385,10 @@ class DemSource {
     getDemTile(z, x, y, abortController) {
         return this.manager.fetchAndParseTile(z, x, y, abortController || new AbortController());
     }
-    parseUrl(url) {
-        const [, z, x, y] = /\/\/(\d+)\/(\d+)\/(\d+)/.exec(url) || [];
-        return [Number(z), Number(x), Number(y)];
-    }
 }
 
 const exported = {
-    generateIsolines: actor.b,
+    generateIsolines: actor.f,
     DemSource,
     HeightTile: actor.H,
     LocalDemManager: actor.L,
