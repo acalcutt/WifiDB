@@ -82,6 +82,12 @@ switch($func)
 				$dbcore->redirect_page($return, 2000);
 			break;
 
+			case "mfa_required":
+				# The password was right; the second step comes next.
+				header('Location: '.$root_path.'/login.php?func=mfa&return='.urlencode($return));
+				exit;
+			break;
+
 			case "cookie_fail":
 				$message = "Set Cookie fail, check the bottom of the glass, or your browser.";
 			break;
@@ -92,6 +98,85 @@ switch($func)
 		}
 		$dbcore->smarty->assign('message', $message);
 		$dbcore->smarty->display('login_result.tpl');
+	break;
+
+	#---# The second step of signing in: an authenticator or recovery code, or a passkey. Only for a session whose password
+	#---# was right (sec->mfa_pending); anything else has nothing to do here.
+	case "mfa":
+		if(!$dbcore->sec->mfa_pending) { header('Location: '.$return); exit; }
+		$tf = $dbcore->sec->TwoFactor();
+		$hasPasskey = false;
+		foreach($tf->Methods($dbcore->sec->mfa_user) as $method) { if($method['type'] === 'passkey') { $hasPasskey = true; } }
+		$errors = array(
+			'wrong_code' => 'That code did not work. Try the newest one from your app, or a recovery code.',
+			'throttled'  => 'Too many wrong tries. Wait a few minutes and try again.',
+		);
+		$e = (string)filter_input(INPUT_GET, 'e', FILTER_SANITIZE_SPECIAL_CHARS);
+		$dbcore->smarty->assign('wifidb_page_label', 'Sign In: Second Step');
+		$dbcore->smarty->assign('mfa_user', $dbcore->sec->mfa_user);
+		$dbcore->smarty->assign('mfa_return', $return);
+		$dbcore->smarty->assign('mfa_error', isset($errors[$e]) ? $errors[$e] : '');
+		$dbcore->smarty->assign('mfa_has_passkey', $hasPasskey);
+		$dbcore->smarty->assign('mfa_can_remember', $tf->DeviceToken($dbcore->sec->mfa_user) !== '');
+		$dbcore->smarty->display('login_mfa.tpl');
+	break;
+
+	#---#
+	case "mfa_proc":
+		if($_SERVER['REQUEST_METHOD'] !== 'POST' || !$dbcore->sec->mfa_pending) { header('Location: '.$return); exit; }
+		$tf = $dbcore->sec->TwoFactor();
+		$user = $dbcore->sec->mfa_user;
+		$proof = $tf->VerifyCode($user, isset($_POST['code']) ? $_POST['code'] : '');
+		if(!$proof['ok'])
+		{
+			$dbcore->sec->logd("Second factor failed for ".var_export($user, 1).": ".$proof['error'], "error");
+			header('Location: '.$root_path.'/login.php?func=mfa&e='.urlencode($proof['error']).'&return='.urlencode($return));
+			exit;
+		}
+		$tf->MfaDone($user, $dbcore->sec->mfa_session);
+		if(@$_POST['remember'] === 'yes') { $dbcore->sec->RememberThisComputer($user); }
+		$dbcore->sec->logd("Second factor accepted for ".var_export($user, 1)." (".$proof['via'].")", "message");
+		if($proof['via'] === 'recovery')
+		{
+			$left = $tf->RecoveryCodesLeft($user);
+			$dbcore->wdbmail->notify('security', 'A recovery code was used to sign in', "A recovery code was used to sign in to your account. You have $left left; you can make new ones under Preferences, Security. If this was not you, change your password.", $dbcore->URL_PATH.'cp/security.php', '', array($user));
+		}
+		header('Location: '.$return);
+		exit;
+	break;
+
+	#---# Passkeys: the page's script asks for a challenge, signs it, and sends the answer back (JSON).
+	case "mfa_passkey_begin":
+	case "mfa_passkey_finish":
+		header('Content-Type: application/json');
+		header('Cache-Control: no-store');
+		$isJson = isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') === 0;
+		if($_SERVER['REQUEST_METHOD'] !== 'POST' || !$isJson || !$dbcore->sec->mfa_pending)
+		{
+			http_response_code(403);
+			echo json_encode(array('ok' => false, 'error' => 'not_pending'));
+			break;
+		}
+		$tf = $dbcore->sec->TwoFactor();
+		$user = $dbcore->sec->mfa_user;
+		if($func === 'mfa_passkey_begin')
+		{
+			echo json_encode(array('ok' => true) + $tf->StartPasskeyAssertion($user, $dbcore->sec->mfa_session));
+			break;
+		}
+		$in = json_decode(file_get_contents('php://input'), true);
+		$in = is_array($in) ? $in : array();
+		$proof = $tf->VerifyPasskey($user, $dbcore->sec->mfa_session, (string)@$in['id'], (string)@$in['clientDataJSON'], (string)@$in['authenticatorData'], (string)@$in['signature']);
+		if(!$proof['ok'])
+		{
+			$dbcore->sec->logd("Passkey failed for ".var_export($user, 1).": ".$proof['error'], "error");
+			echo json_encode(array('ok' => false, 'error' => $proof['error']));
+			break;
+		}
+		$tf->MfaDone($user, $dbcore->sec->mfa_session);
+		if(!empty($in['remember'])) { $dbcore->sec->RememberThisComputer($user); }
+		$dbcore->sec->logd("Passkey accepted for ".var_export($user, 1), "message");
+		echo json_encode(array('ok' => true, 'redirect' => $return));
 	break;
 
 	#---#
