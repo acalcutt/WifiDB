@@ -236,7 +236,7 @@ final class SignalGraphTest extends TestCase
         $this->assertSame('', $data['lat']);
     }
 
-    public function testOnlyTheMostRecentReadingsAreUsed(): void
+    public function testAHistoryLongerThanThePictureIsMergedToFit(): void
     {
         $db = $this->database();
         $db->beginTransaction();
@@ -244,6 +244,113 @@ final class SignalGraphTest extends TestCase
         for ($i = 0; $i < 3500; $i++) { $stmt->execute([$i % 100, sprintf('2024-01-01 00:%02d:%02d.%03d', intdiv($i, 3600) % 60, intdiv($i, 60) % 60, $i % 60)]); }
         $db->commit();
         $db->exec("INSERT INTO wifi_ap (AP_ID, BSSID) VALUES (5, 'cc:dd')");
-        $this->assertCount(SignalGraph::MAX_POINTS, SignalGraph::DataForAp($db, 'mysql', 5)['sig']);
+        $this->assertCount(3326, SignalGraph::DataForAp($db, 'mysql', 5, ['width' => 20000])['sig'], '3500 readings are merged to fit a 20000px picture: (20000 - 40) / 6 points');
+    }
+
+    // ── per file, a time window, and fitting long histories ──
+
+    /** access point 20 with readings from two imports (files 1 and 2), a day apart, plus another access point's */
+    private function twoFiles(): PDO
+    {
+        $db = $this->database();
+        $db->exec("ALTER TABLE wifi_hist ADD COLUMN File_ID INTEGER");
+        $db->exec("INSERT INTO wifi_ap (AP_ID, BSSID, SSID) VALUES (20, 'ee:ff', 'Two Files')");
+        $rows = [[20, 1, 10, '2024-01-01 10:00:00'], [20, 1, 20, '2024-01-01 10:00:05'], [20, 1, 30, '2024-01-01 10:00:10'],
+                 [20, 2, 70, '2024-01-02 10:00:00'], [20, 2, 80, '2024-01-02 10:00:05'], [21, 2, 99, '2024-01-02 10:00:05']];
+        foreach ($rows as $r) {
+            $db->prepare("INSERT INTO wifi_hist (AP_ID, File_ID, Sig, Hist_Date) VALUES (?, ?, ?, ?)")->execute([$r[0], $r[1], $r[2], $r[3]]);
+        }
+        return $db;
+    }
+
+    public function testOneFilesReadingsOnly(): void
+    {
+        $db = $this->twoFiles();
+        $this->assertSame([10, 20, 30], SignalGraph::DataForAp($db, 'mysql', 20, ['file' => '1'])['sig']);
+        $this->assertSame([70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['file' => 2])['sig']);
+        $this->assertSame([10, 20, 30, 70, 80], SignalGraph::DataForAp($db, 'mysql', 20)['sig'], 'no file: all of them');
+        $both = SignalGraph::DataForAp($db, 'mysql', 20, ['file' => 1]);
+        $this->assertSame('File 1', $both['label']);
+        $this->assertSame('2024-01-01 10:00:00', $both['fa'], 'the header shows the first and last reading drawn');
+        $this->assertSame('2024-01-01 10:00:10', $both['lu']);
+    }
+
+    public function testAFileThatAccessPointIsNotInIsNotFound(): void
+    {
+        $db = $this->twoFiles();
+        $this->assertNull(SignalGraph::DataForAp($db, 'mysql', 20, ['file' => 99]));
+        $this->assertNull(SignalGraph::DataForAp($db, 'mysql', 21, ['file' => 1]), "another access point's file");
+    }
+
+    public function testADurationCountsBackFromTheNewestReading(): void
+    {
+        $db = $this->twoFiles();
+        // 20's newest reading is 2024-01-02: the last day of it is file 2 only, and "now" does not matter
+        $this->assertSame([20, 30, 70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['days' => 1])['sig'], 'the 24 hours before the newest reading, which reaches back to the readings of the day before');
+        $this->assertSame([70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['from' => '2024-01-02'])['sig']);
+        $this->assertSame([10, 20, 30, 70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['days' => 30])['sig']);
+        $this->assertSame([10, 20, 30, 70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['days' => 'x'])['sig'], 'junk is ignored');
+    }
+
+    public function testADurationWithinOneFile(): void
+    {
+        $db = $this->twoFiles();
+        $this->assertSame([80], SignalGraph::DataForAp($db, 'mysql', 20, ['file' => 2, 'from' => '2024-01-02 10:00:03'])['sig']);
+    }
+
+    public function testFromAndTo(): void
+    {
+        $db = $this->twoFiles();
+        $this->assertSame([10, 20, 30], SignalGraph::DataForAp($db, 'mysql', 20, ['to' => '2024-01-01'] + ['from' => '2024-01-01'])['sig'] ?? [], 'a date alone as the end means the whole of that day');
+        $this->assertSame([70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['from' => '2024-01-02'])['sig']);
+        $this->assertSame([10, 20, 30], SignalGraph::DataForAp($db, 'mysql', 20, ['to' => '2024-01-01 23:59:59'])['sig']);
+        $this->assertNull(SignalGraph::DataForAp($db, 'mysql', 20, ['from' => '2030-01-01']), 'nothing in the range');
+    }
+
+    public static function badDates(): array
+    {
+        return ['not a date' => ['yesterday'], 'impossible' => ['2024-02-31'], 'injection' => ["2024-01-01' OR '1'='1"], 'an array' => [['2024-01-01']], 'time out of range' => ['2024-01-01 25:00:00']];
+    }
+
+    #[DataProvider('badDates')]
+    public function testBadDatesAreIgnoredNotUsed($value): void
+    {
+        $db = $this->twoFiles();
+        $this->assertSame([10, 20, 30, 70, 80], SignalGraph::DataForAp($db, 'mysql', 20, ['from' => $value, 'to' => $value])['sig']);
+        $this->assertNull(SignalGraph::ParseDate($value));
+    }
+
+    public function testDatesAreNormalised(): void
+    {
+        $this->assertSame('2024-01-31 00:00:00', SignalGraph::ParseDate('2024-01-31'));
+        $this->assertSame('2024-01-31 12:30:00', SignalGraph::ParseDate('2024-01-31 12:30'));
+        $this->assertSame('2024-01-31 12:30:45', SignalGraph::ParseDate('2024-01-31T12:30:45'));
+    }
+
+    public function testALongHistoryIsMergedKeepingTheStrongestReadings(): void
+    {
+        $sig = array_fill(0, 1000, 10);
+        $sig[137] = 95;                                  // a brief peak
+        $fit = SignalGraph::Fit($sig, 100);
+        $this->assertCount(100, $fit);
+        $this->assertSame(95, max($fit), 'the peak survives');
+        $this->assertSame(10, $fit[0]);
+        $this->assertSame([5, 6], SignalGraph::Fit([5, 6], 100), 'a short history is left alone');
+        $this->assertSame([9], SignalGraph::Fit([3, 9, 4], 1));
+    }
+
+    public function testTheWidthSetsHowManyPointsAreKept(): void
+    {
+        $db = $this->database();
+        $db->exec("INSERT INTO wifi_ap (AP_ID, BSSID) VALUES (30, 'aa')");
+        $db->beginTransaction();
+        $stmt = $db->prepare("INSERT INTO wifi_hist (AP_ID, Sig, Hist_Date) VALUES (30, ?, ?)");
+        for ($i = 0; $i < 2000; $i++) { $stmt->execute([$i % 100, sprintf('2024-01-01 %02d:%02d:%02d', intdiv($i, 3600), intdiv($i, 60) % 60, $i % 60)]); }
+        $db->commit();
+        $this->assertCount(493, SignalGraph::DataForAp($db, 'mysql', 30)['sig'], 'the default 3000px holds 493 points');
+        $this->assertCount(160, SignalGraph::DataForAp($db, 'mysql', 30, ['width' => 1000])['sig']);
+        $this->assertCount(2000, SignalGraph::DataForAp($db, 'mysql', 30, ['width' => 20000])['sig'], 'wide enough for all of them');
+        $this->assertCount(60, SignalGraph::DataForAp($db, 'mysql', 30, ['width' => 1])['sig'], 'a tiny width is raised to 400px');
+        $this->assertCount(493, SignalGraph::DataForAp($db, 'mysql', 30, ['width' => '1e9'])['sig'], 'junk gives the default');
     }
 }

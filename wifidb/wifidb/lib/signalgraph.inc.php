@@ -95,14 +95,53 @@ class SignalGraph
 
 	// ── From the database ────────────────────────────────────────────────────────────────────────────
 
+	const DB_MAX_ROWS = 50000;       // readings read for one graph, the most recent
+	const DEFAULT_WIDTH = 3000;      // pixels: about what Vistumbler's own links reached
+	const MAX_WIDTH = 20000;
+
+	/** A date or date-time as "Y-m-d H:i:s", or null if it isn't one. A date alone is midnight, or with $endOfDay the last second of that day (for a "to"). */
+	public static function ParseDate($v, $endOfDay = false)
+	{
+		if(!is_scalar($v) || !preg_match('/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/', trim((string)$v), $m)) { return null; }
+		if(!checkdate((int)$m[2], (int)$m[3], (int)$m[1])) { return null; }
+		$dateOnly = !isset($m[4]);
+		$h = isset($m[4]) ? (int)$m[4] : ($endOfDay ? 23 : 0); $i = isset($m[5]) ? (int)$m[5] : ($endOfDay && $dateOnly ? 59 : 0); $s = isset($m[6]) ? (int)$m[6] : ($endOfDay && $dateOnly ? 59 : 0);
+		if($h > 23 || $i > 59 || $s > 59) { return null; }
+		return sprintf('%04d-%02d-%02d %02d:%02d:%02d', $m[1], $m[2], $m[3], $h, $i, $s);
+	}
+
+	/**
+	 * Shrinks a long run of readings to at most $max points, keeping the strongest reading in each stretch, so a
+	 * brief peak is still there afterwards.
+	 */
+	public static function Fit(array $sig, $max)
+	{
+		$n = count($sig);
+		$max = max(1, (int)$max);
+		if($n <= $max) { return $sig; }
+		$out = array();
+		for($i = 0; $i < $max; $i++)
+		{
+			$from = (int)floor($i * $n / $max);
+			$to = max($from + 1, (int)floor(($i + 1) * $n / $max));
+			$out[] = max(array_slice($sig, $from, $to - $from));
+		}
+		return $out;
+	}
+
 	/**
 	 * The access point's own data and its recorded signal history (the same rows the details pages show), as the fields
-	 * of a spec. The history is the most recent MAX_POINTS readings, oldest first, like Vistumbler's addresses.
+	 * of a spec: the readings oldest first, like Vistumbler's addresses.
+	 *
 	 * @param PDO $conn
 	 * @param string $dialect mysql or sqlsrv: how a row limit is spelled
-	 * @return array|null null if there is no such access point
+	 * @param array $opts what to include: file (a file's ID: only that import's readings, as on the details page),
+	 *                    days (only the last N days of what there is, counted back from the newest reading, so an old
+	 *                    access point still graphs), from and to (dates, "2024-01-31" or "2024-01-31 12:00:00"; inclusive),
+	 *                    width (the widest picture wanted, in pixels; more readings than fit are merged, strongest kept)
+	 * @return array|null null if there is no such access point, or none of its readings are in what was asked for
 	 */
-	public static function DataForAp($conn, $dialect, $apId)
+	public static function DataForAp($conn, $dialect, $apId, array $opts = array())
 	{
 		if(!is_scalar($apId) || !ctype_digit((string)$apId) || strlen((string)$apId) > 18) { return null; }
 		$id = (int)$apId;
@@ -117,21 +156,56 @@ class SignalGraph
 		$ap = $prep->fetch(PDO::FETCH_ASSOC);
 		if(!$ap) { return null; }
 
+		// which readings
+		$where = 'AP_ID = ?';
+		$params = array($id);
+		$file = (isset($opts['file']) && is_scalar($opts['file']) && ctype_digit((string)$opts['file']) && strlen((string)$opts['file']) <= 18) ? (int)$opts['file'] : null;
+		if($file !== null) { $where .= ' AND File_ID = ?'; $params[] = $file; }
+
+		$from = isset($opts['from']) ? self::ParseDate($opts['from']) : null;
+		$to = isset($opts['to']) ? self::ParseDate($opts['to'], true) : null;
+		$days = (isset($opts['days']) && is_scalar($opts['days']) && ctype_digit((string)$opts['days']) && strlen((string)$opts['days']) <= 5 && (int)$opts['days'] > 0) ? (int)$opts['days'] : null;
+		if($days !== null)
+		{
+			$prep = $conn->prepare('SELECT MAX(Hist_Date) FROM wifi_hist WHERE ' . $where);
+			$prep->execute($params);
+			$newest = $prep->fetchColumn();
+			$stamp = $newest ? strtotime(substr($newest, 0, 19) . ' UTC') : false;
+			if($stamp !== false)
+			{
+				$since = gmdate('Y-m-d H:i:s', $stamp - $days * 86400);
+				if($from === null || $since > $from) { $from = $since; }
+			}
+		}
+		if($from !== null) { $where .= ' AND Hist_Date >= ?'; $params[] = $from; }
+		if($to !== null) { $where .= ' AND Hist_Date <= ?'; $params[] = $to; }
+
 		$sql = ($dialect === 'sqlsrv')
-			? 'SELECT TOP ' . self::MAX_POINTS . ' Sig FROM wifi_hist WHERE AP_ID = ? ORDER BY Hist_Date DESC, Hist_ID DESC'
-			: 'SELECT Sig FROM wifi_hist WHERE AP_ID = ? ORDER BY Hist_Date DESC, Hist_ID DESC LIMIT ' . self::MAX_POINTS;
+			? 'SELECT TOP ' . self::DB_MAX_ROWS . ' Sig, Hist_Date FROM wifi_hist WHERE ' . $where . ' ORDER BY Hist_Date DESC, Hist_ID DESC'
+			: 'SELECT Sig, Hist_Date FROM wifi_hist WHERE ' . $where . ' ORDER BY Hist_Date DESC, Hist_ID DESC LIMIT ' . self::DB_MAX_ROWS;
 		$prep = $conn->prepare($sql);
-		$prep->execute(array($id));
+		$prep->execute($params);
+		$rows = array_reverse($prep->fetchAll(PDO::FETCH_NUM));
+		$filtered = ($file !== null || $from !== null || $to !== null);
+		if(!$rows && $filtered) { return null; }
+
 		$signals = array();
-		foreach($prep->fetchAll(PDO::FETCH_COLUMN) as $sig) { $signals[] = max(0, min(100, (int)$sig)); }
+		foreach($rows as $row) { $signals[] = max(0, min(100, (int)$row[0])); }
+		$width = (isset($opts['width']) && is_scalar($opts['width']) && ctype_digit((string)$opts['width']) && strlen((string)$opts['width']) <= 6)
+			? max(400, min(self::MAX_WIDTH, (int)$opts['width'])) : self::DEFAULT_WIDTH;
+		$signals = self::Fit($signals, (int)floor(($width - 2 * self::LEFT) / self::STEP));
 
 		$text = function ($v) { return self::CleanText($v === null ? '' : $v); };
+		// what is drawn: the window's own first and last readings when only part of the history was asked for
+		$first = $ap['fa']; $last = $ap['la'];
+		if($filtered || $days !== null) { $first = $rows ? $rows[0][1] : $first; $last = $rows ? $rows[count($rows) - 1][1] : $last; }
 		return array(
 			'ssid' => ($text($ap['SSID']) === '' ? 'UNNAMED' : $text($ap['SSID'])), 'mac' => $text($ap['BSSID']), 'man' => '',
 			'auth' => $text($ap['AUTH']), 'encry' => $text($ap['ENCR']), 'radio' => $text($ap['RADTYPE']), 'chan' => $text($ap['CHAN']),
 			'lat' => $text($ap['Lat']), 'long' => $text($ap['Lon']), 'btx' => $text($ap['BTX']), 'otx' => $text($ap['OTX']),
-			'fa' => $text($ap['fa']), 'lu' => $text($ap['la']), 'nt' => $text($ap['NETTYPE']), 'label' => '',
-			'sig' => $signals ? array_reverse($signals) : array(0),
+			'fa' => $text($first), 'lu' => $text($last), 'nt' => $text($ap['NETTYPE']),
+			'label' => $file !== null ? 'File ' . $file : '',
+			'sig' => $signals ? $signals : array(0),
 		);
 	}
 
