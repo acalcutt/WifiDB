@@ -73,17 +73,17 @@ class wdbmail
 		$this->mail->DKIM_copyHeaderFields = $this->DKIM_copyHeaderFields;//Suppress listing signed header fields in signature, defaults to true for debugging purpose
 		$this->mail->addCustomHeader("List-Unsubscribe",$this->ListUnsubscribe);
 		
-		$this->signup_smtp_debug		= $config['signup_smtp_debug'];
-		$this->signup_smtp_host			= $config['signup_smtp_host'];
-		$this->signup_smtp_port			= $config['signup_smtp_port'];
-		$this->signup_smtp_user			= $config['signup_smtp_user'];
-		$this->signup_smtp_pass			= $config['signup_smtp_pass'];
-		$this->signup_smtp_from			= $config['signup_smtp_from'];
-		$this->signup_smtp_replyto		= $config['signup_smtp_replyto'];		
-		$this->signup_smtp_secure		= $config['signup_smtp_secure'];
-		$this->signup_smtp_auth			= $config['signup_smtp_auth'];
-		$this->signup_smtp_authtype		= $config['signup_smtp_authtype'];
-		$this->signup_smtp_options		= $config['signup_smtp_options'];
+		$this->signup_smtp_debug		= $config['signup_smtp_debug'] ?? $config['smtp_debug'];
+		$this->signup_smtp_host			= $config['signup_smtp_host'] ?? $config['smtp_host'];
+		$this->signup_smtp_port			= $config['signup_smtp_port'] ?? $config['smtp_port'];
+		$this->signup_smtp_user			= $config['signup_smtp_user'] ?? $config['smtp_user'];
+		$this->signup_smtp_pass			= $config['signup_smtp_pass'] ?? $config['smtp_pass'];
+		$this->signup_smtp_from			= $config['signup_smtp_from'] ?? $config['smtp_from'];
+		$this->signup_smtp_replyto		= $config['signup_smtp_replyto'] ?? $config['smtp_replyto'];		
+		$this->signup_smtp_secure		= $config['signup_smtp_secure'] ?? $config['smtp_secure'];
+		$this->signup_smtp_auth			= $config['signup_smtp_auth'] ?? $config['smtp_auth'];
+		$this->signup_smtp_authtype		= $config['signup_smtp_authtype'] ?? $config['smtp_authtype'];
+		$this->signup_smtp_options		= $config['signup_smtp_options'] ?? $config['smtp_options'];
 		
 		$this->signupmail 					= new PHPMailer();
 		$this->signupmail->isSMTP();										// Set mailer to use SMTP			

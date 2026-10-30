@@ -55,6 +55,20 @@ $config = array
 	'smtp_auth'			 =>   true,
 	'smtp_authtype'		 =>   'LOGIN',
 	'smtp_options'		  =>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
+	#----------Sign-up mail (optional)------------#
+	# Sign-up and password-reset mail can go out from a different account than the site's other mail. If these are
+	# left out (as here), it uses the SMTP settings above. To use a separate account, uncomment and set them.
+	#'signup_smtp_debug'		=>   0,
+	#'signup_smtp_host'		=>   'smtp.someemail.com',
+	#'signup_smtp_port'		=>   587,
+	#'signup_smtp_user'		=>   'wifidb_signup@someemail.com',
+	#'signup_smtp_pass'		=>   'supersecretpw',
+	#'signup_smtp_from'		=>   'wifidb_signup@someemail.com',
+	#'signup_smtp_replyto'		=>   'wifidb_signup@someemail.com',
+	#'signup_smtp_secure'		=>   'tls',
+	#'signup_smtp_auth'		=>   true,
+	#'signup_smtp_authtype'	=>   'LOGIN',
+	#'signup_smtp_options'		=>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
 	'DKIM_domain'		   =>   'someemail.com',
 	'DKIM_private'		  =>   'private.pem',
 	'DKIM_selector'		 =>   'wdb',
