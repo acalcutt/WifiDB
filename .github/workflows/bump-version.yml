@@ -1,0 +1,49 @@
+name: Create bump version PR
+
+# Actions > Create bump version PR > Run workflow: bumps VERSION, rolls CHANGELOG.md's "## master" section into it and
+# opens a pull request. Merging it to master releases the new version (release.yml).
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version bump type.
+        required: true
+        type: choice
+        options: [patch, minor, major, prepatch, preminor, premajor, prerelease]
+      preid:
+        description: Prerelease identifier (e.g. alpha, beta, rc). Only used with the pre* types.
+        required: false
+        type: string
+        default: 'rc'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    name: Bump version PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # bump_version.py writes version=<new> to $GITHUB_OUTPUT
+      - name: Bump version and changelog
+        id: bump
+        run: python build/bump_version.py "${{ inputs.version }}" "${{ inputs.preid }}"
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: Release v${{ steps.bump.outputs.version }}
+          branch: release-v${{ steps.bump.outputs.version }}
+          title: Release v${{ steps.bump.outputs.version }}
+          body: |
+            Automated version bump to `v${{ steps.bump.outputs.version }}`.
+
+            Review the `CHANGELOG.md` entries before merging. Once merged, **Build and Release** builds and boot-tests
+            the Proxmox template and publishes the release.
+          labels: release

@@ -1,0 +1,97 @@
+name: Build and Release
+
+# On a push to master, releases VERSION if there's no GitHub release for it yet, with the matching CHANGELOG.md section
+# as the notes: the Proxmox LXC template (proxmox/build-template.sh), boot-tested against MariaDB
+# (proxmox/test-template.sh). Same files as the GitLab pipeline (.gitlab-ci.yml).
+# Run it by hand with "dry run" to build and test without publishing.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and test the release files without publishing anything.
+        type: boolean
+        default: false
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  release-check:
+    name: Check if version is already released
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.check.outputs.version }}
+      published: ${{ steps.check.outputs.published }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${VERSION}")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "published=$([ "$STATUS" = "200" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$(echo "$VERSION" | grep -q -- '-' && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "Version $VERSION, already released: $STATUS"
+
+  proxmox:
+    name: Proxmox LXC template
+    runs-on: ubuntu-24.04
+    needs: release-check
+    # a dry run builds even a released version
+    if: ${{ needs.release-check.outputs.published == 'false' || inputs.dry_run }}
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the template
+        run: |
+          sudo apt-get install -y -q zstd
+          git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb
+          sudo bash proxmox/build-template.sh wifidb-src.tar.gz \
+            "proxmox-files/WifiDB-v${{ needs.release-check.outputs.version }}-proxmox-amd64.tar.zst"
+      - name: Boot-test it
+        run: sudo bash proxmox/test-template.sh proxmox-files/*.tar.zst
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-proxmox
+          path: proxmox-files/*.tar.zst
+          compression-level: 0
+          retention-days: 7
+
+  release:
+    name: Publish GitHub release
+    runs-on: ubuntu-latest
+    needs: [release-check, proxmox]
+    if: ${{ needs.release-check.outputs.published == 'false' && !inputs.dry_run }}
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-files
+          merge-multiple: true
+      - name: Release notes from CHANGELOG.md
+        run: |
+          awk -v ver="## ${{ needs.release-check.outputs.version }}" \
+            'BEGIN{p=0} $0==ver{p=1; next} /^## / && p==1{exit} p==1{print}' CHANGELOG.md > notes.md
+          {
+            echo
+            echo "## Downloads"
+            echo
+            echo "- **Proxmox:** the \`.tar.zst\` is an LXC template (Ubuntu 26.04, PHP, Apache, the services and the cron jobs)"
+            echo "  with no database of its own: it uses your MySQL/MariaDB or SQL Server. See docs/proxmox.md."
+            echo "- **Anywhere else:** the source is the repository at this tag; README.md has the install steps."
+          } >> notes.md
+          cat notes.md
+      - uses: ncipollo/release-action@v1
+        with:
+          tag: v${{ needs.release-check.outputs.version }}
+          name: WifiDB v${{ needs.release-check.outputs.version }}
+          bodyFile: notes.md
+          prerelease: ${{ needs.release-check.outputs.prerelease }}
+          artifacts: release-files/*
