@@ -89,9 +89,9 @@ cat > /etc/wifidb/firstboot.env <<'ENV'
 # Settings for the first boot (wifidb-firstboot). Fill these in before starting the container, or after the first
 # attempt fails: systemctl restart wifidb-firstboot
 #
-# The database. The template has none of its own; point it at your MySQL/MariaDB or SQL Server. It must exist, with
+# The database. The template has none of its own; point it at your MariaDB or SQL Server. It must exist, with
 # a user that can create tables (the first boot loads the schema into an empty database).
-WIFIDB_DB_TYPE=mysql              # mysql, or sqlsrv for SQL Server
+WIFIDB_DB_TYPE=mariadb            # mariadb, or sqlsrv for SQL Server
 #WIFIDB_DB_HOST=db.example.lan
 #WIFIDB_DB_PORT=3306              # default 3306 (mysql) or 1433 (sqlsrv)
 #WIFIDB_DB_NAME=wifi

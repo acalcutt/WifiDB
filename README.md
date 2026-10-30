@@ -1,7 +1,7 @@
 Vistumbler WiFiDB -> Read-me
 ===================
 
-Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MySQL/MariaDB, that is intended to manage Wireless Access points made with the Vistumber Wireless scanning software  
+Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MariaDB, that is intended to manage Wireless Access points made with the Vistumber Wireless scanning software  
 
   Project Phase: Beta
   --------------
@@ -18,10 +18,10 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MyS
 	* PHP 8.1 and earlier, including 7.x, are not supported.  
 	* Extensions: gd, zip, bcmath, mbstring, curl, xml, sockets (the websocket daemon)  
 	* A database driver, one of:  
-		* pdo_mysql, for MySQL or MariaDB  
+		* pdo_mysql (PHP's driver for MariaDB), for MariaDB  
 		* pdo_sqlsrv and Microsoft's ODBC Driver 18 for SQL Server (msodbcsql18), for SQL Server  
 * One of the following databases  
-	* MariaDB 10.6 or later (utf8mb4). MySQL 8 is not supported yet: blank_db.sql does not load there, because the unique key on cell_id is longer than MySQL allows (MariaDB allows it)  
+	* MariaDB 10.6 or later (utf8mb4). MySQL is not supported: blank_db.sql uses index sizes that only MariaDB allows  
 	* Microsoft SQL Server 2019 or later (needed for UTF8 support)  
 * Apache 2.4 or later  
 * A Web-browser (doh!)  
@@ -32,17 +32,17 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MyS
 	that you have apache or what ever HTTP server you are using 
 	
 	1.) Set up a Debian or Ubuntu instance with apache and PHP 8.2 or later and the extensions above  
-	2.) Set up a database server, MySQL/MariaDB or Microsoft SQL Server (the free developer edition, windows or linux, will work fine)  
+	2.) Set up a database server, MariaDB or Microsoft SQL Server (the free developer edition, windows or linux, will work fine)  
 	3.) Create tools directory (ex. /opt/wdbtools/)  
 	4.) Copy the /wifidb/tools folder from this repository into the tools directory created in the previous step  
 	5.) Copy the /wifidb/wifidb folder from this repository into your website root directory  
 	6.) Create a blank database (ex. wifi) and import the schema into it  
-		* MySQL/MariaDB: import 'blank_db.sql'  
+		* MariaDB: import 'blank_db.sql'  
 		* SQL Server: import 'blank_db.sqlsrv' (Note: Replace all instances of 'prod_wifi' in blank_db.sqlsrv with what you named your database)  
 	7.) Create a database user that has access to the database created in the previous step  
 	8.) Update your daemon config file, [tools]/daemon.config.inc.php (start from daemon.config.inc.php.example)  
 	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php (start from config.inc.php.example)  
-		In the "SQL Info" section, use the SQL Server settings ('srvc' => 'sqlsrv') or the MySQL settings ('srvc' => 'mysql').  
+		In the "SQL Info" section, use the SQL Server settings ('srvc' => 'sqlsrv') or the MariaDB settings ('srvc' => 'mysql', which is the name of PHP's driver for it).  
 	
   To Import Manually:  
 	cd [tools]/daemon  

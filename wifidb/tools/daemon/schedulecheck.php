@@ -3,7 +3,7 @@
 schedulecheck.php: prints how many scheduled runs of a daemon are due on this node.
 
 Used by the tools/cron scripts (import_files, export_kml, admind) in place of sqlcmd, so they work with
-MySQL/MariaDB as well as SQL Server and need no database credentials of their own: this connects the same way
+MariaDB as well as SQL Server and need no database credentials of their own: this connects the same way
 the daemons do, through daemon.config.inc.php and the web site's config.
 
   php schedulecheck.php Import

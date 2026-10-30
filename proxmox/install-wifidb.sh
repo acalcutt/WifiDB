@@ -13,7 +13,7 @@
 #                                files, logs and the two config files. Mount a second disk here.
 #
 # SQL Server support needs Microsoft's ODBC driver and the pdo_sqlsrv extension. WIFIDB_SQLSRV controls it:
-#   auto (default)  install it if it can be, otherwise carry on with MySQL/MariaDB only and say so
+#   auto (default)  install it if it can be, otherwise carry on with MariaDB only and say so
 #   yes             fail the build if it can't be installed
 #   no              skip it
 set -euo pipefail
@@ -43,7 +43,7 @@ if [ "$sqlsrv" != "no" ]; then
         exit 1
     else
         tail -25 /var/log/wifidb-sqlsrv-install.log
-        log "WARNING: the SQL Server driver could not be installed; this template supports MySQL/MariaDB only"
+        log "WARNING: the SQL Server driver could not be installed; this template supports MariaDB only"
         # leave a clean system behind: no half-installed extension that PHP warns about on every start
         phpdismod -v "$phpver" sqlsrv pdo_sqlsrv >/dev/null 2>&1 || true
         rm -f "/etc/php/$phpver/mods-available/sqlsrv.ini" "/etc/php/$phpver/mods-available/pdo_sqlsrv.ini"

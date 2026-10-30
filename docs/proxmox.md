@@ -2,7 +2,7 @@
 
 The Proxmox template is an Ubuntu LXC container with the whole site installed: Apache and PHP-FPM (with a separate
 pool for the heavy endpoints), the monitor and websocket daemons as systemd services, and the cron jobs. It has no
-database of its own: it uses your MySQL/MariaDB or SQL Server. It serves plain HTTP on port 80, for HAProxy (or any
+database of its own: it uses your MariaDB or SQL Server. It serves plain HTTP on port 80, for HAProxy (or any
 proxy) in front to do TLS.
 
 `<version>` below is the build, `210` is the container ID, and the addresses are examples.
@@ -22,7 +22,7 @@ its own disk.
 
 - A database that exists, with a user that can create tables (the first boot loads the schema into an empty
   database), reachable from the container.
-  - **MySQL / MariaDB:** utf8mb4. Create the database and user, e.g.
+  - **MariaDB 10.6 or later:** utf8mb4. Create the database and user, e.g.
     `CREATE DATABASE wifi CHARACTER SET utf8mb4; CREATE USER 'wifidb'@'%' IDENTIFIED BY '…'; GRANT ALL ON wifi.* TO 'wifidb'@'%';`
   - **SQL Server:** SQL Server 2019 or later. Only if the template has the SQL Server driver (see below).
 - A name for this node. The database has a row per node (`settings.node_name`, `schedule.nodename`); the daemons and
@@ -59,7 +59,7 @@ pct exec 210 -- journalctl -u wifidb-firstboot -f
 The settings (each is described in the file):
 
 ```bash
-WIFIDB_DB_TYPE=mysql              # or sqlsrv
+WIFIDB_DB_TYPE=mariadb            # or sqlsrv
 WIFIDB_DB_HOST=db.example.lan
 WIFIDB_DB_NAME=wifi
 WIFIDB_DB_USER=wifidb
@@ -112,7 +112,7 @@ same on MySQL and SQL Server and hold no credentials.
 
 SQL Server needs Microsoft's ODBC driver 18 and the `pdo_sqlsrv` PHP extension. The build installs them when it can
 and says in its log if it couldn't (`WARNING: the SQL Server driver could not be installed`); a template built that
-way supports MySQL/MariaDB only, and the first boot stops with a message if you ask it for `sqlsrv`. Check with
+way supports MariaDB only, and the first boot stops with a message if you ask it for `sqlsrv`. Check with
 `pct exec 210 -- php -m | grep sqlsrv`.
 
 ## Upgrading

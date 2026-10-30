@@ -46,7 +46,7 @@ start_container() { # start_container NAME
     docker create --name "$ct" --hostname wifidb-test --network "$net" --privileged \
         --cgroupns=private --tmpfs /run --tmpfs /run/lock -v "$vol:/srv/wifidb-data" "$image" >/dev/null
     printf '%s\n' \
-        'WIFIDB_DB_TYPE=mysql' "WIFIDB_DB_HOST=$db" 'WIFIDB_DB_NAME=wifi' 'WIFIDB_DB_USER=wifidb' 'WIFIDB_DB_PASS=testpw' \
+        'WIFIDB_DB_TYPE=mariadb' "WIFIDB_DB_HOST=$db" 'WIFIDB_DB_NAME=wifi' 'WIFIDB_DB_USER=wifidb' 'WIFIDB_DB_PASS=testpw' \
         'WIFIDB_URL=https://wifidb.test' 'WIFIDB_NODE=testnode' 'WIFIDB_EXTERNAL_PROXY=10.0.0.1' \
         > /tmp/firstboot.env.$id
     docker cp "/tmp/firstboot.env.$id" "$ct:/etc/wifidb/firstboot.env"

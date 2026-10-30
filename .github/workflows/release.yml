@@ -84,7 +84,7 @@ jobs:
             echo "## Downloads"
             echo
             echo "- **Proxmox:** the \`.tar.zst\` is an LXC template (Ubuntu 26.04, PHP, Apache, the services and the cron jobs)"
-            echo "  with no database of its own: it uses your MySQL/MariaDB or SQL Server. See docs/proxmox.md."
+            echo "  with no database of its own: it uses your MariaDB or SQL Server. See docs/proxmox.md."
             echo "- **Anywhere else:** the source is the repository at this tag; README.md has the install steps."
           } >> notes.md
           cat notes.md

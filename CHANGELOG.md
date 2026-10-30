@@ -8,9 +8,9 @@
   8.4.27, 8.5.12 and later. The README lists the requirements and the upgrade steps.
 - **A Proxmox LXC template** (Ubuntu 26.04): Apache, PHP-FPM with a separate pool for the heavy exports and tile
   endpoints, the monitor and websocket daemons as systemd services, and the cron jobs on wifidb.net's schedule. It uses
-  your MySQL/MariaDB or SQL Server and keeps uploads, generated files, logs and settings on a data disk, so an upgrade is
+  your MariaDB or SQL Server and keeps uploads, generated files, logs and settings on a data disk, so an upgrade is
   a new container on the same disk. See docs/proxmox.md.
-- **MySQL/MariaDB in the cron jobs.** `import_files`, `export_kml` and `admind` asked SQL Server for the schedule with
+- **MariaDB in the cron jobs.** `import_files`, `export_kml` and `admind` asked SQL Server for the schedule with
   `sqlcmd` and a password edited into each script; they now ask through the daemons' own connection
   (`tools/daemon/schedulecheck.php`), so they work with either database and hold no credentials.
 - **Tests and CI.** 172 PHPUnit tests (helpers, password and key generation, coordinate and signal conversions, and a

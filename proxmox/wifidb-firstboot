@@ -27,11 +27,12 @@ if [ -f "$ENV_FILE" ]; then
     set +a
 fi
 
-DB_TYPE=${WIFIDB_DB_TYPE:-mysql}
+DB_TYPE=${WIFIDB_DB_TYPE:-mariadb}
 case "$DB_TYPE" in
-    mysql) DB_PORT=${WIFIDB_DB_PORT:-3306} ;;
+    # the config calls MariaDB "mysql", the name of the PHP driver that talks to it
+    mariadb|mysql) DB_TYPE=mysql; DB_PORT=${WIFIDB_DB_PORT:-3306} ;;
     sqlsrv) DB_PORT=${WIFIDB_DB_PORT:-1433} ;;
-    *) die "WIFIDB_DB_TYPE must be mysql or sqlsrv (it is '$DB_TYPE')" ;;
+    *) die "WIFIDB_DB_TYPE must be mariadb or sqlsrv (it is '$DB_TYPE')" ;;
 esac
 DB_HOST=${WIFIDB_DB_HOST:-}
 DB_NAME=${WIFIDB_DB_NAME:-wifi}
@@ -40,7 +41,7 @@ DB_PASS=${WIFIDB_DB_PASS:-}
 [ -n "$DB_HOST" ] || die "set WIFIDB_DB_HOST in $ENV_FILE, then: systemctl restart wifidb-firstboot"
 [ -n "$DB_PASS" ] || die "set WIFIDB_DB_PASS in $ENV_FILE, then: systemctl restart wifidb-firstboot"
 if [ "$DB_TYPE" = sqlsrv ] && ! php -m | grep -x pdo_sqlsrv >/dev/null; then
-    die "this template was built without the SQL Server driver; use WIFIDB_DB_TYPE=mysql or a template that has it"
+    die "this template was built without the SQL Server driver; use WIFIDB_DB_TYPE=mariadb or a template that has it"
 fi
 
 NODE=${WIFIDB_NODE:-$(hostname -s)}
