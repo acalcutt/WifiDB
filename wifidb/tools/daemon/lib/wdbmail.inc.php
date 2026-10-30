@@ -376,17 +376,19 @@ Go here to reset it to one you choose:
 		
 		if($this->sql->service == "mysql")
 		{
-			$insert = "INSERT INTO user_validate (username, code, date) VALUES ('$username', '$validate_code', '$date')";
-			#echo $insert;
-			if($this->sql->conn->query($insert))
+			// bound, not pasted in: the username comes from the sign-up form
+			try { $inserted = $this->sql->conn->prepare("INSERT INTO user_validate (username, code, date) VALUES (?, ?, ?)")->execute(array($username, $validate_code, $date)); }
+			catch (Exception $e) { $inserted = false; }
+			if($inserted)
 			{
 				$return =1;
 				#echo "Message sent and inserted into DB.";
 			}
 			else
 			{
-				$insert = "UPDATE user_validate SET code = '$validate_code', date = '$date' WHERE username LIKE '$username'";
-				if($this->sql->conn->query($insert))
+				try { $updated = $this->sql->conn->prepare("UPDATE user_validate SET code = ?, date = ? WHERE username = ?")->execute(array($validate_code, $date, $username)); }
+				catch (Exception $e) { $updated = false; }
+				if($updated)
 				{
 					$return =1;
 				#	echo "Message sent and Updated to newest data.";
