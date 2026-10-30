@@ -42,7 +42,7 @@ class createGPX
 			case 2:
 				$sec_type_colorhex = "#ffa500";
 				break;
-			case 3;
+			case 3:
 				$sec_type_colorhex = "#ff0000";
 				break;
 			default:

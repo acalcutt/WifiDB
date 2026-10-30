@@ -61,7 +61,7 @@ function gen_str($len = 10)
     $base           =   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
     $max            =   strlen($base)-1;
     $key            =   '';
-    mt_srand((double)microtime()*1000000);
+    mt_srand((float)microtime()*1000000);
     while(strlen($key) < $len+1)
     {$key.=$base[mt_rand(0,$max)];}
     return $key;
@@ -72,7 +72,7 @@ function gen_mac()
     $base           =   'ABCDEF123456789';
     $max            =   strlen($base)-1;
     $key            =   '';
-    mt_srand((double)microtime()*1000000);
+    mt_srand((float)microtime()*1000000);
     while(strlen($key) < 13)
     {$key.=$base[mt_rand(0,$max)];}
     return $key;

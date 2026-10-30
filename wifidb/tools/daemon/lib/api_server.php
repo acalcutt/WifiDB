@@ -333,7 +333,7 @@ function getIPs($withV6 = true)
 {
     if(PHP_OS == "WINNT")
     {
-        $ipconfig = `ipconfig`;
+        $ipconfig = shell_exec("ipconfig");
         preg_match_all('/IP Address. . . . . . . . . . . . : ?([^ ]+)/', $ipconfig, $ips);
         if(!$withV6)
         {return trim($ips[1][0]);}
@@ -341,7 +341,7 @@ function getIPs($withV6 = true)
         {return trim($ips[1][1]);}
     }else
     {
-        preg_match_all('/inet'.($withV6 ? '6?' : '').' addr: ?([^ ]+)/', `ifconfig`, $ips);
+        preg_match_all('/inet'.($withV6 ? '6?' : '').' addr: ?([^ ]+)/', shell_exec("ifconfig"), $ips);
 	return trim($ips[1][count($ips[1])-1]);
     }
 }

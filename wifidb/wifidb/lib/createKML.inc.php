@@ -305,7 +305,7 @@ class createKML
 			case 2:
 				$sec_type_label = "wep";
 				break;
-			case 3;
+			case 3:
 				$sec_type_label = "secure";
 				break;
 			default:
@@ -371,7 +371,7 @@ class createKML
 			case 2:
 				$sec_type_label = "wep";
 				break;
-			case 3;
+			case 3:
 				$sec_type_label = "secure";
 				break;
 			default:

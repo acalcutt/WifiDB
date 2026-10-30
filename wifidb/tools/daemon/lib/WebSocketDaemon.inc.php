@@ -22,7 +22,7 @@ class WebSocketDaemon extends WebSocketServer {
 
         switch($user->headers['get'])
         {
-            case "/wifidb/api/Scheduling";
+            case "/wifidb/api/Scheduling":
                 switch(strtolower($message))
                 {
                     case "import_waiting":
