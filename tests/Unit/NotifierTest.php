@@ -47,9 +47,9 @@ final class NotifierTest extends TestCase
 
     public function testATypeThatIsOffByDefaultNeedsOptIn(): void
     {
-        $this->assertSame(0, $this->n->Notify('kmz', 'New export'));
-        $this->n->SetPref('bob', 'kmz', true);
-        $this->assertSame(1, $this->n->Notify('kmz', 'New export'));
+        $this->assertSame(0, $this->n->Notify('export', 'New export'));
+        $this->n->SetPref('bob', 'export', true);
+        $this->assertSame(1, $this->n->Notify('export', 'New export'));
         $this->assertSame(1, $this->n->UnreadCount('bob'));
     }
 
@@ -66,10 +66,10 @@ final class NotifierTest extends TestCase
 
     public function testSettingAPrefTwiceKeepsOneRow(): void
     {
-        $this->n->SetPref('bob', 'kmz', true);
-        $this->n->SetPref('bob', 'kmz', false);
+        $this->n->SetPref('bob', 'export', true);
+        $this->n->SetPref('bob', 'export', false);
         $this->assertSame(1, (int)$this->db->query("SELECT COUNT(*) FROM notification_prefs WHERE username = 'bob'")->fetchColumn());
-        $this->assertFalse($this->n->Prefs('bob')['kmz']['on']);
+        $this->assertFalse($this->n->Prefs('bob')['export']['on']);
     }
 
     public function testAnUnknownTypeIsAProgrammingError(): void

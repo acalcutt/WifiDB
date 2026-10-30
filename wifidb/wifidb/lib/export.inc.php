@@ -1883,7 +1883,7 @@ class export extends dbcore
 				if($Full_Labeled_Exported){$message .= "Full Labeled Export Download: $kmz_full_labeled_urlpath \r\n";}
 				if($Incremental_Exported){$message .= "Incremental Export Download: $kmz_increm_urlpath \r\n";}
 				if($Incremental_Labeled_Exported){$message .= "Incremental Labeled Export Download: $kmz_increm_labeled_urlpath \r\n";}
-				$this->wdbmail->notify('kmz', $subject, $message, $this->URL_PATH."api/export.php?func=exp_combined_netlink", 'kmz', null, "New KMZ exports for $filedate");
+				$this->wdbmail->notify('export', $subject, $message, $this->URL_PATH."api/export.php?func=exp_combined_netlink", 'kmz', null, "New KMZ exports for $filedate");
 			}
 
 			#Generate History KML
