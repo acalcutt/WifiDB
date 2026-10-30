@@ -80,6 +80,14 @@ done
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
 check "/health answers 200" test "$(http "$ct1" http://127.0.0.1/health)" = 200
+# The first line a WebSocket server answers a handshake with: "HTTP/1.1 101 Switching Protocols"
+ws_status() {
+    docker exec "$ct1" curl -s -m 5 -i \
+        -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' \
+        -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$1" | head -1
+}
+check "the websocket daemon accepts a handshake" test "$(ws_status http://127.0.0.1:9000/wifidb/api/Scheduling | grep -c 101)" = 1
+check "...and Apache passes /ws/Scheduling to it" test "$(ws_status http://127.0.0.1/ws/Scheduling | grep -c 101)" = 1
 check "uploads are not served" test "$(http "$ct1" http://127.0.0.1/import/up/.htaccess)" = 403
 check "the schema was loaded" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from information_schema.tables where table_schema=\"wifi\"")" -gt 20'
 check "this node is named testnode" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select node_name from settings limit 1")" = testnode'
