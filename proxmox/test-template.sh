@@ -57,7 +57,7 @@ wait_firstboot() { # wait_firstboot NAME
     local ct=$1
     for _ in $(seq 120); do
         if docker exec "$ct" test ! -e /etc/wifidb/firstboot-pending 2>/dev/null \
-           && docker exec "$ct" systemctl is-system-running >/dev/null 2>&1; then return 0; fi
+           && case "$(docker exec "$ct" systemctl is-system-running 2>/dev/null)" in running|degraded) true ;; *) false ;; esac; then return 0; fi
         sleep 3
     done
     docker exec "$ct" journalctl -u wifidb-firstboot --no-pager | tail -40
@@ -80,6 +80,7 @@ done
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
 check "/health answers 200" test "$(http "$ct1" http://127.0.0.1/health)" = 200
+check "/health/ready answers 200 with the database up" test "$(http "$ct1" http://127.0.0.1/health/ready)" = 200
 # The first line a WebSocket server answers a handshake with: "HTTP/1.1 101 Switching Protocols"
 ws_status() {
     docker exec "$ct1" curl -s -m 5 -i \
@@ -116,6 +117,12 @@ check "the settings on the data disk were kept" docker exec "$ct2" grep -q '// m
 check "the upload is still there" docker exec "$ct2" test -f /srv/wifidb-data/import/up/uploaded-before-upgrade.vs1
 check "the database was left alone" docker exec "$ct2" sh -c 'journalctl -u wifidb-firstboot --no-pager | grep -q "already has the WiFiDB tables"'
 check "the site answers 200 again" test "$(http "$ct2" http://127.0.0.1/)" = 200
+
+log "stopping the database: /health/ready must say so, and /health must not care"
+docker stop "$db" >/dev/null
+check "/health/ready answers 503 with the database down" test "$(http "$ct2" http://127.0.0.1/health/ready)" = 503
+check "...and says why, without naming the server" sh -c 'out=$(docker exec "$0" curl -s http://127.0.0.1/health/ready); echo "$out" | grep -q "database unreachable" && ! echo "$out" | grep -q "wifidb-test-db"' "$ct2"
+check "/health still answers 200 (it is only Apache)" test "$(http "$ct2" http://127.0.0.1/health)" = 200
 
 if [ "$fail" = 0 ]; then log "all checks passed"; else log "SOME CHECKS FAILED"; fi
 exit "$fail"
