@@ -64,3 +64,36 @@ third=$(login | setcookie_value WiFiDB_login_yes)
 again=$(site -X POST --data-urlencode "code=$recovery1" -H "Cookie: $tzc; WiFiDB_login_yes=$third" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
 check "...and works only once" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$again"
 check "using a recovery code leaves a notice for the member" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from notifications where username=\"tfuser\" and type=\"security\"")" -ge 1'
+
+log "admin mode"
+admhash=$(docker exec -e P="$pass" "$ct1" php -r 'echo password_hash(getenv("P"), PASSWORD_BCRYPT);')
+docker exec "$db" mariadb -uwifidb -ptestpw wifi -e "INSERT INTO user_info (username, password, uid, email, validated, permissions) VALUES ('admuser', '$admhash', 'ad1', 'ad@example.test', 0, '1000')"
+admcodes=$(tf_php '
+    $pdo->exec("INSERT INTO user_login_hashes (username, hash, utime) VALUES (\"admuser\", \"setup\", " . (time() + 600) . ")");
+    $start = $tf->StartTotp("admuser", "setup");
+    $done = $tf->FinishTotp("admuser", "setup", "test", Totp::Code($start["secret"], Totp::Step()));
+    $pdo->exec("DELETE FROM user_login_hashes WHERE hash = \"setup\"");
+    foreach ($done["recovery_codes"] as $code) { echo "CODE=$code\n"; }
+' | sed -n 's/^CODE=//p')
+adm_code() { echo "$admcodes" | sed -n "${1}p"; }                       # recovery codes: each works once, so each step uses its own
+adm_session=$(site -H "Cookie: $tzc" -X POST --data-urlencode "time_user=admuser" --data-urlencode "time_pass=$pass" 'http://127.0.0.1/login.php?func=login_proc' | setcookie_value WiFiDB_login_yes)
+site -X POST --data-urlencode "code=$(adm_code 1)" -H "Cookie: $tzc; WiFiDB_login_yes=$adm_session" 'http://127.0.0.1/login.php?func=mfa_proc' >/dev/null
+adm_get() { site -H "Cookie: $tzc; WiFiDB_login_yes=$adm_session" "$@"; }
+status() { sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p'; }
+
+check "an administrator who is signed in but not in admin mode is sent to turn it on" sh -c 'echo "$0" | grep -q "cp/admin_mode.php"' "$(adm_get 'http://127.0.0.1/opt/admin_action.php?action=reset_file&file_id=1' | location)"
+check "...for the bad files page too" sh -c 'echo "$0" | grep -q "cp/admin_mode.php"' "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | location)"
+check "the admin mode page asks for a code" sh -c 'echo "$0" | grep -q "Turn on admin mode"' "$(adm_get 'http://127.0.0.1/cp/admin_mode.php')"
+check "the menu offers admin mode, and no admin buttons" sh -c 'echo "$0" | grep -q "cp/admin_mode.php\">Admin mode" && ! echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
+check "a wrong code is refused" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$(adm_get -X POST -d code=000000 'http://127.0.0.1/cp/admin_mode.php?func=proc' | location)"
+check "a code used to sign in cannot turn it on" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$(adm_get -X POST --data-urlencode "code=$(adm_code 1)" 'http://127.0.0.1/cp/admin_mode.php?func=proc' | location)"
+back=$(adm_get -X POST --data-urlencode "code=$(adm_code 2)" 'http://127.0.0.1/cp/admin_mode.php?func=proc&return=%2Fopt%2Fscheduling.php%3Ffunc%3Dbad' | location)
+check "a fresh code turns admin mode on and goes back to where the admin was" sh -c 'echo "$0" | grep -q "scheduling.php?func=bad"' "$back"
+check "the admin pages now open" test "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | status)" = 200
+check "an admin action gets past the gate (it then finds there is no such PID record)" sh -c 'echo "$0" | grep -q "PID record not found"' "$(adm_get 'http://127.0.0.1/opt/admin_action.php?action=delete_daemon_pid&pidfile=nothing' )"
+check "the menu now offers the way out" sh -c 'echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
+adm_get 'http://127.0.0.1/cp/admin_mode.php?func=off' >/dev/null
+check "leaving admin mode closes the admin pages again" sh -c 'echo "$0" | grep -q "cp/admin_mode.php"' "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | location)"
+check "a member who is not an administrator is refused outright" test "$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/opt/scheduling.php?func=bad' | status)" = 403
+check "...and cannot turn admin mode on" test "$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/cp/admin_mode.php' | status)" = 403
+check "the lockout command removes the methods and ends the sessions" sh -c 'docker exec "$0" runuser -u www-data -- php /opt/wifidb/tools/utilites/reset_two_factor.php admuser | grep -q "1 method(s) removed" && test "$(docker exec "$1" mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from user_two_factor where username=\"admuser\"; select count(*) from user_login_hashes where username=\"admuser\"" | tr "\n" " ")" = "0 0 "' "$ct1" "$db"
