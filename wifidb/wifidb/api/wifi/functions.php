@@ -1,4 +1,42 @@
 <?php
+
+// ── Input handling for the graph pages (anything from the address bar or a form is untrusted) ──────────────────────
+if(!function_exists('h')) {
+	/** A value for HTML text or an attribute */
+	function h($v) { return htmlspecialchars((string)$v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); }
+}
+if(!function_exists('wifi_clean_text')) {
+	/** A short, single-line label: control characters out, length limited (the picture grows with its text) */
+	function wifi_clean_text($v, $max = 64)
+	{
+		$v = preg_replace('/[\x00-\x1f\x7f]+/', ' ', (string)$v);
+		return function_exists('mb_substr') ? mb_substr($v, 0, $max, 'UTF-8') : substr($v, 0, $max);
+	}
+}
+if(!function_exists('wifi_color_spec')) {
+	/** "rrr:ggg:bbb" with each part 0-255, or "rand"; anything else gives $default */
+	function wifi_color_spec($v, $default)
+	{
+		$v = (string)$v;
+		if($v === 'rand') { return 'rand'; }
+		if(!preg_match('/^(\d{1,3}):(\d{1,3}):(\d{1,3})$/', $v, $m)) { $v = $default; preg_match('/^(\d{1,3}):(\d{1,3}):(\d{1,3})$/', $v, $m); }
+		return sprintf('%03d:%03d:%03d', min(255, (int)$m[1]), min(255, (int)$m[2]), min(255, (int)$m[3]));
+	}
+}
+if(!function_exists('wifi_sig_spec')) {
+	/** "50-60-70": whole numbers 0-100 joined by dashes, at most $max of them */
+	function wifi_sig_spec($v, $max = 3000)
+	{
+		$out = array();
+		foreach(explode('-', substr((string)$v, 0, $max * 4)) as $part)
+		{
+			if($part === '' || !ctype_digit($part)) { continue; }
+			$out[] = min(100, (int)$part);
+			if(count($out) >= $max) { break; }
+		}
+		return $out ? implode('-', $out) : '0';
+	}
+}
 $ver=array(
 			"lastedit"	=>"2010-June-13",
 			"wifi"		=>"v2.0.5",
@@ -32,6 +70,11 @@ function imagegrid($image, $w, $h, $s, $color)
 
 	function wifigraphline($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $linec='rand', $text='rand', $bgc='rand')
 	{
+		foreach(array('ssid','mac','man','auth','encry','radio','chan','lat','long','BTx','OTx','FA','LU','NT','label') as $k) { $$k = wifi_clean_text($$k); }
+		$sig = wifi_sig_spec($sig);
+		$text = wifi_color_spec($text, '255:255:255');
+		$linec = wifi_color_spec($linec, '255:000:000');
+		$bgc = wifi_color_spec($bgc, '000:000:000');
 		$n=0;
 		$nn=1;
 		$y=20;
@@ -156,8 +199,8 @@ function imagegrid($image, $w, $h, $s, $color)
 			$count--;
 		}
 		$name='tmp/'.$date.'v.png';
-		echo '<h1>'.$ssid.'</h1><br>';
-		echo '<img src="'.$name.'"><br />';
+		echo '<h1>'.h($ssid).'</h1><br>';
+		echo '<img src="'.h($name).'"><br />';
 		ImagePNG($img, $name);
 		ImageDestroy($img);
 	}
@@ -170,6 +213,11 @@ function imagegrid($image, $w, $h, $s, $color)
 
 	function wifigraphbar($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $linec='rand', $text='rand', $bgc='rand')
 	{
+		foreach(array('ssid','mac','man','auth','encry','radio','chan','lat','long','BTx','OTx','FA','LU','NT','label') as $k) { $$k = wifi_clean_text($$k); }
+		$sig = wifi_sig_spec($sig);
+		$text = wifi_color_spec($text, '255:255:255');
+		$linec = wifi_color_spec($linec, '255:000:000');
+		$bgc = wifi_color_spec($bgc, '000:000:000');
 		$p=460;
 		$I=0;
 
@@ -297,8 +345,8 @@ function imagegrid($image, $w, $h, $s, $color)
 			$count--;
 		}
 		$name='tmp/'.$date.'.png';
-		echo '<h1>'.$ssid.'</h1><br>';
-		echo '<img src="'.$name.'"><br />';
+		echo '<h1>'.h($ssid).'</h1><br>';
+		echo '<img src="'.h($name).'"><br />';
 		ImagePNG($img, $name);
 		ImageDestroy($img);
 	}

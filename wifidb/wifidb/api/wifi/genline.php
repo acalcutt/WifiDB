@@ -36,103 +36,103 @@ $lastedit="2010-June-13";
 
 </td>
 <?php
-if($_POST['graph_type']==='line')
+if(($_POST['graph_type'] ?? '')==='line')
 {
 $date = date('mdHis');
-	$ssid = $_POST['ssid'];
-	$mac = $_POST['mac'];
-	$man = $_POST['man'];
-	$auth = $_POST['auth'];
-	$encry = $_POST['encry'];
-	$radio = $_POST['radio'];
-	$chan = $_POST['chan'];
-	$lat = $_POST['lat'];
-	$long = $_POST['long'];
-	$BTx = $_POST['btx'];
-	$OTx = $_POST['otx'];
-	$FA = $_POST['FA'];
-	$LU = $_POST['LU'];
-	$NT = $_POST['NT'];
-	$label = $_POST['label'];
-	$sig = $_POST['sig'];
-	$text = $_POST['text'];
-	$linec = $_POST['linec'];
-	$bgc = $_POST['bgc'];
+	$ssid = $_POST['ssid'] ?? '';
+	$mac = $_POST['mac'] ?? '';
+	$man = $_POST['man'] ?? '';
+	$auth = $_POST['auth'] ?? '';
+	$encry = $_POST['encry'] ?? '';
+	$radio = $_POST['radio'] ?? '';
+	$chan = $_POST['chan'] ?? '';
+	$lat = $_POST['lat'] ?? '';
+	$long = $_POST['long'] ?? '';
+	$BTx = $_POST['btx'] ?? '';
+	$OTx = $_POST['otx'] ?? '';
+	$FA = $_POST['FA'] ?? '';
+	$LU = $_POST['LU'] ?? '';
+	$NT = $_POST['NT'] ?? '';
+	$label = $_POST['label'] ?? '';
+	$sig = $_POST['sig'] ?? '';
+	$text = $_POST['text'] ?? '';
+	$linec = $_POST['linec'] ?? '';
+	$bgc = $_POST['bgc'] ?? '';
 	echo '<form action="genline.php" method="post" enctype="multipart/form-data">';
-	echo '<input name="ssid" type="hidden" value="'.$ssid.'"/>';
-	echo '<input name="mac" type="hidden" value="'.$mac.'"/>';
-	echo '<input name="man" type="hidden" value="'.$man.'"/>';
-	echo '<input name="auth" type="hidden" value="'.$auth.'"/>';
-	echo '<input name="encry" type="hidden" value="'.$encry.'"/>';
-	echo '<input name="radio" type="hidden" value="'.$radio.'"/>';
-	echo '<input name="chan" type="hidden" value="'.$chan.'"/>';
-	echo '<input name="lat" type="hidden" value="'.$lat.'"/>';
-	echo '<input name="long" type="hidden" value="'.$long.'"/>';
-	echo '<input name="btx" type="hidden" value="'.$BTx.'"/>';
-	echo '<input name="otx" type="hidden" value="'.$OTx.'"/>';
-	echo '<input name="FA" type="hidden" value="'.$FA.'"/>';
-	echo '<input name="LU" type="hidden" value="'.$LU.'"/>';
-	echo '<input name="NT" type="hidden" value="'.$NT.'"/>';
-	echo '<input name="label" type="hidden" value="'.$label.'"/>';
-	echo '<input name="sig" type="hidden" value="'.$sig.'"/>';
-	echo '<input name="text" type="hidden" value="'.$text.'"/>';
-	echo '<input name="bgc" type="hidden" value="'.$bgc.'"/>';
-	echo '<input name="linec" type="hidden" value="'.$linec.'"/>';
+	echo '<input name="ssid" type="hidden" value="'.h($ssid).'"/>';
+	echo '<input name="mac" type="hidden" value="'.h($mac).'"/>';
+	echo '<input name="man" type="hidden" value="'.h($man).'"/>';
+	echo '<input name="auth" type="hidden" value="'.h($auth).'"/>';
+	echo '<input name="encry" type="hidden" value="'.h($encry).'"/>';
+	echo '<input name="radio" type="hidden" value="'.h($radio).'"/>';
+	echo '<input name="chan" type="hidden" value="'.h($chan).'"/>';
+	echo '<input name="lat" type="hidden" value="'.h($lat).'"/>';
+	echo '<input name="long" type="hidden" value="'.h($long).'"/>';
+	echo '<input name="btx" type="hidden" value="'.h($BTx).'"/>';
+	echo '<input name="otx" type="hidden" value="'.h($OTx).'"/>';
+	echo '<input name="FA" type="hidden" value="'.h($FA).'"/>';
+	echo '<input name="LU" type="hidden" value="'.h($LU).'"/>';
+	echo '<input name="NT" type="hidden" value="'.h($NT).'"/>';
+	echo '<input name="label" type="hidden" value="'.h($label).'"/>';
+	echo '<input name="sig" type="hidden" value="'.h($sig).'"/>';
+	echo '<input name="text" type="hidden" value="'.h($text).'"/>';
+	echo '<input name="bgc" type="hidden" value="'.h($bgc).'"/>';
+	echo '<input name="linec" type="hidden" value="'.h($linec).'"/>';
 	echo '<input name="graph_type" type="hidden" value=""/>';
 	echo '<input name="Genline" type="submit" value="Generate Bar Graph" />';
 	echo '</form>';
 	wifigraphline($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $linec, $text, $bgc );
 ?>
-You can find your Wifi Graph here -> <a href="tmp/<?php echo $date;?>v.png"><?php echo$date;?>v.png</a>
+You can find your Wifi Graph here -> <a href="tmp/<?php echo h($date);?>v.png"><?php echo h($date);?>v.png</a>
 <?php
 	}else
 	{
 $date = date('mdHis');
-	$ssid = $_POST['ssid'];
-	$mac = $_POST['mac'];
-	$man = $_POST['man'];
-	$auth = $_POST['auth'];
-	$encry = $_POST['encry'];
-	$radio = $_POST['radio'];
-	$chan = $_POST['chan'];
-	$lat = $_POST['lat'];
-	$long = $_POST['long'];
-	$BTx = $_POST['btx'];
-	$OTx = $_POST['otx'];
-	$FA = $_POST['FA'];
-	$LU = $_POST['LU'];
-	$NT = $_POST['NT'];
-	$label = $_POST['label'];
-	$sig = $_POST['sig'];
-	$text = $_POST['text'];
-	$bgc = $_POST['bgc'];
-	$linec = $_POST['linec'];
+	$ssid = $_POST['ssid'] ?? '';
+	$mac = $_POST['mac'] ?? '';
+	$man = $_POST['man'] ?? '';
+	$auth = $_POST['auth'] ?? '';
+	$encry = $_POST['encry'] ?? '';
+	$radio = $_POST['radio'] ?? '';
+	$chan = $_POST['chan'] ?? '';
+	$lat = $_POST['lat'] ?? '';
+	$long = $_POST['long'] ?? '';
+	$BTx = $_POST['btx'] ?? '';
+	$OTx = $_POST['otx'] ?? '';
+	$FA = $_POST['FA'] ?? '';
+	$LU = $_POST['LU'] ?? '';
+	$NT = $_POST['NT'] ?? '';
+	$label = $_POST['label'] ?? '';
+	$sig = $_POST['sig'] ?? '';
+	$text = $_POST['text'] ?? '';
+	$bgc = $_POST['bgc'] ?? '';
+	$linec = $_POST['linec'] ?? '';
 	echo '<form action="genline.php" method="post" enctype="multipart/form-data">';
-	echo '<input name="ssid" type="hidden" value="'.$ssid.'"/>';
-	echo '<input name="mac" type="hidden" value="'.$mac.'"/>';
-	echo '<input name="man" type="hidden" value="'.$man.'"/>';
-	echo '<input name="auth" type="hidden" value="'.$auth.'"/>';
-	echo '<input name="encry" type="hidden" value="'.$encry.'"/>';
-	echo '<input name="radio" type="hidden" value="'.$radio.'"/>';
-	echo '<input name="chan" type="hidden" value="'.$chan.'"/>';
-	echo '<input name="lat" type="hidden" value="'.$lat.'"/>';
-	echo '<input name="long" type="hidden" value="'.$long.'"/>';
-	echo '<input name="btx" type="hidden" value="'.$BTx.'"/>';
-	echo '<input name="otx" type="hidden" value="'.$OTx.'"/>';
-	echo '<input name="FA" type="hidden" value="'.$FA.'"/>';
-	echo '<input name="LU" type="hidden" value="'.$LU.'"/>';
-	echo '<input name="NT" type="hidden" value="'.$NT.'"/>';
-	echo '<input name="label" type="hidden" value="'.$label.'"/>';
-	echo '<input name="sig" type="hidden" value="'.$sig.'"/>';
-	echo '<input name="text" type="hidden" value="'.$text.'"/>';
-	echo '<input name="linec" type="hidden" value="'.$linec.'"/>';
-	echo '<input name="bgc" type="hidden" value="'.$bgc.'"/>';
+	echo '<input name="ssid" type="hidden" value="'.h($ssid).'"/>';
+	echo '<input name="mac" type="hidden" value="'.h($mac).'"/>';
+	echo '<input name="man" type="hidden" value="'.h($man).'"/>';
+	echo '<input name="auth" type="hidden" value="'.h($auth).'"/>';
+	echo '<input name="encry" type="hidden" value="'.h($encry).'"/>';
+	echo '<input name="radio" type="hidden" value="'.h($radio).'"/>';
+	echo '<input name="chan" type="hidden" value="'.h($chan).'"/>';
+	echo '<input name="lat" type="hidden" value="'.h($lat).'"/>';
+	echo '<input name="long" type="hidden" value="'.h($long).'"/>';
+	echo '<input name="btx" type="hidden" value="'.h($BTx).'"/>';
+	echo '<input name="otx" type="hidden" value="'.h($OTx).'"/>';
+	echo '<input name="FA" type="hidden" value="'.h($FA).'"/>';
+	echo '<input name="LU" type="hidden" value="'.h($LU).'"/>';
+	echo '<input name="NT" type="hidden" value="'.h($NT).'"/>';
+	echo '<input name="label" type="hidden" value="'.h($label).'"/>';
+	echo '<input name="sig" type="hidden" value="'.h($sig).'"/>';
+	echo '<input name="text" type="hidden" value="'.h($text).'"/>';
+	echo '<input name="linec" type="hidden" value="'.h($linec).'"/>';
+	echo '<input name="bgc" type="hidden" value="'.h($bgc).'"/>';
 	echo '<input name="graph_type" type="hidden" value="line"/>';
 	echo '<input name="Genline" type="submit" value="Generate Line Graph" />';
 	echo '</form>';
 	wifigraphbar($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $linec, $text, $bgc );
 ?>
-You can find your Wifi Graph here -> <a href="tmp/<?php echo $date;?>.png"><?php echo$date;?>.png</a>
+You can find your Wifi Graph here -> <a href="tmp/<?php echo h($date);?>.png"><?php echo h($date);?>.png</a>
 <?php
 	}
 ?>
