@@ -37,7 +37,6 @@
 	{$wifidb_meta_header|default:""}
 	{$redirect_func|default:""}
 	<!-- QR loader for client-side QR generation -->
-	<script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
 	<link rel="stylesheet" href="{$themeurl}html5style.css" />
 	<link rel="stylesheet" href="{$wifidb_host_url}lib/js/sceditor/minified/themes/default.min.css" id="theme-style" />
 	<script src="{$wifidb_host_url}lib/js/sceditor/minified/sceditor.min.js"></script>

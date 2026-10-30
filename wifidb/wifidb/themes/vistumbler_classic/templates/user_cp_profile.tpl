@@ -48,7 +48,8 @@ if not, write to the
 											window.WIFIDB = window.WIFIDB || {};
 											WIFIDB.theme_url = '{$themeurl}';
 										</script>
-										<script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
+										<script src="{$wifidb_host_url}lib/js/qrcode-generator/qrcode.js"></script>
+										<script src="{$wifidb_host_url}lib/js/wifidb/qrcode.js"></script>
 										<div id="wifidb_link_qr" style="margin-top:8px"></div>
 										<p id="wifidb_link_msg">This generates a one-time linking token (expires in 5 minutes).</p>
 									</div>
@@ -76,9 +77,6 @@ if not, write to the
 														if (typeof window.makeQRCode === 'function') {
 															qrdiv.innerHTML = '';
 															window.makeQRCode(qrdiv, data.redeem_url, {width:180, height:180});
-														} else if (typeof window.QRCode === 'function') {
-															qrdiv.innerHTML = '';
-															new QRCode(qrdiv, {text: data.redeem_url, width:180, height:180});
 														} else {
 															qrdiv.innerHTML = '<div class="wifidb-qr-error">QR generation unavailable</div>';
 														}

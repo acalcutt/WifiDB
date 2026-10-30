@@ -39,7 +39,6 @@
         {$wifidb_meta_header}
         {$redirect_func}
         <!-- QR loader for client-side QR generation (shared) -->
-        <script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
     </head>
     <body style="background-color: #145285" {$redirect_html}>
         <!-- Cookie consent & consent-mode helper (shared) -->

@@ -16,6 +16,7 @@ licence, and the only directory here that may be edited.
 | `webtorrent/` | `webtorrent` | 3.0.21 |
 | `chart.min.js` (single file) | `chart.js`, `dist/chart.umd.min.js` | 4.6.1 |
 | `sceditor/minified/` | `sceditor` | 3.2.3 |
+| `qrcode-generator/` | `qrcode-generator` (`dist/qrcode.js`) | 2.0.4 |
 
 ## The swarm libraries
 

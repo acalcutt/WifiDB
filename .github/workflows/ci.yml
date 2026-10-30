@@ -51,4 +51,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check wifidb/wifidb/lib/js/wifidb/signalchart.js
-      - run: node --test tests/js/signalchart.test.js
+      - run: node --test tests/js/signalchart.test.js tests/js/qrcode.test.js
