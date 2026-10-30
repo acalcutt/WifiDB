@@ -73,3 +73,26 @@ if(!function_exists('wifidb_pdo_from_config')) {
 		return new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
 	}
 }
+
+// The readings of an access point as the compact rows the signal chart draws: [date, signal, rssi]. $signals are rows
+// with Sig, RSSI and Hist_Date (or GPS_Date), as the details page reads them.
+if(!function_exists('wifidb_signal_points')) {
+	function wifidb_signal_points($signals)
+	{
+		$out = array();
+		foreach($signals as $row)
+		{
+			$date = isset($row['Hist_Date']) ? $row['Hist_Date'] : (isset($row['GPS_Date']) ? $row['GPS_Date'] : '');
+			$out[] = array(substr((string)$date, 0, 19), (int)(isset($row['Sig']) ? $row['Sig'] : 0), (isset($row['RSSI']) && $row['RSSI'] !== null && $row['RSSI'] !== '') ? (int)$row['RSSI'] : null);
+		}
+		return $out;
+	}
+}
+
+// Rows as JSON that is safe to put inside an HTML attribute or a script (no <, >, & or quotes survive unescaped).
+if(!function_exists('wifidb_json_safe')) {
+	function wifidb_json_safe($value)
+	{
+		return json_encode($value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+	}
+}

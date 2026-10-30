@@ -159,6 +159,7 @@ switch($func)
 		$prep->execute();
 		$fpointer = $prep->fetchAll();
 		$file_array = array();
+		$all_points = array();   # every file's readings on this page, for the chart at the top
 		foreach($fpointer as $file)
 		{
 			$sql1 = "SELECT wifi_hist.AP_ID, wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.GPS_ID, wifi_hist.New, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch, wifi_gps.TrackAngle, wifi_gps.GPS_Date, wifi_gps.MPH, wifi_gps.KPH\n"
@@ -178,6 +179,7 @@ switch($func)
 			"validgps" => $file['ValidGPS'],
 			"nu" => $file['New'],
 			"signals" => $signals,
+			"chart" => wifidb_json_safe(wifidb_signal_points($signals)),
 			"points" => Count($signals),
 			"file_user" => $file['file_user'],
 			"file" => $file['file_orig'],
@@ -185,8 +187,11 @@ switch($func)
 			"notes" => $file['notes'],
 			"date" => $file['file_date']
 			);
+			$all_points = array_merge($all_points, wifidb_signal_points($signals));
 			$file_array[] = $file_info;
 		}
+		usort($all_points, function($a, $b) { return strcmp($a[0], $b[0]); });
+		$dbcore->smarty->assign('wifidb_chart_all', wifidb_json_safe($all_points));
 		$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, "", "", "", "", "", "", "", "", "", $id);
 		$dbcore->smarty->assign('pages_together', $dbcore->pages_together);
 		$ssid = isset($ap_info['ssid']) ? $ap_info['ssid'] : '';
