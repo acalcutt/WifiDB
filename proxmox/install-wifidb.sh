@@ -69,6 +69,7 @@ a2enmod -q rewrite headers remoteip proxy proxy_fcgi proxy_http proxy_wstunnel s
 a2enconf -q "php$phpver-fpm" >/dev/null
 install -m 0644 "$here/wifidb-slow-pool.conf" /etc/apache2/wifidb-slow-pool.conf
 install -m 0644 "$here/wifidb-slow-pool-fpm.conf" "/etc/php/$phpver/fpm/pool.d/wdb-slow.conf"
+install -m 0644 "$here/wifidb-health-pool-fpm.conf" "/etc/php/$phpver/fpm/pool.d/wdb-health.conf"
 # The interactive pool, sized as wifidb.net's is: 50 workers, requests cut off at 30s (PHP's own limit 110s). The
 # heavy endpoints have the wdb-slow pool for longer ones.
 cat > "/etc/php/$phpver/fpm/pool.d/www.conf" <<POOL
