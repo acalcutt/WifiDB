@@ -1,0 +1,5 @@
+# signal.png and signal.svg are the same script (signal.php), told which one by the name
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^signal\.(png|svg)$ signal.php?format=$1 [QSA,L]
+</IfModule>
