@@ -29,6 +29,7 @@ if not, write to the
 						if (document.getElementById(ClickIcon).innerHTML == "+")
 						{
 							document.getElementById(tbodyid).style.display = "";
+							if(window.wifidbInitSignalCharts){ wifidbInitSignalCharts(document.getElementById(tbodyid)); }
 							document.getElementById(ClickIcon).innerHTML = "-";
 						}else{
 							document.getElementById(tbodyid).style.display = "none";
@@ -36,6 +37,8 @@ if not, write to the
 						}
 					}
 					</script>
+					<script src="{$wifidb_host_url}lib/js/chart.min.js"></script>
+					<script src="{$wifidb_host_url}lib/js/wifidb/signalchart.js"></script>
 					<h1>{$wifidb_ap.ssid|escape:'htmlall'}
 						{if $wifidb_ap.validgps eq 1}
 							<a href="{$wifidb_host_url}opt/map.php?func=exp_ap&id={$wifidb_ap.id|escape:'htmlall'}" title="Show AP on Map"><img width="20px" src="{$themeurl}img/globe_on.png"></a>
@@ -102,6 +105,15 @@ if not, write to the
 								</td>
 							</tr>
 						</tbody>
+						<tbody>
+							<tr>
+								<td colspan="12" class="light" style="padding: 8px;">
+									<b>Signal history</b> (the readings from the files listed below)
+									<div class="sigchart" data-ranges="1" data-points="{$wifidb_chart_all|escape:'html'}" data-png="{$wifidb_host_url}api/wifi/signal.png?ap={$wifidb_ap.id|escape:'url'}" data-svg="{$wifidb_host_url}api/wifi/signal.svg?ap={$wifidb_ap.id|escape:'url'}"></div>
+									<script>if(window.wifidbInitSignalCharts){ wifidbInitSignalCharts(); }</script>
+								</td>
+							</tr>
+						</tbody>
 						{foreach name=outer item=wifidb_assoc from=$wifidb_assoc_lists}
 						<tbody>
 							<tr>
@@ -156,6 +168,11 @@ if not, write to the
 							</tr>
 						</tbody>
 						<tbody id="Row{$wifidb_assoc.id|escape:'htmlall'}" style="display:none">
+							<tr>
+								<td colspan="9" class="light" style="padding: 8px;">
+									<div class="sigchart" data-points="{$wifidb_assoc.chart|escape:'html'}" data-png="{$wifidb_host_url}api/wifi/signal.png?ap={$wifidb_ap.id|escape:'url'}&amp;file={$wifidb_assoc.id|escape:'url'}" data-svg="{$wifidb_host_url}api/wifi/signal.svg?ap={$wifidb_ap.id|escape:'url'}&amp;file={$wifidb_assoc.id|escape:'url'}"></div>
+								</td>
+							</tr>
 							<tr class="header">
 								<th class="header">Signal</th>
 								<th class="header">RSSI</th>

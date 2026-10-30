@@ -3,6 +3,7 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+- **Interactive signal charts on an access point's page.** Each file's readings open with a Chart.js line chart (signal % and RSSI dBm, hover for values, a time range, and PNG/SVG links to save or share the same graph), drawn when that file is opened; one more chart at the top covers all the files listed. Both themes. The page already had the readings, so nothing extra is loaded.
 - **Signal graphs as images, with no temporary files.** `api/wifi/signal.png` and `signal.svg` draw an access point's signal history straight from an address, so they work in an `<img>` tag, a forum post or a link. They take the same parameters Vistumbler's own links carry (SSID, Mac, Chn, Sig and the rest), plus `type=bar|line` and `text`, `bg` and `line` colors. The old form page now shows the picture through that address instead of saving a PNG in `tmp/` (a folder that had to be writable and was never cleaned up), so `tmp/` is no longer needed. Without PHP GD, the PNG address answers with the SVG.
 - **PHP 8.2 to 8.5.** WiFiDB now runs on current PHP. PHP 7.x and 8.0/8.1 are out of security support, and the
   October 2026 PHP flaws (CVE-2026-109618 and CVE-2026-109619, remote code execution) are fixed only in 8.2.35, 8.3.36,
