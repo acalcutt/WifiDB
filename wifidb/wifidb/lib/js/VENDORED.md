@@ -7,10 +7,10 @@ licence, and the only directory here that may be edited.
 
 | directory | package | version |
 |---|---|---|
-| `maplibre-gl-inspect/` | `@maplibre/maplibre-gl-inspect` | 1.8.2 |
+| `maplibre-gl-inspect/` | `@maplibre/maplibre-gl-inspect` | 1.9.0 |
 | `fflate/` | `fflate` | 0.8.3 |
 | `maplibre-contour/` | `maplibre-contour` | 0.1.0 |
-| `maplibre-gl/` | `maplibre-gl` | 6.3.0 |
+| `maplibre-gl/` | `maplibre-gl` | 6.16.0 |
 | `pmtiles/` | `pmtiles` | 4.5.0 |
 | `pmtiles-torrent/` | `pmtiles-torrent` | 0.4.4 |
 | `webtorrent/` | `webtorrent` | 3.0.21 |
@@ -37,8 +37,9 @@ hence the import map emitted by `opt/map.php`, which maps each bare name to the
 file here. Mapping rather than rewriting keeps these copies byte-identical to
 what npm published, so refreshing one is a copy rather than a merge.
 
-`maplibre-gl.mjs` loads `maplibre-gl-shared.mjs` and `maplibre-gl-worker.mjs`
-by relative path at runtime. All three have to stay in the same directory.
+`maplibre-gl.mjs` loads `maplibre-gl-worker.mjs` by relative path at runtime, so
+the two have to stay in the same directory. (Up to 6.12 there was also a
+`maplibre-gl-shared.mjs`; from 6.13 on it is no longer part of the package.)
 
 ## Refreshing
 
