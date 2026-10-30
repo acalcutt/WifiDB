@@ -1,6 +1,6 @@
 # Mail settings
 
-WiFiDB sends two kinds of mail, and can use two accounts for them:
+WiFiDB sends two kinds of mail, and can use two accounts for them. (Mail is sent with PHPMailer, installed by Composer and pinned to an exact version in `composer.json`.)
 
 | Kind | Sent by | Account |
 |---|---|---|
