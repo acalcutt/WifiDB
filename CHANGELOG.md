@@ -22,6 +22,8 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Sign-up and password-reset mail failed on a config built from the example file.** The mailer reads separate `signup_smtp_*` settings, but `config.inc.php.example` did not have them. They are now optional and fall back to the main `smtp_*` account, with a documented commented-out block in the example for using a separate account.
+- **`rund.php ver` and `rund.php help` printed blanks and warnings.** They read version numbers from a variable that was never in scope; they use the core's version now.
 - **Security: the signal graph page (api/wifi, opened from Vistumbler) wrote the access point's name and other values into the page unescaped,** so a crafted link ran script in the visitor's browser. Everything is escaped now, the colors and the signal list are validated before they reach GD (a bad color is an error on PHP 8), and the text and number of points are limited. Vistumbler's links work unchanged.
 - **Security: a crafted login link could run script in the visitor's browser and send them to another site.** The `return` address on the login page went into an inline script unfiltered. Return addresses are now accepted only if they are paths on this site (or this site's own address), on the login page and on the confirm pages for deleting imports and the admin actions, and the page writes the address into its script as a safely encoded string.
 - **Security: a crafted theme cookie could point the template and compile folders anywhere.** The theme name is now
