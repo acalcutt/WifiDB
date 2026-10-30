@@ -7,7 +7,7 @@ stages:
   - package
 
 default:
-  tags: [linux]
+  tags: [linux, docker]
   interruptible: true
 
 variables:
