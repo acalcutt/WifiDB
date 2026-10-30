@@ -14,6 +14,7 @@ require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 require_once $daemon_config['wifidb_install'].'/lib/migrate.inc.php';
 
 $dir = dirname(__FILE__).'/../../sql/migrations';
+if(!is_dir($dir.'/'.$dbcore->sql->service)) { fwrite(STDERR, "No migrations for '".$dbcore->sql->service."' in $dir\r\n"); exit(1); }
 $migrator = new Migrator($dbcore->sql->conn, $dbcore->sql->service, $dir);
 $migrator->log = function($line) { echo $line."\r\n"; };
 
