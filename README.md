@@ -75,6 +75,9 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 	every Smarty template in both themes, which catches a template syntax error without running the site.  
 	CI (.gitlab-ci.yml and .github/workflows/ci.yml) lints every PHP file and runs the tests on PHP 8.2, 8.3, 8.4 and 8.5.  
 
+  Mail:  
+	docs/email.md describes every mail setting, DKIM, SPF and DMARC; php tools/utilites/check_mail.php checks them.  
+
   Releasing:  
 	New entries go in CHANGELOG.md under "## master". To make a release, run the bump:  
 	GitLab: Build > Pipelines > New pipeline, set BUMP_VERSION (patch, minor, major, ...).  

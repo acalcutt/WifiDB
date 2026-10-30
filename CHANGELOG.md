@@ -3,6 +3,7 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+- **Mail settings check and DKIM help.** `tools/utilites/check_mail.php` checks the mail settings and says in plain words what is wrong: settings still at their example values, a DKIM key file that is missing or unreadable (PHPMailer then sends the mail unsigned without any error), a DKIM record missing from DNS or for a different key, addresses outside the signing domain, missing SPF or DMARC; `--send` sends a signed test message. In the Proxmox template `wifidb-dkim generate` makes the key (kept on the data disk) and prints the DNS record to publish. `docs/email.md` documents every mail setting.
 - **Interactive signal charts on an access point's page.** Each file's readings open with a Chart.js line chart (signal % and RSSI dBm, hover for values, a time range, and PNG/SVG links to save or share the same graph), drawn when that file is opened; one more chart at the top covers all the files listed. Both themes. The page already had the readings, so nothing extra is loaded.
 - **Signal graphs as images, with no temporary files.** `api/wifi/signal.png` and `signal.svg` draw an access point's signal history straight from an address, so they work in an `<img>` tag, a forum post or a link. They take the same parameters Vistumbler's own links carry (SSID, Mac, Chn, Sig and the rest), plus `type=bar|line` and `text`, `bg` and `line` colors. The old form page now shows the picture through that address instead of saving a PNG in `tmp/` (a folder that had to be writable and was never cleaned up), so `tmp/` is no longer needed. Without PHP GD, the PNG address answers with the SVG.
 - **PHP 8.2 to 8.5.** WiFiDB now runs on current PHP. PHP 7.x and 8.0/8.1 are out of security support, and the
@@ -22,6 +23,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Sign-up and password-reset mail was never DKIM-signed.** Only the main mailer had the DKIM settings; the sign-up mailer now has them too.
 - **Sign-up and password-reset mail failed on a config built from the example file.** The mailer reads separate `signup_smtp_*` settings, but `config.inc.php.example` did not have them. They are now optional and fall back to the main `smtp_*` account, with a documented commented-out block in the example for using a separate account.
 - **`rund.php ver` and `rund.php help` printed blanks and warnings.** They read version numbers from a variable that was never in scope; they use the core's version now.
 - **Security: the signal graph page (api/wifi, opened from Vistumbler) wrote the access point's name and other values into the page unescaped,** so a crafted link ran script in the visitor's browser. Everything is escaped now, the colors and the signal list are validated before they reach GD (a bad color is an error on PHP 8), and the text and number of points are limited. Vistumbler's links work unchanged.
