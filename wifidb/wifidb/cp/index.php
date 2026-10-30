@@ -41,6 +41,12 @@ if($username)
 	$userArray = $result->fetch();
 	$user_id = $userArray['id'];
 
+	// A member who chose to be asked before saving preferences confirms first (cp/confirm.php), then has a few minutes.
+	if(in_array($func, array('profile', 'pref', 'update_user_profile', 'update_user_pref'), true))
+	{
+		$dbcore->sec->RequirePreferencesConfirmation($func === 'update_user_pref' ? 'cp/index.php?func=pref' : 'cp/index.php?func=profile');
+	}
+
 	switch($func)
 	{
 		case '':

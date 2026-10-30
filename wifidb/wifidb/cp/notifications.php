@@ -33,6 +33,10 @@ if(!$username)
 	exit;
 }
 
+
+# Choosing which notifications to get is a preference: it asks for the second factor if the member chose that.
+if($func === 'settings') { $dbcore->sec->RequirePreferencesConfirmation('cp/notifications.php?func=settings'); }
+
 $notifier = new Notifier($dbcore->sql->conn);
 $post = ($_SERVER['REQUEST_METHOD'] === 'POST');
 $page = max(1, (int)filter_input(INPUT_GET, 'page', FILTER_SANITIZE_NUMBER_INT));

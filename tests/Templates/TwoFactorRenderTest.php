@@ -136,4 +136,17 @@ final class TwoFactorRenderTest extends TestCase
         $html = $smarty->fetch('user_cp_security_codes.tpl');
         $this->assertStringContainsString("aaaa-bbbb\ncccc-dddd\n</pre>", $html);
     }
+    #[DataProvider('themes')]
+    public function testTheConfirmPageCarriesTheReturnAddressSafely(string $theme): void
+    {
+        $smarty = $this->smarty($theme);
+        $smarty->assign('confirm_return', "/cp/index.php?func=pref&x='</script>");
+        $smarty->assign('confirm_error', 'That code did not work.');
+        $smarty->assign('confirm_has_passkey', true);
+        $html = $smarty->fetch('user_cp_confirm.tpl');
+        $this->assertStringNotContainsString("'</script>", $html);
+        $this->assertStringContainsString('func=proc&amp;return=%2Fcp%2Findex.php%3Ffunc%3Dpref', $html);
+        $this->assertStringContainsString('That code did not work.', $html);
+        $this->assertStringContainsString('Use a passkey', $html);
+    }
 }

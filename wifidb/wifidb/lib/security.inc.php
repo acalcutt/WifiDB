@@ -562,6 +562,26 @@ class security
 		setcookie('WiFiDB_device', '', array("expires" => time() - 3600, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
 	}
 
+	/** Must this signed-in member confirm a second factor before saving preferences (their choice), and haven't yet? */
+	public function PreferencesNeedConfirmation()
+	{
+		if(!$this->login_check || $this->SessionID === '') { return false; }
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try { return $tf->NeedsPreferencesCheck($this->LoginUser, $this->SessionID); }
+		catch(Throwable $e) { return false; }
+	}
+
+	/** Sends the member to confirm, then back to where they were. Call before showing or saving a preferences page. */
+	public function RequirePreferencesConfirmation($postedBackTo = 'cp/index.php?func=profile')
+	{
+		if(!$this->PreferencesNeedConfirmation()) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		$back = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $path.$postedBackTo : $_SERVER['REQUEST_URI'];   # a saved form can't be replayed after the check, so the page it came from
+		header('Location: '.$path.'cp/confirm.php?return='.urlencode($back));
+		exit;
+	}
+
 	function APILoginCheck($username = '', $apikey = '')
 	{
 		if($username && $apikey)

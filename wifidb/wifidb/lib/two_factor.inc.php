@@ -30,6 +30,7 @@ class TwoFactor
 	const CHALLENGE_TTL = 600;         // seconds a passkey or new-authenticator step may take
 	const DEVICE_DAYS = 30;            // "remember this computer"
 	const MFA_REFRESH_DAYS = 30;       // a long-lived session asks again after this long
+	const PREFS_CONFIRM_MINUTES = 10;  // after confirming, preferences can be saved for this long
 	const ADMIN_MODE_MINUTES = 30;     // admin mode ends after this long without an admin page
 
 	private $conn;
@@ -223,6 +224,36 @@ class TwoFactor
 	public function RecoveryCodesLeft($username)
 	{
 		return (int)$this->Run("SELECT COUNT(*) FROM user_recovery_codes WHERE username = ? AND used IS NULL", array($username))->fetchColumn();
+	}
+
+	// ── Confirming before preferences are saved ──────────────────────────────────────────────────────
+
+	/** Does saving preferences need a second factor right now? Only for a member who chose that and has a method. */
+	public function NeedsPreferencesCheck($username, $sessionHash)
+	{
+		if(!$this->AsksOnPreferences($username)) { return false; }
+		$until = $this->Run("SELECT prefs_until FROM user_login_hashes WHERE username = ? AND hash = ?", array($username, $sessionHash))->fetchColumn();
+		return !$until || $this->Parse($until) <= $this->Now();
+	}
+
+	/** A code typed for this: an authenticator or recovery code. Does not turn on admin mode. @return array ok, error */
+	public function ConfirmPreferencesWithCode($username, $sessionHash, $code)
+	{
+		$proof = $this->VerifyCode($username, $code);
+		return $proof['ok'] ? $this->SetPreferencesConfirmed($username, $sessionHash) : $proof;
+	}
+
+	public function ConfirmPreferencesWithPasskey($username, $sessionHash, $credentialId, $clientDataB64, $authenticatorDataB64, $signatureB64)
+	{
+		$proof = $this->VerifyPasskey($username, $sessionHash, $credentialId, $clientDataB64, $authenticatorDataB64, $signatureB64);
+		return $proof['ok'] ? $this->SetPreferencesConfirmed($username, $sessionHash) : $proof;
+	}
+
+	private function SetPreferencesConfirmed($username, $sessionHash)
+	{
+		$changed = $this->Run("UPDATE user_login_hashes SET prefs_until = ? WHERE username = ? AND hash = ? AND mfa_pending = 0",
+			array($this->Stamp($this->Now() + self::PREFS_CONFIRM_MINUTES * 60), $username, $sessionHash))->rowCount();
+		return $changed > 0 ? array('ok' => true) : array('ok' => false, 'error' => 'no_session');
 	}
 
 	// ── Checking a code or a passkey ─────────────────────────────────────────────────────────────────

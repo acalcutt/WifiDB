@@ -23,7 +23,7 @@ final class TwoFactorTest extends TestCase
         foreach ([
             "CREATE TABLE user_info (username TEXT, password TEXT, mfa_login INTEGER NOT NULL DEFAULT 1, mfa_prefs INTEGER NOT NULL DEFAULT 0)",
             "CREATE TABLE user_login_hashes (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, hash TEXT, utime INTEGER,
-                mfa_pending INTEGER NOT NULL DEFAULT 0, mfa_at TEXT, admin_until TEXT, challenge TEXT, challenge_expires TEXT)",
+                mfa_pending INTEGER NOT NULL DEFAULT 0, mfa_at TEXT, admin_until TEXT, prefs_until TEXT, challenge TEXT, challenge_expires TEXT)",
             "CREATE TABLE user_two_factor (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, type TEXT, name TEXT, secret TEXT,
                 public_key TEXT, alg INTEGER, sign_count INTEGER NOT NULL DEFAULT 0, last_step INTEGER NOT NULL DEFAULT 0, created TEXT, last_used TEXT)",
             "CREATE TABLE user_recovery_codes (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, code_hash TEXT, created TEXT, used TEXT)",
@@ -403,5 +403,71 @@ final class TwoFactorTest extends TestCase
         [$cd, $ad, $sig] = $passkey->assert($start['challenge'], $this->tf->origin, $this->tf->rpId, 2, 0x05);
         $this->assertTrue($this->tf->StepUpWithPasskey(self::USER, self::HASH, $id, $cd, $ad, $sig)['ok']);
         $this->assertTrue($this->tf->AdminModeActive(self::USER, self::HASH));
+    }
+    // ── Confirming before preferences are saved ──
+
+    public function testPreferencesOnlyAskWhenTheMemberChoseThat(): void
+    {
+        [$secret] = $this->enrollTotp();
+        $this->assertFalse($this->tf->NeedsPreferencesCheck(self::USER, self::HASH), 'off until chosen');
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH));
+        $this->assertFalse($this->tf->NeedsPreferencesCheck('bob', 'x'), 'a member with no method is never asked');
+    }
+
+    public function testAGoodCodeOpensPreferencesForTenMinutesOnly(): void
+    {
+        [$secret] = $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->now += 60;
+        $this->assertTrue($this->tf->ConfirmPreferencesWithCode(self::USER, self::HASH, $this->code($secret))['ok']);
+        $this->assertFalse($this->tf->NeedsPreferencesCheck(self::USER, self::HASH));
+        $this->now += 9 * 60;
+        $this->assertFalse($this->tf->NeedsPreferencesCheck(self::USER, self::HASH), 'still open');
+        $this->now += 2 * 60;
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH), 'closed again');
+    }
+
+    public function testAWrongCodeLeavesPreferencesClosed(): void
+    {
+        $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->assertSame('wrong_code', $this->tf->ConfirmPreferencesWithCode(self::USER, self::HASH, '000000')['error']);
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH));
+    }
+
+    public function testTheCodeThatSignedYouInCannotAlsoOpenPreferences(): void
+    {
+        [$secret] = $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->now += 60;
+        $code = $this->code($secret);
+        $this->assertTrue($this->tf->VerifyCode(self::USER, $code)['ok']);
+        $this->assertSame('wrong_code', $this->tf->ConfirmPreferencesWithCode(self::USER, self::HASH, $code)['error']);
+    }
+
+    public function testConfirmingPreferencesIsNotAdminModeAndTheOtherWayRound(): void
+    {
+        [$secret] = $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->now += 60;
+        $this->tf->ConfirmPreferencesWithCode(self::USER, self::HASH, $this->code($secret));
+        $this->assertFalse($this->tf->AdminModeActive(self::USER, self::HASH), 'confirming preferences does not turn on admin mode');
+        $this->now += 30;
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->db->exec("UPDATE user_login_hashes SET prefs_until = NULL");
+        $this->assertTrue($this->tf->StepUpWithCode(self::USER, self::HASH, $this->code($secret))['ok']);
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH), 'and admin mode does not confirm preferences');
+    }
+
+    public function testConfirmingIsPerSessionAndNotForAPendingOne(): void
+    {
+        [$secret] = $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->session(self::USER, 'other');
+        $this->tf->MarkPending(self::USER, 'other');
+        $this->now += 60;
+        $this->assertSame('no_session', $this->tf->ConfirmPreferencesWithCode(self::USER, 'other', $this->code($secret))['error']);
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, 'other'));
     }
 }
