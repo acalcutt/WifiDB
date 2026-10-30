@@ -582,6 +582,44 @@ class security
 		exit;
 	}
 
+	/** Is the signed-in member an Administrator by rank? Says nothing about admin mode. */
+	public function IsAdministrator()
+	{
+		return $this->login_check && $this->priv_name === "Administrator";
+	}
+
+	/**
+	 * Is this session in admin mode: an Administrator who proved a second factor for it, within the last
+	 * ADMIN_MODE_MINUTES of using admin pages? $slide = false only looks (the header), so browsing ordinary pages
+	 * doesn't keep it open.
+	 */
+	public function AdminModeActive($slide = false)
+	{
+		if(!$this->IsAdministrator() || $this->SessionID === '') { return false; }
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try { return $tf->AdminModeActive($this->LoginUser, $this->SessionID, $slide); }
+		catch(Throwable $e) { return false; }
+	}
+
+	/**
+	 * The gate for every admin action. Not an Administrator: 403. An Administrator who isn't in admin mode: sent to
+	 * cp/admin_mode.php and back here after (a form that was being posted can't be replayed, so it returns to $postedBackTo).
+	 */
+	public function RequireAdminMode($postedBackTo = 'opt/scheduling.php')
+	{
+		if(!$this->IsAdministrator())
+		{
+			header("HTTP/1.1 403 Forbidden");
+			die("Access denied. Administrator privileges required.");
+		}
+		if($this->AdminModeActive(true)) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		$back = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $path.$postedBackTo : $_SERVER['REQUEST_URI'];
+		header('Location: '.$path.'cp/admin_mode.php?return='.urlencode($back));
+		exit;
+	}
+
 	/** Leaves the member an in-app notice about their own account (a method added, a recovery code used). Never throws. */
 	public function Tell($username, $title, $body, $link = '')
 	{

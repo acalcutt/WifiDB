@@ -927,11 +927,7 @@ switch($func)
 
 		case 'bad':
 				// Restrict access to this page to administrators only
-				if(isset($dbcore->sec->priv_name) && $dbcore->sec->priv_name != "Administrator")
-				{
-					header("HTTP/1.1 403 Forbidden");
-					die("Access denied. Administrator privileges required.");
-				}
+				$dbcore->sec->RequireAdminMode('opt/scheduling.php?func=bad');
 
 				$bad_row = array();
 			$n=0;

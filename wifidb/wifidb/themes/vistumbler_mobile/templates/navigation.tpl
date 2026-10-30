@@ -18,8 +18,13 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></li>
-						{if ($wifidb_login_priv_name|default:"") == "Administrator"}
+						{if $wifidb_is_admin|default:false}
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></li>
+						{if $wifidb_admin_mode|default:false}
+						<li><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></li>
+						{else}
+						<li><a href="{$wifidb_host_url}cp/admin_mode.php">Admin mode</a></li>
+						{/if}
 						{/if}
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></li>
 						<li><a href="{$wifidb_host_url}opt/search.php">Search</a></li>

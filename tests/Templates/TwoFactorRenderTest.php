@@ -149,4 +149,53 @@ final class TwoFactorRenderTest extends TestCase
         $this->assertStringContainsString('That code did not work.', $html);
         $this->assertStringContainsString('Use a passkey', $html);
     }
+
+    #[DataProvider('themes')]
+    public function testTheAdminModePageAsksForACodeAndCarriesTheReturnAddressSafely(string $theme): void
+    {
+        $smarty = $this->smarty($theme);
+        $smarty->assign('admin_return', "/opt/scheduling.php?func=bad&x='</script>");
+        $smarty->assign('admin_error', 'That code did not work.');
+        $smarty->assign('admin_has_two_factor', true);
+        $smarty->assign('admin_has_passkey', true);
+        $smarty->assign('admin_minutes', 30);
+        $html = $smarty->fetch('admin_mode.tpl');
+        $this->assertStringNotContainsString("'</script>", $html);
+        $this->assertStringContainsString('func=proc&amp;return=%2Fopt%2Fscheduling.php%3Ffunc%3Dbad', $html);
+        $this->assertStringContainsString('name="code"', $html);
+        $this->assertStringContainsString('That code did not work.', $html);
+        $this->assertStringContainsString('Use a passkey', $html);
+        $this->assertStringContainsString('30 minutes', $html);
+    }
+
+    #[DataProvider('themes')]
+    public function testTheAdminModePageWithoutTwoFactorSendsTheAdminToSetItUp(string $theme): void
+    {
+        $smarty = $this->smarty($theme);
+        $smarty->assign('admin_return', '/');
+        $smarty->assign('admin_has_two_factor', false);
+        $smarty->assign('admin_has_passkey', false);
+        $smarty->assign('admin_minutes', 30);
+        $html = $smarty->fetch('admin_mode.tpl');
+        $this->assertStringNotContainsString('name="code"', $html);
+        $this->assertStringContainsString('cp/security.php', $html);
+    }
+
+    public function testTheMobileMenuOffersAdminModeOnlyToAdministratorsAndShowsTheWayOut(): void
+    {
+        $member = $this->smarty('vistumbler_mobile')->fetch('navigation.tpl');
+        $this->assertStringNotContainsString('admin_mode.php', $member);
+        $this->assertStringNotContainsString('func=bad', $member);
+
+        $smarty = $this->smarty('vistumbler_mobile');
+        $smarty->assign('wifidb_is_admin', true);
+        $smarty->assign('wifidb_admin_mode', false);
+        $off = $smarty->fetch('navigation.tpl');
+        $this->assertStringContainsString('cp/admin_mode.php">Admin mode<', $off);
+        $this->assertStringNotContainsString('Leave admin mode', $off);
+
+        $smarty->assign('wifidb_admin_mode', true);
+        $on = $smarty->fetch('navigation.tpl');
+        $this->assertStringContainsString('admin_mode.php?func=off">Leave admin mode<', $on);
+    }
 }

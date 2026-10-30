@@ -87,8 +87,13 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
-                                {if ($wifidb_login_priv_name|default:"") == "Administrator"}
+                                {if $wifidb_is_admin|default:false}
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
+                                {if $wifidb_admin_mode|default:false}
+                                <div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></div>
+                                {else}
+                                <div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php">Admin mode</a></div>
+                                {/if}
                                 {/if}
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>

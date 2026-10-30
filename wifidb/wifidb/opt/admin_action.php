@@ -12,12 +12,8 @@ define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
-// Check if user is logged in and is an Administrator
-if($dbcore->sec->priv_name != "Administrator")
-{
-	header("HTTP/1.1 403 Forbidden");
-	die("Access denied. Administrator privileges required.");
-}
+// An Administrator, and in admin mode (a second factor proven for this, see cp/admin_mode.php)
+$dbcore->sec->RequireAdminMode('opt/scheduling.php?func=bad');
 
 $action = wifidb_input_string(INPUT_GET, 'action');
 $file_id = filter_input(INPUT_GET, 'file_id', FILTER_SANITIZE_NUMBER_INT);

@@ -75,6 +75,9 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_login_user', $this->sec->LoginUser);
 			$this->smarty->assign('wifidb_login_privs', $this->sec->privs);
 			$this->smarty->assign('wifidb_login_priv_name', $this->sec->priv_name);
+			# Admin buttons show only in admin mode; an Administrator outside it sees a link to turn it on
+			$this->smarty->assign('wifidb_is_admin', $this->sec->IsAdministrator());
+			$this->smarty->assign('wifidb_admin_mode', $this->sec->AdminModeActive(false));
 			$this->smarty->assign('wifidb_login_logged_in', $this->sec->login_check);
 			$this->smarty->assign('wifidb_message_unread_count', $this->GetMessageCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_notification_unread_count', $this->GetNotificationCount($this->sec->LoginUser));
