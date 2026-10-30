@@ -96,4 +96,46 @@ final class WifiGraphInputTest extends TestCase
         $this->assertCount(3000, explode('-', wifi_sig_spec($many)));
         $this->assertCount(10, explode('-', wifi_sig_spec($many, 10)));
     }
+
+    // ── the form page (genline.php) now points at the image address instead of writing a file ──
+
+    private function shown(array $post, string $type = 'bar'): string
+    {
+        $_POST = $post;
+        ob_start();
+        wifi_show_graph($type);
+        $html = ob_get_clean();
+        $_POST = [];
+        return $html;
+    }
+
+    public function testTheFormPageShowsAnImageFromTheImageAddress(): void
+    {
+        $html = $this->shown(['ssid' => 'My Net', 'mac' => '00:11:22:33:44:55', 'sig' => '0-45-50', 'text' => '255:255:255', 'bgc' => '000:000:000', 'linec' => '255:000:000'], 'line');
+        $this->assertSame(1, preg_match('/<img src="(signal\.php\?[^"]+)"/', $html, $m));
+        $url = html_entity_decode($m[1], ENT_QUOTES);
+        parse_str(parse_url($url, PHP_URL_QUERY), $q);
+        $this->assertSame('line', $q['type']);
+        $this->assertSame('My Net', $q['SSID']);
+        $this->assertSame('0-45-50', $q['Sig']);
+        $this->assertSame('000:000:000', $q['bg']);
+        $this->assertSame('255:000:000', $q['line']);
+        $this->assertStringContainsString('<h1>My Net</h1>', $html);
+        $this->assertStringNotContainsString('tmp/', $html, 'no file is written or linked');
+    }
+
+    public function testTheFormPageStaysSafeWithHostileInput(): void
+    {
+        $html = $this->shown(['ssid' => '"><script>alert(1)</script>', 'sig' => ['x'], 'mac' => "a\r\nb"]);
+        $this->assertStringNotContainsString('<script>', $html);
+        $this->assertStringNotContainsString('" ><', $html);
+        $this->assertSame(1, preg_match('/<img src="([^"]*)"/', $html), 'the attribute is still intact');
+    }
+
+    public function testTheFormPageWithNothingPostedStillWorks(): void
+    {
+        $html = $this->shown([]);
+        $this->assertStringContainsString('<h1>UNNAMED</h1>', $html);
+        $this->assertStringContainsString('signal.php?type=bar', $html);
+    }
 }

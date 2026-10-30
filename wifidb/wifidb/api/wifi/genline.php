@@ -81,9 +81,8 @@ $date = date('mdHis');
 	echo '<input name="graph_type" type="hidden" value=""/>';
 	echo '<input name="Genline" type="submit" value="Generate Bar Graph" />';
 	echo '</form>';
-	wifigraphline($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $linec, $text, $bgc );
+	wifi_show_graph('line');
 ?>
-You can find your Wifi Graph here -> <a href="tmp/<?php echo h($date);?>v.png"><?php echo h($date);?>v.png</a>
 <?php
 	}else
 	{
@@ -130,14 +129,13 @@ $date = date('mdHis');
 	echo '<input name="graph_type" type="hidden" value="line"/>';
 	echo '<input name="Genline" type="submit" value="Generate Line Graph" />';
 	echo '</form>';
-	wifigraphbar($ssid, $mac, $man, $auth, $encry, $radio, $chan, $lat, $long, $BTx, $OTx, $FA, $LU, $NT, $label, $sig, $date, $linec, $text, $bgc );
+	wifi_show_graph('bar');
 ?>
-You can find your Wifi Graph here -> <a href="tmp/<?php echo h($date);?>.png"><?php echo h($date);?>.png</a>
 <?php
 	}
 ?>
 If your graph is coming up blank or missing data please go <a class="links" href="http://forum.techidiots.net/forum/viewthread.php?tid=7" targe="_blank">Here</a>
-<br>Your image will be available for aprox the next 30 min.<br />Source is right <a class="links" href="http://vistumbler.svn.sourceforge.net/viewvc/vistumbler/wifi">here</a><br />
+Source is right <a class="links" href="http://vistumbler.svn.sourceforge.net/viewvc/vistumbler/wifi">here</a><br />
 You can view the Version History <a class="links" href="ver.php">here</a><br />
 <br />
 <font size="1">Please use Vistumbler to gather the data.<br />
