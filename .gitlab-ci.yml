@@ -195,3 +195,12 @@ bump-version:
     GIT_DEPTH: 0
   script:
     - ./.gitlab/scripts/bump.ps1 -BumpType $env:BUMP_VERSION -PreId $env:BUMP_PREID
+
+# The chart script's date handling (node --test), the one piece of JavaScript with logic worth testing.
+js-tests:
+  stage: test
+  image: node:22-alpine
+  rules: *ci-rules
+  script:
+    - node --check wifidb/wifidb/lib/js/wifidb/signalchart.js
+    - node --test tests/js/signalchart.test.js
