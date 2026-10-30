@@ -27,7 +27,7 @@ include('lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'User Login');
 
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
-if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
+$return = wifidb_safe_return(isset($_REQUEST['return']) ? $_REQUEST['return'] : '', $dbcore->sec->domain, '');
 
 if($return == ''){$return = '/'.$dbcore->root;}
 $root_path = ($dbcore->root != '' ? '/'.trim($dbcore->root, '/') : '');

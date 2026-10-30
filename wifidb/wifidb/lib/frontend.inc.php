@@ -507,13 +507,13 @@ class frontend extends dbcore
 	function redirect_page($return = "", $delay = 0)
 	{
 		if($return == ''){$return = $this->URL_PATH;}
+		$target = wifidb_js_string($return);
 		$this->smarty->assign("redirect_func", "<script type=\"text/javascript\">
 			function reload()
 			{
-				//window.open('{$return}')
-				location.href = '{$return}';
+				location.href = {$target};
 			}
 		</script>");
-		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
+		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', ".(int)$delay.")\"");
 	}
 }

@@ -23,3 +23,34 @@ if(!function_exists('wifidb_sanitize_string')) {
 		return is_string($value) ? wifidb_sanitize_string($value) : $value;
 	}
 }
+
+// Where to send someone back to after login or an action: a path on this site, or an address on this site's own host.
+// Anything else (another site, "//evil.example", javascript:, control characters) gives $default.
+if(!function_exists('wifidb_safe_return')) {
+	function wifidb_safe_return($value, $siteHost, $default = '')
+	{
+		if(!is_string($value)) { return $default; }
+		if(preg_match('/[\x00-\x1f\x7f]/', $value) || strpos($value, chr(92)) !== false) { return $default; }
+		$value = trim($value);
+		if($value === '') { return $default; }
+		if($value[0] === '/')
+		{
+			// "//host" means another site to a browser
+			return (isset($value[1]) && $value[1] === '/') ? $default : $value;
+		}
+		if(preg_match('#^https?://#i', $value))
+		{
+			$host = parse_url($value, PHP_URL_HOST);
+			if(is_string($host) && $siteHost !== '' && strcasecmp($host, $siteHost) === 0) { return $value; }
+		}
+		return $default;
+	}
+}
+
+// A value as a JavaScript string literal (quotes included) that is safe inside an inline <script> block.
+if(!function_exists('wifidb_js_string')) {
+	function wifidb_js_string($value)
+	{
+		return json_encode((string)$value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+	}
+}

@@ -46,4 +46,91 @@ final class HelpersTest extends TestCase
     {
         $this->assertSame('default', wifidb_resolve_theme($requested, WIFIDB_WEB . '/', 'default'));
     }
+
+    // ── where to send someone back to ──
+
+    public static function goodReturns(): array
+    {
+        return [
+            'a path'                  => ['/wifidb/cp/index.php?func=myimports'],
+            'the site root'           => ['/'],
+            'a path with a query'     => ['/opt/scheduling.php?func=schedule&x=1'],
+            'an address on this site' => ['https://wifidb.example.com/opt/map.php?id=3'],
+            'this site, other case'   => ['HTTPS://WifiDB.Example.com/'],
+            'with spaces around'      => ['  /cp/index.php  '],
+        ];
+    }
+
+    #[DataProvider('goodReturns')]
+    public function testSafeReturnKeepsAddressesOnThisSite(string $value): void
+    {
+        $this->assertSame(trim($value), wifidb_safe_return($value, 'wifidb.example.com', '/fallback'));
+    }
+
+    public static function badReturns(): array
+    {
+        return [
+            'another site'             => ['https://evil.example.net/'],
+            'a lookalike host'         => ['https://wifidb.example.com.evil.net/'],
+            'userinfo trick'           => ['https://wifidb.example.com@evil.net/'],
+            'protocol-relative'        => ['//evil.example.net/x'],
+            'javascript'               => ['javascript:alert(1)'],
+            'javascript, spaced'       => ["  JaVaScRiPt:alert(1)"],
+            'data'                     => ['data:text/html,<script>alert(1)</script>'],
+            'a backslash'              => ['/\evil.example.net'],
+            'a backslash in an address' => ['https://wifidb.example.com\@evil.net'],
+            'a line break'             => ["/ok\r\nLocation: https://evil.example.net"],
+            'a null byte'              => ["/ok\0"],
+            'no leading slash'         => ['evil.example.net/path'],
+            'ftp'                      => ['ftp://wifidb.example.com/'],
+            'empty'                    => [''],
+            'only spaces'              => ['   '],
+            'not a string'             => [['/ok']],
+        ];
+    }
+
+    #[DataProvider('badReturns')]
+    public function testSafeReturnRefusesAnythingElse($value): void
+    {
+        $this->assertSame('/fallback', wifidb_safe_return($value, 'wifidb.example.com', '/fallback'));
+    }
+
+    public function testSafeReturnWithNoSiteHostOnlyTrustsPaths(): void
+    {
+        $this->assertSame('/ok', wifidb_safe_return('/ok', '', '/fallback'));
+        $this->assertSame('/fallback', wifidb_safe_return('https://wifidb.example.com/', '', '/fallback'));
+    }
+
+    // ── values written into an inline script ──
+
+    public static function scriptBreakers(): array
+    {
+        return [
+            'a quote'          => ["x'; alert(1); //"],
+            'a double quote'   => ['x"; alert(1); //'],
+            'a script end tag' => ['x</script><script>alert(1)</script>'],
+            'an html comment'  => ['<!-- x'],
+            'a line break'     => ["x\nalert(1)"],
+            'an ampersand'     => ['a&b'],
+            'a backslash'      => ['x' . chr(92)],
+        ];
+    }
+
+    #[DataProvider('scriptBreakers')]
+    public function testJsStringCannotBreakOutOfAScript(string $value): void
+    {
+        $js = wifidb_js_string($value);
+        $this->assertStringStartsWith('"', $js);
+        $this->assertStringEndsWith('"', $js);
+        $this->assertStringNotContainsString("'", $js);
+        $this->assertStringNotContainsString('<', $js);
+        $this->assertStringNotContainsString('>', $js);
+        $this->assertStringNotContainsString("\n", $js);
+        $this->assertSame($value, json_decode($js), 'it still means the same string to JavaScript');
+    }
+
+    public function testJsStringKeepsSlashesReadable(): void
+    {
+        $this->assertSame('"/wifidb/cp/index.php"', wifidb_js_string('/wifidb/cp/index.php'));
+    }
 }

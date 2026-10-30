@@ -22,7 +22,7 @@ if($dbcore->sec->priv_name != "Administrator")
 $action = wifidb_input_string(INPUT_GET, 'action');
 $file_id = filter_input(INPUT_GET, 'file_id', FILTER_SANITIZE_NUMBER_INT);
 $confirm = wifidb_input_string(INPUT_GET, 'confirm');
-$return_url = filter_input(INPUT_GET, 'return', FILTER_SANITIZE_URL);
+$return_url = wifidb_safe_return(filter_input(INPUT_GET, 'return', FILTER_UNSAFE_RAW), $dbcore->sec->domain, '');
 
 /**
  * Queue an admin job for background processing

@@ -20,6 +20,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Security: a crafted login link could run script in the visitor's browser and send them to another site.** The `return` address on the login page went into an inline script unfiltered. Return addresses are now accepted only if they are paths on this site (or this site's own address), on the login page and on the confirm pages for deleting imports and the admin actions, and the page writes the address into its script as a safely encoded string.
 - **Security: a crafted theme cookie could point the template and compile folders anywhere.** The theme name is now
   accepted only if it is a folder in `themes/`.
 - **Security: passwords are stored with bcrypt at cost 12** (was cost 7), checked in constant time. Existing passwords
