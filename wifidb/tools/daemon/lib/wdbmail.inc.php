@@ -99,6 +99,15 @@ class wdbmail
 		$this->signupmail->SMTPAuth 			= $this->signup_smtp_auth;			// Enable SMTP authentication
 		$this->signupmail->AuthType 			= $this->signup_smtp_authtype;		// Auth type, tls or ssl
 		$this->signupmail->SMTPOptions 		= $this->signup_smtp_options;
+
+		// Sign-up and password-reset mail is signed with the same DKIM key as the rest (it is the same domain; only
+		// the SMTP account differs), so it is not the one kind of mail that goes out unsigned.
+		$this->signupmail->DKIM_domain 		= $this->DKIM_domain;
+		$this->signupmail->DKIM_private 		= $this->DKIM_private;
+		$this->signupmail->DKIM_selector 		= $this->DKIM_selector;
+		$this->signupmail->DKIM_passphrase 	= $this->DKIM_passphrase;
+		$this->signupmail->DKIM_identity 		= $this->DKIM_identity;
+		$this->signupmail->DKIM_copyHeaderFields = $this->DKIM_copyHeaderFields;
     }
     
     function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
