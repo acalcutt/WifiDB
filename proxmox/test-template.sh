@@ -90,6 +90,14 @@ ws_status() {
 check "the websocket daemon accepts a handshake" test "$(ws_status http://127.0.0.1:9000/wifidb/api/Scheduling | grep -c 101)" = 1
 check "...and Apache passes /ws/Scheduling to it" test "$(ws_status http://127.0.0.1/ws/Scheduling | grep -c 101)" = 1
 check "uploads are not served" test "$(http "$ct1" http://127.0.0.1/import/up/.htaccess)" = 403
+# The signal graph: an address as Vistumbler builds it (spaces are %20 here only because curl wants a valid URL)
+vq='SSID=My%20Net&Mac=00:11:22:33:44:55&Manuf=Cisco&Auth=WPA2-Personal&Encry=CCMP&radio=802.11n&Chn=6&Lat=N%2043.1234&Long=W%2070.1234&BTx=54&OTx=54&FA=2024-01-02%2010:11:12&LU=2024-01-02%2010:12:12&NT=Infrastructure&Label=Unknown&Sig=0-45-50-0-0-62-70'
+check "signal.png is a real PNG image" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.png?$1" | head -c 8 | od -An -c | tr -d " " | grep -q "211PNG"' "$ct1" "$vq"
+check "...served as image/png" sh -c 'docker exec "$0" curl -s -o /dev/null -w "%{content_type}" "http://127.0.0.1/api/wifi/signal.png?$1" | grep -q "^image/png"' "$ct1" "$vq"
+check "signal.svg is an SVG with the access point in it" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.svg?$1" | grep -q "SSID: My Net"' "$ct1" "$vq"
+check "the old graph page (index.php) accepts Vistumbler's address" test "$(http "$ct1" "http://127.0.0.1/api/wifi/index.php?$vq")" = 200
+check "...and does not echo a script from the address" sh -c '! docker exec "$0" curl -s "http://127.0.0.1/api/wifi/index.php?SSID=%3Cscript%3Ealert(1)%3C/script%3E&Sig=1-2" | grep -q "<script>alert"' "$ct1"
+check "the graph writes nothing to a tmp folder" docker exec "$ct1" sh -c 'test -z "$(ls /var/www/wifidb/api/wifi/tmp 2>/dev/null)"'
 check "the schema was loaded" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from information_schema.tables where table_schema=\"wifi\"")" -gt 20'
 check "this node is named testnode" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select node_name from settings limit 1")" = testnode'
 check "schedulecheck prints a number" docker exec "$ct1" sh -c 'out=$(su -s /bin/bash www-data -c "php /opt/wifidb/tools/daemon/schedulecheck.php Import"); echo "$out"; case "$out" in (*[!0-9]*|"") exit 1;; esac'

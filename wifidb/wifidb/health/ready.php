@@ -4,7 +4,7 @@
 // it needs to stay fast and keep working when the rest of the site is struggling.
 header('Content-Type: text/plain; charset=utf-8');
 header('Cache-Control: no-store');
-@set_time_limit(5);
+
 
 $lib = dirname(__DIR__) . '/lib';
 if(!is_file($lib . '/config.inc.php')) { http_response_code(503); echo "not ready: no config\n"; exit; }
