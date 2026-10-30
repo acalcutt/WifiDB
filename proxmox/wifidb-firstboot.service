@@ -2,7 +2,6 @@
 Description=Set up this WiFiDB container (first boot)
 After=network-online.target systemd-resolved.service
 Wants=network-online.target
-Before=apache2.service cron.service wifidb-monitord.service wifidb-websocketd.service
 ConditionPathExists=/etc/wifidb/firstboot-pending
 
 [Service]
