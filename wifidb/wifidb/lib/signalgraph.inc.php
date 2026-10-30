@@ -93,6 +93,48 @@ class SignalGraph
 		return array(25 + ord($h[0]) % 196, 25 + ord($h[1]) % 196, 25 + ord($h[2]) % 196);
 	}
 
+	// ── From the database ────────────────────────────────────────────────────────────────────────────
+
+	/**
+	 * The access point's own data and its recorded signal history (the same rows the details pages show), as the fields
+	 * of a spec. The history is the most recent MAX_POINTS readings, oldest first, like Vistumbler's addresses.
+	 * @param PDO $conn
+	 * @param string $dialect mysql or sqlsrv: how a row limit is spelled
+	 * @return array|null null if there is no such access point
+	 */
+	public static function DataForAp($conn, $dialect, $apId)
+	{
+		if(!is_scalar($apId) || !ctype_digit((string)$apId) || strlen((string)$apId) > 18) { return null; }
+		$id = (int)$apId;
+
+		$sql = ($dialect === 'sqlsrv')
+			? 'SELECT TOP 1 wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, g.Lat, g.Lon '
+			: 'SELECT wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, g.Lat, g.Lon ';
+		$sql .= 'FROM wifi_ap AS wap LEFT JOIN wifi_gps AS g ON g.GPS_ID = wap.HighGps_ID WHERE wap.AP_ID = ?';
+		if($dialect !== 'sqlsrv') { $sql .= ' LIMIT 1'; }
+		$prep = $conn->prepare($sql);
+		$prep->execute(array($id));
+		$ap = $prep->fetch(PDO::FETCH_ASSOC);
+		if(!$ap) { return null; }
+
+		$sql = ($dialect === 'sqlsrv')
+			? 'SELECT TOP ' . self::MAX_POINTS . ' Sig FROM wifi_hist WHERE AP_ID = ? ORDER BY Hist_Date DESC, Hist_ID DESC'
+			: 'SELECT Sig FROM wifi_hist WHERE AP_ID = ? ORDER BY Hist_Date DESC, Hist_ID DESC LIMIT ' . self::MAX_POINTS;
+		$prep = $conn->prepare($sql);
+		$prep->execute(array($id));
+		$signals = array();
+		foreach($prep->fetchAll(PDO::FETCH_COLUMN) as $sig) { $signals[] = max(0, min(100, (int)$sig)); }
+
+		$text = function ($v) { return self::CleanText($v === null ? '' : $v); };
+		return array(
+			'ssid' => ($text($ap['SSID']) === '' ? 'UNNAMED' : $text($ap['SSID'])), 'mac' => $text($ap['BSSID']), 'man' => '',
+			'auth' => $text($ap['AUTH']), 'encry' => $text($ap['ENCR']), 'radio' => $text($ap['RADTYPE']), 'chan' => $text($ap['CHAN']),
+			'lat' => $text($ap['Lat']), 'long' => $text($ap['Lon']), 'btx' => $text($ap['BTX']), 'otx' => $text($ap['OTX']),
+			'fa' => $text($ap['fa']), 'lu' => $text($ap['la']), 'nt' => $text($ap['NETTYPE']), 'label' => '',
+			'sig' => $signals ? array_reverse($signals) : array(0),
+		);
+	}
+
 	// ── Layout ───────────────────────────────────────────────────────────────────────────────────────
 
 	/** The three lines of text at the top of the picture */

@@ -98,6 +98,14 @@ check "signal.svg is an SVG with the access point in it" sh -c 'docker exec "$0"
 check "the old graph page (index.php) accepts Vistumbler's address" test "$(http "$ct1" "http://127.0.0.1/api/wifi/index.php?$vq")" = 200
 check "...and does not echo a script from the address" sh -c '! docker exec "$0" curl -s "http://127.0.0.1/api/wifi/index.php?SSID=%3Cscript%3Ealert(1)%3C/script%3E&Sig=1-2" | grep -q "<script>alert"' "$ct1"
 check "the graph writes nothing to a tmp folder" docker exec "$ct1" sh -c 'test -z "$(ls /var/www/wifidb/api/wifi/tmp 2>/dev/null)"'
+# An access point from the database: ?ap=
+docker exec "$db" mariadb -uwifidb -ptestpw wifi -e "
+  INSERT INTO wifi_ap (AP_ID, BSSID, SSID, CHAN, AUTH, ENCR, RADTYPE, NETTYPE) VALUES (4242, '00:11:22:33:44:55', 'Test <AP>', 6, 'WPA2', 'CCMP', '802.11n', 'Infrastructure');
+  INSERT INTO wifi_hist (Hist_ID, AP_ID, Sig, Hist_Date) VALUES (880001, 4242, 30, '2024-01-01 00:00:01'), (880002, 4242, 70, '2024-01-01 00:00:02'), (880003, 4242, 50, '2024-01-01 00:00:03');" >/dev/null 2>&1
+check "signal.png?ap= draws a stored access point" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.png?ap=4242" | head -c 8 | od -An -c | tr -d " " | grep -q "211PNG"' "$ct1"
+check "signal.svg?ap= shows its name, escaped" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.svg?ap=4242" | grep -q "SSID: Test &lt;AP&gt;"' "$ct1"
+check "an access point that does not exist is a 404" test "$(http "$ct1" "http://127.0.0.1/api/wifi/signal.png?ap=999999")" = 404
+check "a non-numeric ap is a 404, not an error" test "$(http "$ct1" "http://127.0.0.1/api/wifi/signal.png?ap=1%20OR%201=1")" = 404
 check "the schema was loaded" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from information_schema.tables where table_schema=\"wifi\"")" -gt 20'
 check "this node is named testnode" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select node_name from settings limit 1")" = testnode'
 check "schedulecheck prints a number" docker exec "$ct1" sh -c 'out=$(su -s /bin/bash www-data -c "php /opt/wifidb/tools/daemon/schedulecheck.php Import"); echo "$out"; case "$out" in (*[!0-9]*|"") exit 1;; esac'

@@ -177,4 +177,73 @@ final class SignalGraphTest extends TestCase
         $png = SignalGraph::Png(SignalGraph::FromQuery($this->query(['SSID' => "caf\u{e9} \u{4e2d}\u{6587} \xff", 'Label' => '<b>'])));
         $this->assertSame("\x89PNG", substr($png, 0, 4));
     }
+
+    // ── an access point from the database (?ap=) ──
+
+    private function database(): PDO
+    {
+        $db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $db->exec("CREATE TABLE wifi_ap (AP_ID INTEGER PRIMARY KEY, BSSID TEXT, SSID TEXT, CHAN INTEGER, AUTH TEXT, ENCR TEXT, RADTYPE TEXT, NETTYPE TEXT, BTX TEXT, OTX TEXT, fa TEXT, la TEXT, HighGps_ID INTEGER)");
+        $db->exec("CREATE TABLE wifi_gps (GPS_ID INTEGER PRIMARY KEY, Lat TEXT, Lon TEXT)");
+        $db->exec("CREATE TABLE wifi_hist (Hist_ID INTEGER PRIMARY KEY AUTOINCREMENT, AP_ID INTEGER, Sig INTEGER, Hist_Date TEXT)");
+        $db->exec("INSERT INTO wifi_gps VALUES (1, 'N 43.1234', 'W 70.1234')");
+        $db->exec("INSERT INTO wifi_ap VALUES (7, '00:11:22:33:44:55', 'Cafe <b>WiFi</b>', 11, 'WPA2-Personal', 'CCMP', '802.11n', 'Infrastructure', '54', '54', '2024-01-02 10:11:12.000', '2024-03-04 10:11:12.000', 1)");
+        foreach ([[7, 10, '2024-01-01 00:00:01'], [7, 80, '2024-01-01 00:00:02'], [7, 55, '2024-01-01 00:00:03'], [8, 99, '2024-01-01 00:00:09']] as $row) {
+            $db->prepare("INSERT INTO wifi_hist (AP_ID, Sig, Hist_Date) VALUES (?, ?, ?)")->execute($row);
+        }
+        return $db;
+    }
+
+    public function testAnAccessPointComesOutOfTheDatabaseWithItsHistoryOldestFirst(): void
+    {
+        $data = SignalGraph::DataForAp($this->database(), 'mysql', '7');
+        $this->assertSame([10, 80, 55], $data['sig'], "only this access point's readings, oldest first");
+        $this->assertSame('00:11:22:33:44:55', $data['mac']);
+        $this->assertSame('11', $data['chan']);
+        $this->assertSame('N 43.1234', $data['lat']);
+        $this->assertSame('W 70.1234', $data['long']);
+        $this->assertSame('2024-03-04 10:11:12.000', $data['lu']);
+    }
+
+    public function testADatabaseGraphDrawsAndEscapesTheName(): void
+    {
+        $spec = array_replace(SignalGraph::FromQuery([]), SignalGraph::DataForAp($this->database(), 'mysql', 7));
+        $svg = SignalGraph::Svg($spec);
+        $this->dom($svg);
+        $this->assertStringContainsString('SSID: Cafe &lt;b&gt;WiFi&lt;/b&gt;', $svg);
+        $this->assertStringNotContainsString('<b>', $svg);
+    }
+
+    public static function notAnAccessPoint(): array
+    {
+        return ['one that does not exist' => ['999'], 'not a number' => ['7 OR 1=1'], 'a quote' => ["7'"], 'negative' => ['-7'],
+                'empty' => [''], 'an array' => [['7']], 'too long' => [str_repeat('9', 40)], 'hex' => ['0x7']];
+    }
+
+    #[DataProvider('notAnAccessPoint')]
+    public function testAnythingElseIsNotFound($ap): void
+    {
+        $this->assertNull(SignalGraph::DataForAp($this->database(), 'mysql', $ap));
+    }
+
+    public function testAnAccessPointWithNoReadingsStillDraws(): void
+    {
+        $db = $this->database();
+        $db->exec("INSERT INTO wifi_ap (AP_ID, BSSID) VALUES (9, 'aa:bb')");
+        $data = SignalGraph::DataForAp($db, 'mysql', 9);
+        $this->assertSame([0], $data['sig']);
+        $this->assertSame('UNNAMED', $data['ssid']);
+        $this->assertSame('', $data['lat']);
+    }
+
+    public function testOnlyTheMostRecentReadingsAreUsed(): void
+    {
+        $db = $this->database();
+        $db->beginTransaction();
+        $stmt = $db->prepare("INSERT INTO wifi_hist (AP_ID, Sig, Hist_Date) VALUES (5, ?, ?)");
+        for ($i = 0; $i < 3500; $i++) { $stmt->execute([$i % 100, sprintf('2024-01-01 00:%02d:%02d.%03d', intdiv($i, 3600) % 60, intdiv($i, 60) % 60, $i % 60)]); }
+        $db->commit();
+        $db->exec("INSERT INTO wifi_ap (AP_ID, BSSID) VALUES (5, 'cc:dd')");
+        $this->assertCount(SignalGraph::MAX_POINTS, SignalGraph::DataForAp($db, 'mysql', 5)['sig']);
+    }
 }
