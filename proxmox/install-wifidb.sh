@@ -8,7 +8,7 @@
 # Layout:
 #   /var/www/wifidb              the web site            (from wifidb/wifidb)
 #   /opt/wifidb/tools            daemons and cron jobs   (from wifidb/tools)
-#   /opt/wifidb/sql              blank_db.sql and blank_db.sqlsrv
+#   /opt/wifidb/sql              blank_db.sql, blank_db.sqlsrv and migrations/ (applied by tools/utilites/migrate.php)
 #   /srv/wifidb-data             everything that must survive an upgrade (made at first boot): uploads, generated
 #                                files, logs and the two config files. Mount a second disk here.
 #
@@ -63,6 +63,7 @@ install -d /var/www/wifidb /opt/wifidb/tools /opt/wifidb/sql
 rsync -a --delete "$src/wifidb/wifidb/" /var/www/wifidb/
 rsync -a --delete "$src/wifidb/tools/" /opt/wifidb/tools/
 install -m 0644 "$src/wifidb/blank_db.sql" "$src/wifidb/blank_db.sqlsrv" /opt/wifidb/sql/
+cp -a "$src/wifidb/sql/migrations" /opt/wifidb/sql/
 # the config files are made at first boot; the working copy's examples stay in the tree
 rm -f /var/www/wifidb/lib/config.inc.php /opt/wifidb/tools/daemon.config.inc.php
 # the data folders live on the data disk (see wifidb-firstboot), so the copies in the code are just placeholders
