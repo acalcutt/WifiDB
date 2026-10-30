@@ -129,6 +129,7 @@ check "Smarty is the Composer-pinned version" docker exec "$ct1" sh -c 'grep -q 
 check "dev tools (PHPUnit) are not in the container" docker exec "$ct1" test ! -e /var/www/wifidb/vendor/phpunit
 
 . "$(dirname "$(readlink -f "$0")")/test-two-factor.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-passkey.inc.sh"
 
 log "keeping a setting on the data disk, then moving to a new container"
 docker exec "$ct1" sh -c 'echo "// marker" >> /srv/wifidb-data/config/web.overrides.php'
