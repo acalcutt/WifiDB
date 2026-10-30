@@ -15,6 +15,8 @@ setcookie_value() { sed -n "s/^[Ss]et-[Cc]ookie: $1=\([^;]*\);.*/\1/p" | head -1
 location() { sed -n 's/^[Ll]ocation: \(.*\)\r*$/\1/p' | tr -d '\r' | head -1; }
 
 log "two-factor sign-in"
+# the site sends a browser through a small script that sets these (init.inc.php); curl has to bring them itself
+tzc="wifidb_client_check=1; wifidb_client_timezone=0; wifidb_client_dst=0"
 check "the database migrations were applied" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from user_two_factor") $(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from notifications")" = "0 0"'
 check "the first boot made the two-factor key" docker exec "$ct1" grep -q "two_factor_key" /srv/wifidb-data/config/web.overrides.php
 pass="correct horse battery staple"
@@ -35,30 +37,30 @@ recovery1=$(echo "$codes" | sed -n 1p)
 check "an authenticator app and ten recovery codes were set up" test -n "$secret" -a "$(echo "$codes" | wc -l)" = 10
 next_code() { echo "$enrolled" | sed -n 's/^SECRET=//p' | docker exec -i "$ct1" php -r 'require "/var/www/wifidb/lib/totp.inc.php"; echo Totp::Code(trim(fgets(STDIN)), Totp::Step() + 1);'; }
 
-login() { site -X POST --data-urlencode "time_user=tfuser" --data-urlencode "time_pass=$pass" "${@}" http://127.0.0.1/login.php?func=login_proc; }
+login() { site -H "Cookie: $tzc${devicecookie:+; WiFiDB_device=$devicecookie}" -X POST --data-urlencode "time_user=tfuser" --data-urlencode "time_pass=$pass" "${@}" http://127.0.0.1/login.php?func=login_proc; }
 
 headers=$(login)
 session=$(echo "$headers" | setcookie_value WiFiDB_login_yes)
 check "a right password goes on to the second step" sh -c 'echo "$0" | grep -q "func=mfa"' "$(echo "$headers" | location)"
-page=$(site -H "Cookie: WiFiDB_login_yes=$session" 'http://127.0.0.1/cp/security.php')
+page=$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/cp/security.php')
 check "...and until it is done the session grants nothing" sh -c 'echo "$0" | grep -q "must be logged in"' "$page"
-check "the second-step page asks for a code" sh -c 'site() { docker exec "$0" curl -s -H "Cookie: WiFiDB_login_yes=$1" "http://127.0.0.1/login.php?func=mfa"; }; site "$0" "$1" | grep -q "One more step"' "$ct1" "$session"
-wrong=$(site -X POST -d code=000000 -H "Cookie: WiFiDB_login_yes=$session" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
+check "the second-step page asks for a code" sh -c 'docker exec "$0" curl -s -H "Cookie: $2; WiFiDB_login_yes=$1" "http://127.0.0.1/login.php?func=mfa" | grep -q "One more step"' "$ct1" "$session" "$tzc"
+wrong=$(site -X POST -d code=000000 -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
 check "a wrong code is refused" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$wrong"
-check "a pass with no pending session is refused" test "$(docker exec "$ct1" curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' 'http://127.0.0.1/login.php?func=mfa_passkey_begin')" = 403
-right=$(site -X POST -d "code=$(next_code)" -d remember=yes -H "Cookie: WiFiDB_login_yes=$session" 'http://127.0.0.1/login.php?func=mfa_proc')
+check "a pass with no pending session is refused" test "$(docker exec "$ct1" curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -H "Cookie: $tzc" -d '{}' 'http://127.0.0.1/login.php?func=mfa_passkey_begin')" = 403
+right=$(site -X POST -d "code=$(next_code)" -d remember=yes -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/login.php?func=mfa_proc')
 device=$(echo "$right" | setcookie_value WiFiDB_device)
-check "the right code finishes sign-in" sh -c '! echo "$0" | grep -q "func=mfa"' "$(echo "$right" | location)"
+check "the right code finishes sign-in" sh -c 'test -n "$0" && ! echo "$0" | grep -q "func=mfa"' "$(echo "$right" | location)"
 check "...and 'remember this computer' sets a device cookie" test -n "$device"
-page=$(site -H "Cookie: WiFiDB_login_yes=$session" 'http://127.0.0.1/cp/security.php')
+page=$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/cp/security.php')
 check "now the Security page opens" sh -c 'echo "$0" | grep -q "Two-factor sign-in"' "$page"
 
-headers=$(login -H "Cookie: WiFiDB_device=$device")
+devicecookie=$device; headers=$(login); devicecookie=
 check "a remembered computer skips the second step" sh -c '! echo "$0" | grep -q "func=mfa"' "$(echo "$headers" | location)"
 second=$(login | setcookie_value WiFiDB_login_yes)
-via=$(site -X POST --data-urlencode "code=$recovery1" -H "Cookie: WiFiDB_login_yes=$second" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
-check "a recovery code finishes sign-in" sh -c '! echo "$0" | grep -q "func=mfa"' "$via"
+via=$(site -X POST --data-urlencode "code=$recovery1" -H "Cookie: $tzc; WiFiDB_login_yes=$second" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
+check "a recovery code finishes sign-in" sh -c 'test -n "$0" && ! echo "$0" | grep -q "func=mfa"' "$via"
 third=$(login | setcookie_value WiFiDB_login_yes)
-again=$(site -X POST --data-urlencode "code=$recovery1" -H "Cookie: WiFiDB_login_yes=$third" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
+again=$(site -X POST --data-urlencode "code=$recovery1" -H "Cookie: $tzc; WiFiDB_login_yes=$third" 'http://127.0.0.1/login.php?func=mfa_proc' | location)
 check "...and works only once" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$again"
 check "using a recovery code leaves a notice for the member" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from notifications where username=\"tfuser\" and type=\"security\"")" -ge 1'

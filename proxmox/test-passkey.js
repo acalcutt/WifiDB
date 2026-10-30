@@ -10,8 +10,19 @@ function check(name, ok) { console.log((ok ? '  ok   ' : '  FAIL ') + name); if 
 (async () => {
     const browser = await chromium.launch();
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
+    // the site sends a first visit through a small script that sets these cookies; set them up front instead
+    const clientCookies = [
+        { name: 'wifidb_client_check', value: '1', domain: 'wifidb.test', path: '/', secure: true },
+        { name: 'wifidb_client_timezone', value: '0', domain: 'wifidb.test', path: '/', secure: true },
+        { name: 'wifidb_client_dst', value: '0', domain: 'wifidb.test', path: '/', secure: true },
+    ];
+    await context.addCookies(clientCookies);
     const page = await context.newPage();
     page.setDefaultTimeout(20000);
+    // what the server answered to the passkey steps, and anything the page logged: shown only if the test stops
+    const seen = [];
+    page.on('console', (m) => { if (m.type() === 'error') { seen.push('console: ' + m.text().slice(0, 200)); } });
+    page.on('response', async (r) => { if (/func=(passkey|mfa_passkey)/.test(r.url())) { try { seen.push(r.status() + ' ' + r.url().split('?')[1] + ' ' + (await r.text()).slice(0, 200)); } catch (e) { /* body gone */ } } });
     const cdp = await context.newCDPSession(page);
     await cdp.send('WebAuthn.enable');
     const { authenticatorId } = await cdp.send('WebAuthn.addVirtualAuthenticator', { options: {
@@ -46,6 +57,7 @@ function check(name, ok) { console.log((ok ? '  ok   ' : '  FAIL ') + name); if 
 
         // sign in again from scratch: the second step must offer the passkey and accept it
         await context.clearCookies();
+        await context.addCookies(clientCookies);
         await login();
         await page.goto(base + '/cp/security.php');
         check('a right password alone grants nothing now (the second step is pending)', (await text()).includes('must be logged in'));
@@ -75,6 +87,9 @@ function check(name, ok) { console.log((ok ? '  ok   ' : '  FAIL ') + name); if 
     } catch (error) {
         console.log('  FAIL the browser test stopped: ' + error.message.split('\n')[0]);
         console.log('       at ' + page.url());
+        for (const line of seen) { console.log('       ' + line); }
+        try { console.log('       message: ' + await page.innerText('#wifidb_passkey_msg')); } catch (e) { /* no such element here */ }
+        try { console.log('       page says: ' + (await page.innerText('body')).replace(/\s+/g, ' ').slice(0, 300)); } catch (e) { /* nothing to show */ }
         failed = 1;
     }
     await browser.close();

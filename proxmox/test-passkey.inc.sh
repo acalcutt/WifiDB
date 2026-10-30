@@ -6,8 +6,10 @@ PLAYWRIGHT_VERSION=1.49.1
 tls=wifidb-test-tls-$id
 
 log "passkeys in a real browser"
-docker run -d --name "$tls" --network "$net" --network-alias wifidb.test caddy:2 \
-    caddy reverse-proxy --from https://wifidb.test --to "http://$ct1:80" >/dev/null 2>&1
+# tls internal: Caddy signs its own certificate (it would otherwise ask Let's Encrypt, which refuses a .test name)
+docker run -d --name "$tls" --network "$net" --network-alias wifidb.test caddy:2 sh -c \
+    'printf "https://wifidb.test {\n\ttls internal\n\treverse_proxy %s:80\n}\n" "$0" > /tmp/Caddyfile && caddy run --config /tmp/Caddyfile --adapter caddyfile' "$ct1" >/dev/null 2>&1
+sleep 5
 trap 'docker rm -f "$tls" >/dev/null 2>&1; cleanup' EXIT
 
 pkpass="a different long passphrase"

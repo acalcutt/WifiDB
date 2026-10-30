@@ -79,6 +79,10 @@ for svc in apache2 cron wifidb-monitord wifidb-websocketd; do
 done
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
+# A page can answer 200 and still carry a PHP error box (PHP 8 made an undefined constant fatal). Look at the text.
+for page in / /login.php /stats.php /opt/map.php /opt/scheduling.php /opt/results.php /opt/userstats.php /opt/export.php /cp/ /login.php?func=create_user_form; do
+    check "no PHP error on $page" sh -c '! docker exec "$0" curl -s -L -H "Cookie: wifidb_client_check=1; wifidb_client_timezone=0" "http://127.0.0.1$1" | grep -qE "Undefined (constant|variable|array key)|Fatal error|Uncaught|Parse error|Stack trace|Call to undefined"' "$ct1" "$page"
+done
 check "/health answers 200" test "$(http "$ct1" http://127.0.0.1/health)" = 200
 check "/health/ready answers 200 with the database up" test "$(http "$ct1" http://127.0.0.1/health/ready)" = 200
 # The first line a WebSocket server answers a handshake with: "HTTP/1.1 101 Switching Protocols"
