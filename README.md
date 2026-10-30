@@ -71,7 +71,7 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MyS
 
 	They cover the helper functions, password and key generation, coordinate and signal conversions, and a compile of  
 	every Smarty template in both themes, which catches a template syntax error without running the site.  
-	CI (.gitlab-ci.yml and .github/workflows/ci.yml) lints every PHP file and runs the tests on PHP 8.2, 8.3 and 8.4.  
+	CI (.gitlab-ci.yml and .github/workflows/ci.yml) lints every PHP file and runs the tests on PHP 8.2, 8.3, 8.4 and 8.5.  
 
   Change Log:  
 		/[WiFiDB Path]/ver.php  

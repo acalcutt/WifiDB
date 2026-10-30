@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -11,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ["8.2", "8.3", "8.4"]
+        php: ["8.2", "8.3", "8.4", "8.5"]
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -29,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php: ["8.2", "8.3", "8.4"]
+        php: ["8.2", "8.3", "8.4", "8.5"]
     steps:
       - uses: actions/checkout@v4
       - uses: shivammathur/setup-php@v2
@@ -40,3 +41,23 @@ jobs:
       - run: composer install --no-interaction --no-progress --prefer-dist
       # Unit tests plus a compile of every Smarty template in both themes. No database or config file needed.
       - run: vendor/bin/phpunit
+
+  # The Proxmox LXC template: built, then boot-tested against a MariaDB container. Slow, so only on master and by hand.
+  proxmox-template:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get install -y zstd
+      - run: |
+          git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb
+          mkdir -p out
+          sudo bash proxmox/build-template.sh wifidb-src.tar.gz "out/WifiDB-${GITHUB_SHA::8}-proxmox-amd64.tar.zst"
+          sudo bash proxmox/test-template.sh "out/WifiDB-${GITHUB_SHA::8}-proxmox-amd64.tar.zst"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proxmox-template
+          path: out/
+          retention-days: 7

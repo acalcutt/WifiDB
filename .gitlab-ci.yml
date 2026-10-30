@@ -4,6 +4,7 @@
 stages:
   - lint
   - test
+  - package
 
 default:
   tags: [linux]
@@ -16,7 +17,7 @@ variables:
 .php-matrix:
   parallel:
     matrix:
-      - PHP_VERSION: ["8.2", "8.3", "8.4"]
+      - PHP_VERSION: ["8.2", "8.3", "8.4", "8.5"]
   image: php:${PHP_VERSION}-cli
 
 # Any syntax error, removed-function fatal or deprecation notice from `php -l` fails the job.
@@ -47,3 +48,35 @@ phpunit:
     when: always
     reports:
       junit: phpunit-report.xml
+
+# The Proxmox LXC template (proxmox/, docs/proxmox.md): built, then boot-tested against a MariaDB container.
+# Needs the Linux runner registered with --privileged (gitlab-runner-install: install-linux-runner.sh --privileged),
+# for Docker-in-Docker and a systemd container. Runs on the default branch; start it by hand on a merge request.
+proxmox-template:
+  stage: package
+  tags: [linux, docker]
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: /certs
+  timeout: 2h
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: manual
+      allow_failure: true
+  before_script:
+    - apk add --no-cache bash coreutils curl git tar zstd
+    - for i in $(seq 30); do docker info >/dev/null 2>&1 && break; sleep 2; done
+  script:
+    - git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb
+    - mkdir -p out
+    - bash proxmox/build-template.sh wifidb-src.tar.gz "out/WifiDB-${CI_COMMIT_SHORT_SHA}-proxmox-amd64.tar.zst"
+    - bash proxmox/test-template.sh "out/WifiDB-${CI_COMMIT_SHORT_SHA}-proxmox-amd64.tar.zst"
+  artifacts:
+    when: always
+    paths:
+      - out/
+    expire_in: 7 days
