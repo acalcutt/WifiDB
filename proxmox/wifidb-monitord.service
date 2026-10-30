@@ -1,8 +1,8 @@
 [Unit]
 Description=WiFiDB monitor daemon (watches the other daemons' PID files and records their status)
-After=network-online.target wifidb-firstboot.service
+After=network-online.target
 Wants=network-online.target
-ConditionPathExists=/srv/wifidb-data/config/daemon.config.inc.php
+ConditionPathExists=/opt/wifidb/tools/daemon.config.inc.php
 
 [Service]
 User=www-data

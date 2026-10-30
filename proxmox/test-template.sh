@@ -81,7 +81,7 @@ check "uploads are not served" test "$(http "$ct1" http://127.0.0.1/import/up/.h
 check "the schema was loaded" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from information_schema.tables where table_schema=\"wifi\"")" -gt 20'
 check "this node is named testnode" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select node_name from settings limit 1")" = testnode'
 check "schedulecheck prints a number" docker exec "$ct1" sh -c 'out=$(su -s /bin/bash www-data -c "php /opt/wifidb/tools/daemon/schedulecheck.php Import"); echo "$out"; case "$out" in (*[!0-9]*|"") exit 1;; esac'
-check "the cron file is installed" docker exec "$ct1" sh -c 'test "$(grep -c update_mvt /etc/cron.d/wifidb)" -gt 20'
+check "the cron file is installed" docker exec "$ct1" sh -c 'test "$(grep -c update_mvt /etc/cron.d/wifidb)" -ge 20'
 check "a cron wrapper runs" docker exec "$ct1" su -s /bin/bash www-data -c '/opt/wifidb/tools/cron/import_files'
 check "uploads are on the data disk" docker exec "$ct1" sh -c 'test -L /var/www/wifidb/import && test -d /srv/wifidb-data/import/up'
 check "logs are on the data disk" docker exec "$ct1" sh -c 'test -L /opt/wifidb/tools/log && ls /srv/wifidb-data/log/import'

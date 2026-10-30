@@ -1,8 +1,8 @@
 [Unit]
 Description=WiFiDB websocket daemon (live APs and the scheduling page)
-After=network-online.target wifidb-firstboot.service
+After=network-online.target
 Wants=network-online.target
-ConditionPathExists=/srv/wifidb-data/config/daemon.config.inc.php
+ConditionPathExists=/opt/wifidb/tools/daemon.config.inc.php
 
 [Service]
 User=www-data
