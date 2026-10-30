@@ -1,17 +1,75 @@
-# Runs on the Docker-executor runner from gitlab-runner-install (tag: linux).
-# Every job starts from a plain php:<version>-cli image, so nothing needs to be installed on the runner.
+# WifiDB CI on gitlab.techidiots.net, laid out as handbrake-lxc's, MediaRiffle's and tippr's: the light jobs that
+# script GitLab itself (version bump, release check, publish) on the Windows shell runner (tag "windows", which needs
+# Python 3 for the version bump), and everything that runs code on the Linux Docker runner (tags "linux", "docker";
+# gitlab-runner-install's install-linux-runner.sh, registered --privileged for the template build's Docker-in-Docker).
+#
+#   lint           Every pipeline: `php -l` over every PHP file on PHP 8.2, 8.3, 8.4 and 8.5. Any error or deprecation
+#                  notice fails it.
+#   phpunit        Every pipeline: the unit tests and a compile of every Smarty template, on the same PHP versions.
+#   proxmox-template  Merge requests, by hand: builds the Proxmox LXC template and boot-tests it against MariaDB
+#                  (docs/proxmox.md), as a job artifact (7 days) named <version>+ci<pipeline>.<commit>.
+#   release-*      Push to the default branch: if no GitLab release exists for VERSION, build and test the template and
+#                  create the release with CHANGELOG.md's section as the notes:
+#                    WifiDB-v<ver>-proxmox-amd64.tar.zst     the Proxmox LXC template (docs/proxmox.md)
+#                  Build > Pipelines > New pipeline with RELEASE_DRY_RUN "true" builds without publishing.
+#   bump-version   Build > Pipelines > New pipeline with BUMP_VERSION set: bump VERSION, roll CHANGELOG.md's
+#                  "## master" section into it, push release-v<version> and open a merge request. Merging it makes
+#                  the release.
+#
+# Release files go to the generic package registry (the template is ~100 MB: the package file size limit, Admin >
+# Settings > CI/CD, must allow it).
+#
+# CI/CD variables (Settings > CI/CD > Variables), Protected + Masked, environment scope "release/*":
+#   CI_PUSH_TOKEN   Project access token, role Maintainer, scopes api + write_repository (bump-version only)
 
-stages:
-  - lint
-  - test
-  - package
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    # Avoid a duplicate branch pipeline while a merge request is open for the branch
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS && $CI_PIPELINE_SOURCE == "push"
+      when: never
+    - if: $CI_COMMIT_BRANCH
+
+variables:
+  BUMP_VERSION:
+    value: "none"
+    options: ["none", "patch", "minor", "major", "prepatch", "preminor", "premajor", "prerelease"]
+    description: "Version bump type. Leave as 'none' to just build and release the current version."
+  BUMP_PREID:
+    value: "rc"
+    description: "Prerelease identifier for the pre* bump types (e.g. alpha, beta, rc)."
+  RELEASE_DRY_RUN:
+    value: "false"
+    options: ["false", "true"]
+    description: "'true': build and test the release files without publishing anything."
+  COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
 
 default:
   tags: [linux, docker]
   interruptible: true
 
-variables:
-  COMPOSER_CACHE_DIR: "$CI_PROJECT_DIR/.composer-cache"
+stages:
+  - lint
+  - test
+  - build
+  - release
+
+# Jobs that push or publish run in this environment; scope the protected variables to it.
+.release-environment: &release-environment
+  name: release/$CI_COMMIT_BRANCH
+  action: prepare
+
+.ci-rules: &ci-rules
+  - if: $BUMP_VERSION != "none"
+    when: never
+  - if: $RELEASE_DRY_RUN == "true"
+    when: never
+  - when: on_success
+
+.release-rules: &release-rules
+  - if: $BUMP_VERSION != "none"
+    when: never
+  - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
 # Supported PHP branches. 8.1 and earlier are out of security support.
 .php-matrix:
@@ -20,10 +78,27 @@ variables:
       - PHP_VERSION: ["8.2", "8.3", "8.4", "8.5"]
   image: php:${PHP_VERSION}-cli
 
+# Docker-in-Docker on the Linux runner, for building the Proxmox template (the build boots a systemd container)
+.docker-build:
+  tags: [linux, docker]
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_TLS_CERTDIR: /certs
+  timeout: 2h
+  before_script:
+    - apk add --no-cache bash coreutils curl git tar zstd
+    - for i in $(seq 30); do docker info >/dev/null 2>&1 && break; sleep 2; done
+
+# ── CI ───────────────────────────────────────────────────────────────────────────────────────────────
+
 # Any syntax error, removed-function fatal or deprecation notice from `php -l` fails the job.
 lint:
   extends: .php-matrix
   stage: lint
+  rules: *ci-rules
   script:
     - |
       output=$(find wifidb -name "*.php" -exec sh -c 'for f; do php -l "$f"; done' sh {} + 2>&1 | grep -v '^No syntax errors' || true)
@@ -34,6 +109,7 @@ lint:
 phpunit:
   extends: .php-matrix
   stage: test
+  rules: *ci-rules
   cache:
     key: composer-${PHP_VERSION}
     paths:
@@ -49,34 +125,73 @@ phpunit:
     reports:
       junit: phpunit-report.xml
 
-# The Proxmox LXC template (proxmox/, docs/proxmox.md): built, then boot-tested against a MariaDB container.
-# Needs the Linux runner registered with --privileged (gitlab-runner-install: install-linux-runner.sh --privileged),
-# for Docker-in-Docker and a systemd container. Runs on the default branch; start it by hand on a merge request.
+# The Proxmox LXC template, built and boot-tested against MariaDB. Slow, so on a merge request it is started by hand;
+# a release builds it too (release-build).
 proxmox-template:
-  stage: package
-  tags: [linux, docker]
-  image: docker:27
-  services:
-    - name: docker:27-dind
-      alias: docker
-  variables:
-    DOCKER_TLS_CERTDIR: /certs
-  timeout: 2h
+  extends: .docker-build
+  stage: build
   rules:
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    - if: $BUMP_VERSION != "none"
+      when: never
+    - if: $RELEASE_DRY_RUN == "true"
+      when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       when: manual
       allow_failure: true
-  before_script:
-    - apk add --no-cache bash coreutils curl git tar zstd
-    - for i in $(seq 30); do docker info >/dev/null 2>&1 && break; sleep 2; done
+  needs: []
   script:
-    - git archive --format=tar.gz -o wifidb-src.tar.gz HEAD wifidb
-    - mkdir -p out
-    - bash proxmox/build-template.sh wifidb-src.tar.gz "out/WifiDB-${CI_COMMIT_SHORT_SHA}-proxmox-amd64.tar.zst"
-    - bash proxmox/test-template.sh "out/WifiDB-${CI_COMMIT_SHORT_SHA}-proxmox-amd64.tar.zst"
+    - bash .gitlab/scripts/build.sh ci-files "$(cat VERSION)+ci$CI_PIPELINE_IID.$CI_COMMIT_SHORT_SHA"
   artifacts:
     when: always
     paths:
-      - out/
+      - ci-files/
     expire_in: 7 days
+
+# ── Release ──────────────────────────────────────────────────────────────────────────────────────────
+
+release-check:
+  stage: lint
+  tags: [windows]
+  rules: *release-rules
+  script:
+    - ./.gitlab/scripts/release-check.ps1
+  artifacts:
+    reports:
+      dotenv: release.env
+
+release-build:
+  extends: .docker-build
+  stage: build
+  rules: *release-rules
+  needs: [release-check]
+  script:
+    - if [ "$RELEASE_BUILD" != "true" ]; then echo "Release $RELEASE_TAG already exists; skipping."; exit 0; fi
+    - bash .gitlab/scripts/build.sh release-files "$RELEASE_VERSION"
+  artifacts:
+    when: always
+    paths:
+      - release-files/
+    expire_in: 7 days
+
+release-publish:
+  stage: release
+  tags: [windows]
+  rules: *release-rules
+  needs: [release-check, release-build]
+  resource_group: release
+  script:
+    - ./.gitlab/scripts/publish-release.ps1
+
+# ── Version bump ─────────────────────────────────────────────────────────────────────────────────────
+
+bump-version:
+  stage: build
+  tags: [windows]
+  resource_group: bump-version
+  environment: *release-environment
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web" && $BUMP_VERSION != "none"
+  variables:
+    GIT_DEPTH: 0
+  script:
+    - ./.gitlab/scripts/bump.ps1 -BumpType $env:BUMP_VERSION -PreId $env:BUMP_PREID

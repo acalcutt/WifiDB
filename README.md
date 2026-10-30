@@ -73,6 +73,13 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MyS
 	every Smarty template in both themes, which catches a template syntax error without running the site.  
 	CI (.gitlab-ci.yml and .github/workflows/ci.yml) lints every PHP file and runs the tests on PHP 8.2, 8.3, 8.4 and 8.5.  
 
+  Releasing:  
+	New entries go in CHANGELOG.md under "## master". To make a release, run the bump:  
+	GitLab: Build > Pipelines > New pipeline, set BUMP_VERSION (patch, minor, major, ...).  
+	GitHub: Actions > Create bump version PR > Run workflow.  
+	It raises VERSION, moves the "## master" entries into the new version and opens a merge request. Merging it builds  
+	and boot-tests the Proxmox template and publishes the release with that version's changelog as the notes.  
+
   Change Log:  
 		/[WiFiDB Path]/ver.php  
   Support:  
