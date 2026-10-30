@@ -1,0 +1,70 @@
+# WiFiDB scheduled jobs. Installed as /etc/cron.d/wifidb. The times are the production server's. This file belongs to
+# the container, so a new template brings its own. To keep different times across upgrades, put your copy at
+# /srv/wifidb-data/cron.d/wifidb: wifidb-firstboot installs it over this one.
+#
+# Each job is a wrapper in /opt/wifidb/tools/cron that locks itself, so a job that's still running is not started twice.
+# They write their own logs to /srv/wifidb-data/log; cron's mail is switched off.
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+MAILTO=""
+
+# ── Imports, exports and housekeeping ────────────────────────────────────────
+# Two import runners each minute: a run claims one due schedule row, so this lets two imports go at once.
+* * * * *   www-data  /opt/wifidb/tools/cron/import_files
+* * * * *   www-data  /opt/wifidb/tools/cron/import_files
+* * * * *   www-data  /opt/wifidb/tools/cron/statsd
+* * * * *   www-data  /opt/wifidb/tools/cron/admind
+0 12 * * *  www-data  /opt/wifidb/tools/cron/export_kml
+0 11 2 * *  www-data  /opt/wifidb/tools/cron/update_manuf
+5 0 * * *   www-data  /opt/wifidb/tools/cron/update_geojson
+#5 0 * * * www-data  /opt/wifidb/tools/cron/update_cell_geojson
+*/15 * * * * www-data /opt/wifidb/tools/cron/update_swarm_index
+
+# ── MVT tiles (01:00 - 04:00) ────────────────────────────────────────────────
+# Daily buckets: hourly (TTL 1 hour)
+15 * * * *  www-data  /opt/wifidb/tools/cron/update_mvt daily
+20 * * * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_daily
+# Weekly buckets: daily at 01:00 (TTL 1 day)
+0 1 * * *   www-data  /opt/wifidb/tools/cron/update_mvt weekly
+15 1 * * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_weekly
+# Monthly buckets: Saturday at 02:00 (TTL 1 week)
+0 2 * * 6   www-data  /opt/wifidb/tools/cron/update_mvt monthly
+20 2 * * 6  www-data  /opt/wifidb/tools/cron/update_mvt cell_monthly
+# Combined heatmap buckets: Sunday at 02:00 (TTL 1 week)
+0 2 * * 0   www-data  /opt/wifidb/tools/cron/update_mvt heatmap
+20 2 * * 0  www-data  /opt/wifidb/tools/cron/update_mvt cell_heatmap
+# Year buckets: one per day on days 1-6 of the month at 03:00 (TTL 30 days)
+0 3 1 * *   www-data  /opt/wifidb/tools/cron/update_mvt 0to1year
+20 3 1 * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_0to1year
+0 3 2 * *   www-data  /opt/wifidb/tools/cron/update_mvt 1to2year
+20 3 2 * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_1to2year
+0 3 3 * *   www-data  /opt/wifidb/tools/cron/update_mvt 2to3year
+20 3 3 * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_2to3year
+0 3 4 * *   www-data  /opt/wifidb/tools/cron/update_mvt 3to5year
+20 3 4 * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_3to5year
+0 3 5 * *   www-data  /opt/wifidb/tools/cron/update_mvt 5to10year
+20 3 5 * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_5to10year
+0 3 6 * *   www-data  /opt/wifidb/tools/cron/update_mvt 10yrplus
+20 3 6 * *  www-data  /opt/wifidb/tools/cron/update_mvt cell_10yrplus
+
+# ── MLT tiles (13:00 - 16:00) ────────────────────────────────────────────────
+45 * * * *  www-data  /opt/wifidb/tools/cron/update_mlt daily
+50 * * * *  www-data  /opt/wifidb/tools/cron/update_mlt cell_daily
+0 13 * * *  www-data  /opt/wifidb/tools/cron/update_mlt weekly
+15 13 * * * www-data  /opt/wifidb/tools/cron/update_mlt cell_weekly
+0 14 * * 6  www-data  /opt/wifidb/tools/cron/update_mlt monthly
+20 14 * * 6 www-data  /opt/wifidb/tools/cron/update_mlt cell_monthly
+0 14 * * 0  www-data  /opt/wifidb/tools/cron/update_mlt heatmap
+20 14 * * 0 www-data  /opt/wifidb/tools/cron/update_mlt cell_heatmap
+0 15 1 * *  www-data  /opt/wifidb/tools/cron/update_mlt 0to1year
+20 15 1 * * www-data  /opt/wifidb/tools/cron/update_mlt cell_0to1year
+0 15 2 * *  www-data  /opt/wifidb/tools/cron/update_mlt 1to2year
+20 15 2 * * www-data  /opt/wifidb/tools/cron/update_mlt cell_1to2year
+0 15 3 * *  www-data  /opt/wifidb/tools/cron/update_mlt 2to3year
+20 15 3 * * www-data  /opt/wifidb/tools/cron/update_mlt cell_2to3year
+0 15 4 * *  www-data  /opt/wifidb/tools/cron/update_mlt 3to5year
+20 15 4 * * www-data  /opt/wifidb/tools/cron/update_mlt cell_3to5year
+0 15 5 * *  www-data  /opt/wifidb/tools/cron/update_mlt 5to10year
+20 15 5 * * www-data  /opt/wifidb/tools/cron/update_mlt cell_5to10year
+0 15 6 * *  www-data  /opt/wifidb/tools/cron/update_mlt 10yrplus
+20 15 6 * * www-data  /opt/wifidb/tools/cron/update_mlt cell_10yrplus

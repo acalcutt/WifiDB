@@ -1,0 +1,251 @@
+#!/bin/bash
+# Makes this container a WiFiDB node. Run once by wifidb-firstboot.service on a new container (and again by hand
+# after editing /etc/wifidb/firstboot.env: systemctl restart wifidb-firstboot).
+#
+# The settings come from /etc/wifidb/firstboot.env (see that file). In short:
+#   - everything that must survive an upgrade goes in /srv/wifidb-data (mount a second disk there): uploads,
+#     generated files, logs, and the settings that differ from the release's defaults
+#   - the code, the release's default config files and the services belong to the container and are replaced when
+#     you move to a new template: create the new container, attach the same data disk, start it
+#   - an empty database gets the schema loaded; a database that already has it is left alone
+set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
+ENV_FILE=/etc/wifidb/firstboot.env
+PENDING=/etc/wifidb/firstboot-pending
+DATA=/srv/wifidb-data
+WEB=/var/www/wifidb
+TOOLS=/opt/wifidb/tools
+
+log() { echo "[wifidb-firstboot] $*"; }
+die() { echo "[wifidb-firstboot] ERROR: $*" >&2; exit 1; }
+
+if [ -f "$ENV_FILE" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+    set +a
+fi
+
+DB_TYPE=${WIFIDB_DB_TYPE:-mysql}
+case "$DB_TYPE" in
+    mysql) DB_PORT=${WIFIDB_DB_PORT:-3306} ;;
+    sqlsrv) DB_PORT=${WIFIDB_DB_PORT:-1433} ;;
+    *) die "WIFIDB_DB_TYPE must be mysql or sqlsrv (it is '$DB_TYPE')" ;;
+esac
+DB_HOST=${WIFIDB_DB_HOST:-}
+DB_NAME=${WIFIDB_DB_NAME:-wifi}
+DB_USER=${WIFIDB_DB_USER:-wifidb}
+DB_PASS=${WIFIDB_DB_PASS:-}
+[ -n "$DB_HOST" ] || die "set WIFIDB_DB_HOST in $ENV_FILE, then: systemctl restart wifidb-firstboot"
+[ -n "$DB_PASS" ] || die "set WIFIDB_DB_PASS in $ENV_FILE, then: systemctl restart wifidb-firstboot"
+if [ "$DB_TYPE" = sqlsrv ] && ! php -m | grep -x pdo_sqlsrv >/dev/null; then
+    die "this template was built without the SQL Server driver; use WIFIDB_DB_TYPE=mysql or a template that has it"
+fi
+
+NODE=${WIFIDB_NODE:-$(hostname -s)}
+ROOT=${WIFIDB_ROOT:-}
+ROOT=${ROOT#/}; ROOT=${ROOT%/}
+SITE_URL=${WIFIDB_URL:-http://$(hostname -f 2>/dev/null || hostname)}
+SITE_URL=${SITE_URL%/}
+PROXY=${WIFIDB_EXTERNAL_PROXY:-}
+phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+
+export DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS NODE ROOT SITE_URL DATA
+
+# ── The data disk ────────────────────────────────────────────────────────────
+log "data folder $DATA"
+if mountpoint -q "$DATA"; then log "(a separate disk is mounted there)"; else log "(no separate disk: it's part of the container's disk)"; fi
+install -d -o www-data -g www-data "$DATA" "$DATA/config" "$DATA/cron.d" "$DATA/log"
+
+# import/ and out/ hold the uploads and everything the daemons generate. The code's own placeholder files
+# (index.php, .htaccess) are copied over them, so a new release's versions win and the generated files stay.
+for d in import out; do
+    if [ ! -L "$WEB/$d" ]; then
+        install -d -o www-data -g www-data "$DATA/$d"
+        rsync -a "$WEB/$d/" "$DATA/$d/"
+        rm -rf "${WEB:?}/$d"
+        ln -s "$DATA/$d" "$WEB/$d"
+    fi
+done
+install -d -o www-data -g www-data "$DATA/import/up" "$DATA/import/up/backup" "$DATA/import/up/convert"
+if [ ! -L "$TOOLS/log" ]; then
+    rm -rf "${TOOLS:?}/log"
+    ln -s "$DATA/log" "$TOOLS/log"
+fi
+# the cron wrappers write to ../log/<name>/
+for sub in $(grep -ho '\.\./log/[A-Za-z_]*' "$TOOLS"/cron/* 2>/dev/null | sed 's#.*/##' | sort -u); do
+    install -d -o www-data -g www-data "$DATA/log/$sub"
+done
+install -d -o www-data -g www-data "$DATA/log/daemon"
+chown -R www-data:www-data "$DATA"
+
+# Smarty's compiled templates and cache: the container's own, rebuilt as needed
+for sub in templates_c cache configs; do
+    install -d -o www-data -g www-data "$WEB/smarty/$sub"
+    for theme in "$WEB"/themes/*/; do
+        [ -d "${theme}templates" ] && install -d -o www-data -g www-data "$WEB/smarty/$sub/$(basename "$theme")"
+    done
+done
+
+# ── Settings ─────────────────────────────────────────────────────────────────
+# Only the differences from the release's defaults are kept on the data disk; the config files the code reads are
+# the release's examples with a line at the end that loads those differences.
+write_overrides() {
+    php <<'PHP'
+<?php
+$e = function ($k, $d = '') { $v = getenv($k); return ($v === false || $v === '') ? $d : $v; };
+$root = $e('ROOT');
+$site = $e('SITE_URL');
+// hosturl and root are joined as hosturl.root.'/', so the trailing slash only goes in when there is a root
+$hosturl = $root === '' ? $site : $site . '/';
+$web = array(
+    'wifidb_tools'  => '/opt/wifidb/tools/',
+    'wifidb_install' => '/var/www/wifidb/',
+    'root'          => $root,
+    'hosturl'       => $hosturl,
+    'WebSocketURL'  => preg_replace('#^http#', 'ws', $site) . '/ws/',
+    'srvc'          => $e('DB_TYPE'),
+    'driver'        => $e('DB_TYPE'),
+    'port'          => (int)$e('DB_PORT'),
+    'host'          => $e('DB_HOST'),
+    'db'            => $e('DB_NAME'),
+    'db_user'       => $e('DB_USER'),
+    'db_pwd'        => $e('DB_PASS'),
+    'pid_file_loc'  => '/run/wifidb/',
+);
+$daemon = array(
+    'wifidb_install'     => '/var/www/wifidb/',
+    'daemon_path'        => '/opt/wifidb/tools/daemon/',
+    'daemon_log_folder'  => '/opt/wifidb/tools/log/',
+    'wifidb_nodename'    => $e('NODE'),
+    'pid_file_loc'       => '/run/wifidb/',
+    'WebSocketBindIP'    => '127.0.0.1',
+    'WebSocketPort'      => 9000,
+);
+$dir = $e('DATA') . '/config';
+file_put_contents("$dir/web.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($web, true) . ";\n");
+file_put_contents("$dir/daemon.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($daemon, true) . ";\n");
+PHP
+}
+
+if [ ! -f "$DATA/config/web.overrides.php" ] || [ "${WIFIDB_REGENERATE:-0}" = 1 ]; then
+    log "writing $DATA/config/*.overrides.php"
+    write_overrides
+else
+    log "keeping the settings in $DATA/config (WIFIDB_REGENERATE=1 rewrites them from firstboot.env)"
+fi
+chown www-data:www-data "$DATA"/config/*.overrides.php
+chmod 0640 "$DATA"/config/*.overrides.php
+
+make_config() { # make_config EXAMPLE TARGET VARIABLE OVERRIDES
+    sed 's/\r$//; /^?>[[:space:]]*$/d' "$1" > "$2"
+    printf '\n// Added by wifidb-firstboot: the settings that differ from the defaults above.\n$%s = array_merge($%s, require %s);\n' "$3" "$3" "'$4'" >> "$2"
+    chown root:www-data "$2"
+    chmod 0640 "$2"
+}
+make_config "$WEB/lib/config.inc.php.example" "$WEB/lib/config.inc.php" config "$DATA/config/web.overrides.php"
+make_config "$TOOLS/daemon.config.inc.php.example" "$TOOLS/daemon.config.inc.php" daemon_config "$DATA/config/daemon.overrides.php"
+
+# ── The web server ───────────────────────────────────────────────────────────
+if [ -n "$PROXY" ]; then
+    log "behind a proxy: $PROXY"
+    cat > /etc/apache2/conf-available/wifidb-proxy.conf <<CONF
+# The proxy in front of this container does TLS and adds the visitor's address in X-Forwarded-For.
+RemoteIPHeader X-Forwarded-For
+RemoteIPInternalProxy $PROXY
+CONF
+    a2enconf -q wifidb-proxy >/dev/null
+else
+    a2disconf -q wifidb-proxy >/dev/null 2>&1 || true
+fi
+if [ -n "$ROOT" ]; then
+    cat > /etc/apache2/conf-available/wifidb-root.conf <<CONF
+Alias /$ROOT /var/www/wifidb
+CONF
+    a2enconf -q wifidb-root >/dev/null
+    a2disconf -q wifidb-legacy >/dev/null 2>&1 || true
+else
+    a2disconf -q wifidb-root >/dev/null 2>&1 || true
+    # the site used to live under /wifidb/; old links keep working
+    cat > /etc/apache2/conf-available/wifidb-legacy.conf <<'CONF'
+RedirectMatch 301 ^/wifidb/?(.*)$ /$1
+CONF
+    a2enconf -q wifidb-legacy >/dev/null
+fi
+
+# Cron times kept on the data disk replace the shipped ones
+if [ -f "$DATA/cron.d/wifidb" ]; then
+    log "using the cron times in $DATA/cron.d/wifidb"
+    install -m 0644 "$DATA/cron.d/wifidb" /etc/cron.d/wifidb
+fi
+
+# ── The database ─────────────────────────────────────────────────────────────
+dbphp() { # dbphp 'php code using $pdo'
+    php -r '
+        $t = getenv("DB_TYPE"); $h = getenv("DB_HOST"); $p = getenv("DB_PORT"); $n = getenv("DB_NAME");
+        $dsn = $t === "mysql" ? "mysql:host=$h;port=$p;dbname=$n;charset=utf8mb4"
+                              : "sqlsrv:Server=$h,$p;Database=$n;TrustServerCertificate=true;LoginTimeout=10";
+        $pdo = new PDO($dsn, getenv("DB_USER"), getenv("DB_PASS"), array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+        '"$1"
+}
+
+log "waiting for the database at $DB_HOST:$DB_PORT"
+ready=0
+for _ in $(seq 60); do
+    if dbphp '' 2>/tmp/wifidb-db-error; then ready=1; break; fi
+    sleep 2
+done
+if [ "$ready" != 1 ]; then
+    cat /tmp/wifidb-db-error >&2
+    die "could not connect to the database as $DB_USER on $DB_HOST:$DB_PORT/$DB_NAME. Check firstboot.env, then: systemctl restart wifidb-firstboot"
+fi
+
+if dbphp '$pdo->query("SELECT COUNT(*) FROM settings")->fetchColumn();' 2>/dev/null; then
+    log "the database already has the WiFiDB tables; leaving them alone"
+    fresh=0
+else
+    log "empty database: loading the schema"
+    if [ "$DB_TYPE" = mysql ]; then
+        MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" "$DB_NAME" < /opt/wifidb/sql/blank_db.sql
+    else
+        sed "s/prod_wifi/$DB_NAME/g" /opt/wifidb/sql/blank_db.sqlsrv > /tmp/wifidb-schema.sql
+        /opt/mssql-tools18/bin/sqlcmd -C -b -S "$DB_HOST,$DB_PORT" -U "$DB_USER" -P "$DB_PASS" -d "$DB_NAME" -i /tmp/wifidb-schema.sql
+        rm -f /tmp/wifidb-schema.sql
+    fi
+    fresh=1
+fi
+
+if [ "$fresh" = 1 ]; then
+    # the schema ships with a node called 'prod'
+    log "naming this node '$NODE'"
+    dbphp '
+        $s = $pdo->prepare("UPDATE settings SET node_name = ?"); $s->execute(array(getenv("NODE")));
+        $s = $pdo->prepare("UPDATE schedule SET nodename = ?"); $s->execute(array(getenv("NODE")));'
+else
+    count=$(dbphp '$s = $pdo->prepare("SELECT COUNT(*) FROM settings WHERE node_name = ?"); $s->execute(array(getenv("NODE"))); echo (int)$s->fetchColumn();')
+    if [ "${count:-0}" = 0 ]; then
+        log "WARNING: the database has no settings row for the node '$NODE', so the import/export/admin jobs"
+        log "         will do nothing here. Add a row to settings and schedule for it, or set WIFIDB_NODE to an"
+        log "         existing node name in $ENV_FILE and run: WIFIDB_REGENERATE=1 systemctl restart wifidb-firstboot"
+    fi
+fi
+
+# ── Start everything ─────────────────────────────────────────────────────────
+systemd-tmpfiles --create /etc/tmpfiles.d/wifidb.conf
+log "starting the services"
+systemctl enable --now "php${phpver}-fpm" apache2 cron
+# The two daemons can be switched off per node (WIFIDB_MONITORD=0, WIFIDB_WEBSOCKETD=0 in firstboot.env).
+for pair in "wifidb-monitord:${WIFIDB_MONITORD:-1}" "wifidb-websocketd:${WIFIDB_WEBSOCKETD:-1}"; do
+    unit=${pair%%:*}
+    if [ "${pair##*:}" = 0 ]; then
+        systemctl disable --now "$unit" 2>/dev/null || true
+        log "$unit is switched off"
+    else
+        systemctl enable --now "$unit"
+    fi
+done
+systemctl reload apache2 || systemctl restart apache2
+
+rm -f "$PENDING"
+log "done: $SITE_URL${ROOT:+/$ROOT} (node '$NODE', $DB_TYPE database '$DB_NAME' on $DB_HOST)"

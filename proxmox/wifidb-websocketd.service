@@ -1,0 +1,16 @@
+[Unit]
+Description=WiFiDB websocket daemon (live APs and the scheduling page)
+After=network-online.target wifidb-firstboot.service
+Wants=network-online.target
+ConditionPathExists=/srv/wifidb-data/config/daemon.config.inc.php
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/wifidb/tools/daemon
+ExecStart=/usr/bin/php /opt/wifidb/tools/daemon/websocketd.php
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

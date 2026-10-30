@@ -1,0 +1,24 @@
+# Base image for the WiFiDB Proxmox template: Ubuntu with systemd as PID 1, like a real container.
+# build-template.sh boots it, installs WiFiDB into it and exports the filesystem.
+ARG UBUNTU_VERSION=26.04
+FROM ubuntu:${UBUNTU_VERSION}
+ENV DEBIAN_FRONTEND=noninteractive container=lxc
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        systemd systemd-sysv systemd-resolved dbus libpam-systemd \
+        iproute2 iputils-ping netcat-openbsd ca-certificates curl wget \
+        sudo locales tzdata less nano vim-tiny cron logrotate rsyslog \
+        openssh-server git gnupg lsb-release zstd \
+    && locale-gen en_US.UTF-8 \
+    && update-locale LANG=en_US.UTF-8 \
+    # services that make no sense in a container
+    && systemctl mask systemd-udevd.service systemd-udevd-kernel.socket \
+        systemd-udevd-control.socket systemd-modules-load.service \
+        sys-kernel-config.mount sys-kernel-debug.mount \
+    && systemctl enable systemd-networkd.service \
+    # Docker's Ubuntu image stops apt from starting services; a real system
+    # (and the installer) expects them to start
+    && rm -f /usr/sbin/policy-rc.d \
+    && rm -rf /var/lib/apt/lists/*
+STOPSIGNAL SIGRTMIN+3
+CMD ["/sbin/init"]
