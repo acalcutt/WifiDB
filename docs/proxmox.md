@@ -125,6 +125,11 @@ way supports MariaDB only, and the first boot stops with a message if you ask it
 4. Point HAProxy's backend at the new container. Keep the old one until you're sure; the data disk is the only thing
    it shares, so start with a backup of the database.
 
+## Two-factor sign-in
+
+First boot makes `two_factor_key` (in `web.overrides.php` on the data disk) and keeps it; do not delete it, or saved
+authenticators stop working. It also applies the database migrations on every boot. See `two-factor.md`.
+
 ## Notes
 
 - **Time zone:** UTC, like the rest of WiFiDB.

@@ -78,6 +78,9 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
   Mail:  
 	docs/email.md describes every mail setting, DKIM, SPF and DMARC; php tools/utilites/check_mail.php checks them.  
 
+  Sign-in:  
+	docs/two-factor.md covers authenticator apps, passkeys, recovery codes, the key to set, and notifications.  
+
   Releasing:  
 	New entries go in CHANGELOG.md under "## master". To make a release, run the bump:  
 	GitLab: Build > Pipelines > New pipeline, set BUMP_VERSION (patch, minor, major, ...).  
