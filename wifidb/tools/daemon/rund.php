@@ -406,9 +406,10 @@ function status($command = '')
 
 function ver()
 {
-	$ver_db_core = $daemon_config['ver']['wifidb'];
-	$ver_Last_Core_Edit = $daemon_config['ver']['Last_Core_Edit'];
-	$ver_d = $daemon_config['daemon_ver'];
+	global $dbcore;
+	$ver_db_core = $dbcore->ver_array['wifidb'];
+	$ver_Last_Core_Edit = $dbcore->ver_array['Last_Core_Edit'];
+	$ver_d = $dbcore->ver_array['wifidb'];
 	echo "\nWiFiDB Daemon for WiFiDB Version: $ver_db_core\nLast Core edit: $ver_Last_Core_Edit\nCurrent Daemon Version: $ver_d\n\n";
 	echo "----------------------------------------
 ----------------------------------------
@@ -518,9 +519,10 @@ VERSION HISTORY
 
 function help()
 {
-	$ver_db_core = $daemon_config['ver']['wifidb'];
-	$ver_Last_Core_Edit = $daemon_config['ver']['Last_Core_Edit'];
-	$ver_d = $daemon_config['ver_d'];
+	global $dbcore;
+	$ver_db_core = $dbcore->ver_array['wifidb'];
+	$ver_Last_Core_Edit = $dbcore->ver_array['Last_Core_Edit'];
+	$ver_d = $dbcore->ver_array['wifidb'];
 	echo "\n  WiFiDB Daemon for WiFiDB Version: $ver_db_core\n  Last Core edit: $ver_Last_Core_Edit\n  Daemon Version: $ver_d\n\n";
 	echo "   There is a file called rund.php that starts/stops/and restarts the daemon. To use
   type 'php rund.php [start,stop,restart]'. This script will only run on linux 
