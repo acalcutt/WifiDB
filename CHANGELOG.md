@@ -3,6 +3,7 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+- **Fixed on PHP 8:** every page's header threw an error (an undefined constant that `@` no longer hides), so the login form and other pages showed an error box; and the Users index called a method that does not exist.
 - **Two-factor sign-in (authenticator apps and passkeys).** User Control Panel → Security adds authenticator apps and passkeys and gives ten one-use recovery codes. After the password, sign-in asks for a code or passkey; "remember this computer" skips it for 30 days. Members can also be asked before saving preferences. Removing a method, new recovery codes and turning it off need the password and leave a notice. Authenticator secrets are encrypted with the new `two_factor_key` setting (the Proxmox template makes one). Run `tools/utilites/migrate.php` to create the tables. See `docs/two-factor.md`.
 - **QR codes (device linking) are drawn by a maintained library that ships with WifiDB** (qrcode-generator 2.0.4, as an inline image). The old code tried an unmaintained copy and then fell back to a public CDN; nothing is loaded from another site now, and the script no longer loads on every page.
 - **Message editor updated** (SCEditor 2.1.3 → 3.2.3), and the style sheet for the classic theme's message editor now loads from the right place.
