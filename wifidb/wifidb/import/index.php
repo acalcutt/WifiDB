@@ -59,7 +59,7 @@ switch($func)
 		$otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
 		$type = (empty($_POST['type'])) ? "" : $_POST['type'];
 		
-		$sql = "SELECT username FROM user_info WHERE username LIKE ?";
+		$sql = "SELECT username FROM user_info WHERE username = ?";
 		$stmt = $dbcore->sql->conn->prepare($sql);
 		$stmt->bindParam(1, $user, PDO::PARAM_STR);
 		$stmt->execute();

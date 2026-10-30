@@ -105,7 +105,7 @@ class frontend extends dbcore
 			#Get Unread Message Count
 			$sql = "SELECT COUNT(pm.id) AS unread_count FROM pm\n"
 				. "INNER JOIN user_info ON user_info.id = pm.user2\n"
-				. "WHERE user2read = 0 And user2del = 0 And user_info.username LIKE ?";
+				. "WHERE user2read = 0 And user2del = 0 And user_info.username = ?";
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $username);
 			$result->execute();
@@ -268,7 +268,7 @@ class frontend extends dbcore
 		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
 			. "FROM wifi_hist\n"
 			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
-			. "WHERE files.file_user LIKE ?";
+			. "WHERE files.file_user = ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -278,7 +278,7 @@ class frontend extends dbcore
 		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
 			. "FROM wifi_hist\n"
 			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
-			. "WHERE files.file_user LIKE ? And wifi_hist.New = 1";
+			. "WHERE files.file_user = ? And wifi_hist.New = 1";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -292,7 +292,7 @@ class frontend extends dbcore
 			. "FROM wifi_ap AS wap\n"
 			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 			. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-			. "WHERE f.file_user LIKE ? And f.completed = 1\n"
+			. "WHERE f.file_user = ? And f.completed = 1\n"
 			. "ORDER BY $sort $ord\n";
 		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
 		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
@@ -340,7 +340,7 @@ class frontend extends dbcore
 	{
 		if($username == ""){return 0;}
 		
-		$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user LIKE ? And ValidGPS = 1";
+		$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user = ? And ValidGPS = 1";
 		$globeprep = $this->sql->conn->prepare($sql);
 		$globeprep->bindParam(1, $username, PDO::PARAM_STR);
 		$globeprep->execute();
@@ -358,7 +358,7 @@ class frontend extends dbcore
 		$sql = "SELECT COUNT(AP_ID)\n"
 			. "FROM wifi_ap\n"
 			. "INNER JOIN files ON files.id = wifi_ap.File_ID\n"
-			. "WHERE files.file_user LIKE ?";
+			. "WHERE files.file_user = ?";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -369,7 +369,7 @@ class frontend extends dbcore
 
 		$sql = "SELECT COUNT(id)\n"
 			. "FROM files\n"
-			. "WHERE file_user LIKE ? And file_date != '' And completed = 1";
+			. "WHERE file_user = ? And file_date != '' And completed = 1";
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -396,7 +396,7 @@ class frontend extends dbcore
 		$regid = $vfetch ? $vfetch[0] : null;
 
 		#Get All Imports for User
-		$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user LIKE ? And file_date != '' And completed = 1 ORDER BY $sort $ord";
+		$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user = ? And file_date != '' And completed = 1 ORDER BY $sort $ord";
 		if($this->sql->service == "mysql"){$sql1 .= " LIMIT $from, $inc";}
 		else if($this->sql->service == "sqlsrv"){$sql1 .= " OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		

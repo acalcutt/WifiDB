@@ -304,7 +304,7 @@ class export extends dbcore
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
 							. "    wap.HighGps_ID IS NOT NULL And\n"
-							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)\n"
+							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user = ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 							if($from !== NULL && $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
 					}
@@ -319,7 +319,7 @@ class export extends dbcore
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
 							. "    wap.HighGps_ID IS NOT NULL And\n"
-							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)\n"
+							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user = ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 						if($from !== NULL && $inc !== NULL){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
 					}
@@ -1380,7 +1380,7 @@ class export extends dbcore
 		if($type == "full")
 		{
 			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 ORDER BY file_user ASC";
-			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE file_user LIKE ? And completed = 1 And ValidGPS = 1";
+			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE file_user = ? And completed = 1 And ValidGPS = 1";
 		}
 		elseif($type == "daily")
 		{
@@ -1391,7 +1391,7 @@ class export extends dbcore
 			$last_export_file = isset($id_fetch['last_export_file']) ? $id_fetch['last_export_file'] : 0;
 
 			$user_query = "SELECT DISTINCT(file_user) FROM files WHERE completed = 1 And ValidGPS = 1 And id > '$last_export_file' ORDER BY file_user ASC";
-			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE completed = 1 And ValidGPS = 1 And file_user LIKE ? AND id > '$last_export_file' ORDER BY id DESC";
+			$user_list_query = "SELECT id, file_user, title, file_date FROM files WHERE completed = 1 And ValidGPS = 1 And file_user = ? AND id > '$last_export_file' ORDER BY id DESC";
 		}	
 		$this->verbosed($user_query);
 		$this->verbosed($user_list_query);

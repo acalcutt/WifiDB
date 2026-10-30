@@ -343,7 +343,7 @@ switch($func)
 		$sql = "SELECT Count(AP_ID) As point_count\n"
 			. "FROM wifi_ap\n"
 			. "WHERE\n"
-			. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
+			. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user = ?)";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();

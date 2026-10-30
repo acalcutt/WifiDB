@@ -225,9 +225,9 @@ class security
 
 		#Check if username already exists
 		if($this->sql->service == "mysql")
-			{$sql = "SELECT username FROM user_info WHERE username LIKE ? LIMIT 1";}
+			{$sql = "SELECT username FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [username] FROM user_info WHERE [username] LIKE ?";}
+			{$sql = "SELECT TOP 1 [username] FROM user_info WHERE [username] = ?";}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();

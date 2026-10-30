@@ -280,7 +280,7 @@ class api extends dbcore
 		switch($task)
 		{
 			case "import":
-				$sql = "SELECT username, import_require_login FROM user_info WHERE username LIKE ?";
+				$sql = "SELECT username, import_require_login FROM user_info WHERE username = ?";
 				$stmt = $this->sql->conn->prepare($sql);
 				$stmt->bindParam(1, $user, PDO::PARAM_STR);
 				$stmt->execute();

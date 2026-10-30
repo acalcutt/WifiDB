@@ -283,9 +283,9 @@ switch($func)
 		
 		#Get users email address
 		if($dbcore->sql->service == "mysql")
-			{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";}
+			{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
-			{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] LIKE ?";}
+			{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql0);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->execute();
@@ -330,9 +330,9 @@ switch($func)
 		else
 		{
 			if($dbcore->sql->service == "mysql")
-				{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";}
+				{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] LIKE ?";}
+				{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql0);
 			$prep->bindParam(1, $username, PDO::PARAM_STR);
 			$prep->execute();
@@ -418,9 +418,9 @@ switch($func)
 				$password_hashed	= $dbcore->sec->HashPassword($newpassword);
 
 				if($dbcore->sql->service == "mysql")
-					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` LIKE ?";}
+					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$update = "UPDATE [user_info] SET [password] = ?, validated = 0, locked = 0 WHERE [username] LIKE ?";}
+					{$update = "UPDATE [user_info] SET [password] = ?, validated = 0, locked = 0 WHERE [username] = ?";}
 				$prep1 = $dbcore->sql->conn->prepare($update);
 				$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
 				$prep1->bindParam(2, $db_username, PDO::PARAM_STR);
