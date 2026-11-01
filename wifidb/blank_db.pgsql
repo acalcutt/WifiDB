@@ -708,8 +708,8 @@ ALTER TABLE "wifi_hist" ADD CONSTRAINT "wifi_hist$wifi_hist_ibfk_2" FOREIGN KEY 
 -- Seed data
 --
 
-INSERT INTO "schedule" ("id", "nodename", "daemon", "enabled", "interval", "status", "nextrun", "pid", "pidfile", "logfile") VALUES (1, 'prod', 'Import', 1, 10, 'Waiting', CAST('2021-01-31T17:02:01.000' AS timestamp), '', '', '');
-INSERT INTO "schedule" ("id", "nodename", "daemon", "enabled", "interval", "status", "nextrun", "pid", "pidfile", "logfile") VALUES (100, 'prod', 'Export', 1, 1440, 'Waiting', CAST('2021-01-31T17:31:12.000' AS timestamp), '', '', '');
+INSERT INTO "schedule" ("id", "nodename", "daemon", "enabled", "interval", "status", "nextrun", "pid", "pidfile", "logfile") VALUES (1, 'prod', 'Import', 1, 10, 'Waiting', CAST('2021-01-31T17:02:01.000' AS timestamp), 0, '', '');
+INSERT INTO "schedule" ("id", "nodename", "daemon", "enabled", "interval", "status", "nextrun", "pid", "pidfile", "logfile") VALUES (100, 'prod', 'Export', 1, 1440, 'Waiting', CAST('2021-01-31T17:31:12.000' AS timestamp), 0, '', '');
 INSERT INTO "settings" ("id", "daemon_state", "version", "apswithgps", "last_export_file", "node_name") VALUES (1, 1, '0.40', 0, 0, 'prod');
 INSERT INTO "cell_carriers" ("carrier_id", "mcc", "mcc_int", "mnc", "mnc_int", "iso", "country", "country_code", "network") VALUES (1, 289, 649, '88', 2191, 'ge', 'Abkhazia', '7', 'A-Mobile');
 INSERT INTO "cell_carriers" ("carrier_id", "mcc", "mcc_int", "mnc", "mnc_int", "iso", "country", "country_code", "network") VALUES (2, 289, 649, '68', 1679, 'ge', 'Abkhazia', '7', 'A-Mobile');

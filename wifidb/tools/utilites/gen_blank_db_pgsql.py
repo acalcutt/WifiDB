@@ -85,6 +85,7 @@ def parse_key_cols(block):
 
 
 tables = OrderedDict()
+coltypes = {}   # table -> column -> Postgres type, for the seed rows
 for m in re.finditer(r'CREATE TABLE \[dbo\]\.\[([^\]]+)\]\((.*?)\n\)\s*ON \[PRIMARY\]', src, re.S):
     table, body = m.group(1), m.group(2)
     cols, constraints = [], []
@@ -96,7 +97,9 @@ for m in re.finditer(r'CREATE TABLE \[dbo\]\.\[([^\]]+)\]\((.*?)\n\)\s*ON \[PRIM
         if not cm:
             continue
         name, rawtype, ident, nullable = cm.group(1), cm.group(2), cm.group(3), cm.group(4)
-        piece = '    %s %s' % (q(name), map_type(rawtype, ident))
+        pgtype = map_type(rawtype, ident)
+        coltypes.setdefault(table, {})[name] = pgtype
+        piece = '    %s %s' % (q(name), pgtype)
         dflt = defaults.get((table, name))
         if dflt:
             piece += ' DEFAULT %s' % dflt
@@ -216,12 +219,53 @@ w('-- Seed data')
 w('--')
 w('')
 
+def split_values(values):
+    """The comma-separated literals of a VALUES list, leaving commas inside quotes and brackets alone."""
+    parts, cur, depth, quote, i = [], '', 0, False, 0
+    while i < len(values):
+        c = values[i]
+        if quote:
+            cur += c
+            if c == "'":
+                if values[i + 1:i + 2] == "'":
+                    cur += "'"
+                    i += 1
+                else:
+                    quote = False
+        elif c == "'":
+            quote = True
+            cur += c
+        elif c == '(':
+            depth += 1
+            cur += c
+        elif c == ')':
+            depth -= 1
+            cur += c
+        elif c == ',' and depth == 0:
+            parts.append(cur)
+            cur = ''
+        else:
+            cur += c
+        i += 1
+    parts.append(cur)
+    return parts
+
+
 seeded = []
 for m in re.finditer(r'^INSERT \[dbo\]\.\[([^\]]+)\] \((.*?)\) VALUES \((.*)\)\s*$', src, re.M):
     table, collist, values = m.group(1), m.group(2), m.group(3)
     if table not in seeded:
         seeded.append(table)
-    cols = ', '.join(q(c) for c in re.findall(r'\[([^\]]+)\]', collist))
+    names = re.findall(r'\[([^\]]+)\]', collist)
+    cols = ', '.join(q(c) for c in names)
+    # SQL Server reads '' as 0 for a number column; Postgres refuses it, so the seed says 0
+    parts = split_values(values)
+    numeric = ('integer', 'bigint', 'smallint', 'double precision')
+    for i, name in enumerate(names):
+        ctype = coltypes.get(table, {}).get(name, '')
+        if parts[i].strip() in ("''", "N''") and (ctype.startswith(numeric) or ctype.startswith('numeric')):
+            parts[i] = '0'
+    values = ', '.join(p.strip() for p in parts)
     vals = re.sub(r'\bCAST\(N?(\'(?:[^\']|\'\')*\') AS DateTime2?\)', r'CAST(\1 AS timestamp)', values)
     vals = re.sub(r"\bN('(?:[^']|'')*')", r'\1', vals)
     w('INSERT INTO %s (%s) VALUES (%s);' % (q(table), cols, vals))
