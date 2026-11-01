@@ -644,8 +644,37 @@ class import extends dbcore
 	private function InsertAp($File_ID, $BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS)
 	{
 		$ap_hash = md5($SSID.$BSSID.$CHAN.$SECTYPE.$AUTH.$ENCR);
+		$return = 0;
 
-		if($this->sql->service == "pgsql")
+		if($this->sql->service == "mysql")
+		{
+			// MariaDB's version of the MERGE below, on the unique ap_hash key. LAST_INSERT_ID(AP_ID) makes lastInsertId()
+			// the access point's id whether it was added or already there, and rowCount() says which (1 added, 2 updated).
+			$retry = true;
+			while ($retry)
+			{
+				try
+				{
+					$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, FLAGS, ap_hash, File_ID)\n"
+						. "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n"
+						. "ON DUPLICATE KEY UPDATE ModDate = CURRENT_TIMESTAMP(3), AP_ID = LAST_INSERT_ID(AP_ID)";
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->execute(array($BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS, $ap_hash, $File_ID));
+					$action = $prep->rowCount() == 1 ? 'INSERT' : 'UPDATE';
+					$prep = $this->sql->conn->prepare("SELECT AP_ID, RADTYPE, FLAGS FROM wifi_ap WHERE AP_ID = ?");
+					$prep->execute(array($this->sql->conn->lastInsertId()));
+					$return = $prep->fetch(2);
+					if($return) { $return['$action'] = $action; }
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					$return = 0;
+				}
+			}
+		}
+		else if($this->sql->service == "pgsql")
 		{
 			// Postgres equivalent of the MERGE below. ap_hash is
 			// md5(SSID+BSSID+CHAN+SECTYPE+AUTH+ENCR), exactly the tuple the MERGE
