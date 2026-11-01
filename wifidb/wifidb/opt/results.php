@@ -48,8 +48,11 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	if ($from == ""){$from = 0;}
 	if ($inc == ""){$inc = 100;}
 	if ($map_inc == ""){$map_inc = 50000;}
-	if ($ord == ""){$ord = "ASC";}
-	if ($sort == ""){$sort = "ssid";}
+	# sort and ord go into ORDER BY: only these, and each column named as it is in wifi_ap (PostgreSQL minds the case)
+	$ord = (strtoupper((string)$ord) === "DESC") ? "DESC" : "ASC";
+	$sorts = array("ap_id" => "AP_ID", "ssid" => "SSID", "bssid" => "BSSID", "chan" => "CHAN", "auth" => "AUTH", "encr" => "ENCR",
+		"radtype" => "RADTYPE", "fa" => "fa", "la" => "la", "points" => "points", "moddate" => "ModDate");
+	$sort = isset($sorts[strtolower((string)$sort)]) ? $sorts[strtolower((string)$sort)] : "SSID";
 	$labeled = 0;
 	$new_icons = 0;
 	$to = ($from + $inc);
