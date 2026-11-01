@@ -436,7 +436,7 @@ class api extends dbcore
 
 				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$id;
 				$this->mesg = "Lat/Long are the same, move a little you lazy bastard.";
-				$sql = "UPDATE live_aps SET LA = ?, sig = ? WHERE id = ?";
+				$sql = "UPDATE live_aps SET ".$this->sql->ident('LA')." = ?, sig = ? WHERE id = ?";   # LA is mixed case: quoted on PostgreSQL
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $data['hist_date'], PDO::PARAM_STR);
 				$prep->bindParam(2, $sig, PDO::PARAM_STR);
@@ -509,7 +509,7 @@ class api extends dbcore
 
 				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$gps_id;
 
-				$sql = "UPDATE live_aps SET sig = ?, LA = ?, lat = ?, long = ? WHERE id = ?";
+				$sql = "UPDATE live_aps SET sig = ?, ".$this->sql->ident('LA')." = ?, lat = ?, long = ? WHERE id = ?";
 				#echo $sql."<br /><br />";
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $sig, PDO::PARAM_STR);
@@ -580,8 +580,9 @@ class api extends dbcore
 				$this->mesg = "Added Signal data.";
 			}
 			$sig = $this->sql->conn->lastInsertId()."|".$gps_id;
+			$q = function ($name) { return $this->sql->ident($name); };   # live_aps's mixed-case columns, quoted on PostgreSQL
 			$sql = "INSERT INTO  live_aps ( ssid, mac,  chan, radio, auth, encry, sectype,
-				BTx, OTx, NT, label, sig, username, FA, LA, lat, long, session_id, ap_hash)
+				".$q('BTx').", ".$q('OTx').", ".$q('NT').", ".$q('Label').", sig, username, ".$q('FA').", ".$q('LA').", lat, long, session_id, ap_hash)
 											VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
 			$chan = (int)$data['chan'];
 			$prep = $this->sql->conn->prepare($sql);
