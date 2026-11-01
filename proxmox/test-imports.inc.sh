@@ -20,7 +20,9 @@ import_type() { # import_type FILE: what the upload page's "type" would be
 }
 
 samples=("$IMPORT_SAMPLES"/*)
-log "importing ${#samples[@]} real uploads"
+# the upload page turns away a file it already has (by hash), so the same file twice is queued once
+distinct=$(md5sum "${samples[@]}" | cut -d' ' -f1 | sort -u | wc -l)
+log "importing ${#samples[@]} real uploads ($distinct different files)"
 imhash=$(docker exec -e P="import pass phrase" "$ct" php -r 'echo password_hash(getenv("P"), PASSWORD_BCRYPT);')
 sqlq "INSERT INTO user_info (username, password, uid, email, validated, permissions) VALUES ('importer', '$imhash', 'im1', 'im@example.test', 0, '0001')" >/dev/null
 imsession=$(docker exec "$ct" curl -s -D - -o /dev/null -H "Cookie: $tzc" -X POST --data-urlencode "time_user=importer" --data-urlencode "time_pass=import pass phrase" \
@@ -28,13 +30,23 @@ imsession=$(docker exec "$ct" curl -s -D - -o /dev/null -H "Cookie: $tzc" -X POS
 check "the importing member signs in" test -n "$imsession"
 before=$(sqlq "select count(*) from files_tmp")
 docker exec "$ct" mkdir -p /var/tmp/samples
+# first, a file sent as the wrong type (a WiGLE .gz as Vistumbler; a byte added so it isn't a duplicate): it has to be
+# set aside without stopping the run, so everything queued after it still imports
+wrong=$(ls "$IMPORT_SAMPLES"/*.gz 2>/dev/null | head -1)
+if [ -n "$wrong" ]; then
+    { cat "$wrong"; echo; } > /tmp/wrong-type.$id.gz
+    docker cp /tmp/wrong-type.$id.gz "$ct:/var/tmp/samples/wrong-type.gz"; rm -f /tmp/wrong-type.$id.gz
+    docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc; WiFiDB_login_yes=$imsession" -F "upload[]=@/var/tmp/samples/wrong-type.gz" \
+        -F user=importer -F "title=sample zz-wrong-type.gz" -F "type=vistumbler" 'http://127.0.0.1/import/index.php?func=import'
+    distinct=$((distinct + 1))
+fi
 for f in "${samples[@]}"; do
     base=$(basename "$f")
     docker cp "$f" "$ct:/var/tmp/samples/$base"
     docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc; WiFiDB_login_yes=$imsession" -F "upload[]=@/var/tmp/samples/$base" \
         -F user=importer -F "title=sample $base" -F "type=$(import_type "$f")" 'http://127.0.0.1/import/index.php?func=import'
 done
-check "the upload page queued all ${#samples[@]}" test "$(sqlq "select count(*) from files_tmp")" = "$((before + ${#samples[@]}))"
+check "the upload page queued all $distinct, each once" test "$(sqlq "select count(*) from files_tmp")" = "$((before + distinct))"
 
 started=$(date +%s)
 imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -f -o -v 2>&1)
@@ -55,6 +67,7 @@ done_n=$(grep -c '|done|' /tmp/import-report.$id)
 bad_n=$(grep -c '|bad|' /tmp/import-report.$id)
 log "imported $done_n, set aside $bad_n"
 sed 's/^/       /' /tmp/import-report.$id | cut -c1-200
-check "every upload either imported or was set aside with a reason" test "$((done_n + bad_n))" = "${#samples[@]}"
+check "every upload either imported or was set aside with a reason" test "$((done_n + bad_n))" = "$distinct"
+[ -n "$wrong" ] && check "...the one sent as the wrong type among those set aside" grep -q '^zz-wrong-type.gz|bad|' /tmp/import-report.$id
 [ -n "${IMPORT_REPORT:-}" ] && cp /tmp/import-report.$id "$IMPORT_REPORT"
 rm -f /tmp/import-report.$id
