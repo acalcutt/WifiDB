@@ -134,7 +134,7 @@ foreach($paths as $path)
 			# a name handed to a function, ident('Lat'), is quoted by it: not query text
 			$prev = $i - 1; while($prev >= 0 && is_array($tokens[$prev]) && $tokens[$prev][0] === T_WHITESPACE) { $prev--; }
 			$next = $i + 1; while($next < $n && is_array($tokens[$next]) && $tokens[$next][0] === T_WHITESPACE) { $next++; }
-			if($prev >= 0 && $tokens[$prev] === '(' && $next < $n && ($tokens[$next] === ')' || $tokens[$next] === ','))
+			if($prev >= 0 && $tokens[$prev] === '(' && $next < $n && ($tokens[$next] === ')' || $tokens[$next] === ',') && preg_match('/^([\'"])[A-Za-z_][A-Za-z0-9_]*\1$/', $s))
 			{
 				$stmt['text'] .= $s;
 				continue;
