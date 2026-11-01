@@ -54,7 +54,8 @@ foreach($paths as $path)
 		if($stmt['strings'])
 		{
 			$sql = sql_text($stmt['strings']);
-			if(preg_match('/\b(SELECT|INSERT\s+INTO|UPDATE|DELETE\s+FROM|MERGE)\b/i', $sql) && preg_match_all($mixedRe, $sql, $hits))
+			# the shape of a query, not just a keyword ("Update profile Vis_ver for ..." is a log message)
+			if(preg_match('/\bSELECT\b.+\bFROM\b|\bINSERT\s+INTO\b|\bUPDATE\s+\S+\s+SET\b|\bDELETE\s+FROM\b|\bMERGE\b/is', $sql) && preg_match_all($mixedRe, $sql, $hits))
 			{
 				# judged at the end of the file: a pgsql arm later in the same if/elseif chain hasn't been read yet
 				$report[] = array($stmt['line'], implode(',', array_unique($hits[1])), stripos($stmt['text'], 'pgsql') !== false, $stack);
