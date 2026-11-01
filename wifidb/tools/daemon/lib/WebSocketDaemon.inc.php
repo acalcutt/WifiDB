@@ -98,11 +98,22 @@ class WebSocketDaemon extends WebSocketServer {
 
     public function FetchLiveAPs($limit = 0)
     {
-        $sql = "SELECT `a`.`id`, `ssid`, `mac`, `auth`, `encry`, `radio`, `chan`, `FA`, `LA`, `lat`, `long`, `b`.`title`, `c`.`username`
+        if($this->sql->service == "pgsql")
+        {
+            $sql = "SELECT a.id, ssid, mac, auth, encry, radio, chan, \"FA\", \"LA\", lat, long, b.title, c.username
+                FROM live_aps AS a
+                LEFT JOIN live_users AS c ON a.session_id = c.session_id
+                LEFT JOIN live_titles AS b ON b.id = c.title_id
+                ORDER BY b.id, a.id ASC";
+        }
+        else
+        {
+            $sql = "SELECT `a`.`id`, `ssid`, `mac`, `auth`, `encry`, `radio`, `chan`, `FA`, `LA`, `lat`, `long`, `b`.`title`, `c`.`username`
                 FROM `live_aps` AS a
                 LEFT JOIN `live_users` AS `c` ON `a`.`session_id` = `c`.`session_id`
                 LEFT JOIN `live_titles` AS `b` ON `b`.`id` = `c`.`title_id`
                 ORDER BY `b`.`id`, `a`.`id` ASC";
+        }
         #var_dump($sql);
         $res = $this->sql->conn->query($sql);
         $this->sql->checkError($res, __LINE__, __FILE__);

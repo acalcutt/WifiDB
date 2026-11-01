@@ -64,6 +64,8 @@ class daemon extends wdbcli
 			{$D_SQL = "SELECT daemon_state FROM settings WHERE node_name = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$D_SQL = "SELECT TOP 1 [daemon_state] FROM [settings] WHERE [node_name] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$D_SQL = "SELECT daemon_state FROM settings WHERE node_name = ? LIMIT 1";}
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
 		$Dresult->execute();
@@ -81,6 +83,8 @@ class daemon extends wdbcli
 					{$E_SQL = "SELECT enabled FROM schedule WHERE id = ? LIMIT 1";}
 				else if($this->sql->service == "sqlsrv")
 					{$E_SQL = "SELECT TOP 1 [enabled] FROM [schedule] WHERE [id] = ?";}
+				else if($this->sql->service == "pgsql")
+					{$E_SQL = "SELECT enabled FROM schedule WHERE id = ? LIMIT 1";}
 				$Eresult = $this->sql->conn->prepare($E_SQL);
 				$Eresult->bindParam(1, $sched_id, PDO::PARAM_INT);
 				$Eresult->execute();
@@ -114,6 +118,8 @@ class daemon extends wdbcli
 					{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
+				else if($this->sql->service == "pgsql")
+					{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
 				$prep = $this->sql->conn->prepare($sql_check);
 				$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
 				$prep->execute();
@@ -150,6 +156,8 @@ class daemon extends wdbcli
 			{$sql = "UPDATE files_bad SET thread_id = ?, node_name = ? WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "UPDATE [files_bad] SET [thread_id] = ?, [node_name] = ? WHERE [id] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "UPDATE files_bad SET thread_id = ?, node_name = ? WHERE id = ?";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $this->thread_id, PDO::PARAM_INT);
 		$prep->bindParam(2, $this->node_name, PDO::PARAM_STR);
@@ -169,6 +177,8 @@ class daemon extends wdbcli
 				{$sql = "DELETE FROM files_importing WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "DELETE FROM [files_importing] WHERE [id] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "DELETE FROM files_importing WHERE id = ?";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
@@ -186,6 +196,8 @@ class daemon extends wdbcli
 				{$sql = "DELETE FROM files WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "DELETE FROM [files] WHERE [id] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "DELETE FROM files WHERE id = ?";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep->execute();
@@ -308,6 +320,8 @@ class daemon extends wdbcli
 				{$update_tmp = "UPDATE files_importing SET tot = 'Preparing for Import', importing = '1' WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$update_tmp = "UPDATE [files_importing] SET [tot] = 'Preparing for Import', [importing] = '1' WHERE [id] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$update_tmp = "UPDATE files_importing SET tot = 'Preparing for Import', importing = '1' WHERE id = ?";}
 			$prep4 = $this->sql->conn->prepare($update_tmp);
 			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
 			$prep4->execute();
@@ -521,6 +535,8 @@ class daemon extends wdbcli
 						{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, NewAPPercent = ?, completed = 1 WHERE id = ?";}
 					else if($this->sql->service == "sqlsrv")
 						{$update_files_table_sql = "UPDATE [files] SET [aps] = ?, [gps] = ?, [NewAPPercent] = ?, [completed] = 1 WHERE [id] = ?";}
+					else if($this->sql->service == "pgsql")
+						{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, \"NewAPPercent\" = ?, completed = 1 WHERE id = ?";}
 					$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
 					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
@@ -534,6 +550,8 @@ class daemon extends wdbcli
 						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
 					else if($this->sql->service == "sqlsrv")
 						{$del_file_tmp = "DELETE FROM [files_importing] WHERE [id] = ?";}
+					else if($this->sql->service == "pgsql")
+						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
 					#echo $del_file_tmp."\r\n";
 					$prep = $this->sql->conn->prepare($del_file_tmp);
 					$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
@@ -604,14 +622,50 @@ class daemon extends wdbcli
 		
 		
 		
-		if($this->sql->service == "sqlsrv")
-		{			
+		if($this->sql->service == "pgsql")
+		{
+			// Postgres equivalent of the MERGE below. files_tmp.hash already carries
+			// a unique constraint (files_tmp$hash), so DO NOTHING reproduces the
+			// "WHEN NOT MATCHED THEN INSERT" arm exactly.
 			$retry = true;
 			while ($retry)
 			{
-				try 
+				try
 				{
-					
+					$sql = "INSERT INTO files_tmp (type, file_name, file_orig, file_date, file_user, notes, title, size, hash)\n"
+						. "VALUES (:type, :file_name, :file_orig, :file_date, :file_user, :notes, :title, :size, :hash)\n"
+						. "ON CONFLICT (hash) DO NOTHING";
+
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':type', $type);
+					$prep->bindParam(':file_name', $file);
+					$prep->bindParam(':file_orig', $file_orig);
+					$prep->bindParam(':file_date', $date);
+					$prep->bindParam(':file_user', $user);
+					$prep->bindParam(':notes', $notes);
+					$prep->bindParam(':title', $title);
+					$prep->bindParam(':size', $size1);
+					$prep->bindParam(':hash', $hash);
+
+					$prep->execute();
+					$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+				}
+			}
+		}
+		else if($this->sql->service == "sqlsrv")
+		{
+			$retry = true;
+			while ($retry)
+			{
+				try
+				{
+
 					$sql = "MERGE INTO files_tmp WITH (HOLDLOCK)\n"
 						. "	USING (SELECT :s_hash AS hash) AS newcell (hash)\n"
 						. "		ON files_tmp.hash = newcell.hash\n"
@@ -682,6 +736,8 @@ class daemon extends wdbcli
 			{$sql = "UPDATE schedule SET nextrun = ? , status = ? WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "UPDATE [schedule] SET [nextrun] = ? , [status] = ? WHERE [id] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "UPDATE schedule SET nextrun = ? , status = ? WHERE id = ?";}
 		$prepnr = $this->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $this->StatusWaiting, PDO::PARAM_STR);
@@ -700,6 +756,8 @@ class daemon extends wdbcli
 			{$sql = "UPDATE schedule SET status = ?, nextrun = ? WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "UPDATE [schedule] SET [status] = ?, [nextrun] = ? WHERE [id] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "UPDATE schedule SET status = ?, nextrun = ? WHERE id = ?";}
 		$prepsr = $this->sql->conn->prepare($sql);
 		$prepsr->bindParam(1, $this->StatusRunning, PDO::PARAM_STR);
 		$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
@@ -715,6 +773,8 @@ class daemon extends wdbcli
 			{$sql = "SELECT count(id) FROM files_tmp";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT count([id]) FROM [files_tmp]";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "SELECT count(id) FROM files_tmp";}
 		$result = $this->sql->conn->query($sql);
 		$fetch = $result->fetch();
 	}

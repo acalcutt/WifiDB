@@ -46,7 +46,7 @@ switch($func)
         header('Location: '.$dbcore->HOSTURL.$dbcore->root.'/opt/scheduling.php');
     break;
     case 'done':
-        $sql = "SELECT * FROM `files` ORDER BY `id` DESC";
+        $sql = "SELECT * FROM files ORDER BY id DESC";
         #echo $sql;
         $result = $dbcore->sql->conn->query($sql);
         $class_f = 0;
@@ -207,9 +207,13 @@ switch($func)
             $sql = "SELECT TOP 1 a.[la] FROM [wifi_ap] a LEFT JOIN [wifi_gps] g ON g.[GPS_ID] = a.[HighGps_ID] WHERE g.[Lat] <> 0.0000 ORDER BY a.[AP_ID] DESC";
             $result = $dbcore->sql->conn->query($sql);
             $ap_array = $result->fetch(2);
+        } else if ($dbcore->sql->service == "pgsql") {
+            $sql = 'SELECT a.la FROM wifi_ap a LEFT JOIN wifi_gps g ON g."GPS_ID" = a."HighGps_ID" WHERE g."Lat" <> 0.0000 ORDER BY a."AP_ID" DESC LIMIT 1';
+            $result = $dbcore->sql->conn->query($sql);
+            $ap_array = $result->fetch(2);
         } else {
             // Fallback: any non-null la
-            $sql = "SELECT la FROM `wifi_ap` WHERE la IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";
+            $sql = "SELECT la FROM wifi_ap WHERE la IS NOT NULL ORDER BY AP_ID DESC LIMIT 1";
             $result = $dbcore->sql->conn->query($sql);
             $ap_array = $result->fetch(2);
         }
@@ -302,7 +306,7 @@ switch($func)
 
     default:
         #include $dbcore->TOOLS_PATH."/daemon/config.inc.php";
-        $sql = "SELECT * FROM `settings` WHERE `id` = '1'";
+        $sql = "SELECT * FROM settings WHERE id = '1'";
         $result = $dbcore->sql->conn->query($sql);
         $file_array = $result->fetch(2);
         $timezone_opt = '';
@@ -357,7 +361,7 @@ switch($func)
         }
         $sched_row = array();
         $n=0;
-        $sql = "SELECT * FROM `files_tmp` ORDER BY `date` ASC";
+        $sql = "SELECT * FROM files_tmp ORDER BY file_date ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -404,7 +408,7 @@ switch($func)
 
         $schedule_row = array();
         $n=0;
-        $sql = "SELECT * FROM `schedule` ORDER BY `nodename` ASC";
+        $sql = "SELECT * FROM schedule ORDER BY nodename ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {
@@ -453,7 +457,7 @@ switch($func)
 
         $pid_row = array();
         $n=0;
-        $sql = "SELECT * FROM `daemon_pid_stats` ORDER BY `nodename` ASC";
+        $sql = "SELECT * FROM daemon_pid_stats ORDER BY nodename ASC";
         $result_1 = $dbcore->sql->conn->query($sql);
         while ($newArray = $result_1->fetch(2))
         {

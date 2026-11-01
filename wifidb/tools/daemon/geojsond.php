@@ -71,6 +71,33 @@ else if($dbcore->sql->service == "sqlsrv")
 		];
 	}
 
+else if($dbcore->sql->service == "pgsql")
+	{
+		// Same six age buckets as the branches above. They differ only in the
+		// wap.la window, so they are built from one template here rather than
+		// repeating a 700-character query six times. DATE_SUB / dateadd become
+		// "timestamp - interval", and paging is LIMIT/OFFSET.
+		$pg_select = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi, wGPS."Lat" As "Lat", wGPS."Lon" As "Lon", wGPS."Alt" As "Alt", wf.file_user'
+			. ' FROM wifi_ap AS wap'
+			. ' LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'
+			. ' LEFT JOIN files AS wf ON wf.id = wap."File_ID"'
+			. ' WHERE wap."HighGps_ID" IS NOT NULL AND wap.points IS NOT NULL';
+		$pg_now = "TIMESTAMP '$currentrun'";
+		$pg_windows = [
+			["WifiDB_Legacy.json",   " AND wap.la < ".$pg_now." - INTERVAL '3 years'"],
+			["WifiDB_2to3year.json", " AND wap.la >= ".$pg_now." - INTERVAL '3 years' AND wap.la < ".$pg_now." - INTERVAL '2 years'"],
+			["WifiDB_1to2year.json", " AND wap.la >= ".$pg_now." - INTERVAL '2 years' AND wap.la < ".$pg_now." - INTERVAL '1 year'"],
+			["WifiDB_0to1year.json", " AND wap.la >= ".$pg_now." - INTERVAL '1 year' AND wap.la < ".$pg_now." - INTERVAL '1 month'"],
+			["WifiDB_monthly.json",  " AND wap.la >= ".$pg_now." - INTERVAL '1 month' AND wap.la < ".$pg_now." - INTERVAL '1 week'"],
+			["WifiDB_weekly.json",   " AND wap.la >= ".$pg_now." - INTERVAL '1 week'"],
+		];
+		$exports = [];
+		foreach($pg_windows as list($pg_name, $pg_where))
+		{
+			$exports[] = [$pg_name, $pg_select.$pg_where.' ORDER BY wap."AP_ID" LIMIT ? OFFSET ?'];
+		}
+	}
+
 // ── CLI flags ─────────────────────────────────────────────────────────────────
 // --file FILENAME   Process only the named output file (e.g. WifiDB_weekly.json).
 //                   Run multiple instances in parallel from an external wrapper
@@ -95,6 +122,12 @@ foreach ($exports as list($filename, $sql)) {
         $ksql = str_replace(
             'ORDER BY wap.AP_ID LIMIT ?,?',
             'AND wap.AP_ID > ? ORDER BY wap.AP_ID LIMIT ?',
+            $sql
+        );
+    } else if ($dbcore->sql->service === 'pgsql') {
+        $ksql = str_replace(
+            'ORDER BY wap."AP_ID" LIMIT ? OFFSET ?',
+            'AND wap."AP_ID" > ? ORDER BY wap."AP_ID" LIMIT ?',
             $sql
         );
     } else {

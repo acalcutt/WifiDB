@@ -11,7 +11,7 @@ if($dbcore->sql->service == "mysql")
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT [AP_ID],[SSID],[BSSID],[CHAN],[SECTYPE],[AUTH],[ENCR],[FLAGS],[ap_hash] FROM [wifi_ap] ORDER BY [AP_ID] ASC";}
 else if($dbcore->sql->service == "pgsql")
-	{$sql = "SELECT ap_id,ssid,bssid,chan,sectype,auth,encr,flags,ap_hash FROM wifi_ap ORDER BY AP_ID ASC";}
+	{$sql = "SELECT \"AP_ID\",\"SSID\",\"BSSID\",\"CHAN\",\"SECTYPE\",\"AUTH\",\"ENCR\",\"FLAGS\",ap_hash FROM wifi_ap ORDER BY \"AP_ID\" ASC";}
 echo $sql."\r\n";
 $result = $dbcore->sql->conn->query($sql);
 $dbcore->verbosed("Gathered AP data");
@@ -48,7 +48,7 @@ while($ap = $result->fetch(1))
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "UPDATE [wifi_ap] SET [ap_hash] = ?, [CHAN] = ?, [AUTH] = ?, [ENCR] = ? WHERE [AP_ID] = ?";}
 		else if($dbcore->sql->service == "pgsql")
-			{$sql = "UPDATE wifi_ap SET ap_hash = ?, chan = ?, auth = ?, encr = ? WHERE ap_id = ?";}
+			{$sql = "UPDATE wifi_ap SET ap_hash = ?, \"CHAN\" = ?, \"AUTH\" = ?, \"ENCR\" = ? WHERE \"AP_ID\" = ?";}
 		
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $ap_hash, PDO::PARAM_STR);
@@ -84,7 +84,7 @@ while($ap = $result->fetch(1))
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sqlh = "SELECT [AP_ID] FROM [wifi_ap] WHERE `ap_hash` = ? ORDER BY AP_ID ASC";}
 	else if($dbcore->sql->service == "pgsql")
-		{$sqlh = "SELECT ap_id_ID FROM wifi_ap WHERE `ap_hash` = ? ORDER BY AP_ID ASC";}
+		{$sqlh = "SELECT \"AP_ID\" FROM wifi_ap WHERE ap_hash = ? ORDER BY \"AP_ID\" ASC";}
 	$prep2 = $dbcore->sql->conn->prepare($sqlh);
 	$prep2->bindParam(1, $ap_hash, PDO::PARAM_STR);
 	$prep2->execute();
@@ -109,7 +109,7 @@ while($ap = $result->fetch(1))
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlu = "UPDATE [wifi_hist] SET [AP_ID] = ?, New = 0 WHERE [AP_ID] = ?";}
 			else if($dbcore->sql->service == "pgsql")
-				{$sqlu = "UPDATE wifi_hist SET ap_id = ?, new = 0 WHERE `ap_id` = ?";}
+				{$sqlu = "UPDATE wifi_hist SET \"AP_ID\" = ?, \"New\" = 0 WHERE \"AP_ID\" = ?";}
 			$prep3 = $dbcore->sql->conn->prepare($sqlu);
 			$prep3->bindParam(1, $new_apid, PDO::PARAM_INT);
 			$prep3->bindParam(2, $orig_apid, PDO::PARAM_INT);
@@ -122,7 +122,7 @@ while($ap = $result->fetch(1))
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqld = "DELETE FROM [wifi_ap] WHERE [AP_ID] = ?";}
 			else if($dbcore->sql->service == "pgsql")
-				{$sqld = "DELETE FROM wifi_ap WHERE ap_id = ?";}
+				{$sqld = "DELETE FROM wifi_ap WHERE \"AP_ID\" = ?";}
 			$prep4 = $dbcore->sql->conn->prepare($sqld);
 			$prep4->bindParam(1, $orig_apid, PDO::PARAM_INT);
 			$prep4->execute();

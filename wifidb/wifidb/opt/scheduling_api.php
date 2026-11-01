@@ -72,7 +72,7 @@ try {
     switch ($func) {
         case 'waiting':
             $waiting_row = array(); $n=0;
-            if (strtolower($dbcore->sql->service) == 'mysql') {
+            if (strtolower($dbcore->sql->service) == 'mysql' || strtolower($dbcore->sql->service) == 'pgsql') {
                 $sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_tmp ORDER BY file_date DESC LIMIT 250";
             } else {
                 $sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_tmp ORDER BY file_date DESC OFFSET 0 ROWS FETCH NEXT 250 ROWS ONLY";
@@ -99,7 +99,7 @@ try {
 
         case 'importing':
             $importing_row = array(); $n=0;
-            if (strtolower($dbcore->sql->service) == 'mysql') {
+            if (strtolower($dbcore->sql->service) == 'mysql' || strtolower($dbcore->sql->service) == 'pgsql') {
                 $sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_importing ORDER BY file_date DESC LIMIT 250";
             } else {
                 $sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user FROM files_importing ORDER BY file_date DESC OFFSET 0 ROWS FETCH NEXT 250 ROWS ONLY";
@@ -160,7 +160,7 @@ try {
 
             // Build schedule rows with nextrun_local, color, schedpid
             $schedule_row = array(); $n = 0;
-            $sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.interval, schedule.status, schedule.nextrun, schedule.logfile, schedule.pidfile, schedule.pid AS schedpid,\n"
+            $sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.".$dbcore->sql->ident('interval')." , schedule.status, schedule.nextrun, schedule.logfile, schedule.pidfile, schedule.pid AS schedpid,\n"
                  . "daemon_pid_stats.pid, daemon_pid_stats.pidtime, daemon_pid_stats.pidcpu, daemon_pid_stats.pidmem, daemon_pid_stats.pidcmd, daemon_pid_stats.date AS pidud\n"
                  . "FROM schedule\n"
                  . "LEFT OUTER JOIN daemon_pid_stats ON daemon_pid_stats.pidfile = schedule.pidfile\n"
@@ -260,7 +260,7 @@ try {
         break;
 
         case 'done':
-            if (strtolower($dbcore->sql->service) == 'mysql') {
+            if (strtolower($dbcore->sql->service) == 'mysql' || strtolower($dbcore->sql->service) == 'pgsql') {
                 $sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ValidGPS, size, NewAPPercent, hash FROM files WHERE completed = 1 ORDER BY file_date DESC LIMIT 250";
             } else {
                 $sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ValidGPS, size, NewAPPercent, hash FROM files WHERE completed = 1 ORDER BY file_date DESC OFFSET 0 ROWS FETCH NEXT 250 ROWS ONLY";
@@ -293,7 +293,7 @@ try {
 
         case 'bad':
             $bad_row = array(); $n=0; $class_f = 0;
-            if (strtolower($dbcore->sql->service) == 'mysql') {
+            if (strtolower($dbcore->sql->service) == 'mysql' || strtolower($dbcore->sql->service) == 'pgsql') {
                 $sql = "SELECT id, file_name, file_orig, file_user, notes, title, file_date, size, hash, type, error_msg FROM files_bad ORDER BY file_date DESC LIMIT 250";
             } else {
                 $sql = "SELECT id, file_name, file_orig, file_user, notes, title, file_date, size, hash, type, error_msg FROM files_bad ORDER BY file_date DESC OFFSET 0 ROWS FETCH NEXT 250 ROWS ONLY";

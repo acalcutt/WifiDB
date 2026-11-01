@@ -20,9 +20,11 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 	* A database driver, one of:  
 		* pdo_mysql (PHP's driver for MariaDB), for MariaDB  
 		* pdo_sqlsrv and Microsoft's ODBC Driver 18 for SQL Server (msodbcsql18), for SQL Server  
+		* pdo_pgsql, for PostgreSQL  
 * One of the following databases  
 	* MariaDB 10.6 or later (utf8mb4). MySQL is not supported: blank_db.sql uses index sizes that only MariaDB allows  
 	* Microsoft SQL Server 2019 or later (needed for UTF8 support)  
+	* PostgreSQL 11 or later (needed for covering indexes)  
 * Apache 2.4 or later
 * Composer 2, to install Smarty (it is pinned to 4.5.8 in composer.json and composer.lock, not kept in the repository)  
 * A Web-browser (doh!)  
@@ -41,10 +43,19 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 	6.) Create a blank database (ex. wifi) and import the schema into it  
 		* MariaDB: import 'blank_db.sql'  
 		* SQL Server: import 'blank_db.sqlsrv' (Note: Replace all instances of 'prod_wifi' in blank_db.sqlsrv with what you named your database)  
+		* PostgreSQL: createdb wifi; psql -d wifi -f blank_db.pgsql (it names no database, so there is nothing to replace)  
 	7.) Create a database user that has access to the database created in the previous step  
 	8.) Update your daemon config file, [tools]/daemon.config.inc.php (start from daemon.config.inc.php.example)  
 	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php (start from config.inc.php.example)  
-		In the "SQL Info" section, use the SQL Server settings ('srvc' => 'sqlsrv') or the MariaDB settings ('srvc' => 'mysql', which is the name of PHP's driver for it).  
+		In the "SQL Info" section, use the SQL Server settings ('srvc' => 'sqlsrv'), the MariaDB settings ('srvc' => 'mysql', which is the name of PHP's driver for it) or the PostgreSQL settings ('srvc' => 'pgsql', port 5432).  
+
+  PostgreSQL and identifier case
+  --------------
+	The schema keeps mixed-case names (GPS_ID, ModDate, ValidGPS, Country, ...) because the PHP layer reads result rows
+	by those exact keys. MariaDB and SQL Server match column names case-insensitively; PostgreSQL folds unquoted
+	identifiers to lower case. blank_db.pgsql therefore creates every identifier double-quoted, and the pgsql query
+	branches must double-quote any mixed-case column they reference (tools/utilites/pg_check_case.py checks this;
+	tools/utilites/pg_audit.py lists query sites that have no pgsql branch). A plain lower-case name needs no quoting.
 	
   To Import Manually:  
 	cd [tools]/daemon  

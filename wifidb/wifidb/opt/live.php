@@ -78,6 +78,8 @@ switch($func)
 			{$sql = "SELECT COUNT(*) FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval_v} {$interval_i})";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT COUNT(*) FROM [live_aps] WHERE [la] >= dateadd({$interval_i}, -{$interval_v}, getdate())";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT COUNT(*) FROM live_aps WHERE la >= dateadd({$interval_i}, -{$interval_v}, CURRENT_TIMESTAMP)";}
 		$sqlprep = $dbcore->sql->conn->prepare($sql);       
 		$sqlprep->execute();
 		$total_rows = $sqlprep->fetchColumn();
@@ -88,6 +90,8 @@ switch($func)
 			{$sql = "SELECT `id`, `ssid`, `mac`, `radio`, `chan`, `auth`, `encry`, `sectype`, `sig` , `fa`, `la`, `username`, `Label`, `lat`, `long` FROM `live_aps` WHERE la >= DATE_SUB(NOW(),INTERVAL {$interval_v} {$interval_i}) ORDER BY `{$sort}` {$ord} LIMIT {$from}, {$to}";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [id], [ssid], [mac], [radio], [chan], [auth], [encry], [sectype], [sig] , [fa], [la], [username], [Label], [lat], [long] FROM [live_aps] WHERE [la] >= dateadd({$interval_i}, -{$interval_v}, getdate()) ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$to} ROWS ONLY";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT id, ssid, mac, radio, chan, auth, encry, sectype, sig , fa, la, username, \"Label\", lat, long FROM live_aps WHERE la >= dateadd({$interval_i}, -{$interval_v}, CURRENT_TIMESTAMP) ORDER BY [{$sort}] {$ord} LIMIT {$to} OFFSET {$from}";}
 		$prep = $dbcore->sql->conn->query($sql);
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)

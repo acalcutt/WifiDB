@@ -278,7 +278,7 @@ class security
 			@list($cookie_pass_seed, $username) = explode(':', base64_decode(@$_COOKIE['WiFiDB_login_yes']));
 		}
 		#var_dump($username);
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
@@ -288,7 +288,7 @@ class security
 		$newArray = $result->fetch(2);
 
 		#var_dump($newArray);
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql1 = "SELECT * FROM user_login_hashes WHERE username = ? AND hash = ? ORDER BY id DESC LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql1 = "SELECT TOP 1 * FROM user_login_hashes WHERE username = ? AND hash = ? ORDER BY id DESC";}
@@ -353,7 +353,7 @@ class security
 		}
 
 		#Check if username already exists
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql = "SELECT username FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [username] FROM user_info WHERE [username] = ?";}
@@ -369,7 +369,7 @@ class security
 		}
 
 		#Check if the email address already exists
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql = "SELECT email FROM user_info WHERE email LIKE ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [email] FROM user_info WHERE [email] LIKE ?";}
@@ -485,7 +485,7 @@ class security
 			return 0;
 		}
 		
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql0 = "SELECT id, validated, locked, login_fails, username, password FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql0 = "SELECT TOP 1 id, validated, locked, login_fails, username, password FROM user_info WHERE username = ?";}
@@ -887,7 +887,7 @@ class security
 				$this->login_check = 0;
 				return -2;
 			}
-			if($this->sql->service == "mysql")
+			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 				{$sql = "SELECT locked, validated, disabled, apikey FROM user_info WHERE username = ? LIMIT 1";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 locked, validated, disabled, apikey FROM user_info WHERE username = ?";}

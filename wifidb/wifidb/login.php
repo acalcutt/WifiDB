@@ -213,6 +213,8 @@ switch($func)
 			{$sql = "DELETE FROM `user_login_hashes` WHERE `username` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "DELETE FROM [user_login_hashes] WHERE [username] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "DELETE FROM user_login_hashes WHERE username = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->execute();
@@ -326,6 +328,8 @@ switch($func)
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `code` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [username] FROM [user_validate] WHERE [code] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_validate WHERE code = ?";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->execute(array($validate_code));
 		$v_array = $result->fetch(2);
@@ -337,6 +341,8 @@ switch($func)
 				{$update = "UPDATE `user_info` SET `validated` = '0' WHERE `username` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$update = "UPDATE [user_info] SET [validated] = '0' WHERE [username] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$update = "UPDATE user_info SET validated = '0' WHERE username = ?";}
 			$result = $dbcore->sql->conn->prepare($update);
 			$result->bindParam(1, $username);
 			$result->execute();
@@ -348,6 +354,8 @@ switch($func)
 					{$delete = "DELETE FROM `user_validate` WHERE `username` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$delete = "DELETE FROM [user_validate] WHERE [username] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$delete = "DELETE FROM user_validate WHERE username = ?";}
 				$result = $dbcore->sql->conn->prepare($delete);
 				$result->bindParam(1, $username);
 				$result->execute();
@@ -386,6 +394,8 @@ switch($func)
 			{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql0 = "SELECT email FROM user_info WHERE username = ? LIMIT 1";}
 		$prep = $dbcore->sql->conn->prepare($sql0);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->execute();
@@ -433,6 +443,8 @@ switch($func)
 				{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql0 = "SELECT email FROM user_info WHERE username = ? LIMIT 1";}
 			$prep = $dbcore->sql->conn->prepare($sql0);
 			$prep->bindParam(1, $username, PDO::PARAM_STR);
 			$prep->execute();
@@ -471,6 +483,8 @@ switch($func)
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [username] FROM [user_validate] WHERE [username] = ? AND [code] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_validate WHERE username = ? AND code = ? LIMIT 1";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
 		$result->bindParam(2, $validate_code);
@@ -503,6 +517,8 @@ switch($func)
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [username] FROM [user_validate] WHERE [username] = ? AND [code] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_validate WHERE username = ? AND code = ? LIMIT 1";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
 		$result->bindParam(2, $validate_code);
@@ -521,6 +537,8 @@ switch($func)
 					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$update = "UPDATE [user_info] SET [password] = ?, validated = 0, locked = 0 WHERE [username] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$update = "UPDATE user_info SET password = ?, validated = 0, locked = 0 WHERE username = ?";}
 				$prep1 = $dbcore->sql->conn->prepare($update);
 				$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
 				$prep1->bindParam(2, $db_username, PDO::PARAM_STR);
@@ -533,6 +551,8 @@ switch($func)
 						{$delete = "DELETE FROM `user_validate` WHERE `username` = ?";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$delete = "DELETE FROM [user_validate] WHERE [username] = ?";}
+					else if($dbcore->sql->service == "pgsql")
+						{$delete = "DELETE FROM user_validate WHERE username = ?";}
 					$result = $dbcore->sql->conn->prepare($delete);
 					$result->bindParam(1, $db_username);
 					$result->execute();

@@ -436,6 +436,8 @@ switch($func)
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT title FROM files WHERE id = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -538,6 +540,13 @@ switch($func)
 					. "FROM [wifi_ap]\n"
 					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
 					. "WHERE [wifi_ap].[AP_ID] = ?";
+			}
+		else if($dbcore->sql->service == "pgsql")
+			{
+				$sql = "SELECT wifi_gps.\"Lat\", wifi_gps.\"Lon\", wifi_ap.ssid\n"
+					. "FROM wifi_ap\n"
+					. "LEFT JOIN wifi_gps ON wifi_ap.\"HighGps_ID\" = wifi_gps.\"GPS_ID\"\n"
+					. "WHERE wifi_ap.\"AP_ID\" = ?";
 			}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);

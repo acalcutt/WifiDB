@@ -12,6 +12,8 @@ if($dbcore->sql->service == "mysql")
 	{$sql = "SELECT `AP_ID`, `File_ID` FROM `wifi_ap` WHERE AP_ID > 0 AND AP_ID <= 1000000 ORDER BY `AP_ID` ASC";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$sql = "SELECT [AP_ID], [File_ID] FROM [wifi_ap] ORDER BY [AP_ID] ASC";}
+else if($dbcore->sql->service == "pgsql")
+	{$sql = "SELECT \"AP_ID\", \"File_ID\" FROM wifi_ap ORDER BY \"AP_ID\" ASC";}
 $result = $dbcore->sql->conn->query($sql);
 
 echo "Rows that need updating: ".$result->rowCount()."\r\n";
@@ -26,6 +28,8 @@ while($ap = $result->fetch(1))
 		{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID` ASC LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID] ASC";}
+	else if($dbcore->sql->service == "pgsql")
+		{$sqlhp = "SELECT \"File_ID\" FROM wifi_hist WHERE \"AP_ID\" = ? ORDER BY \"File_ID\" ASC LIMIT 1";}
 	$resgps = $dbcore->sql->conn->prepare($sqlhp);
 	$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 	$resgps->execute();
@@ -41,6 +45,8 @@ while($ap = $result->fetch(1))
 			{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sqlu = "UPDATE wifi_ap SET \"File_ID\" = ? WHERE \"AP_ID\" = ?";}
 		echo "UPDATE `wifi_ap` SET `File_ID` = $File_ID WHERE `AP_ID` = $AP_ID\r\n";
 		$prep = $dbcore->sql->conn->prepare($sqlu);
 		$prep->bindParam(1, $File_ID, PDO::PARAM_INT);

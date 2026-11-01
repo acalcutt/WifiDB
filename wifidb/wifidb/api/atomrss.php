@@ -34,6 +34,8 @@ if($dbcore->sql->service == "mysql")
 	{$query = "SELECT * FROM `files` ORDER BY `id` DESC";}
 else if($dbcore->sql->service == "sqlsrv")
 	{$query = "SELECT * FROM [files] ORDER BY [id] DESC";}
+else if($dbcore->sql->service == "pgsql")
+	{$query = "SELECT * FROM files ORDER BY id DESC";}
 $result = $dbcore->sql->conn->query($query);
 
 while($row = $result->fetch(2))

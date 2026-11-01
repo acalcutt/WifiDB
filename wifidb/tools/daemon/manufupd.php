@@ -101,18 +101,34 @@ if(!($total_manuf > 0))
 		{
 			try 
 			{
-				$sql = "MERGE INTO manufacturers WITH (HOLDLOCK)\n"
-					. "	USING (SELECT :s_bssid AS BSSID) AS newmac (BSSID)\n"
-					. "		ON manufacturers.BSSID = newmac.BSSID\n"
-					. "	WHEN MATCHED THEN\n"
-					. "		UPDATE SET manufacturers.Manufacturer = :uManuf, manufacturers.modified = getdate()\n"
-					. "	WHEN NOT MATCHED THEN\n"
-					. "		INSERT (BSSID, Manufacturer, modified)\n"
-					. "		VALUES (:BSSID, :iManuf, :modified)\n"
-					. 'OUTPUT INSERTED.id, $action;';
-							
-				$prep = $dbcore->sql->conn->prepare($sql);
-				$prep->bindParam(':s_bssid', $u_bssid);
+				if($dbcore->sql->service == "pgsql")
+				{
+					// manufacturers.BSSID already carries a unique constraint
+					// (manufacturers$BSSID), so it is the conflict target directly.
+					// The action is aliased "$action" -- a legal quoted identifier in
+					// Postgres -- to match the key the sqlsrv OUTPUT clause produces.
+					$sql = 'INSERT INTO manufacturers ("BSSID", "Manufacturer", modified)'."\n"
+						. 'VALUES (:BSSID, :iManuf, :modified)'."\n"
+						. 'ON CONFLICT ("BSSID") DO UPDATE SET "Manufacturer" = :uManuf, modified = CURRENT_TIMESTAMP'."\n"
+						. 'RETURNING id, CASE WHEN xmax = 0 THEN \'INSERT\' ELSE \'UPDATE\' END AS "$action"';
+
+					$prep = $dbcore->sql->conn->prepare($sql);
+				}
+				else
+				{
+					$sql = "MERGE INTO manufacturers WITH (HOLDLOCK)\n"
+						. "	USING (SELECT :s_bssid AS BSSID) AS newmac (BSSID)\n"
+						. "		ON manufacturers.BSSID = newmac.BSSID\n"
+						. "	WHEN MATCHED THEN\n"
+						. "		UPDATE SET manufacturers.Manufacturer = :uManuf, manufacturers.modified = getdate()\n"
+						. "	WHEN NOT MATCHED THEN\n"
+						. "		INSERT (BSSID, Manufacturer, modified)\n"
+						. "		VALUES (:BSSID, :iManuf, :modified)\n"
+						. 'OUTPUT INSERTED.id, $action;';
+
+					$prep = $dbcore->sql->conn->prepare($sql);
+					$prep->bindParam(':s_bssid', $u_bssid);
+				}
 				$prep->bindParam(':BSSID', $u_bssid);
 				$prep->bindParam(':uManuf', $u_manuf);
 				$prep->bindParam(':iManuf', $u_manuf);
