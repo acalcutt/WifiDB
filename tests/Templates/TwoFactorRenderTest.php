@@ -181,6 +181,32 @@ final class TwoFactorRenderTest extends TestCase
         $this->assertStringContainsString('cp/security.php', $html);
     }
 
+    #[DataProvider('themes')]
+    public function testTheSiteSettingsPageNeverShowsASecretAndSaysWhereEachValueComesFrom(string $theme): void
+    {
+        $smarty = $this->smarty($theme);
+        $smarty->assign('site_settings', [
+            ['name' => 'signups_open', 'type' => 'bool', 'label' => 'Sign-ups are open', 'help' => 'Anyone <b>can</b> join', 'value' => true, 'is_set' => null, 'source' => 'saved'],
+            ['name' => 'email_validation', 'type' => 'bool', 'label' => 'Confirm e-mail', 'help' => '', 'value' => false, 'is_set' => null, 'source' => 'config'],
+            ['name' => 'cleantalk_key', 'type' => 'secret', 'label' => 'CleanTalk access key', 'help' => '', 'value' => null, 'is_set' => true, 'source' => 'saved'],
+        ]);
+        $smarty->assign('settings_message', 'CleanTalk did not accept that key. Nothing was saved.');
+        $smarty->assign('settings_problem', true);
+        $smarty->assign('settings_unencrypted', true);
+        $html = $smarty->fetch('admin_settings.tpl');
+        $this->assertStringContainsString('action="https://wifidb.example.com/admin/settings.php"', $html);
+        $this->assertStringContainsString('method="post"', $html);
+        $this->assertMatchesRegularExpression('/name="signups_open" type="checkbox" checked>/', $html);
+        $this->assertMatchesRegularExpression('/name="email_validation" type="checkbox">/', $html);
+        $this->assertStringContainsString('name="cleantalk_key" type="password" value=""', $html);
+        $this->assertStringContainsString('name="clear_cleantalk_key"', $html);
+        $this->assertStringContainsString('Set. Leave blank to keep it', $html);
+        $this->assertStringContainsString('From config.inc.php', $html);
+        $this->assertStringContainsString('Anyone &lt;b&gt;can&lt;/b&gt; join', $html);
+        $this->assertStringContainsString('<font color="Red">CleanTalk did not accept that key', $html);
+        $this->assertStringContainsString('stored unencrypted', $html);
+    }
+
     public function testTheMobileMenuOffersAdminModeOnlyToAdministratorsAndShowsTheWayOut(): void
     {
         $member = $this->smarty('vistumbler_mobile')->fetch('navigation.tpl');

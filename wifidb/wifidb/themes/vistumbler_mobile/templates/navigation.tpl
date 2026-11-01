@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></li>
 						{if $wifidb_is_admin|default:false}
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></li>
+						<li><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></li>
 						{if $wifidb_admin_mode|default:false}
 						<li><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></li>
 						{else}

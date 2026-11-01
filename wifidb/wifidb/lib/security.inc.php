@@ -51,6 +51,47 @@ class security
 			'two_factor_issuer' => isset($config['two_factor_issuer']) ? $config['two_factor_issuer'] : 'WifiDB',
 			'hosturl'           => $this->HOSTURL,
 		);
+		$this->site_config = $config;
+	}
+
+	# Site settings an administrator can change from the site: see lib/site_settings.inc.php
+	private $site_settings = null;
+	private $site_config = array();
+
+	/** @return SiteSettings */
+	public function Settings()
+	{
+		if($this->site_settings === null)
+		{
+			require_once dirname(__FILE__).'/site_settings.inc.php';
+			$this->site_settings = new SiteSettings($this->sql->conn, $this->site_config);
+		}
+		return $this->site_settings;
+	}
+
+	/** One site setting (saved on admin/settings.php, else from config.inc.php). */
+	public function Setting($name)
+	{
+		return $this->Settings()->Get($name);
+	}
+
+	/**
+	 * CleanTalk for this key; with no key, the one saved on admin/settings.php. cleantalk_server and cleantalk_api in
+	 * config.inc.php point it somewhere else (tests).
+	 */
+	public function CleanTalk($key = null)
+	{
+		require_once dirname(__FILE__).'/cleantalk.inc.php';
+		return new CleanTalk($key === null ? $this->Setting('cleantalk_key') : $key, null,
+			!empty($this->site_config['cleantalk_server']) ? $this->site_config['cleantalk_server'] : null,
+			!empty($this->site_config['cleantalk_api']) ? $this->site_config['cleantalk_api'] : null);
+	}
+
+	/** CleanTalk when it's turned on and has a key, else null (nothing is checked). */
+	public function SpamCheck()
+	{
+		if(!$this->Setting('cleantalk_enabled') || $this->Setting('cleantalk_key') === '') { return null; }
+		return $this->CleanTalk();
 	}
 
 	# Two-factor sign-in: see lib/two_factor.inc.php
@@ -299,7 +340,8 @@ class security
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
 		$prep->bindParam(3, $uid, PDO::PARAM_STR);
-		$prep->bindParam(4, $this->email_validation, PDO::PARAM_STR);
+		$validation = $this->Setting('email_validation') ? '1' : '0';
+		$prep->bindParam(4, $validation, PDO::PARAM_STR);
 		$prep->bindParam(5, $email, PDO::PARAM_STR);
 		$prep->bindParam(6, $join_date, PDO::PARAM_STR);
 		$prep->bindParam(7, $api_key, PDO::PARAM_STR);

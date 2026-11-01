@@ -44,6 +44,11 @@ $config = array
 	// and keep it: with a different key the saved authenticators stop working. The Proxmox template makes one for you.
 	'two_factor_key'		=>   '',
 	'two_factor_issuer'		=>   'WifiDB',
+	// Starting values for the settings on Site Settings (admin/settings.php). Once an administrator saves them there,
+	// the saved value is used and these are ignored. email_validation above is one of them too.
+	'signups_open'			=>   1,
+	'cleantalk_enabled'		=>   0,     // check sign-ups and private messages with CleanTalk (cleantalk.org)
+	'cleantalk_key'			=>   '',
 	'dBmMaxSignal'		  =>   '-30',
 	'dBmDissociationSignal'	=>   '-85',
 	'verbose'			   =>   1,

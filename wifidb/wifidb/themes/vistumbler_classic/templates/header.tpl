@@ -89,6 +89,7 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
                                 {if $wifidb_is_admin|default:false}
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
+                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></div>
                                 {if $wifidb_admin_mode|default:false}
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></div>
                                 {else}
