@@ -30,6 +30,8 @@ $exports = array(
 	"WifiDB_Legacy.json"   => array(" AND wap.la < ?", array($ago(3))),
 );
 $row_count = 100000;
+$out_dir = $daemon_config['wifidb_install'].'out/geojson/';
+if(!is_dir($out_dir)) { mkdir($out_dir, 0775, true); }
 
 foreach($exports as $filename => $bucket)
 {
@@ -73,5 +75,5 @@ foreach($exports as $filename => $bucket)
 	}
 	echo "\n";
 	$results = $dbcore->createGeoJSON->createGeoJSONstructure($Import_Map_Data);
-	file_put_contents($daemon_config['wifidb_install'].'out/geojson/'.$filename, $results);
+	file_put_contents($out_dir.$filename, $results);
 }

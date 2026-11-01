@@ -30,6 +30,7 @@ require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 $page_size = 100000;
 $out_file  = rtrim($daemon_config['wifidb_install'], '/') . '/out/geojson/cell_networks.json';
 $tmp_file  = $out_file . '.tmp';
+if (!is_dir(dirname($out_file))) { mkdir(dirname($out_file), 0775, true); }
 
 // ── SQL — keyset pagination: AND cell_id.cell_id > ? ... LIMIT/FETCH ? ───────
 // MySQL: LEFT JOIN cell_carriers eliminates the per-row lookup.

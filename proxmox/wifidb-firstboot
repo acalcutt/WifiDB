@@ -75,7 +75,7 @@ for d in import/up out; do
         ln -s "$DATA/$d" "$WEB/$d"
     fi
 done
-install -d -o www-data -g www-data "$DATA/import/up/backup" "$DATA/import/up/convert" "$DATA/import/up/extract"
+install -d -o www-data -g www-data "$DATA/import/up/backup" "$DATA/import/up/convert" "$DATA/import/up/extract" "$DATA/out/geojson"
 # whole-site backups (admin/backups.php, tools/utilites/backup.php): member data, so only www-data reads them
 install -d -m 0700 -o www-data -g www-data "$DATA/backups" "$DATA/backups/queue"
 if [ ! -L "$TOOLS/log" ]; then

@@ -112,6 +112,7 @@ for ($_i = 1, $_nc = count($argv_safe); $_i < $_nc; $_i++) {
 
 $page_size = 100000;
 $out_dir   = rtrim($daemon_config['wifidb_install'], '/') . '/out/geojson/';
+if (!is_dir($out_dir)) { mkdir($out_dir, 0775, true); }
 
 foreach ($exports as list($filename, $sql)) {
     if ($single_file !== null && $filename !== $single_file) continue;
