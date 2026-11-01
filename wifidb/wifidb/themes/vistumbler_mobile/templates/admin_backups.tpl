@@ -80,6 +80,35 @@ version 2 of the License, or (at your option) any later version.
 					{/if}
 				</table>
 
+				<form method="post" action="{$wifidb_host_url}admin/backups.php" autocomplete="off">
+					<input type="hidden" name="action" value="import">
+					<table class="content_table">
+						<tr><td class="subheading" colspan="2">Copy a backup from another server</td></tr>
+						<tr class="light"><td width="25%">Other server</td><td><input type="text" name="url" size="40" placeholder="https://old.example.com"></td></tr>
+						<tr class="dark"><td>Its transfer key</td><td><input type="password" name="key" size="40"><br><small>Made on that server's Backups page (transfer key, below).</small></td></tr>
+						<tr class="light"><td>Backup</td><td><input type="text" name="import_name" size="34" placeholder="its newest">
+							<br><label><input type="checkbox" name="fresh"> have it make a new backup first</label></td></tr>
+						<tr class="dark"><td>Then</td><td><label><input type="checkbox" name="restore"> restore it here, replacing this site's data</label>
+							<br><input type="text" name="confirm" size="34" placeholder="type {$backups_domain|escape:'html':'UTF-8':false} to confirm a restore"></td></tr>
+						<tr class="light"><td></td><td><label><input type="checkbox" name="insecure"> don't check its TLS certificate (a test server with a self-signed one)</label></td></tr>
+						<tr class="dark"><td></td><td><input type="submit" value="Copy it here"><br><small>It's copied 16 MB at a time; if the copy is cut off, asking again carries on where it stopped. The whole file is checked against the other server's SHA-256 before it's used.</small></td></tr>
+					</table>
+				</form>
+
+				<table class="content_table">
+					<tr><td class="subheading">Transfer key</td></tr>
+					<tr class="light"><td>Lets another WifiDB server list this server's backups, copy them, and ask for a new one. That's all it can do. It expires after {$backups_key_days} days, only one exists at a time, and backups never include it.</td></tr>
+					{if $backups_new_key}
+					<tr class="dark"><td><strong>The new key</strong> (shown only now; give it to the other server's administrator):<br><code id="wifidb_transfer_key">{$backups_new_key|escape:'html':'UTF-8':false}</code></td></tr>
+					{elseif $backups_key}
+					<tr class="dark"><td>{if $backups_key.expired}The last key has expired.{else}A key is active, made by {$backups_key.created_by|escape:'html':'UTF-8':false}; it expires {$backups_key.expires|date_format:'%Y-%m-%d %H:%M'} UTC.{/if}</td></tr>
+					{/if}
+					<tr class="light"><td>
+						<form method="post" action="{$wifidb_host_url}admin/backups.php" style="display:inline"><input type="hidden" name="action" value="create_key"><input type="submit" value="{if $backups_key || $backups_new_key}Make a new key{else}Make a key{/if}"></form>
+						{if $backups_key || $backups_new_key}<form method="post" action="{$wifidb_host_url}admin/backups.php" style="display:inline"><input type="hidden" name="action" value="revoke_key"><input type="submit" value="Revoke the key"></form>{/if}
+					</td></tr>
+				</table>
+
 				<table class="content_table">
 					<tr><td class="subheading">From the command line</td></tr>
 					<tr class="light"><td><pre class="backup-log">php tools/utilites/backup.php export

@@ -40,13 +40,39 @@ $messages = array(
 	'busy'        => 'Something is already running or waiting; try again once it has finished.',
 	'no_backup'   => 'No finished backup has that name.',
 	'not_ready'   => "The backups folder can't be written: check backup_dir in config.inc.php.",
+	'import_what' => "Give the other server's address (https://...) and its transfer key.",
+	'revoked'     => 'The transfer key was revoked.',
 );
+$newKey = '';
 if($_SERVER['REQUEST_METHOD'] === 'POST')
 {
 	$action = (string)($_POST['action'] ?? '');
 	$name = (string)($_POST['name'] ?? '');
 	$result = 'queued';
-	if(!$backups->Ready()) { $result = 'not_ready'; }
+	if($action === 'create_key' && $backups->Ready())
+	{
+		# shown once, on this page, and never again: no redirect
+		$newKey = $backups->CreateTransferKey($username);
+		$dbcore->sec->logd("Backup transfer key made by $username", "Info");
+		$result = '';
+	}
+	elseif($action === 'revoke_key') { $backups->RevokeTransferKey(); $result = 'revoked'; }
+	elseif($action === 'import')
+	{
+		$url = trim((string)($_POST['url'] ?? ''));
+		$key = trim((string)($_POST['key'] ?? ''));
+		$restore = isset($_POST['restore']);
+		if(!preg_match('#^https?://[^\s/]+#i', $url) || $key === '') { $result = 'import_what'; }
+		elseif($restore && strcasecmp(trim((string)($_POST['confirm'] ?? '')), $domain) !== 0) { $result = 'confirm'; }
+		elseif(!$backups->Ready()) { $result = 'not_ready'; }
+		else
+		{
+			$backups->Queue('import', $username, array('url' => $url, 'key' => $key, 'name' => trim((string)($_POST['import_name'] ?? '')),
+				'fresh' => isset($_POST['fresh']), 'restore' => $restore, 'insecure' => isset($_POST['insecure'])));
+			$dbcore->sec->logd("Backup import from $url asked for by $username".($restore ? ', then restore' : ''), "Info");
+		}
+	}
+	elseif(!$backups->Ready()) { $result = 'not_ready'; }
 	elseif(in_array($action, array('restore', 'delete'), true) && !BackupService::ValidName($name)) { $result = 'no_backup'; }
 	elseif($action === 'restore' && strcasecmp(trim((string)($_POST['confirm'] ?? '')), $domain) !== 0) { $result = 'confirm'; }
 	elseif($action === 'restore' && $backups->Busy()) { $result = 'busy'; }
@@ -65,11 +91,13 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 			catch(Throwable $e) { /* the restore empties the notifications anyway */ }
 		}
 	}
-	header('Location: backups.php?r='.$result);
-	exit;
+	if($result !== '') { header('Location: backups.php?r='.$result); exit; }
 }
 
 $r = (string)filter_input(INPUT_GET, 'r', FILTER_SANITIZE_SPECIAL_CHARS);
+$dbcore->smarty->assign('backups_new_key', $newKey);
+$dbcore->smarty->assign('backups_key', $backups->TransferKeyInfo());
+$dbcore->smarty->assign('backups_key_days', BackupService::TRANSFER_KEY_DAYS);
 $list = $backups->Backups();
 foreach($list as &$b) { $b['size_text'] = BackupService::HumanSize($b['size'] ?? 0); }
 unset($b);

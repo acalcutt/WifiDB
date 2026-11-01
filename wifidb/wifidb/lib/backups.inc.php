@@ -223,6 +223,7 @@ class BackupService
 				case 'export':  $this->job['name'] = $this->Export(!empty($request['daily']) ? 'daily' : 'manual', $request['requested_by'] ?? ''); break;
 				case 'restore': $this->Restore($request['name'] ?? ''); break;
 				case 'delete':  $this->Delete($request['name'] ?? ''); break;
+				case 'import':  $this->job['name'] = $this->Import($request); break;
 				default: throw new BackupException("Unknown request: ".($request['action'] ?? ''));
 			}
 			$this->job['state'] = 'done';
@@ -368,6 +369,174 @@ class BackupService
 		$overrides['two_factor_key'] = $key;
 		file_put_contents($file, "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn ".var_export($overrides, true).";\n");
 		$this->Log("installed the backup's two_factor_key in $file");
+	}
+
+	// ── Transfer keys: another server copying backups from here ──────────────────────────────────────
+
+	const TRANSFER_KEY_DAYS = 7;
+	const CHUNK = 16777216;   // 16 MB a request
+
+	private function KeyFile() { return $this->Dir().'/transfer-key.json'; }
+
+	/** The current key's details (never the key), or null. */
+	public function TransferKeyInfo()
+	{
+		$info = self::ReadJson($this->KeyFile());
+		if(!$info) { return null; }
+		$info['expired'] = ($info['expires'] ?? 0) < time();
+		unset($info['sha256']);
+		return $info;
+	}
+
+	/** Makes a new key, replacing any old one, and returns it. It can't be shown again. */
+	public function CreateTransferKey($by)
+	{
+		if(!$this->Ready()) { throw new BackupException("The backups folder ".$this->Dir()." can't be written"); }
+		$key = 'wdbk_'.rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+		self::WriteJson($this->KeyFile(), array('sha256' => hash('sha256', $key), 'created' => time(), 'expires' => time() + self::TRANSFER_KEY_DAYS * 86400, 'created_by' => $by));
+		return $key;
+	}
+
+	public function RevokeTransferKey() { @unlink($this->KeyFile()); }
+
+	public function CheckTransferKey($key)
+	{
+		$info = self::ReadJson($this->KeyFile());
+		if(!is_string($key) || $key === '' || !$info || ($info['expires'] ?? 0) < time()) { return false; }
+		return hash_equals((string)$info['sha256'], hash('sha256', $key));
+	}
+
+	/** What another server sees in the list. */
+	public static function PublicSummary(array $b)
+	{
+		$out = array();
+		foreach(array('name', 'state', 'step', 'created', 'size', 'sha256', 'rows', 'source', 'error') as $k) { if(isset($b[$k])) { $out[$k] = $b[$k]; } }
+		unset($out['source']['migrations']);
+		return $out;
+	}
+
+	/** A request to another server's admin/backup_transfer.php. @return array [HTTP status, body] */
+	private function Remote($url, $key, $func, array $opts = array())
+	{
+		$ch = curl_init(rtrim($url, '/').'/admin/backup_transfer.php?func='.$func.(isset($opts['name']) ? '&name='.rawurlencode($opts['name']) : ''));
+		$headers = array('X-WifiDB-Transfer-Key: '.$key);
+		curl_setopt_array($ch, array(CURLOPT_HTTPHEADER => $headers, CURLOPT_CONNECTTIMEOUT => 20, CURLOPT_FOLLOWLOCATION => false));
+		if(!empty($opts['insecure'])) { curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0); }
+		if(!empty($opts['post'])) { curl_setopt($ch, CURLOPT_POST, true); curl_setopt($ch, CURLOPT_POSTFIELDS, ''); }
+		if(isset($opts['file']))
+		{
+			curl_setopt($ch, CURLOPT_FILE, $opts['file']);
+			curl_setopt($ch, CURLOPT_RANGE, $opts['range']);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 600);
+		}
+		else
+		{
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+		}
+		$body = curl_exec($ch);
+		$status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+		$error = curl_error($ch);
+		if($body === false) { throw new BackupException("Couldn't reach $url: $error"); }
+		if($status === 403) { throw new BackupException("$url refused the transfer key (wrong, expired or revoked)"); }
+		return array($status, $body);
+	}
+
+	private function RemoteList($url, $key, $insecure)
+	{
+		list($status, $body) = $this->Remote($url, $key, 'list', array('insecure' => $insecure));
+		$data = json_decode((string)$body, true);
+		if($status !== 200 || !is_array($data) || empty($data['ok'])) { throw new BackupException("$url didn't answer as a WifiDB server would (HTTP $status)"); }
+		return $data;
+	}
+
+	/**
+	 * Copies a backup from another server (its admin/backup_transfer.php, with a transfer key made there). Resumes a
+	 * copy that was cut off, and checks the whole file against the SHA-256 the other server lists.
+	 * @param array $request url, key, name (blank: its newest), fresh (have it make one first), restore, insecure
+	 * @return string the backup's name here
+	 */
+	public function Import(array $request)
+	{
+		$url = rtrim((string)($request['url'] ?? ''), '/');
+		$key = (string)($request['key'] ?? '');
+		$insecure = !empty($request['insecure']);
+		if(!preg_match('#^https?://#i', $url) || $key === '') { throw new BackupException("Give the other server's address and its transfer key"); }
+		$name = (string)($request['name'] ?? '');
+		if(!empty($request['fresh']))
+		{
+			$asked = time();
+			$this->Log("asking $url to make a new backup");
+			$this->Remote($url, $key, 'fresh', array('post' => true, 'insecure' => $insecure));
+			$name = '';
+			for($waited = 0; $name === ''; $waited += 30)
+			{
+				if($waited > 24 * 3600) { throw new BackupException("$url hadn't finished its backup after a day"); }
+				sleep($waited ? 30 : 5);
+				foreach($this->RemoteList($url, $key, $insecure)['backups'] as $b)
+				{
+					if(strtotime(($b['created'] ?? '').' UTC') < $asked - 60) { continue; }
+					if(($b['state'] ?? '') === 'failed') { throw new BackupException("$url's new backup failed: ".($b['error'] ?? '')); }
+					if(($b['state'] ?? '') === 'done') { $name = $b['name']; break; }
+					if($waited % 300 === 0) { $this->Log("  $url: ".($b['step'] ?? 'working')); }
+				}
+			}
+		}
+		$list = $this->RemoteList($url, $key, $insecure);
+		$pick = null;
+		foreach($list['backups'] as $b)
+		{
+			if(($b['state'] ?? '') !== 'done') { continue; }
+			if($name === '' || $b['name'] === $name) { $pick = $b; break; }   # newest first
+		}
+		if(!$pick) { throw new BackupException($name === '' ? "$url has no finished backups" : "$url has no finished backup named $name"); }
+		$name = $pick['name'];
+		if(!self::ValidName($name) || empty($pick['sha256'])) { throw new BackupException("$url listed a backup this server can't take ($name)"); }
+
+		$local = $this->Get($name);
+		if($local && ($local['state'] ?? '') === 'done' && ($local['sha256'] ?? '') === $pick['sha256']) { $this->Log("$name is already here"); }
+		else
+		{
+			$partial = $this->Path($name).'.partial';
+			$have = is_file($partial) ? filesize($partial) : 0;
+			$size = (int)$pick['size'];
+			$this->Log("copying $name from $url (".self::HumanSize($size).($have ? ", carrying on from ".self::HumanSize($have) : '').")");
+			self::WriteJson($this->StatusPath($name), array('name' => $name, 'state' => 'running', 'kind' => 'imported', 'created' => $pick['created'], 'step' => 'copying from '.$url, 'source' => $pick['source'] ?? array()));
+			$out = fopen($partial, 'ab');
+			$lastPct = -1;
+			while($have < $size)
+			{
+				$end = min($size, $have + self::CHUNK) - 1;
+				try { list($status) = $this->Remote($url, $key, 'get', array('name' => $name, 'insecure' => $insecure, 'file' => $out, 'range' => "$have-$end")); }
+				catch(Throwable $e) { ftruncate($out, $have); fclose($out); throw $e; }
+				fflush($out);
+				clearstatcache(true, $partial);
+				$now = filesize($partial);
+				if($status !== 206 || $now !== $end + 1)
+				{
+					ftruncate($out, $have);   # an error page or a short piece doesn't stay in the copy
+					fclose($out);
+					$now = $have;
+					throw new BackupException("The copy from $url stopped at ".self::HumanSize($now)." (HTTP $status); asking again carries on from there"); }
+				$have = $now;
+				$pct = (int)floor($have * 100 / max(1, $size));
+				if($pct >= $lastPct + 5) { $lastPct = $pct; $this->Log("  $pct% (".self::HumanSize($have).")"); }
+			}
+			fclose($out);
+			$this->Log("checking the copy");
+			if(hash_file('sha256', $partial) !== $pick['sha256'])
+			{
+				@unlink($partial);
+				throw new BackupException("The copy of $name doesn't match the SHA-256 $url gave, so it was thrown away");
+			}
+			rename($partial, $this->Path($name));
+			@chmod($this->Path($name), 0600);
+			$manifest = WifidbBackup::ReadManifest($this->Path($name));
+			self::WriteJson($this->StatusPath($name), $this->StatusFrom($manifest, 'imported') + array('size' => $size, 'sha256' => $pick['sha256'], 'imported_from' => $url));
+			$this->Log("copied $name");
+		}
+		if(!empty($request['restore'])) { $this->Restore($name); }
+		return $name;
 	}
 
 	/**

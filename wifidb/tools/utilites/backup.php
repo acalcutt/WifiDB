@@ -8,6 +8,9 @@ A backup made on SQL Server restores on MariaDB and the other way round. See doc
   php backup.php verify NAME          check every file in it against its SHA-256
   php backup.php restore NAME --yes   replace this site's data with it (everyone is signed out)
   php backup.php delete NAME
+  php backup.php import URL --key KEY [--name NAME] [--fresh] [--restore --yes] [--insecure]
+                                      copy a backup from another server (its newest, or NAME; --fresh: have it make one first)
+  php backup.php key [--revoke]       make this server's transfer key (shown once), or revoke it
   php backup.php daily                queue the daily backup (tools/cron/backups daily, from cron)
   php backup.php run-queue            run what the admin page asked for (tools/cron/backups does this each minute)
 
@@ -57,6 +60,19 @@ switch($command)
 	case 'delete':
 		exit($backups->Run(array('action' => 'delete', 'name' => $name, 'requested_by' => 'command line')) ? 0 : 1);
 
+	case 'import':
+		$opt = function ($flag) use ($args) { $i = array_search($flag, $args, true); return ($i !== false && isset($args[$i + 1])) ? $args[$i + 1] : ''; };
+		$restore = in_array('--restore', $args, true);
+		if($restore && !in_array('--yes', $args, true)) { $fail("--restore replaces all of this site's data and signs everyone out. Add --yes to go ahead."); }
+		exit($backups->Run(array('action' => 'import', 'url' => $name, 'key' => $opt('--key'), 'name' => $opt('--name'), 'fresh' => in_array('--fresh', $args, true),
+			'restore' => $restore, 'insecure' => in_array('--insecure', $args, true), 'requested_by' => 'command line')) ? 0 : 1);
+
+	case 'key':
+		if(in_array('--revoke', $args, true)) { $backups->RevokeTransferKey(); echo "Revoked.\n"; exit(0); }
+		echo $backups->CreateTransferKey('command line')."\n";
+		fwrite(STDERR, "This key lets another server copy this server's backups for ".BackupService::TRANSFER_KEY_DAYS." days. It isn't shown again.\n");
+		exit(0);
+
 	case 'daily':
 		require_once $daemon_config['wifidb_install'].'/lib/site_settings.inc.php';
 		if(!(new SiteSettings($dbcore->sql->conn, $config))->Get('backup_daily')) { echo "Daily backups are off (Site Settings).
@@ -70,6 +86,6 @@ switch($command)
 		exit(0);
 
 	default:
-		fwrite(STDERR, "Usage: php backup.php export [--daily] | list | verify NAME | restore NAME --yes | delete NAME | run-queue\n");
+		fwrite(STDERR, "Usage: php backup.php export | list | verify NAME | restore NAME --yes | delete NAME | import URL --key KEY [...] | key [--revoke] | daily | run-queue\n");
 		exit(2);
 }
