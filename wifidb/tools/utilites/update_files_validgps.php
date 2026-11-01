@@ -1,4 +1,8 @@
 <?php
+/*
+update_files_validgps.php: sets files.ValidGPS on every finished import that has at least one reading with a real GPS
+fix (and clears it on one that has none). MariaDB, SQL Server and PostgreSQL.
+*/
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
@@ -7,34 +11,26 @@ $wdb_install = $daemon_config['wifidb_install'];
 if($wdb_install == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require($wdb_install)."/lib/init.inc.php";
 
-
 $dbcore->verbose = 1;
+$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
 
-$sql = "SELECT `id` \n"
-	. "FROM `files` \n"
-	. "WHERE `completed` = 1 ORDER BY `date` DESC";
-$result = $dbcore->sql->conn->query($sql);
+$files = $dbcore->sql->conn->query("SELECT id, ".$q('ValidGPS')." AS validgps FROM files WHERE completed = 1 ORDER BY file_date DESC")->fetchAll(PDO::FETCH_ASSOC);
 
-while($array = $result->fetch())
+# does the file have a reading with a GPS fix?
+$check = $dbcore->sql->conn->prepare("SELECT COUNT(*) FROM wifi_hist"
+	." INNER JOIN wifi_gps ON wifi_hist.".$q('GPS_ID')." = wifi_gps.".$q('GPS_ID')
+	." WHERE wifi_hist.".$q('File_ID')." = ? AND wifi_gps.".$q('Lat')." != '0.0000'");
+$update = $dbcore->sql->conn->prepare("UPDATE files SET ".$q('ValidGPS')." = ? WHERE id = ?");
+$changed = 0;
+foreach($files as $file)
 {
-	#Find if file had Valid GPS
-	$sql = "SELECT `wifi_hist`.`Hist_ID`\n"
-		. "FROM `wifi_hist`\n"
-		. "LEFT JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-		. "WHERE `wifi_hist`.`File_ID` = ? And `wifi_gps`.`GPS_ID` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-		. "LIMIT 1";
-	$prepvgps = $dbcore->sql->conn->prepare($sql);
-	$prepvgps->bindParam(1, $array['id'], PDO::PARAM_INT);
-	$prepvgps->execute();
-	$prepvgps_fetch = $prepvgps->fetch(2);
-	if($prepvgps_fetch)
+	$check->execute(array($file['id']));
+	$valid = ((int)$check->fetchColumn() > 0) ? 1 : 0;
+	if($valid !== (int)$file['validgps'])
 	{
-		echo "Updating {$array['id']}\r\n";
-		$ValidGPS = 1;
-		$sql = "UPDATE `files` SET `ValidGPS` = ? WHERE `id` = ?";
-		$prepvgpsu = $dbcore->sql->conn->prepare($sql);
-		$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
-		$prepvgpsu->bindParam(2, $array['id'], PDO::PARAM_INT);
-		$prepvgpsu->execute();
+		echo "File {$file['id']}: ValidGPS ".(int)$file['validgps']." -> $valid\r\n";
+		$update->execute(array($valid, $file['id']));
+		$changed++;
 	}
 }
+echo "Checked ".count($files)." files, changed $changed.\r\n";
