@@ -67,11 +67,13 @@ scan() { # scan COOKIE PAGE...: no PHP or SQL error on each page
     local cookie=$1; shift
     for page in "$@"; do
         out=$(docker exec "$ct" curl -s -L -H "Cookie: $cookie" "http://127.0.0.1$page")
-        if echo "$out" | grep -qE "$errors"; then bad "no error on $page"; echo "$out" | grep -oE ".{0,120}($errors).{0,160}" | head -2 | sed 's/^/       /'; else ok "no error on $page"; fi
+        code=$(docker exec "$ct" curl -s -L -o /dev/null -w '%{http_code}' -H "Cookie: $cookie" "http://127.0.0.1$page")
+        if [ "$code" != 200 ]; then bad "no error on $page (HTTP $code)";
+        elif echo "$out" | grep -qE "$errors"; then bad "no error on $page"; echo "$out" | grep -oE ".{0,120}($errors).{0,160}" | head -2 | sed 's/^/       /'; else ok "no error on $page"; fi
     done
 }
 scan "$tzc" / /login.php /stats.php /all.php /opt/map.php /opt/live.php /opt/search.php /opt/scheduling.php '/opt/scheduling.php?func=waiting' \
-    '/opt/scheduling.php?func=done' '/opt/scheduling.php?func=schedule' /opt/results.php '/opt/userstats.php?func=allusers' /opt/export.php '/login.php?func=create_user_form'
+    '/opt/scheduling.php?func=done' '/opt/scheduling.php?func=schedule' /opt/results.php '/opt/userstats.php?func=allusers' /opt/export.php '/login.php?func=create_user_form' /import/
 
 log "signing in"
 pass="correct horse battery staple"

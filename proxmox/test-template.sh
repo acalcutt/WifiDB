@@ -80,8 +80,9 @@ done
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
 # A page can answer 200 and still carry a PHP error box (PHP 8 made an undefined constant fatal). Look at the text.
-for page in / /login.php /stats.php /opt/map.php /opt/scheduling.php /opt/results.php /opt/userstats.php /opt/export.php /cp/ /login.php?func=create_user_form; do
-    check "no PHP error on $page" sh -c '! docker exec "$0" curl -s -L -H "Cookie: wifidb_client_check=1; wifidb_client_timezone=0" "http://127.0.0.1$1" | grep -qE "Undefined (constant|variable|array key)|Fatal error|Uncaught|Parse error|Stack trace|Call to undefined"' "$ct1" "$page"
+# (and an error can also be an empty 500, so the status counts too)
+for page in / /login.php /stats.php /opt/map.php /opt/scheduling.php /opt/results.php /opt/userstats.php /opt/export.php /cp/ /login.php?func=create_user_form /import/; do
+    check "no PHP error on $page" sh -c 'test "$(docker exec "$0" curl -s -L -o /dev/null -w "%{http_code}" -H "Cookie: wifidb_client_check=1; wifidb_client_timezone=0" "http://127.0.0.1$1")" = 200 && ! docker exec "$0" curl -s -L -H "Cookie: wifidb_client_check=1; wifidb_client_timezone=0" "http://127.0.0.1$1" | grep -qE "Undefined (constant|variable|array key)|Fatal error|Uncaught|Parse error|Stack trace|Call to undefined"' "$ct1" "$page"
 done
 check "/health answers 200" test "$(http "$ct1" http://127.0.0.1/health)" = 200
 check "/health/ready answers 200 with the database up" test "$(http "$ct1" http://127.0.0.1/health/ready)" = 200
@@ -115,7 +116,7 @@ check "this node is named testnode" docker exec "$db" sh -c 'test "$(mariadb -uw
 check "schedulecheck prints a number" docker exec "$ct1" sh -c 'out=$(su -s /bin/bash www-data -c "php /opt/wifidb/tools/daemon/schedulecheck.php Import"); echo "$out"; case "$out" in (*[!0-9]*|"") exit 1;; esac'
 check "the cron file is installed" docker exec "$ct1" sh -c 'test "$(grep -c update_mvt /etc/cron.d/wifidb)" -ge 20'
 check "a cron wrapper runs" docker exec "$ct1" su -s /bin/bash www-data -c '/opt/wifidb/tools/cron/import_files'
-check "uploads are on the data disk" docker exec "$ct1" sh -c 'test -L /var/www/wifidb/import && test -d /srv/wifidb-data/import/up'
+check "uploads are on the data disk, the upload page isn't" docker exec "$ct1" sh -c 'test -L /var/www/wifidb/import/up && test -d /srv/wifidb-data/import/up && test ! -L /var/www/wifidb/import'
 check "logs are on the data disk" docker exec "$ct1" sh -c 'test -L /opt/wifidb/tools/log && ls /srv/wifidb-data/log/import'
 for dir in /var/www/wifidb/import/up /var/www/wifidb/out/tiles /var/www/wifidb/out/pmtiles /srv/wifidb-data/log/import /var/www/wifidb/smarty/templates_c; do
     check "www-data can write to $dir" docker exec "$ct1" su -s /bin/bash www-data -c "f=$dir/.write-test-\$\$ && echo x > \$f && rm \$f"
