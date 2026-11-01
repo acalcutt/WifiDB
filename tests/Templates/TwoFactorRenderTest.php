@@ -232,6 +232,35 @@ final class TwoFactorRenderTest extends TestCase
         }
     }
 
+    #[DataProvider('themes')]
+    public function testTheBackupsPageListsBackupsWithDownloadRestoreAndDelete(string $theme): void
+    {
+        $smarty = $this->smarty($theme);
+        $smarty->assign('backups_list', [
+            ['name' => 'wifidb-backup-20270101-033000', 'state' => 'done', 'kind' => 'daily', 'created' => '2027-01-01 03:30:00', 'size_text' => '1.2 GB', 'rows' => 1234567,
+             'sha256' => str_repeat('ab', 32), 'source' => ['site' => 'https://wifidb.example.com/<b>', 'service' => 'sqlsrv']],
+            ['name' => 'wifidb-backup-20270102-033000', 'state' => 'running', 'step' => 'exporting wifi_hist', 'created' => '2027-01-02 03:30:00', 'size_text' => '0 B'],
+        ]);
+        $smarty->assign('backups_job', ['action' => 'export', 'state' => 'running', 'started' => '2027-01-02 03:30:00', 'log_text' => "[03:30:01] exporting <wifi_hist>"]);
+        $smarty->assign('backups_pending', [['action' => 'restore', 'name' => 'wifidb-backup-20270101-033000', 'requested_by' => 'root']]);
+        $smarty->assign('backups_busy', true);
+        $smarty->assign('backups_ready', true);
+        $smarty->assign('backups_dir', '/srv/wifidb-data/backups');
+        $smarty->assign('backups_domain', 'wifidb.example.com');
+        $html = $smarty->fetch('admin_backups.tpl');
+        $this->assertSame(1, substr_count($html, 'func=download&amp;name=wifidb-backup-20270101-033000'), 'only the finished one downloads');
+        $this->assertSame(1, substr_count($html, 'value="Restore"'));
+        $this->assertSame(1, substr_count($html, 'value="Delete"'), "not the one that's running");
+        $this->assertStringContainsString('placeholder="wifidb.example.com"', $html);
+        $this->assertStringContainsString('1,234,567 rows', $html);
+        $this->assertStringContainsString('SQL Server', $html);
+        $this->assertStringContainsString('exporting wifi_hist', $html);
+        $this->assertStringContainsString('&lt;wifi_hist&gt;', $html);
+        $this->assertStringNotContainsString('<b>', substr($html, strpos($html, 'Backups on this server')));
+        $this->assertStringContainsString('Waiting to start: restore', $html);
+        $this->assertStringContainsString('location.reload()', $html);
+    }
+
     public function testTheMobileMenuOffersAdminModeOnlyToAdministratorsAndShowsTheWayOut(): void
     {
         $member = $this->smarty('vistumbler_mobile')->fetch('navigation.tpl');
