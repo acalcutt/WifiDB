@@ -329,7 +329,7 @@ class daemon extends wdbcli
 		$file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));		
 
 		$source = $this->PATH.'import/up/'.$file_name;
-		if(file_exists($source) && count(file($source)) > 1)//make sure the file exists
+		if(file_exists($source) && filesize($source) > 0)//make sure the file exists (by size: a zip or database file may have no line breaks in it)
 		{
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
 			if($this->sql->service == "mysql")
@@ -412,6 +412,7 @@ class daemon extends wdbcli
 							$this->verbosed("Extracting VSZ. ".$source, 1);
 							$path_parts = pathinfo($source);
 							$detination_vs1 = $path_parts['dirname']."/extract/".$path_parts['filename'].".VS1";
+							if(!is_dir($path_parts['dirname']."/extract")) { mkdir($path_parts['dirname']."/extract", 0775, true); }
 
 							$VSZ = new ZipArchive();
 							if ($VSZ->open($source) === TRUE) {
@@ -485,6 +486,7 @@ class daemon extends wdbcli
 							$this->verbosed("Extracting GZ. ".$source, 1);
 							$path_parts = pathinfo($source);
 							$detination_csv = $path_parts['dirname']."/extract/".$path_parts['filename'].".CSV";
+							if(!is_dir($path_parts['dirname']."/extract")) { mkdir($path_parts['dirname']."/extract", 0775, true); }
 
 							$file = gzopen($source, 'rb');
 							$out_file = fopen($detination_csv, 'wb'); 
