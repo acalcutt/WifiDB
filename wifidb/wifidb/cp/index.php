@@ -89,7 +89,7 @@ if($username)
 			$cp_profile = array();
 			if($userArray['id'])
 			{
-				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ?, apikey = ?, import_require_login = ? WHERE id = ?";
+				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, ".$dbcore->sql->ident('Vis_ver')." = ?, apikey = ?, import_require_login = ? WHERE id = ?";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				$result->bindParam(1, $email, PDO::PARAM_STR);
 				$result->bindParam(2, $h_email, PDO::PARAM_STR);
