@@ -67,7 +67,7 @@ check "using a recovery code leaves a notice for the member" docker exec "$db" s
 
 log "admin mode"
 admhash=$(docker exec -e P="$pass" "$ct1" php -r 'echo password_hash(getenv("P"), PASSWORD_BCRYPT);')
-docker exec "$db" mariadb -uwifidb -ptestpw wifi -e "INSERT INTO user_info (username, password, uid, email, validated, permissions) VALUES ('admuser', '$admhash', 'ad1', 'ad@example.test', 0, '1000')"
+docker exec "$db" mariadb -uwifidb -ptestpw wifi -e "INSERT INTO user_info (username, password, uid, email, validated, permissions, admin) VALUES ('admuser', '$admhash', 'ad1', 'ad@example.test', 0, '1000', 1)"
 admcodes=$(tf_php '
     $pdo->exec("INSERT INTO user_login_hashes (username, hash, utime) VALUES (\"admuser\", \"setup\", " . (time() + 600) . ")");
     $start = $tf->StartTotp("admuser", "setup");
@@ -92,6 +92,29 @@ check "a fresh code turns admin mode on and goes back to where the admin was" sh
 check "the admin pages now open" test "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | status)" = 200
 check "an admin action gets past the gate (it then finds there is no such PID record)" sh -c 'echo "$0" | grep -q "PID record not found"' "$(adm_get 'http://127.0.0.1/opt/admin_action.php?action=delete_daemon_pid&pidfile=nothing' )"
 check "the menu now offers the way out" sh -c 'echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
+
+log "site settings, the sign-ups switch and CleanTalk"
+# CleanTalk is pointed at a closed port, so nothing here reaches cleantalk.org and its failing open is what gets tested
+docker exec "$ct1" php -r '$f = "/srv/wifidb-data/config/web.overrides.php"; $c = include $f; $c["cleantalk_server"] = $c["cleantalk_api"] = "http://127.0.0.1:9/"; file_put_contents($f, "<?php\nreturn " . var_export($c, true) . ";\n");'
+sleep 3   # PHP rechecks a changed file after a couple of seconds
+settings() { adm_get -X POST "$@" 'http://127.0.0.1/admin/settings.php' | location; }
+signup() { site -H "Cookie: $tzc" -X POST --data-urlencode "time_user=$1" --data-urlencode "time_pass=$pass" --data-urlencode "time_pass2=$pass" --data-urlencode "time_email=$1@example.test" -d agree_terms=yes -d ct_js=1 -d ct_t=$(( $(date +%s) - 20 )) 'http://127.0.0.1/login.php?func=create_user_proc'; }
+members() { docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from user_info where username = '$1'"; }
+check "the site settings table was made" docker exec "$db" mariadb -uwifidb -ptestpw wifi -e "select count(*) from site_settings"
+check "the site settings page opens in admin mode" sh -c 'echo "$0" | grep -q "Site settings" && echo "$0" | grep -q "name=\"signups_open\" type=\"checkbox\" checked"' "$(adm_get 'http://127.0.0.1/admin/settings.php')"
+check "a member who is not an administrator is refused" test "$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/admin/settings.php' | status)" = 403
+check "closing sign-ups (and e-mail confirmation, which this test can't send) saves" sh -c 'echo "$0" | grep -q "r=saved"' "$(settings)"
+check "...and leaves the administrators a notice" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from notifications where username=\"admuser\" and title=\"Site settings changed\"")" -ge 1'
+check "...the login page no longer offers to sign up" sh -c '! echo "$0" | grep -q "func=create_user_form"' "$(site -H "Cookie: $tzc" 'http://127.0.0.1/login.php')"
+check "...and a sign-up sent anyway is refused" sh -c 'echo "$0" | grep -q "Sign-ups are closed"' "$(signup closeduser)"
+check "...without making the account" test "$(members closeduser)" = 0
+check "turning CleanTalk on without its key saves nothing" sh -c 'echo "$0" | grep -q "r=needs_key"' "$(settings -d signups_open=on -d cleantalk_enabled=on)"
+check "a key CleanTalk can't be asked about is saved, with a warning" sh -c 'echo "$0" | grep -q "r=unreachable"' "$(settings -d signups_open=on -d cleantalk_enabled=on --data-urlencode cleantalk_key=testkey)"
+check "...encrypted" docker exec "$db" sh -c 'mariadb -uwifidb -ptestpw wifi -N -e "select value from site_settings where name=\"cleantalk_key\"" | grep -q "^enc:"'
+check "...and the page shows it is set, but not the key" sh -c 'echo "$0" | grep -q "Leave blank to keep it" && ! echo "$0" | grep -q testkey' "$(adm_get 'http://127.0.0.1/admin/settings.php')"
+check "with sign-ups open again and CleanTalk unreachable, a sign-up goes through" sh -c 'echo "$0" | grep -q "User Created"' "$(signup ctuser)"
+check "...the account is there" test "$(members ctuser)" = 1
+check "...and the log says CleanTalk did not check it" docker exec "$db" sh -c 'mariadb -uwifidb -ptestpw wifi -N -e "select message from log" | grep -q "CleanTalk did not check a newuser from ctuser"'
 adm_get 'http://127.0.0.1/cp/admin_mode.php?func=off' >/dev/null
 check "leaving admin mode closes the admin pages again" sh -c 'echo "$0" | grep -q "cp/admin_mode.php"' "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | location)"
 check "a member who is not an administrator is refused outright" test "$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/opt/scheduling.php?func=bad' | status)" = 403
