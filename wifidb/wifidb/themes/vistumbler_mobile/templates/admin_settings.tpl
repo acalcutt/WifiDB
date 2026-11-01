@@ -24,6 +24,8 @@ version 2 of the License, or (at your option) any later version.
 							<td>
 								{if $s.type == 'bool'}
 								<input id="{$s.name}" name="{$s.name}" type="checkbox"{if $s.value} checked{/if}>
+								{elseif $s.type == 'text'}
+								<input id="{$s.name}" name="{$s.name}" type="text" size="40" value="{$s.value|escape:'html':'UTF-8':false}">
 								{else}
 								<input id="{$s.name}" name="{$s.name}" type="password" value="" size="40" placeholder="{if $s.is_set}Set. Leave blank to keep it{else}Not set{/if}">
 								{if $s.is_set}<label><input name="clear_{$s.name}" type="checkbox"> Remove it</label>{/if}

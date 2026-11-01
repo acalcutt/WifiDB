@@ -65,6 +65,12 @@ version 2 of the License, or (at your option) any later version.
 								<input type="submit" value="Restore">
 							</form>
 							{/if}
+							{if ($b.state|default:'') == 'done' && $backups_s3}
+							<form method="post" action="{$wifidb_host_url}admin/backups.php">
+								<input type="hidden" name="action" value="upload"><input type="hidden" name="name" value="{$b.name|escape:'html':'UTF-8':false}">
+								<input type="submit" value="Copy to S3">{if $b.s3|default:''}<br><small>copied {$b.s3|escape:'html':'UTF-8':false}</small>{/if}
+							</form>
+							{/if}
 							{if ($b.state|default:'') != 'running'}
 							<form method="post" action="{$wifidb_host_url}admin/backups.php">
 								<input type="hidden" name="action" value="delete"><input type="hidden" name="name" value="{$b.name|escape:'html':'UTF-8':false}">
@@ -77,6 +83,26 @@ version 2 of the License, or (at your option) any later version.
 					<tr><td colspan="6"><small>Restore replaces all of this site's data with the backup and signs everyone out; afterwards you sign in with an account from the backup. Type this site's domain to confirm. The scheduled imports and exports wait until it's done.</small></td></tr>
 					{else}
 					<tr class="light"><td colspan="6">No backups yet.</td></tr>
+					{/if}
+				</table>
+
+				<table class="content_table">
+					<tr><td class="subheading" colspan="4">Copies in S3</td></tr>
+					{if !$backups_s3}
+					<tr class="light"><td colspan="4">No bucket is set up. Give one on <a href="{$wifidb_host_url}admin/settings.php">Site Settings</a> (Garage, MinIO or AWS) and each nightly backup is copied there too, so it survives losing this server.</td></tr>
+					{elseif $backups_remote_error}
+					<tr class="light"><td colspan="4"><font color="Red">The bucket couldn't be listed: {$backups_remote_error|escape:'html':'UTF-8':false}</font></td></tr>
+					{elseif $backups_remote}
+					<tr class="header"><th>Backup</th><th>Copied (UTC)</th><th>Size</th><th></th></tr>
+					{foreach $backups_remote as $o}
+					<tr class="{cycle values='light,dark'}">
+						<td><code>{$o.name|escape:'html':'UTF-8':false}</code></td><td>{$o.modified|replace:'T':' '|truncate:16:''|escape:'html':'UTF-8':false}</td><td>{$o.size_text|escape:'html':'UTF-8':false}</td>
+						<td>{if $o.here}<small>also here</small>{else}<form method="post" action="{$wifidb_host_url}admin/backups.php"><input type="hidden" name="action" value="fetch"><input type="hidden" name="name" value="{$o.name|escape:'html':'UTF-8':false}"><input type="submit" value="Fetch to this server"></form>{/if}</td>
+					</tr>
+					{/foreach}
+					<tr><td colspan="4"><small>In {$backups_s3_where|escape:'html':'UTF-8':false}/ in the bucket. A fetched backup shows up above and restores from there.</small></td></tr>
+					{else}
+					<tr class="light"><td colspan="4">Nothing in the bucket yet ({$backups_s3_where|escape:'html':'UTF-8':false}/).</td></tr>
 					{/if}
 				</table>
 

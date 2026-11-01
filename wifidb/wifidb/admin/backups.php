@@ -73,11 +73,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 		}
 	}
 	elseif(!$backups->Ready()) { $result = 'not_ready'; }
-	elseif(in_array($action, array('restore', 'delete'), true) && !BackupService::ValidName($name)) { $result = 'no_backup'; }
+	elseif(in_array($action, array('restore', 'delete', 'upload', 'fetch'), true) && !BackupService::ValidName($name)) { $result = 'no_backup'; }
 	elseif($action === 'restore' && strcasecmp(trim((string)($_POST['confirm'] ?? '')), $domain) !== 0) { $result = 'confirm'; }
 	elseif($action === 'restore' && $backups->Busy()) { $result = 'busy'; }
 	elseif($action === 'restore' && (($backups->Get($name)['state'] ?? '') !== 'done')) { $result = 'no_backup'; }
-	elseif(in_array($action, array('export', 'restore', 'delete'), true))
+	elseif(in_array($action, array('export', 'restore', 'delete', 'upload', 'fetch'), true))
 	{
 		$backups->Queue($action, $username, $action === 'export' ? array() : array('name' => $name));
 		$dbcore->sec->logd("Backup request by $username: $action $name", "Info");
@@ -96,6 +96,17 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 
 $r = (string)filter_input(INPUT_GET, 'r', FILTER_SANITIZE_SPECIAL_CHARS);
 $dbcore->smarty->assign('backups_new_key', $newKey);
+# the copies in S3, when Site Settings has a bucket
+$remote = array(); $remoteError = '';
+$s3 = null;
+try { $s3 = $backups->S3(); if($s3) { $remote = $backups->RemoteBackups(); } }
+catch(Throwable $e) { $remoteError = $e->getMessage(); }
+foreach($remote as &$o) { $o['size_text'] = BackupService::HumanSize($o['size']); $o['here'] = (bool)$backups->Get($o['name']); }
+unset($o);
+$dbcore->smarty->assign('backups_s3', (bool)$s3 || $remoteError !== '');
+$dbcore->smarty->assign('backups_s3_where', $s3 ? $backups->S3Prefix() : '');
+$dbcore->smarty->assign('backups_remote', $remote);
+$dbcore->smarty->assign('backups_remote_error', $remoteError);
 $dbcore->smarty->assign('backups_key', $backups->TransferKeyInfo());
 $dbcore->smarty->assign('backups_key_days', BackupService::TRANSFER_KEY_DAYS);
 $list = $backups->Backups();

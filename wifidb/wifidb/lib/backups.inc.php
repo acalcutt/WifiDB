@@ -220,10 +220,15 @@ class BackupService
 		{
 			switch($request['action'] ?? '')
 			{
-				case 'export':  $this->job['name'] = $this->Export(!empty($request['daily']) ? 'daily' : 'manual', $request['requested_by'] ?? ''); break;
+				case 'export':
+					$this->job['name'] = $this->Export(!empty($request['daily']) ? 'daily' : 'manual', $request['requested_by'] ?? '');
+					if(!empty($request['daily']) && $this->S3()) { $this->Upload($this->job['name']); }   # the off-site copy
+					break;
 				case 'restore': $this->Restore($request['name'] ?? ''); break;
 				case 'delete':  $this->Delete($request['name'] ?? ''); break;
 				case 'import':  $this->job['name'] = $this->Import($request); break;
+				case 'upload':  $this->Upload($request['name'] ?? ''); break;
+				case 'fetch':   $this->Fetch($request['name'] ?? ''); break;
 				default: throw new BackupException("Unknown request: ".($request['action'] ?? ''));
 			}
 			$this->job['state'] = 'done';
@@ -234,6 +239,7 @@ class BackupService
 		{
 			$this->job['state'] = 'failed';
 			$this->job['error'] = $e->getMessage();
+			$this->Alert(($request['action'] ?? 'A backup request').' failed', $e->getMessage());
 			$this->Log('failed: '.$e->getMessage());
 			$ok = false;
 		}
@@ -242,6 +248,19 @@ class BackupService
 		$this->job = null;
 		if($ownLock) { $this->Unlock(); }
 		return $ok;
+	}
+
+	/** Tells the administrators in the site (a nightly backup failing, say). Never throws. */
+	private function Alert($title, $body)
+	{
+		if(!$this->conn) { return; }
+		try
+		{
+			require_once dirname(__FILE__).'/notify.inc.php';
+			$link = rtrim($this->config['hosturl'] ?? '', '/').'/'.trim($this->config['root'] ?? '', '/');
+			(new Notifier($this->conn))->Notify('admin_alert', 'Backups: '.$title, $body, rtrim($link, '/').'/admin/backups.php');
+		}
+		catch(Throwable $e) { /* the log has it */ }
 	}
 
 	// ── The work ─────────────────────────────────────────────────────────────────────────────────────
@@ -369,6 +388,105 @@ class BackupService
 		$overrides['two_factor_key'] = $key;
 		file_put_contents($file, "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn ".var_export($overrides, true).";\n");
 		$this->Log("installed the backup's two_factor_key in $file");
+	}
+
+	// ── Copies in S3 (Garage, MinIO, AWS): Site Settings says where ──────────────────────────────────
+
+	const S3_KEEP = 30;
+	private $s3 = false;
+
+	private function Setting($name)
+	{
+		if(!$this->conn) { return ''; }
+		require_once dirname(__FILE__).'/site_settings.inc.php';
+		return (new SiteSettings($this->conn, $this->config))->Get($name);
+	}
+
+	/** The bucket for copies, or null when none is set up. */
+	public function S3()
+	{
+		if($this->s3 === false)
+		{
+			$this->s3 = null;
+			if($this->Setting('backup_s3_endpoint') !== '')
+			{
+				require_once dirname(__FILE__).'/s3.inc.php';
+				$this->s3 = new S3Client($this->Setting('backup_s3_endpoint'), $this->Setting('backup_s3_region'), $this->Setting('backup_s3_bucket'),
+					$this->Setting('backup_s3_key_id'), $this->Setting('backup_s3_secret'));
+				$this->s3->log = array($this, 'Log');
+			}
+		}
+		return $this->s3;
+	}
+
+	/** The folder in the bucket: Site Settings', or the site's domain. */
+	public function S3Prefix()
+	{
+		$prefix = trim((string)$this->Setting('backup_s3_prefix'), '/');
+		if($prefix === '') { $prefix = (string)parse_url($this->config['hosturl'] ?? '', PHP_URL_HOST); }
+		return $prefix !== '' ? $prefix : 'wifidb';
+	}
+
+	private function S3Key($name) { return $this->S3Prefix().'/'.$name.'.tar'; }
+
+	/** The backups in the bucket, newest first: name, size, modified. */
+	public function RemoteBackups()
+	{
+		$s3 = $this->S3();
+		if(!$s3) { return array(); }
+		$out = array();
+		foreach($s3->ListObjects($this->S3Prefix().'/') as $o)
+		{
+			$name = basename($o[0], '.tar');
+			if(self::ValidName($name) && $o[0] === $this->S3Key($name)) { $out[] = array('name' => $name, 'size' => $o[1], 'modified' => $o[2]); }
+		}
+		usort($out, function ($a, $b) { return strcmp($b['name'], $a['name']); });
+		return $out;
+	}
+
+	/** Copies a finished backup to the bucket, then keeps only the newest S3_KEEP (backup_s3_keep) there. */
+	public function Upload($name)
+	{
+		$s3 = $this->S3();
+		if(!$s3) { throw new BackupException("No S3 bucket is set up (Site Settings)"); }
+		$b = $this->Get($name);
+		if(!$b || ($b['state'] ?? '') !== 'done') { throw new BackupException("$name isn't a finished backup"); }
+		$sha = $b['sha256'] ?? hash_file('sha256', $this->Path($name));
+		$this->Log("copying $name to S3 (".$this->S3Key($name).", ".self::HumanSize(filesize($this->Path($name))).")");
+		$s3->PutFile($this->S3Key($name), $this->Path($name), array('sha256' => $sha, 'site' => $b['source']['site'] ?? '', 'service' => $b['source']['service'] ?? ''));
+		$b['s3'] = gmdate('Y-m-d H:i:s');
+		unset($b['name']);
+		self::WriteJson($this->StatusPath($name), $b + array('name' => $name));
+		$keep = max(1, (int)($this->config['backup_s3_keep'] ?? self::S3_KEEP));
+		foreach(array_slice($this->RemoteBackups(), $keep) as $old)
+		{
+			$this->Log("removing the old copy ".$old['name']." from S3");
+			$s3->Delete($this->S3Key($old['name']));
+		}
+	}
+
+	/** Downloads a backup from the bucket into the folder (carrying on from an earlier try), checked against its SHA-256. */
+	public function Fetch($name)
+	{
+		$s3 = $this->S3();
+		if(!$s3) { throw new BackupException("No S3 bucket is set up (Site Settings)"); }
+		if(!self::ValidName($name)) { throw new BackupException("No backup named $name"); }
+		$head = $s3->Head($this->S3Key($name));
+		if(!$head) { throw new BackupException("The bucket has no $name"); }
+		$partial = $this->Path($name).'.partial';
+		$this->Log("fetching $name from S3 (".self::HumanSize($head['size']).")");
+		$s3->GetFile($this->S3Key($name), $partial);
+		$sha = hash_file('sha256', $partial);
+		if(!empty($head['meta']['sha256']) && $sha !== $head['meta']['sha256'])
+		{
+			@unlink($partial);
+			throw new BackupException("The copy of $name from S3 doesn't match its SHA-256, so it was thrown away");
+		}
+		rename($partial, $this->Path($name));
+		@chmod($this->Path($name), 0600);
+		$manifest = WifidbBackup::ReadManifest($this->Path($name));
+		self::WriteJson($this->StatusPath($name), $this->StatusFrom($manifest, 'from S3') + array('size' => $head['size'], 'sha256' => $sha, 's3' => 'fetched'));
+		$this->Log("fetched $name");
 	}
 
 	// ── Transfer keys: another server copying backups from here ──────────────────────────────────────

@@ -46,6 +46,33 @@ try
 	$c->Delete('backups/site one/small.bin');
 	$c->Delete('backups/site one/big.bin');
 	check("deleted objects are gone", $c->ListObjects('backups/') === array());
+
+	# the backups' use of it: settings from Site Settings, copy two backups up (keeping one), fetch it back elsewhere
+	require $argv[1].'/backups.inc.php';
+	require_once $argv[1].'/site_settings.inc.php';
+	$db = new PDO('sqlite::memory:', null, null, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+	$db->exec("CREATE TABLE site_settings (name TEXT PRIMARY KEY, value TEXT, updated_by TEXT, updated_at TEXT)");
+	$db->exec("CREATE TABLE user_info (id INTEGER PRIMARY KEY, username TEXT)");
+	$db->exec("INSERT INTO user_info (username) VALUES ('alice')");
+	$config = array('hosturl' => 'https://wifidb.test/', 'two_factor_key' => Totp::GenerateKey(), 'backup_dir' => "$tmp/here", 'backup_s3_keep' => 1);
+	(new SiteSettings($db, $config))->Save(array('backup_s3_endpoint' => getenv('S3_ENDPOINT'), 'backup_s3_region' => getenv('S3_REGION'), 'backup_s3_bucket' => getenv('S3_BUCKET'),
+		'backup_s3_key_id' => getenv('S3_KEY_ID'), 'backup_s3_secret' => getenv('S3_SECRET')), 'test');
+	$here = new BackupService($config, $db, 'sqlite');
+	$here->Ready();
+	foreach(array('wifidb-backup-20270101-000000', 'wifidb-backup-20270102-000000') as $n)
+	{
+		(new WifidbBackup($db, 'sqlite'))->Export("$tmp/here/$n.tar", array('site' => 'https://wifidb.test/', 'migrations' => array()));
+		check("$n is copied to the bucket", $here->Run(array('action' => 'upload', 'name' => $n, 'requested_by' => 'test')), json_encode($here->Job()['error'] ?? ''));
+	}
+	$remote = $here->RemoteBackups();
+	check("only the newest copy is kept (backup_s3_keep 1), under the site's domain", array_column($remote, 'name') === array('wifidb-backup-20270102-000000')
+		&& $c->ListObjects('wifidb.test/')[0][0] === 'wifidb.test/wifidb-backup-20270102-000000.tar', json_encode($remote));
+	$elsewhere = new BackupService(array('backup_dir' => "$tmp/elsewhere") + $config, $db, 'sqlite');
+	$elsewhere->Ready();
+	check("another server fetches it", $elsewhere->Run(array('action' => 'fetch', 'name' => 'wifidb-backup-20270102-000000', 'requested_by' => 'test')), json_encode($elsewhere->Job()['error'] ?? ''));
+	$got = $elsewhere->Get('wifidb-backup-20270102-000000');
+	check("...whole, and it's listed as a backup", ($got['state'] ?? '') === 'done' && hash_file('sha256', "$tmp/elsewhere/wifidb-backup-20270102-000000.tar") === hash_file('sha256', "$tmp/here/wifidb-backup-20270102-000000.tar"), json_encode($got));
+	$c->Delete('wifidb.test/wifidb-backup-20270102-000000.tar');
 }
 catch(Throwable $e)
 {

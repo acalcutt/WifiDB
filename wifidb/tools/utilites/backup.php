@@ -10,6 +10,9 @@ A backup made on SQL Server restores on MariaDB and the other way round. See doc
   php backup.php delete NAME
   php backup.php import URL --key KEY [--name NAME] [--fresh] [--restore --yes] [--insecure]
                                       copy a backup from another server (its newest, or NAME; --fresh: have it make one first)
+  php backup.php list --remote        the backups in the S3 bucket (Site Settings)
+  php backup.php upload NAME          copy a backup to the S3 bucket
+  php backup.php fetch NAME           download one from the bucket into backup_dir
   php backup.php key [--revoke]       make this server's transfer key (shown once), or revoke it
   php backup.php daily                queue the daily backup (tools/cron/backups daily, from cron)
   php backup.php run-queue            run what the admin page asked for (tools/cron/backups does this each minute)
@@ -38,6 +41,13 @@ switch($command)
 		exit($ok ? 0 : 1);
 
 	case 'list':
+		if(in_array('--remote', $args, true))
+		{
+			try { foreach($backups->RemoteBackups() as $o) { printf("%-32s %10s  %s
+", $o['name'], BackupService::HumanSize($o['size']), $o['modified']); } }
+			catch(Throwable $e) { $fail($e->getMessage()); }
+			exit(0);
+		}
 		foreach($backups->Backups() as $b)
 		{
 			printf("%-32s %-8s %-10s %10s  %s%s\n", $b['name'], $b['state'] ?? '', $b['kind'] ?? '', BackupService::HumanSize($b['size'] ?? 0),
@@ -56,6 +66,10 @@ switch($command)
 	case 'restore':
 		if(!in_array('--yes', $args, true)) { $fail("This replaces all of this site's data with $name and signs everyone out. Run it again with --yes to go ahead."); }
 		exit($backups->Run(array('action' => 'restore', 'name' => $name, 'requested_by' => 'command line')) ? 0 : 1);
+
+	case 'upload':
+	case 'fetch':
+		exit($backups->Run(array('action' => $command, 'name' => $name, 'requested_by' => 'command line')) ? 0 : 1);
 
 	case 'delete':
 		exit($backups->Run(array('action' => 'delete', 'name' => $name, 'requested_by' => 'command line')) ? 0 : 1);

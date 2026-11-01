@@ -14,7 +14,7 @@ require_once dirname(__FILE__).'/totp.inc.php';
 
 class SiteSettings
 {
-	/** name => [type ('bool' or 'secret'), label, help, default when config.inc.php doesn't say] */
+	/** name => [type ('bool', 'text' or 'secret'), label, help, default when config.inc.php doesn't say] */
 	const SETTINGS = array(
 		'signups_open'      => array('bool', 'Sign-ups are open',
 			'Anyone can create an account. Off: the sign-up form says sign-ups are closed; members already signed up are not affected.', 1),
@@ -26,6 +26,15 @@ class SiteSettings
 			'From your CleanTalk dashboard. Saving checks it with CleanTalk.', ''),
 		'backup_daily'      => array('bool', 'Make a backup every night',
 			'At about 03:30 (tools/cron/backups daily). The newest daily ones are kept (backup_keep in config.inc.php, 7 unless set); backups made by hand are never removed. A big database makes big backups: check the backups folder has room.', 1),
+		'backup_s3_endpoint' => array('text', 'Copy backups to S3: address',
+			'An S3-compatible service (Garage, MinIO, AWS), such as https://s3.example.com, without the bucket. Each nightly backup is copied there (the newest 30 are kept); others can be copied from the Backups page. Empty: no copies.', ''),
+		'backup_s3_region'  => array('text', 'S3 region',
+			'Garage: the s3_region in its garage.toml (usually garage). AWS: the bucket\'s region.', 'garage'),
+		'backup_s3_bucket'  => array('text', 'S3 bucket', 'Keep it private: backups hold e-mail addresses and password hashes.', ''),
+		'backup_s3_prefix'  => array('text', 'S3 folder',
+			'The folder in the bucket, so several sites can share one. Empty: this site\'s domain.', ''),
+		'backup_s3_key_id'  => array('text', 'S3 key ID', 'A key that can only reach this bucket.', ''),
+		'backup_s3_secret'  => array('secret', 'S3 secret key', 'Saving checks the bucket with these keys.', ''),
 	);
 
 	private $conn;
@@ -77,7 +86,7 @@ class SiteSettings
 		return array_key_exists($name, $this->config) ? 'config' : 'default';
 	}
 
-	/** @return bool|string a bool setting as a bool; a secret as plain text ('' if none, or if it can't be read) */
+	/** @return bool|string a bool setting as a bool; text and a secret as plain text ('' if a secret can't be read) */
 	public function Get($name)
 	{
 		$source = $this->Source($name);
@@ -86,6 +95,7 @@ class SiteSettings
 		{
 			$raw = (string)$this->rows[$name];
 			if($type === 'bool') { return $raw === '1'; }
+			if($type === 'text') { return $raw; }
 			$plain = Totp::Unprotect($raw, $this->key);
 			return $plain === false ? '' : $plain;
 		}
@@ -106,7 +116,7 @@ class SiteSettings
 				'type'   => $type,
 				'label'  => $label,
 				'help'   => $help,
-				'value'  => $type === 'bool' ? $value : null,
+				'value'  => $type === 'secret' ? null : $value,
 				'is_set' => $type === 'secret' ? $value !== '' : null,
 				'source' => $this->Source($name),
 			);
@@ -115,7 +125,7 @@ class SiteSettings
 	}
 
 	/**
-	 * Saves what changed. $values: name => true/false for a bool; for a secret, a new value, '' to clear it, or null
+	 * Saves what changed. $values: name => true/false for a bool; a string for text; for a secret, a new value, '' to clear it, or null
 	 * (or left out) to keep it. Names it doesn't know are ignored.
 	 * @return array the names that changed
 	 */
@@ -135,8 +145,8 @@ class SiteSettings
 			else
 			{
 				$new = trim((string)$values[$name]);
-				if($new === $this->Get($name) && $this->Source($name) === 'saved') { continue; }
-				$stored = $new === '' ? '' : Totp::Protect($new, $this->key);
+				if($new === $this->Get($name) && ($type === 'text' || $this->Source($name) === 'saved')) { continue; }
+				$stored = ($new === '' || $type === 'text') ? $new : Totp::Protect($new, $this->key);
 			}
 			$this->Store($name, $stored, $username);
 			$changed[] = $name;

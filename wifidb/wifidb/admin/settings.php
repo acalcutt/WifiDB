@@ -30,7 +30,9 @@ $messages = array(
 	'needs_key'   => 'Turning on CleanTalk needs its access key. Nothing was saved.',
 	'bad_key'     => 'CleanTalk did not accept that key. Nothing was saved.',
 	'error'       => 'The settings could not be saved. If you have not run the database migrations yet, run tools/utilites/migrate.php.',
+	'bad_s3'      => "That S3 bucket couldn't be used with those keys. Nothing was saved.",
 );
+$detail = '';
 
 if($_SERVER['REQUEST_METHOD'] === 'POST')
 {
@@ -38,6 +40,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 	foreach(SiteSettings::SETTINGS as $name => $def)
 	{
 		if($def[0] === 'bool') { $values[$name] = isset($_POST[$name]); continue; }
+		if($def[0] === 'text') { $values[$name] = isset($_POST[$name]) ? trim((string)$_POST[$name]) : ''; continue; }
 		$given = isset($_POST[$name]) ? trim((string)$_POST[$name]) : '';
 		if(isset($_POST['clear_'.$name])) { $values[$name] = ''; }
 		elseif($given !== '') { $values[$name] = $given; }
@@ -53,6 +56,29 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 		$check = $dbcore->sec->CleanTalk($newKey)->CheckKey();
 		if($check === 'invalid') { $result = 'bad_key'; }
 		elseif($check === 'unreachable') { $result = 'unreachable'; }
+	}
+
+	# a changed S3 location for backup copies is tried before it's saved
+	$s3 = array();
+	$s3Changed = false;
+	foreach(array('endpoint', 'region', 'bucket', 'key_id', 'secret') as $part)
+	{
+		$name = 'backup_s3_'.$part;
+		$s3[$part] = ($values[$name] !== null) ? $values[$name] : $settings->Get($name);
+		if($values[$name] !== null && $values[$name] !== $settings->Get($name)) { $s3Changed = true; }
+	}
+	if(($result === 'saved' || $result === 'unreachable') && $s3Changed && $s3['endpoint'] !== '')
+	{
+		try
+		{
+			require_once '../lib/s3.inc.php';
+			(new S3Client($s3['endpoint'], $s3['region'], $s3['bucket'], $s3['key_id'], $s3['secret']))->Check();
+		}
+		catch(Throwable $e)
+		{
+			$result = 'bad_s3';
+			$detail = $e->getMessage();
+		}
 	}
 
 	if($result === 'saved' || $result === 'unreachable')
@@ -84,14 +110,14 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 			$result = 'error';
 		}
 	}
-	header('Location: settings.php?r='.$result);
-	exit;
+	if($detail === '') { header('Location: settings.php?r='.$result); exit; }
+	$r = $result;   # shown here, with what went wrong, instead of after a redirect
 }
+else { $r = (string)filter_input(INPUT_GET, 'r', FILTER_SANITIZE_SPECIAL_CHARS); }
 
-$r = (string)filter_input(INPUT_GET, 'r', FILTER_SANITIZE_SPECIAL_CHARS);
 $dbcore->smarty->assign('wifidb_page_label', 'Site Settings');
 $dbcore->smarty->assign('site_settings', $settings->Describe());
-$dbcore->smarty->assign('settings_message', isset($messages[$r]) ? $messages[$r] : '');
-$dbcore->smarty->assign('settings_problem', in_array($r, array('needs_key', 'bad_key', 'error', 'unreachable'), true));
+$dbcore->smarty->assign('settings_message', (isset($messages[$r]) ? $messages[$r] : '').($detail !== '' ? ' ('.$detail.')' : ''));
+$dbcore->smarty->assign('settings_problem', in_array($r, array('needs_key', 'bad_key', 'error', 'unreachable', 'bad_s3'), true));
 $dbcore->smarty->assign('settings_unencrypted', empty($config['two_factor_key']));
 $dbcore->smarty->display('admin_settings.tpl');
