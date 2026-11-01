@@ -33,6 +33,8 @@ function sql_text(array $strings)
 	$text = preg_replace('/\{\$[^}]*\}|\$[A-Za-z_][A-Za-z0-9_\->\[\]\']*/', ' ', $text);   # PHP variables in the string
 	$text = preg_replace('/"[^"]*"/', ' ', $text);                                         # quoted identifiers
 	$text = preg_replace("/'[^']*'/", ' ', $text);                                         # SQL string values
+	$text = preg_replace('/:[A-Za-z_][A-Za-z0-9_]*/', ' ', $text);                         # named parameters (:BSSID)
+	$text = preg_replace('#/\*.*?\*/#s', ' ', $text);                                      # SQL comments
 	return $text;
 }
 
@@ -146,16 +148,22 @@ foreach($paths as $path)
 		$stmt['text'] .= $s;
 	}
 	$flush();
-	$report = array_values(array_filter($report, function ($r) {
-		if($r[2]) { return false; }
+	$kept = array();
+	foreach($report as $r)
+	{
+		if($r[2]) { continue; }   # the statement itself picks by service (a ?: on pgsql)
+		$keep = true;
 		foreach($r[3] as $frame)
 		{
-			if($frame['cond'] !== null && stripos($frame['cond'], 'pgsql') !== false) { return false; }
+			if($frame['cond'] === null) { continue; }
+			# in the pgsql branch itself: a mixed-case name there was left unquoted
+			if(preg_match('/==\s*[\'"]pgsql[\'"]/', $frame['cond'])) { $r[1] .= '  (unquoted, in the pgsql branch)'; break; }
 			# an arm (the mysql one, the sqlsrv one, or the else) of a chain that has a pgsql arm
-			if($frame['cond'] !== null && !empty($frame['chain']) && stripos(implode(' ', $frame['chain']->conds), 'pgsql') !== false) { return false; }
+			if(stripos($frame['cond'], 'pgsql') !== false || (!empty($frame['chain']) && stripos(implode(' ', $frame['chain']->conds), 'pgsql') !== false)) { $keep = false; break; }
 		}
-		return true;
-	}));
+		if($keep) { $kept[] = $r; }
+	}
+	$report = $kept;
 	if($report)
 	{
 		$files++;
