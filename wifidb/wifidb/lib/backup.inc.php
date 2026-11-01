@@ -44,7 +44,8 @@ class WifidbBackup
 	public $log;          // function ($line): progress lines
 	public $clock;        // function (): Unix time (tests)
 	public $rowsPerPart = self::ROWS_PER_PART;
-	public $tmpDir = '';  // where a restore unpacks one part at a time: next to the backup, not /tmp
+	public $tmpDir = '';
+	private $held = array();   // values bound by reference (SQL Server binary)  // where a restore unpacks one part at a time: next to the backup, not /tmp
 
 	/** @param string $service 'mysql' (MariaDB), 'sqlsrv', or 'sqlite' (tests) */
 	public function __construct(PDO $conn, $service)
@@ -118,14 +119,14 @@ class WifidbBackup
 		return 'value';
 	}
 
-	/** Columns of this database's tables that the database fills in itself (SQL Server identity), by table. */
+	/** The column SQL Server fills in itself (identity), by table: table => column, both lower case. */
 	private function IdentityTables()
 	{
 		if($this->service !== 'sqlsrv') { return array(); }
 		$out = array();
-		foreach($this->conn->query("SELECT t.name FROM sys.identity_columns c JOIN sys.tables t ON t.object_id = c.object_id")->fetchAll(PDO::FETCH_COLUMN) as $t)
+		foreach($this->conn->query("SELECT t.name, c.name FROM sys.identity_columns c JOIN sys.tables t ON t.object_id = c.object_id")->fetchAll(PDO::FETCH_NUM) as $r)
 		{
-			$out[strtolower($t)] = true;
+			$out[strtolower($r[0])] = strtolower($r[1]);
 		}
 		return $out;
 	}
@@ -346,7 +347,7 @@ class WifidbBackup
 			{
 				if(!isset($here[strtolower($source)])) { continue; }
 				$table = $here[strtolower($source)];
-				$stats = $this->LoadTable($tar, $table, $info, isset($identity[strtolower($table)]), $rejects, $report);
+				$stats = $this->LoadTable($tar, $table, $info, isset($identity[strtolower($table)]) ? $identity[strtolower($table)] : null, $rejects, $report);
 				$report['tables'][$table] = $stats;
 			}
 			$tar->Close();
@@ -384,7 +385,7 @@ class WifidbBackup
 		}
 	}
 
-	private function LoadTable(BackupTar $tar, $table, array $info, $hasIdentity, $rejects, array &$report)
+	private function LoadTable(BackupTar $tar, $table, array $info, $identityColumn, $rejects, array &$report)
 	{
 		$target = array();
 		foreach($this->Columns($table) as $c) { $target[strtolower($c[0])] = $c; }
@@ -399,7 +400,12 @@ class WifidbBackup
 		$this->Say("restoring $table (".number_format($info['rows'])." rows)");
 
 		$names = array();
-		foreach($map as $m) { $names[] = $this->Q($m[1][0]); }
+		$hasIdentity = false;
+		foreach($map as $m)
+		{
+			$names[] = $this->Q($m[1][0]);
+			if(strtolower($m[1][0]) === $identityColumn) { $hasIdentity = true; }   # else SQL Server numbers the rows itself
+		}
 		$perRow = count($map);
 		$batch = $this->service === 'sqlsrv' ? max(1, min(1000, intdiv(2000, $perRow))) : max(1, min(500, intdiv(30000, $perRow)));
 		$head = "INSERT INTO ".$this->Q($table)." (".implode(', ', $names).") VALUES ";
@@ -440,6 +446,7 @@ class WifidbBackup
 			$prep = $this->conn->prepare($head.implode(', ', array_fill(0, count($rows), $one)));
 			$n = 1;
 			$zero = 0;
+			$this->held = array();
 			foreach($rows as $row) { $n = $this->Bind($prep, $n, $map, $row, $zero); }
 			$prep->execute();
 			$this->conn->commit();
@@ -458,6 +465,7 @@ class WifidbBackup
 			try
 			{
 				$zero = 0;
+				$this->held = array();
 				$this->Bind($prep, 1, $map, $row, $zero);
 				$prep->execute();
 				$stats['loaded']++;
@@ -494,7 +502,12 @@ class WifidbBackup
 			}
 			if($to[1] === 'binary')
 			{
-				if($this->service === 'sqlsrv') { $prep->bindValue($n++, $v, PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY); }
+				if($this->service === 'sqlsrv')
+				{
+					# only bindParam takes the encoding, and it binds a variable: keep it until the statement has run
+					$this->held[] = $v;
+					$prep->bindParam($n++, $this->held[array_key_last($this->held)], PDO::PARAM_LOB, 0, PDO::SQLSRV_ENCODING_BINARY);
+				}
 				else { $prep->bindValue($n++, $v, $v === null ? PDO::PARAM_NULL : PDO::PARAM_LOB); }
 				continue;
 			}
