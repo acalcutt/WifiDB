@@ -267,6 +267,11 @@ $config = array
 	'db'				  	=>   'wifi',
 	'db_user'			   =>   'wdbuser',
 	'db_pwd'				=>   'supersecretpw',
+	# How the SQL Server connection is secured. Encrypted by default. sqlsrv_trust_server_certificate accepts the
+	# server's certificate without checking it, which a self-signed one (SQL Server's default) needs; set it to false
+	# once the server has a certificate this machine trusts, and the connection is then checked as well as encrypted.
+	'sqlsrv_encrypt'		=>   true,
+	'sqlsrv_trust_server_certificate' => true,
 	#MySQL Server
 	#'srvc'				  =>   'mysql',
 	#'host'				  =>   'localhost',

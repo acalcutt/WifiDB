@@ -133,4 +133,13 @@ final class HelpersTest extends TestCase
     {
         $this->assertSame('"/wifidb/cp/index.php"', wifidb_js_string('/wifidb/cp/index.php'));
     }
+
+    public function testSqlServerIsEncryptedAndTrustsItsCertificateUnlessToldOtherwise(): void
+    {
+        $this->assertSame(';Encrypt=true;TrustServerCertificate=true', wifidb_sqlsrv_security([]), 'as it always was');
+        $this->assertSame(';Encrypt=true;TrustServerCertificate=false', wifidb_sqlsrv_security(['sqlsrv_trust_server_certificate' => false]));
+        $this->assertSame(';Encrypt=true;TrustServerCertificate=false', wifidb_sqlsrv_security(['sqlsrv_trust_server_certificate' => '0']));
+        $this->assertSame(';Encrypt=false;TrustServerCertificate=true', wifidb_sqlsrv_security(['sqlsrv_encrypt' => 'no']));
+        $this->assertSame(';Encrypt=true;TrustServerCertificate=true', wifidb_sqlsrv_security(['sqlsrv_trust_server_certificate' => 'maybe']), "a value it can't read leaves it as it was");
+    }
 }

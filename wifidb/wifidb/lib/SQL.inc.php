@@ -1,4 +1,6 @@
 <?php
+require_once dirname(__FILE__).'/helpers.inc.php';   # wifidb_sqlsrv_security()
+
 class SQL
 {
 	function __construct($config)
@@ -48,7 +50,7 @@ class SQL
 			// in check but long enough to survive a busy-but-alive server's slow
 			// pre-login/TLS handshake -- 3s was too aggressive and produced
 			// intermittent SQLSTATE 08001 "error during handshakes before login".
-			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database.';TrustServerCertificate=true;LoginTimeout=15';
+			$dsn = $this->service.':Server='.$this->host.';Database='.$this->database.wifidb_sqlsrv_security($config).';LoginTimeout=15';
 			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
 			$this->conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 			$this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

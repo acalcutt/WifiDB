@@ -3,6 +3,7 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+- **SQL Server connection security is a setting.** `sqlsrv_encrypt` and `sqlsrv_trust_server_certificate` in `config.inc.php` (both on by default, as before; `WIFIDB_SQLSRV_TRUST_CERT=0` on the Proxmox template). Turn the second off once the SQL Server has a certificate the web server trusts, and the connection is checked as well as encrypted.
 - **PostgreSQL support** (merged from the postgresql branch): `blank_db.pgsql`, a `pgsql` branch for the queries, PostgreSQL migrations, backups that move to and from it, and the Proxmox template (`WIFIDB_DB_TYPE=pgsql`). The database user needs to own its database, not be a superuser. `tools/utilites/pg_audit.py` lists query sites still to check.
 - **Usernames are matched exactly in the API export too** (`api/v2/export.php` still used `LIKE`).
 - **Backups that move between SQL Server and MariaDB** (`admin/backups.php`, needs admin mode, and `tools/utilites/backup.php`). One file holds the whole database; one made on SQL Server restores on MariaDB and the other way round, which also moves a site to a new server. Back up now or nightly (newest 7 kept), download (resumable), restore (type the domain to confirm; scheduled daemons wait meanwhile; the backup's key for authenticator apps comes with it). See `docs/backups.md`.

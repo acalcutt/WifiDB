@@ -39,6 +39,9 @@ DB_HOST=${WIFIDB_DB_HOST:-}
 DB_NAME=${WIFIDB_DB_NAME:-wifi}
 DB_USER=${WIFIDB_DB_USER:-wifidb}
 DB_PASS=${WIFIDB_DB_PASS:-}
+# SQL Server: 0 checks the server's certificate against the trusted roots (needs one this container trusts); 1, the
+# default, accepts it as it is, which SQL Server's own self-signed certificate needs
+SQLSRV_TRUST_CERT=${WIFIDB_SQLSRV_TRUST_CERT:-1}
 [ -n "$DB_HOST" ] || die "set WIFIDB_DB_HOST in $ENV_FILE, then: systemctl restart wifidb-firstboot"
 [ -n "$DB_PASS" ] || die "set WIFIDB_DB_PASS in $ENV_FILE, then: systemctl restart wifidb-firstboot"
 if [ "$DB_TYPE" = sqlsrv ] && ! php -m | grep -x pdo_sqlsrv >/dev/null; then
@@ -53,7 +56,7 @@ SITE_URL=${SITE_URL%/}
 PROXY=${WIFIDB_EXTERNAL_PROXY:-}
 phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
 
-export DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS NODE ROOT SITE_URL DATA
+export DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS SQLSRV_TRUST_CERT NODE ROOT SITE_URL DATA
 
 # ── The data disk ────────────────────────────────────────────────────────────
 log "data folder $DATA"
@@ -118,6 +121,7 @@ $web = array(
     'db'            => $e('DB_NAME'),
     'db_user'       => $e('DB_USER'),
     'db_pwd'        => $e('DB_PASS'),
+    'sqlsrv_trust_server_certificate' => $e('SQLSRV_TRUST_CERT', '1') !== '0',
     'pid_file_loc'  => '/run/wifidb/',
 );
 $daemon = array(
@@ -200,7 +204,7 @@ dbphp() { # dbphp 'php code using $pdo'
         $t = getenv("DB_TYPE"); $h = getenv("DB_HOST"); $p = getenv("DB_PORT"); $n = getenv("DB_NAME");
         $dsn = $t === "mysql" ? "mysql:host=$h;port=$p;dbname=$n;charset=utf8mb4"
              : ($t === "pgsql" ? "pgsql:host=$h;port=$p;dbname=$n;connect_timeout=10"
-                               : "sqlsrv:Server=$h,$p;Database=$n;TrustServerCertificate=true;LoginTimeout=10");
+                               : "sqlsrv:Server=$h,$p;Database=$n;Encrypt=true;TrustServerCertificate=" . (getenv("SQLSRV_TRUST_CERT") === "0" ? "false" : "true") . ";LoginTimeout=10");
         $pdo = new PDO($dsn, getenv("DB_USER"), getenv("DB_PASS"), array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
         '"$1"
 }

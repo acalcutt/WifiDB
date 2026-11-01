@@ -86,7 +86,7 @@ else if($config['srvc'] == "sqlsrv")
 	// LoginTimeout=15: bound connect time when SQL is down without being so tight
 	// it aborts a busy-but-alive server's handshake (3s caused SQLSTATE 08001).
 	// See SQL.inc.php for the full rationale.
-	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].';TrustServerCertificate=true;LoginTimeout=15';
+	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].wifidb_sqlsrv_security($config).';LoginTimeout=15';
 	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
 	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
 	$sql = "SELECT TOP 1 [version] FROM [settings]";

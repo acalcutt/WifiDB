@@ -58,11 +58,24 @@ if(!function_exists('wifidb_js_string')) {
 // A short-lived database connection from the web site's config, for small standalone pages (/health/ready, the signal
 // graph) that must not load the whole application. $timeout bounds connecting to the server.
 if(!function_exists('wifidb_pdo_from_config')) {
+	/**
+	 * The part of a SQL Server connection string that says how the link is secured, from config.inc.php:
+	 * sqlsrv_encrypt (encrypt the connection; on unless set to false) and sqlsrv_trust_server_certificate (accept the
+	 * server's certificate without checking it against the trusted roots; on unless set to false, as WiFiDB always
+	 * has, since most SQL Servers present a self-signed one). Turn the second off once the server has a certificate
+	 * this machine trusts.
+	 */
+	function wifidb_sqlsrv_security($config)
+	{
+		$on = function ($key) use ($config) { return !isset($config[$key]) || filter_var($config[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false; };
+		return ';Encrypt=' . ($on('sqlsrv_encrypt') ? 'true' : 'false') . ';TrustServerCertificate=' . ($on('sqlsrv_trust_server_certificate') ? 'true' : 'false');
+	}
+
 	function wifidb_pdo_from_config($config, $timeout = 2)
 	{
 		if($config['srvc'] === 'sqlsrv')
 		{
-			$dsn = 'sqlsrv:Server=' . $config['host'] . ',' . (int)$config['port'] . ';Database=' . $config['db'] . ';TrustServerCertificate=true;LoginTimeout=' . (int)$timeout;
+			$dsn = 'sqlsrv:Server=' . $config['host'] . ',' . (int)$config['port'] . ';Database=' . $config['db'] . wifidb_sqlsrv_security($config) . ';LoginTimeout=' . (int)$timeout;
 			$options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
 		}
 		elseif($config['srvc'] === 'pgsql')

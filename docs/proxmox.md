@@ -69,6 +69,7 @@ WIFIDB_DB_PASS=…
 WIFIDB_URL=https://wifidb.example.com
 WIFIDB_NODE=wifidb                # this node's name in the database; default: the hostname
 WIFIDB_EXTERNAL_PROXY=192.168.1.1 # the proxy's address(es), for real visitor IPs
+#WIFIDB_SQLSRV_TRUST_CERT=0       # SQL Server: check its certificate (default 1: accept a self-signed one)
 ```
 
 The first boot writes the settings that differ from the defaults to `/srv/wifidb-data/config/*.overrides.php`, loads
