@@ -10,8 +10,8 @@ if [ "$(sqlq 'select count(*) from files where completed = 1')" = 0 ]; then
     log "(nothing has been imported: the utilities are not tested)"
 else
 util() { docker exec "$ct" runuser -u www-data -- php "/opt/wifidb/tools/utilites/$1" "${@:2}" 2>&1; }
-ran() { # ran NAME OUTPUT: the utility gave no PHP or SQL error
-    if echo "$2" | grep -qE "$errors"; then bad "$1 runs without an error"; echo "$2" | grep -E "$errors" | head -4 | sed 's/^/       /'; else ok "$1 runs without an error"; fi
+ran() { # ran NAME OUTPUT: the utility gave no PHP or SQL error, nor a warning (a file it couldn't write is one)
+    if echo "$2" | grep -qE "$errors|PHP Warning"; then bad "$1 runs without an error"; echo "$2" | grep -E "$errors|PHP Warning" | head -4 | sed 's/^/       /'; else ok "$1 runs without an error"; fi
 }
 
 out=$(util update_files_validgps.php); ran update_files_validgps.php "$out"
@@ -20,8 +20,9 @@ check "...and checks the finished files" sh -c 'echo "$0" | grep -q "^Checked [1
 out=$(util NewAPPercentCalc.php); ran NewAPPercentCalc.php "$out"
 check "...and agrees with what the importer worked out (nothing to change)" sh -c 'echo "$0" | grep -q "changed 0"' "$out"
 
-# take an access point's summary away, then have update_high_gps.php put it back from the readings
-apx=$(sqlq "select min($(Q AP_ID)) from wifi_ap")
+# take an access point's summary away, then have update_high_gps.php put it back from the readings (one the importer
+# made, so the summary it starts with is the importer's; the boot test's own made-up one has none)
+apx=$(sqlq "select min($(Q AP_ID)) from wifi_ap where $(Q File_ID) is not null")
 points=$(sqlq "select points from wifi_ap where $(Q AP_ID) = $apx")
 sqlq "UPDATE wifi_ap SET points = 0, high_rssi = NULL, $(Q HighGps_ID) = NULL WHERE $(Q AP_ID) = $apx" >/dev/null
 out=$(util update_high_gps.php --from "$apx" --to "$apx"); ran update_high_gps.php "$out"

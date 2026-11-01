@@ -67,7 +67,7 @@ check "nothing is left waiting or half-imported" test "$(sqlq "select (select co
 {
     sqlq "select title, 'done', aps, gps from files where completed = 1 and title like 'sample %' order by title"
     sqlq "select title, 'bad', error_msg from files_bad where title like 'sample %' order by title"
-} | sed 's/^sample //' | sort > /tmp/import-report.$id
+} | sed 's/^sample //; s/ |=| .*//' | sort > /tmp/import-report.$id   # (after |=| is the upload's path, different every run)
 done_n=$(grep -c '|done|' /tmp/import-report.$id)
 bad_n=$(grep -c '|bad|' /tmp/import-report.$id)
 log "imported $done_n, set aside $bad_n"
