@@ -83,27 +83,12 @@ switch($func)
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			$title = $user."'s Network Link";
-			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
-			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
-			else if($dbcore->sql->service == "pgsql")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND user LIKE ?)";
-				}
+			# one query for every database (the three there were read files.[user], which is now file_user)
+			$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+			$sql = "SELECT Count(".$q('AP_ID').") As ap_count\n"
+				. "FROM wifi_ap\n"
+				. "WHERE\n"
+				. "	".$q('File_ID')." IN (SELECT id FROM files WHERE ".$q('ValidGPS')." = 1 AND file_user = ?)";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
