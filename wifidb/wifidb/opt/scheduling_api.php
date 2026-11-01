@@ -260,11 +260,7 @@ try {
         break;
 
         case 'done':
-            if (strtolower($dbcore->sql->service) == 'mysql' || strtolower($dbcore->sql->service) == 'pgsql') {
-                $sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ValidGPS, size, NewAPPercent, hash FROM files WHERE completed = 1 ORDER BY file_date DESC LIMIT 250";
-            } else {
-                $sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ValidGPS, size, NewAPPercent, hash FROM files WHERE completed = 1 ORDER BY file_date DESC OFFSET 0 ROWS FETCH NEXT 250 ROWS ONLY";
-            }
+            $sql = "SELECT id, file_orig, file_user, notes, title, file_date, aps, gps, ".$dbcore->sql->ident('ValidGPS').", size, ".$dbcore->sql->ident('NewAPPercent').", hash FROM files WHERE completed = 1 ORDER BY file_date DESC ".$dbcore->sql->limit(0, 250);
             $result = $dbcore->sql->conn->query($sql);
             $files_all = array(); $class_f = 0;
             while ($newArray = $result->fetch(2)) {
