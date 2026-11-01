@@ -49,6 +49,10 @@ $config = array
 	'signups_open'			=>   1,
 	'cleantalk_enabled'		=>   0,     // check sign-ups and private messages with CleanTalk (cleantalk.org)
 	'cleantalk_key'			=>   '',
+	// Whole-site backups (admin/backups.php, docs/backups.md). backup_dir '' means {wifidb_tools}/backups; it holds
+	// member data, so keep it out of the web root. The newest backup_keep of the daily backups are kept.
+	'backup_dir'			=>   '',
+	'backup_keep'			=>   7,
 	'dBmMaxSignal'		  =>   '-30',
 	'dBmDissociationSignal'	=>   '-85',
 	'verbose'			   =>   1,

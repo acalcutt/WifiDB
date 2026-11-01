@@ -26,6 +26,14 @@ ob_start();
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 ob_end_clean();
 
+// A restore is replacing the site's data (lib/backups.inc.php): nothing starts until it's done.
+require_once $daemon_config['wifidb_install']."/lib/backups.inc.php";
+if(is_file(BackupService::PauseFile($config)))
+{
+    echo "0\n";
+    exit(0);
+}
+
 $node = $daemon_config['wifidb_nodename'];
 $conn = $dbcore->sql->conn;
 

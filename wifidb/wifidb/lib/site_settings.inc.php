@@ -24,6 +24,8 @@ class SiteSettings
 			'Sends the e-mail address, IP address and name of each new sign-up, and private messages from members without a track record, to CleanTalk (cleantalk.org), and refuses what it calls spam. If CleanTalk cannot be reached, they go through.', 0),
 		'cleantalk_key'     => array('secret', 'CleanTalk access key',
 			'From your CleanTalk dashboard. Saving checks it with CleanTalk.', ''),
+		'backup_daily'      => array('bool', 'Make a backup every night',
+			'At about 03:30 (tools/cron/backups daily). The newest daily ones are kept (backup_keep in config.inc.php, 7 unless set); backups made by hand are never removed. A big database makes big backups: check the backups folder has room.', 1),
 	);
 
 	private $conn;

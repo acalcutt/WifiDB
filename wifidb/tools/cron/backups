@@ -1,0 +1,14 @@
+#!/bin/bash
+# Runs what admin/backups.php asked for (export, restore, delete, ...), one at a time; with "daily", makes the daily
+# backup first (the newest 7 are kept). Each minute from cron; a run already going makes this one exit at once.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+mkdir -p ../log/backups
+log=../log/backups/backups_$(date -u +%Y%m%d).log
+if [ "${1:-}" = "daily" ]; then
+	php ../utilites/backup.php daily >> "$log" 2>&1
+fi
+php ../utilites/backup.php run-queue >> "$log" 2>&1
+find ../log/backups/ -mtime +14 -type f -delete
+exit 0
