@@ -157,10 +157,21 @@ switch($func)
 								{
 									$mesg .= "<h3>With help from: ".$otherusers."<BR></h3>";
 								}
+								// the same file twice is queued once: already waiting, importing or imported (MariaDB's files_tmp
+								// also has a unique key on hash; SQL Server's and PostgreSQL's don't, so it's checked here for all)
+								$dup = $dbcore->sql->conn->prepare("SELECT (SELECT COUNT(*) FROM files_tmp WHERE hash = ?) + (SELECT COUNT(*) FROM files_importing WHERE hash = ?) + (SELECT COUNT(*) FROM files WHERE hash = ?) AS n");
+								$dup->execute(array($hash, $hash, $hash));
+								if((int)$dup->fetchColumn() > 0)
+								{
+									unlink($uploadfile);
+									$mesg .= "<h2>File (".htmlspecialchars($filename_orig, ENT_QUOTES).") has already been uploaded</h2>";
+									break;
+								}
+
 								//lets try a scheduled import table that has a cron job
 								//that runs and imports all of them at once into the DB
 								//in order that they where uploaded
-								
+
 								if($dbcore->sql->service == "mysql")
 									{$sql = "INSERT INTO `files_tmp`(`file_name`, `file_orig`, `file_date`, `file_user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 								else if($dbcore->sql->service == "sqlsrv")
