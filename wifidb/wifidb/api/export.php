@@ -340,7 +340,7 @@ switch($func)
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 			#Get SSID
-			$sql = "SELECT SSID FROM wifi_ap WHERE AP_ID = ?";
+			$sql = "SELECT ".$dbcore->sql->ident('SSID')." FROM wifi_ap WHERE ".$dbcore->sql->ident('AP_ID')." = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();

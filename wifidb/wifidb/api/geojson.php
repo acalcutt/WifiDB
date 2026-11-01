@@ -37,7 +37,8 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
 		
-		$sql = "SELECT id, ssid, mac, auth, encry, sectype, radio, chan, sig, username, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, long\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # live_aps's mixed-case columns, quoted on PostgreSQL
+		$sql = "SELECT id, ssid, mac, auth, encry, sectype, radio, chan, sig, username, session_id, ap_hash, ".$q('BTx').", ".$q('OTx').", ".$q('NT').", ".$q('Label').", ".$q('FA').", ".$q('LA').", lat, long\n"
 					. "FROM live_aps\n"
 					. "WHERE lat <> '0.0000' AND id = ?";
 
