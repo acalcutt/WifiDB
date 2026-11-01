@@ -146,10 +146,12 @@ class SignalGraph
 		if(!is_scalar($apId) || !ctype_digit((string)$apId) || strlen((string)$apId) > 18) { return null; }
 		$id = (int)$apId;
 
-		$sql = ($dialect === 'sqlsrv')
-			? 'SELECT TOP 1 wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, g.Lat, g.Lon '
-			: 'SELECT wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, g.Lat, g.Lon ';
-		$sql .= 'FROM wifi_ap AS wap LEFT JOIN wifi_gps AS g ON g.GPS_ID = wap.HighGps_ID WHERE wap.AP_ID = ?';
+		// mixed-case names are quoted on PostgreSQL, which would fold them to lower case; the others match them either way
+		$q = function ($name) use ($dialect) { return $dialect === 'pgsql' ? '"' . $name . '"' : $name; };
+		$cols = 'wap.' . $q('BSSID') . ', wap.' . $q('SSID') . ', wap.' . $q('CHAN') . ', wap.' . $q('AUTH') . ', wap.' . $q('ENCR') . ', wap.' . $q('RADTYPE')
+			. ', wap.' . $q('NETTYPE') . ', wap.' . $q('BTX') . ', wap.' . $q('OTX') . ', wap.fa, wap.la, g.' . $q('Lat') . ', g.' . $q('Lon') . ' ';
+		$sql = ($dialect === 'sqlsrv') ? 'SELECT TOP 1 ' . $cols : 'SELECT ' . $cols;
+		$sql .= 'FROM wifi_ap AS wap LEFT JOIN wifi_gps AS g ON g.' . $q('GPS_ID') . ' = wap.' . $q('HighGps_ID') . ' WHERE wap.' . $q('AP_ID') . ' = ?';
 		if($dialect !== 'sqlsrv') { $sql .= ' LIMIT 1'; }
 		$prep = $conn->prepare($sql);
 		$prep->execute(array($id));
@@ -157,17 +159,18 @@ class SignalGraph
 		if(!$ap) { return null; }
 
 		// which readings
-		$where = 'AP_ID = ?';
+		$where = $q('AP_ID') . ' = ?';
 		$params = array($id);
 		$file = (isset($opts['file']) && is_scalar($opts['file']) && ctype_digit((string)$opts['file']) && strlen((string)$opts['file']) <= 18) ? (int)$opts['file'] : null;
-		if($file !== null) { $where .= ' AND File_ID = ?'; $params[] = $file; }
+		if($file !== null) { $where .= ' AND ' . $q('File_ID') . ' = ?'; $params[] = $file; }
+		$date = $q('Hist_Date');
 
 		$from = isset($opts['from']) ? self::ParseDate($opts['from']) : null;
 		$to = isset($opts['to']) ? self::ParseDate($opts['to'], true) : null;
 		$days = (isset($opts['days']) && is_scalar($opts['days']) && ctype_digit((string)$opts['days']) && strlen((string)$opts['days']) <= 5 && (int)$opts['days'] > 0) ? (int)$opts['days'] : null;
 		if($days !== null)
 		{
-			$prep = $conn->prepare('SELECT MAX(Hist_Date) FROM wifi_hist WHERE ' . $where);
+			$prep = $conn->prepare('SELECT MAX(' . $date . ') FROM wifi_hist WHERE ' . $where);
 			$prep->execute($params);
 			$newest = $prep->fetchColumn();
 			$stamp = $newest ? strtotime(substr($newest, 0, 19) . ' UTC') : false;
@@ -177,12 +180,13 @@ class SignalGraph
 				if($from === null || $since > $from) { $from = $since; }
 			}
 		}
-		if($from !== null) { $where .= ' AND Hist_Date >= ?'; $params[] = $from; }
-		if($to !== null) { $where .= ' AND Hist_Date <= ?'; $params[] = $to; }
+		if($from !== null) { $where .= ' AND ' . $date . ' >= ?'; $params[] = $from; }
+		if($to !== null) { $where .= ' AND ' . $date . ' <= ?'; $params[] = $to; }
 
+		$order = ' ORDER BY ' . $date . ' DESC, ' . $q('Hist_ID') . ' DESC';
 		$sql = ($dialect === 'sqlsrv')
-			? 'SELECT TOP ' . self::DB_MAX_ROWS . ' Sig, Hist_Date FROM wifi_hist WHERE ' . $where . ' ORDER BY Hist_Date DESC, Hist_ID DESC'
-			: 'SELECT Sig, Hist_Date FROM wifi_hist WHERE ' . $where . ' ORDER BY Hist_Date DESC, Hist_ID DESC LIMIT ' . self::DB_MAX_ROWS;
+			? 'SELECT TOP ' . self::DB_MAX_ROWS . ' ' . $q('Sig') . ', ' . $date . ' FROM wifi_hist WHERE ' . $where . $order
+			: 'SELECT ' . $q('Sig') . ', ' . $date . ' FROM wifi_hist WHERE ' . $where . $order . ' LIMIT ' . self::DB_MAX_ROWS;
 		$prep = $conn->prepare($sql);
 		$prep->execute($params);
 		$rows = array_reverse($prep->fetchAll(PDO::FETCH_NUM));
