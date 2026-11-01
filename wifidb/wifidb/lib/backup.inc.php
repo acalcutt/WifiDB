@@ -521,6 +521,9 @@ class WifidbBackup
 			catch(Throwable $e)
 			{
 				$this->Reject($table, $row, $e, $stats, $rejects, $report);
+				# a statement whose run failed can't be trusted with the next row (PHP 8.5's SQLite driver refuses to run it
+				# again), so the rest get a fresh one
+				$prep = $this->conn->prepare($head.$one);
 			}
 		}
 	}
