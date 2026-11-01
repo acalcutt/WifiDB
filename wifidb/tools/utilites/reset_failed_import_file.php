@@ -68,7 +68,7 @@ If($File_Hash)
 			
 			#Find if this AP is in another list
 			if($dbcore->sql->service == "mysql")
-				{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID != ? LIMIT 1";}
+				{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID` != ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? And [File_ID] != ?";}
 			else if($dbcore->sql->service == "pgsql")
