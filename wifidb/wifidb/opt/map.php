@@ -340,10 +340,11 @@ switch($func)
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
 		#Get Point count and division count
-		$sql = "SELECT Count(AP_ID) As point_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(".$q('AP_ID').") As point_count\n"
 			. "FROM wifi_ap\n"
 			. "WHERE\n"
-			. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user = ?)";
+			. "	".$q('File_ID')." IN (SELECT id FROM files WHERE ".$q('ValidGPS')." = 1 AND file_user = ?)";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -420,10 +421,11 @@ switch($func)
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
 		#Get Point count and division count
-		$sql = "SELECT Count(DISTINCT wifi_hist.AP_ID) AS point_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(DISTINCT wifi_hist.".$q('AP_ID').") AS point_count\n"
 			. "From wifi_hist\n"
-			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.AP_ID = wap.AP_ID\n"
-			. "WHERE wifi_hist.File_ID = ? AND wap.HighGps_ID IS NOT NULL";
+			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.".$q('AP_ID')." = wap.".$q('AP_ID')."\n"
+			. "WHERE wifi_hist.".$q('File_ID')." = ? AND wap.".$q('HighGps_ID')." IS NOT NULL";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -543,7 +545,7 @@ switch($func)
 			}
 		else if($dbcore->sql->service == "pgsql")
 			{
-				$sql = "SELECT wifi_gps.\"Lat\", wifi_gps.\"Lon\", wifi_ap.ssid\n"
+				$sql = "SELECT wifi_gps.\"Lat\", wifi_gps.\"Lon\", wifi_ap.\"SSID\" AS ssid\n"
 					. "FROM wifi_ap\n"
 					. "LEFT JOIN wifi_gps ON wifi_ap.\"HighGps_ID\" = wifi_gps.\"GPS_ID\"\n"
 					. "WHERE wifi_ap.\"AP_ID\" = ?";
@@ -613,13 +615,14 @@ switch($func)
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 		#Get Point count and division count
-		$sql = "SELECT Count(wh.Hist_ID) As point_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(wh.".$q('Hist_ID').") As point_count\n"
 			. "FROM wifi_hist AS wh\n"
-			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
+			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = wh.".$q('GPS_ID')."\n";
 		if($file_id)
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND wh.".$q('AP_ID')." = ? And wh.".$q('File_ID')." = ?\n";}
 		else
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND wh.".$q('AP_ID')." = ?\n";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		if($file_id){$result->bindParam(2, $file_id, PDO::PARAM_INT);}
@@ -629,10 +632,10 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get Marker Centerpoint
-		$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, wifi_ap.SSID, wifi_ap.SECTYPE\n"
+		$sql = "SELECT wifi_gps.".$q('Lat').", wifi_gps.".$q('Lon').", wifi_ap.".$q('SSID').", wifi_ap.".$q('SECTYPE')."\n"
 			. "FROM wifi_ap\n"
-			. "LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID\n"
-			. "WHERE wifi_ap.AP_ID = ?";
+			. "LEFT JOIN wifi_gps ON wifi_ap.".$q('HighGps_ID')." = wifi_gps.".$q('GPS_ID')."\n"
+			. "WHERE wifi_ap.".$q('AP_ID')." = ?";
 		$prepc = $dbcore->sql->conn->prepare($sql);
 		$prepc->bindParam(1, $id, PDO::PARAM_INT);
 		$prepc->execute();
@@ -755,13 +758,14 @@ switch($func)
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 		#Get Point count and division count
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
 		$sql = "SELECT Count(ch.cell_hist_id) As point_count\n"
 			. "FROM cell_hist AS ch\n"
-			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = ch.gps_id\n";
+			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = ch.gps_id\n";
 		if($file_id)
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ? And ch.file_id = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND ch.cell_id = ? And ch.file_id = ?\n";}
 		else
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND ch.cell_id = ?\n";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		if($file_id){$result->bindParam(2, $file_id, PDO::PARAM_INT);}
@@ -771,9 +775,9 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get Marker Centerpoint
-		$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, cell_id.ssid\n"
+		$sql = "SELECT wifi_gps.".$q('Lat').", wifi_gps.".$q('Lon').", cell_id.ssid\n"
 			. "FROM cell_id\n"
-			. "LEFT JOIN wifi_gps ON wifi_gps.GPS_ID = cell_id.highgps_id\n"
+			. "LEFT JOIN wifi_gps ON wifi_gps.".$q('GPS_ID')." = cell_id.highgps_id\n"
 			. "WHERE cell_id.cell_id = ?";
 		$prepc = $dbcore->sql->conn->prepare($sql);
 		$prepc->bindParam(1, $id, PDO::PARAM_INT);

@@ -71,16 +71,32 @@ class export extends dbcore
 		$ap_array = array();
 		$apcount = 0;
 		
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_gps_sig, wap.high_gps_rssi, wap.high_rssi,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
-			. "wf.file_user As file_user\n"
-			. "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.AP_ID = ?";
-		if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
+		if($this->sql->service == "pgsql")
+		{
+			$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap."FLAGS", wap.fa, wap.la, wap.points, wap.high_sig, wap.high_gps_sig, wap.high_gps_rssi, wap.high_rssi,'."\n"
+				. 'wGPS."Lat" As "Lat",'."\n"
+				. 'wGPS."Lon" As "Lon",'."\n"
+				. 'wGPS."Alt" As "Alt",'."\n"
+				. "wf.file_user As file_user\n"
+				. "FROM wifi_ap AS wap\n"
+				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
+				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
+				. 'WHERE wap."AP_ID" = ?';
+			if($valid_gps){$sql .= ' AND wap."HighGps_ID" IS NOT NULL';}
+		}
+		else
+		{
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_gps_sig, wap.high_gps_rssi, wap.high_rssi,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.file_user As file_user\n"
+				. "FROM wifi_ap AS wap\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+				. "WHERE wap.AP_ID = ?";
+			if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
+		}
 
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -801,16 +817,32 @@ class export extends dbcore
 
 	public function SigHistArray($ap_id, $file_id, $from = NULL, $inc = NULL, $valid_gps = 0, $named = 0)
 	{
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
-			. "wf.file_user As file_user\n"
-			. "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.AP_ID = ?";
-		if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
+		if($this->sql->service == "pgsql")
+		{
+			$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,'."\n"
+				. 'wGPS."Lat" As "Lat",'."\n"
+				. 'wGPS."Lon" As "Lon",'."\n"
+				. 'wGPS."Alt" As "Alt",'."\n"
+				. "wf.file_user As file_user\n"
+				. "FROM wifi_ap AS wap\n"
+				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
+				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
+				. 'WHERE wap."AP_ID" = ?';
+			if($valid_gps){$sql .= ' AND wap."HighGps_ID" IS NOT NULL';}
+		}
+		else
+		{
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wGPS.Alt As Alt,\n"
+				. "wf.file_user As file_user\n"
+				. "FROM wifi_ap AS wap\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+				. "WHERE wap.AP_ID = ?";
+			if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
+		}
 
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $ap_id, PDO::PARAM_INT);
@@ -1954,7 +1986,6 @@ class export extends dbcore
 		chmod($boundaries_kml_file, 0664);
 		return $boundaries_kml_file;
 	}
-
 
 	/*
 	 * Generate the Daily Daemon KML files

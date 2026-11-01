@@ -73,9 +73,9 @@ switch($func)
 			$ap_info = $UserListArray['data'];
 			$file_info = $UserListArray['file_info'];
 
-			$sql = "SELECT Count(DISTINCT wifi_hist.AP_ID) As ApCount\n"
+			$sql = "SELECT Count(DISTINCT wifi_hist.".$dbcore->sql->ident('AP_ID').") As ApCount\n"
 				. "FROM wifi_hist\n"
-				. "WHERE wifi_hist.File_ID = ?";
+				. "WHERE wifi_hist.".$dbcore->sql->ident('File_ID')." = ?";
 			$sqlprep = $dbcore->sql->conn->prepare($sql);
 			$sqlprep->bindParam(1,$row, PDO::PARAM_INT);
 			$sqlprep->execute();

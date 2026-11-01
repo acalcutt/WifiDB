@@ -250,7 +250,7 @@ class frontend extends dbcore
 			#Check If Registered User
 			$sql = "SELECT id\n"
 				. "FROM user_info\n"
-				. "WHERE username like ? And validated = 0";
+				. "WHERE username = ? And validated = 0";
 			$vres = $this->sql->conn->prepare($sql);
 			$vres->bindParam(1, $userfetch['file_user']);
 			$vres->execute();
@@ -413,9 +413,9 @@ class frontend extends dbcore
 		
 		#Total APs
 		if($this->sql->service == "pgsql")
-			{$sql = 'SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG("NewAPPercent") As "NewAPPercent" FROM files WHERE file_user like ? GROUP BY file_user';}
+			{$sql = 'SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG("NewAPPercent") As "NewAPPercent" FROM files WHERE file_user = ? GROUP BY file_user';}
 		else
-			{$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user like ? GROUP BY file_user";}
+			{$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user = ? GROUP BY file_user";}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -446,7 +446,7 @@ class frontend extends dbcore
 
 		$sql = "SELECT COUNT(id)\n"
 			. "FROM files\n"
-			. "WHERE file_user = ? And file_date != '' And completed = 1";
+			. "WHERE file_user = ? And ".($this->sql->service == "pgsql" ? "file_date IS NOT NULL" : "file_date != ''")." And completed = 1";   # PostgreSQL won't compare a date with ''
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -458,19 +458,19 @@ class frontend extends dbcore
 			{
 				$sql = "SELECT `id`\n"
 					. "FROM `user_info`\n"
-					. "WHERE `username` like ? And `validated` = 0";
+					. "WHERE `username` = ? And `validated` = 0";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [id]\n"
 					. "FROM [user_info]\n"
-					. "WHERE [username] like ? And [validated] = 0";
+					. "WHERE [username] = ? And [validated] = 0";
 			}
 		else if($this->sql->service == "pgsql")
 			{
 				$sql = "SELECT id\n"
 					. "FROM user_info\n"
-					. "WHERE username like ? And validated = 0";
+					. "WHERE username = ? And validated = 0";
 			}
 		$vres = $this->sql->conn->prepare($sql);
 		$vres->bindParam(1, $username);
@@ -480,7 +480,7 @@ class frontend extends dbcore
 
 		#Get All Imports for User
 		if($this->sql->service == "pgsql")
-			{$sql1 = 'SELECT id, file_orig, title, notes, file_date, aps, gps, "ValidGPS", "NewAPPercent" FROM files WHERE file_user = ? And file_date != \'\' And completed = 1 ORDER BY '."$sort_sql $ord";}
+			{$sql1 = 'SELECT id, file_orig, title, notes, file_date, aps, gps, "ValidGPS", "NewAPPercent" FROM files WHERE file_user = ? And file_date IS NOT NULL And completed = 1 ORDER BY '."$sort_sql $ord";}
 		else
 			{$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user = ? And file_date != '' And completed = 1 ORDER BY $sort_sql $ord";}
 		if($this->sql->service == "mysql"){$sql1 .= " LIMIT $from, $inc";}
