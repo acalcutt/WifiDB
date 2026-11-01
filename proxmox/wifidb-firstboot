@@ -60,9 +60,11 @@ log "data folder $DATA"
 if mountpoint -q "$DATA"; then log "(a separate disk is mounted there)"; else log "(no separate disk: it's part of the container's disk)"; fi
 install -d -o www-data -g www-data "$DATA" "$DATA/config" "$DATA/cron.d" "$DATA/log"
 
-# import/ and out/ hold the uploads and everything the daemons generate. The code's own placeholder files
+# import/up/ holds the uploads and out/ everything the daemons generate. The code's own placeholder files
 # (index.php, .htaccess) are copied over them, so a new release's versions win and the generated files stay.
-for d in import out; do
+# import/ itself stays with the release: its index.php is the upload page, which finds lib/ by a relative path and
+# would break if PHP saw it on the data disk.
+for d in import/up out; do
     if [ ! -L "$WEB/$d" ]; then
         install -d -o www-data -g www-data "$DATA/$d"
         rsync -a "$WEB/$d/" "$DATA/$d/"
@@ -70,7 +72,7 @@ for d in import out; do
         ln -s "$DATA/$d" "$WEB/$d"
     fi
 done
-install -d -o www-data -g www-data "$DATA/import/up" "$DATA/import/up/backup" "$DATA/import/up/convert"
+install -d -o www-data -g www-data "$DATA/import/up/backup" "$DATA/import/up/convert"
 # whole-site backups (admin/backups.php, tools/utilites/backup.php): member data, so only www-data reads them
 install -d -m 0700 -o www-data -g www-data "$DATA/backups" "$DATA/backups/queue"
 if [ ! -L "$TOOLS/log" ]; then
