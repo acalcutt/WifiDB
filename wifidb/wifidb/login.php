@@ -270,6 +270,11 @@ switch($func)
 			$dbcore->smarty->assign('message', "<font color='Red'><h2>Passwords is blank.</h2></font>");
 			$dbcore->smarty->display('create_user.tpl');
 		}
+		else if(($refused = $dbcore->sec->SpamRefusal('newuser', $email, $username)) !== '')
+		{
+			$dbcore->smarty->assign('message', "<font color='Red'><h2>This sign-up was refused by the spam check: ".htmlspecialchars($refused, ENT_QUOTES, 'UTF-8')."</h2></font>");
+			$dbcore->smarty->display('create_user.tpl');
+		}
 		else
 		{
 			#var_dump("Start Create User");

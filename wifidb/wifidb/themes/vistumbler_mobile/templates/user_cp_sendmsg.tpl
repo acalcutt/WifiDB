@@ -24,6 +24,7 @@ if not, write to the
 				<div style="text-align: center;">
 					<div style="display: inline-block; text-align: left;">
 						<form action="{$wifidb_host_url}cp/messages.php?func=sendmsg_submit" method="post" enctype="multipart/form-data">
+{include file="spam_check_fields.tpl"}
 							<ul class="wrapper">
 								<li class="form-row>
 									<label for="from_user">From</label><br />

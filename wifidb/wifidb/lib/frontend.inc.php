@@ -82,6 +82,7 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_message_unread_count', $this->GetMessageCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_notification_unread_count', $this->GetNotificationCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
+			$this->smarty->assign('ct_form_time', time());   # spam_check_fields.tpl: when a form was shown
 			#$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
 			$this->htmlheader();
 			$this->htmlfooter();

@@ -366,7 +366,16 @@ if($username)
 			$smt->execute();
 			$touser = $smt->fetch(2);
 			
-			if($message)
+			# members without a track record have their messages checked for spam (when CleanTalk is on)
+			$refused = ($message && !$dbcore->sec->HasTrackRecord($username))
+				? $dbcore->sec->SpamRefusal('message', $userArray['email'], $username, trim($subject."\n".$message))
+				: '';
+			if($refused !== '')
+			{
+				$dbcore->redirect_page('/wifidb/cp/messages.php?func=sendmsg', 4000);
+				$cp_profile['message'] = "<br>The message was not sent: the spam check refused it (".htmlspecialchars($refused, ENT_QUOTES, 'UTF-8').").<br><br>";
+			}
+			elseif($message)
 			{
 				if($userArray['id'] && $to_id)
 				{

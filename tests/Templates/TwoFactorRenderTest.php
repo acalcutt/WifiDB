@@ -207,6 +207,31 @@ final class TwoFactorRenderTest extends TestCase
         $this->assertStringContainsString('stored unencrypted', $html);
     }
 
+    #[DataProvider('themes')]
+    public function testTheSignUpAndMessageFormsCarryTheSpamCheckHints(string $theme): void
+    {
+        foreach (['create_user.tpl', 'user_cp_sendmsg.tpl'] as $template) {
+            $smarty = $this->smarty($theme);
+            $smarty->assign('ct_form_time', 1_800_000_000);
+            $smarty->assign('fromusers', []);
+            $html = $smarty->fetch($template);
+            $form = substr($html, strpos($html, '<form'), strpos($html, '</form>') - strpos($html, '<form'));
+            $this->assertStringContainsString('name="ct_t" value="1800000000"', $form, $template);
+            $this->assertStringContainsString('name="ct_js" value="0"', $form, $template);
+            $this->assertStringContainsString("e.value = '1'", $html, $template);
+        }
+    }
+
+    public function testTheLoginPageHidesTheSignUpLinkWhenSignUpsAreClosed(): void
+    {
+        foreach (['vistumbler_classic', 'vistumbler_mobile'] as $theme) {
+            $smarty = $this->smarty($theme);
+            $this->assertStringContainsString('func=create_user_form', $smarty->fetch('login_index.tpl'), "$theme, open by default");
+            $smarty->assign('wifidb_signups_open', false);
+            $this->assertStringNotContainsString('func=create_user_form', $smarty->fetch('login_index.tpl'), $theme);
+        }
+    }
+
     public function testTheMobileMenuOffersAdminModeOnlyToAdministratorsAndShowsTheWayOut(): void
     {
         $member = $this->smarty('vistumbler_mobile')->fetch('navigation.tpl');

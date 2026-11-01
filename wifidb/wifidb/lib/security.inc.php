@@ -87,6 +87,61 @@ class security
 			!empty($this->site_config['cleantalk_api']) ? $this->site_config['cleantalk_api'] : null);
 	}
 
+	const TRACK_RECORD_DAYS = 90;
+
+	/**
+	 * Has this member shown they are a person: a finished import, an account this old, or moderator rank or higher?
+	 * Their private messages skip the spam check.
+	 */
+	public function HasTrackRecord($username)
+	{
+		$prep = $this->sql->conn->prepare("SELECT permissions, join_date FROM user_info WHERE username = ?");
+		$prep->execute(array($username));
+		$member = $prep->fetch(PDO::FETCH_ASSOC);
+		if(!$member) { return false; }
+		if((int)$member['permissions'] >= 100) { return true; }
+		$joined = $member['join_date'] ? strtotime($member['join_date']) : false;
+		if($joined && $joined <= time() - self::TRACK_RECORD_DAYS * 86400) { return true; }
+		$prep = $this->sql->conn->prepare("SELECT COUNT(*) FROM files WHERE file_user = ? AND completed = 1");
+		$prep->execute(array($username));
+		return (int)$prep->fetchColumn() > 0;
+	}
+
+	/**
+	 * Asks CleanTalk (when it's on) about a sign-up ('newuser') or a private message ('message'), from the request being
+	 * handled. The form's ct_js and ct_t fields (spam_check_fields.tpl) say whether its script ran and when it was shown.
+	 * @return string '' to go ahead (also when CleanTalk is off or can't be reached), else why it was refused
+	 */
+	public function SpamRefusal($kind, $email, $nickname, $message = '')
+	{
+		$cleantalk = $this->SpamCheck();
+		if(!$cleantalk) { return ''; }
+		$ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';   # the visitor's, behind the proxy too (mod_remoteip)
+		$jsOn = isset($_POST['ct_js']) && $_POST['ct_js'] === '1';
+		$shown = isset($_POST['ct_t']) ? (int)$_POST['ct_t'] : 0;
+		$elapsed = ($shown > 0 && $shown <= time()) ? time() - $shown : null;
+		$agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+		try
+		{
+			$verdict = ($kind === 'message')
+				? $cleantalk->CheckMessage($message, $email, $nickname, $ip, $jsOn, $elapsed, $agent)
+				: $cleantalk->CheckNewUser($email, $nickname, $ip, $jsOn, $elapsed, $agent);
+		}
+		catch(Throwable $e)
+		{
+			$this->logd("CleanTalk check failed, let through: ".$e->getMessage(), "error");
+			return '';
+		}
+		if(!$verdict['checked'])
+		{
+			$this->logd("CleanTalk did not check a ".$kind." from ".$nickname." (".$ip."), let through: ".$verdict['reason'], "error");
+			return '';
+		}
+		if($verdict['allow']) { return ''; }
+		$this->logd("CleanTalk refused a ".$kind." from ".$nickname." <".$email."> (".$ip."): ".$verdict['reason'], "error");
+		return $verdict['reason'] !== '' ? $verdict['reason'] : 'It looked like spam.';
+	}
+
 	/** CleanTalk when it's turned on and has a key, else null (nothing is checked). */
 	public function SpamCheck()
 	{
