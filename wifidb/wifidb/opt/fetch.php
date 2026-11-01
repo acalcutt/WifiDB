@@ -59,14 +59,15 @@ switch($func)
 		$sqlprep->execute();
 		$total_rows = $sqlprep->fetchColumn();
 
-		$sql = "SELECT cell_hist.file_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, cell_hist.new, COUNT(cell_hist.hist_date) As points\n"
+		# cell_hist's columns are all lower case; files.ValidGPS is the one mixed-case name (quoted on PostgreSQL)
+		$validgps = $dbcore->sql->ident('ValidGPS');
+		$sql = "SELECT cell_hist.file_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.$validgps, cell_hist.new, COUNT(cell_hist.hist_date) As points\n"
 			. "FROM cell_hist\n"
 			. "INNER JOIN files ON cell_hist.file_id = files.id\n"
 			. "WHERE cell_hist.cell_id = ?\n"
-			. "GROUP BY cell_hist.file_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, cell_hist.new\n"
-			. "ORDER BY {$sort} {$ord}";
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+			. "GROUP BY cell_hist.file_id, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.$validgps, cell_hist.new\n"
+			. "ORDER BY ".($dbcore->sql->service == "pgsql" ? strtolower($sort) : $sort)." {$ord}";
+		$sql .= "\n".$dbcore->sql->limit($from, $inc);
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -75,9 +76,10 @@ switch($func)
 		$apcount = 0;
 		foreach($fpointer as $file)
 		{
-			$sql1 = "SELECT cell_hist.rssi, cell_hist.hist_date, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch\n"
+			$g = function ($name) use ($dbcore) { return 'wifi_gps.'.$dbcore->sql->ident($name); };
+			$sql1 = "SELECT cell_hist.rssi, cell_hist.hist_date, ".$g('Lat').", ".$g('Lon').", ".$g('Alt').", ".$g('NumOfSats').", ".$g('AccuracyMeters').", ".$g('HorDilPitch')."\n"
 				. "FROM cell_hist\n"
-				. "LEFT JOIN wifi_gps ON wifi_gps.GPS_ID = cell_hist.gps_id\n"
+				. "LEFT JOIN wifi_gps ON ".$g('GPS_ID')." = cell_hist.gps_id\n"
 				. "WHERE cell_hist.file_id = ? AND cell_hist.cell_id = ?\n"
 				. "ORDER BY hist_date DESC";
 			$prep1 = $dbcore->sql->conn->prepare($sql1);
@@ -140,20 +142,33 @@ switch($func)
 			$geonames = array();
 		}
 
-		$sql = "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
+		$sql = $dbcore->sql->service == "pgsql"
+			? 'Select Count(distinct "File_ID") FROM wifi_hist WHERE "AP_ID" = ?'
+			: "Select Count(distinct File_ID) FROM wifi_hist WHERE AP_ID = ?";
 		$sqlprep = $dbcore->sql->conn->prepare($sql);
 		$sqlprep->bindParam(1, $id, PDO::PARAM_INT);
 		$sqlprep->execute();
 		$total_rows = $sqlprep->fetchColumn();
 
-		$sql = "SELECT wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New, COUNT(wifi_hist.Hist_Date) As points\n"
-			. "FROM wifi_hist\n"
-			. "INNER JOIN files ON wifi_hist.File_ID = files.id\n"
-			. "WHERE wifi_hist.AP_ID = ?\n"
-			. "GROUP BY wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New\n"
-			. "ORDER BY {$sort} {$ord}";
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		if($dbcore->sql->service == "pgsql")
+		{
+			$sql = 'SELECT wifi_hist."File_ID", files.title, files.file_orig, files.notes, files.file_user, files.file_date, files."ValidGPS", wifi_hist."New", COUNT(wifi_hist."Hist_Date") As points'."\n"
+				. "FROM wifi_hist\n"
+				. 'INNER JOIN files ON wifi_hist."File_ID" = files.id'."\n"
+				. 'WHERE wifi_hist."AP_ID" = ?'."\n"
+				. 'GROUP BY wifi_hist."File_ID", files.title, files.file_orig, files.notes, files.file_user, files.file_date, files."ValidGPS", wifi_hist."New"'."\n"
+				. "ORDER BY ".$dbcore->sql->ident($sort)." {$ord}";
+		}
+		else
+		{
+			$sql = "SELECT wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New, COUNT(wifi_hist.Hist_Date) As points\n"
+				. "FROM wifi_hist\n"
+				. "INNER JOIN files ON wifi_hist.File_ID = files.id\n"
+				. "WHERE wifi_hist.AP_ID = ?\n"
+				. "GROUP BY wifi_hist.File_ID, files.title, files.file_orig, files.notes, files.file_user, files.file_date, files.ValidGPS, wifi_hist.New\n"
+				. "ORDER BY {$sort} {$ord}";
+		}
+		$sql .= "\n".$dbcore->sql->limit($from, $inc);
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -162,11 +177,22 @@ switch($func)
 		$all_points = array();   # every file's readings on this page, for the chart at the top
 		foreach($fpointer as $file)
 		{
-			$sql1 = "SELECT wifi_hist.AP_ID, wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.GPS_ID, wifi_hist.New, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch, wifi_gps.TrackAngle, wifi_gps.GPS_Date, wifi_gps.MPH, wifi_gps.KPH\n"
-				. "FROM wifi_hist\n"
-				. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID=wifi_gps.GPS_ID\n"
-				. "WHERE wifi_hist.File_ID = ? AND wifi_hist.AP_ID = ?\n"
-				. "ORDER BY wifi_hist.Hist_Date ASC";
+			if($dbcore->sql->service == "pgsql")
+			{
+				$sql1 = 'SELECT wifi_hist."AP_ID", wifi_hist."Sig", wifi_hist."RSSI", wifi_hist."GPS_ID", wifi_hist."New", wifi_gps."Lat", wifi_gps."Lon", wifi_gps."Alt", wifi_gps."NumOfSats", wifi_gps."AccuracyMeters", wifi_gps."HorDilPitch", wifi_gps."TrackAngle", wifi_gps."GPS_Date", wifi_gps."MPH", wifi_gps."KPH"'."\n"
+					. "FROM wifi_hist\n"
+					. 'INNER JOIN wifi_gps ON wifi_hist."GPS_ID" = wifi_gps."GPS_ID"'."\n"
+					. 'WHERE wifi_hist."File_ID" = ? AND wifi_hist."AP_ID" = ?'."\n"
+					. 'ORDER BY wifi_hist."Hist_Date" ASC';
+			}
+			else
+			{
+				$sql1 = "SELECT wifi_hist.AP_ID, wifi_hist.Sig, wifi_hist.RSSI, wifi_hist.GPS_ID, wifi_hist.New, wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.AccuracyMeters, wifi_gps.HorDilPitch, wifi_gps.TrackAngle, wifi_gps.GPS_Date, wifi_gps.MPH, wifi_gps.KPH\n"
+					. "FROM wifi_hist\n"
+					. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID=wifi_gps.GPS_ID\n"
+					. "WHERE wifi_hist.File_ID = ? AND wifi_hist.AP_ID = ?\n"
+					. "ORDER BY wifi_hist.Hist_Date ASC";
+			}
 			$prep1 = $dbcore->sql->conn->prepare($sql1);
 			$prep1->bindParam(1, $file['File_ID'], PDO::PARAM_INT);
 			$prep1->bindParam(2, $id, PDO::PARAM_INT);

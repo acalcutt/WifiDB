@@ -79,6 +79,19 @@ class SQL
 		return $name;
 	}
 
+	/**
+	 * The paging clause for the active driver, to go at the end of a query that has an ORDER BY: rows $from to
+	 * $from + $count. (SQL Server's OFFSET ... FETCH needs the ORDER BY; MariaDB and PostgreSQL don't, but a page of an
+	 * unordered result is meaningless anyway.)
+	 */
+	function limit($from, $count)
+	{
+		$from = max(0, (int)$from);
+		$count = max(0, (int)$count);
+		if($this->service == "sqlsrv") { return "OFFSET $from ROWS FETCH NEXT $count ROWS ONLY"; }
+		return "LIMIT $count OFFSET $from";
+	}
+
 	/** Back-compat alias for ident(). */
 	function sortIdent($name)
 	{

@@ -27,6 +27,8 @@ if(!is_numeric($inc)){$inc = 250;}
 $dbcore->smarty->assign('wifidb_page_label', 'List of Wireless Access Points');
 
 $dbcore->smarty->assign('func', $func);
+# mixed-case column names need quoting on PostgreSQL; on MariaDB and SQL Server this leaves them as they are
+$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };
 switch($func)
 {
 	case "bt":
@@ -42,18 +44,17 @@ switch($func)
 		#Get the list of access points in the requsted order
 		
 		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network, cell_carriers.country,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
+			. "wGPS.".$q('Lat')." As ".$q('Lat').",\n"
+			. "wGPS.".$q('Lon')." As ".$q('Lon').",\n"
+			. "wGPS.".$q('Alt')." As ".$q('Alt').",\n"
 			. "wf.file_user As file_user\n"
 			. "FROM cell_id AS cid\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = cid.highgps_id\n"
 			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = substring(cid.mac,4,3)\n"
 			. "WHERE cid.fa IS NOT NULL AND cid.type IN ('BT','BLE')\n"	
 			. "ORDER BY {$sort} {$ord}";
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		$sql .= "\n".$dbcore->sql->limit($from, $inc);
 		$pre_page_list = $dbcore->sql->conn->query($sql);
 
 		$row_color = 0;
@@ -106,18 +107,17 @@ switch($func)
 		#Get the list of access points in the requsted order
 		
 		$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network, cell_carriers.country,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wGPS.Alt As Alt,\n"
+			. "wGPS.".$q('Lat')." As ".$q('Lat').",\n"
+			. "wGPS.".$q('Lon')." As ".$q('Lon').",\n"
+			. "wGPS.".$q('Alt')." As ".$q('Alt').",\n"
 			. "wf.file_user As file_user\n"
 			. "FROM cell_id AS cid\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
+			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = cid.highgps_id\n"
 			. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 			. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = REPLACE(substring(cid.mac,4,3), '_', '')\n"
 			. "WHERE cid.fa IS NOT NULL AND cid.type NOT IN ('BT','BLE')\n"	
 			. "ORDER BY {$sort} {$ord}";
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		$sql .= "\n".$dbcore->sql->limit($from, $inc);
 
 		$pre_page_list = $dbcore->sql->conn->query($sql);
 
@@ -169,19 +169,31 @@ switch($func)
 		$total_rows = $sqlprep->fetchColumn();
 
 		#Get the list of access points in the requsted order
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon,\n"
-			. "wf.file_user As file_user\n"
-			. "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-			. "WHERE wap.fa IS NOT NULL AND wap.fa != '1970-01-01 00:00:00.000'\n"	
-			. "ORDER BY {$sort} {$ord}";
-			
-		
-		if($dbcore->sql->service == "mysql"){$sql .= "\nLIMIT {$from},{$inc}";}
-		else if($dbcore->sql->service == "sqlsrv"){$sql .= "\nOFFSET {$from} ROWS FETCH NEXT {$inc} ROWS ONLY";}
+		if($dbcore->sql->service == "pgsql")
+		{
+			$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points,'."\n"
+				. 'wGPS."Lat" As "Lat",'."\n"
+				. 'wGPS."Lon" As "Lon",'."\n"
+				. "wf.file_user As file_user\n"
+				. "FROM wifi_ap AS wap\n"
+				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
+				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
+				. "WHERE wap.fa IS NOT NULL AND wap.fa != '1970-01-01 00:00:00'\n"
+				. "ORDER BY ".$q($sort)." {$ord}";
+		}
+		else
+		{
+			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+				. "wGPS.Lat As Lat,\n"
+				. "wGPS.Lon As Lon,\n"
+				. "wf.file_user As file_user\n"
+				. "FROM wifi_ap AS wap\n"
+				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
+				. "WHERE wap.fa IS NOT NULL AND wap.fa != '1970-01-01 00:00:00.000'\n"
+				. "ORDER BY {$sort} {$ord}";
+		}
+		$sql .= "\n".$dbcore->sql->limit($from, $inc);
 		$pre_page_list = $dbcore->sql->conn->query($sql);
 
 
