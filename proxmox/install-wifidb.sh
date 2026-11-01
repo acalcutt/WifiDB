@@ -8,7 +8,7 @@
 # Layout:
 #   /var/www/wifidb              the web site            (from wifidb/wifidb)
 #   /opt/wifidb/tools            daemons and cron jobs   (from wifidb/tools)
-#   /opt/wifidb/sql              blank_db.sql, blank_db.sqlsrv and migrations/ (applied by tools/utilites/migrate.php)
+#   /opt/wifidb/sql              blank_db.sql, blank_db.sqlsrv, blank_db.pgsql and migrations/ (applied by tools/utilites/migrate.php)
 #   /srv/wifidb-data             everything that must survive an upgrade (made at first boot): uploads, generated
 #                                files, logs and the two config files. Mount a second disk here.
 #
@@ -27,8 +27,8 @@ log() { echo "[install-wifidb] $*"; }
 log "installing packages"
 apt-get update -q
 apt-get install -y -q --no-install-recommends \
-    apache2 php-fpm php-cli php-gd php-zip php-bcmath php-mbstring php-curl php-xml php-sqlite3 php-apcu php-mysql \
-    mariadb-client unzip rsync tar gzip
+    apache2 php-fpm php-cli php-gd php-zip php-bcmath php-mbstring php-curl php-xml php-sqlite3 php-apcu php-mysql php-pgsql \
+    mariadb-client postgresql-client unzip rsync tar gzip
 phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
 log "PHP $phpver"
 
@@ -62,7 +62,7 @@ log "installing the application"
 install -d /var/www/wifidb /opt/wifidb/tools /opt/wifidb/sql
 rsync -a --delete "$src/wifidb/wifidb/" /var/www/wifidb/
 rsync -a --delete "$src/wifidb/tools/" /opt/wifidb/tools/
-install -m 0644 "$src/wifidb/blank_db.sql" "$src/wifidb/blank_db.sqlsrv" /opt/wifidb/sql/
+install -m 0644 "$src/wifidb/blank_db.sql" "$src/wifidb/blank_db.sqlsrv" "$src/wifidb/blank_db.pgsql" /opt/wifidb/sql/
 cp -a "$src/wifidb/sql/migrations" /opt/wifidb/sql/
 # the config files are made at first boot; the working copy's examples stay in the tree
 rm -f /var/www/wifidb/lib/config.inc.php /opt/wifidb/tools/daemon.config.inc.php

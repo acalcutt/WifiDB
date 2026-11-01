@@ -32,7 +32,8 @@ case "$DB_TYPE" in
     # the config calls MariaDB "mysql", the name of the PHP driver that talks to it
     mariadb|mysql) DB_TYPE=mysql; DB_PORT=${WIFIDB_DB_PORT:-3306} ;;
     sqlsrv) DB_PORT=${WIFIDB_DB_PORT:-1433} ;;
-    *) die "WIFIDB_DB_TYPE must be mariadb or sqlsrv (it is '$DB_TYPE')" ;;
+    pgsql|postgres|postgresql) DB_TYPE=pgsql; DB_PORT=${WIFIDB_DB_PORT:-5432} ;;
+    *) die "WIFIDB_DB_TYPE must be mariadb, sqlsrv or pgsql (it is '$DB_TYPE')" ;;
 esac
 DB_HOST=${WIFIDB_DB_HOST:-}
 DB_NAME=${WIFIDB_DB_NAME:-wifi}
@@ -196,7 +197,8 @@ dbphp() { # dbphp 'php code using $pdo'
     php -r '
         $t = getenv("DB_TYPE"); $h = getenv("DB_HOST"); $p = getenv("DB_PORT"); $n = getenv("DB_NAME");
         $dsn = $t === "mysql" ? "mysql:host=$h;port=$p;dbname=$n;charset=utf8mb4"
-                              : "sqlsrv:Server=$h,$p;Database=$n;TrustServerCertificate=true;LoginTimeout=10";
+             : ($t === "pgsql" ? "pgsql:host=$h;port=$p;dbname=$n;connect_timeout=10"
+                               : "sqlsrv:Server=$h,$p;Database=$n;TrustServerCertificate=true;LoginTimeout=10");
         $pdo = new PDO($dsn, getenv("DB_USER"), getenv("DB_PASS"), array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
         '"$1"
 }
@@ -219,6 +221,9 @@ else
     log "empty database: loading the schema"
     if [ "$DB_TYPE" = mysql ]; then
         MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" "$DB_NAME" < /opt/wifidb/sql/blank_db.sql
+    elif [ "$DB_TYPE" = pgsql ]; then
+        # blank_db.pgsql is one transaction and names no database, so it loads into the one the connection is to
+        PGPASSWORD="$DB_PASS" psql -q -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /opt/wifidb/sql/blank_db.pgsql >/dev/null
     else
         sed "s/prod_wifi/$DB_NAME/g" /opt/wifidb/sql/blank_db.sqlsrv > /tmp/wifidb-schema.sql
         /opt/mssql-tools18/bin/sqlcmd -C -b -S "$DB_HOST,$DB_PORT" -U "$DB_USER" -P "$DB_PASS" -d "$DB_NAME" -i /tmp/wifidb-schema.sql

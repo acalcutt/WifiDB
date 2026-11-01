@@ -65,6 +65,11 @@ if(!function_exists('wifidb_pdo_from_config')) {
 			$dsn = 'sqlsrv:Server=' . $config['host'] . ',' . (int)$config['port'] . ';Database=' . $config['db'] . ';TrustServerCertificate=true;LoginTimeout=' . (int)$timeout;
 			$options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
 		}
+		elseif($config['srvc'] === 'pgsql')
+		{
+			$dsn = 'pgsql:host=' . $config['host'] . ';port=' . (int)$config['port'] . ';dbname=' . $config['db'] . ';connect_timeout=' . max(1, (int)$timeout);
+			$options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+		}
 		else
 		{
 			$dsn = 'mysql:host=' . $config['host'] . ';port=' . (int)$config['port'] . ';dbname=' . $config['db'] . ';charset=' . $config['charset'];

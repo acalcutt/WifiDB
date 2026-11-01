@@ -91,9 +91,9 @@ cat > /etc/wifidb/firstboot.env <<'ENV'
 #
 # The database. The template has none of its own; point it at your MariaDB or SQL Server. It must exist, with
 # a user that can create tables (the first boot loads the schema into an empty database).
-WIFIDB_DB_TYPE=mariadb            # mariadb, or sqlsrv for SQL Server
+WIFIDB_DB_TYPE=mariadb            # mariadb, sqlsrv for SQL Server, or pgsql for PostgreSQL
 #WIFIDB_DB_HOST=db.example.lan
-#WIFIDB_DB_PORT=3306              # default 3306 (mysql) or 1433 (sqlsrv)
+#WIFIDB_DB_PORT=3306              # default 3306 (mysql), 1433 (sqlsrv) or 5432 (pgsql)
 #WIFIDB_DB_NAME=wifi
 #WIFIDB_DB_USER=wifidb
 #WIFIDB_DB_PASS=
