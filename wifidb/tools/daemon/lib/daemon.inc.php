@@ -231,6 +231,23 @@ class daemon extends wdbcli
 	}
 
 
+	# Takes out what an import that failed part way got as far as writing, so its files row can go too: its readings, the
+	# access points it made (any another import has since seen are kept, pointing at that import instead), the best-GPS
+	# links other access points had to its GPS points, the GPS points, and its cell readings.
+	public function RemovePartialImport($file_id)
+	{
+		$q = function ($name) { return $this->sql->ident($name); };
+		$run = function ($sql) use ($file_id) { $this->sql->conn->prepare($sql)->execute(array($file_id)); };
+		$run("DELETE FROM wifi_hist WHERE ".$q('File_ID')." = ?");
+		$run("UPDATE wifi_ap SET ".$q('File_ID')." = (SELECT MIN(h.".$q('File_ID').") FROM wifi_hist h WHERE h.".$q('AP_ID')." = wifi_ap.".$q('AP_ID').") "
+			."WHERE ".$q('File_ID')." = ? AND EXISTS (SELECT 1 FROM wifi_hist h WHERE h.".$q('AP_ID')." = wifi_ap.".$q('AP_ID').")");
+		$run("DELETE FROM wifi_ap WHERE ".$q('File_ID')." = ?");
+		$run("UPDATE wifi_ap SET ".$q('HighGps_ID')." = NULL, high_gps_rssi = NULL, high_gps_sig = NULL WHERE ".$q('HighGps_ID')." IN (SELECT ".$q('GPS_ID')." FROM wifi_gps WHERE ".$q('File_ID')." = ?)");
+		$run("DELETE FROM wifi_gps WHERE ".$q('File_ID')." = ?");
+		$run("DELETE FROM cell_hist WHERE file_id = ?");
+		$run("DELETE FROM cell_id WHERE file_id = ? AND NOT EXISTS (SELECT 1 FROM cell_hist h WHERE h.cell_id = cell_id.cell_id)");
+	}
+
 	public function GetNextImportID()
 	{
 		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
@@ -374,140 +391,151 @@ class daemon extends wdbcli
 					$this->wdbmail->notify('import_started', $subject, $message, $this->URL_PATH."opt/scheduling.php", 'schedule', array($file_user), "Import started: ".($file_title ? $file_title : $file_name));
 				}
 				
-				if($file_type == "vistumbler" || $file_type == "ns1" || $file_type == "")
+				# a parser that throws (a file that isn't what its type says, or a bug) sets this file aside rather than stopping
+				# the run and leaving it half-imported
+				try
 				{
-					if($file_ext == 'csv')
+					if($file_type == "vistumbler" || $file_type == "ns1" || $file_type == "")
 					{
-						$this->verbosed("Importing CSV. ".$source, 1);
-						$tmp = $this->import->import_vistumblercsv($source, $file_row,  $importing_id);
-					}
-					elseif($file_ext == 'mdb')
-					{
-						$this->verbosed("Importing MDB. ".$source, 1);
-						$tmp = $this->import->import_vistumblermdb($source, $file_row,  $importing_id);
-					}
-					elseif($file_ext == 'vsz')
-					{
-						$this->verbosed("Extracting VSZ. ".$source, 1);
-						$path_parts = pathinfo($source);
-						$detination_vs1 = $path_parts['dirname']."/extract/".$path_parts['filename'].".VS1";
-
-						$VSZ = new ZipArchive();
-						if ($VSZ->open($source) === TRUE) {
-							if($fileData = $VSZ->getFromName('data.vs1')) {
-								file_put_contents($detination_vs1, $fileData);
-							}
-						}
-						
-						if (file_exists($detination_vs1)) 
+						if($file_ext == 'csv')
 						{
-							if($this->CheckFileImported($detination_vs1))
+							$this->verbosed("Importing CSV. ".$source, 1);
+							$tmp = $this->import->import_vistumblercsv($source, $file_row,  $importing_id);
+						}
+						elseif($file_ext == 'mdb')
+						{
+							$this->verbosed("Importing MDB. ".$source, 1);
+							$tmp = $this->import->import_vistumblermdb($source, $file_row,  $importing_id);
+						}
+						elseif($file_ext == 'vsz')
+						{
+							$this->verbosed("Extracting VSZ. ".$source, 1);
+							$path_parts = pathinfo($source);
+							$detination_vs1 = $path_parts['dirname']."/extract/".$path_parts['filename'].".VS1";
+
+							$VSZ = new ZipArchive();
+							if ($VSZ->open($source) === TRUE) {
+								if($fileData = $VSZ->getFromName('data.vs1')) {
+									file_put_contents($detination_vs1, $fileData);
+								}
+							}
+							
+							if (file_exists($detination_vs1)) 
 							{
-								$tmp = array(-1, "Extracted VS1 has already been imported. ".$detination_vs1);
+								if($this->CheckFileImported($detination_vs1))
+								{
+									$tmp = array(-1, "Extracted VS1 has already been imported. ".$detination_vs1);
+								}
+								else
+								{
+									$this->verbosed("Importing Extracted VSZ. ".$detination_vs1, 1);
+									$tmp = $this->import->import_vs1($detination_vs1, $file_row,  $importing_id);								
+								}
+								unlink($detination_vs1);
 							}
 							else
 							{
-								$this->verbosed("Importing Extracted VSZ. ".$detination_vs1, 1);
-								$tmp = $this->import->import_vs1($detination_vs1, $file_row,  $importing_id);								
+								$tmp = array(-1, "Extracted VS1 Does not exists. ".$detination_vs1);
 							}
-							unlink($detination_vs1);
+						}
+						elseif($file_ext == 'ns1' || $file_type == "ns1")
+						{
+							$this->verbosed("Importing NS1. ".$source, 1);
+							$tmp = $this->import->import_ns1($source, $file_row,  $importing_id);
 						}
 						else
 						{
-							$tmp = array(-1, "Extracted VS1 Does not exists. ".$detination_vs1);
+							$this->verbosed("Importing VS1. ".$source, 1);
+							$tmp = $this->import->import_vs1($source, $file_row,  $importing_id);
 						}
 					}
-					elseif($file_ext == 'ns1' || $file_type == "ns1")
+					elseif ($file_type == "wardrive")
 					{
-						$this->verbosed("Importing NS1. ".$source, 1);
-						$tmp = $this->import->import_ns1($source, $file_row,  $importing_id);
+						if($file_ext == "db")
+						{
+							$this->verbosed("Importing Wardrive4. ".$source, 1);
+							$tmp = $this->import->import_wardrive4($source, $file_row,  $importing_id);
+						}
+						elseif ($file_ext == "db3")
+						{
+							$this->verbosed("Importing Wardrive3. ".$source, 1);
+							$tmp = $this->import->import_wardrive3($source, $file_row,  $importing_id);
+						}
+						else
+						{
+							$tmp = array(-1, "Unknown File Type");
+						}
 					}
-					else
+					elseif ($file_type == "kismet")
 					{
-						$this->verbosed("Importing VS1. ".$source, 1);
-						$tmp = $this->import->import_vs1($source, $file_row,  $importing_id);
+						if($file_ext == "netxml")
+						{
+							$this->verbosed("Importing Kismet netxml. ".$source, 1);
+							$tmp = $this->import->import_kismetnetxml($source, $file_row,  $importing_id);
+						}
+						else
+						{
+							$tmp = array(-1, "Unknown File Type");
+						}
 					}
-				}
-				elseif ($file_type == "wardrive")
-				{
-					if($file_ext == "db")
+					elseif ($file_type == "wiglewificsv")
 					{
-						$this->verbosed("Importing Wardrive4. ".$source, 1);
-						$tmp = $this->import->import_wardrive4($source, $file_row,  $importing_id);
+						if($file_ext == "gz")
+						{
+							$this->verbosed("Extracting GZ. ".$source, 1);
+							$path_parts = pathinfo($source);
+							$detination_csv = $path_parts['dirname']."/extract/".$path_parts['filename'].".CSV";
+
+							$file = gzopen($source, 'rb');
+							$out_file = fopen($detination_csv, 'wb'); 
+
+							while (!gzeof($file)) 
+							{
+								fwrite($out_file, gzread($file, 4096));
+							}
+
+							fclose($out_file);
+							gzclose($file);
+							
+							if (file_exists($detination_csv)) 
+							{
+								if($this->CheckFileImported($detination_csv))
+								{
+									$tmp = array(-1, "Extracted CSV has already been imported. ".$detination_csv);
+								}
+								else
+								{
+									$this->verbosed("Importing Extracted CSV. ".$detination_csv, 1);
+									$tmp = $this->import->import_wiglewificsv($detination_csv, $file_row,  $importing_id);							
+								}
+								unlink($detination_csv);
+							}
+							else
+							{
+								$tmp = array(-1, "Extracted CSV Does not exists. ".$detination_csv);
+							}
+						}
+						else
+						{
+							$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
+							$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
+						}
 					}
-					elseif ($file_ext == "db3")
+					elseif ($file_type == "swardriving")
 					{
-						$this->verbosed("Importing Wardrive3. ".$source, 1);
-						$tmp = $this->import->import_wardrive3($source, $file_row,  $importing_id);
+						$this->verbosed("Importing SWardriving. ".$source, 1);
+						$tmp = $this->import->import_swardriving($source, $file_row,  $importing_id);
 					}
 					else
 					{
 						$tmp = array(-1, "Unknown File Type");
 					}
 				}
-				elseif ($file_type == "kismet")
+				catch(Throwable $e)
 				{
-					if($file_ext == "netxml")
-					{
-						$this->verbosed("Importing Kismet netxml. ".$source, 1);
-						$tmp = $this->import->import_kismetnetxml($source, $file_row,  $importing_id);
-					}
-					else
-					{
-						$tmp = array(-1, "Unknown File Type");
-					}
-				}
-				elseif ($file_type == "wiglewificsv")
-				{
-					if($file_ext == "gz")
-					{
-						$this->verbosed("Extracting GZ. ".$source, 1);
-						$path_parts = pathinfo($source);
-						$detination_csv = $path_parts['dirname']."/extract/".$path_parts['filename'].".CSV";
-
-						$file = gzopen($source, 'rb');
-						$out_file = fopen($detination_csv, 'wb'); 
-
-						while (!gzeof($file)) 
-						{
-							fwrite($out_file, gzread($file, 4096));
-						}
-
-						fclose($out_file);
-						gzclose($file);
-						
-						if (file_exists($detination_csv)) 
-						{
-							if($this->CheckFileImported($detination_csv))
-							{
-								$tmp = array(-1, "Extracted CSV has already been imported. ".$detination_csv);
-							}
-							else
-							{
-								$this->verbosed("Importing Extracted CSV. ".$detination_csv, 1);
-								$tmp = $this->import->import_wiglewificsv($detination_csv, $file_row,  $importing_id);							
-							}
-							unlink($detination_csv);
-						}
-						else
-						{
-							$tmp = array(-1, "Extracted CSV Does not exists. ".$detination_csv);
-						}
-					}
-					else
-					{
-						$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
-						$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
-					}
-				}
-				elseif ($file_type == "swardriving")
-				{
-					$this->verbosed("Importing SWardriving. ".$source, 1);
-					$tmp = $this->import->import_swardriving($source, $file_row,  $importing_id);
-				}
-				else
-				{
-					$tmp = array(-1, "Unknown File Type");
+					if($this->sql->conn->inTransaction()) { $this->sql->conn->rollBack(); }
+					$this->RemovePartialImport($file_row);
+					$tmp = array(-1, get_class($e).": ".$e->getMessage());
 				}
 			
 				if(@$tmp[0] === -1)
