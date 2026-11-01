@@ -233,31 +233,30 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 		{
-			$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
-
-			$daemon_sql = "INSERT INTO files_importing (file, file_orig, user, otherusers, title, notes, size, date, hash, tmp_id, type) SELECT file, file_orig, user, otherusers, title, notes, size, date, hash, id, type FROM files_tmp ORDER BY date ASC LIMIT 1";
-			$result = $this->sql->conn->prepare($daemon_sql);
-			$result->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-			$LastInsert = $this->sql->conn->lastInsertID();
-			//var_dump($LastInsert);
-
-			$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
-			$prep = $this->sql->conn->prepare($select);
-			$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
-			$prep->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-			$tmp_id = $prep->fetch(2)['tmp_id'];
-
-			$delete = "DELETE FROM files_tmp WHERE id = ?";
-			$prep = $this->sql->conn->prepare($delete);
-			$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
-			$prep->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-
-			$this->sql->conn->query("UNLOCK TABLES");
+			# Take the oldest waiting file and move it to files_importing in one transaction. SKIP LOCKED: two importers
+			# running at once each get a different file instead of waiting on, or both taking, the same one.
+			$this->sql->conn->beginTransaction();
+			try
+			{
+				$next = $this->sql->conn->query("SELECT id, file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, type FROM files_tmp ORDER BY file_date ASC, id ASC LIMIT 1 FOR UPDATE SKIP LOCKED")->fetch(2);
+				$LastInsert = "";
+				if($next)
+				{
+					$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+					$this->sql->conn->prepare($sql)->execute(array($next['file_name'], $next['file_orig'], $next['file_user'], $next['otherusers'], $next['title'],
+						$next['notes'], $next['size'], $next['file_date'], $next['hash'], $next['id'], $next['type']));
+					$LastInsert = $this->sql->conn->lastInsertId();
+					$this->sql->conn->prepare("DELETE FROM files_tmp WHERE id = ?")->execute(array($next['id']));
+				}
+				$this->sql->conn->commit();
+			}
+			catch(Throwable $e)
+			{
+				$this->sql->conn->rollBack();
+				throw $e;
+			}
 		}
 		else if($this->sql->service == "sqlsrv")
 		{
