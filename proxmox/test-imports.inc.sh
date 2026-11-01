@@ -24,11 +24,11 @@ imsession=$(docker exec "$ct" curl -s -D - -o /dev/null -H "Cookie: $tzc" -X POS
     'http://127.0.0.1/login.php?func=login_proc' | sed -n 's/^[Ss]et-[Cc]ookie: WiFiDB_login_yes=\([^;]*\);.*/\1/p' | head -1)
 check "the importing member signs in" test -n "$imsession"
 before=$(sqlq "select count(*) from files_tmp")
-docker exec "$ct" mkdir -p /tmp/samples
+docker exec "$ct" mkdir -p /var/tmp/samples
 for f in "${samples[@]}"; do
     base=$(basename "$f")
-    docker cp "$f" "$ct:/tmp/samples/$base"
-    docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc; WiFiDB_login_yes=$imsession" -F "upload[]=@/tmp/samples/$base" \
+    docker cp "$f" "$ct:/var/tmp/samples/$base"
+    docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc; WiFiDB_login_yes=$imsession" -F "upload[]=@/var/tmp/samples/$base" \
         -F user=importer -F "title=sample $base" -F "type=$(import_type "$f")" 'http://127.0.0.1/import/index.php?func=import'
 done
 check "the upload page queued all ${#samples[@]}" test "$(sqlq "select count(*) from files_tmp")" = "$((before + ${#samples[@]}))"
