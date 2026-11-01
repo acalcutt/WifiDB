@@ -181,7 +181,7 @@ While(1)
 	$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 	#Find How Many APs have GPS now
-	$sql = "SELECT Count(AP_ID) As ap_count FROM wifi_ap WHERE HighGPS_ID IS NOT NULL";
+	$sql = "SELECT Count(".$dbcore->sql->ident('AP_ID').") As ap_count FROM wifi_ap WHERE ".$dbcore->sql->ident('HighGps_ID')." IS NOT NULL";
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$ap_countarray = $result->fetch(2);
