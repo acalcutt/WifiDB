@@ -30,10 +30,14 @@ switch($func)
 	default:
 		$dbcore->smarty->assign('wifidb_page_label', 'All Live Access Points Page');
 
-		if (filter_has_var(INPUT_GET, "from")) {(int)$from = htmlspecialchars(filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT));}else{(int)$from = 0;}
-		if (filter_has_var(INPUT_GET, "to")) {(int)$to = htmlspecialchars(filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT));}else{(int)$to = 500;}
-		if (filter_has_var(INPUT_GET, "ord")) {$ord = htmlspecialchars(filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_ENCODED));}else{$ord = "DESC";}
-		if (filter_has_var(INPUT_GET, "sort")) {$sort = htmlspecialchars(filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_ENCODED));}else{$sort = "la";}
+		$from = max(0, (int)filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT));
+		$to = (int)filter_input(INPUT_GET, 'to', FILTER_SANITIZE_NUMBER_INT);
+		if($to <= 0){$to = 500;}
+		# they go into ORDER BY, so only these
+		$ord = strtoupper((string)filter_input(INPUT_GET, 'ord', FILTER_UNSAFE_RAW)) === "ASC" ? "ASC" : "DESC";
+		$sort = (string)filter_input(INPUT_GET, 'sort', FILTER_UNSAFE_RAW);
+		$sorts = array("id", "ssid", "mac", "radio", "chan", "auth", "encry", "sectype", "sig", "fa", "la", "username", "Label");
+		if(!in_array($sort, $sorts, true)){$sort = "la";}
 		if (filter_has_var(INPUT_GET, "view")) {(int)$view = htmlspecialchars(filter_input(INPUT_GET, 'view', FILTER_SANITIZE_NUMBER_INT));}else{(int)$view = 86400;}
 		
 		switch($view)
@@ -79,7 +83,7 @@ switch($func)
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT COUNT(*) FROM [live_aps] WHERE [la] >= dateadd({$interval_i}, -{$interval_v}, getdate())";}
 		else if($dbcore->sql->service == "pgsql")
-			{$sql = "SELECT COUNT(*) FROM live_aps WHERE la >= dateadd({$interval_i}, -{$interval_v}, CURRENT_TIMESTAMP)";}
+			{$sql = "SELECT COUNT(*) FROM live_aps WHERE \"LA\" >= CURRENT_TIMESTAMP - INTERVAL '{$interval_v} {$interval_i}'";}
 		$sqlprep = $dbcore->sql->conn->prepare($sql);       
 		$sqlprep->execute();
 		$total_rows = $sqlprep->fetchColumn();
@@ -91,7 +95,11 @@ switch($func)
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [id], [ssid], [mac], [radio], [chan], [auth], [encry], [sectype], [sig] , [fa], [la], [username], [Label], [lat], [long] FROM [live_aps] WHERE [la] >= dateadd({$interval_i}, -{$interval_v}, getdate()) ORDER BY [{$sort}] {$ord} OFFSET {$from} ROWS FETCH NEXT {$to} ROWS ONLY";}
 		else if($dbcore->sql->service == "pgsql")
-			{$sql = "SELECT id, ssid, mac, radio, chan, auth, encry, sectype, sig , fa, la, username, \"Label\", lat, long FROM live_aps WHERE la >= dateadd({$interval_i}, -{$interval_v}, CURRENT_TIMESTAMP) ORDER BY [{$sort}] {$ord} LIMIT {$to} OFFSET {$from}";}
+			{
+				# FA, LA and Label are mixed case in live_aps; the rest are lower case
+				$pgsort = in_array($sort, array("fa", "la", "Label"), true) ? '"'.($sort === "Label" ? "Label" : strtoupper($sort)).'"' : $sort;
+				$sql = "SELECT id, ssid, mac, radio, chan, auth, encry, sectype, sig, \"FA\" AS fa, \"LA\" AS la, username, \"Label\", lat, long FROM live_aps WHERE \"LA\" >= CURRENT_TIMESTAMP - INTERVAL '{$interval_v} {$interval_i}' ORDER BY {$pgsort} {$ord} LIMIT {$to} OFFSET {$from}";
+			}
 		$prep = $dbcore->sql->conn->query($sql);
 		$appointer = $prep->fetchAll();
 		foreach($appointer as $ap)
