@@ -60,7 +60,6 @@ if($username)
 				. "ORDER BY pm.stimestamp DESC";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
-			$result->bindParam(2, $username, PDO::PARAM_STR);
 			$result->execute();
 
 			$row_color = 0;
@@ -106,7 +105,6 @@ if($username)
 				. "ORDER BY pm.stimestamp DESC";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
-			$result->bindParam(2, $username, PDO::PARAM_STR);
 			$result->execute();
 
 			$row_color = 0;
