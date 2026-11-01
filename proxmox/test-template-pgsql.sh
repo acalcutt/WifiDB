@@ -107,6 +107,11 @@ scan "$member" "/opt/fetch.php?id=$ap" "/opt/userstats.php?func=useraplist&row=1
     "/opt/map.php?func=user_list&id=1" '/opt/scheduling.php?func=done'
 check "the signal graph draws an imported access point" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.png?ap=$1" | head -c 8 | od -An -c | tr -d " " | grep -q "211PNG"' "$ct" "$ap"
 
+if [ -n "${IMPORT_SAMPLES:-}" ]; then
+    sqlq() { psql_ "$1"; }
+    . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"
+fi
+
 log "backup and restore"
 bk() { docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/utilites/backup.php "$@"; }
 check "a backup is made" bk export

@@ -1,0 +1,57 @@
+# Sourced by the boot tests when IMPORT_SAMPLES names a folder of real uploads (.vs1, .vsz, .csv, .gz, .db, .db3,
+# .netxml, .ns1, .txt, .mdb): each goes through the upload page and the importer, and what came of it is written to
+# IMPORT_REPORT (one line per file: done, access points, GPS points; or bad and why). Running the same folder against
+# MariaDB and PostgreSQL and comparing the two reports shows whether both databases import the same.
+#
+# Needs from the caller: ct (the container), sqlq (runs SQL, prints rows with | between columns), tzc, ok/bad/check/log.
+# The samples are people's uploads: keep the folder out of the repository.
+
+import_type() { # import_type FILE: what the upload page's "type" would be
+    case "$(basename "${1,,}")" in
+        *.gz) echo wiglewificsv ;;
+        *.db|*.db3) echo wardrive ;;
+        *.netxml) echo kismet ;;
+        *.csv) if head -c 40 "$1" | grep -q WigleWifi; then echo wiglewificsv; else echo vistumbler; fi ;;
+        *) echo vistumbler ;;
+    esac
+}
+
+samples=("$IMPORT_SAMPLES"/*)
+log "importing ${#samples[@]} real uploads"
+imhash=$(docker exec -e P="import pass phrase" "$ct" php -r 'echo password_hash(getenv("P"), PASSWORD_BCRYPT);')
+sqlq "INSERT INTO user_info (username, password, uid, email, validated, permissions) VALUES ('importer', '$imhash', 'im1', 'im@example.test', 0, '0001')" >/dev/null
+imsession=$(docker exec "$ct" curl -s -D - -o /dev/null -H "Cookie: $tzc" -X POST --data-urlencode "time_user=importer" --data-urlencode "time_pass=import pass phrase" \
+    'http://127.0.0.1/login.php?func=login_proc' | sed -n 's/^[Ss]et-[Cc]ookie: WiFiDB_login_yes=\([^;]*\);.*/\1/p' | head -1)
+check "the importing member signs in" test -n "$imsession"
+before=$(sqlq "select count(*) from files_tmp")
+docker exec "$ct" mkdir -p /tmp/samples
+for f in "${samples[@]}"; do
+    base=$(basename "$f")
+    docker cp "$f" "$ct:/tmp/samples/$base"
+    docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc; WiFiDB_login_yes=$imsession" -F "upload[]=@/tmp/samples/$base" \
+        -F user=importer -F "title=sample $base" -F "type=$(import_type "$f")" 'http://127.0.0.1/import/index.php?func=import'
+done
+check "the upload page queued all ${#samples[@]}" test "$(sqlq "select count(*) from files_tmp")" = "$((before + ${#samples[@]}))"
+
+started=$(date +%s)
+imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -f -o -v 2>&1)
+log "the importer took $(( $(date +%s) - started ))s"
+if echo "$imp" | grep -qE 'Fatal error|Uncaught|SQLSTATE|PDOException|Stack trace'; then
+    bad "the importer ran without a PHP or SQL error"
+    echo "$imp" | grep -E 'Fatal error|Uncaught|SQLSTATE|PDOException' | sort | uniq -c | sort -rn | head -8 | sed 's/^/       /'
+else
+    ok "the importer ran without a PHP or SQL error"
+fi
+check "nothing is left waiting or half-imported" test "$(sqlq "select (select count(*) from files_tmp) + (select count(*) from files_importing)")" = 0
+
+{
+    sqlq "select title, 'done', aps, gps from files where title like 'sample %' order by title"
+    sqlq "select title, 'bad', error_msg from files_bad where title like 'sample %' order by title"
+} | sed 's/^sample //' | sort > /tmp/import-report.$id
+done_n=$(grep -c '|done|' /tmp/import-report.$id)
+bad_n=$(grep -c '|bad|' /tmp/import-report.$id)
+log "imported $done_n, set aside $bad_n"
+sed 's/^/       /' /tmp/import-report.$id | cut -c1-200
+check "every upload either imported or was set aside with a reason" test "$((done_n + bad_n))" = "${#samples[@]}"
+[ -n "${IMPORT_REPORT:-}" ] && cp /tmp/import-report.$id "$IMPORT_REPORT"
+rm -f /tmp/import-report.$id

@@ -135,6 +135,10 @@ check "dev tools (PHPUnit) are not in the container" docker exec "$ct1" test ! -
 . "$(dirname "$(readlink -f "$0")")/test-two-factor.inc.sh"
 . "$(dirname "$(readlink -f "$0")")/test-passkey.inc.sh"
 . "$(dirname "$(readlink -f "$0")")/test-backups.inc.sh"
+if [ -n "${IMPORT_SAMPLES:-}" ]; then
+    ct=$ct1; sqlq() { docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "$1" | tr "	" "|"; }
+    . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"
+fi
 
 log "keeping a setting on the data disk, then moving to a new container"
 docker exec "$ct1" sh -c 'echo "// marker" >> /srv/wifidb-data/config/web.overrides.php'
