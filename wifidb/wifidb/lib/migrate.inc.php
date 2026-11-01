@@ -1,13 +1,13 @@
 <?php
 /*
-migrate.inc.php, applies the numbered SQL files in sql/migrations/<mysql|sqlsrv>/ to a database, once each and in order,
-and remembers which it has applied in the schema_migrations table. A fresh database (blank_db.sql or blank_db.sqlsrv)
+migrate.inc.php, applies the numbered SQL files in sql/migrations/<mysql|sqlsrv|pgsql>/ to a database, once each and in
+order, and remembers which it has applied in the schema_migrations table. A fresh database (blank_db.sql, .sqlsrv, .pgsql)
 and an old one both end up at the same place, because blank_db is the base schema and everything since is a migration.
 
 Several nodes may run it at once against one database: a migration is claimed by inserting its row first, and only the
 node whose insert succeeded runs it; the others wait for it to finish.
 
-A file holds statements separated by ';' (mysql) or by lines that say GO (sqlsrv). Name them 0002_what_it_does.sql.
+A file holds statements separated by ';' (mysql, pgsql) or by lines that say GO (sqlsrv). Name them 0002_what_it_does.sql.
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -57,6 +57,10 @@ class Migrator
 		if($this->dialect === 'sqlsrv')
 		{
 			$sql = "IF OBJECT_ID(N'dbo.schema_migrations', N'U') IS NULL CREATE TABLE dbo.schema_migrations (id NVARCHAR(100) NOT NULL PRIMARY KEY, started DATETIME NOT NULL, applied DATETIME NULL)";
+		}
+		elseif($this->dialect === 'pgsql')
+		{
+			$sql = "CREATE TABLE IF NOT EXISTS schema_migrations (id VARCHAR(100) NOT NULL PRIMARY KEY, started TIMESTAMP(0) NOT NULL, applied TIMESTAMP(0) NULL)";
 		}
 		else
 		{
@@ -164,7 +168,8 @@ class Migrator
 			$batches = preg_split('/^[ \t]*GO[ \t]*$/mi', $text);
 			return array_values(array_filter(array_map('trim', $batches), 'strlen'));
 		}
-		// ';' ends a statement, except inside quotes and comments
+		// ';' ends a statement, except inside quotes and comments. A backslash escapes the next character only in MariaDB.
+		$backslash = ($dialect !== 'pgsql');
 		$statements = array();
 		$current = '';
 		$quote = null;
@@ -175,7 +180,7 @@ class Migrator
 			if($quote !== null)
 			{
 				$current .= $c;
-				if($c === '\\' && $quote !== '`' && $i + 1 < $length) { $current .= $text[++$i]; }
+				if($backslash && $c === '\\' && $quote !== '`' && $i + 1 < $length) { $current .= $text[++$i]; }
 				elseif($c === $quote) { $quote = null; }
 				continue;
 			}
