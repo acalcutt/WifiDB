@@ -22,9 +22,14 @@ $prep = $dbcore->sql->conn->prepare("DELETE FROM wifi_hist WHERE ".$q('File_ID')
 $prep->execute(array($file_id));
 echo "Removed ".$prep->rowCount()." signal readings.\r\n";
 
+# an access point whose best GPS point came from this file points at it too (another foreign key on MariaDB)
+$prep = $dbcore->sql->conn->prepare("UPDATE wifi_ap SET ".$q('HighGps_ID')." = NULL, high_gps_rssi = NULL, high_gps_sig = NULL WHERE ".$q('HighGps_ID')." IN (SELECT ".$q('GPS_ID')." FROM wifi_gps WHERE ".$q('File_ID')." = ?)");
+$prep->execute(array($file_id));
+$cleared = $prep->rowCount();
 $prep = $dbcore->sql->conn->prepare("DELETE FROM wifi_gps WHERE ".$q('File_ID')." = ?");
 $prep->execute(array($file_id));
 echo "Removed ".$prep->rowCount()." GPS points.\r\n";
+if($cleared) { echo "$cleared access points had their best GPS point here: run update_high_gps.php to pick them new ones.\r\n"; }
 
 if($dbcore->sql->service == "mysql")
 {
