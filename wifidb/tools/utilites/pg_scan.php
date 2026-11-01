@@ -53,7 +53,7 @@ foreach($paths as $path)
 	$report = array();
 	$n = count($tokens);
 	$flush = function () use (&$stmt, &$stack, &$report, $mixedRe) {
-		if($stmt['strings'])
+		if($stmt['strings'] && !preg_match('/^\s*(echo|print)\b/i', $stmt['text']))   # printing a query isn't running one
 		{
 			$sql = sql_text($stmt['strings']);
 			# the shape of a query, not just a keyword ("Update profile Vis_ver for ..." is a log message)
