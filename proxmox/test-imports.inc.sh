@@ -28,6 +28,10 @@ sqlq "INSERT INTO user_info (username, password, uid, email, validated, permissi
 imsession=$(docker exec "$ct" curl -s -D - -o /dev/null -H "Cookie: $tzc" -X POST --data-urlencode "time_user=importer" --data-urlencode "time_pass=import pass phrase" \
     'http://127.0.0.1/login.php?func=login_proc' | sed -n 's/^[Ss]et-[Cc]ookie: WiFiDB_login_yes=\([^;]*\);.*/\1/p' | head -1)
 check "the importing member signs in" test -n "$imsession"
+# cron starts importers every minute, which would race the one run here: it's held off (and any running left to
+# finish) until the report is written
+docker exec "$ct" systemctl stop cron
+for _ in $(seq 90); do docker exec "$ct" pgrep -f importd.php >/dev/null || break; sleep 2; done
 before=$(sqlq "select count(*) from files_tmp")
 docker exec "$ct" mkdir -p /var/tmp/samples
 # first, a file sent as the wrong type (a WiGLE .gz as Vistumbler; a byte added so it isn't a duplicate): it has to be
@@ -49,7 +53,7 @@ done
 check "the upload page queued all $distinct, each once" test "$(sqlq "select count(*) from files_tmp")" = "$((before + distinct))"
 
 started=$(date +%s)
-imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -f -o -v 2>&1)
+imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -f -o -v 2>&1 | tr -d '\0')
 log "the importer took $(( $(date +%s) - started ))s"
 if echo "$imp" | grep -qE 'Fatal error|Uncaught|SQLSTATE|PDOException|Stack trace'; then
     bad "the importer ran without a PHP or SQL error"
@@ -57,10 +61,11 @@ if echo "$imp" | grep -qE 'Fatal error|Uncaught|SQLSTATE|PDOException|Stack trac
 else
     ok "the importer ran without a PHP or SQL error"
 fi
-check "nothing is left waiting or half-imported" test "$(sqlq "select (select count(*) from files_tmp) + (select count(*) from files_importing)")" = 0
+check "nothing is left waiting or half-imported" test "$(sqlq "select (select count(*) from files_tmp) + (select count(*) from files_importing)")" = 0 ||
+    echo "$imp" | grep -v 'Deprecated\|^Insert \(GPS \)\?Size\|^Import Line Error\|^---' | tail -25 | cut -c1-200 | sed 's/^/       /'
 
 {
-    sqlq "select title, 'done', aps, gps from files where title like 'sample %' order by title"
+    sqlq "select title, 'done', aps, gps from files where completed = 1 and title like 'sample %' order by title"
     sqlq "select title, 'bad', error_msg from files_bad where title like 'sample %' order by title"
 } | sed 's/^sample //' | sort > /tmp/import-report.$id
 done_n=$(grep -c '|done|' /tmp/import-report.$id)
@@ -71,3 +76,4 @@ check "every upload either imported or was set aside with a reason" test "$((don
 [ -n "$wrong" ] && check "...the one sent as the wrong type among those set aside" grep -q '^zz-wrong-type.gz|bad|' /tmp/import-report.$id
 [ -n "${IMPORT_REPORT:-}" ] && cp /tmp/import-report.$id "$IMPORT_REPORT"
 rm -f /tmp/import-report.$id
+docker exec "$ct" systemctl start cron

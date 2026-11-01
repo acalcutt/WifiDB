@@ -109,6 +109,9 @@ scan "$member" /cp/ '/cp/index.php?func=profile' '/cp/index.php?func=pref' /cp/s
     '/cp/messages.php?func=sendmsg' '/opt/userstats.php?func=alluserlists&user=tuser'
 
 log "importing a WiGLE file"
+# cron's importers would race the one run here, so it's held off until the checks are done
+docker exec "$ct" systemctl stop cron
+for _ in $(seq 90); do docker exec "$ct" pgrep -f importd.php >/dev/null || break; sleep 2; done
 docker exec "$ct" sh -c 'printf "%s\n" "WigleWifi-1.4,appRelease=2.53,model=Test,release=11,device=test,display=x,board=x,brand=x" \
     "MAC,SSID,AuthMode,FirstSeen,Channel,RSSI,CurrentLatitude,CurrentLongitude,AltitudeMeters,AccuracyMeters,Type" \
     "00:11:22:33:44:01,Café Ünïcode,[WPA2-PSK-CCMP][ESS],2026-01-01 10:00:00,6,-50,42.3601000,-71.0589000,10,5,WIFI" \
@@ -125,6 +128,7 @@ check "...their GPS points" test "$(sqlq 'select count(*) from wifi_gps')" -ge 3
 check "...the non-ASCII name intact" test "$(sqlq "select count(*) from wifi_ap where \"SSID\" = N'Café Ünïcode'")" = 1
 check "...and nothing went to the bad files" test "$(sqlq 'select count(*) from files_bad')" = 0
 if [ "$(sqlq 'select count(*) from wifi_ap')" != 2 ]; then echo "$imp" | tail -15 | sed 's/^/       /'; fi
+docker exec "$ct" systemctl start cron
 ap=$(sqlq 'select min("AP_ID") from wifi_ap')
 scan "$member" "/opt/fetch.php?id=$ap" "/opt/userstats.php?func=useraplist&row=1" '/all.php?sort=AP_ID&ord=DESC&from=0&inc=100' /stats.php \
     "/opt/map.php?func=user_list&id=1" '/opt/scheduling.php?func=done' "/graph/index.php?id=$ap" '/opt/results.php?ssid=Caf&sort=SSID&ord=ASC'
