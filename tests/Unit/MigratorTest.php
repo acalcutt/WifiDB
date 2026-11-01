@@ -143,10 +143,17 @@ final class MigratorTest extends TestCase
         $waiting->Run();
     }
 
-    public function testTheRealMigrationsParseForBothDatabases(): void
+    public function testPostgresStringsHaveNoBackslashEscapes(): void
+    {
+        // in standard SQL strings a backslash is just a character, so 'C:\' ends the string
+        $this->assertSame(["INSERT INTO a VALUES ('C:\\')", "SELECT 'x;y'"], Migrator::Split("INSERT INTO a VALUES ('C:\\'); SELECT 'x;y'", 'pgsql'));
+        $this->assertSame(["INSERT INTO a VALUES ('it''s; fine')", 'SELECT 1'], Migrator::Split("INSERT INTO a VALUES ('it''s; fine'); SELECT 1", 'pgsql'));
+    }
+
+    public function testTheRealMigrationsParseForEveryDatabase(): void
     {
         $real = __DIR__ . '/../../wifidb/sql/migrations';
-        foreach (['mysql', 'sqlsrv'] as $dialect) {
+        foreach (['mysql', 'sqlsrv', 'pgsql'] as $dialect) {
             $files = glob("$real/$dialect/*.sql");
             $this->assertNotEmpty($files, $dialect);
             foreach ($files as $file) {
@@ -159,10 +166,12 @@ final class MigratorTest extends TestCase
                 }
             }
         }
-        $this->assertSame(
-            array_map('basename', glob("$real/mysql/*.sql")),
-            array_map('basename', glob("$real/sqlsrv/*.sql")),
-            'every migration exists for both databases'
-        );
+        foreach (['sqlsrv', 'pgsql'] as $dialect) {
+            $this->assertSame(
+                array_map('basename', glob("$real/mysql/*.sql")),
+                array_map('basename', glob("$real/$dialect/*.sql")),
+                "every migration exists for $dialect too"
+            );
+        }
     }
 }

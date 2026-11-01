@@ -2,7 +2,7 @@
 
 The Proxmox template is an Ubuntu LXC container with the whole site installed: Apache and PHP-FPM (with a separate
 pool for the heavy endpoints), the monitor and websocket daemons as systemd services, and the cron jobs. It has no
-database of its own: it uses your MariaDB or SQL Server. It serves plain HTTP on port 80, for HAProxy (or any
+database of its own: it uses your MariaDB, SQL Server or PostgreSQL. It serves plain HTTP on port 80, for HAProxy (or any
 proxy) in front to do TLS.
 
 `<version>` below is the build, `210` is the container ID, and the addresses are examples.
@@ -25,6 +25,8 @@ its own disk.
   - **MariaDB 10.6 or later:** utf8mb4. Create the database and user, e.g.
     `CREATE DATABASE wifi CHARACTER SET utf8mb4; CREATE USER 'wifidb'@'%' IDENTIFIED BY '…'; GRANT ALL ON wifi.* TO 'wifidb'@'%';`
   - **SQL Server:** SQL Server 2019 or later. Only if the template has the SQL Server driver (see below).
+  - **PostgreSQL 11 or later:** a database the user owns (it doesn't need to be a superuser), e.g.
+    `CREATE ROLE wifidb LOGIN PASSWORD '…'; CREATE DATABASE wifi OWNER wifidb ENCODING 'UTF8';`
 - A name for this node. The database has a row per node (`settings.node_name`, `schedule.nodename`); the daemons and
   cron jobs only work on their own node's rows. Several nodes can share one database.
 
@@ -59,7 +61,7 @@ pct exec 210 -- journalctl -u wifidb-firstboot -f
 The settings (each is described in the file):
 
 ```bash
-WIFIDB_DB_TYPE=mariadb            # or sqlsrv
+WIFIDB_DB_TYPE=mariadb            # or sqlsrv, or pgsql
 WIFIDB_DB_HOST=db.example.lan
 WIFIDB_DB_NAME=wifi
 WIFIDB_DB_USER=wifidb

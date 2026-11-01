@@ -1,8 +1,8 @@
 # Backups, moving servers and restoring
 
 WifiDB backs up its whole database to one file, copies it to S3 or to another server, and restores it. A backup made on
-**SQL Server restores on MariaDB, and the other way round**, so the same tools move a site to a new server or to the
-other kind of database.
+**SQL Server restores on MariaDB or PostgreSQL, and every other way round**, so the same tools move a site to a new
+server or to another kind of database.
 
 Everything is on **Backups** (`admin/backups.php`, admin mode on) or with `tools/utilites/backup.php` on the server.
 
@@ -72,7 +72,7 @@ Big files go up in 64 MB parts and come down in pieces, carrying on after an int
 
 ## Moving to a new server
 
-1. **Set up the new server** (the Proxmox template, say) with its own empty database: MariaDB or SQL Server, either one.
+1. **Set up the new server** (the Proxmox template, say) with its own empty database: MariaDB, SQL Server or PostgreSQL, any of them.
    First boot creates the tables and applies the migrations.
 2. **Get a backup there**, any of these ways:
    - **Copy it with a transfer key.** On the old server's Backups page, **make a key** (shown once, good for 7 days).
@@ -99,8 +99,10 @@ Big files go up in 64 MB parts and come down in pieces, carrying on after an int
 A row the target refuses (too long for its column, a duplicate under the other database's collation) doesn't stop the
 restore: it's written to `NAME.rejects.jsonl` in the backups folder and counted in the log.
 
-Between the two databases, a few columns aren't quite alike: some are `varchar` (not Unicode) on SQL Server where
-MariaDB holds any character, and MariaDB's `tinyint(1)` is a `bit` (0 or 1) on SQL Server. Real WifiDB data fits both;
+Between the databases, a few columns aren't quite alike: some are `varchar` (not Unicode) on SQL Server where MariaDB
+and PostgreSQL hold any character, and MariaDB's `tinyint(1)` is a `bit` (0 or 1) on SQL Server. Real WifiDB data fits
+all three. On PostgreSQL the restore takes the foreign keys off while it loads and puts them back afterwards (switching
+them off would need a superuser), and reads big tables through a cursor when it backs them up;
 `proxmox/test-backup-crossdb.sh` fills every column of every table and checks a round trip.
 
 Passkeys are tied to the site's address: they keep working only if the new server has the same one.
@@ -134,7 +136,8 @@ On the template, run it as `www-data`: `runuser -u www-data -- php /opt/wifidb/t
 
 ## Tests
 
-- `proxmox/test-backup-crossdb.sh TEMPLATE.tar.zst`: MariaDB to SQL Server and back, every column of every table.
+- `proxmox/test-backup-crossdb.sh TEMPLATE.tar.zst`: MariaDB to SQL Server to PostgreSQL and back to MariaDB, every
+  column of every table.
 - `proxmox/test-s3.sh`: the S3 client and the backup copies against a one-node Garage.
 - The template boot test makes a backup from the page, downloads it (whole and by range), copies it with a transfer
   key, and restores it.

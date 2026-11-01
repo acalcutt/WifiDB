@@ -3,6 +3,8 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+- **PostgreSQL support** (merged from the postgresql branch): `blank_db.pgsql`, a `pgsql` branch for the queries, PostgreSQL migrations, backups that move to and from it, and the Proxmox template (`WIFIDB_DB_TYPE=pgsql`). The database user needs to own its database, not be a superuser. `tools/utilites/pg_audit.py` lists query sites still to check.
+- **Usernames are matched exactly in the API export too** (`api/v2/export.php` still used `LIKE`).
 - **Backups that move between SQL Server and MariaDB** (`admin/backups.php`, needs admin mode, and `tools/utilites/backup.php`). One file holds the whole database; one made on SQL Server restores on MariaDB and the other way round, which also moves a site to a new server. Back up now or nightly (newest 7 kept), download (resumable), restore (type the domain to confirm; scheduled daemons wait meanwhile; the backup's key for authenticator apps comes with it). See `docs/backups.md`.
 - **Copy a backup from another server** with a transfer key made on that server's Backups page (7 days, shown once): 16 MB pieces, resumes after an interruption, SHA-256 checked, optionally a fresh backup first and a restore after.
 - **Backup copies in S3** (Garage, MinIO, AWS): set the bucket on Site Settings and each nightly backup is copied there (newest 30 kept); the Backups page lists the bucket and fetches from it.
