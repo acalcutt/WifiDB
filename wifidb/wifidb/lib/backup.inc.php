@@ -1,7 +1,7 @@
 <?php
 /*
-backup.inc.php, backups of the whole database that restore into either kind of database: one made on SQL Server restores
-on MariaDB and the other way round.
+backup.inc.php, backups of the whole database that restore into any of the databases WifiDB runs on: one made on SQL
+Server restores on MariaDB or PostgreSQL, and every other way round.
 
 A backup is one .tar file, wifidb-backup-YYYYMMDD-HHMMSS.tar, holding
   tables/<table>.<part>.jsonl.gz   the rows, one JSON array per line, in the column order the manifest gives
@@ -45,9 +45,10 @@ class WifidbBackup
 	public $clock;        // function (): Unix time (tests)
 	public $rowsPerPart = self::ROWS_PER_PART;
 	public $tmpDir = '';
-	private $held = array();   // values bound by reference (SQL Server binary)  // where a restore unpacks one part at a time: next to the backup, not /tmp
+	private $held = array();
+	private $foreignKeys = array();   // PostgreSQL's, while a restore has them off   // values bound by reference (SQL Server binary)  // where a restore unpacks one part at a time: next to the backup, not /tmp
 
-	/** @param string $service 'mysql' (MariaDB), 'sqlsrv', or 'sqlite' (tests) */
+	/** @param string $service 'mysql' (MariaDB), 'sqlsrv', 'pgsql', or 'sqlite' (tests) */
 	public function __construct(PDO $conn, $service)
 	{
 		$this->conn = $conn;
@@ -75,6 +76,7 @@ class WifidbBackup
 	{
 		if($this->service === 'mysql') { $sql = "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'"; }
 		elseif($this->service === 'sqlsrv') { $sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA = 'dbo'"; }
+		elseif($this->service === 'pgsql') { $sql = "SELECT table_name FROM information_schema.tables WHERE table_type = 'BASE TABLE' AND table_schema = current_schema()"; }
 		else { $sql = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"; }
 		$tables = array();
 		foreach($this->conn->query($sql)->fetchAll(PDO::FETCH_COLUMN) as $name)
@@ -97,7 +99,7 @@ class WifidbBackup
 			}
 			return $columns;
 		}
-		$schema = $this->service === 'mysql' ? 'DATABASE()' : "'dbo'";
+		$schema = $this->service === 'mysql' ? 'DATABASE()' : ($this->service === 'pgsql' ? 'current_schema()' : "'dbo'");
 		$prep = $this->conn->prepare("SELECT COLUMN_NAME, DATA_TYPE, IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = ? AND TABLE_SCHEMA = $schema ORDER BY ORDINAL_POSITION");
 		$prep->execute(array($table));
 		foreach($prep->fetchAll(PDO::FETCH_NUM) as $c)
@@ -112,23 +114,48 @@ class WifidbBackup
 	public static function Kind($type)
 	{
 		$t = strtolower(preg_replace('/\(.*$/', '', trim((string)$type)));
-		if(in_array($t, array('blob', 'tinyblob', 'mediumblob', 'longblob', 'binary', 'varbinary', 'image'), true)) { return 'binary'; }
-		if(in_array($t, array('datetime', 'datetime2', 'smalldatetime', 'timestamp', 'datetimeoffset'), true)) { return 'datetime'; }
+		if(in_array($t, array('blob', 'tinyblob', 'mediumblob', 'longblob', 'binary', 'varbinary', 'image', 'bytea'), true)) { return 'binary'; }
+		if(in_array($t, array('datetime', 'datetime2', 'smalldatetime', 'timestamp', 'datetimeoffset'), true) || strpos($t, 'timestamp ') === 0) { return 'datetime'; }
 		if($t === 'date') { return 'date'; }
-		if($t === 'bit') { return 'bool'; }
+		if($t === 'bit' || $t === 'boolean') { return 'bool'; }
 		return 'value';
 	}
 
-	/** The column SQL Server fills in itself (identity), by table: table => column, both lower case. */
+	/** The column the database numbers itself (identity), by table: lower-case table => the column's own name. */
 	private function IdentityTables()
 	{
-		if($this->service !== 'sqlsrv') { return array(); }
+		if($this->service === 'sqlsrv') { $sql = "SELECT t.name, c.name FROM sys.identity_columns c JOIN sys.tables t ON t.object_id = c.object_id"; }
+		elseif($this->service === 'pgsql') { $sql = "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = current_schema() AND (is_identity = 'YES' OR column_default LIKE 'nextval(%')"; }
+		else { return array(); }
 		$out = array();
-		foreach($this->conn->query("SELECT t.name, c.name FROM sys.identity_columns c JOIN sys.tables t ON t.object_id = c.object_id")->fetchAll(PDO::FETCH_NUM) as $r)
-		{
-			$out[strtolower($r[0])] = strtolower($r[1]);
-		}
+		foreach($this->conn->query($sql)->fetchAll(PDO::FETCH_NUM) as $r) { $out[strtolower($r[0])] = $r[1]; }
 		return $out;
+	}
+
+	/** Every row of a query. PostgreSQL's driver would hold a whole table in memory, so it's read through a cursor there. */
+	private function Rows($sql)
+	{
+		if($this->service !== 'pgsql')
+		{
+			$result = $this->conn->query($sql);
+			while(($row = $result->fetch(PDO::FETCH_NUM)) !== false) { yield $row; }
+			$result->closeCursor();
+			return;
+		}
+		$this->conn->beginTransaction();
+		try
+		{
+			$this->conn->exec("DECLARE wdb_export NO SCROLL CURSOR FOR ".$sql);
+			while($rows = $this->conn->query("FETCH FORWARD 5000 FROM wdb_export")->fetchAll(PDO::FETCH_NUM))
+			{
+				foreach($rows as $row) { yield $row; }
+			}
+			$this->conn->exec("CLOSE wdb_export");
+		}
+		finally
+		{
+			$this->conn->commit();
+		}
 	}
 
 	// ── Export ───────────────────────────────────────────────────────────────────────────────────────
@@ -205,9 +232,8 @@ class WifidbBackup
 				$this->Say("exporting $table");
 				$info = array('columns' => $columns, 'rows' => 0, 'parts' => array());
 				$names = implode(', ', array_map(array($this, 'Q'), array_column($columns, 0)));
-				$result = $this->conn->query("SELECT $names FROM ".$this->Q($table));
 				$part = 0; $inPart = 0; $gz = null; $partFile = '';
-				while(($row = $result->fetch(PDO::FETCH_NUM)) !== false)
+				foreach($this->Rows("SELECT $names FROM ".$this->Q($table)) as $row)
 				{
 					if($gz === null)
 					{
@@ -226,7 +252,6 @@ class WifidbBackup
 						$inPart = 0;
 					}
 				}
-				$result->closeCursor();
 				if($gz !== null)
 				{
 					gzclose($gz);
@@ -351,9 +376,16 @@ class WifidbBackup
 				$report['tables'][$table] = $stats;
 			}
 			$tar->Close();
-			foreach(array_keys($identity) as $lower)
+			foreach($identity as $lower => $column)
 			{
-				if(isset($here[$lower])) { $this->conn->exec("DBCC CHECKIDENT ('dbo.".str_replace("'", "''", $here[$lower])."', RESEED) WITH NO_INFOMSGS"); }
+				if(!isset($here[$lower])) { continue; }
+				# the next id comes after the highest restored one
+				if($this->service === 'sqlsrv') { $this->conn->exec("DBCC CHECKIDENT ('dbo.".str_replace("'", "''", $here[$lower])."', RESEED) WITH NO_INFOMSGS"); }
+				else
+				{
+					$prep = $this->conn->prepare("SELECT setval(pg_get_serial_sequence(?, ?), COALESCE((SELECT MAX(".$this->Q($column).") FROM ".$this->Q($here[$lower])."), 0) + 1, false)");
+					$prep->execute(array($this->Q($here[$lower]), $column));
+				}
 			}
 		}
 		finally
@@ -376,6 +408,21 @@ class WifidbBackup
 	{
 		if($this->service === 'mysql') { $this->conn->exec("SET FOREIGN_KEY_CHECKS = ".($on ? 1 : 0)); }
 		elseif($this->service === 'sqlite') { $this->conn->exec("PRAGMA foreign_keys = ".($on ? 'ON' : 'OFF')); }
+		elseif($this->service === 'pgsql')
+		{
+			# switching them off needs a superuser, so they're taken off and put back (NOT VALID: the rows aren't checked
+			# again, as SQL Server's WITH NOCHECK and MariaDB's FOREIGN_KEY_CHECKS don't either)
+			if(!$on)
+			{
+				$this->foreignKeys = $this->conn->query("SELECT conrelid::regclass::text, conname, pg_get_constraintdef(oid) FROM pg_constraint WHERE contype = 'f' AND connamespace = current_schema()::regnamespace")->fetchAll(PDO::FETCH_NUM);
+				foreach($this->foreignKeys as $fk) { $this->conn->exec("ALTER TABLE ".$fk[0]." DROP CONSTRAINT ".$this->Q($fk[1])); }
+			}
+			else
+			{
+				foreach($this->foreignKeys as $fk) { $this->conn->exec("ALTER TABLE ".$fk[0]." ADD CONSTRAINT ".$this->Q($fk[1])." ".$fk[2]." NOT VALID"); }
+				$this->foreignKeys = array();
+			}
+		}
 		else
 		{
 			foreach($tables as $t)
@@ -404,7 +451,7 @@ class WifidbBackup
 		foreach($map as $m)
 		{
 			$names[] = $this->Q($m[1][0]);
-			if(strtolower($m[1][0]) === $identityColumn) { $hasIdentity = true; }   # else SQL Server numbers the rows itself
+			if($this->service === 'sqlsrv' && $identityColumn !== null && strtolower($m[1][0]) === strtolower($identityColumn)) { $hasIdentity = true; }   # else SQL Server numbers the rows itself
 		}
 		$perRow = count($map);
 		$batch = $this->service === 'sqlsrv' ? max(1, min(1000, intdiv(2000, $perRow))) : max(1, min(500, intdiv(30000, $perRow)));

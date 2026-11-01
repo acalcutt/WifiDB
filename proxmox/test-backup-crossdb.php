@@ -1,12 +1,13 @@
 <?php
 /*
-test-backup-crossdb.php, run by test-backup-crossdb.sh: a backup made on MariaDB restores on SQL Server, and a backup of
-that restores on MariaDB again, with every row of every table the same as where it started.
+test-backup-crossdb.php, run by test-backup-crossdb.sh: a backup made on MariaDB restores on SQL Server, a backup of that
+restores on PostgreSQL, and a backup of that restores on MariaDB again, with every row of every table the same at each
+stop as where it started.
 
 Every column of every table gets three rows of made-up values that test the awkward cases: non-ASCII text (including
 4-byte characters), binary, dates, decimals and ids that line up across the foreign keys.
   php test-backup-crossdb.php LIB_DIR MIGRATIONS_DIR WORK_DIR
-Environment: MARIA_HOST, MARIA2_HOST, MSSQL_HOST, MSSQL_PW.
+Environment: MARIA_HOST, MARIA2_HOST, MSSQL_HOST, MSSQL_PW, PG_HOST.
 */
 list(, $lib, $migrations, $work) = $argv;
 require "$lib/backup.inc.php";
@@ -19,6 +20,7 @@ function connect($kind, $host)
 {
 	$opts = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
 	if($kind === 'mysql') { return new PDO("mysql:host=$host;dbname=wifi;charset=utf8mb4", 'root', 'rootpw', $opts); }
+	if($kind === 'pgsql') { return new PDO("pgsql:host=$host;dbname=wifi", 'wifidb', 'testpw', $opts); }
 	return new PDO("sqlsrv:Server=$host;Database=prod_wifi;TrustServerCertificate=true", 'sa', getenv('MSSQL_PW'), $opts);
 }
 
@@ -141,45 +143,60 @@ function migrate(PDO $db, $service, $migrations)
 $maria = connect('mysql', getenv('MARIA_HOST'));
 $maria2 = connect('mysql', getenv('MARIA2_HOST'));
 $mssql = connect('sqlsrv', getenv('MSSQL_HOST'));
+$pg = connect('pgsql', getenv('PG_HOST'));
 $appliedMaria = migrate($maria, 'mysql', $migrations);
-migrate($maria2, 'mysql', $migrations);
+$appliedMaria2 = migrate($maria2, 'mysql', $migrations);
 $appliedMssql = migrate($mssql, 'sqlsrv', $migrations);
-check("the migrations ran on both kinds of database", $appliedMaria === $appliedMssql && count($appliedMaria) >= 4, implode(',', $appliedMaria).' / '.implode(',', $appliedMssql));
+$appliedPg = migrate($pg, 'pgsql', $migrations);
+check("the migrations ran on all three kinds of database", $appliedMaria === $appliedMssql && $appliedMaria === $appliedPg && count($appliedMaria) >= 4,
+	implode(',', $appliedMaria).' / '.implode(',', $appliedMssql).' / '.implode(',', $appliedPg));
 $ascii = array();
 foreach($mssql->query("SELECT LOWER(TABLE_NAME + '.' + COLUMN_NAME) FROM INFORMATION_SCHEMA.COLUMNS WHERE DATA_TYPE IN ('varchar', 'char', 'text')")->fetchAll(PDO::FETCH_COLUMN) as $col) { $ascii[$col] = true; }
 $seeded = seed($maria, $ascii);
 check("every column of $seeded tables on MariaDB was filled", $seeded >= 35);
 $original = snapshot($maria, 'mysql');
 
+/** Backs up $from and restores it on $to. @return array the restore's report */
+function hop(PDO $from, $fromService, array $fromMigrations, PDO $to, $toService, array $toMigrations, $tar)
+{
+	global $work;
+	$b = new WifidbBackup($from, $fromService);
+	$b->rowsPerPart = 2;   // several parts per table
+	$manifest = $b->Export($tar, array('site' => "https://$fromService.test/", 'migrations' => $fromMigrations), array('two_factor_key' => 'k'));
+	$r = new WifidbBackup($to, $toService);
+	$r->tmpDir = $work;
+	$report = $r->Restore($tar, $toMigrations, "$tar.rejects");
+	$report['manifest_rows'] = $manifest['rows'];
+	$report['rejects'] = @file_get_contents("$tar.rejects") ?: '';
+	return $report;
+}
+
 # MariaDB -> SQL Server
-$b = new WifidbBackup($maria, 'mysql');
-$b->rowsPerPart = 2;   // several parts per table
-$tar1 = "$work/wifidb-backup-20270101-000001.tar";
-$manifest = $b->Export($tar1, array('site' => 'https://maria.test/', 'migrations' => $appliedMaria), array('two_factor_key' => 'k'));
+$report = hop($maria, 'mysql', $appliedMaria, $mssql, 'sqlsrv', $appliedMssql, "$work/wifidb-backup-20270101-000001.tar");
 $total = array_sum(array_map('count', $original));
-check("the MariaDB backup holds every table's rows", $manifest['rows'] === $total, $manifest['rows'].' rows, '.$total.' in the database');
-$r = new WifidbBackup($mssql, 'sqlsrv');
-$r->tmpDir = $work;
-$report = $r->Restore($tar1, $appliedMssql, "$work/rejects1.jsonl");
-check("it restores on SQL Server with nothing refused", $report['rejected'] === 0, @file_get_contents("$work/rejects1.jsonl") ?: '');
+check("the MariaDB backup holds every table's rows", $report['manifest_rows'] === $total, $report['manifest_rows'].' rows, '.$total.' in the database');
+check("it restores on SQL Server with nothing refused", $report['rejected'] === 0, $report['rejects']);
 check("...the table only MariaDB has is reported", $report['missing_here'] === array('user_imports'), json_encode($report['missing_here']));
 check("...and no table here is missing from the backup", $report['not_in_backup'] === array(), json_encode($report['not_in_backup']));
 compare("...and every row on SQL Server matches MariaDB's", $original, snapshot($mssql, 'sqlsrv'), array('user_imports'));
-
-# the id counters moved on past the restored ids
 $mssql->exec("INSERT INTO notifications (username, type, title, created) VALUES ('x', 'security', 't', '2026-01-01 00:00:00')");
 check("SQL Server's next id comes after the restored ones", (int)$mssql->query("SELECT MAX(id) FROM notifications")->fetchColumn() === 4);
-
-# SQL Server -> MariaDB
 $mssql->exec("DELETE FROM notifications WHERE username = 'x'");
-$b = new WifidbBackup($mssql, 'sqlsrv');
-$tar2 = "$work/wifidb-backup-20270101-000002.tar";
-$b->Export($tar2, array('site' => 'https://mssql.test/', 'migrations' => $appliedMssql));
-$r = new WifidbBackup($maria2, 'mysql');
-$r->tmpDir = $work;
-$report = $r->Restore($tar2, migrate($maria2, 'mysql', $migrations), "$work/rejects2.jsonl");
-check("the SQL Server backup restores on MariaDB with nothing refused", $report['rejected'] === 0, @file_get_contents("$work/rejects2.jsonl") ?: '');
-compare("...and after the round trip every row is as it started", $original, snapshot($maria2, 'mysql'), array('user_imports'));
+
+# SQL Server -> PostgreSQL
+$report = hop($mssql, 'sqlsrv', $appliedMssql, $pg, 'pgsql', $appliedPg, "$work/wifidb-backup-20270101-000002.tar");
+check("the SQL Server backup restores on PostgreSQL with nothing refused", $report['rejected'] === 0, $report['rejects']);
+check("...with the same tables", $report['missing_here'] === array() && $report['not_in_backup'] === array(), json_encode(array($report['missing_here'], $report['not_in_backup'])));
+compare("...and every row on PostgreSQL matches MariaDB's", $original, snapshot($pg, 'pgsql'), array('user_imports'));
+$pg->exec("INSERT INTO notifications (username, type, title, created) VALUES ('x', 'security', 't', '2026-01-01 00:00:00')");
+check("PostgreSQL's next id comes after the restored ones", (int)$pg->query("SELECT MAX(id) FROM notifications")->fetchColumn() === 4);
+$pg->exec("DELETE FROM notifications WHERE username = 'x'");
+check("PostgreSQL's foreign keys are back", (int)$pg->query("SELECT COUNT(*) FROM pg_constraint WHERE contype = 'f' AND connamespace = current_schema()::regnamespace")->fetchColumn() === 2);
+
+# PostgreSQL -> MariaDB
+$report = hop($pg, 'pgsql', $appliedPg, $maria2, 'mysql', $appliedMaria2, "$work/wifidb-backup-20270101-000003.tar");
+check("the PostgreSQL backup restores on MariaDB with nothing refused", $report['rejected'] === 0, $report['rejects']);
+compare("...and after the trip round all three every row is as it started", $original, snapshot($maria2, 'mysql'), array('user_imports'));
 $maria2->exec("INSERT INTO notifications (username, type, title, created) VALUES ('x', 'security', 't', '2026-01-01 00:00:00')");
 check("MariaDB's next id comes after the restored ones", (int)$maria2->query("SELECT MAX(id) FROM notifications")->fetchColumn() === 4);
 check("the foreign keys are on again on MariaDB", (int)$maria2->query("SELECT @@FOREIGN_KEY_CHECKS")->fetchColumn() === 1);
