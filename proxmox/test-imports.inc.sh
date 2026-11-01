@@ -11,7 +11,10 @@ import_type() { # import_type FILE: what the upload page's "type" would be
         *.gz) echo wiglewificsv ;;
         *.db|*.db3) echo wardrive ;;
         *.netxml) echo kismet ;;
-        *.csv) if head -c 40 "$1" | grep -q WigleWifi; then echo wiglewificsv; else echo vistumbler; fi ;;
+        *.csv)
+            if head -c 60 "$1" | grep -q WigleWifi; then echo wiglewificsv
+            elif head -c 60 "$1" | grep -q '^BSSID,SSID,AuthMode,channel,frequency'; then echo swardriving
+            else echo vistumbler; fi ;;
         *) echo vistumbler ;;
     esac
 }
