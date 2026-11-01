@@ -1,4 +1,16 @@
 <?php
+/*
+update_high_gps.php: works out each access point's summary columns again from its readings, the way the importer
+keeps them (import.inc.php, UpdateHighPoints):
+  fa, la             the first and last reading
+  high_rssi, high_sig, points
+  HighGps_ID, high_gps_rssi, high_gps_sig   the best reading with a GPS fix: strongest RSSI, then newest, then the
+                                            most satellites, then the most accurate
+MariaDB, SQL Server and PostgreSQL. An older version kept pointers to readings (FirstHist_ID, HighRSSI_ID, ...), which
+wifi_ap no longer has.
+
+  php update_high_gps.php [--from AP_ID] [--to AP_ID]
+*/
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
 
@@ -6,114 +18,59 @@ if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to c
 if($daemon_config['wifidb_install'] == ""){die("You need to edit your daemon config file first in: [tools dir]/daemon/config.inc.php");}
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
-$dbcore->verbosed("Gathered AP data");
+$opt = function ($flag) use ($argv) { $i = array_search($flag, $argv, true); return ($i !== false && isset($argv[$i + 1])) ? (int)$argv[$i + 1] : null; };
+$from = $opt('--from');
+$to = $opt('--to');
+$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+$ap = $q('AP_ID');
 
-if($dbcore->sql->service == "mysql")
+# read in batches, each after the last id of the one before: a result left open while the others run is something SQL
+# Server can refuse, and production has millions of access points
+$batch = 5000;
+$list = $dbcore->sql->conn->prepare("SELECT $ap, fa, la, high_rssi, high_sig, points, ".$q('HighGps_ID').", high_gps_rssi, high_gps_sig FROM wifi_ap"
+	." WHERE $ap > ?".($to !== null ? " AND $ap <= ?" : "")." ORDER BY $ap ASC ".$dbcore->sql->limit(0, $batch));
+$last = ($from !== null) ? $from - 1 : 0;
+$rows = array();
+$next = function () use ($list, &$last, &$rows, $to) {
+	if(!$rows)
 	{
-		//$sql = "SELECT `AP_ID`, `FirstHist_ID`, `LastHist_ID`, `HighRSSI_ID`, `HighSig_ID`, `HighGps_ID` FROM `wifi_ap` WHERE AP_ID > 4000000 AND AP_ID <= 5000000 ORDER BY `AP_ID` ASC";
-		$sql = "SELECT `AP_ID`, `FirstHist_ID`, `LastHist_ID`, `HighRSSI_ID`, `HighSig_ID`, `HighGps_ID` FROM `wifi_ap` ORDER BY `AP_ID` ASC";
+		$list->execute($to !== null ? array($last, $to) : array($last));
+		$rows = $list->fetchAll(PDO::FETCH_ASSOC);
+		if(!$rows) { return false; }
 	}
-else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT [AP_ID], [FirstHist_ID], [LastHist_ID], [HighRSSI_ID], [HighSig_ID], [HighGps_ID] FROM [wifi_ap] ORDER BY [AP_ID] ASC";}
-else if($dbcore->sql->service == "pgsql")
-	{$sql = "SELECT \"AP_ID\", \"FirstHist_ID\", \"LastHist_ID\", \"HighRSSI_ID\", \"HighSig_ID\", \"HighGps_ID\" FROM wifi_ap ORDER BY \"AP_ID\" ASC";}
-$result = $dbcore->sql->conn->query($sql);
+	$row = array_shift($rows);
+	$last = (int)$row['AP_ID'];
+	return $row;
+};
 
-echo "Rows that need updating: ".$result->rowCount()."\r\n";
-sleep(4);
-while($ap = $result->fetch(1))
+$totals = $dbcore->sql->conn->prepare("SELECT MIN(".$q('Hist_Date').") AS fa, MAX(".$q('Hist_Date').") AS la, MAX(".$q('RSSI').") AS high_rssi,"
+	." MAX(".$q('Sig').") AS high_sig, COUNT(*) AS points FROM wifi_hist WHERE $ap = ? AND ".$q('Hist_Date')." IS NOT NULL");
+$best = $dbcore->sql->conn->prepare("SELECT h.".$q('GPS_ID')." AS gps_id, h.".$q('RSSI')." AS rssi, h.".$q('Sig')." AS sig"
+	." FROM wifi_hist h INNER JOIN wifi_gps g ON h.".$q('GPS_ID')." = g.".$q('GPS_ID')
+	." WHERE h.$ap = ? AND h.".$q('Hist_Date')." IS NOT NULL AND g.".$q('Lat')." != '0.0000'"
+	." ORDER BY h.".$q('RSSI')." DESC, h.".$q('Hist_Date')." DESC, g.".$q('NumOfSats')." DESC, g.".$q('AccuracyMeters')." ASC, h.".$q('Hist_ID')." ASC "
+	.$dbcore->sql->limit(0, 1));
+$update = $dbcore->sql->conn->prepare("UPDATE wifi_ap SET fa = ?, la = ?, high_rssi = ?, high_sig = ?, points = ?, ".$q('HighGps_ID')." = ?,"
+	." high_gps_rssi = ?, high_gps_sig = ? WHERE $ap = ?");
+
+$checked = 0; $changed = 0;
+while($row = $next())
 {
-    $AP_ID = $ap['AP_ID'];
-	$Orig_FirstHist_ID = $ap['FirstHist_ID'];
-	$Orig_LastHist_ID = $ap['LastHist_ID'];
-	$Orig_HighRSSI_ID = $ap['HighRSSI_ID'];
-	$Orig_HighSig_ID = $ap['HighSig_ID'];
-	$Orig_HighGps_ID = $ap['HighGps_ID'];
-	
-	#Get High Points
-	if($dbcore->sql->service == "mysql")
-	{
-		$sqlhp = "SELECT \n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY `Hist_Date` ASC, `Hist_ID` ASC LIMIT 1) As `FA_id`,\n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY `Hist_Date` DESC, `Hist_ID` ASC LIMIT 1) As `LA_id`,\n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY `Sig` DESC, `Hist_Date` DESC, `Hist_ID` ASC LIMIT 1) As `HighSig_id`,\n"
-			. "(SELECT Hist_ID FROM `wifi_hist` WHERE `AP_ID` = `wap`.`AP_ID` And `Hist_date` IS NOT NULL ORDER BY `RSSI` DESC, `Hist_Date` DESC, `Hist_ID` ASC LIMIT 1) As `HighRSSI_id`,\n"
-			. "(SELECT `wifi_hist`.`GPS_ID`\n"
-			. "    FROM `wifi_hist`\n"
-			. "    INNER JOIN `wifi_gps` ON `wifi_hist`.`GPS_ID` = `wifi_gps`.`GPS_ID`\n"
-			. "    WHERE `wifi_hist`.`AP_ID` = `wap`.`AP_ID` And `wifi_hist`.`Hist_date` IS NOT NULL And `wifi_gps`.`Lat` != '0.0000'\n"
-			. "    ORDER BY `wifi_hist`.`RSSI` DESC, `wifi_hist`.`Hist_Date` DESC, `wifi_gps`.`NumOfSats` DESC, `wifi_hist`.`Hist_ID` ASC\n"
-			. "    LIMIT 1) As `HighGps_id`\n"
-			. "FROM `wifi_ap` As `wap`\n"
-			. "WHERE `wap`.`AP_ID` = ?";
-	}
-	else if($dbcore->sql->service == "sqlsrv")
-	{
-		$sqlhp = "SELECT\n"
-			. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL ORDER BY [Hist_Date] ASC, [Hist_ID] ASC) AS [FA_id],\n"
-			. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL ORDER BY [Hist_Date] DESC, [Hist_ID] ASC) AS [LA_id],\n"
-			. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL ORDER BY [Sig] DESC, [Hist_Date] DESC, [Hist_ID] ASC) AS [HighSig_id],\n"
-			. "(SELECT TOP 1 [Hist_ID] FROM [wifi_hist] WHERE [AP_ID] = [wap].[AP_ID] And [Hist_date] IS NOT NULL ORDER BY [RSSI] DESC, [Hist_Date] DESC, [Hist_ID] ASC) AS [HighRSSI_id],\n"
-			. "(SELECT TOP 1 [wifi_hist].[GPS_ID]\n"
-			. "    FROM [wifi_hist]\n"
-			. "    INNER JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
-			. "    WHERE [wifi_hist].[AP_ID] = [wap].[AP_ID] AND [wifi_hist].[Hist_Date] IS NOT NULL AND [wifi_gps].[Lat] != '0.0000'\n"
-			. "    ORDER BY [wifi_hist].[RSSI] DESC, [wifi_hist].[Hist_Date] DESC, [wifi_gps].[NumOfSats] DESC) As [HighGps_id], [wifi_hist].[Hist_ID] ASC\n"
-			. "FROM [wifi_ap] As [wap]\n"
-			. "WHERE [wap].[AP_ID] = ?";
-	}
-	else if($dbcore->sql->service == "pgsql")
-	{
-		// Derived from the MySQL arm rather than the sqlsrv one: the sqlsrv query
-		// above has ", [wifi_hist].[Hist_ID] ASC" stranded outside the subquery's
-		// ORDER BY, which is a syntax error there.
-		$sqlhp = "SELECT \n"
-			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"Hist_Date\" ASC, \"Hist_ID\" ASC LIMIT 1) As \"FA_id\",\n"
-			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"Hist_Date\" DESC, \"Hist_ID\" ASC LIMIT 1) As \"LA_id\",\n"
-			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"Sig\" DESC, \"Hist_Date\" DESC, \"Hist_ID\" ASC LIMIT 1) As \"HighSig_id\",\n"
-			. "(SELECT \"Hist_ID\" FROM wifi_hist WHERE \"AP_ID\" = wap.\"AP_ID\" And \"Hist_Date\" IS NOT NULL ORDER BY \"RSSI\" DESC, \"Hist_Date\" DESC, \"Hist_ID\" ASC LIMIT 1) As \"HighRSSI_id\",\n"
-			. "(SELECT wifi_hist.\"GPS_ID\"\n"
-			. "    FROM wifi_hist\n"
-			. "    INNER JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
-			. "    WHERE wifi_hist.\"AP_ID\" = wap.\"AP_ID\" And wifi_hist.\"Hist_Date\" IS NOT NULL And wifi_gps.\"Lat\" != 0.0000\n"
-			. "    ORDER BY wifi_hist.\"RSSI\" DESC, wifi_hist.\"Hist_Date\" DESC, wifi_gps.\"NumOfSats\" DESC, wifi_hist.\"Hist_ID\" ASC\n"
-			. "    LIMIT 1) As \"HighGps_id\"\n"
-			. "FROM wifi_ap As wap\n"
-			. "WHERE wap.\"AP_ID\" = ?";
-	}
-
-	$resgps = $dbcore->sql->conn->prepare($sqlhp);
-	$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
-	$resgps->execute();
-	$fetchgps = $resgps->fetch(2);
-	$HighSig_id = $fetchgps['HighSig_id'];
-	$FA_id = $fetchgps['FA_id'];
-	$LA_id = $fetchgps['LA_id'];
-	$HighRSSI_id = $fetchgps['HighRSSI_id'];
-	$HighGps_id = $fetchgps['HighGps_id'];
-	
-	if($Orig_FirstHist_ID != $FA_id || $Orig_LastHist_ID != $LA_id || $Orig_HighRSSI_ID != $HighRSSI_id || $Orig_HighSig_ID != $HighSig_id || $Orig_HighGps_ID != $HighGps_id)
-	{
-		echo "Updating AP_ID".$AP_ID." - FA:".$FA_id."(".$Orig_FirstHist_ID.") - LA:".$LA_id."(".$Orig_LastHist_ID.") - HighRSSI:".$HighRSSI_id."(".$Orig_HighRSSI_ID.") - HighSig:".$HighSig_id."(".$Orig_HighSig_ID.") - HighGPS:".$HighGps_id."(".$Orig_HighGps_ID.")\r\n";
-		#Update AP IDs
-		if($dbcore->sql->service == "mysql")
-			{$sqlu = "UPDATE `wifi_ap` SET `FirstHist_ID` = ? , `LastHist_ID` = ? , `HighRSSI_ID` = ?, `HighSig_ID` = ? , `HighGps_ID` = ? WHERE `AP_ID` = ?";}
-		else if($dbcore->sql->service == "sqlsrv")
-			{$sqlu = "UPDATE [wifi_ap] SET [FirstHist_ID] = ? , [LastHist_ID] = ? , [HighRSSI_ID] = ?, [HighSig_ID] = ? , [HighGps_ID] = ? WHERE [AP_ID] = ?";}
-		else if($dbcore->sql->service == "pgsql")
-			{$sqlu = "UPDATE wifi_ap SET \"FirstHist_ID\" = ? , \"LastHist_ID\" = ? , \"HighRSSI_ID\" = ?, \"HighSig_ID\" = ? , \"HighGps_ID\" = ? WHERE \"AP_ID\" = ?";}
-		echo "UPDATE `wifi_ap` SET `FirstHist_ID` = $FA_id , `LastHist_ID` = $LA_id , `HighRSSI_ID` = $HighRSSI_id, `HighSig_ID` = $HighSig_id , `HighGps_ID` = $HighGps_id WHERE `AP_ID` = $AP_ID\r\n";
-		$prep = $dbcore->sql->conn->prepare($sqlu);
-		$prep->bindParam(1, $FA_id, PDO::PARAM_INT);
-		$prep->bindParam(2, $LA_id, PDO::PARAM_INT);
-		$prep->bindParam(3, $HighRSSI_id, PDO::PARAM_INT);
-		$prep->bindParam(4, $HighSig_id, PDO::PARAM_INT);
-		$prep->bindParam(5, $HighGps_id, PDO::PARAM_INT);
-		$prep->bindParam(6, $AP_ID, PDO::PARAM_INT);
-		$prep->execute();
-	}
-	else
-	{
-		echo "No Updates needed for AP_ID:".$AP_ID."\r\n";
-	}
+	$id = $row['AP_ID'];
+	$checked++;
+	$totals->execute(array($id));
+	$t = $totals->fetch(PDO::FETCH_ASSOC);
+	if(!$t || !(int)$t['points']) { continue; }   # no readings: nothing to work it out from
+	$best->execute(array($id));
+	$g = $best->fetch(PDO::FETCH_ASSOC) ?: array('gps_id' => null, 'rssi' => null, 'sig' => null);
+	$best->closeCursor();
+	$new = array($t['fa'], $t['la'], $t['high_rssi'], $t['high_sig'], $t['points'], $g['gps_id'], $g['rssi'], $g['sig']);
+	$old = array($row['fa'], $row['la'], $row['high_rssi'], $row['high_sig'], $row['points'], $row['HighGps_ID'], $row['high_gps_rssi'], $row['high_gps_sig']);
+	# dates come back with or without fractions depending on the database: compare the seconds only
+	$same = function ($a, $b) { return substr((string)$a, 0, 19) === substr((string)$b, 0, 19); };
+	if(count(array_filter(array_map($same, $new, $old))) === count($new)) { continue; }
+	$update->execute(array_merge($new, array($id)));
+	$changed++;
+	echo "AP $id: updated (best GPS point ".($g['gps_id'] === null ? 'none' : $g['gps_id']).")\r\n";
 }
+echo "Checked $checked access points, updated $changed.\r\n";
