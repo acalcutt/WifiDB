@@ -1,9 +1,9 @@
 <?php
 /*
-load_geonames.php: loads a GeoNames dump file (http://download.geonames.org/export/dump/) into its table, for the
+load_geonames.php: loads a GeoNames dump file (https://download.geonames.org/export/dump/) into its table, for the
 "places nearby" on the access point page. MariaDB, SQL Server and PostgreSQL.
 
-  php load_geonames.php --geonames     --file=allCountries.txt        [--replace]
+  php load_geonames.php --geonames     --file=allCountries.txt        [--replace]   (unzip allCountries.zip first)
   php load_geonames.php --admin1       --file=admin1CodesASCII.txt    [--replace]
   php load_geonames.php --admin2       --file=admin2Codes.txt         [--replace]
   php load_geonames.php --countrynames --file=countryInfo.txt         [--replace]
@@ -36,7 +36,7 @@ foreach(array_slice($argv, 1) as $arg)
 if($load === '' || $file === '')
 {
 	fwrite(STDERR, "Usage: php load_geonames.php --geonames|--admin1|--admin2|--countrynames --file=FILE [--replace]\n"
-		."Get the files from http://download.geonames.org/export/dump/\n");
+		."Get the files from https://download.geonames.org/export/dump/\n");
 	exit(2);
 }
 $in = @fopen($file, 'r');
