@@ -134,6 +134,7 @@ check "dev tools (PHPUnit) are not in the container" docker exec "$ct1" test ! -
 
 . "$(dirname "$(readlink -f "$0")")/test-two-factor.inc.sh"
 . "$(dirname "$(readlink -f "$0")")/test-passkey.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-backups.inc.sh"
 
 log "keeping a setting on the data disk, then moving to a new container"
 docker exec "$ct1" sh -c 'echo "// marker" >> /srv/wifidb-data/config/web.overrides.php'
