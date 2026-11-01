@@ -41,6 +41,10 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Imports on MariaDB failed at the first file.** Adding an access point had no MariaDB version (only SQL Server's and PostgreSQL's), so every import stopped on a foreign key error; and taking the next file off the queue used column names MariaDB no longer has.
+- **A file the importer can't read no longer stops the import run.** A file that isn't what its type says, or one that trips a bug, used to end the run and stay "importing" for good. Now it goes to the bad files with the error as its reason, what it got as far as writing is taken out again, and the next file is imported.
+- **`.gz` and `.VSZ` uploads always failed:** the `import/up/extract` folder they're unpacked into was never made. The importer makes it now. A `.VSZ` without a line-break byte in it was also taken for an empty file.
+- **The maintenance utilities work on all three databases** and on today's tables: `update_files_validgps.php`, `NewAPPercentCalc.php`, `update_high_gps.php` (works out an access point's first and last seen, best signal, points and best GPS point again from its readings), `fix_dates.php`, `geojson.php`, `file_cleanup_signal_data.php` and `load_geonames.php` (the files from https://download.geonames.org/export/dump/, a line at a time). The Proxmox boot tests run them.
 - **Sign-up and password-reset mail was never DKIM-signed.** Only the main mailer had the DKIM settings; the sign-up mailer now has them too.
 - **Sign-up and password-reset mail failed on a config built from the example file.** The mailer reads separate `signup_smtp_*` settings, but `config.inc.php.example` did not have them. They are now optional and fall back to the main `smtp_*` account, with a documented commented-out block in the example for using a separate account.
 - **`rund.php ver` and `rund.php help` printed blanks and warnings.** They read version numbers from a variable that was never in scope; they use the core's version now.
