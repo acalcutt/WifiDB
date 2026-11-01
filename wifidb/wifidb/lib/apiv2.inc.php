@@ -400,17 +400,17 @@ class apiv2 extends dbcore
 		$user = $this->sec->username;
 		$from = max(0, (int) $from);
 		$inc = min(100, max(1, (int) $inc));
-		$mysql = ($this->sql->service == "mysql");
+		$q = function ($name) { return $this->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
 
 		$prep = $this->sql->conn->prepare("SELECT join_date, last_login FROM user_info WHERE username = ?");
 		$prep->execute(array($user));
 		$account = $prep->fetch(2);
 
-		$prep = $this->sql->conn->prepare("SELECT COUNT(id) AS files, SUM(aps) AS aps, SUM(gps) AS gps, MIN(file_date) AS first_import, MAX(file_date) AS last_import, AVG(NewAPPercent) AS efficiency FROM files WHERE file_user = ? AND completed = 1");
+		$prep = $this->sql->conn->prepare("SELECT COUNT(id) AS files, SUM(aps) AS aps, SUM(gps) AS gps, MIN(file_date) AS first_import, MAX(file_date) AS last_import, AVG(".$q('NewAPPercent').") AS efficiency FROM files WHERE file_user = ? AND completed = 1");
 		$prep->execute(array($user));
 		$totals = $prep->fetch(2);
 
-		$prep = $this->sql->conn->prepare("SELECT COUNT(wifi_ap.AP_ID) FROM wifi_ap INNER JOIN files ON files.id = wifi_ap.File_ID WHERE files.file_user = ?");
+		$prep = $this->sql->conn->prepare("SELECT COUNT(wifi_ap.".$q('AP_ID').") FROM wifi_ap INNER JOIN files ON files.id = wifi_ap.".$q('File_ID')." WHERE files.file_user = ?");
 		$prep->execute(array($user));
 		$new_aps = (int) $prep->fetchColumn();
 
@@ -431,15 +431,13 @@ class apiv2 extends dbcore
 		$prep = $this->sql->conn->prepare("SELECT id, file_orig, title, file_date, size, UPPER(hash) AS hash, ap, tot FROM files_importing WHERE file_user = ? ORDER BY id");
 		$prep->execute(array($user));
 		$importing = $prep->fetchAll(2);
-		$sql = $mysql
-			? "SELECT id, file_orig, title, file_date, size, UPPER(hash) AS hash, error_msg FROM files_bad WHERE file_user = ? ORDER BY id DESC LIMIT 25"
-			: "SELECT TOP 25 id, file_orig, title, file_date, size, UPPER(hash) AS hash, error_msg FROM files_bad WHERE file_user = ? ORDER BY id DESC";
+		$sql = "SELECT id, file_orig, title, file_date, size, UPPER(hash) AS hash, error_msg FROM files_bad WHERE file_user = ? ORDER BY id DESC ".$this->sql->limit(0, 25);
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->execute(array($user));
 		$bad = $prep->fetchAll(2);
 
-		$sql = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent, UPPER(hash) AS hash FROM files WHERE file_user = ? AND completed = 1 ORDER BY id DESC";
-		$sql .= $mysql ? " LIMIT $from, $inc" : " OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";
+		$sql = "SELECT id, file_orig, title, notes, file_date, aps, gps, ".$q('ValidGPS').", ".$q('NewAPPercent').", UPPER(hash) AS hash FROM files WHERE file_user = ? AND completed = 1 ORDER BY id DESC";
+		$sql .= " ".$this->sql->limit($from, $inc);
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->execute(array($user));
 		$imports = array();
