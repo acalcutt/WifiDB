@@ -436,6 +436,14 @@ class import extends dbcore
 					$prepc->bindParam(2, $skew_seconds, PDO::PARAM_INT);
 					$prepc->execute();
 				}
+				else if($this->sql->service == "pgsql")
+				{
+					$sqlc = 'UPDATE wifi_gps SET "GPS_Date" = NULL WHERE "File_ID" = ? AND "GPS_Date" > (CURRENT_TIMESTAMP AT TIME ZONE \'UTC\') + (? * INTERVAL \'1 second\')';
+					$prepc = $this->sql->conn->prepare($sqlc);
+					$prepc->bindParam(1, $file_id, PDO::PARAM_INT);
+					$prepc->bindParam(2, $skew_seconds, PDO::PARAM_INT);
+					$prepc->execute();
+				}
 				$retry = false;
 			}
 			catch (Exception $e) {
@@ -896,7 +904,7 @@ class import extends dbcore
 			while ($retry)
 			{
 				try {
-					$sql = "UPDATE files SET ValidGPS = ? WHERE id = ?";
+					$sql = "UPDATE files SET ".$this->sql->ident('ValidGPS')." = ? WHERE id = ?";
 					$prepvgpsu = $this->sql->conn->prepare($sql);
 					$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
 					$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
@@ -914,13 +922,14 @@ class import extends dbcore
 	private function UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS = -99, $msg = "")
 	{
 		if($HighRSSIwGPS == ""){$HighRSSIwGPS = -99;}
+		$q = function ($name) { return $this->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
 		
 		#Get AP Info, SSID and old High GPS RSSI value
 		$retry = true;
 		while ($retry)
 		{
 			try {
-				$sql = "SELECT SSID, high_gps_rssi FROM wifi_ap WHERE AP_ID = ?";
+				$sql = "SELECT ".$q('SSID').", high_gps_rssi FROM wifi_ap WHERE ".$q('AP_ID')." = ?";
 				$gaip = $this->sql->conn->prepare($sql);
 				$gaip->bindParam(1, $ap_id, PDO::PARAM_INT);
 				$gaip->execute();
@@ -943,7 +952,7 @@ class import extends dbcore
 		while ($retry)
 		{
 			try {
-				$sql = "SELECT Min(Hist_Date) AS fa, Max(Hist_Date) AS la, Max(RSSI) AS high_rssi, Max(Sig) AS high_sig, Count(Hist_Date) AS points FROM wifi_hist WHERE AP_ID = ? GROUP BY AP_ID";
+				$sql = "SELECT Min(".$q('Hist_Date').") AS fa, Max(".$q('Hist_Date').") AS la, Max(".$q('RSSI').") AS high_rssi, Max(".$q('Sig').") AS high_sig, Count(".$q('Hist_Date').") AS points FROM wifi_hist WHERE ".$q('AP_ID')." = ? GROUP BY ".$q('AP_ID');
 				$hpp = $this->sql->conn->prepare($sql);
 				$hpp->bindParam(1, $ap_id, PDO::PARAM_INT);
 				$hpp->execute();
@@ -960,7 +969,7 @@ class import extends dbcore
 			while ($retry)
 			{
 				try {
-					$sql = "UPDATE wifi_ap SET fa = ? , la = ? , high_rssi = ? , high_sig = ? , points = ? WHERE AP_ID = ?";
+					$sql = "UPDATE wifi_ap SET fa = ? , la = ? , high_rssi = ? , high_sig = ? , points = ? WHERE ".$q('AP_ID')." = ?";
 					$uhpp = $this->sql->conn->prepare($sql);
 					$uhpp->bindParam(1, $fetchhp['fa'], PDO::PARAM_STR);
 					$uhpp->bindParam(2, $fetchhp['la'], PDO::PARAM_STR);
@@ -1003,11 +1012,11 @@ class import extends dbcore
 						}
 					else if($this->sql->service == "pgsql")
 						{
-							$sql = "SELECT wifi_hist.GPS_ID, wifi_hist.RSSI, wifi_hist.Sig\n"
+							$sql = 'SELECT wifi_hist."GPS_ID", wifi_hist."RSSI", wifi_hist."Sig"'."\n"
 								. "FROM wifi_hist\n"
-								. "INNER JOIN wifi_gps ON wifi_hist.GPS_ID = wifi_gps.GPS_ID\n"
-								. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
-								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, wifi_hist.Hist_ID ASC LIMIT 1";
+								. 'INNER JOIN wifi_gps ON wifi_hist."GPS_ID" = wifi_gps."GPS_ID"'."\n"
+								. 'WHERE wifi_hist."AP_ID" = ? And wifi_hist."Hist_Date" IS NOT NULL And wifi_gps."Lat" != '."'0.0000'\n"
+								. 'ORDER BY wifi_hist."RSSI" DESC, wifi_hist."Hist_Date" DESC, wifi_gps."NumOfSats" DESC, wifi_gps."AccuracyMeters" ASC, wifi_hist."Hist_ID" ASC LIMIT 1';
 						}
 					$hgp = $this->sql->conn->prepare($sql);
 					$hgp->bindParam(1, $ap_id, PDO::PARAM_INT);
@@ -1025,7 +1034,7 @@ class import extends dbcore
 				while ($retry)
 				{
 					try {
-						$sql = "UPDATE wifi_ap SET HighGps_ID = ? , high_gps_rssi = ? , high_gps_sig = ? WHERE AP_ID = ?";
+						$sql = "UPDATE wifi_ap SET ".$q('HighGps_ID')." = ? , high_gps_rssi = ? , high_gps_sig = ? WHERE ".$q('AP_ID')." = ?";
 						$uhgp = $this->sql->conn->prepare($sql);
 						$uhgp->bindParam(1, $fetchhg['GPS_ID'], PDO::PARAM_INT);
 						$uhgp->bindParam(2, $fetchhg['RSSI'], PDO::PARAM_INT);
@@ -1131,9 +1140,9 @@ class import extends dbcore
 				{
 					$sql = "SELECT cell_hist.gps_id, cell_hist.rssi\n"
 						. "FROM cell_hist\n"
-						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.GPS_ID\n"
-						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
-						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, cell_hist.cell_hist_id ASC LIMIT 1";
+						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.\"GPS_ID\"\n"
+						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.\"Lat\" != '0.0000'\n"
+						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.\"NumOfSats\" DESC, wifi_gps.\"AccuracyMeters\" ASC, cell_hist.cell_hist_id ASC LIMIT 1";
 				}
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
