@@ -53,6 +53,7 @@ $config = array
 	// member data, so keep it out of the web root. The newest backup_keep of the daily backups are kept.
 	'backup_dir'			=>   '',
 	'backup_keep'			=>   7,
+	'backup_s3_keep'		=>   30,    // copies kept in the S3 bucket (Site Settings), when one is set up
 	'dBmMaxSignal'		  =>   '-30',
 	'dBmDissociationSignal'	=>   '-85',
 	'verbose'			   =>   1,

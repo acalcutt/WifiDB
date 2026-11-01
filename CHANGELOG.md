@@ -3,6 +3,9 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+- **Backups that move between SQL Server and MariaDB** (`admin/backups.php`, needs admin mode, and `tools/utilites/backup.php`). One file holds the whole database; one made on SQL Server restores on MariaDB and the other way round, which also moves a site to a new server. Back up now or nightly (newest 7 kept), download (resumable), restore (type the domain to confirm; scheduled daemons wait meanwhile; the backup's key for authenticator apps comes with it). See `docs/backups.md`.
+- **Copy a backup from another server** with a transfer key made on that server's Backups page (7 days, shown once): 16 MB pieces, resumes after an interruption, SHA-256 checked, optionally a fresh backup first and a restore after.
+- **Backup copies in S3** (Garage, MinIO, AWS): set the bucket on Site Settings and each nightly backup is copied there (newest 30 kept); the Backups page lists the bucket and fetches from it.
 - **Site Settings page for administrators** (`admin/settings.php`, needs admin mode). Sign-ups open or closed, e-mail confirmation for new accounts, and CleanTalk are changed there instead of in `config.inc.php`, which still gives their starting values. Changes leave the administrators a notice. New table `site_settings`: run `tools/utilites/migrate.php`. See `docs/site-settings.md`.
 - **Sign-ups can be closed.** Off on Site Settings, the sign-up link goes away and sign-ups are refused. They stay open by default.
 - **Optional spam check with CleanTalk** for sign-ups and for private messages from newer members. It is off until an administrator adds a key; a key CleanTalk refuses is not saved. If CleanTalk can't be reached, sign-ups and messages go through. The privacy policy now says what is sent to CleanTalk.

@@ -84,6 +84,9 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
   Site settings:  
 	docs/site-settings.md covers the administrators' Site Settings page, closing sign-ups, and the CleanTalk spam check.  
 
+  Backups:  
+	docs/backups.md covers backups, restoring, moving to a new server or the other database, transfer keys and S3 copies.  
+
   Releasing:  
 	New entries go in CHANGELOG.md under "## master". To make a release, run the bump:  
 	GitLab: Build > Pipelines > New pipeline, set BUMP_VERSION (patch, minor, major, ...).  
