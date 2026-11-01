@@ -309,7 +309,8 @@ class daemon extends wdbcli
 				$LastInsert = "";
 			}
 		}
-		return $LastInsert;
+		# 0 when nothing is waiting: the id is then looked up, and PostgreSQL won't take '' for a number
+		return (int)$LastInsert;
 		
 	}
 
