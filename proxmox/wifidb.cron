@@ -19,6 +19,9 @@ MAILTO=""
 5 0 * * *   www-data  /opt/wifidb/tools/cron/update_geojson
 #5 0 * * * www-data  /opt/wifidb/tools/cron/update_cell_geojson
 */15 * * * * www-data /opt/wifidb/tools/cron/update_swarm_index
+# Backups: what admin/backups.php asks for, each minute; and the nightly one (Site Settings can turn that off)
+* * * * *   www-data  /opt/wifidb/tools/cron/backups
+30 3 * * *  www-data  /opt/wifidb/tools/cron/backups daily
 
 # ── MVT tiles (01:00 - 04:00) ────────────────────────────────────────────────
 # Daily buckets: hourly (TTL 1 hour)

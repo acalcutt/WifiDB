@@ -70,6 +70,8 @@ for d in import out; do
     fi
 done
 install -d -o www-data -g www-data "$DATA/import/up" "$DATA/import/up/backup" "$DATA/import/up/convert"
+# whole-site backups (admin/backups.php, tools/utilites/backup.php): member data, so only www-data reads them
+install -d -m 0700 -o www-data -g www-data "$DATA/backups" "$DATA/backups/queue"
 if [ ! -L "$TOOLS/log" ]; then
     rm -rf "${TOOLS:?}/log"
     ln -s "$DATA/log" "$TOOLS/log"
@@ -150,6 +152,10 @@ make_config() { # make_config EXAMPLE TARGET VARIABLE OVERRIDES
     chmod 0640 "$2"
 }
 make_config "$WEB/lib/config.inc.php.example" "$WEB/lib/config.inc.php" config "$DATA/config/web.overrides.php"
+# backups go on the data disk unless the overrides say otherwise, and a restore puts the backup's two_factor_key in the overrides
+printf '$config['"'"'overrides_file'"'"'] = %s;
+if(empty($config['"'"'backup_dir'"'"'])) { $config['"'"'backup_dir'"'"'] = %s; }
+' "'$DATA/config/web.overrides.php'" "'$DATA/backups'" >> "$WEB/lib/config.inc.php"
 make_config "$TOOLS/daemon.config.inc.php.example" "$TOOLS/daemon.config.inc.php" daemon_config "$DATA/config/daemon.overrides.php"
 
 # ── The web server ───────────────────────────────────────────────────────────
