@@ -41,7 +41,7 @@ if not, write to the
                                                 <tr>
                                                     <td colspan="2">
                                                         <p align="center">
-                                                            <a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br>
+                                                            {if $wifidb_signups_open|default:true}<a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br>{/if}
                                                             <a class="links" href="{$wifidb_host_url}login.php?func=reset_user_pass_request">Forgot your password?</a>
                                                         </p>
                                                     </td>

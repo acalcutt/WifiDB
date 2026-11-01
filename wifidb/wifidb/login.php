@@ -31,6 +31,16 @@ $return = wifidb_safe_return(isset($_REQUEST['return']) ? $_REQUEST['return'] : 
 
 if($return == ''){$return = '/'.$dbcore->root;}
 $root_path = ($dbcore->root != '' ? '/'.trim($dbcore->root, '/') : '');
+# Site Settings can close sign-ups: the link goes away and the form and its handler say so
+$signups_open = $dbcore->sec->Setting('signups_open');
+$dbcore->smarty->assign('wifidb_signups_open', $signups_open);
+if(!$signups_open && ($func === 'create_user_form' || $func === 'create_user_proc'))
+{
+	$dbcore->smarty->assign('wifidb_page_label', 'Sign-ups Closed');
+	$dbcore->smarty->assign('message', "<h2>Sign-ups are closed right now.</h2>");
+	$dbcore->smarty->display('login_result.tpl');
+	exit;
+}
 switch($func)
 {
 	case "login_proc":
