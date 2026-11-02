@@ -107,11 +107,12 @@ if(!$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
-	#Claim a schedule ID
+	#Claim a schedule ID, once its next run is due (cron starts this each minute; the stats are worked out each interval)
+	$currentrun = date("Y-m-d G:i:s");
 	if($dbcore->sql->service == "mysql")
-		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `enabled` = 1 LIMIT 1";}
+		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
-		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [enabled] = 1";}
+		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
 	else if($dbcore->sql->service == "pgsql")
 		{
 			// Postgres has neither UPDATE TOP (n) nor UPDATE ... LIMIT, so the row
@@ -121,7 +122,7 @@ if(!$dbcore->ForceDaemonRun)
 			// parameters follow in the same sequence inside the subquery.
 			$sql = "UPDATE schedule SET pid = ?, pidfile = ?, logfile = ?, status = ?"
 				. " WHERE id = (SELECT id FROM schedule"
-				. "   WHERE nodename = ? And daemon = ? And status != ? And enabled = 1"
+				. "   WHERE nodename = ? And daemon = ? And status != ? And nextrun <= ? And enabled = 1"
 				. "   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1)";
 		}
 	$prepus = $dbcore->sql->conn->prepare($sql);
@@ -132,6 +133,7 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus->bindParam(5, $dbcore->node_name, PDO::PARAM_STR);
 	$prepus->bindParam(6, $dbcore->daemon_name, PDO::PARAM_STR);
 	$prepus->bindParam(7, $dbcore->StatusRunning, PDO::PARAM_STR);
+	$prepus->bindParam(8, $currentrun, PDO::PARAM_STR);
 	$prepus->execute();
 
 	#Start claimed schedule ID, if one exists

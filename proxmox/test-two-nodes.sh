@@ -117,6 +117,7 @@ check "node-b has the same two_factor_key" test "$(docker exec "$ctb" php -r '$c
 check "node-b added itself to settings" test "$(sqlq "select count(*) from settings where node_name = 'node-b'")" = 1
 check "...with imports on" test "$(sqlq "select enabled from schedule where nodename = 'node-b' and daemon = 'Import'")" = 1
 check "...and the KML export left to node-a" test "$(sqlq "select enabled from schedule where nodename = 'node-b' and daemon = 'Export'")" = 0
+check "...and the stats too (node-a works them out, migration 0007)" test "$(sqlq "select enabled from schedule where nodename = 'node-a' and daemon = 'Stats'")$(sqlq "select enabled from schedule where nodename = 'node-b' and daemon = 'Stats'")" = 10
 docker exec "$ctb" journalctl -u wifidb-firstboot --no-pager | grep -q "new to this database" && ok "...and its first boot said so" || bad "...and its first boot said so"
 
 for ct in "$cta" "$ctb"; do docker cp "$here/test-two-nodes.php" "$ct:/var/tmp/test-two-nodes.php"; docker exec "$ct" chmod 644 /var/tmp/test-two-nodes.php; done

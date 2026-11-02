@@ -49,6 +49,12 @@ else
     log "(download.geonames.org can't be reached from here: the GeoNames load is not tested)"
 fi
 
+# the stats daemon, through its schedule row (migration 0007), as cron starts it
+out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0'); ran statsd.php "$out"
+check "...and fills the stats cache" test "$(sqlq 'select count(*) from stats_cache')" -gt 0
+out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
+check "...and started again at once, waits for its next run" sh -c 'echo "$0" | grep -q "There are no jobs that need to be run"' "$out"
+
 # last, as it removes data: one file's readings and GPS points
 fid=$(sqlq "select min(id) from files where completed = 1")
 out=$(util file_cleanup_signal_data.php "$fid"); ran file_cleanup_signal_data.php "$out"

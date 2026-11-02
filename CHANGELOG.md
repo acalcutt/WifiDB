@@ -44,6 +44,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Admin jobs (deleting and resetting imports) and the Stats page's figures were never worked out on a new install:** admind and statsd only run for a node with an `Admin` or `Stats` row in `schedule`, and the schema had neither. Migration 0006 gives each node without one an `Admin` row; migration 0007, if no node has a `Stats` row, gives each node one, switched on for the first node only and run hourly. Run `tools/utilites/migrate.php`; rows you already have are left alone. statsd also waited for nothing: started by cron each minute, it worked the stats out each minute; it now waits for its next run.
 - **Uploads from Vistumbler (the API) failed on MariaDB and PostgreSQL,** and were reported as failed even when they were queued; `.netxml` uploads through it were refused as unsupported.
 - **Imports on MariaDB failed at the first file.** Adding an access point had no MariaDB version (only SQL Server's and PostgreSQL's), so every import stopped on a foreign key error; and taking the next file off the queue used column names MariaDB no longer has.
 - **A file the importer can't read no longer stops the import run.** A file that isn't what its type says, or one that trips a bug, used to end the run and stay "importing" for good. Now it goes to the bad files with the error as its reason, what it got as far as writing is taken out again, and the next file is imported.
