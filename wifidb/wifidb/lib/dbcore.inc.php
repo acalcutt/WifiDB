@@ -270,7 +270,7 @@ class dbcore
 			if(file_exists($WFDBD_PID)) #Check and see if the PID File exists
 			{
 				$pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
-				exec('ps -p '.$pid_open[0].' -o "%p|" -o %mem -o "|%C|%x|%a"' , $output); #execute PS for the PID given.
+				exec('ps -p '.(int)$pid_open[0].' -o "%p|" -o %mem -o "|%C|%x|%a"' , $output); #execute PS for the PID given (a number, nothing else, goes to the shell).
 				if(isset($output[1])) #if there was data returned from PS lets parse it.
 				{
 					$pieces = explode("|", $output[1]);
@@ -297,7 +297,7 @@ class dbcore
 			if(file_exists($WFDBD_PID)) #Check to see if the file exists.
 			{
 				$pid_open = file($WFDBD_PID); #Open it and get the PID of the daemon.
-				exec('tasklist /V /FI "PID eq '.$pid_open[0].'" /FO CSV' , $output, $sta); #Execute Tasklist a sysinternals app
+				exec('tasklist /V /FI "PID eq '.(int)$pid_open[0].'" /FO CSV' , $output, $sta); #Execute Tasklist a sysinternals app
 				if(isset($output[2])) #if there was data returned,
 				{
 					$ps_stats = explode("," , $output[2]); #we can parse it for the data.
