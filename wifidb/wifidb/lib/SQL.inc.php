@@ -3,6 +3,8 @@ require_once dirname(__FILE__).'/helpers.inc.php';   # wifidb_sqlsrv_security()
 
 class SQL
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $charset, $collate, $conn, $database, $driver, $host, $port, $service;
 	function __construct($config)
 	{
 		$this->host			  = $config['host'];
@@ -17,7 +19,7 @@ class SQL
 		{
 			$dsn = $this->service.':dbname='.$this->database.';host='.$this->host.';charset='.$this->charset;
 			$options = array(
-				PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$this->charset.' COLLATE '.$this->collate,
+				wifidb_mysql_attr('INIT_COMMAND') => 'SET NAMES '.$this->charset.' COLLATE '.$this->collate,
 				PDO::ATTR_PERSISTENT => TRUE,
 			);
 			$this->conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);

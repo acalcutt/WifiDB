@@ -115,6 +115,15 @@ if(!function_exists('wifidb_json_safe')) {
 	}
 }
 
+// A MySQL PDO attribute by name (INIT_COMMAND, USE_BUFFERED_QUERY): Pdo\Mysql's constant from PHP 8.4 on, since 8.5
+// deprecates PDO::MYSQL_ATTR_*, and PDO's before. Checked without the autoloader, which throws for a class it doesn't know.
+if(!function_exists('wifidb_mysql_attr')) {
+	function wifidb_mysql_attr($name)
+	{
+		return class_exists('Pdo\Mysql', false) ? constant('Pdo\Mysql::ATTR_'.$name) : constant('PDO::MYSQL_ATTR_'.$name);
+	}
+}
+
 // The migrations in $dir/<dialect>/ the database hasn't applied (schema_migrations), cheaply enough for every request:
 // one query, nothing created (lib/migrate.inc.php is what applies them). No such folder (a copy of the site without
 // sql/): none. No schema_migrations table yet: all of them.

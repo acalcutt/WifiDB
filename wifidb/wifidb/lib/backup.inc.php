@@ -223,8 +223,8 @@ class WifidbBackup
 		if($this->service === 'mysql')
 		{
 			# stream the rows instead of holding a whole table in memory
-			$buffered = $this->conn->getAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY);
-			$this->conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
+			$buffered = $this->conn->getAttribute(wifidb_mysql_attr('USE_BUFFERED_QUERY'));
+			$this->conn->setAttribute(wifidb_mysql_attr('USE_BUFFERED_QUERY'), false);
 		}
 		try
 		{
@@ -265,7 +265,7 @@ class WifidbBackup
 		}
 		finally
 		{
-			if($buffered !== null) { $this->conn->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $buffered); }
+			if($buffered !== null) { $this->conn->setAttribute(wifidb_mysql_attr('USE_BUFFERED_QUERY'), $buffered); }
 		}
 
 		$secretsFile = $work.'/secrets.json';
