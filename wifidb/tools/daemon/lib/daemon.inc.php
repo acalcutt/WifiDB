@@ -459,7 +459,7 @@ class daemon extends wdbcli
 							{
 								if($this->CheckFileImported($detination_vs1))
 								{
-									$tmp = array(-1, "Extracted VS1 has already been imported. ".$detination_vs1);
+									$tmp = array(-1, "The VS1 inside this VSZ has already been imported");
 								}
 								else
 								{
@@ -470,7 +470,7 @@ class daemon extends wdbcli
 							}
 							else
 							{
-								$tmp = array(-1, "Extracted VS1 Does not exists. ".$detination_vs1);
+								$tmp = array(-1, "The VSZ could not be opened as a zip file, or has no data.vs1 inside");
 							}
 						}
 						elseif($file_ext == 'ns1' || $file_type == "ns1")
@@ -537,7 +537,7 @@ class daemon extends wdbcli
 							{
 								if($this->CheckFileImported($detination_csv))
 								{
-									$tmp = array(-1, "Extracted CSV has already been imported. ".$detination_csv);
+									$tmp = array(-1, "The CSV inside this .gz has already been imported");
 								}
 								else
 								{
@@ -548,7 +548,7 @@ class daemon extends wdbcli
 							}
 							else
 							{
-								$tmp = array(-1, "Extracted CSV Does not exists. ".$detination_csv);
+								$tmp = array(-1, "The .gz could not be unpacked");
 							}
 						}
 						else
