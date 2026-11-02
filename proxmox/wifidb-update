@@ -232,12 +232,14 @@ try
 	foreach(SYSTEM_FILES as $pattern) { $files = array_merge($files, glob($pattern) ?: array()); }
 	if(run('tar -cPf '.escapeshellarg($rollback).' '.implode(' ', array_map('escapeshellarg', $files))) !== 0) { throw new RuntimeException("couldn't save the system files"); }
 	services('stop-site');
+	// mv, not rename(): a folder that came with a container's image (Docker's overlay filesystem) can't be renamed, only
+	// copied to the new name, which mv does and rename() doesn't for a folder
 	foreach(CODE_DIRS as $code)
 	{
 		run('rm -rf '.escapeshellarg("$code.old"));
-		if(!rename($code, "$code.old")) { throw new RuntimeException("couldn't move $code aside"); }
+		if(run('mv -T '.escapeshellarg($code).' '.escapeshellarg("$code.old")) !== 0) { throw new RuntimeException("couldn't move $code aside"); }
+		$moved = true;   # from here a failure puts back what was moved
 	}
-	$moved = true;
 	if(run('bash '.escapeshellarg("$root/proxmox/install-files.sh").' '.escapeshellarg("$root/web").' '.escapeshellarg("$root/tools").' '.escapeshellarg("$root/sql")) !== 0)
 	{
 		throw new RuntimeException("install-files.sh failed (see ".LOGFILE.")");
@@ -267,7 +269,7 @@ catch(Throwable $e)
 		services('stop-jobs');
 		foreach(CODE_DIRS as $code)
 		{
-			if(is_dir("$code.old")) { run('rm -rf '.escapeshellarg($code)); rename("$code.old", $code); }
+			if(is_dir("$code.old")) { run('rm -rf '.escapeshellarg($code)); run('mv -T '.escapeshellarg("$code.old").' '.escapeshellarg($code)); }
 		}
 		if(is_file($rollback)) { run('tar -xPf '.escapeshellarg($rollback)); }
 		run('systemctl daemon-reload');
