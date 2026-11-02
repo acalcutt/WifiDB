@@ -27,6 +27,9 @@ rm -f /var/www/wifidb/lib/config.inc.php /opt/wifidb/tools/daemon.config.inc.php
 # the data folders live on the data disk (see wifidb-firstboot), so the copies in the code are just placeholders
 chmod +x /opt/wifidb/tools/cron/* 2>/dev/null || true
 chown -R root:root /var/www/wifidb /opt/wifidb
+# rsync -a gives each folder the mode of the one it came from, and install-wifidb.sh's is a mktemp -d (0700): the
+# site, the daemons and the migrations run as www-data, so these are readable whatever they came from
+chmod 0755 /var/www/wifidb /opt/wifidb /opt/wifidb/tools /opt/wifidb/sql
 
 log "web server"
 install -m 0644 "$here/wifidb-apache.conf" /etc/apache2/sites-available/wifidb.conf
