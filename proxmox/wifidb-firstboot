@@ -54,9 +54,12 @@ ROOT=${ROOT#/}; ROOT=${ROOT%/}
 SITE_URL=${WIFIDB_URL:-http://$(hostname -f 2>/dev/null || hostname)}
 SITE_URL=${SITE_URL%/}
 PROXY=${WIFIDB_EXTERNAL_PROXY:-}
+# Several nodes on one database need the same key: it encrypts the authenticator secrets and Site Settings' secrets,
+# which every node reads. Empty: kept from the data disk, or made here (the first node).
+TWO_FACTOR_KEY=${WIFIDB_TWO_FACTOR_KEY:-}
 phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
 
-export DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS SQLSRV_TRUST_CERT NODE ROOT SITE_URL DATA
+export DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS SQLSRV_TRUST_CERT NODE ROOT SITE_URL DATA TWO_FACTOR_KEY
 
 # ── The data disk ────────────────────────────────────────────────────────────
 log "data folder $DATA"
@@ -134,10 +137,12 @@ $daemon = array(
     'WebSocketPort'      => 9000,
 );
 $dir = $e('DATA') . '/config';
-// The key that encrypts saved authenticator secrets: made once, and kept when the settings are regenerated, since
-// a new key would make every saved authenticator useless.
+// The key that encrypts saved authenticator secrets: WIFIDB_TWO_FACTOR_KEY when given (every node on one database
+// has to have the same), else made once and kept when the settings are regenerated, since a new key would make every
+// saved authenticator useless.
 $old = is_file("$dir/web.overrides.php") ? @include "$dir/web.overrides.php" : array();
-$web['two_factor_key'] = (is_array($old) && !empty($old['two_factor_key'])) ? $old['two_factor_key'] : base64_encode(random_bytes(32));
+$web['two_factor_key'] = $e('TWO_FACTOR_KEY') !== '' ? $e('TWO_FACTOR_KEY')
+    : ((is_array($old) && !empty($old['two_factor_key'])) ? $old['two_factor_key'] : base64_encode(random_bytes(32)));
 file_put_contents("$dir/web.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($web, true) . ";\n");
 file_put_contents("$dir/daemon.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($daemon, true) . ";\n");
 PHP
@@ -247,9 +252,24 @@ if [ "$fresh" = 1 ]; then
 else
     count=$(dbphp '$s = $pdo->prepare("SELECT COUNT(*) FROM settings WHERE node_name = ?"); $s->execute(array(getenv("NODE"))); echo (int)$s->fetchColumn();')
     if [ "${count:-0}" = 0 ]; then
-        log "WARNING: the database has no settings row for the node '$NODE', so the import/export/admin jobs"
-        log "         will do nothing here. Add a row to settings and schedule for it, or set WIFIDB_NODE to an"
-        log "         existing node name in $ENV_FILE and run: WIFIDB_REGENERATE=1 systemctl restart wifidb-firstboot"
+        # A node joining a database other nodes use: it gets rows of its own, copied from the first node's, with
+        # imports and admin jobs on (each file and job goes to one node) and the rest (the KML export, stats) left to
+        # the node that has them; turn them on in schedule to move them.
+        from=$(dbphp '
+            $node = getenv("NODE");
+            $from = $pdo->query("SELECT node_name FROM settings ORDER BY id")->fetchColumn();
+            if($from === false) { exit; }
+            $pdo->prepare("INSERT INTO settings (daemon_state, version, apswithgps, last_export_file, node_name) SELECT daemon_state, version, apswithgps, last_export_file, ? FROM settings WHERE node_name = ?")->execute(array($node, $from));
+            $i = getenv("DB_TYPE") === "mysql" ? chr(96)."interval".chr(96) : chr(34)."interval".chr(34);
+            $pdo->prepare("INSERT INTO schedule (nodename, daemon, enabled, $i, status, nextrun) SELECT ?, daemon, CASE WHEN daemon IN (?, ?) THEN enabled ELSE 0 END, $i, ?, nextrun FROM schedule WHERE nodename = ?")
+                ->execute(array($node, "Import", "Admin", "Waiting", $from));
+            echo $from;')
+        if [ -n "$from" ]; then
+            log "the node '$NODE' is new to this database: added it alongside '$from' (imports and admin jobs on here;"
+            log "         the KML export and stats stay with '$from'). It needs '$from''s two_factor_key: WIFIDB_TWO_FACTOR_KEY."
+        else
+            log "WARNING: the database has no settings row for any node, so the import/export/admin jobs will do nothing here."
+        fi
     fi
 fi
 

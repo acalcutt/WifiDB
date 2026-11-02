@@ -105,6 +105,10 @@ WIFIDB_DB_TYPE=mariadb            # mariadb, sqlsrv for SQL Server, or pgsql for
 # This node's name in the database (settings.node_name and schedule.nodename). Default: the container's hostname.
 #WIFIDB_NODE=wifidb
 #
+# Another node on the same database: the first node's two_factor_key (in its /srv/wifidb-data/config/web.overrides.php),
+# which encrypts the authenticator secrets and Site Settings' secrets every node reads. Empty: kept, or made here.
+#WIFIDB_TWO_FACTOR_KEY=
+#
 # Behind HAProxy on OPNsense (or another proxy that does TLS): the proxy's addresses on this network, separated by
 # spaces. For a CARP pair list both firewalls and the shared address.
 #WIFIDB_EXTERNAL_PROXY=192.168.1.1

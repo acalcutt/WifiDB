@@ -71,6 +71,7 @@ WIFIDB_URL=https://wifidb.example.com
 WIFIDB_NODE=wifidb                # this node's name in the database; default: the hostname
 WIFIDB_EXTERNAL_PROXY=192.168.1.1 # the proxy's address(es), for real visitor IPs
 #WIFIDB_SQLSRV_TRUST_CERT=0       # SQL Server: check its certificate (default 1: accept a self-signed one)
+#WIFIDB_TWO_FACTOR_KEY=…          # another node on the same database: the first node's two_factor_key
 ```
 
 The first boot writes the settings that differ from the defaults to `/srv/wifidb-data/config/*.overrides.php`, loads
@@ -79,7 +80,9 @@ config files the code reads are rebuilt from the release's defaults each time a 
 end that loads your overrides, so a new release's new settings arrive by themselves and yours stay.
 
 An existing database (say, the one your current server uses) is left as it is. If it has no row for this node, the
-first boot says so: add the node (`settings` and `schedule` rows), or set `WIFIDB_NODE` to an existing node name.
+first boot adds the node: a `settings` row and `schedule` rows copied from the first node's, with imports and admin
+jobs on and the rest (KML export, stats) off, since one node does those. To take over an existing node's rows
+instead, set `WIFIDB_NODE` to its name.
 
 ## Behind HAProxy on OPNsense
 
@@ -115,6 +118,9 @@ same on MySQL and SQL Server and hold no credentials.
 ## Several nodes on one database
 
 Two or more containers can share one database behind HAProxy, each with its own data disk and its own `WIFIDB_NODE`.
+Give every node after the first the first node's `two_factor_key` (from its `/srv/wifidb-data/config/web.overrides.php`)
+as `WIFIDB_TWO_FACTOR_KEY`: it encrypts the members' authenticator secrets and the secrets in Site Settings, which
+every node reads. The first boot adds a new node's `settings` and `schedule` rows.
 
 - **Imports:** the queue is in the database, and each node's importer takes the next file in one step, so every upload
   is imported once. Set up **Shared files in S3** in Site Settings (`files_s3_*`; a bucket of its own, not the
@@ -125,7 +131,8 @@ Two or more containers can share one database behind HAProxy, each with its own 
 - **Work one node does for all** (the tile and GeoJSON builds, the manufacturer list, the nightly backup) runs under a
   lock held in the database (`tools/daemon/lock_run.php`): whichever node starts it first does it, and the others skip
   that run. If that node stops, its lock goes with its database connection.
-- **Scheduled daemons** have rows per node in `schedule`: enable the KML export and stats daemons on one node only.
+- **Scheduled daemons** have rows per node in `schedule`: the KML export and stats daemons belong on one node only
+  (a node the first boot adds has them off).
 - The generated files (tiles, GeoJSON, exports) are still on the disk of the node that built them.
 
 ## SQL Server
