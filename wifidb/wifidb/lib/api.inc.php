@@ -339,11 +339,17 @@ class api extends dbcore
 					{
 						$result->execute();
 						$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
+						# with the bucket, it's where uploads are kept: this node's copy goes (the importer fetches it)
+						if($shared) { @unlink($upload); }
 					}
 					catch(PDOException $e)
 					{
 						$this->logd("Could not queue the API upload $filename: ".$e->getMessage(), "error");
 						$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import."));
+						if($shared)
+						{
+							try { $shared->DeleteUpload($filename); } catch(Throwable $ignored) { /* nothing queued points at it */ }
+						}
 					}
 				}
 				break;

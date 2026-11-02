@@ -91,6 +91,14 @@ try
 	check("...and a name can't reach out of uploads/", $shared->UploadKey('../../backups/x.tar') === 'shared-test/uploads/x.tar');
 	$shared->DeleteUpload('12345_upload.vs1');
 	check("a deleted upload is gone from the bucket", $c->Head('shared-test/uploads/12345_upload.vs1') === null);
+	$shared->PutUpload('67890_upload.vs1', "$tmp/upload.vs1");
+	check("a deleted import's upload moves to deleted/ in the bucket", $shared->MoveUpload('67890_upload.vs1', 'user_deleted', 'hash|vistumbler|67890_upload.vs1')
+		&& $c->Head('shared-test/uploads/67890_upload.vs1') === null && ($c->Head('shared-test/user_deleted/67890_upload.vs1')['size'] ?? 0) === filesize("$tmp/upload.vs1"));
+	$c->GetFile('shared-test/user_deleted/67890_upload.txt', "$tmp/note.txt");
+	check("...with a note of what it was beside it", file_get_contents("$tmp/note.txt") === 'hash|vistumbler|67890_upload.vs1');
+	check("...and one the bucket hasn't got is false, not an error", $shared->MoveUpload('00000_none.vs1', 'deleted', 'x') === false);
+	check("...and the folder can't reach out of the prefix", $shared->FolderKey('../x', 'a.vs1') === 'shared-test/x/a.vs1' && $shared->FolderKey('', 'a.vs1') === 'shared-test/deleted/a.vs1');
+	foreach($c->ListObjects('shared-test/') as $o) { $c->Delete($o[0]); }
 }
 catch(Throwable $e)
 {

@@ -206,6 +206,21 @@ class S3Client
 		$this->Request('DELETE', $key);
 	}
 
+	/** Copies an object within the bucket (S3 has no rename: a move is this, then Delete). */
+	public function Copy($from, $to)
+	{
+		list($status, , $text) = $this->Request('PUT', $to, array(), '', array('x-amz-copy-source' => '/'.rawurlencode($this->bucket).'/'.self::EncodeKey($from)));
+		if($status === 404) { throw new S3Exception("There's no $from in the bucket"); }
+		# a copy can fail after S3 has already answered 200, with the error in the body
+		if(strpos($text, '<Error>') !== false) { throw new S3Exception("S3 couldn't copy $from: ".strip_tags($text)); }
+	}
+
+	/** Puts a short text as an object. */
+	public function PutString($key, $text)
+	{
+		$this->Request('PUT', $key, array(), (string)$text);
+	}
+
 	/** Uploads a file; one over singlePutMax goes in parts. @param array $meta stored as x-amz-meta-* */
 	public function PutFile($key, $file, array $meta = array())
 	{

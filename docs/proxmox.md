@@ -124,9 +124,10 @@ every node reads. The first boot adds a new node's `settings` and `schedule` row
 
 - **Imports:** the queue is in the database, and each node's importer takes the next file in one step, so every upload
   is imported once. Set up **Shared files in S3** in Site Settings (`files_s3_*`; a bucket of its own, not the
-  backups'): each upload is put there before it's queued, and a node importing an upload that came in on another node
-  fetches it, then removes its copy once the import is done. Without it, an upload can only be imported by the node it
-  came in on.
+  backups'). The bucket is then where uploads are kept: each one is put there (`PREFIX/uploads/`) before it's queued,
+  and the node it came in on lets its own copy go; whichever node imports it fetches it and removes that working copy
+  afterwards; deleting an import moves it to `PREFIX/deleted/` (or `user_deleted/`) in the bucket, with the same note
+  beside it as `import/up/deleted/` has. Without it, an upload can only be imported by the node it came in on.
 - **Admin jobs** (delete or reset an import, and so on) are taken by one node each.
 - **Work one node does for all** (the tile and GeoJSON builds, the manufacturer list, the nightly backup) runs under a
   lock held in the database (`tools/daemon/lock_run.php`): whichever node starts it first does it, and the others skip

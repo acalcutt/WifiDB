@@ -281,6 +281,40 @@ function admind_shared_files($dbcore)
 }
 
 /**
+ * Moves a deleted import's upload to the deleted folder, with a note of what it was beside it (NAME.txt). With the
+ * shared files in S3 that's in the bucket, where uploads are kept, and a working copy on this node just goes; an
+ * upload the bucket hasn't got (one from before it was set up) is moved in import/up as without it.
+ */
+function admind_move_to_deleted($dbcore, $file_info, $folder)
+{
+	$name = $file_info['file_name'];
+	$source_file = $dbcore->PATH.'import/up/'.$name;
+	$note = $file_info['hash'].'|'.$file_info['type'].'|'.$name.'|'.$file_info['file_orig'].'|'.$file_info['file_user'].'|'
+		.$file_info['title'].'|'.$file_info['file_date'].'|'.$file_info['notes'];
+	$shared = admind_shared_files($dbcore);
+	if($shared)
+	{
+		try
+		{
+			if($shared->MoveUpload($name, $folder, $note))
+			{
+				if(file_exists($source_file)) { unlink($source_file); }
+				return;
+			}
+		}
+		catch(Throwable $e)
+		{
+			$dbcore->verbosed("Could not move $name to $folder/ in the shared files bucket: ".$e->getMessage(), -1);
+		}
+	}
+	if(!file_exists($source_file)) { return; }
+	$deleted_path = $dbcore->PATH.'import/up/'.$folder.'/';
+	if(!is_dir($deleted_path)) { mkdir($deleted_path, 0755, true); }
+	file_put_contents($deleted_path.pathinfo($name, PATHINFO_FILENAME).'.txt', $note);
+	rename($source_file, $deleted_path.$name);
+}
+
+/**
  * Process an admin job based on its type
  */
 function process_admin_job($dbcore, $job)
@@ -602,39 +636,7 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 		$resgps->execute();
 
 		// Move uploaded file to deleted folder
-		$upload_path = $dbcore->PATH . 'import/up/';
-		$deleted_path = $dbcore->PATH . 'import/up/' . $deleted_folder . '/';
-
-		if(!is_dir($deleted_path))
-		{
-			mkdir($deleted_path, 0755, true);
-		}
-
-		$source_file = $upload_path . $file_info['file_name'];
-		// with the shared files in S3, an upload that came in on another node is fetched first so it's kept here too
-		$shared = admind_shared_files($dbcore);
-		if($shared && !file_exists($source_file))
-		{
-			try { $shared->FetchUpload($file_info['file_name'], $source_file); }
-			catch(Throwable $e) { $dbcore->verbosed("Could not fetch ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
-		}
-		if(file_exists($source_file))
-		{
-			// Save file info to txt
-			$info_file = $deleted_path . pathinfo($file_info['file_name'], PATHINFO_FILENAME) . '.txt';
-			$info_content = $file_info['hash'] . '|' . $file_info['type'] . '|' . $file_info['file_name'] . '|'
-				. $file_info['file_orig'] . '|' . $file_info['file_user'] . '|' . $file_info['title'] . '|'
-				. $file_info['file_date'] . '|' . $file_info['notes'];
-			file_put_contents($info_file, $info_content);
-
-			rename($source_file, $deleted_path . $file_info['file_name']);
-			// ...and the bucket's copy goes, as the one in import/up did
-			if($shared)
-			{
-				try { $shared->DeleteUpload($file_info['file_name']); }
-				catch(Throwable $e) { $dbcore->verbosed("Could not remove ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
-			}
-		}
+		admind_move_to_deleted($dbcore, $file_info, $deleted_folder);
 
 		return array('success' => true, 'message' => "File ID $File_ID deleted successfully");
 	}
@@ -1012,39 +1014,7 @@ function delete_failed_file($dbcore, $File_Import_ID)
 		$prep->execute();
 
 		// Move uploaded file to deleted folder
-		$upload_path = $dbcore->PATH . 'import/up/';
-		$deleted_path = $dbcore->PATH . 'import/up/deleted/';
-
-		if(!is_dir($deleted_path))
-		{
-			mkdir($deleted_path, 0755, true);
-		}
-
-		$source_file = $upload_path . $file_info['file_name'];
-		// with the shared files in S3, an upload that came in on another node is fetched first so it's kept here too
-		$shared = admind_shared_files($dbcore);
-		if($shared && !file_exists($source_file))
-		{
-			try { $shared->FetchUpload($file_info['file_name'], $source_file); }
-			catch(Throwable $e) { $dbcore->verbosed("Could not fetch ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
-		}
-		if(file_exists($source_file))
-		{
-			// Save file info to txt
-			$info_file = $deleted_path . pathinfo($file_info['file_name'], PATHINFO_FILENAME) . '.txt';
-			$info_content = $file_info['hash'] . '|' . $file_info['type'] . '|' . $file_info['file_name'] . '|'
-				. $file_info['file_orig'] . '|' . $file_info['file_user'] . '|' . $file_info['title'] . '|'
-				. $file_info['file_date'] . '|' . $file_info['notes'];
-			file_put_contents($info_file, $info_content);
-
-			rename($source_file, $deleted_path . $file_info['file_name']);
-			// ...and the bucket's copy goes, as the one in import/up did
-			if($shared)
-			{
-				try { $shared->DeleteUpload($file_info['file_name']); }
-				catch(Throwable $e) { $dbcore->verbosed("Could not remove ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
-			}
-		}
+		admind_move_to_deleted($dbcore, $file_info, 'deleted');
 
 		return array('success' => true, 'message' => "Failed file ID $File_Import_ID deleted successfully");
 	}

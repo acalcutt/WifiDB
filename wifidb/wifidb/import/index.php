@@ -206,19 +206,31 @@ switch($func)
 								$result->bindValue(8, $size, PDO::PARAM_STR);
 								$result->bindValue(9, $hash, PDO::PARAM_STR);
 								$result->bindValue(10, $type, PDO::PARAM_STR);
-								$result->execute();
-								if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
+								$import_number = 0;
+								try
 								{
-									$mesg .= "<h2>File ($filename_orig) has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
-									$message .= "File ($filename_orig) has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
+									$result->execute();
+									$import_number = $dbcore->sql->conn->lastInsertId();
 								}
-								else if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() == 0)
+								catch(PDOException $e)
 								{
-									$mesg .= "<h2>File ($filename_orig) has already been inserted</h2>";
+									$dbcore->logd("Could not queue the upload $filename: ".$e->getMessage(), "error");
+								}
+								// with the bucket, it's where uploads are kept: this node's copy goes once the file is queued (the
+								// importer fetches it), and the bucket's goes if it wasn't
+								if($shared)
+								{
+									try { if($import_number) { unlink($uploadfile); } else { $shared->DeleteUpload($filename); } }
+									catch(Throwable $e) { $dbcore->logd("Could not tidy up after the upload $filename: ".$e->getMessage(), "error"); }
+								}
+								if($import_number)
+								{
+									$mesg .= "<h2>File ($filename_orig) has been inserted for importing at a scheduled time. Import Number: {$import_number}</h2>";
+									$message .= "File ($filename_orig) has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
 								}
 								else
 								{
-									$mesg .= "<h2>There was an error inserting file for scheduled import.</h2>".var_export($dbcore->sql->conn->errorInfo());
+									$mesg .= "<h2>There was an error inserting file for scheduled import.</h2>";
 									$message .= "New Import Failed!\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->PATH."/import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
 									#$dbcore->mail_admins($message, $subject, $type);
 								}

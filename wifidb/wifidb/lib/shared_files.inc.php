@@ -1,10 +1,11 @@
 <?php
 /*
 shared_files.inc.php: the files every node needs, kept in an S3-compatible bucket (Site Settings, files_s3_*), for
-several nodes sharing one database. An upload is put in the bucket before it's queued, so whichever node's importer
-takes it can fetch it; the node it came in on keeps its own copy as before.
+several nodes sharing one database. With it, the bucket is where uploads are kept: one is put there before it's
+queued (and the node it came in on lets its own copy go), whichever node's importer takes it fetches it and removes
+that working copy afterwards, and deleting an import moves it to deleted/ in the bucket.
 
-In the bucket: PREFIX/uploads/FILE_NAME (the name it has in import/up).
+In the bucket: PREFIX/uploads/FILE_NAME (the name it has in import/up), and PREFIX/deleted/ as import/up/deleted/.
 Copyright (C) 2026 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -68,5 +69,26 @@ class SharedFiles
 	public function DeleteUpload($name)
 	{
 		$this->s3->Delete($this->UploadKey($name));
+	}
+
+	/** PREFIX/FOLDER/NAME: where admind moves a deleted import's upload (deleted/ by default), beside uploads/. */
+	public function FolderKey($folder, $name)
+	{
+		$folder = preg_replace('/[^A-Za-z0-9_-]/', '', (string)$folder);
+		return $this->prefix.'/'.($folder !== '' ? $folder : 'deleted').'/'.basename($name);
+	}
+
+	/**
+	 * Moves an upload from uploads/ to FOLDER/ in the bucket, with a note of what it was (NAME without its extension,
+	 * .txt) beside it, as import/up/deleted/ has without the bucket. @return bool false when the bucket hasn't got it
+	 */
+	public function MoveUpload($name, $folder, $note)
+	{
+		$from = $this->UploadKey($name);
+		if(!$this->s3->Head($from)) { return false; }
+		$this->s3->Copy($from, $this->FolderKey($folder, $name));
+		$this->s3->PutString($this->FolderKey($folder, pathinfo(basename($name), PATHINFO_FILENAME).'.txt'), $note);
+		$this->s3->Delete($from);
+		return true;
 	}
 }
