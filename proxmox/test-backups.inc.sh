@@ -24,6 +24,13 @@ bk_get -X POST --data-urlencode "code=$(echo "$bkcodes" | sed -n 2p)" 'http://12
 check "in admin mode it opens, served by the backup pool" sh -c 'echo "$0" | grep -q "No backups yet" && docker exec "$1" test -S /run/php/wdb-backup.sock' "$(bk_get 'http://127.0.0.1/admin/backups.php')" "$ct1"
 check "a member who isn't an administrator is refused" test "$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/admin/backups.php' | status)" = 403
 
+# The servers page (admin/servers.php), with this node's report from the minute's cron job; proxmox/test-update.sh
+# tries the updates themselves
+docker exec "$ct1" runuser -u www-data -- /opt/wifidb/tools/cron/server_status
+check "the servers page opens in admin mode, with this node's report" sh -c 'echo "$0" | grep -q "<strong>testnode</strong>" && echo "$0" | grep -q "apache2: active"' "$(bk_get 'http://127.0.0.1/admin/servers.php')"
+check "...a member who isn't an administrator is refused" test "$(site -H "Cookie: $tzc; WiFiDB_login_yes=$session" 'http://127.0.0.1/admin/servers.php' | status)" = 403
+check "...and an update to a release no server has listed isn't asked for" sh -c 'echo "$0" | grep -q "r=bad_version"' "$(bk_get -X POST -d action=update -d version=99.0.0 'http://127.0.0.1/admin/servers.php' | location)"
+
 check "'back up now' queues a request" sh -c 'echo "$0" | grep -q "r=queued" && docker exec "$1" sh -c "ls /srv/wifidb-data/backups/queue/*.json"' "$(bk_get -X POST -d action=export 'http://127.0.0.1/admin/backups.php' | location)" "$ct1"
 before=$(rows)
 bk run-queue

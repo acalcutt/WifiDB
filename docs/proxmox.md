@@ -150,6 +150,10 @@ way supports MariaDB only, and the first boot stops with a message if you ask it
 
 ## Upgrading
 
+The simplest way is **Admin > Servers**: pick the new release and every container updates itself in turn, with the
+old version put back if the site doesn't answer afterwards ([updates.md](updates.md)). By hand, or to move to a new
+Ubuntu base (an update replaces WifiDB, not the operating system):
+
 1. Download the new template and create a new container from it, with the same `--mp0` data disk (stop the old
    container first: a volume can't be attached to two).
 2. Put the same `firstboot.env` in (or leave it: the settings are already on the data disk, and the first boot keeps
