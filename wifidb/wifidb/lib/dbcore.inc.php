@@ -108,7 +108,7 @@ class dbcore
 		}
 
 		$this->ver_array				=   array(
-			"wifidb"					=>  "v0.40 Beta",
+			"wifidb"					=>  "v".(require dirname(__FILE__).'/version.inc.php'),   # the footer's, and the daemons' banners
 			"codename"				  =>  "Phoenix",
 			"Last_Core_Edit"			=>  "09-04-2018"
 			);

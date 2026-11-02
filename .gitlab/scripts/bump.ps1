@@ -38,7 +38,7 @@ if (git ls-remote --heads origin "refs/heads/$branch") {
 }
 
 Invoke-Git checkout -B $branch
-Invoke-Git add VERSION CHANGELOG.md
+Invoke-Git add VERSION CHANGELOG.md wifidb/wifidb/lib/version.inc.php
 Invoke-Git @gitUser commit -m "Release v$version"
 
 git push $pushUrl "HEAD:refs/heads/$branch" -o ci.skip

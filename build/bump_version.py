@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-"""Bump VERSION and roll the "## master" section of CHANGELOG.md into a new
+"""Bump VERSION (and the site's copy, wifidb/wifidb/lib/version.inc.php, which
+the footer shows) and roll the "## master" section of CHANGELOG.md into a new
 version section. Used by the bump-version job (.gitlab/scripts/bump.ps1) and the GitHub
 bump-version workflow;
 merging its merge request releases the version (.gitlab-ci.yml). Based on
@@ -15,6 +16,8 @@ import re
 import sys
 
 VERSION_FILE = "VERSION"
+# the site's own copy (VERSION isn't shipped with it): the footer shows it
+PHP_VERSION_FILE = "wifidb/wifidb/lib/version.inc.php"
 CHANGELOG = "CHANGELOG.md"
 MASTER_SECTION = "\n".join([
     "## master",
@@ -81,6 +84,11 @@ def main():
     new_version = bump(current, kind, preid)
     print("%s -> %s" % (current, new_version))
     write_text(VERSION_FILE, new_version + "\n", newline)
+    php, php_newline = read_text(PHP_VERSION_FILE)
+    php, found = re.subn(r"return '[^']*';", "return '%s';" % new_version, php)
+    if found != 1:
+        raise SystemExit("%s has no \"return '<version>';\" line" % PHP_VERSION_FILE)
+    write_text(PHP_VERSION_FILE, php, php_newline)
 
     if os.path.exists(CHANGELOG):
         changelog, cl_newline = read_text(CHANGELOG)
