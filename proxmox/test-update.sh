@@ -120,7 +120,8 @@ check "updated" sh -c 'echo "$0" | grep -q "^done|updated from"' "$(state)"
 check "...the new code, answering" test "$(cver)|$(home)" = "9.9.9|200"
 check "...the old code kept aside" docker exec "$ct" grep -q "return '$was';" /var/www/wifidb.old/lib/version.inc.php
 check "...uploads and generated files still on the data disk" docker exec "$ct" sh -c 'test -L /var/www/wifidb/import/up && test -L /var/www/wifidb/out && test -L /opt/wifidb/tools/log'
-check "...the site's settings kept" docker exec "$ct" grep -q "testnode" /var/www/wifidb/lib/config.inc.php
+# (they're in web.overrides.php on the data disk, which the new config.inc.php loads)
+check "...the site's settings kept" test "$(docker exec "$ct" php -r 'require "/var/www/wifidb/lib/config.inc.php"; echo $config["wifidb_nodename"];')" = testnode
 check "...cron and the daemons running" docker exec "$ct" systemctl is-active -q cron wifidb-monitord wifidb-websocketd
 check "...and the backup made first" sh -c 'docker exec "$0" sh -c "ls /srv/wifidb-data/backups/wifidb-backup-*.tar" && test "$(echo "$1")" = 1' "$ct" "$(sqlq "select backup_taken from server_update_requests where version = '9.9.9'")"
 check "the token went to the release host only, never in the log" sh -c '! docker exec "$0" grep -q s3cret-token /var/log/wifidb-update.log' "$ct"
