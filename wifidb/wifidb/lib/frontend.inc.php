@@ -25,6 +25,9 @@ if not, write to the
 #===========================================================#
 class frontend extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $all_users_aps, $all_users_data, $footer, $login_bar, $meta, $pages_together, $smarty,
+		$user_all_imports_data, $users_import_aps, $wifidb_host_url;
 	#===========================#
 	#   __construct (default)   #
 	#===========================#

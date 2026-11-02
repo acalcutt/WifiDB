@@ -21,6 +21,8 @@ if not, write to the
 
 class misc
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $ver_array;
     function __construct($dbcore)
     {
         $this->ver_array['Misc'] = array(

@@ -20,6 +20,8 @@ if not, write to the
 */
 class apiv2 extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $apikey, $Author, $EnableAPIKey, $GeoNamesLoopGiveUp, $output, $startdate, $username, $vernum;
 	function __construct($config, &$SQL)
 	{
 		parent::__construct($config, $SQL);

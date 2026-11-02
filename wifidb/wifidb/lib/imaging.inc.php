@@ -20,6 +20,9 @@ if not, write to the
 */
 
 class imaging {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $barcanvas, $canvas, $color_black, $color_blue, $color_gray, $color_green, $color_red, $color_white,
+		$draw_grid, $dynamic_canvas, $grid_spacing, $label_x, $label_y, $line_thickness, $linecanvas, $write_file;
     function  __construct()
     {
         $this->width = 1024;

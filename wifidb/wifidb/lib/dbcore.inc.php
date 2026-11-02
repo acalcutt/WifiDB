@@ -21,6 +21,18 @@ if not, write to the
 
 class dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $alerts_message_flag, $AllDateRange, $apache_group, $apache_user, $bypass_check, $colors, $convert,
+		$createGeoJSON, $createGPX, $createKML, $csv_htmlpath, $csv_out, $daemon_htmlpath, $daemon_name, $daemon_out,
+		$daemon_version, $daemonize, $date_format, $datetime_format, $dBmDissociationSignal, $dBmMaxSignal, $debug,
+		$default_dst, $default_refresh, $default_timezone, $dim, $EndDaate, $export, $ForceDaemonRun, $Func, $gpx_htmlpath,
+		$gpx_out, $graphs, $HOSTURL, $import, $ImportID, $job_interval, $kml_htmlpath, $kml_out, $KML_SOURCE_URL, $lang,
+		$languages, $lastedit, $LocateList, $log_interval, $log_level, $Log_Type, $LogFile, $login_check, $mesg, $named,
+		$open_loc, $PATH, $PATH_THEMES, $pid_file, $pid_file_loc, $rebuild, $region_htmlpath, $region_out, $reserved_users,
+		$return_message, $root, $RunOnceThrough, $sec, $smarty_path, $Spawn, $StartDate, $supported_extentions, $switches,
+		$theme, $This_is_me, $thread_id, $tile_cache, $tile_max_gz_bytes, $tile_max_zoom, $tile_min_zoom,
+		$tileserver_gl_url, $time_format, $timeout, $TOOLS_PATH, $URL_PATH, $ver_array, $ver_str, $verbose, $vs1_htmlpath,
+		$vs1_out, $wdbmail, $WebSocketURL, $WEP_loc, $WPA_loc, $xml, $Zip;
 	public $cli;
 	public function __construct($config = NULL, $sql = null)
 	{

@@ -25,6 +25,13 @@ use PHPMailer\PHPMailer\PHPMailer;
 #[AllowDynamicProperties]
 class wdbmail
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $DKIM_copyHeaderFields, $DKIM_domain, $DKIM_identity, $DKIM_passphrase, $DKIM_private, $DKIM_selector,
+		$email_validation, $ListUnsubscribe, $mail, $notifier, $sec, $signup_smtp_auth, $signup_smtp_authtype,
+		$signup_smtp_debug, $signup_smtp_from, $signup_smtp_host, $signup_smtp_options, $signup_smtp_pass,
+		$signup_smtp_port, $signup_smtp_replyto, $signup_smtp_secure, $signup_smtp_user, $signupmail, $smtp_auth,
+		$smtp_authtype, $smtp_debug, $smtp_from, $smtp_host, $smtp_options, $smtp_pass, $smtp_port, $smtp_replyto,
+		$smtp_secure, $smtp_user, $URL_PATH, $wifidb_email_updates, $wifidb_install, $XMailer;
     function __construct($config, $sql = null)
     {
 		$this->wifidb_install			= isset($config['wifidb_install']) ? rtrim($config['wifidb_install'], '/\\').'/' : null;

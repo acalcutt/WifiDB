@@ -20,6 +20,8 @@ if not, write to the
 */
 class api extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $apikey, $Author, $GeoNamesLoopGiveUp, $output, $session_id, $startdate, $use_keys, $username, $vernum;
 	function __construct($config)
 	{
 		parent::__construct($config);

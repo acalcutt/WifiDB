@@ -10,6 +10,8 @@ You should have received a copy of the GNU General Public License along with thi
 
 class import extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $rssi_signals_flag;
 	function __construct($config, $convert_obj, $verbose)
 	{
 		if($convert_obj === NULL)

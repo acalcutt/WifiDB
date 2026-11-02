@@ -20,6 +20,8 @@ if not, write to the
 */
 class export extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $daemon_folder_stats, $month_names;
 	public function __construct($config, $createGPXObj, $createKMLObj, $createGeoJSONObj, $convertObj, $ZipObj, $sql = null){
 		parent::__construct($config, $sql);
 

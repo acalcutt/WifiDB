@@ -21,6 +21,9 @@ if not, write to the
 
 class daemon extends wdbcli
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $DaemonSleepTime, $default_notes, $default_title, $default_user, $DeleteDeadPids, $node_name, $NodeSyncing,
+		$NumberOfThreads, $StatusRunning, $StatusWaiting;
 	public function __construct($config, $daemon_config)
 	{
 		parent::__construct($config, $daemon_config);

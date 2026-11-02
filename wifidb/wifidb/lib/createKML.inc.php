@@ -20,6 +20,12 @@ if not, write to the
 */
 class createKML
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $convert, $folderstyle, $minlodpixels_1024, $minlodpixels_128, $minlodpixels_2048, $minlodpixels_32,
+		$minlodpixels_4096, $minlodpixels_512, $minlodpixels_64, $minlodpixels_8192, $open_path, $open_path_dead,
+		$openstyle, $openstyledead, $PolyStyle, $secure_path, $secure_path_dead, $securestyle, $securestyledead,
+		$SigMapTimeBeforeMarkedDead, $SignalLevelStyle, $style_data, $tracklinestyle, $URL_BASE, $users, $wep_path,
+		$wep_path_dead, $wepstyle, $wepstyledead;
 
 	public function __construct($URL_PATH, $kml_out, $daemon_out, $convertObj, $tilldead = 5)
 	{
