@@ -54,8 +54,8 @@ ROOT=${ROOT#/}; ROOT=${ROOT%/}
 SITE_URL=${WIFIDB_URL:-http://$(hostname -f 2>/dev/null || hostname)}
 SITE_URL=${SITE_URL%/}
 PROXY=${WIFIDB_EXTERNAL_PROXY:-}
-# The API's own host name (api.wifidb.net). Default: api. and the site's domain (without www.), when it has one;
-# WIFIDB_API_HOST= (empty) for none.
+# The API's own host names (api.wifidb.net, and older ones such as api.vistumbler.net), separated by spaces. Default:
+# api. and the site's domain (without www.), when it has one; WIFIDB_API_HOST= (empty) for none.
 site_host=$(printf '%s' "$SITE_URL" | sed -E 's#^[A-Za-z]+://##; s#[:/].*$##; s#^www\.##')
 if [[ "$site_host" == *.* && "$site_host" =~ [A-Za-z] ]]; then api_default="api.$site_host"; else api_default=""; fi
 API_HOST=${WIFIDB_API_HOST-$api_default}
@@ -205,11 +205,16 @@ fi
 # The API's own host name, as wifidb.net has api.wifidb.net: the api/ folder at its top, so
 # https://api.<site>/import.php is /api/import.php. Named zz- so it loads after wifidb.conf, which stays the default
 # for every other name.
-if [ -n "$API_HOST" ]; then
-    log "the API also answers at $API_HOST"
+if [ -n "${API_HOST// /}" ]; then
+    # several names, separated by spaces (api.wifidb.net api.vistumbler.net): the first is the ServerName, the rest aliases
+    read -r -a api_names <<< "$API_HOST"
+    api_alias=""
+    [ "${#api_names[@]}" -gt 1 ] && api_alias="ServerAlias ${api_names[*]:1}"
+    log "the API also answers at ${api_names[*]}"
     cat > /etc/apache2/sites-available/zz-wifidb-api.conf <<CONF
 <VirtualHost *:80>
-    ServerName $API_HOST
+    ServerName ${api_names[0]}
+    $api_alias
     DocumentRoot /var/www/wifidb/api
     Include /etc/apache2/wifidb-slow-pool.conf
     <Directory /var/www/wifidb/api>

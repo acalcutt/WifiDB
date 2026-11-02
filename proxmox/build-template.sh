@@ -102,9 +102,10 @@ WIFIDB_DB_TYPE=mariadb            # mariadb, sqlsrv for SQL Server, or pgsql for
 #WIFIDB_URL=https://wifidb.example.com
 #WIFIDB_ROOT=                     # leave empty to serve the site at the top of the address
 #
-# The API's own host name, which serves the api/ folder at its top (api.wifidb.net/import.php = wifidb.net/api/import.php).
-# Default: api. and the site's domain; set it empty for none. Point it at this container in the proxy, as the site.
-#WIFIDB_API_HOST=api.wifidb.example.com
+# The API's own host names, which serve the api/ folder at their top (api.wifidb.net/import.php = wifidb.net/api/import.php):
+# one, or several in quotes separated by spaces. Default: api. and the site's domain; set it empty for none. Point them
+# at this container in the proxy, as the site.
+#WIFIDB_API_HOST="api.wifidb.example.com api.old-name.example.com"
 #
 # This node's name in the database (settings.node_name and schedule.nodename). Default: the container's hostname.
 #WIFIDB_NODE=wifidb

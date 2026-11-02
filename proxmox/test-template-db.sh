@@ -66,7 +66,7 @@ log "first boot ($type)"
 docker create --name "$ct" --hostname wifidb-test --network "$net" --privileged \
     --cgroupns=private --tmpfs /run --tmpfs /run/lock -v "$vol:/srv/wifidb-data" "$image" >/dev/null
 printf '%s\n' "WIFIDB_DB_TYPE=$type" "WIFIDB_DB_HOST=$db" 'WIFIDB_DB_NAME=wifi' 'WIFIDB_DB_USER=wifidb' "WIFIDB_DB_PASS=$apppw" \
-    'WIFIDB_URL=https://wifidb.test' 'WIFIDB_NODE=testnode' > /tmp/firstboot.env.$id
+    'WIFIDB_URL=https://wifidb.test' 'WIFIDB_NODE=testnode' 'WIFIDB_API_HOST="api.wifidb.test api.vistumbler.test"' > /tmp/firstboot.env.$id
 docker cp "/tmp/firstboot.env.$id" "$ct:/etc/wifidb/firstboot.env"; rm -f "/tmp/firstboot.env.$id"
 docker start "$ct" >/dev/null
 booted=0
@@ -84,6 +84,11 @@ check "this node is named testnode" test "$(sqlq "select min(node_name) from set
 check "admin jobs will run here (an Admin schedule row, migration 0006)" test "$(sqlq "select count(*) from schedule where nodename = 'testnode' and daemon = 'Admin' and enabled = 1")" = 1
 check "...and the stats are worked out here (a Stats row, migration 0007)" test "$(sqlq "select count(*) from schedule where nodename = 'testnode' and daemon = 'Stats' and enabled = 1")" = 1
 check "/health/ready answers 200" test "$(docker exec "$ct" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/health/ready)" = 200
+# WIFIDB_API_HOST with two names, as wifidb.net has api.wifidb.net and the older api.vistumbler.net
+for h in api.wifidb.test api.vistumbler.test; do
+    check "$h serves the API at its top" sh -c 'docker exec "$0" curl -s -H "Host: $1" http://127.0.0.1/index.php | grep -q "WiFiDB API Version"' "$ct" "$h"
+done
+check "...and wifidb.test is still the site" sh -c '! docker exec "$0" curl -s -H "Host: wifidb.test" http://127.0.0.1/index.php | grep -q "WiFiDB API Version"' "$ct"
 tzc="wifidb_client_check=1; wifidb_client_timezone=0; wifidb_client_dst=0"
 errors='Undefined (constant|variable|array key)|Fatal error|Uncaught|Parse error|Stack trace|Call to undefined|SQLSTATE|PDOException'
 scan() { # scan COOKIE PAGE...: no PHP or SQL error on each page

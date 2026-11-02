@@ -72,7 +72,7 @@ WIFIDB_NODE=wifidb                # this node's name in the database; default: t
 WIFIDB_EXTERNAL_PROXY=192.168.1.1 # the proxy's address(es), for real visitor IPs
 #WIFIDB_SQLSRV_TRUST_CERT=0       # SQL Server: check its certificate (default 1: accept a self-signed one)
 #WIFIDB_TWO_FACTOR_KEY=…          # another node on the same database: the first node's two_factor_key
-#WIFIDB_API_HOST=api.wifidb.example.com # the API's own name (api/ at its top); default api.<site>, empty for none
+#WIFIDB_API_HOST="api.wifidb.example.com api.old.example.com" # the API's own names (api/ at their top); default api.<site>, empty for none
 ```
 
 The first boot writes the settings that differ from the defaults to `/srv/wifidb-data/config/*.overrides.php`, loads
@@ -97,8 +97,9 @@ In HAProxy:
 - the backend is the container's address, port 80, with *forwardfor* on;
 - health check: `GET /health` (answers `ok`);
 - the live pages use websockets at `/ws/…`: give the backend a long tunnel timeout (an hour or so);
-- send the API's own name (`api.<site>`, see `WIFIDB_API_HOST`) to the same backend, with its certificate: the
-  container serves the `api/` folder at the top of that name, as `api.wifidb.net` always has.
+- send the API's own names (`api.<site>` by default; `WIFIDB_API_HOST` takes several, such as
+  `"api.wifidb.net api.vistumbler.net"`) to the same backend, with their certificates: the container serves the `api/`
+  folder at the top of each, as `api.wifidb.net` always has. Any other name the proxy sends is served as the site.
 
 The tile folders send their own headers (CORS, gzip, `Accept-Ranges` for PMTiles); let HAProxy pass them through
 unchanged and don't compress `.pbf`, `.mlt` or `.pmtiles` responses there.
