@@ -8,7 +8,7 @@
  */
 class WebSocketDaemon extends WebSocketServer {
 	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
-	public $sql;
+	public $dbcore, $sql;
     //protected $maxBufferSize = 1048576; //1MB... overkill for an echo server, but potentially plausible for other applications.
     public function __construct(&$dbcore, $addr, $port, $bufferLength = 2048)
     {

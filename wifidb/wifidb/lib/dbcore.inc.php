@@ -29,8 +29,8 @@ class dbcore
 		$gpx_out, $graphs, $HOSTURL, $import, $ImportID, $job_interval, $kml_htmlpath, $kml_out, $KML_SOURCE_URL, $lang,
 		$languages, $lastedit, $LocateList, $log_interval, $log_level, $Log_Type, $LogFile, $login_check, $mesg, $named,
 		$open_loc, $PATH, $PATH_THEMES, $pid_file, $pid_file_loc, $rebuild, $region_htmlpath, $region_out, $reserved_users,
-		$return_message, $root, $RunOnceThrough, $sec, $smarty_path, $Spawn, $StartDate, $supported_extentions, $switches,
-		$theme, $This_is_me, $thread_id, $tile_cache, $tile_max_gz_bytes, $tile_max_zoom, $tile_min_zoom,
+		$return_message, $root, $RunOnceThrough, $sec, $smarty_path, $Spawn, $sql, $StartDate, $supported_extentions,
+		$switches, $theme, $This_is_me, $thread_id, $tile_cache, $tile_max_gz_bytes, $tile_max_zoom, $tile_min_zoom,
 		$tileserver_gl_url, $time_format, $timeout, $TOOLS_PATH, $URL_PATH, $ver_array, $ver_str, $verbose, $vs1_htmlpath,
 		$vs1_out, $wdbmail, $WebSocketURL, $WEP_loc, $WPA_loc, $xml, $Zip;
 	public $cli;

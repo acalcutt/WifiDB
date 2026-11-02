@@ -22,7 +22,7 @@ if not, write to the
 class graphs
 {
 	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
-	public $lastedit, $ver_graph;
+	public $lastedit, $PATH, $URL_PATH, $ver_graph;
 	public function __construct($PATH, $URL_PATH)
 	{
 		$this->PATH		 =   $PATH;

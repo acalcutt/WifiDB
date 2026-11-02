@@ -3,7 +3,7 @@
 class security
 {
 	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
-	public $activatecode, $check_error, $cli, $config_fails, $date_format, $datetime_format, $domain, $email_validation,
+	public $activatecode, $apikey, $check_error, $cli, $config_fails, $date_format, $datetime_format, $domain, $email_validation,
 		$EnableAPIKey, $HOSTURL, $last_login, $log_level, $Log_Type, $login_check, $login_val, $LoginLabel, $LoginUri,
 		$LoginUser, $mesg, $PATH, $priv_name, $privs, $reserved_users, $root, $SessionID, $sql, $ssl, $This_is_me,
 		$time_format, $timeout, $TOOLS_PATH, $URL_PATH;

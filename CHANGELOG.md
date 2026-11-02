@@ -73,7 +73,8 @@
 - **Security: removed `tar_file`,** which built a shell command from its argument and was never called.
 - **`blank_db.sql` could not be imported into an empty database:** `cell_id` had its primary key defined twice.
 - **PHP 8 fatals and deprecations:** string offsets with `{}`, the removed `__autoload()`, `implode()` argument order,
-  optional parameters before required ones, the backtick operator, `case x;`, and the old cast names.
+  optional parameters before required ones, the backtick operator, `case x;`, and the old cast names. Properties
+  that classes made by assigning them (deprecated in PHP 8.2, an error in PHP 9) are declared in their classes.
 - **`FILTER_SANITIZE_STRING`** (deprecated in PHP 8.1) is replaced by `wifidb_input_string()`, with the same result.
 - **Removed what could not run:** 26 utilities (dropped tables, deleted libraries, stubs), the pthreads prototype
   (pthreads does not exist in PHP 8), dead `mysql_*` code, and two templates that did not compile. Four utilities
