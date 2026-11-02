@@ -19,6 +19,9 @@ value is used, and the page says where each value comes from. The values are kep
 (migration 0004, applied by `tools/utilites/migrate.php`). Every change leaves the administrators a notice saying who changed
 what.
 
+Signing in with Google, GitHub, Discord or Facebook is set up on its own page, **Sign-in Providers**
+(`admin/logins.php`), kept in the same table: see [linked-logins.md](linked-logins.md).
+
 ## CleanTalk
 
 [CleanTalk](https://cleantalk.org) is an optional paid spam-checking service. When it is on, WifiDB asks it about:

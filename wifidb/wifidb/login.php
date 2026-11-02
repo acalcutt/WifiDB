@@ -41,6 +41,14 @@ if(!$signups_open && ($func === 'create_user_form' || $func === 'create_user_pro
 	$dbcore->smarty->display('login_result.tpl');
 	exit;
 }
+# "Sign in with Google" and the like, for the providers an administrator turned on (admin/logins.php)
+$linked_logins = array();
+try
+{
+	foreach($dbcore->sec->LinkedLogins()->EnabledProviders() as $provider) { $linked_logins[] = array('id' => $provider, 'name' => LinkedLogins::Name($provider)); }
+}
+catch(Throwable $e) {}
+$dbcore->smarty->assign('wifidb_linked_logins', $linked_logins);
 switch($func)
 {
 	case "login_proc":
@@ -290,6 +298,27 @@ switch($func)
 					$subject = "Vistumbler WifiDB - User '$username' Created";
 					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n";
 					$dbcore->wdbmail->notify('new_user', $subject, $message, $dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user=".urlencode($username), 'new_users', null, "New member: $username");
+					# signed up after signing in with an outside account nobody had linked (logins.php): the new account gets it
+					$linked_note = '';
+					$link_token = (isset($_COOKIE[LinkedLogins::LINK_COOKIE]) && is_string($_COOKIE[LinkedLogins::LINK_COOKIE])) ? $_COOKIE[LinkedLogins::LINK_COOKIE] : '';
+					try
+					{
+						$logins = $dbcore->sec->LinkedLogins();
+						$held = $logins->Unlinked($link_token, $link_token);
+						if($held && $held['username'] === '')
+						{
+							$logins->UnlinkedDone($link_token);
+							$dbcore->sec->LinkedLoginCookie(LinkedLogins::LINK_COOKIE, '');
+							$logins->Link($username, $held['provider'], $held['identity']);
+							$linked_name = LinkedLogins::Name($held['provider']);
+							$dbcore->sec->logd("A ".$linked_name." account was linked to new member ".var_export($username, 1), "message");
+							$linked_note = "<h2>Your $linked_name account is linked to it: once you can sign in, Sign in with $linked_name works too.</h2>";
+						}
+					}
+					catch(Throwable $e)
+					{
+						$dbcore->sec->logd("Could not link an outside account to new member ".var_export($username, 1).": ".$e->getMessage(), "error");
+					}
 					#User created!, now if the admin has enabled Email Confirmation before a user can be used, send it out, other wise let them login.
 					if($dbcore->sec->Setting('email_validation'))
 					{
@@ -306,7 +335,7 @@ switch($func)
 					{
 						$message = "<font color='Green'><h2>User Created! Go ahead and login.</h2></font>";
 					}
-					$dbcore->smarty->assign('message', $message);
+					$dbcore->smarty->assign('message', $message.$linked_note);
 					$dbcore->smarty->display('login_index.tpl');
 				break;
 

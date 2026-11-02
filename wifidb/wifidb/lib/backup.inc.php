@@ -33,13 +33,13 @@ class WifidbBackup
 	/**
 	 * This server's own tables: not in a backup, and a restore keeps what this server has. Sessions (everyone signs in
 	 * again after a restore), the migrations this database has had, the node's daemon switch and schedule, running
-	 * daemons, and queued admin jobs, which point at rows the restore replaces; and the servers' reports and updates
-	 * (admin/servers.php), which are about these servers.
+	 * daemons, and queued admin jobs, which point at rows the restore replaces; the servers' reports and updates
+	 * (admin/servers.php), which are about these servers; and the linked sign-ins under way (lib/linked_logins.inc.php).
 	 */
 	const LOCAL_TABLES = array('user_login_hashes', 'schema_migrations', 'settings', 'schedule', 'daemon_pid_stats', 'admin_jobs',
-		'server_status', 'server_update_requests');
+		'server_status', 'server_update_requests', 'linked_login_states');
 	/** Emptied by a restore though not restored: they'd point at the old site's state. */
-	const EMPTIED_TABLES = array('user_login_hashes', 'daemon_pid_stats', 'admin_jobs');
+	const EMPTIED_TABLES = array('user_login_hashes', 'daemon_pid_stats', 'admin_jobs', 'linked_login_states');
 
 	private $conn;
 	private $service;

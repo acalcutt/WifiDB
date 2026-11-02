@@ -1,5 +1,5 @@
 <!--
-Preferences -> Security: authenticator apps, passkeys, recovery codes. See cp/security.php.
+Preferences -> Security: authenticator apps, passkeys, recovery codes, linked accounts. See cp/security.php.
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
 version 2 of the License, or (at your option) any later version.
@@ -87,6 +87,46 @@ version 2 of the License, or (at your option) any later version.
 						</tr>
 					</table>
 				</form>
+				{/if}
+				{if $security_linked || $security_linkable}
+				<table class="content_table">
+					<tr>
+						<td class="subheading" colspan="4">Linked accounts</td>
+					</tr>
+					<tr>
+						<td class="header" colspan="4">
+							{if $security_linked_now}Your {$security_linked_now|escape:'html':'UTF-8':false} account is linked. {/if}
+							Sign in with a linked account instead of your password. Signing in still asks for a second factor if you have it on.
+						</td>
+					</tr>
+					{foreach item=l from=$security_linked name=linked}
+					<tr class="{if $smarty.foreach.linked.iteration is odd}dark{else}light{/if}">
+						<td>{$l.name|escape:'html':'UTF-8':false}</td>
+						<td>{if $l.display_name}{$l.display_name|escape:'html':'UTF-8':false}{/if}{if $l.display_name && $l.email} {/if}{if $l.email}({$l.email|escape:'html':'UTF-8':false}){/if}</td>
+						<td>Linked {$l.created|escape:'html':'UTF-8':false} UTC{if $l.last_used}, last used {$l.last_used|escape:'html':'UTF-8':false} UTC{/if}</td>
+						<td>
+							<form method="post" action="{$wifidb_host_url}cp/security.php?func=unlink" style="display:inline">
+								<input type="hidden" name="provider" value="{$l.provider|escape:'html':'UTF-8':false}">
+								<input type="password" name="password" placeholder="Your password" autocomplete="current-password" required>
+								<input type="submit" value="Unlink">
+							</form>
+						</td>
+					</tr>
+					{/foreach}
+					{foreach item=p from=$security_linkable name=linkable}
+					<tr class="{if $smarty.foreach.linkable.iteration is odd}light{else}dark{/if}">
+						<td>{$p.name|escape:'html':'UTF-8':false}</td>
+						<td colspan="2">Not linked</td>
+						<td>
+							<form method="post" action="{$wifidb_host_url}cp/security.php?func=link" style="display:inline">
+								<input type="hidden" name="provider" value="{$p.id|escape:'html':'UTF-8':false}">
+								<input type="password" name="password" placeholder="Your password" autocomplete="current-password" required>
+								<input type="submit" value="Link a {$p.name|escape:'html':'UTF-8':false} account">
+							</form>
+						</td>
+					</tr>
+					{/foreach}
+				</table>
 				{/if}
 			</div>
 <script src="{$wifidb_host_url}lib/js/wifidb/passkeys.js"></script>

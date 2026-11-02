@@ -1,10 +1,12 @@
 <?php
 /*
 security.php, Preferences -> Security: the member's second factors (authenticator apps and passkeys), recovery codes,
-and whether sign-in asks for one. See lib/two_factor.inc.php for what each of those means.
+and whether sign-in asks for one (see lib/two_factor.inc.php for what each of those means); and the Google, GitHub,
+Discord or Facebook accounts linked to theirs to sign in with (lib/linked_logins.inc.php).
 
 Changes are POSTs (the cookie is SameSite=Lax). Taking a method away, turning the sign-in question off and making new
-recovery codes ask for the account password again, so a borrowed, signed-in browser can't undo the protection.
+recovery codes ask for the account password again, so a borrowed, signed-in browser can't undo the protection; so do
+linking an outside account (a way in without the password) and unlinking one.
 Copyright (C) 2026 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -38,6 +40,7 @@ if(!$tf)
 	exit;
 }
 $session = $dbcore->sec->SessionID;
+$logins = $dbcore->sec->LinkedLogins();
 $post = ($_SERVER['REQUEST_METHOD'] === 'POST');
 $self = 'security.php';
 
@@ -157,7 +160,45 @@ try
 			$showCodes($tf->NewRecoveryCodes($username), 'New recovery codes. The old ones no longer work.');
 			break;
 
+		# Linked accounts (lib/linked_logins.inc.php): linking one is a way in without the password, so it needs the
+		# password, as taking one away does
+		case 'link':
+			if(!$post) { header("Location: $self"); exit; }
+			$provider = (string)@$_POST['provider'];
+			if(!$passwordOk()) { $say('The password was not right, so nothing was linked.'); break; }
+			list($url, $token) = $logins->Start($provider, 'link', $username, $dbcore->URL_PATH.'cp/security.php');
+			$dbcore->sec->LinkedLoginCookie(LinkedLogins::STATE_COOKIE, $token, LinkedLogins::STATE_TTL);
+			header('Location: '.$url);
+			exit;
+
+		case 'unlink':
+			if(!$post) { header("Location: $self"); exit; }
+			$provider = (string)@$_POST['provider'];
+			if(!$passwordOk()) { $say('The password was not right, so nothing was unlinked.'); break; }
+			if($logins->Unlink($username, $provider))
+			{
+				$name = LinkedLogins::Name($provider);
+				$tell("A $name account was unlinked", "The $name account linked to yours was unlinked, and can no longer be used to sign in. If this was not you, change your password.");
+				$say("Unlinked. Sign in with $name no longer signs in to this account.");
+			}
+			else { $say('That account was not linked.'); }
+			break;
+
 		default:
+			$linked = array();
+			foreach($logins->LinksFor($username) as $link)
+			{
+				$linked[$link['provider']] = $link + array('name' => LinkedLogins::Name($link['provider']));
+			}
+			$linkable = array();
+			foreach($logins->EnabledProviders() as $provider)
+			{
+				if(!isset($linked[$provider])) { $linkable[] = array('id' => $provider, 'name' => LinkedLogins::Name($provider)); }
+			}
+			$linkedNow = (string)filter_input(INPUT_GET, 'linked', FILTER_SANITIZE_SPECIAL_CHARS);
+			$dbcore->smarty->assign('security_linked', array_values($linked));
+			$dbcore->smarty->assign('security_linkable', $linkable);
+			$dbcore->smarty->assign('security_linked_now', LinkedLogins::Name($linkedNow));
 			$dbcore->smarty->assign('security_methods', $tf->Methods($username));
 			$dbcore->smarty->assign('security_has', $tf->HasTwoFactor($username));
 			$dbcore->smarty->assign('security_asks_login', $tf->AsksAtLogin($username));
@@ -171,5 +212,6 @@ catch(Throwable $e)
 {
 	$dbcore->sec->logd("Security settings error for ".$username.": ".$e->getMessage(), "error");
 	if($func === 'passkey_begin' || $func === 'passkey_finish') { $json(array('ok' => false, 'error' => 'server'), 500); }
+	elseif($e instanceof LinkedLoginException) { $say($e->getMessage()); }
 	else { $say('Something went wrong. If you have not run the database migrations yet, run tools/utilites/migrate.php.'); }
 }

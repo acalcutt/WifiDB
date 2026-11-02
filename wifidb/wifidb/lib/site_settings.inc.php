@@ -47,6 +47,22 @@ class SiteSettings
 		'files_s3_secret'   => array('secret', 'Shared files S3 secret key', 'Saving checks the bucket with these keys.', ''),
 	);
 
+	/** Signing in with another site's account (lib/linked_logins.inc.php), saved from admin/logins.php instead. */
+	const LOGIN_SETTINGS = array(
+		'login_google_enabled'     => array('bool', 'Sign in with Google', '', 0),
+		'login_google_client_id'   => array('text', 'Google client ID', '', ''),
+		'login_google_secret'      => array('secret', 'Google client secret', '', ''),
+		'login_github_enabled'     => array('bool', 'Sign in with GitHub', '', 0),
+		'login_github_client_id'   => array('text', 'GitHub client ID', '', ''),
+		'login_github_secret'      => array('secret', 'GitHub client secret', '', ''),
+		'login_discord_enabled'    => array('bool', 'Sign in with Discord', '', 0),
+		'login_discord_client_id'  => array('text', 'Discord client ID', '', ''),
+		'login_discord_secret'     => array('secret', 'Discord client secret', '', ''),
+		'login_facebook_enabled'   => array('bool', 'Sign in with Facebook', '', 0),
+		'login_facebook_client_id' => array('text', 'Facebook app ID', '', ''),
+		'login_facebook_secret'    => array('secret', 'Facebook app secret', '', ''),
+	);
+
 	private $conn;
 	private $config;
 	private $key;
@@ -87,10 +103,18 @@ class SiteSettings
 		return $this->rows;
 	}
 
+	/** @return array [type, label, help, default] */
+	public static function Definition($name)
+	{
+		if(isset(self::SETTINGS[$name])) { return self::SETTINGS[$name]; }
+		if(isset(self::LOGIN_SETTINGS[$name])) { return self::LOGIN_SETTINGS[$name]; }
+		throw new InvalidArgumentException("No setting named $name");
+	}
+
 	/** Where the value comes from: 'saved' (this page), 'config' (config.inc.php) or 'default'. */
 	public function Source($name)
 	{
-		if(!isset(self::SETTINGS[$name])) { throw new InvalidArgumentException("No setting named $name"); }
+		self::Definition($name);
 		$rows = $this->Rows();
 		if(array_key_exists($name, $rows)) { return 'saved'; }
 		return array_key_exists($name, $this->config) ? 'config' : 'default';
@@ -100,7 +124,7 @@ class SiteSettings
 	public function Get($name)
 	{
 		$source = $this->Source($name);
-		list($type, , , $default) = self::SETTINGS[$name];
+		list($type, , , $default) = self::Definition($name);
 		if($source === 'saved')
 		{
 			$raw = (string)$this->rows[$name];
@@ -113,11 +137,14 @@ class SiteSettings
 		return $type === 'bool' ? (bool)$value : (string)$value;
 	}
 
-	/** For the settings page: each setting with its value (never a secret's, only whether one is set) and its source. */
-	public function Describe()
+	/**
+	 * For the settings page: each setting with its value (never a secret's, only whether one is set) and its source.
+	 * @param array|null $settings the definitions to describe; the Site Settings page's (SETTINGS) unless given
+	 */
+	public function Describe($settings = null)
 	{
 		$out = array();
-		foreach(self::SETTINGS as $name => $def)
+		foreach($settings === null ? self::SETTINGS : $settings as $name => $def)
 		{
 			list($type, $label, $help) = $def;
 			$value = $this->Get($name);
@@ -142,7 +169,7 @@ class SiteSettings
 	public function Save($values, $username)
 	{
 		$changed = array();
-		foreach(self::SETTINGS as $name => $def)
+		foreach(self::SETTINGS + self::LOGIN_SETTINGS as $name => $def)
 		{
 			if(!array_key_exists($name, $values) || $values[$name] === null) { continue; }
 			$type = $def[0];

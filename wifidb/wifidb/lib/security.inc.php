@@ -181,7 +181,32 @@ class security
 		}
 		return $this->two_factor;
 	}
-	
+
+	# Signing in with a linked Google, GitHub, Discord or Facebook account: see lib/linked_logins.inc.php
+	private $linked_logins = null;
+
+	/** @return LinkedLogins */
+	public function LinkedLogins()
+	{
+		if($this->linked_logins === null)
+		{
+			require_once dirname(__FILE__).'/linked_logins.inc.php';
+			# linked_logins_endpoints in config.inc.php points a provider somewhere else (tests)
+			$this->linked_logins = new LinkedLogins($this->sql->conn, $this->Settings(), $this->URL_PATH, null, null,
+				!empty($this->site_config['linked_logins_endpoints']) ? $this->site_config['linked_logins_endpoints'] : array());
+		}
+		return $this->linked_logins;
+	}
+
+	/** Sets (or, with '', removes) one of the linked sign-in's cookies: for this site, kept from scripts, for $ttl seconds. */
+	public function LinkedLoginCookie($name, $value, $ttl = 0)
+	{
+		if($this->cli) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		setcookie($name, $value, array("expires" => $value === '' ? time() - 3600 : time() + $ttl, "path" => $path, "domain" => $this->domain,
+			"secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
+	}
+
 	
 	public function logd($message = '', $type = "message", $prefix = "")
 	{
@@ -541,36 +566,7 @@ class security
 				$rehash->bindParam(2, $id, PDO::PARAM_INT);
 				$rehash->execute();
 			}
-			if($this->GenerateSessionCookie($Bender_remember_me, $authoritah))
-			{
-				$date = date($this->datetime_format);
-				$sql1 = "UPDATE user_info SET login_fails = '0', last_login = ? WHERE id = ? ";
-				$prep = $this->sql->conn->prepare($sql1);
-				$prep->bindParam(1, $date, PDO::PARAM_STR);
-				$prep->bindParam(2, $id, PDO::PARAM_INT);
-				$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-				
-				$this->login_val = "good";
-				$this->login_check = 1;
-				if($this->StartSecondFactor($this->username))
-				{
-					# The password was right but this member asks for a second factor: the session grants nothing until it is done.
-					$this->login_val = "mfa_required";
-					$this->login_check = 0;
-					$this->logd("Password accepted for ".var_export($username, 1).", waiting for the second factor", "message");
-					$this->mesg[] = "A second factor is needed.";
-					return 1;
-				}
-				$this->logd("Login Successful for ".var_export($username, 1), "message");
-				$this->mesg[] = "User is logged in.";
-				return 1;
-			}
-			else
-			{
-				$this->logd("Failed to generate session cookie.", "error");
-				$this->login_val = "cookie_fail";
-				return 0;
-			}
+			return $this->SignedIn($id, $Bender_remember_me, $authoritah, "Password");
 		}else
 		{
 			#Failed Password check.
@@ -605,6 +601,79 @@ class security
 		}
 	}
 	
+	/**
+	 * The member ($this->username, user_info.id $id) proved who they are ($how, for the log): their session starts, and
+	 * waits for its second factor if they ask for one.
+	 */
+	private function SignedIn($id, $Bender_remember_me, $authoritah, $how)
+	{
+		if(!$this->GenerateSessionCookie($Bender_remember_me, $authoritah))
+		{
+			$this->logd("Failed to generate session cookie.", "error");
+			$this->login_val = "cookie_fail";
+			return 0;
+		}
+		$date = date($this->datetime_format);
+		$sql1 = "UPDATE user_info SET login_fails = '0', last_login = ? WHERE id = ? ";
+		$prep = $this->sql->conn->prepare($sql1);
+		$prep->bindParam(1, $date, PDO::PARAM_STR);
+		$prep->bindParam(2, $id, PDO::PARAM_INT);
+		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+
+		$this->login_val = "good";
+		$this->login_check = 1;
+		if($this->StartSecondFactor($this->username))
+		{
+			# Who it is was proved, but this member asks for a second factor: the session grants nothing until it is done.
+			$this->login_val = "mfa_required";
+			$this->login_check = 0;
+			$this->logd($how." accepted for ".var_export($this->username, 1).", waiting for the second factor", "message");
+			$this->mesg[] = "A second factor is needed.";
+			return 1;
+		}
+		$this->logd("Login Successful for ".var_export($this->username, 1)." (".$how.")", "message");
+		$this->mesg[] = "User is logged in.";
+		return 1;
+	}
+
+	/**
+	 * Signs in a member who signed in with an outside account linked to theirs (lib/linked_logins.inc.php): as Login()
+	 * does after the right password, so the account must be confirmed and not locked, and the second factor is still
+	 * asked for. Sets login_val as Login() does: good, mfa_required, NotValidated, locked, u_fail or cookie_fail.
+	 */
+	public function LoginLinked($username, $Bender_remember_me = 0, $how = "Linked account")
+	{
+		if($this->sql->service == "sqlsrv")
+			{$sql0 = "SELECT TOP 1 id, validated, locked, username FROM user_info WHERE username = ?";}
+		else
+			{$sql0 = "SELECT id, validated, locked, username FROM user_info WHERE username = ? LIMIT 1";}
+		$result = $this->sql->conn->prepare($sql0);
+		$result->execute(array($username));
+		$member = $result->fetch(PDO::FETCH_ASSOC);
+		if(!$member)
+		{
+			$this->login_val = "u_fail";
+			$this->login_check = 0;
+			$this->logd("Failed to login, a linked account's user is gone: ".var_export($username, 1), "error");
+			return 0;
+		}
+		if((int)$member['validated'] === 1)
+		{
+			$this->login_val = 'NotValidated';
+			$this->login_check = 0;
+			return 0;
+		}
+		if((int)$member['locked'] === 1)
+		{
+			$this->login_val = 'locked';
+			$this->login_check = 0;
+			$this->logd("Failed to login, user locked: ".var_export($username, 1), "error");
+			return 0;
+		}
+		$this->username = $member['username'];
+		return $this->SignedIn($member['id'], $Bender_remember_me, 0, $how);
+	}
+
 	/**
 	 * Called with a session that has just been created. Does this member ask for a second factor at sign-in, and is
 	 * this computer one they chose to remember? @return bool true if the session has been made to wait for one

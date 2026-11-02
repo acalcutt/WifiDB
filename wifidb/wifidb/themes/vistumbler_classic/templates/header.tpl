@@ -90,6 +90,7 @@
                                 {if $wifidb_is_admin|default:false}
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></div>
+                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></div>
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/backups.php">Backups</a></div>
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/servers.php">Servers</a></div>
                                 {if $wifidb_admin_mode|default:false}
