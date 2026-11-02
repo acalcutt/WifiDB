@@ -598,7 +598,7 @@ class apiv2 extends dbcore
 					require_once dirname(__FILE__).'/import_queue.inc.php';
 					list($queued, $detail) = ImportQueue::Add($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array(), array('file_name' => $filename,
 						'file_orig' => $file_orig, 'file_date' => $date, 'file_user' => $user, 'otherusers' => $otherusers, 'notes' => $notes,
-						'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type), $upload, function ($line) { $this->logd($line, "error"); });
+						'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type), $upload, function ($line) { $this->logd($line, "error"); }, 'upload_api');
 					switch($queued)
 					{
 						case 'queued':

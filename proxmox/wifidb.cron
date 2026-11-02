@@ -16,6 +16,8 @@ MAILTO=""
 * * * * *   www-data  /opt/wifidb/tools/cron/admind
 # this node's report for admin/servers.php (version, load, memory, disks, services)
 * * * * *   www-data  /opt/wifidb/tools/cron/server_status
+# this node's page views and events, added to the traffic counts (admin/traffic.php)
+* * * * *   www-data  /opt/wifidb/tools/cron/traffic
 # with the shared files bucket, the generated files (tile archives, GeoJSON, KML exports) kept the same on every node
 */2 * * * * www-data  /opt/wifidb/tools/cron/out_sync
 0 12 * * *  www-data  /opt/wifidb/tools/cron/export_kml

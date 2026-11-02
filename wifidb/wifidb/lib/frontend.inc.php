@@ -28,6 +28,7 @@ class frontend extends dbcore
 	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
 	public $all_users_aps, $all_users_data, $footer, $login_bar, $meta, $pages_together, $smarty,
 		$user_all_imports_data, $users_import_aps, $wifidb_host_url;
+	private $visitor_country = false;   # VisitorCountry(): false until looked up, then the code or null
 	#===========================#
 	#   __construct (default)   #
 	#===========================#
@@ -66,6 +67,7 @@ class frontend extends dbcore
 			$ip_version = (strpos($client_ip, ':') !== false) ? 'IPv6' : 'IPv4';
 			$this->smarty->assign('ip_version', $ip_version);
 			$this->AssignTracking(isset($config['geoip_country_db']) ? $config['geoip_country_db'] : '');
+			$this->CountPageView($config);
 
 			$this->smarty->assign('critical_error_message', '');
 
@@ -199,7 +201,7 @@ class frontend extends dbcore
 			if($mode === 'region')
 			{
 				$credit = is_string($geoipDb) && $geoipDb !== '' && is_file($geoipDb);   # DB-IP's licence asks for a link
-				if(!isset($_COOKIE[CookieConsent::COOKIE])) { $country = VisitorCountry::Lookup($_SERVER, $geoipDb); }
+				if(!isset($_COOKIE[CookieConsent::COOKIE])) { $country = $this->VisitorCountry($geoipDb); }
 			}
 			$ask = CookieConsent::Ask($mode, $country);
 		}
@@ -217,6 +219,46 @@ class frontend extends dbcore
 		$this->smarty->assign('wifidb_google_verification', $settings->Get('google_site_verification'));
 		$this->smarty->assign('wifidb_bing_verification', $settings->Get('bing_site_verification'));
 		$this->smarty->assign('wifidb_site_origin', preg_replace('#^(https?://[^/]+).*$#i', '$1', $this->URL_PATH));
+	}
+
+	/**
+	 * The visitor's country (lib/visitor_country.inc.php), looked up once a page and kept for a day for each address in
+	 * APCu, when this node has it (the cookie banner and the traffic counts both ask). @return string|null
+	 */
+	private function VisitorCountry($geoipDb)
+	{
+		if($this->visitor_country !== false) { return $this->visitor_country; }
+		require_once dirname(__FILE__).'/visitor_country.inc.php';
+		$ip = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
+		# (a CDN that says the country: nothing to look up)
+		$cache = !isset($_SERVER['HTTP_CF_IPCOUNTRY']) && $ip !== '' && function_exists('apcu_fetch') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN);
+		if($cache)
+		{
+			$cached = apcu_fetch('wifidb_country_'.$ip, $found);
+			if($found) { return $this->visitor_country = ($cached === '' ? null : $cached); }
+		}
+		$this->visitor_country = VisitorCountry::Lookup($_SERVER, $geoipDb);
+		if($cache) { apcu_store('wifidb_country_'.$ip, (string)$this->visitor_country, 86400); }
+		return $this->visitor_country;
+	}
+
+	/** This page view, for admin/traffic.php (lib/traffic.inc.php). Never in the page's way. */
+	private function CountPageView(array $config)
+	{
+		try
+		{
+			require_once dirname(__FILE__).'/traffic.inc.php';
+			$traffic = Traffic::ForConfig($config);
+			$agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+			if($traffic === null || $_SERVER['REQUEST_METHOD'] !== 'GET' || Traffic::IsBot($agent)) { return; }
+			# the script from the site's root: opt/fetch.php
+			$script = isset($_SERVER['SCRIPT_NAME']) ? (string)$_SERVER['SCRIPT_NAME'] : '';
+			$base = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+			$page = strpos($script, $base) === 0 ? substr($script, strlen($base)) : ltrim($script, '/');
+			$traffic->Page($page, (string)$this->sec->LoginUser, $_SERVER,
+				$this->VisitorCountry(isset($config['geoip_country_db']) ? $config['geoip_country_db'] : ''));
+		}
+		catch(Throwable $e) {}
 	}
 
 	function htmlfooter()

@@ -24,6 +24,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></li>
 						<li><a href="{$wifidb_host_url}admin/backups.php">Backups</a></li>
 						<li><a href="{$wifidb_host_url}admin/servers.php">Servers</a></li>
+						<li><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></li>
 						{if $wifidb_admin_mode|default:false}
 						<li><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></li>
 						{else}

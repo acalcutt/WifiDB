@@ -28,11 +28,12 @@ class ImportQueue
 	 * Queues the upload at $path (already in import/up as $f['file_name']).
 	 * @param array $f file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type
 	 * @param callable|null $log function ($line), for what went wrong
+	 * @param string $via 'upload' (the upload page) or 'upload_api' (the API, Vistumbler), for the traffic counts
 	 * @return array [result, detail]: ['queued', import id], ['waiting'|'imported', ''] (the same file is already
 	 *   queued or imported), ['unstored', why] (the shared files bucket couldn't take it) or ['failed', why]. Unless it
 	 *   was queued, the copy at $path is removed again; with the bucket, it is removed once queued too.
 	 */
-	public static function Add(PDO $conn, array $config, array $f, $path, $log = null)
+	public static function Add(PDO $conn, array $config, array $f, $path, $log = null, $via = 'upload')
 	{
 		$say = function ($line) use ($log) { if($log) { call_user_func($log, $line); } };
 		$hash = (string)$f['hash'];
@@ -80,6 +81,8 @@ class ImportQueue
 		}
 		// with the bucket, it's where uploads are kept: this node's copy goes (the importer fetches it)
 		if($shared) { @unlink($path); }
+		require_once dirname(__FILE__).'/traffic.inc.php';
+		Traffic::Note($config, $via);   # admin/traffic.php
 		return array('queued', $id);
 	}
 }

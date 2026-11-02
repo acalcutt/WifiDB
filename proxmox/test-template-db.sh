@@ -116,6 +116,7 @@ scan "$member" /cp/ '/cp/index.php?func=profile' '/cp/index.php?func=pref' /cp/s
     '/cp/messages.php?func=sendmsg' '/opt/userstats.php?func=alluserlists&user=tuser'
 . "$(dirname "$(readlink -f "$0")")/test-linked-logins.inc.sh"
 . "$(dirname "$(readlink -f "$0")")/test-site-meta.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-traffic.inc.sh"
 
 log "importing a WiGLE file"
 # cron's importers would race the one run here, so it's held off until the checks are done

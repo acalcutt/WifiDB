@@ -57,6 +57,8 @@ switch($func)
 		$Bender_remember_me = (@$_POST['Bender_remmeber_me'] == "Yes" ? 1 : 0 );
 		
 		$dbcore->sec->Login($username, $password, $Bender_remember_me);
+		require_once 'lib/traffic.inc.php';
+		Traffic::Note($config, in_array($dbcore->sec->login_val, array('good', 'mfa_required'), true) ? 'login' : 'login_failed');   # admin/traffic.php
 		switch($dbcore->sec->login_val)
 		{
 			case "locked":
@@ -295,6 +297,8 @@ switch($func)
 			switch($ret)
 			{
 				case 1:
+					require_once 'lib/traffic.inc.php';
+					Traffic::Note($config, 'signup');   # admin/traffic.php
 					$subject = "Vistumbler WifiDB - User '$username' Created";
 					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n";
 					$dbcore->wdbmail->notify('new_user', $subject, $message, $dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user=".urlencode($username), 'new_users', null, "New member: $username");

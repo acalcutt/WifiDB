@@ -225,7 +225,7 @@ class api extends dbcore
 	{
 		require_once dirname(__FILE__).'/import_queue.inc.php';
 		list($queued, $detail) = ImportQueue::Add($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array(), $f, $upload,
-			function ($line) { $this->logd($line, "error"); });
+			function ($line) { $this->logd($line, "error"); }, 'upload_api');
 		switch($queued)
 		{
 			case 'queued':   return array("message" => "File has been inserted for importing at a scheduled time.", "importnum" => $detail, "filehash" => $f['hash'], "title" => $f['title'], "user" => $f['file_user']);

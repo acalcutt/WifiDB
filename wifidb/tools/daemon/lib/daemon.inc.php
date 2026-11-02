@@ -147,6 +147,8 @@ class daemon extends wdbcli
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
 		$prep->execute();
+		require_once $this->PATH.'lib/traffic.inc.php';
+		Traffic::Note(isset($GLOBALS['config']) ? $GLOBALS['config'] : null, 'import_failed');   # admin/traffic.php
 		if ($this->sql->checkError()) {
 			$this->verbosed("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1), -1);
 			//$this->logd("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1));
@@ -611,6 +613,8 @@ class daemon extends wdbcli
 
 					$prep_update_files_table->execute();
 					$this->sql->checkError(__LINE__, __FILE__);
+					require_once $this->PATH.'lib/traffic.inc.php';
+					Traffic::Note(isset($GLOBALS['config']) ? $GLOBALS['config'] : null, 'import_done');   # admin/traffic.php
 
 					if($this->sql->service == "mysql")
 						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}

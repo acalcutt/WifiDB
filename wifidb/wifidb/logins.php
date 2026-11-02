@@ -121,7 +121,12 @@ try
 				$showUnlinked($callback, $identity, $token, false);
 			}
 			$sec->LoginLinked($username, $record['remember'] ? 1 : 0, "Linked $name account");
-			if($sec->login_val === 'good' || $sec->login_val === 'mfa_required') { $logins->Touch($callback, $identity['subject']); }
+			if($sec->login_val === 'good' || $sec->login_val === 'mfa_required')
+			{
+				$logins->Touch($callback, $identity['subject']);
+				require_once 'lib/traffic.inc.php';
+				Traffic::Note($config, 'login');   # admin/traffic.php
+			}
 			$signedIn($record['return']);
 			break;
 

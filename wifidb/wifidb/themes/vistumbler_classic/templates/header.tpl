@@ -95,6 +95,7 @@
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></div>
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/backups.php">Backups</a></div>
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/servers.php">Servers</a></div>
+                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></div>
                                 {if $wifidb_admin_mode|default:false}
                                 <div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></div>
                                 {else}

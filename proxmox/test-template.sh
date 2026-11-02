@@ -144,6 +144,7 @@ check "dev tools (PHPUnit) are not in the container" docker exec "$ct1" test ! -
 ct=$ct1; sqlq() { docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "$1" | tr "	" "|"; }
 . "$(dirname "$(readlink -f "$0")")/test-linked-logins.inc.sh"
 . "$(dirname "$(readlink -f "$0")")/test-site-meta.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-traffic.inc.sh"
 if [ -n "${IMPORT_SAMPLES:-}" ]; then
     . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"
 fi
