@@ -112,8 +112,27 @@ function installed_version()
 	return preg_match("/return '([^']*)';/", (string)@file_get_contents(WEB.'/lib/version.inc.php'), $m) ? $m[1] : '';
 }
 
+/**
+ * updates.conf: KEY=value lines, # or ; for a comment. Read by hand, not as an INI file: PHP's INI parser takes a #
+ * comment as a syntax error (and then reads nothing), and a token can have characters INI gives a meaning to.
+ */
+function read_conf($file)
+{
+	$conf = array();
+	foreach(is_file($file) ? (array)file($file, FILE_IGNORE_NEW_LINES) : array() as $line)
+	{
+		$line = trim($line);
+		if($line === '' || $line[0] === '#' || $line[0] === ';' || strpos($line, '=') === false) { continue; }
+		list($key, $value) = explode('=', $line, 2);
+		$value = trim($value);
+		if(strlen($value) >= 2 && ($value[0] === '"' || $value[0] === "'") && substr($value, -1) === $value[0]) { $value = substr($value, 1, -1); }
+		$conf[trim($key)] = $value;
+	}
+	return $conf;
+}
+
 if(function_exists('posix_geteuid') && posix_geteuid() !== 0) { fwrite(STDERR, "wifidb-update has to run as root\n"); exit(1); }
-$conf = is_file(CONF) ? (parse_ini_file(CONF, false, INI_SCANNER_RAW) ?: array()) : array();
+$conf = read_conf(CONF);
 if(($conf['UPDATES'] ?? '1') !== '1' && !in_array('--status', $argv, true)) { exit(0); }
 
 // the site's own code, read now: an update moves it aside
