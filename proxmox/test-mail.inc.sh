@@ -1,7 +1,8 @@
 # Sourced by the boot tests: sending mail as the Mail page (admin/mail.php) sets it up, through a stand-in mail server
 # run in the container (test-smtp-sink.php): a test message, a signing key made on the page and the record it shows,
-# check_mail.php reading what the page saved, and a new member's confirmation mail, signed; and with the mail server
-# gone, a sign-up that says the mail wasn't sent. Needs from the caller: ct, sqlq, tzc, ok/bad/check/log; and from
+# check_mail.php reading what the page saved, signing in with a Google account connected on the page (OAuth, against
+# test-oauth-provider.php), and a new member's confirmation mail, signed; and with the mail server gone, a sign-up that
+# says the mail wasn't sent. Needs from the caller: ct, sqlq, tzc, ok/bad/check/log; and from
 # test-linked-logins.inc.sh, $session (a member), $s4 (ll2fa, an administrator) and ll_code (ll2fa's recovery codes:
 # 1-5 are used before).
 
@@ -63,6 +64,49 @@ check "...with no PHP errors" ml_clean "$page"
 out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/utilites/check_mail.php --send cli@example.test 2>&1)
 check "check_mail.php uses what the page saved too, and sends with it" sh -c 'echo "$0" | grep -q "The DKIM key is readable, 2048 bits" && echo "$0" | grep -q "^Sent." && ! echo "$0" | grep -q "Could not read"' "$out"
 check "...signed" test "$(ml_verify "$record")" = ok
+
+# a Google account instead of the password (lib/mail_oauth.inc.php), through the stand-in provider test-linked-logins
+# started (test-oauth-provider.php), which "signs in" whoever /tmp/oauth-subject names
+log "mail through a Google account (OAuth)"
+docker cp "$here/test-oauth-provider.php" "$ct:/var/tmp/oauth-provider.php"
+docker exec "$ct" pgrep -f "127.0.0.1:8099" >/dev/null || docker exec -d "$ct" php -S 127.0.0.1:8099 /var/tmp/oauth-provider.php
+docker exec "$ct" php -r '$f = "/srv/wifidb-data/config/web.overrides.php"; $c = include $f;
+    $c["mail_oauth_endpoints"] = array("authorize" => "http://127.0.0.1:8099/authorize", "token" => "http://127.0.0.1:8099/token",
+        "userinfo" => "http://127.0.0.1:8099/userinfo", "revoke" => "http://127.0.0.1:8099/revoke");
+    file_put_contents($f, "<?php\nreturn " . var_export($c, true) . ";\n");'
+sleep 3   # PHP rechecks a changed file after a couple of seconds
+docker exec "$ct" sh -c 'echo mailer > /tmp/oauth-subject'
+check "connecting a Google account needs the OAuth client saved first" sh -c 'echo "$0" | grep -q "r=oauth_needs"' "$(ml_post -d func=oauth_connect -d account=main | ml_loc)"
+ml_save -d smtp_oauth_client_id=fake-mail --data-urlencode smtp_oauth_secret=fake-secret >/dev/null
+start=$(ml_post -d func=oauth_connect -d account=main)
+mo_cookie=$(echo "$start" | sed -n 's/^[Ss]et-[Cc]ookie: WiFiDB_mail_oauth=\([^;]*\);.*/\1/p' | head -1)
+check "Connect with Google goes to Google, for mail, offline, with PKCE and the address to come back to" \
+    sh -c 'echo "$0" | grep -q "^http://127.0.0.1:8099/authorize?" && echo "$0" | grep -q "scope=https%3A%2F%2Fmail.google.com%2F" && echo "$0" | grep -q "access_type=offline" && echo "$0" | grep -q "code_challenge=" && echo "$0" | grep -q "redirect_uri=https%3A%2F%2Fwifidb.test%2Fadmin%2Fmail.php%3Foauth%3Dgoogle" && test -n "$1"' \
+    "$(echo "$start" | ml_loc)" "$mo_cookie"
+back=$(docker exec "$ct" curl -s -D - -o /dev/null "$(echo "$start" | ml_loc)" | ml_loc | sed 's#^https://wifidb.test#http://127.0.0.1#')
+mo_back() { docker exec "$ct" curl -s -D - -H "Cookie: $tzc; WiFiDB_login_yes=$s4; WiFiDB_mail_oauth=$mo_cookie" "$back"; }
+check "...and back, the account is connected" sh -c 'echo "$0" | grep -q "r=connected"' "$(mo_back | ml_loc)"
+check "...signing in as it, with its token kept encrypted" sh -c 'echo "$0" | grep -q "^enc:" && test "$1" = "mailer@fake.example|XOAUTH2"' \
+    "$(sqlq "select value from site_settings where name = 'smtp_oauth_token'")" \
+    "$(sqlq "select value from site_settings where name = 'smtp_user'")|$(sqlq "select value from site_settings where name = 'smtp_authtype'")"
+check "...which the page shows" sh -c 'echo "$0" | grep -q "Connected as mailer@fake.example" && echo "$0" | grep -q "value=\"oauth_disconnect\""' "$(ml_get http://127.0.0.1/admin/mail.php)"
+check "the same answer from Google can't be used twice" sh -c 'echo "$0" | grep -q "The Google account wasn.*t connected"' "$(mo_back)"
+before=$(ml_count)
+page=$(ml_post -d func=test -d to=me@example.test -d account=main)
+mo_auth=$(docker exec "$ct" tail -1 "$sink.auth")
+mo_token=$(echo "$mo_auth" | sed -n 's/.*auth=Bearer \([0-9a-f]*\).*/\1/p')
+check "a test message goes out signed in with an access token, not a password" sh -c 'echo "$0" | grep -q "Sent to me@example.test" && echo "$0" | grep -q "AUTH XOAUTH2 (the login is left out)" && test "$1" = $(( $2 + 1 ))' \
+    "$page" "$(ml_count)" "$before"
+check "...as the connected account, with a token Google gave for it" sh -c 'echo "$0" | grep -q "^user=mailer@fake.example auth=Bearer " && test -n "$1" && test "$(docker exec "$2" cat "/tmp/oauth-fake/token-$1")" = mailer' \
+    "$mo_auth" "$mo_token" "$ct"
+check "...which isn't on the page" sh -c '! echo "$0" | grep -q "$1"' "$page" "$mo_token"
+check "the check asks Google for an access token, and gets one" sh -c 'echo "$0" | grep -q "signs in to Google as mailer@fake.example: Google gives it an access token"' "$(ml_post -d func=check)"
+docker exec "$ct" sh -c 'rm -f /tmp/oauth-fake/refresh-*'   # Google takes it back
+check "when Google has taken the token back, the check says to connect again" sh -c 'echo "$0" | grep -q "invalid_grant" && echo "$0" | grep -q "connect the account again"' "$(ml_post -d func=check)"
+check "...and a test message says why it wasn't sent" sh -c 'echo "$0" | grep -q "Not sent" && echo "$0" | grep -q "invalid_grant"' "$(ml_post -d func=test -d to=me@example.test -d account=main)"
+check "disconnecting forgets it" sh -c 'echo "$0" | grep -q "r=disconnected" && test -z "$1"' \
+    "$(ml_post -d func=oauth_disconnect -d account=main | ml_loc)" "$(sqlq "select value from site_settings where name = 'smtp_oauth_token'")"
+ml_save >/dev/null   # the password again, for what's below
 
 # a new member's confirmation, through the sign-up account (the mail account's, as it has nothing of its own)
 ml_validation=$(sqlq "select value from site_settings where name = 'email_validation'")

@@ -94,12 +94,15 @@ class MailCheck
 
 		// ── sending ──
 		$signupOwn = false;
-		foreach(array('host', 'user', 'pass', 'from') as $field) { if(isset($config['signup_smtp_' . $field])) { $signupOwn = true; } }
-		// a server that takes mail without signing in needs no username or password
-		$fields = (!isset($config['smtp_auth']) || $config['smtp_auth']) ? array('host', 'user', 'pass', 'from') : array('host', 'from');
+		foreach(array('host', 'user', 'pass', 'from', 'oauth_token') as $field) { if(isset($config['signup_smtp_' . $field])) { $signupOwn = true; } }
+		$auth = !isset($config['smtp_auth']) || $config['smtp_auth'];
+		$oauth = array('smtp' => $auth && $get('smtp_authtype') === 'XOAUTH2');   # a Google account connected on the Mail page
+		$oauth['signup_smtp'] = $oauth['smtp'] || !empty($config['signup_smtp_oauth_token']);
 		foreach(array('smtp' => '', 'signup_smtp' => 'sign-up mail ') as $prefix => $label)
 		{
 			if($prefix === 'signup_smtp' && !$signupOwn) { $add('ok', 'Sign-up mail uses the main SMTP account (no separate signup_smtp_* settings).'); continue; }
+			// a server that takes mail without signing in needs no username or password, and a Google account no password
+			$fields = !$auth ? array('host', 'from') : ($oauth[$prefix] ? array('host', 'user', 'from') : array('host', 'user', 'pass', 'from'));
 			foreach($fields as $field)
 			{
 				// what the sign-up account doesn't set is the main account's
@@ -108,6 +111,23 @@ class MailCheck
 				{
 					$add('fail', ucfirst($label) . $prefix . '_' . $field . ' is empty or still the example value, so ' . ($label ?: 'mail ') . 'cannot be sent.');
 				}
+			}
+		}
+		// signing in with a Google account: one connected, and the one the username names (Google refuses another)
+		if($oauth['signup_smtp'] && ($get('smtp_oauth_client_id') === '' || $get('smtp_oauth_secret') === ''))
+		{
+			$add('fail', 'Signing in with a Google account needs the Google OAuth client ID and secret (Mail page).');
+		}
+		foreach(array('smtp' => 'The mail account', 'signup_smtp' => 'The sign-up account') as $prefix => $which)
+		{
+			if(!$oauth[$prefix] || ($prefix === 'signup_smtp' && !$signupOwn)) { continue; }
+			$user = isset($config[$prefix . '_user']) ? (string)$config[$prefix . '_user'] : (string)$get('smtp_user');
+			$own = !empty($config[$prefix . '_oauth_token']);
+			$connected = $own ? (string)$get($prefix . '_oauth_account') : (string)$get('smtp_oauth_account');
+			if(!$own && $prefix === 'smtp') { $add('fail', "$which signs in with a Google account, but none is connected: connect one on the Mail page."); }
+			elseif($connected !== '' && strcasecmp($connected, $user) !== 0)
+			{
+				$add('fail', "$which's username is $user, but the Google account " . ($own ? 'connected for it' : 'it signs in with (the mail account\'s)') . " is $connected: Google refuses that. Connect $user" . ($own ? '' : ' for it') . ', or change the username.');
 			}
 		}
 		if(!empty($config['email_validation']) && (self::IsExampleValue($get('smtp_host')) || self::IsExampleValue($get('signup_smtp_host') ?: $get('smtp_host'))))

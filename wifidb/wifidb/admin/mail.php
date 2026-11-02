@@ -2,7 +2,8 @@
 /*
 mail.php, how the site sends mail (tools/daemon/lib/wdbmail.inc.php): the mail server and account, a second account for
 sign-up and password-reset mail if wanted, and DKIM signing, whose key can be made here and is then kept in the
-database, so every server signs with it. It checks the settings and DNS (lib/mailcheck.inc.php, as
+database, so every server signs with it. Either account can sign in to Gmail or Google Workspace with a Google account
+(OAuth) instead of a password: connected here, through the site's own OAuth client (lib/mail_oauth.inc.php). It checks the settings and DNS (lib/mailcheck.inc.php, as
 tools/utilites/check_mail.php does) and sends a test message. Needs admin mode.
 
 Kept with the site settings: they start from config.inc.php's smtp_* and DKIM_* settings, and once saved here the value
@@ -22,6 +23,7 @@ define("SWITCH_EXTRAS", "cp");
 
 include('../lib/init.inc.php');
 require_once '../lib/mailcheck.inc.php';
+require_once '../lib/mail_oauth.inc.php';
 $dbcore->sec->RequireAdminMode('admin/mail.php');
 
 $username = $dbcore->sec->LoginUser;
@@ -29,6 +31,10 @@ $settings = $dbcore->sec->Settings();
 $messages = array(
 	'saved'     => 'Saved.',
 	'nothing'   => 'Nothing changed.',
+	'connected' => 'The Google account is connected: mail goes out signed in as it.',
+	'disconnected' => 'Disconnected, and Google was told the site no longer needs it. Mail from that account can\'t be sent until one is connected again, or another way to sign in is chosen.',
+	'oauth_needs'  => 'Connecting a Google account needs the Google OAuth client ID and secret saved first.',
+	'oauth_failed' => 'The Google account wasn\'t connected:',
 	'key_made'  => 'A new signing key was made, and mail is signed with it from now on. Publish its record (below) in DNS: until it is there, receivers can\'t check the signature.',
 	'key_kept'  => 'There is a signing key already: tick Replace it to make a new one. Nothing was changed.',
 	'bad_key'   => 'That isn\'t a private key PHP can read (a PEM file, without a passphrase, of at least 1024 bits). Nothing was saved.',
@@ -53,7 +59,7 @@ function mail_save($dbcore, $settings, $values, $username)
 	}
 	if(!$changed) { return 'nothing'; }
 	$labels = array();
-	foreach($changed as $name) { $labels[] = SiteSettings::MAIL_SETTINGS[$name][1]; }
+	foreach($changed as $name) { $labels[] = SiteSettings::Definition($name)[1]; }
 	$dbcore->sec->logd("Mail settings changed by ".$username.": ".implode(', ', $changed), "Info");
 	try
 	{
@@ -76,8 +82,68 @@ function mail_key($pem)
 	return ($bits !== null && $bits >= 1024) ? $pem : null;
 }
 
+# Google accounts (lib/mail_oauth.inc.php): Google sends the browser back here, to the address its console was given
+$endpoints = isset($config['mail_oauth_endpoints']) ? (array)$config['mail_oauth_endpoints'] : array();
+$redirect = $dbcore->URL_PATH.'admin/mail.php?oauth=google';
+$oauthCookie = function ($value) use ($dbcore)
+{
+	setcookie(MailOAuth::COOKIE, $value, array('expires' => $value === '' ? time() - 3600 : time() + MailOAuth::TTL,
+		'path' => $dbcore->sec->PATH ? $dbcore->sec->PATH : '/', 'secure' => $dbcore->sec->ssl === '1', 'httponly' => true, 'samesite' => 'Lax'));
+};
+
 $func = isset($_POST['func']) ? (string)$_POST['func'] : '';
-if($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'save')
+if($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'oauth_connect')
+{
+	$account = (isset($_POST['account']) && $_POST['account'] === 'signup') ? 'signup' : 'main';
+	if($settings->Get('smtp_oauth_client_id') === '' || $settings->Get('smtp_oauth_secret') === '') { header('Location: mail.php?r=oauth_needs'); exit; }
+	$hint = $settings->Get($account === 'signup' ? 'signup_smtp_user' : 'smtp_user');
+	list($url, $value) = MailOAuth::Start($settings->Get('smtp_oauth_client_id'), $redirect, $account,
+		filter_var($hint, FILTER_VALIDATE_EMAIL) !== false ? $hint : '', $endpoints);
+	$oauthCookie($value);
+	header('Location: '.$url);
+	exit;
+}
+elseif($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['oauth']) && $_GET['oauth'] === 'google')
+{
+	$kept = isset($_COOKIE[MailOAuth::COOKIE]) ? (string)$_COOKIE[MailOAuth::COOKIE] : '';
+	$oauthCookie('');   # once only
+	try
+	{
+		list($account, $refresh, $email) = MailOAuth::Finish($settings->Get('smtp_oauth_client_id'), $settings->Get('smtp_oauth_secret'), $redirect,
+			isset($_GET['code']) ? (string)$_GET['code'] : '', isset($_GET['state']) ? (string)$_GET['state'] : '', $kept,
+			isset($_GET['error']) ? (string)$_GET['error'] : '', $endpoints);
+		$p = ($account === 'signup') ? 'signup_smtp_' : 'smtp_';
+		$old = $settings->Get($p.'oauth_token');
+		# the account signs in as itself, and Gmail sends only as it (or its aliases)
+		$values = array($p.'oauth_token' => $refresh, $p.'oauth_account' => $email, $p.'user' => $email);
+		if($account === 'main') { $values['smtp_authtype'] = 'XOAUTH2'; $values['smtp_auth'] = true; }
+		if($settings->Get($p.'from') === '') { $values[$p.'from'] = $email; }
+		$result = mail_save($dbcore, $settings, $values, $username);
+		if($result === 'saved')
+		{
+			if($old !== '' && $old !== $refresh) { MailOAuth::Revoke($old, $endpoints); }
+			$result = 'connected';
+		}
+		header('Location: mail.php?r='.$result);
+		exit;
+	}
+	catch(RuntimeException $e)
+	{
+		$dbcore->sec->logd("Connecting a Google account for mail failed: ".$e->getMessage(), "error");
+		$r = 'oauth_failed';
+		$detail = $e->getMessage();
+	}
+}
+elseif($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'oauth_disconnect')
+{
+	$p = (isset($_POST['account']) && $_POST['account'] === 'signup') ? 'signup_smtp_' : 'smtp_';
+	$old = $settings->Get($p.'oauth_token');
+	if($old !== '') { MailOAuth::Revoke($old, $endpoints); }
+	$result = mail_save($dbcore, $settings, array($p.'oauth_token' => '', $p.'oauth_account' => ''), $username);
+	header('Location: mail.php?r='.($result === 'saved' ? 'disconnected' : $result));
+	exit;
+}
+elseif($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'save')
 {
 	$values = array();
 	$problems = array();
@@ -131,7 +197,8 @@ elseif($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'make_key')
 }
 elseif($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'check')
 {
-	$results = MailCheck::Check($settings->MailConfig($config), array('MailCheck', 'Txt'));
+	$mailConfig = $settings->MailConfig($config);
+	$results = array_merge(MailCheck::Check($mailConfig, array('MailCheck', 'Txt')), wdbmail::CheckOAuth($mailConfig));
 	$r = '';
 }
 elseif($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'test')
@@ -150,12 +217,25 @@ elseif($_SERVER['REQUEST_METHOD'] === 'POST' && $func === 'test')
 else { $r = (string)filter_input(INPUT_GET, 'r', FILTER_SANITIZE_SPECIAL_CHARS); }
 
 # the settings, in the page's sections
-$sections = array('main' => array(), 'signup' => array(), 'signing' => array());
+$sections = array('main' => array(), 'signup' => array(), 'oauth' => array(), 'signing' => array());
 foreach($settings->Describe(SiteSettings::MAIL_SETTINGS) as $s)
 {
 	if(strpos($s['name'], 'signup_') === 0) { $sections['signup'][] = $s; }
+	elseif(strpos($s['name'], 'smtp_oauth_') === 0) { $sections['oauth'][] = $s; }
 	elseif(strpos($s['name'], 'DKIM_') === 0) { $sections['signing'][] = $s; }
 	else { $sections['main'][] = $s; }
+}
+# the Google accounts connected
+$oauth = array(
+	'redirect' => $redirect,
+	'ready'    => $settings->Get('smtp_oauth_client_id') !== '' && $settings->Get('smtp_oauth_secret') !== '',
+	'accounts' => array(),
+);
+foreach(array('main' => 'The mail account', 'signup' => 'The sign-up account') as $account => $name)
+{
+	$p = ($account === 'signup') ? 'signup_smtp_' : 'smtp_';
+	$oauth['accounts'][] = array('id' => $account, 'name' => $name, 'connected' => $settings->Get($p.'oauth_account'),
+		'set' => $settings->Get($p.'oauth_token') !== '');
 }
 
 # the signing key in use, and the record to publish for it
@@ -198,6 +278,8 @@ catch(Throwable $e) {}
 $dbcore->smarty->assign('wifidb_page_label', 'Mail');
 $dbcore->smarty->assign('mail_main', $sections['main']);
 $dbcore->smarty->assign('mail_signup', $sections['signup']);
+$dbcore->smarty->assign('mail_oauth_settings', $sections['oauth']);
+$dbcore->smarty->assign('mail_oauth', $oauth);
 $dbcore->smarty->assign('mail_signing', $sections['signing']);
 $dbcore->smarty->assign('mail_dkim', $dkim);
 $dbcore->smarty->assign('mail_results', $results);
@@ -205,6 +287,6 @@ $dbcore->smarty->assign('mail_test', $test);
 $dbcore->smarty->assign('mail_to', $test !== null ? $test['to'] : $me);
 $dbcore->smarty->assign('mail_validation', (bool)$settings->Get('email_validation'));
 $dbcore->smarty->assign('settings_message', (isset($messages[$r]) ? $messages[$r] : '').($detail !== '' ? ' ('.$detail.')' : ''));
-$dbcore->smarty->assign('settings_problem', in_array($r, array('key_kept', 'bad_key', 'bad_value', 'error'), true));
+$dbcore->smarty->assign('settings_problem', in_array($r, array('key_kept', 'bad_key', 'bad_value', 'error', 'oauth_needs', 'oauth_failed'), true));
 $dbcore->smarty->assign('settings_unencrypted', empty($config['two_factor_key']));
 $dbcore->smarty->display('admin_mail.tpl');

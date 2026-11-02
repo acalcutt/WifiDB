@@ -224,6 +224,13 @@ final class TwoFactorRenderTest extends TestCase
         $smarty->assign('mail_signing', [
             ['name' => 'DKIM_private_string', 'type' => 'secret', 'label' => 'Signing key', 'help' => '', 'value' => null, 'is_set' => true, 'source' => 'saved', 'options' => null],
         ]);
+        $smarty->assign('mail_oauth_settings', [
+            ['name' => 'smtp_oauth_secret', 'type' => 'secret', 'label' => 'Google OAuth client secret', 'help' => '', 'value' => null, 'is_set' => true, 'source' => 'saved', 'options' => null],
+        ]);
+        $smarty->assign('mail_oauth', ['redirect' => 'https://wifidb.example.com/admin/mail.php?oauth=google', 'ready' => false, 'accounts' => [
+            ['id' => 'main', 'name' => 'The mail account', 'connected' => "me$evil@gmail.test", 'set' => true],
+            ['id' => 'signup', 'name' => 'The sign-up account', 'connected' => '', 'set' => false],
+        ]]);
         $smarty->assign('mail_dkim', ['from' => 'saved', 'bits' => 2048, 'name' => 'wifidb._domainkey.example.test', 'record' => 'v=DKIM1; k=rsa; p=MIIB', 'new_selector' => 'wifidb202611']);
         $smarty->assign('mail_results', [['ok', 'The DKIM record matches the key.'], ['fail', "No DKIM record. Publish this:\n    v=DKIM1"]]);
         $smarty->assign('mail_test', ['to' => 'me@example.test', 'signup' => true, 'sent' => false, 'error' => $evil, 'lines' => "SERVER -> CLIENT: 535 $evil"]);
@@ -243,6 +250,10 @@ final class TwoFactorRenderTest extends TestCase
         $this->assertStringContainsString("No DKIM record. Publish this:<br />\n    v=DKIM1", $html);
         $this->assertMatchesRegularExpression('/name="account" type="radio" value="signup" checked>/', $html);
         $this->assertStringContainsString('nobody can finish signing up', $html);
+        $this->assertStringContainsString('<code>https://wifidb.example.com/admin/mail.php?oauth=google</code>', $html, 'the redirect URI for Google\'s console');
+        $this->assertStringContainsString('name="smtp_oauth_secret" type="password" value=""', $html);
+        $this->assertMatchesRegularExpression('/Connected as me&lt;script&gt;.*<input type="hidden" name="func" value="oauth_disconnect">/s', $html);
+        $this->assertMatchesRegularExpression('/value="oauth_connect">\s*<input type="submit" value="Connect with Google" disabled/', $html, 'not before the client is saved');
     }
 
     #[DataProvider('themes')]

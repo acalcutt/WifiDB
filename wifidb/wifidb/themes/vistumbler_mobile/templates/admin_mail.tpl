@@ -61,6 +61,18 @@ version 2 of the License, or (at your option) any later version.
 						</tr>
 						{call name=mail_rows rows=$mail_signup}
 						<tr>
+							<td class="subheading" colspan="2">Signing in with a Google account (OAuth)</td>
+						</tr>
+						<tr>
+							<td class="header" colspan="2">For Gmail or Google Workspace, instead of an app password: make an OAuth client (a Web application) in a Google Cloud project, with the scope https://mail.google.com/ on its consent screen and the address below as its authorized redirect URI, and save its client ID and secret here; then connect the account below.
+								For Workspace, make the consent screen Internal. For a gmail.com account, publish it (In production): one left in Testing gets tokens that stop working after 7 days.</td>
+						</tr>
+						<tr class="dark">
+							<td width="35%"><strong>Authorized redirect URI</strong></td>
+							<td><code>{$mail_oauth.redirect|escape:'html':'UTF-8':false}</code></td>
+						</tr>
+						{call name=mail_rows rows=$mail_oauth_settings}
+						<tr>
 							<td class="subheading" colspan="2">Signing (DKIM)</td>
 						</tr>
 						<tr>
@@ -73,6 +85,30 @@ version 2 of the License, or (at your option) any later version.
 						</tr>
 					</table>
 				</form>
+				<table class="content_table">
+					<tr>
+						<td class="subheading" colspan="2">Google accounts</td>
+					</tr>
+					{foreach $mail_oauth.accounts as $a}
+					<tr class="{cycle values='dark,light'}">
+						<td width="35%"><strong>{$a.name|escape:'html':'UTF-8':false}</strong></td>
+						<td>
+							<form method="post" action="{$wifidb_host_url}admin/mail.php">
+								<input type="hidden" name="account" value="{$a.id}">
+								{if $a.set}
+								Connected as {$a.connected|escape:'html':'UTF-8':false}.
+								<input type="hidden" name="func" value="oauth_disconnect">
+								<input type="submit" value="Disconnect">
+								{else}
+								{if $a.id == 'signup'}Not connected: it signs in as the mail account does.{else}Not connected.{/if}
+								<input type="hidden" name="func" value="oauth_connect">
+								<input type="submit" value="Connect with Google"{if !$mail_oauth.ready} disabled title="Save the OAuth client ID and secret first"{/if}>
+								{/if}
+							</form>
+						</td>
+					</tr>
+					{/foreach}
+				</table>
 				<table class="content_table">
 					<tr>
 						<td class="subheading" colspan="2">Signing key</td>

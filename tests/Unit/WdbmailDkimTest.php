@@ -154,16 +154,68 @@ final class WdbmailDkimTest extends TestCase
         }
     }
 
+    /** The stand-in mail server (proxmox/test-smtp-sink.php), on a free port. @return array (the process, its port) */
+    private function sink(): array
+    {
+        $sink = proc_open([PHP_BINARY, dirname(__DIR__, 2) . '/proxmox/test-smtp-sink.php', '0', $this->dir . '/sink'],
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        $port = (int)fgets($pipes[1]);
+        $this->assertGreaterThan(0, $port, 'the stand-in mail server started');
+        return [$sink, $port];
+    }
+
+    private function stopSink($sink): void
+    {
+        proc_terminate($sink);
+        proc_close($sink);
+        foreach (glob($this->dir . '/sink/*') ?: [] as $f) { @unlink($f); }
+        @rmdir($this->dir . '/sink');
+    }
+
+    #[RunInSeparateProcess]
+    #[PreserveGlobalState(false)]
+    public function testAGoogleAccountSignsInWithItsAccessTokenNotAPassword(): void
+    {
+        $m = $this->mailer([], $this->saved(['smtp_authtype' => 'XOAUTH2', 'smtp_user' => 'me@gmail.test', 'smtp_oauth_client_id' => 'client-1',
+            'smtp_oauth_secret' => 'secret-1', 'smtp_oauth_token' => 'rt-main', 'signup_smtp_user' => 'signup@gmail.test', 'signup_smtp_oauth_token' => 'rt-signup']));
+        $this->assertSame('XOAUTH2', $m->mail->AuthType);
+        $this->assertInstanceOf(MailOAuth::class, $m->mail->getOAuth());
+        $this->assertSame('me@gmail.test', $m->mail->getOAuth()->User());
+        $this->assertSame('XOAUTH2', $m->signupmail->AuthType);
+        $this->assertSame('signup@gmail.test', $m->signupmail->getOAuth()->User(), 'the sign-up account as its own Google account');
+
+        [$sink, $port] = $this->sink();
+        try {
+            foreach (['at-good' => [200, json_encode(['access_token' => 'at-good'])],
+                      'revoked' => [400, json_encode(['error' => 'invalid_grant'])]] as $case => $answer) {
+                $mail = wdbmail::Mailer($this->config(['smtp_host' => '127.0.0.1', 'smtp_port' => $port, 'smtp_secure' => '', 'smtp_authtype' => 'XOAUTH2',
+                    'smtp_user' => 'me@gmail.test']));
+                $mail->setOAuth(new MailOAuth('me@gmail.test', 'client-1', 'secret-1', 'rt-main', [], fn () => $answer));
+                $mail->addAddress('someone@example.net');
+                $mail->Subject = 'hello';
+                $mail->Body = 'hello';
+                if ($case === 'at-good') {
+                    $this->assertTrue($mail->send(), $mail->ErrorInfo);
+                    $this->assertSame("user=me@gmail.test auth=Bearer at-good  \n", file_get_contents($this->dir . '/sink.auth'), 'signed in with the access token');
+                } else {
+                    $this->assertFalse($mail->send());
+                    $this->assertStringContainsString('invalid_grant', wdbmail::Why($mail), "Google's reason, not only PHPMailer's");
+                    $this->assertStringContainsString('connect the account again', wdbmail::Why($mail));
+                }
+            }
+        } finally {
+            $this->stopSink($sink);
+            @unlink($this->dir . '/sink.auth');
+        }
+    }
+
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
     public function testATestMessageGoesThroughWithTheLoginLeftOutOfWhatIsShown(): void
     {
         $this->mailer();   # loads wdbmail
-        $sink = proc_open([PHP_BINARY, dirname(__DIR__, 2) . '/proxmox/test-smtp-sink.php', '0', $this->dir . '/sink'],
-            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+        [$sink, $port] = $this->sink();
         try {
-            $port = (int)fgets($pipes[1]);
-            $this->assertGreaterThan(0, $port, 'the stand-in mail server started');
             [$sent, $error, $lines] = wdbmail::Test($this->config(['smtp_host' => '127.0.0.1', 'smtp_port' => $port, 'smtp_secure' => '',
                 'smtp_user' => 'secret-user', 'smtp_pass' => 'secret-pass']), 'someone@example.net');
             $this->assertTrue($sent, $error);
@@ -180,10 +232,7 @@ final class WdbmailDkimTest extends TestCase
             $this->assertStringContainsString('Subject: WiFiDB mail test', $received);
             $this->assertSame([true, 'ok'], DkimVerifier::Verify($received, $this->publicKey), 'signed, as the site\'s mail is');
         } finally {
-            proc_terminate($sink);
-            proc_close($sink);
-            foreach (glob($this->dir . '/sink/*') ?: [] as $f) { @unlink($f); }
-            @rmdir($this->dir . '/sink');
+            $this->stopSink($sink);
         }
 
         [$sent, $error] = wdbmail::Test($this->config(['smtp_host' => '127.0.0.1', 'smtp_port' => 1, 'smtp_secure' => '']), 'someone@example.net');

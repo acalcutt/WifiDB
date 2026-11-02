@@ -115,6 +115,19 @@ class wdbmail
 		$mail->SMTPAuth			= (bool)$smtp('smtp_auth', true);
 		$mail->AuthType			= $smtp('smtp_authtype');	// '': the best the server offers
 		$mail->SMTPOptions		= $smtp('smtp_options', array());
+		// a Google account connected on admin/mail.php (lib/mail_oauth.inc.php) instead of the password: the sign-up
+		// account's own if it has one connected, else the main account's
+		if($signup && !empty($config['signup_smtp_oauth_token'])) { $mail->AuthType = 'XOAUTH2'; }
+		if($mail->AuthType === 'XOAUTH2')
+		{
+			if(!class_exists('MailOAuth', false))
+			{
+				require_once (isset($config['wifidb_install']) ? rtrim($config['wifidb_install'], '/\\').'/' : dirname(__DIR__, 3).'/wifidb/').'lib/mail_oauth.inc.php';
+			}
+			$mail->SMTPAuth = true;
+			$mail->setOAuth(new MailOAuth($mail->Username, $c('smtp_oauth_client_id'), $c('smtp_oauth_secret'), $smtp('smtp_oauth_token'),
+				isset($config['mail_oauth_endpoints']) ? (array)$config['mail_oauth_endpoints'] : array()));
+		}
 		// PHPMailer waits 300 seconds for a mail server that doesn't answer, far past the web pool's 30: the page (a
 		// sign-up, a password reset) would end in an error instead of saying the mail couldn't be sent
 		$mail->Timeout			= (int)$c('smtp_timeout', 15);
@@ -162,7 +175,43 @@ class wdbmail
 			$sent = false;
 			$mail->ErrorInfo = $e->getMessage();
 		}
-		return array($sent, $sent ? '' : $mail->ErrorInfo, $lines);
+		return array($sent, $sent ? '' : self::Why($mail), $lines);
+	}
+
+	/** Why $mail wasn't sent: PHPMailer's error, and Google's reason when the access token is what failed */
+	public static function Why(PHPMailer $mail)
+	{
+		$oauth = $mail->getOAuth();
+		return ($oauth instanceof MailOAuth && $oauth->Error() !== '') ? $oauth->Error().' ('.$mail->ErrorInfo.')' : $mail->ErrorInfo;
+	}
+
+	/**
+	 * For the mail check: whether Google gives each account that signs in with a Google account an access token.
+	 * @return array [status, text], as MailCheck::Check's
+	 */
+	public static function CheckOAuth(array $config)
+	{
+		$out = array();
+		$seen = array();
+		foreach(array(false, true) as $signup)
+		{
+			$oauth = self::Mailer($config, $signup)->getOAuth();
+			if(!($oauth instanceof MailOAuth)) { continue; }
+			$which = $signup ? 'The sign-up account' : 'The mail account';
+			$key = $oauth->User()."\n".($signup && !empty($config['signup_smtp_oauth_token']) ? 'own' : 'main');
+			if(isset($seen[$key])) { continue; }   # the sign-up account using the main one's
+			$seen[$key] = true;
+			try
+			{
+				$oauth->AccessToken();
+				$out[] = array('ok', "$which signs in to Google as ".$oauth->User().': Google gives it an access token.');
+			}
+			catch(Throwable $e)
+			{
+				$out[] = array('fail', "$which can't send: ".$oauth->Error());
+			}
+		}
+		return $out;
 	}
     
     function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
@@ -371,7 +420,7 @@ Go here to reset it to one you choose:
 
 						#Send email
 						if (!$this->mail->send()) {
-							echo "Mailer Error (" . str_replace("@", "&#64;", $userArray['email']) . ') ' . $this->mail->ErrorInfo . '<br />';
+							echo "Mailer Error (" . str_replace("@", "&#64;", $userArray['email']) . ') ' . self::Why($this->mail) . '<br />';
 							$allSent = 0;
 						}
 					}
@@ -428,7 +477,7 @@ Go here to reset it to one you choose:
 		$this->signupmail->clearAddresses();
 		if(!$sent)
 		{
-			$this->sec->logd('Validation email to '.$username.' could not be sent. Mailer Error: '.$this->signupmail->ErrorInfo, 'error');
+			$this->sec->logd('Validation email to '.$username.' could not be sent. Mailer Error: '.self::Why($this->signupmail), 'error');
 			return 0;
 		}
 		

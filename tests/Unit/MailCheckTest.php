@@ -225,6 +225,24 @@ final class MailCheckTest extends TestCase
         $this->assertNotContains('fail', $this->statuses($results), $this->text($results));
     }
 
+    public function testAGoogleAccountNeedsNoPasswordButHasToBeConnectedAndBeTheUsername(): void
+    {
+        $google = ['smtp_authtype' => 'XOAUTH2', 'smtp_pass' => '', 'smtp_oauth_client_id' => 'client-1', 'smtp_oauth_secret' => 'secret-1',
+            'smtp_oauth_token' => 'rt-1', 'smtp_oauth_account' => 'wifidb@example.test'];
+        $results = MailCheck::Check($this->config($google), $this->dns($this->goodDns()));
+        $this->assertNotContains('fail', $this->statuses($results), $this->text($results));
+
+        $this->assertStringContainsString('none is connected', $this->text(MailCheck::Check($this->config(['smtp_oauth_token' => ''] + $google), $this->dns($this->goodDns()))));
+        $this->assertStringContainsString('needs the Google OAuth client ID and secret', $this->text(MailCheck::Check($this->config(['smtp_oauth_secret' => ''] + $google), $this->dns($this->goodDns()))));
+        $this->assertStringContainsString("The mail account's username is wifidb@example.test, but the Google account connected for it is other@example.test: Google refuses that",
+            $this->text(MailCheck::Check($this->config(['smtp_oauth_account' => 'other@example.test'] + $google), $this->dns($this->goodDns()))));
+        $this->assertStringContainsString("The sign-up account's username is signup@example.test, but the Google account it signs in with (the mail account's) is wifidb@example.test",
+            $this->text(MailCheck::Check($this->config(['signup_smtp_user' => 'signup@example.test'] + $google), $this->dns($this->goodDns()))));
+        $own = MailCheck::Check($this->config(['signup_smtp_user' => 'signup@example.test', 'signup_smtp_oauth_token' => 'rt-2',
+            'signup_smtp_oauth_account' => 'signup@example.test'] + $google), $this->dns($this->goodDns()));
+        $this->assertNotContains('fail', $this->statuses($own), 'with its own connected: ' . $this->text($own));
+    }
+
     public function testMissingSpfAndDmarcAreWarnings(): void
     {
         $dns = $this->goodDns();

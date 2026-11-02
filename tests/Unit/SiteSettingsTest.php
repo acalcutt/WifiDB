@@ -157,7 +157,8 @@ final class SiteSettingsTest extends TestCase
         $this->assertSame($config, $this->settings($config)->MailConfig($config), 'nothing saved: config.inc.php as it is');
 
         $this->settings($config)->Save(['smtp_host' => 'smtp.saved.test', 'smtp_port' => '465', 'smtp_secure' => 'ssl', 'smtp_pass' => 'saved-pass',
-            'signup_smtp_host' => '', 'signup_smtp_secure' => 'none', 'DKIM_private_string' => "-----BEGIN PRIVATE KEY-----\nabc\n", 'email_validation' => false], 'root');
+            'signup_smtp_host' => '', 'signup_smtp_secure' => 'none', 'DKIM_private_string' => "-----BEGIN PRIVATE KEY-----\nabc\n", 'email_validation' => false,
+            'smtp_oauth_token' => 'rt-google'], 'root');
         $mail = $this->settings($config)->MailConfig($config);
         $this->assertSame('smtp.saved.test', $mail['smtp_host']);
         $this->assertSame(465, $mail['smtp_port'], 'a port is a number, as PHPMailer wants');
@@ -172,6 +173,9 @@ final class SiteSettingsTest extends TestCase
         $this->assertArrayNotHasKey('smtp_from_name', $mail, 'nor is a default added');
         $stored = $this->db->query("SELECT value FROM site_settings WHERE name = 'DKIM_private_string'")->fetchColumn();
         $this->assertStringStartsWith('enc:', $stored, 'the signing key is kept encrypted');
+        $this->assertSame('rt-google', $mail['smtp_oauth_token'], 'a connected Google account\'s token too');
+        $this->assertStringStartsWith('enc:', $this->db->query("SELECT value FROM site_settings WHERE name = 'smtp_oauth_token'")->fetchColumn());
+        $this->assertNotContains('smtp_oauth_token', array_column($this->settings()->Describe(SiteSettings::MAIL_SETTINGS), 'name'), 'it isn\'t a field on the page');
     }
 
     public function testTheMailPageStartsFromConfig(): void

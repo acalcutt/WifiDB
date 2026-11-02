@@ -141,7 +141,9 @@ class SiteSettings
 		'smtp_auth'      => array('bool', 'Sign in to the mail server',
 			'Off only for a server that takes this one\'s mail without a password.', 1),
 		'smtp_authtype'  => array('choice', 'How to sign in', '', '',
-			array('' => 'The best way the server offers', 'LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'CRAM-MD5' => 'CRAM-MD5')),
+			array('' => 'With the password: the best way the server offers', 'LOGIN' => 'With the password: LOGIN',
+				'PLAIN' => 'With the password: PLAIN', 'CRAM-MD5' => 'With the password: CRAM-MD5',
+				'XOAUTH2' => 'With a Google account (OAuth), connected below: Gmail and Google Workspace')),
 		'smtp_user'      => array('text', 'Username', '', ''),
 		'smtp_pass'      => array('secret', 'Password',
 			'Gmail and Google Workspace need an app password (Google account, Security, App passwords), not the account\'s own.', ''),
@@ -159,6 +161,9 @@ class SiteSettings
 		'signup_smtp_pass'    => array('secret', 'Sign-up account\'s password', '', ''),
 		'signup_smtp_from'    => array('text', 'Sign-up account\'s From address', '', ''),
 		'signup_smtp_replyto' => array('text', 'Sign-up account\'s Reply-To address', '', ''),
+		'smtp_oauth_client_id' => array('text', 'Google OAuth client ID',
+			'From the Google Cloud project that the mail accounts connect through (a Web application client).', ''),
+		'smtp_oauth_secret'    => array('secret', 'Google OAuth client secret', '', ''),
 		'DKIM_domain'    => array('text', 'Signing domain',
 			'The domain mail is signed for: the part after @ in the From address, or a parent of it. Empty: mail is sent unsigned.', ''),
 		'DKIM_selector'  => array('text', 'Selector',
@@ -168,6 +173,14 @@ class SiteSettings
 			'Kept in the database, so every server signs with it. Empty: the key file DKIM_private names in config.inc.php, if any.', ''),
 	);
 
+	/** The Google accounts connected on admin/mail.php (lib/mail_oauth.inc.php): saved by connecting one, not typed in */
+	const MAIL_TOKENS = array(
+		'smtp_oauth_token'          => array('secret', 'Google account connected for mail', '', ''),
+		'smtp_oauth_account'        => array('text', 'Google account connected for mail: its address', '', ''),
+		'signup_smtp_oauth_token'   => array('secret', 'Google account connected for sign-up mail', '', ''),
+		'signup_smtp_oauth_account' => array('text', 'Google account connected for sign-up mail: its address', '', ''),
+	);
+
 	/**
 	 * config.inc.php's mail settings, with what was saved on admin/mail.php over them (for wdbmail::Mailer). A sign-up
 	 * account setting saved empty is taken out, so it is the main account's, as one left out of config.inc.php is.
@@ -175,7 +188,7 @@ class SiteSettings
 	 */
 	public function MailConfig(array $config)
 	{
-		foreach(self::MAIL_SETTINGS + array('email_validation' => self::SETTINGS['email_validation']) as $name => $def)
+		foreach(self::MAIL_SETTINGS + self::MAIL_TOKENS + array('email_validation' => self::SETTINGS['email_validation']) as $name => $def)
 		{
 			if($this->Source($name) !== 'saved') { continue; }
 			$value = $this->Get($name);
@@ -249,6 +262,7 @@ class SiteSettings
 		if(isset(self::SETTINGS[$name])) { return self::SETTINGS[$name]; }
 		if(isset(self::LOGIN_SETTINGS[$name])) { return self::LOGIN_SETTINGS[$name]; }
 		if(isset(self::MAIL_SETTINGS[$name])) { return self::MAIL_SETTINGS[$name]; }
+		if(isset(self::MAIL_TOKENS[$name])) { return self::MAIL_TOKENS[$name]; }
 		throw new InvalidArgumentException("No setting named $name");
 	}
 
@@ -314,7 +328,7 @@ class SiteSettings
 	public function Save($values, $username)
 	{
 		$changed = array();
-		foreach(self::SETTINGS + self::LOGIN_SETTINGS + self::MAIL_SETTINGS as $name => $def)
+		foreach(self::SETTINGS + self::LOGIN_SETTINGS + self::MAIL_SETTINGS + self::MAIL_TOKENS as $name => $def)
 		{
 			if(!array_key_exists($name, $values) || $values[$name] === null) { continue; }
 			$type = $def[0];

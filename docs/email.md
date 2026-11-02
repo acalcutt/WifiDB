@@ -15,7 +15,8 @@ main account too. Both are signed with the same DKIM key (below).
 **Mail** in the menu (`admin/mail.php`, needs admin mode) sets it all from the site:
 
 - the mail server and account (server, port, encryption, the login, the From name and address, Reply-To), and whether
-  members get notification mail;
+  members get notification mail; for Gmail or Google Workspace, the login can be a Google account connected on the page
+  (OAuth) instead of a password (below);
 - a sign-up account, if you want one: anything left empty is the main account's;
 - DKIM signing: the domain, the selector and the key. **Make a key** makes a 2048-bit key, keeps it in the database
   (encrypted, as the password is), so every server signs with it, and shows the TXT record to publish and its name;
@@ -67,7 +68,8 @@ Changes take effect on the next request and the next run of a cron job. The two 
 | `wifidb_email_updates` | `1`: send the notification mail (new users, imports and so on) | `1` |
 | `smtp_host`, `smtp_port` | The mail server | `smtp.gmail.com`, `587` |
 | `smtp_secure` | `tls` (STARTTLS, port 587) or `ssl` (port 465) | `tls` |
-| `smtp_auth`, `smtp_authtype` | Log in to the server, and how (`''`: the best way the server offers) | `true`, `LOGIN` |
+| `smtp_auth`, `smtp_authtype` | Log in to the server, and how (`''`: the best way the server offers; `XOAUTH2`: a Google account connected on the Mail page) | `true`, `LOGIN` |
+| `smtp_oauth_client_id`, `smtp_oauth_secret` | The OAuth client Google accounts are connected through (the Mail page) | |
 | `smtp_user`, `smtp_pass` | The account's login. Gmail and Google Workspace need an **app password** (Google account → Security → App passwords), not the account password. | |
 | `smtp_from` | The From address. Gmail only lets you send as the account's own address or one of its aliases. | `wifidb@example.org` |
 | `smtp_from_name` | The name shown with the From address, or empty for the address alone (both accounts) | `WiFiDB` |
@@ -87,11 +89,48 @@ Changes take effect on the next request and the next run of a cron job. The two 
 
 ## Gmail or Google Workspace
 
-```php
-'smtp_host' => 'smtp.gmail.com', 'smtp_port' => 587, 'smtp_secure' => 'tls',
-'smtp_auth' => true, 'smtp_authtype' => 'LOGIN',
-'smtp_user' => 'wifidb@example.org', 'smtp_pass' => '<an app password>', 'smtp_from' => 'wifidb@example.org',
-```
+The server is `smtp.gmail.com`, port 587, STARTTLS. Google no longer takes the account's own password from a mail
+program (for Workspace accounts, since May 2025), so sign in one of two ways:
+
+- **A Google account (OAuth)**, the way Google recommends: no password is kept, only a token Google can take back. Set
+  up below.
+- **An app password** (Google account → Security → App passwords; it needs 2-Step Verification, and Advanced
+  Protection turns app passwords off) as the password, signing in with LOGIN:
+
+  ```php
+  'smtp_host' => 'smtp.gmail.com', 'smtp_port' => 587, 'smtp_secure' => 'tls',
+  'smtp_auth' => true, 'smtp_authtype' => 'LOGIN',
+  'smtp_user' => 'wifidb@example.org', 'smtp_pass' => '<an app password>', 'smtp_from' => 'wifidb@example.org',
+  ```
+
+On Google Workspace, the **SMTP relay service** (`smtp-relay.gmail.com`, set up in the Admin console under Gmail →
+Routing) can also take the site's mail by the servers' addresses, with no sign-in at all: on the Mail page, turn
+*Sign in to the mail server* off. It needs every node's public address in the relay's list.
+
+### Signing in with a Google account (OAuth)
+
+1. **Make an OAuth client** in a Google Cloud project (console.cloud.google.com), one for mail rather than the one
+   *Sign-in Providers* uses:
+   - *APIs & Services → OAuth consent screen*: for a Workspace account make it **Internal** (no review, and the
+     connection doesn't expire). For a gmail.com account it has to be External: add the scope
+     `https://mail.google.com/` and **publish it** (*In production*). Left in *Testing*, Google ends the connection
+     after 7 days. Google doesn't review an app only you use, but shows a warning while you connect it: *Advanced →
+     Go to (the app)*.
+   - *Credentials → Create credentials → OAuth client ID*, type **Web application**, with the **Authorized redirect URI**
+     the Mail page shows (`https://<your site>/admin/mail.php?oauth=google`).
+2. On the Mail page, save the client ID and secret, then **Connect with Google** for the mail account and sign in as
+   the account mail is sent from. The page saves its address as the username (and the From address, if that was
+   empty) and switches *How to sign in* to the Google account. The sign-up account can have its own, connected the
+   same way; without one it signs in as the mail account does.
+3. **Check** asks Google for an access token, and **Send a test message** sends one.
+
+Only the refresh token is kept (encrypted, with the site settings), so every node signs in with it. Google takes it back
+if the account's password changes, if it goes unused for six months, or if the site's access is removed from the
+account (myaccount.google.com → Security → Third-party apps). After that, mail from that account fails, and the log and
+the check say to connect the account again. **Disconnect** removes the token here and tells Google.
+
+For tests, `mail_oauth_endpoints` in `config.inc.php` points Google's addresses (`authorize`, `token`, `userinfo`,
+`revoke`) somewhere else.
 
 Google signs mail it relays with its own DKIM key for your domain (the `google._domainkey` record Workspace has you
 publish), so mail through Gmail **passes DKIM and DMARC even if WiFiDB's own signature is not set up**. WiFiDB's

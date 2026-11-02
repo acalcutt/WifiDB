@@ -1,6 +1,7 @@
 <?php
 // A stand-in mail server for the tests (the boot tests' test-mail.inc.sh, tests/Unit/WdbmailDkimTest.php): it takes
-// every message, with any login or none, and writes each to a file in the folder it's given, as it was received.
+// every message, with any login or none, and writes each to a file in the folder it's given, as it was received. An
+// XOAUTH2 sign-in (a Google account) is written, decoded, to <folder>.auth, a line each.
 //   php test-smtp-sink.php <port> <folder>     port 0: any free one, printed on the first line
 // One connection at a time, which is all the tests need. No STARTTLS.
 $port = isset($argv[1]) ? (int)$argv[1] : 2525;
@@ -36,11 +37,15 @@ while ($c = @stream_socket_accept($server, -1)) {
         }
         $parts = explode(' ', $line);
         switch (strtoupper($parts[0])) {
-            case 'EHLO': fwrite($c, "250-sink.test\r\n250-AUTH PLAIN LOGIN\r\n250 8BITMIME\r\n"); break;
+            case 'EHLO': fwrite($c, "250-sink.test\r\n250-AUTH PLAIN LOGIN XOAUTH2\r\n250 8BITMIME\r\n"); break;
             case 'HELO': $say('250 sink.test'); break;
             case 'AUTH':
                 $mech = isset($parts[1]) ? strtoupper($parts[1]) : '';
-                if ($mech === 'PLAIN' && isset($parts[2])) { $say('235 2.7.0 Accepted'); }
+                if ($mech === 'XOAUTH2' && isset($parts[2])) {
+                    file_put_contents("$dir.auth", strtr(base64_decode($parts[2]), "\001", ' ') . "\n", FILE_APPEND);
+                    $say('235 2.7.0 Accepted');
+                }
+                elseif ($mech === 'PLAIN' && isset($parts[2])) { $say('235 2.7.0 Accepted'); }
                 elseif ($mech === 'PLAIN') { $auth = 'pass'; $say('334 '); }
                 elseif ($mech === 'LOGIN') { $auth = 'user'; $say('334 VXNlcm5hbWU6'); }
                 else { $say('504 Unrecognized authentication type'); }
