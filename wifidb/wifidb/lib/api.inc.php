@@ -228,29 +228,20 @@ class api extends dbcore
 		$ext		= $details['ext'];
 		$filename	= $details['file_name'];
 		$file_orig	= $details['file_orig'];
+		$upload		= $this->PATH.'import/up/'.$filename;   # where api/import.php put it; removed again if it isn't queued
 
-		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
-		else if($this->sql->service == "sqlsrv")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
-		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
-			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
-		else if($this->sql->service == "sqlsrv")
-			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
-		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
-
-		$tmp_prep->execute();
-		$files_prep->execute();
-		$tmp_ret = $tmp_prep->fetch(2);
-		$files_ret = $files_prep->fetch(2);
-		if($tmp_ret['hash'] != "")
+		$found = $this->sql->conn->prepare("SELECT (SELECT COUNT(*) FROM files_tmp WHERE hash = ?) + (SELECT COUNT(*) FROM files_importing WHERE hash = ?) AS waiting, (SELECT COUNT(*) FROM files WHERE hash = ?) AS imported");
+		$found->execute(array($hash, $hash, $hash));
+		$found = $found->fetch(2);
+		if((int)$found['waiting'] > 0)
 		{
+			@unlink($upload);
 			$this->mesg = array("error"=>"File Hash already waiting for import: $hash");
 			return -1;
 		}
-		if($files_ret['hash'] != "")
+		if((int)$found['imported'] > 0)
 		{
+			@unlink($upload);
 			$this->mesg = array("error"=>"File Hash already exists in WiFiDB:  $hash");
 			return -1;
 		}
@@ -288,6 +279,7 @@ class api extends dbcore
 			case "netxml":
 				$task = "import";
 				$type = "kismet";
+			break;
 			default:
 				$task = "";
 				$type = "";
@@ -304,18 +296,18 @@ class api extends dbcore
 				$array = $stmt->fetch(2);
 				if($this->sec->CheckReservedUser($user) == 1 || $this->sec->CheckReservedUser($otherusers) == 1)
 				{
+					@unlink($upload);
 					$this->mesg = array("error" => "Reserved users are not allowed to import.");
 				}
 				else if($array['username'] && $array['import_require_login'] == 1 && $this->sec->APILoginCheck($array['username'], $apikey) != 1)
 				{
+					@unlink($upload);
 					$this->mesg = array("error" => "Your account requires an api key to import. Please make sure your api key is set correctly.");
 				}
 				else
 				{
-					if($this->sql->service == "mysql")
-						{$sql = "INSERT INTO files_tmp(file, file_orig, file_date, user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-					else if($this->sql->service == "sqlsrv")
-						{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+					# the same columns on all three databases (the MariaDB form here still had the old names)
+					$sql = "INSERT INTO files_tmp (file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 					$result = $this->sql->conn->prepare( $sql );
 					$result->bindValue(1, $filename, PDO::PARAM_STR);
@@ -328,18 +320,20 @@ class api extends dbcore
 					$result->bindValue(8, $size, PDO::PARAM_STR);
 					$result->bindValue(9, $hash, PDO::PARAM_STR);
 					$result->bindValue(10, $type, PDO::PARAM_STR);
-					$result->execute();
-					$error = $this->sql->conn->errorCode();
-					if($error[0] == "00000")
+					try
 					{
+						$result->execute();
 						$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
-					}else
+					}
+					catch(PDOException $e)
 					{
-						$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.", "details" => var_export($this->sql->conn->errorInfo(), 1)));
+						$this->logd("Could not queue the API upload $filename: ".$e->getMessage(), "error");
+						$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import."));
 					}
 				}
 				break;
 			default:
+				@unlink($upload);
 				$this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://wifidb.net/wifidb/import/?func=supported_files");
 				break;
 		}
