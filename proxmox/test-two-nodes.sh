@@ -175,6 +175,8 @@ log "an admin job: deleting the import node-b made, done by node-a's admind"
 check "each node has an Admin schedule row (migration 0006)" test "$(sqlq "select count(*) from schedule where daemon = 'Admin' and enabled = 1")" = 2
 fid=$(sqlq "select id from files where node_name = 'node-b'")
 sqlq "INSERT INTO admin_jobs (job_type, target_id, target_table, requested_by, status, created_at) VALUES ('delete_file', $fid, 'files', 'test', 'pending', '2026-01-01 00:00:00')" >/dev/null
+# cron's last run (before it was stopped) set the next run up to a minute ahead: made due now, as cron would find it
+sqlq "UPDATE schedule SET status = 'Waiting', nextrun = '2000-01-01 00:00:00' WHERE nodename = 'node-a' AND daemon = 'Admin'" >/dev/null
 adm=$(docker exec "$cta" runuser -u www-data -- php /opt/wifidb/tools/daemon/admind.php -o -v 2>&1 | tr -d '\0')
 check "node-a's admind did it" test "$(sqlq "select status from admin_jobs where target_id = $fid")|$(sqlq "select nodename from admin_jobs where target_id = $fid")" = "completed|node-a"
 check "...the import is gone" test "$(sqlq "select count(*) from files where id = $fid")" = 0
