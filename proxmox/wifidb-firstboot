@@ -95,6 +95,13 @@ for sub in $(grep -ho '\.\./log/[A-Za-z_]*' "$TOOLS"/cron/* 2>/dev/null | sed 's
     install -d -o www-data -g www-data "$DATA/log/$sub"
 done
 install -d -o www-data -g www-data "$DATA/log/daemon"
+# The country database the cookie banner asks by (lib/visitor_country.inc.php): kept on the data disk, starting from the
+# copy the template was built with. cp -p keeps that copy's date, so tools/cron/update_geoip fetches a newer one once
+# it's a month old; until then, and whenever a fetch fails, the one here is used.
+install -d -o www-data -g www-data "$DATA/geoip"
+if [ ! -f "$DATA/geoip/dbip-country-lite.mmdb" ] && [ -f /opt/wifidb/geoip/dbip-country-lite.mmdb ]; then
+    cp -p /opt/wifidb/geoip/dbip-country-lite.mmdb "$DATA/geoip/"
+fi
 chown -R www-data:www-data "$DATA"
 
 # Smarty's compiled templates and cache: the container's own, rebuilt as needed
@@ -170,10 +177,12 @@ make_config() { # make_config EXAMPLE TARGET VARIABLE OVERRIDES
     chmod 0640 "$2"
 }
 make_config "$WEB/lib/config.inc.php.example" "$WEB/lib/config.inc.php" config "$DATA/config/web.overrides.php"
-# backups go on the data disk unless the overrides say otherwise, and a restore puts the backup's two_factor_key in the overrides
+# backups and the country database go on the data disk unless the overrides say otherwise, and a restore puts the
+# backup's two_factor_key in the overrides
 printf '$config['"'"'overrides_file'"'"'] = %s;
 if(empty($config['"'"'backup_dir'"'"'])) { $config['"'"'backup_dir'"'"'] = %s; }
-' "'$DATA/config/web.overrides.php'" "'$DATA/backups'" >> "$WEB/lib/config.inc.php"
+if(empty($config['"'"'geoip_country_db'"'"'])) { $config['"'"'geoip_country_db'"'"'] = %s; }
+' "'$DATA/config/web.overrides.php'" "'$DATA/backups'" "'$DATA/geoip/dbip-country-lite.mmdb'" >> "$WEB/lib/config.inc.php"
 make_config "$TOOLS/daemon.config.inc.php.example" "$TOOLS/daemon.config.inc.php" daemon_config "$DATA/config/daemon.overrides.php"
 
 # ── The web server ───────────────────────────────────────────────────────────

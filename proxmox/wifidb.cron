@@ -20,6 +20,8 @@ MAILTO=""
 */2 * * * * www-data  /opt/wifidb/tools/cron/out_sync
 0 12 * * *  www-data  /opt/wifidb/tools/cron/export_kml
 0 11 2 * *  www-data  /opt/wifidb/tools/cron/update_manuf
+# the country database for the cookie banner: a new copy once this node's is a month old (a failed fetch keeps the old)
+40 4 * * *  www-data  /opt/wifidb/tools/cron/update_geoip
 5 0 * * *   www-data  /opt/wifidb/tools/cron/update_geojson
 #5 0 * * * www-data  /opt/wifidb/tools/cron/update_cell_geojson
 */15 * * * * www-data /opt/wifidb/tools/cron/update_swarm_index

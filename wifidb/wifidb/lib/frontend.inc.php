@@ -39,8 +39,6 @@ class frontend extends dbcore
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
 			$this->sec->LoginCheck();
 			$this->meta = new stdClass();
-			$this->meta->ads = isset($config['ads']) ? $config['ads'] : '';
-			$this->meta->tracker = isset($config['tracker']) ? $config['tracker'] : '';
 			$this->meta->header = isset($config['header']) ? $config['header'] : '';
 
 			$this->smarty = new Smarty();
@@ -69,6 +67,7 @@ class frontend extends dbcore
 			// Check if Client IP contains a colon, which indicates IPv6
 			$ip_version = (strpos($client_ip, ':') !== false) ? 'IPv6' : 'IPv4';
 			$this->smarty->assign('ip_version', $ip_version);
+			$this->AssignTracking(isset($config['geoip_country_db']) ? $config['geoip_country_db'] : '');
 
 			$this->smarty->assign('critical_error_message', '');
 
@@ -178,6 +177,42 @@ class frontend extends dbcore
 	}
 
 
+	/**
+	 * Google Analytics, AdSense and the cookie banner as Site Settings has them, for header.tpl and footer.tpl: nothing of
+	 * Google's loads until an ID is set, and the banner is for the visitors "Visitors' consent" says to ask (by their
+	 * country, from $geoipDb, lib/visitor_country.inc.php; not looked up for one who has already chosen).
+	 */
+	private function AssignTracking($geoipDb)
+	{
+		$settings = $this->sec->Settings();
+		$analytics = $settings->Get('analytics_id');
+		$client = $settings->Get('adsense_client');
+		$slot = $client !== '' ? $settings->Get('adsense_slot') : '';
+		$tracking = ($analytics !== '' || $client !== '');
+		$ask = false;
+		$credit = false;
+		if($tracking)
+		{
+			require_once dirname(__FILE__).'/cookie_consent.inc.php';
+			require_once dirname(__FILE__).'/visitor_country.inc.php';
+			$mode = CookieConsent::Mode($settings->Get('analytics_consent'));
+			$country = null;
+			if($mode === 'region')
+			{
+				$credit = is_string($geoipDb) && $geoipDb !== '' && is_file($geoipDb);   # DB-IP's licence asks for a link
+				if(!isset($_COOKIE[CookieConsent::COOKIE])) { $country = VisitorCountry::Lookup($_SERVER, $geoipDb); }
+			}
+			$ask = CookieConsent::Ask($mode, $country);
+		}
+		$this->smarty->assign('wifidb_tracking', $tracking);
+		$this->smarty->assign('wifidb_consent_ask', $ask);
+		$this->smarty->assign('wifidb_analytics_id', $analytics);
+		$this->smarty->assign('wifidb_adsense_client', $slot !== '' ? $client : '');
+		$this->smarty->assign('wifidb_adsense_slot', $slot);
+		$this->smarty->assign('wifidb_adsense_slot_menu', $client !== '' ? $settings->Get('adsense_slot_menu') : '');
+		$this->smarty->assign('wifidb_geoip_credit', $credit);
+	}
+
 	function htmlfooter()
 	{
 		$out = '';
@@ -197,7 +232,6 @@ class frontend extends dbcore
 			}
 
 		}
-		$this->footer = $this->meta->tracker.$this->meta->ads;
 		return 1;
 	}
 

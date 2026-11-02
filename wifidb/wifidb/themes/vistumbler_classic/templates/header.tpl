@@ -1,24 +1,25 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html lang="en">
     <head>
-<!-- Google tag (gtag.js) -->
-{literal}
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-S1ZD9TQYZK"></script>
+{if $wifidb_tracking|default:false}
+<!-- Google consent mode: nothing uses cookies for analytics or personalized ads until the visitor allows it, and only
+     the visitors Site Settings says to ask are asked (lib/js/cookie-consent.js) -->
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'analytics_storage': 'denied'
-  });
-
-{/literal}
-  gtag('config', 'G-S1ZD9TQYZK', {ldelim} 'ip_version': '{$ip_version|default:""}' {rdelim});
-{literal}
+  function gtag(){ldelim}dataLayer.push(arguments);{rdelim}
+  gtag('consent', 'default', {ldelim} 'ad_storage': 'denied', 'analytics_storage': 'denied', 'ad_user_data': 'denied', 'ad_personalization': 'denied' {rdelim});
+  window.WIFIDB_CONSENT = {ldelim} ask: {if $wifidb_consent_ask}true{else}false{/if} {rdelim};
 </script>
-{/literal}
+<script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
+{/if}
+{if $wifidb_analytics_id|default:''}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={$wifidb_analytics_id|escape:'url'}"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', '{$wifidb_analytics_id|escape:'javascript'}', {ldelim} 'ip_version': '{$ip_version|default:""|escape:'javascript'}' {rdelim});
+</script>
+{/if}
         <link rel="stylesheet" href="{$themeurl}styles.css" />
         <link rel="stylesheet" href="{$wifidb_host_url}lib/js/sceditor/minified/themes/default.min.css" id="theme-style" />
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/sceditor.min.js"></script>
@@ -41,8 +42,6 @@
         <!-- QR loader for client-side QR generation (shared) -->
     </head>
     <body style="background-color: #145285" {$redirect_html}>
-        <!-- Cookie consent & consent-mode helper (shared) -->
-        <script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
         {$install_header|default:""}
         {$wifidb_announce_header|default:""}
         

@@ -40,21 +40,23 @@ You should have received a copy of the GNU General Public License along with thi
 						<li class="inside_dark_header">Other Projects</li>
 						<li><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></li>
 						<li><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></li>					
-						<li class="inside_dark_header">Ads</li>
+						{if $wifidb_adsense_slot_menu|default:''}<li class="inside_dark_header">Ads</li>{/if}
 					</ul>
 					<div class="inside_text_center">
-						<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2350008141216245"
+						{if $wifidb_adsense_slot_menu|default:''}
+						<!-- AdSense, from Site Settings -->
+						<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={$wifidb_adsense_client|escape:'url'}"
 							 crossorigin="anonymous"></script>
-						<!-- WifiDB Vertical -->
 						<ins class="adsbygoogle"
 							 style="display:block"
-							 data-ad-client="ca-pub-2350008141216245"
-							 data-ad-slot="8040593654"
+							 data-ad-client="{$wifidb_adsense_client|escape:'html':'UTF-8':false}"
+							 data-ad-slot="{$wifidb_adsense_slot_menu|escape:'html':'UTF-8':false}"
 							 data-ad-format="auto"
 							 data-full-width-responsive="true"></ins>
 						<script>
-							 (adsbygoogle = window.adsbygoogle || []).push({});
+							 (adsbygoogle = window.adsbygoogle || []).push({ldelim}{rdelim});
 						</script>
+						{/if}
 						<script type="text/javascript">
 							if(vidonate) {
 							//Show donate images instead

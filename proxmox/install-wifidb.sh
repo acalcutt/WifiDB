@@ -67,4 +67,14 @@ cp -a "$src/wifidb/sql/migrations" "$sqlsrc/"
 bash "$here/install-files.sh" "$src/wifidb/wifidb" "$src/wifidb/tools" "$sqlsrc"
 rm -rf "$sqlsrc"
 
+# A copy of the country database the cookie banner asks by, so a new container has one before it can fetch its own:
+# wifidb-firstboot puts it on the data disk, and tools/cron/update_geoip keeps that one up to date
+install -d /opt/wifidb/geoip
+if php -r 'require "/var/www/wifidb/vendor/autoload.php"; require "/var/www/wifidb/lib/visitor_country.inc.php";
+           echo "[install-wifidb] country database: ", VisitorCountry::Update("/opt/wifidb/geoip/dbip-country-lite.mmdb"), "\n";'; then
+    chmod 0644 /opt/wifidb/geoip/dbip-country-lite.mmdb
+else
+    log "WARNING: the country database could not be fetched; until tools/cron/update_geoip gets one, everyone is asked about cookies"
+fi
+
 log "done"

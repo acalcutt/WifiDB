@@ -14,7 +14,10 @@ require_once dirname(__FILE__).'/totp.inc.php';
 
 class SiteSettings
 {
-	/** name => [type ('bool', 'text' or 'secret'), label, help, default when config.inc.php doesn't say] */
+	/**
+	 * name => [type ('bool', 'text', 'secret' or 'choice'), label, help, default when config.inc.php doesn't say, and for a
+	 * choice its options: value => label]
+	 */
 	const SETTINGS = array(
 		'signups_open'      => array('bool', 'Sign-ups are open',
 			'Anyone can create an account. Off: the sign-up form says sign-ups are closed; members already signed up are not affected.', 1),
@@ -45,7 +48,42 @@ class SiteSettings
 			'The folder in the bucket, so several sites can share one. Empty: this site\'s domain.', ''),
 		'files_s3_key_id'   => array('text', 'Shared files S3 key ID', 'A key that can only reach this bucket.', ''),
 		'files_s3_secret'   => array('secret', 'Shared files S3 secret key', 'Saving checks the bucket with these keys.', ''),
+		'analytics_id'      => array('text', 'Google Analytics measurement ID',
+			'G-XXXXXXXXXX, or paste the whole tag Google gives you. Empty: no analytics.', ''),
+		'adsense_client'    => array('text', 'AdSense publisher ID',
+			'ca-pub-… (or pub-…), from AdSense, Account, Account information. Empty: no ads.', ''),
+		'adsense_slot'      => array('text', 'AdSense ad unit',
+			'The data-ad-slot number of the display ad unit shown at the foot of each page (or paste its code).', ''),
+		'adsense_slot_menu' => array('text', 'AdSense ad unit under the menu',
+			'The mobile theme shows a second ad under its menu: that ad unit\'s number (or its code). Empty: none there.', ''),
+		'analytics_consent' => array('choice', "Visitors' consent to analytics and ad cookies",
+			"Ask where it's required: only visitors in the EU and the rest of the European Economic Area, the UK and Switzerland see the cookie banner (by the country of their address, looked up on this server; anyone whose country can't be told is asked too); everyone else isn't asked. Ask every visitor: everyone sees the banner. Don't ask: nobody does, which is only allowed where consent isn't required. Until a visitor allows them, Google is told not to use cookies for analytics or personalized ads.",
+			'region', array('region' => "Ask where it's required", 'ask' => 'Ask every visitor', 'off' => "Don't ask")),
 	);
+
+	/**
+	 * A value as an administrator might paste it, made into what's kept: an ID found in the tag Google gives, for
+	 * example. @return array (the value, '' when it's fine or else what's wrong with it)
+	 */
+	public static function Clean($name, $value)
+	{
+		$value = trim((string)$value);
+		if($value === '') { return array('', ''); }
+		switch($name)
+		{
+			case 'analytics_id':
+				return preg_match('/\b(G-[A-Z0-9]{4,20})\b/i', $value, $m) ? array(strtoupper($m[1]), '')
+					: array($value, "That isn't a Google Analytics measurement ID (G- and letters and numbers).");
+			case 'adsense_client':
+				return preg_match('/\b(?:ca-)?pub-(\d{10,20})\b/', $value, $m) ? array('ca-pub-'.$m[1], '')
+					: array($value, "That isn't an AdSense publisher ID (ca-pub- and a number).");
+			case 'adsense_slot':
+			case 'adsense_slot_menu':
+				if(preg_match('/data-ad-slot\s*=\s*["\']?(\d{5,20})/', $value, $m) || preg_match('/^(\d{5,20})$/', $value, $m)) { return array($m[1], ''); }
+				return array($value, "That isn't an AdSense ad unit number.");
+		}
+		return array($value, '');
+	}
 
 	/** Signing in with another site's account (lib/linked_logins.inc.php), saved from admin/logins.php instead. */
 	const LOGIN_SETTINGS = array(
@@ -124,16 +162,19 @@ class SiteSettings
 	public function Get($name)
 	{
 		$source = $this->Source($name);
-		list($type, , , $default) = self::Definition($name);
+		$def = self::Definition($name);
+		list($type, , , $default) = $def;
 		if($source === 'saved')
 		{
 			$raw = (string)$this->rows[$name];
 			if($type === 'bool') { return $raw === '1'; }
+			if($type === 'choice') { return isset($def[4][$raw]) ? $raw : (string)$default; }
 			if($type === 'text') { return $raw; }
 			$plain = Totp::Unprotect($raw, $this->key);
 			return $plain === false ? '' : $plain;
 		}
 		$value = ($source === 'config') ? $this->config[$name] : $default;
+		if($type === 'choice') { return isset($def[4][(string)$value]) ? (string)$value : (string)$default; }
 		return $type === 'bool' ? (bool)$value : (string)$value;
 	}
 
@@ -156,6 +197,7 @@ class SiteSettings
 				'value'  => $type === 'secret' ? null : $value,
 				'is_set' => $type === 'secret' ? $value !== '' : null,
 				'source' => $this->Source($name),
+				'options' => isset($def[4]) ? $def[4] : null,
 			);
 		}
 		return $out;
@@ -182,8 +224,10 @@ class SiteSettings
 			else
 			{
 				$new = trim((string)$values[$name]);
-				if($new === $this->Get($name) && ($type === 'text' || $this->Source($name) === 'saved')) { continue; }
-				$stored = ($new === '' || $type === 'text') ? $new : Totp::Protect($new, $this->key);
+				if($type === 'choice' && !isset($def[4][$new])) { continue; }   # not one of its options
+				$plain = ($type === 'text' || $type === 'choice');
+				if($new === $this->Get($name) && ($plain || $this->Source($name) === 'saved')) { continue; }
+				$stored = ($new === '' || $plain) ? $new : Totp::Protect($new, $this->key);
 			}
 			$this->Store($name, $stored, $username);
 			$changed[] = $name;

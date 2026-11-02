@@ -94,6 +94,36 @@ final class SiteSettingsTest extends TestCase
         $this->assertSame(0, (int)$this->db->query("SELECT COUNT(*) FROM site_settings")->fetchColumn());
     }
 
+    public function testAChoiceIsOneOfItsOptions(): void
+    {
+        $s = $this->settings();
+        $this->assertSame('region', $s->Get('analytics_consent'), "the cookie banner is asked where it's required unless set");
+        $this->assertSame([], $s->Save(['analytics_consent' => 'sometimes'], 'root'), 'not an option: nothing saved');
+        $this->assertSame(['analytics_consent'], $s->Save(['analytics_consent' => 'off'], 'root'));
+        $this->assertSame('off', $this->settings()->Get('analytics_consent'));
+        $this->assertSame('off', $this->settings(['analytics_consent' => 'ask'])->Get('analytics_consent'), 'saved wins over config');
+        $fresh = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        $this->assertSame('ask', (new SiteSettings($fresh, ['analytics_consent' => 'ask']))->Get('analytics_consent'));
+        $this->assertSame('region', (new SiteSettings($fresh, ['analytics_consent' => 'bogus']))->Get('analytics_consent'), 'not an option: the default');
+        $options = array_column($s->Describe(), null, 'name')['analytics_consent']['options'];
+        $this->assertSame(['region', 'ask', 'off'], array_keys($options));
+    }
+
+    public function testIdsAreTakenOutOfWhatGoogleGives(): void
+    {
+        $tag = "<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-S1ZD9TQYZK\"></script>\n<script>gtag('config', 'G-S1ZD9TQYZK');</script>";
+        $this->assertSame(['G-S1ZD9TQYZK', ''], SiteSettings::Clean('analytics_id', $tag));
+        $this->assertSame(['G-ABC123XYZ', ''], SiteSettings::Clean('analytics_id', ' g-abc123xyz '));
+        $this->assertNotSame('', SiteSettings::Clean('analytics_id', 'UA-12345-1')[1], 'old Universal Analytics IDs are refused');
+        $this->assertSame(['ca-pub-2350008141216245', ''], SiteSettings::Clean('adsense_client', 'pub-2350008141216245'));
+        $this->assertSame(['ca-pub-2350008141216245', ''], SiteSettings::Clean('adsense_client', '<script src="...adsbygoogle.js?client=ca-pub-2350008141216245"></script>'));
+        $this->assertNotSame('', SiteSettings::Clean('adsense_client', 'my publisher')[1]);
+        $this->assertSame(['6299844992', ''], SiteSettings::Clean('adsense_slot', '<ins class="adsbygoogle" data-ad-client="ca-pub-1" data-ad-slot="6299844992"></ins>'));
+        $this->assertSame(['6299844992', ''], SiteSettings::Clean('adsense_slot', '6299844992'));
+        $this->assertSame(['', ''], SiteSettings::Clean('analytics_id', '  '), 'empty turns it off');
+        $this->assertSame(['garage', ''], SiteSettings::Clean('backup_s3_region', ' garage '), 'others are only trimmed');
+    }
+
     public function testADatabaseWithoutTheTableFallsBackToConfig(): void
     {
         $bare = new SiteSettings(new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]), ['signups_open' => 0]);

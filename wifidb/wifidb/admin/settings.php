@@ -31,16 +31,25 @@ $messages = array(
 	'bad_key'     => 'CleanTalk did not accept that key. Nothing was saved.',
 	'error'       => 'The settings could not be saved. If you have not run the database migrations yet, run tools/utilites/migrate.php.',
 	'bad_s3'      => "That S3 bucket couldn't be used with those keys. Nothing was saved.",
+	'bad_value'   => 'Nothing was saved:',
 );
 $detail = '';
 
 if($_SERVER['REQUEST_METHOD'] === 'POST')
 {
 	$values = array();
+	$problems = array();
 	foreach(SiteSettings::SETTINGS as $name => $def)
 	{
 		if($def[0] === 'bool') { $values[$name] = isset($_POST[$name]); continue; }
-		if($def[0] === 'text') { $values[$name] = isset($_POST[$name]) ? trim((string)$_POST[$name]) : ''; continue; }
+		if($def[0] === 'choice') { $values[$name] = isset($_POST[$name]) ? (string)$_POST[$name] : null; continue; }
+		if($def[0] === 'text')
+		{
+			# an ID pasted with the tag around it is taken out of it; one that isn't an ID saves nothing
+			list($values[$name], $wrong) = SiteSettings::Clean($name, isset($_POST[$name]) ? (string)$_POST[$name] : '');
+			if($wrong !== '') { $problems[] = $wrong; }
+			continue;
+		}
 		$given = isset($_POST[$name]) ? trim((string)$_POST[$name]) : '';
 		if(isset($_POST['clear_'.$name])) { $values[$name] = ''; }
 		elseif($given !== '') { $values[$name] = $given; }
@@ -50,7 +59,12 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 	$result = 'saved';
 	$newKey = $values['cleantalk_key'];
 	$key = ($newKey !== null) ? $newKey : $settings->Get('cleantalk_key');
-	if($values['cleantalk_enabled'] && $key === '') { $result = 'needs_key'; }
+	if($problems)
+	{
+		$result = 'bad_value';
+		$detail = implode(' ', $problems);
+	}
+	elseif($values['cleantalk_enabled'] && $key === '') { $result = 'needs_key'; }
 	elseif($newKey !== null && $newKey !== '')
 	{
 		$check = $dbcore->sec->CleanTalk($newKey)->CheckKey();
@@ -121,6 +135,6 @@ else { $r = (string)filter_input(INPUT_GET, 'r', FILTER_SANITIZE_SPECIAL_CHARS);
 $dbcore->smarty->assign('wifidb_page_label', 'Site Settings');
 $dbcore->smarty->assign('site_settings', $settings->Describe());
 $dbcore->smarty->assign('settings_message', (isset($messages[$r]) ? $messages[$r] : '').($detail !== '' ? ' ('.$detail.')' : ''));
-$dbcore->smarty->assign('settings_problem', in_array($r, array('needs_key', 'bad_key', 'error', 'unreachable', 'bad_s3'), true));
+$dbcore->smarty->assign('settings_problem', in_array($r, array('needs_key', 'bad_key', 'error', 'unreachable', 'bad_s3', 'bad_value'), true));
 $dbcore->smarty->assign('settings_unencrypted', empty($config['two_factor_key']));
 $dbcore->smarty->display('admin_settings.tpl');

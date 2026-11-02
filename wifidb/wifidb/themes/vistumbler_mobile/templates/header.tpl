@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-{literal}
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-S1ZD9TQYZK"></script>
+{if $wifidb_tracking|default:false}
+<!-- Google consent mode: nothing uses cookies for analytics or personalized ads until the visitor allows it, and only
+     the visitors Site Settings says to ask are asked (lib/js/cookie-consent.js) -->
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'analytics_storage': 'denied'
-  });
-
-{/literal}
-  gtag('config', 'G-S1ZD9TQYZK', {ldelim} 'ip_version': '{$ip_version|default:""}' {rdelim});
-{literal}
+  function gtag(){ldelim}dataLayer.push(arguments);{rdelim}
+  gtag('consent', 'default', {ldelim} 'ad_storage': 'denied', 'analytics_storage': 'denied', 'ad_user_data': 'denied', 'ad_personalization': 'denied' {rdelim});
+  window.WIFIDB_CONSENT = {ldelim} ask: {if $wifidb_consent_ask}true{else}false{/if} {rdelim};
 </script>
-{/literal}
+<script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
+{/if}
+{if $wifidb_analytics_id|default:''}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={$wifidb_analytics_id|escape:'url'}"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', '{$wifidb_analytics_id|escape:'javascript'}', {ldelim} 'ip_version': '{$ip_version|default:""|escape:'javascript'}' {rdelim});
+</script>
+{/if}
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{$wifidb_page_label|default:""} | Vistumbler WiFiDB</title>
@@ -51,8 +52,6 @@
 	</script>
 	<script type="text/javascript" src="{$themeurl}lib/adframe.js"></script>
 	<!-- Start Collapsible Menu Scripts-->
-    <!-- Cookie consent & consent-mode helper (loads before ad scripts in body) -->
-	<script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
 	<script src="{$wifidb_host_url}lib/js/jquery-4.0.0.min.js"></script>
     <script type="text/javascript">
         $(document).ready(function () {

@@ -115,6 +115,7 @@ check "...and their control panel opens" sh -c '! docker exec "$0" curl -s -H "C
 scan "$member" /cp/ '/cp/index.php?func=profile' '/cp/index.php?func=pref' /cp/security.php /cp/notifications.php '/cp/messages.php?func=inbox' \
     '/cp/messages.php?func=sendmsg' '/opt/userstats.php?func=alluserlists&user=tuser'
 . "$(dirname "$(readlink -f "$0")")/test-linked-logins.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-site-meta.inc.sh"
 
 log "importing a WiGLE file"
 # cron's importers would race the one run here, so it's held off until the checks are done
