@@ -139,7 +139,13 @@ every node reads. The first boot adds a new node's `settings` and `schedule` row
   that run. If that node stops, its lock goes with its database connection.
 - **Scheduled daemons** have rows per node in `schedule`: the KML export and stats daemons belong on one node only
   (a node the first boot adds has them off).
-- The generated files (tiles, GeoJSON, exports) are still on the disk of the node that built them.
+- **Generated files:** with the shared files bucket, `tools/cron/out_sync` keeps the tile archives (`out/pmtiles`,
+  `out/pmtiles-mlt`), the GeoJSON and the KML exports (`out/daemon`) the same on every node, every two minutes:
+  whichever node built a file pushes it, the others pull it, and each serves them from its own disk as before (so it
+  keeps serving if the bucket is out of reach). An archive's hard-linked stable name and the exports' symbolic links
+  are kept as links, so a big archive is in the bucket once. The tile trees (`out/tiles`, `out/tiles-mlt`) aren't
+  synced: each node fills its own from the database as tiles are asked for. Without the bucket, the generated files
+  are only on the node that built them.
 
 ## SQL Server
 

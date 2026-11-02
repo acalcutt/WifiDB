@@ -39,6 +39,10 @@ class SharedFiles
 
 	public function UploadKey($name) { return $this->prefix.'/uploads/'.basename($name); }
 
+	/** For lib/out_sync.inc.php, which keeps out/ in step through the same bucket. */
+	public function S3() { return $this->s3; }
+	public function Prefix() { return $this->prefix; }
+
 	/** Puts an upload in the bucket. Throws if it can't, so the caller can refuse the upload rather than queue it unreachable. */
 	public function PutUpload($name, $path)
 	{

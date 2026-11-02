@@ -191,14 +191,14 @@ class S3Client
 		return $out;
 	}
 
-	/** @return array|null size and metadata (x-amz-meta-*, without the prefix), or null if there's no such object */
+	/** @return array|null size, when it was written (Unix time) and metadata (x-amz-meta-*, without the prefix), or null if there's no such object */
 	public function Head($key)
 	{
 		list($status, $headers) = $this->Request('HEAD', $key);
 		if($status === 404) { return null; }
 		$meta = array();
 		foreach($headers as $k => $v) { if(strpos($k, 'x-amz-meta-') === 0) { $meta[substr($k, 11)] = $v; } }
-		return array('size' => (int)($headers['content-length'] ?? 0), 'meta' => $meta);
+		return array('size' => (int)($headers['content-length'] ?? 0), 'modified' => (int)strtotime($headers['last-modified'] ?? ''), 'meta' => $meta);
 	}
 
 	public function Delete($key)
@@ -215,10 +215,12 @@ class S3Client
 		if(strpos($text, '<Error>') !== false) { throw new S3Exception("S3 couldn't copy $from: ".strip_tags($text)); }
 	}
 
-	/** Puts a short text as an object. */
-	public function PutString($key, $text)
+	/** Puts a short text as an object. @param array $meta stored as x-amz-meta-* */
+	public function PutString($key, $text, array $meta = array())
 	{
-		$this->Request('PUT', $key, array(), (string)$text);
+		$metaHeaders = array();
+		foreach($meta as $k => $v) { $metaHeaders['x-amz-meta-'.strtolower($k)] = $v; }
+		$this->Request('PUT', $key, array(), (string)$text, $metaHeaders);
 	}
 
 	/** Uploads a file; one over singlePutMax goes in parts. @param array $meta stored as x-amz-meta-* */

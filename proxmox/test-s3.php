@@ -99,6 +99,42 @@ try
 	check("...and one the bucket hasn't got is false, not an error", $shared->MoveUpload('00000_none.vs1', 'deleted', 'x') === false);
 	check("...and the folder can't reach out of the prefix", $shared->FolderKey('../x', 'a.vs1') === 'shared-test/x/a.vs1' && $shared->FolderKey('', 'a.vs1') === 'shared-test/deleted/a.vs1');
 	foreach($c->ListObjects('shared-test/') as $o) { $c->Delete($o[0]); }
+
+	# out/ kept the same on two nodes through the bucket (lib/out_sync.inc.php)
+	require $argv[1].'/out_sync.inc.php';
+	foreach(array('a', 'b') as $n) { mkdir("$tmp/out-$n/pmtiles", 0777, true); mkdir("$tmp/out-$n/daemon/2026-11-01", 0777, true); }
+	$A = new OutSync($c, 'sync-test', "$tmp/out-a", "$tmp/state-a.json");
+	$B = new OutSync($c, 'sync-test', "$tmp/out-b", "$tmp/state-b.json");
+	file_put_contents("$tmp/out-a/pmtiles/daily-20261101.pmtiles", str_repeat('tiles', 1000));
+	link("$tmp/out-a/pmtiles/daily-20261101.pmtiles", "$tmp/out-a/pmtiles/daily.pmtiles");
+	file_put_contents("$tmp/out-a/daemon/2026-11-01/full_db.kmz", 'kmz');
+	symlink("$tmp/out-a/daemon/2026-11-01/full_db.kmz", "$tmp/out-a/daemon/full_db.kmz");
+	file_put_contents("$tmp/out-a/pmtiles/weekly.pmtiles.building", 'half');
+	file_put_contents("$tmp/out-a/pmtiles/.htaccess", 'each node its own');
+	$did = $A->Run();
+	check("node A pushes its new files (not the one still being written, nor dot files)", $did['pushed'] === 4 && !$did['errors'], json_encode($did));
+	$objects = array_column($c->ListObjects('sync-test/out/'), 1, 0);
+	check("...a hard-linked archive is in the bucket once (its other name an empty marker)", ($objects['sync-test/out/pmtiles/daily.pmtiles'] ?? -1) === 0
+		&& ($objects['sync-test/out/pmtiles/daily-20261101.pmtiles'] ?? 0) === 5000, json_encode($objects));
+	$did = $B->Run();
+	check("node B pulls them", $did['pulled'] === 4 && !$did['errors'], json_encode($did));
+	$st = stat("$tmp/out-b/pmtiles/daily.pmtiles");
+	check("...the archive's stable name a hard link again, the export's a symbolic link", $st['nlink'] === 2 && $st['ino'] === stat("$tmp/out-b/pmtiles/daily-20261101.pmtiles")['ino']
+		&& readlink("$tmp/out-b/daemon/full_db.kmz") === "$tmp/out-a/daemon/2026-11-01/full_db.kmz");
+	check("...and nothing to do on either side next time", array_sum(array_slice($A->Run(), 0, 4)) === 0 && array_sum(array_slice($B->Run(), 0, 4)) === 0);
+	sleep(1);
+	file_put_contents("$tmp/out-a/daemon/2026-11-01/full_db.kmz", 'kmz, rebuilt');
+	unlink("$tmp/out-a/pmtiles/daily.pmtiles");
+	unlink("$tmp/out-a/pmtiles/daily-20261101.pmtiles");
+	$A->Run();
+	$did = $B->Run();
+	check("a rebuilt file reaches the other node, and removed ones go from it", file_get_contents("$tmp/out-b/daemon/2026-11-01/full_db.kmz") === 'kmz, rebuilt'
+		&& !file_exists("$tmp/out-b/pmtiles/daily.pmtiles") && !file_exists("$tmp/out-b/pmtiles/daily-20261101.pmtiles"), json_encode($did));
+	file_put_contents("$tmp/out-b/daemon/2026-11-01/daily_db.kmz", 'from b');
+	$B->Run();
+	$A->Run();
+	check("...and it works the other way round too", @file_get_contents("$tmp/out-a/daemon/2026-11-01/daily_db.kmz") === 'from b');
+	foreach($c->ListObjects('sync-test/') as $o) { $c->Delete($o[0]); }
 }
 catch(Throwable $e)
 {
