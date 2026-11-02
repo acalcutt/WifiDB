@@ -53,7 +53,9 @@ done
 check "the upload page queued all $distinct, each once" test "$(sqlq "select count(*) from files_tmp")" = "$((before + distinct))"
 
 started=$(date +%s)
-imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -f -o -v 2>&1 | tr -d '\0')
+# as cron runs it (no -f): through this node's Import row in schedule, made due first
+sqlq "UPDATE schedule SET status = 'Waiting', nextrun = '2000-01-01 00:00:00' WHERE daemon = 'Import'" >/dev/null
+imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -o -v 2>&1 | tr -d '\0')
 log "the importer took $(( $(date +%s) - started ))s"
 if echo "$imp" | grep -qE 'Fatal error|Uncaught|SQLSTATE|PDOException|Stack trace'; then
     bad "the importer ran without a PHP or SQL error"

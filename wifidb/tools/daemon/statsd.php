@@ -137,8 +137,8 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus->execute();
 
 	#Start claimed schedule ID, if one exists
-	// "interval" is a reserved word in Postgres and must be quoted there;
-	$sql = "SELECT id, ".$dbcore->sql->ident('interval')." FROM schedule WHERE pid = ? And pidfile = ?";
+	// "interval" is a reserved word: quoted on Postgres, and named with its table for MariaDB;
+	$sql = "SELECT schedule.id, schedule.".$dbcore->sql->ident('interval')." FROM schedule WHERE pid = ? And pidfile = ?";
 	$prepgj = $dbcore->sql->conn->prepare($sql);
 	$prepgj->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepgj->bindParam(2, $pid_filename, PDO::PARAM_STR);
