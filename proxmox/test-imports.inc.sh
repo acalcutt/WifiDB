@@ -55,13 +55,20 @@ check "the upload page queued all $distinct, each once" test "$(sqlq "select cou
 started=$(date +%s)
 # as cron runs it (no -f): through this node's Import row in schedule, made due first
 sqlq "UPDATE schedule SET status = 'Waiting', nextrun = '2000-01-01 00:00:00' WHERE daemon = 'Import'" >/dev/null
-imp=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/importd.php -o -v 2>&1 | tr -d '\0')
+# every notice reported (the template's own settings leave deprecations out), so the run also shows what PHP 9 breaks
+imp=$(docker exec "$ct" runuser -u www-data -- php -d error_reporting=-1 -d log_errors=1 -d error_log= /opt/wifidb/tools/daemon/importd.php -o -v 2>&1 | tr -d '\0')
 log "the importer took $(( $(date +%s) - started ))s"
 if echo "$imp" | grep -qE 'Fatal error|Uncaught|SQLSTATE|PDOException|Stack trace'; then
     bad "the importer ran without a PHP or SQL error"
     echo "$imp" | grep -E 'Fatal error|Uncaught|SQLSTATE|PDOException' | sort | uniq -c | sort -rn | head -8 | sed 's/^/       /'
 else
     ok "the importer ran without a PHP or SQL error"
+fi
+if echo "$imp" | grep -q 'Deprecated'; then
+    bad "...nor a deprecation notice"
+    echo "$imp" | grep 'Deprecated' | sed 's/^.*Deprecated: *//' | sort | uniq -c | sort -rn | head -12 | cut -c1-200 | sed 's/^/       /'
+else
+    ok "...nor a deprecation notice"
 fi
 check "nothing is left waiting or half-imported" test "$(sqlq "select (select count(*) from files_tmp) + (select count(*) from files_importing)")" = 0 ||
     echo "$imp" | grep -v 'Deprecated\|^Insert \(GPS \)\?Size\|^Import Line Error\|^---' | tail -25 | cut -c1-200 | sed 's/^/       /'

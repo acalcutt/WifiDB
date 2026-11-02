@@ -9,9 +9,11 @@ errors=${errors:-'Undefined (constant|variable|array key)|Fatal error|Uncaught|P
 if [ "$(sqlq 'select count(*) from files where completed = 1')" = 0 ]; then
     log "(nothing has been imported: the utilities are not tested)"
 else
-util() { docker exec "$ct" runuser -u www-data -- php "/opt/wifidb/tools/utilites/$1" "${@:2}" 2>&1; }
-ran() { # ran NAME OUTPUT: the utility gave no PHP or SQL error, nor a warning (a file it couldn't write is one)
-    if echo "$2" | grep -qE "$errors|PHP Warning"; then bad "$1 runs without an error"; echo "$2" | grep -E "$errors|PHP Warning" | head -4 | sed 's/^/       /'; else ok "$1 runs without an error"; fi
+# every notice reported (the template's settings leave deprecations out), so PHP 9's are caught too
+PHPALL="-d error_reporting=-1 -d log_errors=1 -d error_log="
+util() { docker exec "$ct" runuser -u www-data -- php $PHPALL "/opt/wifidb/tools/utilites/$1" "${@:2}" 2>&1; }
+ran() { # ran NAME OUTPUT: the utility gave no PHP or SQL error, nor a warning (a file it couldn't write is one) or deprecation
+    if echo "$2" | grep -qE "$errors|PHP Warning|Deprecated"; then bad "$1 runs without an error"; echo "$2" | grep -E "$errors|PHP Warning|Deprecated" | head -4 | sed 's/^/       /'; else ok "$1 runs without an error"; fi
 }
 
 out=$(util update_files_validgps.php); ran update_files_validgps.php "$out"
@@ -50,13 +52,13 @@ else
 fi
 
 # the stats daemon, through its schedule row (migration 0007), as cron starts it
-out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0'); ran statsd.php "$out"
+out=$(docker exec "$ct" runuser -u www-data -- php $PHPALL /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0'); ran statsd.php "$out"
 check "...and fills the stats cache" test "$(sqlq 'select count(*) from stats_cache')" -gt 0
-out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
+out=$(docker exec "$ct" runuser -u www-data -- php $PHPALL /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
 check "...and started again at once, waits for its next run" sh -c 'echo "$0" | grep -q "There are no jobs that need to be run"' "$out"
 # a run that died (a restart mid-run) leaves its row 'Running' with its pid: the next run takes it back
 sqlq "UPDATE schedule SET status = 'Running', pid = 999999, nextrun = '2000-01-01 00:00:00' WHERE daemon = 'Stats'" >/dev/null
-out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
+out=$(docker exec "$ct" runuser -u www-data -- php $PHPALL /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
 check "...and takes back a schedule row left 'Running' by a run that died" sh -c 'echo "$0" | grep -q "left running by a process that.s gone" && echo "$0" | grep -q "Statistics cache generation complete"' "$out"
 
 # last, as it removes data: one file's readings and GPS points
