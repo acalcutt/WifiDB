@@ -63,44 +63,45 @@ class convert extends dbcore
 		$pattern[0] = '/N /';
 		$pattern[1] = '/E /';
 		$replacement = "";
-		$geocord_in = preg_replace($pattern, $replacement, $geocord_in);
+		$geocord_in = preg_replace($pattern, $replacement, (string)$geocord_in);
 
 		$pattern_neg[0] = '/S /';
 		$pattern_neg[1] = '/W /';
 		$replacement_neg = "-";
-		$geocord_in = preg_replace($pattern_neg, $replacement_neg, $geocord_in);
+		$geocord_in = (string)preg_replace($pattern_neg, $replacement_neg, (string)$geocord_in);
 
-		$sign = ($geocord_in[0] == "-") ? "-" : "";
+		$sign = (substr($geocord_in, 0, 1) === "-") ? "-" : "";
 		$geocord_in = str_replace("-", "", $geocord_in);# Temporarily remove "-" sign if it exists (otherwise the addition below won't work)
 
-		$geocord_exp = explode(" ", $geocord_in);
+		$geocord_exp = explode(" ", trim($geocord_in));
 		$sections = count($geocord_exp);
 
 		if ($sections == 1)
 		{
 			$latlon_exp = explode(".", $geocord_exp[0]);
-			if (strlen($latlon_exp[1]) == 4)
+			$fraction = $latlon_exp[1] ?? '';   # none at all in a value like "0"
+			if (strlen($fraction) == 4)
 			{
 				#DMM to DMM
-				$return = $sign.((int)$latlon_exp[0]).".".$latlon_exp[1];
+				$return = $sign.((int)$latlon_exp[0]).".".$fraction;
 			}
-			elseif (strlen($latlon_exp[1]) == 7)
+			elseif (strlen($fraction) == 7)
 			{
 				#DDD to DMM
-				$DD = $latlon_exp[0] * 100;
-				$MM = ((float)(".".$latlon_exp[1])) * 60;
+				$DD = (float)$latlon_exp[0] * 100;
+				$MM = ((float)(".".$fraction)) * 60;
 				$return = $sign.number_format($DD + $MM, 4, ".", "");
 			}
 		}
 		elseif ($sections == 3)
 		{
-			#DDMMSS to DMM
-			$DDSTR = substr($sections[0], 0, -1);
-			$MMSTR = substr($sections[1], 0, -1);
-			$SSSTR = substr($sections[2], 0, -1);
+			#DDMMSS to DMM: 43° 7' 24.44" (each part ends with its unit, which goes)
+			$DDSTR = substr($geocord_exp[0], 0, -1);
+			$MMSTR = substr($geocord_exp[1], 0, -1);
+			$SSSTR = substr($geocord_exp[2], 0, -1);
 
-			$DD = $DDSTR * 100;
-			$MM = $MMSTR + ($SSSTR / 60);
+			$DD = (float)$DDSTR * 100;
+			$MM = (float)$MMSTR + ((float)$SSSTR / 60);
 			$return = $sign.number_format($DD + $MM, 4, ".", "");
 		}
 

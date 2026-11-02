@@ -5,7 +5,7 @@ use PHPUnit\Framework\TestCase;
 require_once WIFIDB_LIB . '/dbcore.inc.php';
 require_once WIFIDB_LIB . '/convert.inc.php';
 
-// dbcore does not declare the signal limits (PHP 8.2 deprecates creating them on the fly), so declare them here.
+// The signal limits config.inc.php would give (the constructor, which reads them, isn't run here).
 class ConvertUnderTest extends convert
 {
     public $dBmMaxSignal = -30;
@@ -46,6 +46,10 @@ final class ConvertTest extends TestCase
             'already DMM'               => ['4307.4074', '4307.4074'],
             'N prefix is dropped'       => ['N 4307.4074', '4307.4074'],
             'S prefix becomes negative' => ['S 4307.4074', '-4307.4074'],
+            'degrees, minutes, seconds' => ["N 43° 7' 24.44\"", '4307.4073'],
+            'DMS, west'                 => ["W 70° 30' 0\"", '-7030.0000'],
+            'nothing'                   => ['', '0.0000'],
+            'no decimal point'          => ['0', '0.0000'],
         ];
     }
 
