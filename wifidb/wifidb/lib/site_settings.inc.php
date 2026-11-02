@@ -1,6 +1,6 @@
 <?php
 /*
-site_settings.inc.php, the settings an administrator changes from the site (admin/settings.php) instead of in
+site_settings.inc.php, the settings an administrator changes from the site (admin/settings.php, logins.php, mail.php) instead of in
 config.inc.php. config.inc.php still gives each one its starting value, under the same name; once an administrator saves
 it, the row in site_settings wins. Secrets (an API key) are encrypted with two_factor_key, like the authenticator secrets,
 and are never shown again, only whether one is set.
@@ -104,8 +104,87 @@ class SiteSettings
 			case 'adsense_slot_menu':
 				if(preg_match('/data-ad-slot\s*=\s*["\']?(\d{5,20})/', $value, $m) || preg_match('/^(\d{5,20})$/', $value, $m)) { return array($m[1], ''); }
 				return array($value, "That isn't an AdSense ad unit number.");
+			case 'smtp_host':
+			case 'signup_smtp_host':
+				return preg_match('/^[^\s"\'<>]+$/', $value) ? array($value, '') : array($value, "That isn't a mail server's name.");
+			case 'smtp_port':
+			case 'signup_smtp_port':
+				return preg_match('/^\d{1,5}$/', $value) && (int)$value >= 1 && (int)$value <= 65535 ? array((string)(int)$value, '')
+					: array($value, "$value isn't a port number.");
+			case 'smtp_from':
+			case 'smtp_replyto':
+			case 'signup_smtp_from':
+			case 'signup_smtp_replyto':
+			case 'DKIM_identity':
+				return filter_var($value, FILTER_VALIDATE_EMAIL) !== false ? array($value, '') : array($value, "$value isn't an e-mail address.");
+			case 'smtp_from_name':
+				return preg_match('/[\x00-\x1f\x7f]/', $value) ? array($value, 'The From name has characters it can\'t.') : array($value, '');
+			case 'DKIM_domain':
+				$value = strtolower(rtrim($value, '.'));
+				return preg_match('/^([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z0-9-]{2,}$/', $value) ? array($value, '') : array($value, "$value isn't a domain.");
+			case 'DKIM_selector':
+				return preg_match('/^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$/', $value) ? array($value, '')
+					: array($value, 'A selector is letters, numbers, dots and dashes.');
 		}
 		return array($value, '');
+	}
+
+	/**
+	 * Sending mail (tools/daemon/lib/wdbmail.inc.php), saved from admin/mail.php instead. The names are config.inc.php's,
+	 * so a site that set them there starts from those. A sign-up account setting left empty is the main account's.
+	 */
+	const MAIL_SETTINGS = array(
+		'smtp_host'      => array('text', 'Mail server', 'Such as smtp.gmail.com.', ''),
+		'smtp_port'      => array('text', 'Port', '587 with STARTTLS, 465 with SSL/TLS.', '587'),
+		'smtp_secure'    => array('choice', 'Encryption', '', 'tls',
+			array('tls' => 'STARTTLS (usually port 587)', 'ssl' => 'SSL/TLS (usually port 465)', '' => 'None (a server on your own network)')),
+		'smtp_auth'      => array('bool', 'Sign in to the mail server',
+			'Off only for a server that takes this one\'s mail without a password.', 1),
+		'smtp_authtype'  => array('choice', 'How to sign in', '', '',
+			array('' => 'The best way the server offers', 'LOGIN' => 'LOGIN', 'PLAIN' => 'PLAIN', 'CRAM-MD5' => 'CRAM-MD5')),
+		'smtp_user'      => array('text', 'Username', '', ''),
+		'smtp_pass'      => array('secret', 'Password',
+			'Gmail and Google Workspace need an app password (Google account, Security, App passwords), not the account\'s own.', ''),
+		'smtp_from'      => array('text', 'From address',
+			'Gmail sends only as the account\'s own address or one of its aliases.', ''),
+		'smtp_from_name' => array('text', 'From name', 'Shown with the address, such as WiFiDB. Empty: the address alone.', ''),
+		'smtp_replyto'   => array('text', 'Reply-To address', 'Empty: replies go to the From address.', ''),
+		'wifidb_email_updates' => array('bool', 'Send notification mail',
+			'Members who asked for it in their preferences get mail about new members, imports and exports, and administrators about imports that failed. The notifications on the site itself are made either way.', 1),
+		'signup_smtp_host'   => array('text', 'Sign-up account\'s mail server', '', ''),
+		'signup_smtp_port'    => array('text', 'Sign-up account\'s port', '', ''),
+		'signup_smtp_secure'  => array('choice', 'Sign-up account\'s encryption', '', '',
+			array('' => 'The main account\'s', 'tls' => 'STARTTLS', 'ssl' => 'SSL/TLS', 'none' => 'None')),
+		'signup_smtp_user'    => array('text', 'Sign-up account\'s username', '', ''),
+		'signup_smtp_pass'    => array('secret', 'Sign-up account\'s password', '', ''),
+		'signup_smtp_from'    => array('text', 'Sign-up account\'s From address', '', ''),
+		'signup_smtp_replyto' => array('text', 'Sign-up account\'s Reply-To address', '', ''),
+		'DKIM_domain'    => array('text', 'Signing domain',
+			'The domain mail is signed for: the part after @ in the From address, or a parent of it. Empty: mail is sent unsigned.', ''),
+		'DKIM_selector'  => array('text', 'Selector',
+			'A name for the key, so a domain can have several, and a new key can be published before the old one is retired.', 'wifidb'),
+		'DKIM_identity'  => array('text', 'Signing identity', 'Normally the From address. Empty: the domain.', ''),
+		'DKIM_private_string' => array('secret', 'Signing key',
+			'Kept in the database, so every server signs with it. Empty: the key file DKIM_private names in config.inc.php, if any.', ''),
+	);
+
+	/**
+	 * config.inc.php's mail settings, with what was saved on admin/mail.php over them (for wdbmail::Mailer). A sign-up
+	 * account setting saved empty is taken out, so it is the main account's, as one left out of config.inc.php is.
+	 * email_validation (Site Settings) comes too, for the mail check.
+	 */
+	public function MailConfig(array $config)
+	{
+		foreach(self::MAIL_SETTINGS + array('email_validation' => self::SETTINGS['email_validation']) as $name => $def)
+		{
+			if($this->Source($name) !== 'saved') { continue; }
+			$value = $this->Get($name);
+			if($value === '' && strpos($name, 'signup_') === 0) { unset($config[$name]); continue; }
+			if($name === 'smtp_port' || $name === 'signup_smtp_port') { $value = (int)$value; }
+			if($name === 'signup_smtp_secure' && $value === 'none') { $value = ''; }
+			$config[$name] = $value;
+		}
+		return $config;
 	}
 
 	/** Signing in with another site's account (lib/linked_logins.inc.php), saved from admin/logins.php instead. */
@@ -169,6 +248,7 @@ class SiteSettings
 	{
 		if(isset(self::SETTINGS[$name])) { return self::SETTINGS[$name]; }
 		if(isset(self::LOGIN_SETTINGS[$name])) { return self::LOGIN_SETTINGS[$name]; }
+		if(isset(self::MAIL_SETTINGS[$name])) { return self::MAIL_SETTINGS[$name]; }
 		throw new InvalidArgumentException("No setting named $name");
 	}
 
@@ -234,7 +314,7 @@ class SiteSettings
 	public function Save($values, $username)
 	{
 		$changed = array();
-		foreach(self::SETTINGS + self::LOGIN_SETTINGS as $name => $def)
+		foreach(self::SETTINGS + self::LOGIN_SETTINGS + self::MAIL_SETTINGS as $name => $def)
 		{
 			if(!array_key_exists($name, $values) || $values[$name] === null) { continue; }
 			$type = $def[0];

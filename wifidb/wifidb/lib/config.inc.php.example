@@ -59,12 +59,16 @@ $config = array
 	'verbose'			   =>   1,
 	'EnableAPIKey'		  =>   0,
 	#----------SMTP Settings------------#
+	# Starting values for the Mail page (admin/mail.php), as wifidb_email_updates above is: once an administrator saves
+	# one there, the saved value is used. smtp_timeout, smtp_options, smtp_debug, DKIM_private, DKIM_passphrase,
+	# ListUnsubscribe and XMailer are set only here. docs/email.md
 	'smtp_debug'			=>   0,						 // Enable verbose debug output 0:disable 2:verbose
 	'smtp_host'			 =>   'smtp.someemail.com',	  // Specify main and backup SMTP servers
 	'smtp_port'			 =>   587,					   // Specify smtp port
 	'smtp_user'			 =>   'wifidb@someemail.com',	// SMTP username
 	'smtp_pass'			 =>   'supersecretpw',		   // SMTP password	
 	'smtp_from'			 =>   'wifidb@someemail.com',	// SMTP from
+	'smtp_from_name'		=>   '',						// shown with the From address, such as WiFiDB ('' for the address alone)
 	'smtp_replyto'		  =>   '',						// SMTP reply to
 	'smtp_secure'		   =>   'tls',					 // Auth type, tls or ssl
 	'smtp_auth'			 =>   true,

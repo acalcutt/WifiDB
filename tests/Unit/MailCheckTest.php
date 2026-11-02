@@ -199,6 +199,32 @@ final class MailCheckTest extends TestCase
         $this->assertStringContainsString('Sign-up mail uses the main SMTP account', $this->text($plain));
     }
 
+    public function testAKeySavedOnTheMailPageIsCheckedInsteadOfTheFile(): void
+    {
+        $results = MailCheck::Check($this->config(['DKIM_private' => '', 'DKIM_private_string' => $this->pem]), $this->dns($this->goodDns()));
+        $this->assertNotContains('fail', $this->statuses($results), $this->text($results));
+        $this->assertStringContainsString('matches the key', $this->text($results));
+
+        $other = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        openssl_pkey_export($other, $otherPem);
+        $text = $this->text(MailCheck::Check($this->config(['DKIM_private_string' => $otherPem]), $this->dns($this->goodDns())));
+        $this->assertStringContainsString('different key than the saved key', $text, 'the saved key is the one used, not the file');
+        $this->assertStringContainsString('not a valid private key', $this->text(MailCheck::Check($this->config(['DKIM_private_string' => 'junk']), $this->dns($this->goodDns()))));
+    }
+
+    public function testASignupAccountTakesWhatItDoesNotSetFromTheMainOne(): void
+    {
+        $results = MailCheck::Check($this->config(['signup_smtp_user' => 'signup@example.test', 'signup_smtp_pass' => 'its-own']), $this->dns($this->goodDns()));
+        $this->assertNotContains('fail', $this->statuses($results), $this->text($results));
+        $this->assertStringNotContainsString('uses the main SMTP account', $this->text($results));
+    }
+
+    public function testAServerThatTakesMailWithoutALoginNeedsNoUsername(): void
+    {
+        $results = MailCheck::Check($this->config(['smtp_auth' => false, 'smtp_user' => '', 'smtp_pass' => '']), $this->dns($this->goodDns()));
+        $this->assertNotContains('fail', $this->statuses($results), $this->text($results));
+    }
+
     public function testMissingSpfAndDmarcAreWarnings(): void
     {
         $dns = $this->goodDns();

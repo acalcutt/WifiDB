@@ -22,6 +22,7 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></li>
 						<li><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></li>
 						<li><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></li>
+						<li><a href="{$wifidb_host_url}admin/mail.php">Mail</a></li>
 						<li><a href="{$wifidb_host_url}admin/backups.php">Backups</a></li>
 						<li><a href="{$wifidb_host_url}admin/servers.php">Servers</a></li>
 						<li><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></li>

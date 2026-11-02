@@ -35,6 +35,9 @@ class wdbmail
     function __construct($config, $sql = null)
     {
 		$this->wifidb_install			= isset($config['wifidb_install']) ? rtrim($config['wifidb_install'], '/\\').'/' : null;
+		$this->sec					  	= new security($this, $config);
+		$this->sql					  	= ($sql !== null) ? $sql : new SQL($config);
+		$config							= $this->SiteMailConfig($config);
 		$this->URL_PATH				 	= $config['hosturl'].$config['root'].'/';
 		$this->wifidb_email_updates	 	= $config['wifidb_email_updates'];
 		$this->email_validation		 	= $config['email_validation'];
@@ -57,36 +60,10 @@ class wdbmail
 		$this->DKIM_copyHeaderFields	= $config['DKIM_copyHeaderFields'];
 		$this->ListUnsubscribe			= $config['ListUnsubscribe'];
 		$this->XMailer					= $config['XMailer'];
-		
-		$this->sec					  	= new security($this, $config);
-		$this->sql					  	= ($sql !== null) ? $sql : new SQL($config);
-		
-		$this->mail 					= new PHPMailer();
-		$this->mail->isSMTP();										// Set mailer to use SMTP			
-		$this->mail->XMailer 			= $this->XMailer;			//What to put in the X-Mailer header. An empty string for PHPMailer default, whitespace for none, or a string to use.		
-		$this->mail->SMTPDebug 			= $this->smtp_debug;		// Enable verbose debug output 0:disable 2:verbose
-		$this->mail->Host 				= $this->smtp_host;			// Specify main and backup SMTP servers
-		$this->mail->Port 				= $this->smtp_port;			// Specify smtp port
-		$this->mail->Username 			= $this->smtp_user;			// SMTP username
-		$this->mail->Password 			= $this->smtp_pass;			// SMTP password		
-		$this->mail->SetFrom($this->smtp_from);						// SMTP from
-		$this->mail->AddReplyTo($this->smtp_replyto);				// SMTP reply to
-		$this->mail->SMTPSecure 		= $this->smtp_secure;		// Enable TLS encryption, ssl also accepted		
-		$this->mail->SMTPAuth 			= $this->smtp_auth;			// Enable SMTP authentication
-		$this->mail->AuthType 			= $this->smtp_authtype;		// Auth type, tls or ssl
-		$this->mail->SMTPOptions 		= $this->smtp_options;
-		// PHPMailer waits 300 seconds for a mail server that doesn't answer, far past the web pool's 30: the page (a
-		// sign-up, a password reset) would end in an error instead of saying the mail couldn't be sent
-		$this->mail->Timeout			= isset($config['smtp_timeout']) ? (int)$config['smtp_timeout'] : 15;
 
-		$this->mail->DKIM_domain 		= $this->DKIM_domain;
-		$this->mail->DKIM_private 		= $this->DKIM_private;
-		$this->mail->DKIM_selector 		= $this->DKIM_selector;		//Set this to your own selector
-		$this->mail->DKIM_passphrase 	= $this->DKIM_passphrase;	//Put your private key's passphrase in here if it has one
-		$this->mail->DKIM_identity 		= $this->DKIM_identity;		//The identity you're signing as - usually your From address
-		$this->mail->DKIM_copyHeaderFields = $this->DKIM_copyHeaderFields;//Suppress listing signed header fields in signature, defaults to true for debugging purpose
+		$this->mail 					= self::Mailer($config);
 		$this->mail->addCustomHeader("List-Unsubscribe",$this->ListUnsubscribe);
-		
+
 		$this->signup_smtp_debug		= $config['signup_smtp_debug'] ?? $config['smtp_debug'];
 		$this->signup_smtp_host			= $config['signup_smtp_host'] ?? $config['smtp_host'];
 		$this->signup_smtp_port			= $config['signup_smtp_port'] ?? $config['smtp_port'];
@@ -98,32 +75,95 @@ class wdbmail
 		$this->signup_smtp_auth			= $config['signup_smtp_auth'] ?? $config['smtp_auth'];
 		$this->signup_smtp_authtype		= $config['signup_smtp_authtype'] ?? $config['smtp_authtype'];
 		$this->signup_smtp_options		= $config['signup_smtp_options'] ?? $config['smtp_options'];
-		
-		$this->signupmail 					= new PHPMailer();
-		$this->signupmail->isSMTP();										// Set mailer to use SMTP			
-		$this->signupmail->XMailer 			= $this->XMailer;			//What to put in the X-Mailer header. An empty string for PHPMailer default, whitespace for none, or a string to use.		
-		$this->signupmail->SMTPDebug 			= $this->signup_smtp_debug;		// Enable verbose debug output 0:disable 2:verbose
-		$this->signupmail->Host 				= $this->signup_smtp_host;			// Specify main and backup SMTP servers
-		$this->signupmail->Port 				= $this->signup_smtp_port;			// Specify smtp port
-		$this->signupmail->Username 			= $this->signup_smtp_user;			// SMTP username
-		$this->signupmail->Password 			= $this->signup_smtp_pass;			// SMTP password		
-		$this->signupmail->SetFrom($this->signup_smtp_from);						// SMTP from
-		$this->signupmail->AddReplyTo($this->signup_smtp_replyto);				// SMTP reply to
-		$this->signupmail->SMTPSecure 		= $this->signup_smtp_secure;		// Enable TLS encryption, ssl also accepted		
-		$this->signupmail->SMTPAuth 			= $this->signup_smtp_auth;			// Enable SMTP authentication
-		$this->signupmail->AuthType 			= $this->signup_smtp_authtype;		// Auth type, tls or ssl
-		$this->signupmail->SMTPOptions 		= $this->signup_smtp_options;
-		$this->signupmail->Timeout			= $this->mail->Timeout;
 
-		// Sign-up and password-reset mail is signed with the same DKIM key as the rest (it is the same domain; only
-		// the SMTP account differs), so it is not the one kind of mail that goes out unsigned.
-		$this->signupmail->DKIM_domain 		= $this->DKIM_domain;
-		$this->signupmail->DKIM_private 		= $this->DKIM_private;
-		$this->signupmail->DKIM_selector 		= $this->DKIM_selector;
-		$this->signupmail->DKIM_passphrase 	= $this->DKIM_passphrase;
-		$this->signupmail->DKIM_identity 		= $this->DKIM_identity;
-		$this->signupmail->DKIM_copyHeaderFields = $this->DKIM_copyHeaderFields;
+		$this->signupmail 				= self::Mailer($config, true);
     }
+
+	/** config.inc.php's mail settings with what an administrator saved on admin/mail.php over them (lib/site_settings.inc.php) */
+	private function SiteMailConfig($config)
+	{
+		if(!class_exists('SiteSettings', false))
+		{
+			require_once ($this->wifidb_install !== null ? $this->wifidb_install : dirname(__DIR__, 3).'/wifidb/').'lib/site_settings.inc.php';
+		}
+		// with no database to read (a test), config.inc.php's alone
+		return (new SiteSettings(isset($this->sql->conn) ? $this->sql->conn : null, $config))->MailConfig($config);
+	}
+
+	/**
+	 * A PHPMailer for the main account, or with $signup the one sign-up and password-reset mail goes out from: any
+	 * signup_smtp_* setting it doesn't have is the main account's. Both are signed with the same DKIM key (it is the same
+	 * domain; only the account differs), so sign-up mail is not the one kind that goes out unsigned: the key saved on
+	 * admin/mail.php, else the file DKIM_private names.
+	 */
+	public static function Mailer(array $config, $signup = false)
+	{
+		$c = function ($name, $default = '') use ($config) { return isset($config[$name]) ? $config[$name] : $default; };
+		$smtp = function ($name, $default = '') use ($config, $signup, $c) { return ($signup && isset($config['signup_'.$name])) ? $config['signup_'.$name] : $c($name, $default); };
+
+		$mail = new PHPMailer();
+		$mail->isSMTP();
+		$mail->XMailer			= $c('XMailer');			// What to put in the X-Mailer header. An empty string for PHPMailer default, whitespace for none, or a string to use.
+		$mail->SMTPDebug		= (int)$smtp('smtp_debug', 0);	// 0:disable 2:verbose
+		$mail->Host				= $smtp('smtp_host');
+		$mail->Port				= (int)$smtp('smtp_port', 587);
+		$mail->Username			= $smtp('smtp_user');
+		$mail->Password			= $smtp('smtp_pass');
+		$mail->setFrom($smtp('smtp_from'), $c('smtp_from_name'));
+		if($smtp('smtp_replyto') !== '') { $mail->addReplyTo($smtp('smtp_replyto')); }
+		$mail->SMTPSecure		= $smtp('smtp_secure');		// tls (STARTTLS) or ssl
+		$mail->SMTPAuth			= (bool)$smtp('smtp_auth', true);
+		$mail->AuthType			= $smtp('smtp_authtype');	// '': the best the server offers
+		$mail->SMTPOptions		= $smtp('smtp_options', array());
+		// PHPMailer waits 300 seconds for a mail server that doesn't answer, far past the web pool's 30: the page (a
+		// sign-up, a password reset) would end in an error instead of saying the mail couldn't be sent
+		$mail->Timeout			= (int)$c('smtp_timeout', 15);
+
+		$mail->DKIM_domain		= $c('DKIM_domain');
+		$mail->DKIM_private_string = $c('DKIM_private_string');
+		$mail->DKIM_private		= $c('DKIM_private');
+		$mail->DKIM_selector	= $c('DKIM_selector');
+		$mail->DKIM_passphrase	= $mail->DKIM_private_string !== '' ? '' : $c('DKIM_passphrase');	// a saved key has none
+		$mail->DKIM_identity	= $c('DKIM_identity');		// usually the From address
+		$mail->DKIM_copyHeaderFields = (bool)$c('DKIM_copyHeaderFields', true);
+		return $mail;
+	}
+
+	/**
+	 * Sends a test message from the main account, or the sign-up one, as Mailer sets it up.
+	 * @return array (sent?, PHPMailer's error or '', the conversation with the mail server: the commands and the server's
+	 *   answers, but not the login (base64 is not encryption) or the message)
+	 */
+	public static function Test(array $config, $to, $signup = false)
+	{
+		$mail = self::Mailer($config, $signup);
+		$lines = array();
+		$mail->SMTPDebug = 2;
+		$mail->Debugoutput = function ($line) use (&$lines)
+		{
+			$line = rtrim($line);
+			if(preg_match('/^CLIENT -> SERVER: (.*)$/s', $line, $m))
+			{
+				if(preg_match('/^AUTH (\S+)/i', $m[1], $a)) { $lines[] = 'CLIENT -> SERVER: AUTH '.$a[1].' (the login is left out)'; }
+				elseif(preg_match('/^(EHLO|HELO|STARTTLS|MAIL FROM:|RCPT TO:|DATA|QUIT|RSET)/i', $m[1])) { $lines[] = $line; }
+				return;
+			}
+			if($line !== '') { $lines[] = $line; }
+		};
+		$mail->addAddress($to);
+		$mail->Subject = 'WiFiDB mail test';
+		$mail->Body = "This is a test message from WiFiDB's mail settings.\r\nIf you can read it, sending works.\r\n";
+		try
+		{
+			$sent = $mail->send();
+		}
+		catch(Throwable $e)
+		{
+			$sent = false;
+			$mail->ErrorInfo = $e->getMessage();
+		}
+		return array($sent, $sent ? '' : $mail->ErrorInfo, $lines);
+	}
     
     function mail_password_reset($username = "", $Useremail = 'noone@somewhere.local')
     {

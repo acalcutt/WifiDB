@@ -7,10 +7,28 @@ WiFiDB sends two kinds of mail, and can use two accounts for them. (Mail is sent
 | **Sign-up and password-reset mail** (the validation link) | `wdbmail::mail_validation` | the sign-up account, `signup_smtp_*` |
 | **Notifications** (new users, new KMZ, schedule and import messages) | `wdbmail::mail_users` | the main account, `smtp_*` |
 
-If the `signup_smtp_*` settings are not given, sign-up mail goes through the main account too. Both are signed with the
-same DKIM key (below).
+Anything the sign-up account doesn't set is the main account's, so with none of it set, sign-up mail goes through the
+main account too. Both are signed with the same DKIM key (below).
 
-Check everything at any time, and send a test message:
+## The Mail page
+
+**Mail** in the menu (`admin/mail.php`, needs admin mode) sets it all from the site:
+
+- the mail server and account (server, port, encryption, the login, the From name and address, Reply-To), and whether
+  members get notification mail;
+- a sign-up account, if you want one: anything left empty is the main account's;
+- DKIM signing: the domain, the selector and the key. **Make a key** makes a 2048-bit key, keeps it in the database
+  (encrypted, as the password is), so every server signs with it, and shows the TXT record to publish and its name;
+  you can paste a key you have instead;
+- **Check**, which does what `check_mail.php` does (below), and **Send a test message**, from either account, which
+  shows what the mail server said, without the login.
+
+The page starts from the settings in `config.inc.php` (below), under the same names. Once a setting is saved on the
+page, that value is used, on every server, and the one in `config.inc.php` is ignored. Every change leaves the
+administrators a notice. `smtp_timeout`, `smtp_options`, `smtp_debug`, `DKIM_private` (a key file),
+`DKIM_passphrase`, `ListUnsubscribe` and `XMailer` are set only in `config.inc.php`.
+
+## Checking from the command line
 
 ```bash
 php tools/utilites/check_mail.php                          # the settings, the DKIM key, DNS, SPF and DMARC
@@ -18,10 +36,11 @@ php tools/utilites/check_mail.php --send you@example.org   # ... and send a sign
 php tools/utilites/check_mail.php --send you@example.org --signup   # from the sign-up account
 ```
 
-It prints `[ OK ]`, `[WARN]` or `[FAIL]` for each thing and exits 1 if any failed. In the Proxmox template run it as the
+It checks the settings as the site uses them: `config.inc.php`'s, with what was saved on the Mail page over them. It
+prints `[ OK ]`, `[WARN]` or `[FAIL]` for each thing and exits 1 if any failed. In the Proxmox template run it as the
 web server's user, so it can read the key: `pct exec 210 -- su -s /bin/bash www-data -c "php /opt/wifidb/tools/utilites/check_mail.php"`.
 
-## Where the settings are
+## Where the settings are in config.inc.php
 
 In `lib/config.inc.php` (copy `lib/config.inc.php.example`). In the Proxmox template that file is built for you; put
 your changes in `/srv/wifidb-data/config/web.overrides.php`, which is kept across upgrades (it is only rewritten if you
@@ -48,9 +67,10 @@ Changes take effect on the next request and the next run of a cron job. The two 
 | `wifidb_email_updates` | `1`: send the notification mail (new users, imports and so on) | `1` |
 | `smtp_host`, `smtp_port` | The mail server | `smtp.gmail.com`, `587` |
 | `smtp_secure` | `tls` (STARTTLS, port 587) or `ssl` (port 465) | `tls` |
-| `smtp_auth`, `smtp_authtype` | Log in to the server, and how | `true`, `LOGIN` |
+| `smtp_auth`, `smtp_authtype` | Log in to the server, and how (`''`: the best way the server offers) | `true`, `LOGIN` |
 | `smtp_user`, `smtp_pass` | The account's login. Gmail and Google Workspace need an **app password** (Google account → Security → App passwords), not the account password. | |
 | `smtp_from` | The From address. Gmail only lets you send as the account's own address or one of its aliases. | `wifidb@example.org` |
+| `smtp_from_name` | The name shown with the From address, or empty for the address alone (both accounts) | `WiFiDB` |
 | `smtp_replyto` | Reply-To address, or empty | |
 | `smtp_options` | PHP stream options for the TLS connection. Leave `verify_peer` on; only a mail server with a self-signed certificate needs it off. | |
 | `smtp_timeout` | Seconds to wait for the mail server before giving up on a message (both accounts). A sign-up or password reset then says the mail couldn't be sent, instead of the page timing out. | `15` |
@@ -58,7 +78,7 @@ Changes take effect on the next request and the next run of a cron job. The two 
 | `signup_smtp_*` | The same set of settings (`host`, `port`, `user`, `pass`, `from`, `replyto`, `secure`, `auth`, `authtype`, `options`, `debug`) for the sign-up account. Leave them all out to use the main account. | |
 | `DKIM_domain` | The domain that signs: the part after `@` in the From address, or a parent of it | `example.org` |
 | `DKIM_selector` | A name for this key, so you can have several (and change keys without a gap) | `wifidb` |
-| `DKIM_private` | The **full path** of the private key file (below) | `/srv/wifidb-data/config/dkim/wifidb.pem` |
+| `DKIM_private` | The **full path** of the private key file (below). A key made or pasted on the Mail page is used instead. | `/srv/wifidb-data/config/dkim/wifidb.pem` |
 | `DKIM_passphrase` | The key's passphrase, or empty (a key made as below has none) | |
 | `DKIM_identity` | The signing identity, normally the From address | `wifidb@example.org` |
 | `DKIM_copyHeaderFields` | `true` is fine | `true` |
@@ -83,7 +103,11 @@ record is missing counts as a failed signature, though receivers ignore it when 
 You need it if you send through your own mail server or a provider that does not sign for you.
 
 1. **Make a key.**
-   - Proxmox template: `pct exec 210 -- wifidb-dkim generate` (the selector defaults to `wifidb`; give another as the
+   - On the Mail page: set the signing domain and save, then **Make a key**. It shows the record to publish and its
+     name, and the key is kept in the database for every server, so step 3 is done too (set the identity there if
+     you want one). Until the record is published, receivers can't check the signature, so publish it soon after.
+     To change keys later, make the new one with a new selector: the old record can stay up for mail already sent.
+   - Proxmox template, as a file: `pct exec 210 -- wifidb-dkim generate` (the selector defaults to `wifidb`; give another as the
      second word). It makes `/srv/wifidb-data/config/dkim/wifidb.pem`, readable by root and the web server only, and
      prints the record to publish. `wifidb-dkim show` prints it again. It will not replace an existing key.
    - Anywhere else:
@@ -95,8 +119,9 @@ You need it if you send through your own mail server or a provider that does not
 2. **Publish the record** as a TXT record named `<selector>._domainkey.<domain>`, with the text it printed
    (`v=DKIM1; k=rsa; p=...`). Most DNS hosts take it as one line; a zone file needs it cut into pieces of at most 255
    characters (`wifidb-dkim` prints that form too). DNS can take a while to spread.
-3. **Set** `DKIM_domain`, `DKIM_selector`, `DKIM_private` (the full path) and `DKIM_identity` as in the table.
-4. **Check:** `php tools/utilites/check_mail.php`. It reads the key, looks up the record in DNS and compares the two. Then
+3. **Set** `DKIM_domain`, `DKIM_selector`, `DKIM_private` (the full path) and `DKIM_identity` as in the table (for a
+   key file; the Mail page has all but the file).
+4. **Check:** **Check** on the Mail page, or `php tools/utilites/check_mail.php`. It reads the key, looks up the record in DNS and compares the two. Then
    `--send you@example.org` and look at the received message's headers: `Authentication-Results` should say
    `dkim=pass` for your domain (and `spf=pass`, `dmarc=pass`).
 

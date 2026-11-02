@@ -208,6 +208,44 @@ final class TwoFactorRenderTest extends TestCase
     }
 
     #[DataProvider('themes')]
+    public function testTheMailPageNeverShowsThePasswordOrKeyAndEscapesWhatTheServerSaid(string $theme): void
+    {
+        $evil = '<script>alert(1)</script>';
+        $smarty = $this->smarty($theme);
+        $smarty->assign('mail_main', [
+            ['name' => 'smtp_host', 'type' => 'text', 'label' => 'Mail server', 'help' => '', 'value' => 'smtp.example.test', 'is_set' => null, 'source' => 'config', 'options' => null],
+            ['name' => 'smtp_secure', 'type' => 'choice', 'label' => 'Encryption', 'help' => '', 'value' => '', 'is_set' => null, 'source' => 'saved',
+                'options' => ['tls' => 'STARTTLS', 'ssl' => 'SSL/TLS', '' => 'None']],
+            ['name' => 'smtp_pass', 'type' => 'secret', 'label' => 'Password', 'help' => '', 'value' => null, 'is_set' => true, 'source' => 'saved', 'options' => null],
+        ]);
+        $smarty->assign('mail_signup', [
+            ['name' => 'signup_smtp_host', 'type' => 'text', 'label' => "Sign-up account's mail server", 'help' => '', 'value' => '', 'is_set' => null, 'source' => 'default', 'options' => null],
+        ]);
+        $smarty->assign('mail_signing', [
+            ['name' => 'DKIM_private_string', 'type' => 'secret', 'label' => 'Signing key', 'help' => '', 'value' => null, 'is_set' => true, 'source' => 'saved', 'options' => null],
+        ]);
+        $smarty->assign('mail_dkim', ['from' => 'saved', 'bits' => 2048, 'name' => 'wifidb._domainkey.example.test', 'record' => 'v=DKIM1; k=rsa; p=MIIB', 'new_selector' => 'wifidb202611']);
+        $smarty->assign('mail_results', [['ok', 'The DKIM record matches the key.'], ['fail', "No DKIM record. Publish this:\n    v=DKIM1"]]);
+        $smarty->assign('mail_test', ['to' => 'me@example.test', 'signup' => true, 'sent' => false, 'error' => $evil, 'lines' => "SERVER -> CLIENT: 535 $evil"]);
+        $smarty->assign('mail_to', 'me@example.test');
+        $smarty->assign('mail_validation', true);
+        $html = $smarty->fetch('admin_mail.tpl');
+        $this->assertStringNotContainsString($evil, $html);
+        $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
+        $this->assertStringContainsString('action="https://wifidb.example.com/admin/mail.php"', $html);
+        $this->assertStringContainsString('name="smtp_pass" type="password" value=""', $html);
+        $this->assertMatchesRegularExpression('/<textarea id="DKIM_private_string" name="DKIM_private_string"[^>]*placeholder="Set. Leave blank to keep it"><\/textarea>/', $html, 'the key is never shown');
+        $this->assertStringContainsString('name="clear_DKIM_private_string"', $html);
+        $this->assertMatchesRegularExpression('/name="smtp_secure" type="radio" value="" checked> None/', $html);
+        $this->assertStringContainsString('v=DKIM1; k=rsa; p=MIIB', $html, 'the record to publish');
+        $this->assertStringContainsString('named wifidb._domainkey.example.test', $html);
+        $this->assertStringContainsString('name="replace"', $html, 'replacing the key in use takes a tick');
+        $this->assertStringContainsString("No DKIM record. Publish this:<br />\n    v=DKIM1", $html);
+        $this->assertMatchesRegularExpression('/name="account" type="radio" value="signup" checked>/', $html);
+        $this->assertStringContainsString('nobody can finish signing up', $html);
+    }
+
+    #[DataProvider('themes')]
     public function testTheSignUpAndMessageFormsCarryTheSpamCheckHints(string $theme): void
     {
         foreach (['create_user.tpl', 'user_cp_sendmsg.tpl'] as $template) {

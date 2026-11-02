@@ -179,8 +179,8 @@ authenticators stop working. It also applies the database migrations on every bo
 ## Notes
 
 - **Time zone:** UTC, like the rest of WiFiDB.
-- **Mail:** none is installed. The accounts' e-mail needs the SMTP settings in `web.overrides.php` (see
-  `config.inc.php.example` for the `smtp_*` names).
+- **Mail:** no mail server is installed. Set the one the site sends through on the **Mail** page (`admin/mail.php`),
+  which can also make the DKIM key and send a test message, or in `web.overrides.php` (`email.md`).
 - **Several web servers:** this template keeps uploads and generated files on a local disk, so two containers would not
   see each other's. Sharing them (a shared filesystem, or object storage for the generated files) is a larger change;
   see the project notes.

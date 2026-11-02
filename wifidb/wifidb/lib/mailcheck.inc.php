@@ -1,6 +1,7 @@
 <?php
 /*
-mailcheck.inc.php, checks the mail settings in config.inc.php and says in plain words what would go wrong: settings
+mailcheck.inc.php, checks the mail settings (config.inc.php's, with what was saved on admin/mail.php over them:
+SiteSettings::MailConfig) and says in plain words what would go wrong: settings
 still at their example values, a DKIM key that is missing or unreadable (PHPMailer then sends the mail UNSIGNED, silently),
 a DKIM record that is not in DNS or does not match the key, and addresses that do not line up with the signing domain.
 Standalone: DNS is looked up through a function the caller gives, so it can be tested without a network.
@@ -73,6 +74,17 @@ class MailCheck
 		return $v === '' || stripos((string)$v, 'someemail') !== false || stripos((string)$v, 'supersecretpw') !== false || stripos((string)$v, '.foo.lan') !== false;
 	}
 
+	/** The TXT strings at $name in DNS (empty when there are none): Check's $dns, for real */
+	public static function Txt($name)
+	{
+		$out = array();
+		foreach((array)@dns_get_record($name, DNS_TXT) as $record)
+		{
+			if(isset($record['txt'])) { $out[] = $record['txt']; }
+		}
+		return $out;
+	}
+
 	/** @param callable $dns function ($name) returning the TXT strings at that name (an array, empty when there are none) */
 	public static function Check(array $config, $dns)
 	{
@@ -81,12 +93,18 @@ class MailCheck
 		$get = function ($k) use ($config) { return isset($config[$k]) ? $config[$k] : ''; };
 
 		// ── sending ──
+		$signupOwn = false;
+		foreach(array('host', 'user', 'pass', 'from') as $field) { if(isset($config['signup_smtp_' . $field])) { $signupOwn = true; } }
+		// a server that takes mail without signing in needs no username or password
+		$fields = (!isset($config['smtp_auth']) || $config['smtp_auth']) ? array('host', 'user', 'pass', 'from') : array('host', 'from');
 		foreach(array('smtp' => '', 'signup_smtp' => 'sign-up mail ') as $prefix => $label)
 		{
-			if($prefix === 'signup_smtp' && !isset($config['signup_smtp_host'])) { $add('ok', 'Sign-up mail uses the main SMTP account (no separate signup_smtp_* settings).'); continue; }
-			foreach(array('host', 'user', 'pass', 'from') as $field)
+			if($prefix === 'signup_smtp' && !$signupOwn) { $add('ok', 'Sign-up mail uses the main SMTP account (no separate signup_smtp_* settings).'); continue; }
+			foreach($fields as $field)
 			{
-				if(self::IsExampleValue($get($prefix . '_' . $field)))
+				// what the sign-up account doesn't set is the main account's
+				$value = isset($config[$prefix . '_' . $field]) ? $config[$prefix . '_' . $field] : $get('smtp_' . $field);
+				if(self::IsExampleValue($value))
 				{
 					$add('fail', ucfirst($label) . $prefix . '_' . $field . ' is empty or still the example value, so ' . ($label ?: 'mail ') . 'cannot be sent.');
 				}
@@ -101,28 +119,40 @@ class MailCheck
 		$domain = strtolower(trim((string)$get('DKIM_domain')));
 		$selector = trim((string)$get('DKIM_selector'));
 		$path = (string)$get('DKIM_private');
-		if($domain === '' || $selector === '' || $path === '' || stripos($domain, 'someemail') !== false)
+		$saved = (string)$get('DKIM_private_string');   // the key saved on admin/mail.php, used before the file
+		if($domain === '' || $selector === '' || ($path === '' && $saved === '') || stripos($domain, 'someemail') !== false)
 		{
-			$add('warn', 'DKIM signing is off (DKIM_domain, DKIM_selector and DKIM_private are not all set). Mail is sent unsigned; most receivers still accept it, a few put it in spam.');
+			$add('warn', 'DKIM signing is off (there is no signing domain, selector and key: DKIM_domain, DKIM_selector, and a key saved on the Mail page or the file DKIM_private). Mail is sent unsigned; most receivers still accept it, a few put it in spam.');
 		}
 		else
 		{
-			if($path[0] !== '/' && !preg_match('/^[A-Za-z]:[\\\\\/]/', $path))
+			if($saved !== '')
 			{
-				$add('warn', "DKIM_private is the relative path \"$path\": which folder that means depends on what is running (the web server and the daemons differ). Use a full path.");
+				$pem = $saved;
+				$passphrase = '';
+				$keyName = 'the saved key';
 			}
-			$pem = is_file($path) && is_readable($path) ? file_get_contents($path) : false;
+			else
+			{
+				if($path[0] !== '/' && !preg_match('/^[A-Za-z]:[\\\\\/]/', $path))
+				{
+					$add('warn', "DKIM_private is the relative path \"$path\": which folder that means depends on what is running (the web server and the daemons differ). Use a full path.");
+				}
+				$pem = is_file($path) && is_readable($path) ? file_get_contents($path) : false;
+				$passphrase = (string)$get('DKIM_passphrase');
+				$keyName = 'the file';
+			}
 			if($pem === false)
 			{
 				$add('fail', "The DKIM key file \"$path\" is missing or not readable by this user. PHPMailer does not complain: it sends the mail UNSIGNED.");
 			}
 			else
 			{
-				$bits = self::KeyBits($pem, (string)$get('DKIM_passphrase'));
-				$publicKey = self::PublicKeyFromPrivate($pem, (string)$get('DKIM_passphrase'));
+				$bits = self::KeyBits($pem, $passphrase);
+				$publicKey = self::PublicKeyFromPrivate($pem, $passphrase);
 				if($publicKey === null)
 				{
-					$add('fail', 'The DKIM key file is not a valid private key (or DKIM_passphrase is wrong).');
+					$add('fail', $saved !== '' ? 'The saved DKIM key is not a valid private key.' : 'The DKIM key file is not a valid private key (or DKIM_passphrase is wrong).');
 				}
 				else
 				{
@@ -131,7 +161,7 @@ class MailCheck
 					$records = array_filter(array_map(function ($t) { return self::ParseRecord($t); }, (array)call_user_func($dns, $name)), function ($r) { return isset($r['p']) || (isset($r['v']) && stripos($r['v'], 'DKIM') === 0); });
 					if(!$records)
 					{
-						$add('fail', "No DKIM record at $name. Receivers cannot check the signature, so it counts as failed. Publish this TXT record:\n    " . self::DnsRecord($pem, (string)$get('DKIM_passphrase')));
+						$add('fail', "No DKIM record at $name. Receivers cannot check the signature, so it counts as failed. Publish this TXT record:\n    " . self::DnsRecord($pem, $passphrase));
 					}
 					else
 					{
@@ -147,7 +177,7 @@ class MailCheck
 							if($testing) { $add('warn', 'The record has t=y (testing): receivers are told to ignore failures. Remove it once mail verifies.'); }
 						}
 						elseif($revoked) { $add('fail', "The DKIM record at $name has an empty p= (the key is revoked)."); }
-						else { $add('fail', "The DKIM record at $name is for a different key than the file. Publish this:\n    " . self::DnsRecord($pem, (string)$get('DKIM_passphrase'))); }
+						else { $add('fail', "The DKIM record at $name is for a different key than $keyName. Publish this:\n    " . self::DnsRecord($pem, $passphrase)); }
 					}
 				}
 			}

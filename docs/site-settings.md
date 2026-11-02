@@ -69,7 +69,8 @@ the Proxmox template has it).
   a test or staging copy.
 
 Signing in with Google, GitHub, Discord or Facebook is set up on its own page, **Sign-in Providers**
-(`admin/logins.php`), kept in the same table: see [linked-logins.md](linked-logins.md).
+(`admin/logins.php`), kept in the same table: see [linked-logins.md](linked-logins.md). So is mail, on **Mail**
+(`admin/mail.php`): the mail server and account, the sign-up account, and the DKIM key: see [email.md](email.md).
 
 ## CleanTalk
 

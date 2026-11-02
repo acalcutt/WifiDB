@@ -90,7 +90,7 @@ final class SiteSettingsTest extends TestCase
 
     public function testUnknownNamesAreIgnored(): void
     {
-        $this->assertSame([], $this->settings()->Save(['smtp_pass' => 'x', 'root' => 'y'], 'root'));
+        $this->assertSame([], $this->settings()->Save(['db_pwd' => 'x', 'DKIM_private' => '/etc/shadow', 'root' => 'y'], 'root'));
         $this->assertSame(0, (int)$this->db->query("SELECT COUNT(*) FROM site_settings")->fetchColumn());
     }
 
@@ -146,5 +146,58 @@ final class SiteSettingsTest extends TestCase
         $bare = new SiteSettings(new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]), ['signups_open' => 0]);
         $this->assertFalse($bare->Get('signups_open'));
         $this->assertSame('config', $bare->Source('signups_open'));
+        $none = new SiteSettings(null, ['smtp_host' => 'smtp.config.test']);
+        $this->assertSame(['smtp_host' => 'smtp.config.test'], $none->MailConfig(['smtp_host' => 'smtp.config.test']), 'or no database at all');
+    }
+
+    public function testTheMailSettingsSavedOnTheMailPageAreLaidOverConfig(): void
+    {
+        $config = ['smtp_host' => 'smtp.config.test', 'smtp_port' => 587, 'smtp_pass' => 'config-pass', 'smtp_secure' => 'tls',
+            'signup_smtp_host' => 'smtp.signup-config.test', 'signup_smtp_user' => 'signup-config', 'smtp_debug' => 0, 'email_validation' => 1];
+        $this->assertSame($config, $this->settings($config)->MailConfig($config), 'nothing saved: config.inc.php as it is');
+
+        $this->settings($config)->Save(['smtp_host' => 'smtp.saved.test', 'smtp_port' => '465', 'smtp_secure' => 'ssl', 'smtp_pass' => 'saved-pass',
+            'signup_smtp_host' => '', 'signup_smtp_secure' => 'none', 'DKIM_private_string' => "-----BEGIN PRIVATE KEY-----\nabc\n", 'email_validation' => false], 'root');
+        $mail = $this->settings($config)->MailConfig($config);
+        $this->assertSame('smtp.saved.test', $mail['smtp_host']);
+        $this->assertSame(465, $mail['smtp_port'], 'a port is a number, as PHPMailer wants');
+        $this->assertSame('ssl', $mail['smtp_secure']);
+        $this->assertSame('saved-pass', $mail['smtp_pass'], 'the password, decrypted');
+        $this->assertArrayNotHasKey('signup_smtp_host', $mail, 'a sign-up setting saved empty is the main account\'s');
+        $this->assertSame('signup-config', $mail['signup_smtp_user'], 'one not saved is still config.inc.php\'s');
+        $this->assertSame('', $mail['signup_smtp_secure'], 'None, for PHPMailer');
+        $this->assertSame("-----BEGIN PRIVATE KEY-----\nabc", $mail['DKIM_private_string']);
+        $this->assertFalse($mail['email_validation']);
+        $this->assertSame(0, $mail['smtp_debug'], 'what the page has no say in is left alone');
+        $this->assertArrayNotHasKey('smtp_from_name', $mail, 'nor is a default added');
+        $stored = $this->db->query("SELECT value FROM site_settings WHERE name = 'DKIM_private_string'")->fetchColumn();
+        $this->assertStringStartsWith('enc:', $stored, 'the signing key is kept encrypted');
+    }
+
+    public function testTheMailPageStartsFromConfig(): void
+    {
+        $s = array_column($this->settings(['smtp_host' => 'smtp.config.test', 'smtp_secure' => '', 'smtp_authtype' => 'LOGIN'])
+            ->Describe(SiteSettings::MAIL_SETTINGS), null, 'name');
+        $this->assertSame(['smtp.config.test', 'config'], [$s['smtp_host']['value'], $s['smtp_host']['source']]);
+        $this->assertSame('', $s['smtp_secure']['value'], 'no encryption is one of the choices');
+        $this->assertSame('LOGIN', $s['smtp_authtype']['value']);
+        $this->assertSame(['wifidb', 'default'], [$s['DKIM_selector']['value'], $s['DKIM_selector']['source']]);
+        $this->assertNull($s['smtp_pass']['value'], 'a password is never shown');
+    }
+
+    public function testMailValuesAreChecked(): void
+    {
+        $this->assertSame(['465', ''], SiteSettings::Clean('smtp_port', ' 465 '));
+        $this->assertNotSame('', SiteSettings::Clean('smtp_port', '70000')[1]);
+        $this->assertNotSame('', SiteSettings::Clean('smtp_port', 'abc')[1]);
+        $this->assertSame(['wifidb@example.test', ''], SiteSettings::Clean('smtp_from', 'wifidb@example.test'));
+        $this->assertNotSame('', SiteSettings::Clean('smtp_from', 'WiFiDB <wifidb@example.test>')[1], 'the name goes in From name');
+        $this->assertNotSame('', SiteSettings::Clean('smtp_host', 'smtp.example.test extra')[1]);
+        $this->assertSame(['example.test', ''], SiteSettings::Clean('DKIM_domain', 'Example.TEST.'));
+        $this->assertNotSame('', SiteSettings::Clean('DKIM_domain', 'not a domain')[1]);
+        $this->assertSame(['wifidb202611', ''], SiteSettings::Clean('DKIM_selector', 'wifidb202611'));
+        $this->assertNotSame('', SiteSettings::Clean('DKIM_selector', 'two words')[1]);
+        $this->assertNotSame('', SiteSettings::Clean('smtp_from_name', "WiFiDB\r\nBcc: x@example.test")[1], 'no header injection');
+        $this->assertSame(['', ''], SiteSettings::Clean('smtp_host', '  '), 'empty is always allowed');
     }
 }
