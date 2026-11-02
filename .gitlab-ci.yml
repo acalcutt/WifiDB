@@ -11,6 +11,8 @@
 #   release-*      Push to the default branch: if no GitLab release exists for VERSION, build and test the template and
 #                  create the release with CHANGELOG.md's section as the notes:
 #                    WifiDB-v<ver>-proxmox-amd64.tar.zst     the Proxmox LXC template (docs/proxmox.md)
+#                    WifiDB-v<ver>-update.tar.gz             the update package admin/servers.php installs (docs/updates.md)
+#                    SHA256SUMS                              every file's checksum (the updater checks the package against it)
 #                  Build > Pipelines > New pipeline with RELEASE_DRY_RUN "true" builds without publishing.
 #   bump-version   Build > Pipelines > New pipeline with BUMP_VERSION set: bump VERSION, roll CHANGELOG.md's
 #                  "## master" section into it, push release-v<version> and open a merge request. Merging it makes

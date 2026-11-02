@@ -1,0 +1,13 @@
+[Unit]
+Description=Update this WiFiDB container to the release asked for on admin/servers.php
+# Not started by anything but its timer: an update stops and starts the site itself.
+After=network-online.target
+
+[Service]
+Type=oneshot
+# root: it replaces the code and the system files and runs wifidb-firstboot. Its settings are root's own
+# /etc/wifidb/updates.conf (written by wifidb-firstboot), so the site can't point it anywhere else.
+User=root
+ExecStart=/usr/bin/php /usr/local/sbin/wifidb-update
+# an update waits for running jobs (up to 30 minutes) and runs the first boot, which can take a while
+TimeoutStartSec=infinity

@@ -82,6 +82,7 @@ disable php*-fpm.service
 disable cron.service
 disable wifidb-monitord.service
 disable wifidb-websocketd.service
+disable wifidb-update.timer
 PRESET
 install -d /etc/wifidb
 touch /etc/wifidb/firstboot-pending
@@ -117,6 +118,16 @@ WIFIDB_DB_TYPE=mariadb            # mariadb, sqlsrv for SQL Server, or pgsql for
 # Behind HAProxy on OPNsense (or another proxy that does TLS): the proxy's addresses on this network, separated by
 # spaces. For a CARP pair list both firewalls and the shared address.
 #WIFIDB_EXTERNAL_PROXY=192.168.1.1
+#
+# Updates from Admin > Servers (docs/updates.md): on by default, from the GitLab releases. WIFIDB_UPDATES=0 switches
+# them off; WIFIDB_UPDATE_SOURCE=github (with WIFIDB_UPDATE_GITHUB_REPO=owner/name) uses GitHub's instead; a private
+# project needs WIFIDB_UPDATE_TOKEN (GitLab: read_api; GitHub: contents read).
+#WIFIDB_UPDATES=1
+#WIFIDB_UPDATE_SOURCE=gitlab
+#WIFIDB_UPDATE_GITLAB_URL=https://gitlab.techidiots.net
+#WIFIDB_UPDATE_GITLAB_PROJECT=techidiots-llc/WifiDB
+#WIFIDB_UPDATE_GITHUB_REPO=
+#WIFIDB_UPDATE_TOKEN=
 #
 # The two background daemons, on by default: the monitor (records the other daemons' status) and the websocket
 # daemon (live updates on the Import Status and Live APs pages). Set to 0 on a node that shouldn't run one.

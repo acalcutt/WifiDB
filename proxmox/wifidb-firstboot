@@ -313,6 +313,28 @@ fi
 log "applying database migrations"
 runuser -u www-data -- php /opt/wifidb/tools/utilites/migrate.php || die "the database migrations failed; see above. Fix the cause, then: systemctl restart wifidb-firstboot"
 
+# ── Updates (admin/servers.php) ──────────────────────────────────────────────
+# wifidb-update (as root, from its timer) does the update an administrator asks for, from the releases at the place
+# set here. Root's own file: the page only names a version, so it can't point the updater anywhere else.
+(
+    umask 077
+    cat > /etc/wifidb/updates.conf <<CONF
+# Written by wifidb-firstboot from firstboot.env (WIFIDB_UPDATES, WIFIDB_UPDATE_*). See docs/updates.md.
+UPDATES=${WIFIDB_UPDATES:-1}
+SOURCE=${WIFIDB_UPDATE_SOURCE:-gitlab}
+GITLAB_URL=${WIFIDB_UPDATE_GITLAB_URL:-https://gitlab.techidiots.net}
+GITLAB_PROJECT=${WIFIDB_UPDATE_GITLAB_PROJECT:-techidiots-llc/WifiDB}
+GITHUB_REPO=${WIFIDB_UPDATE_GITHUB_REPO:-}
+TOKEN=${WIFIDB_UPDATE_TOKEN:-}
+CONF
+)
+if [ "${WIFIDB_UPDATES:-1}" = 0 ]; then
+    systemctl disable --now wifidb-update.timer 2>/dev/null || true
+    log "updates from admin/servers.php are switched off"
+else
+    systemctl enable --now wifidb-update.timer 2>/dev/null || log "WARNING: the updater's timer could not be switched on"
+fi
+
 # ── Start everything ─────────────────────────────────────────────────────────
 systemd-tmpfiles --create /etc/tmpfiles.d/wifidb.conf
 log "starting the services"

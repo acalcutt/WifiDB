@@ -1,5 +1,6 @@
 #!/bin/bash
-# Builds the Proxmox template and boot-tests it (proxmox/build-template.sh, proxmox/test-template.sh). Runs in a
+# Builds the Proxmox template and boot-tests it (proxmox/build-template.sh, proxmox/test-template.sh), then makes the
+# update package from it (proxmox/make-update-package.sh) and SHA256SUMS. Runs in a
 # docker:27 job with the dind service on the Linux runner (registered --privileged); the repository is the checkout.
 #
 # usage: .gitlab/scripts/build.sh OUTDIR VERSION
@@ -25,4 +26,8 @@ fi
 template=$out/WifiDB-$label-proxmox-amd64.tar.zst
 bash proxmox/build-template.sh "$src" "$template"
 bash proxmox/test-template.sh "$template"
+# the update package (what admin/servers.php installs on a running server) is cut from the same template, and
+# SHA256SUMS covers every file; the updater refuses a package that doesn't match it
+bash proxmox/make-update-package.sh "$template" "$out/WifiDB-$label-update.tar.gz"
+(cd "$out" && sha256sum WifiDB-*.tar.zst WifiDB-*.tar.gz > SHA256SUMS)
 ls -la "$out"

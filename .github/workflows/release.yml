@@ -2,7 +2,8 @@ name: Build and Release
 
 # On a push to master, releases VERSION if there's no GitHub release for it yet, with the matching CHANGELOG.md section
 # as the notes: the Proxmox LXC template (proxmox/build-template.sh), boot-tested against MariaDB
-# (proxmox/test-template.sh). Same files as the GitLab pipeline (.gitlab-ci.yml).
+# (proxmox/test-template.sh), its update package (proxmox/make-update-package.sh) and SHA256SUMS. Same files as the
+# GitLab pipeline (.gitlab-ci.yml).
 # Run it by hand with "dry run" to build and test without publishing.
 
 on:
@@ -55,10 +56,20 @@ jobs:
             "proxmox-files/WifiDB-v${{ needs.release-check.outputs.version }}-proxmox-amd64.tar.zst"
       - name: Boot-test it
         run: sudo bash proxmox/test-template.sh proxmox-files/*.tar.zst
+      # the update package (what admin/servers.php installs on a running server) is cut from the same template, and
+      # SHA256SUMS covers every file; the updater refuses a package that doesn't match it
+      - name: Update package and checksums
+        run: |
+          sudo bash proxmox/make-update-package.sh proxmox-files/*.tar.zst \
+            "proxmox-files/WifiDB-v${{ needs.release-check.outputs.version }}-update.tar.gz"
+          cd proxmox-files && sha256sum WifiDB-*.tar.zst WifiDB-*.tar.gz | sudo tee SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: release-proxmox
-          path: proxmox-files/*.tar.zst
+          path: |
+            proxmox-files/*.tar.zst
+            proxmox-files/*.tar.gz
+            proxmox-files/SHA256SUMS
           compression-level: 0
           retention-days: 7
 
@@ -85,6 +96,8 @@ jobs:
             echo
             echo "- **Proxmox:** the \`.tar.zst\` is an LXC template (Ubuntu 26.04, PHP, Apache, the services and the cron jobs)"
             echo "  with no database of its own: it uses your MariaDB or SQL Server. See docs/proxmox.md."
+            echo "- **Update package:** the \`-update.tar.gz\` is what Admin > Servers installs on running containers (docs/updates.md);"
+            echo "  \`SHA256SUMS\` lists every file's checksum."
             echo "- **Anywhere else:** the source is the repository at this tag; README.md has the install steps."
           } >> notes.md
           cat notes.md

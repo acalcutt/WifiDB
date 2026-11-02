@@ -37,6 +37,8 @@ $notes += @(
     ''
     "- **Proxmox:** ``$template`` is an LXC template (Ubuntu 26.04, PHP, Apache, the services and the cron jobs) with no"
     '  database of its own: it uses your MySQL/MariaDB or SQL Server. See docs/proxmox.md.'
+    '- **Update package:** the `-update.tar.gz` is what Admin > Servers installs on running containers (docs/updates.md);'
+    '  `SHA256SUMS` lists every file''s checksum.'
     '- **Anywhere else:** the source is the repository at this tag; README.md has the install steps.'
 )
 $description = ($notes -join "`n").Trim()
