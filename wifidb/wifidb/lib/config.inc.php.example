@@ -69,6 +69,7 @@ $config = array
 	'smtp_secure'		   =>   'tls',					 // Auth type, tls or ssl
 	'smtp_auth'			 =>   true,
 	'smtp_authtype'		 =>   'LOGIN',
+	'smtp_timeout'		  =>   15,						// seconds to wait for the mail server before giving up on a message
 	'smtp_options'		  =>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
 	#----------Sign-up mail (optional)------------#
 	# Sign-up and password-reset mail can go out from a different account than the site's other mail. If these are

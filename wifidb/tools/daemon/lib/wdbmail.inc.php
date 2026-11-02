@@ -75,7 +75,10 @@ class wdbmail
 		$this->mail->SMTPAuth 			= $this->smtp_auth;			// Enable SMTP authentication
 		$this->mail->AuthType 			= $this->smtp_authtype;		// Auth type, tls or ssl
 		$this->mail->SMTPOptions 		= $this->smtp_options;
-		
+		// PHPMailer waits 300 seconds for a mail server that doesn't answer, far past the web pool's 30: the page (a
+		// sign-up, a password reset) would end in an error instead of saying the mail couldn't be sent
+		$this->mail->Timeout			= isset($config['smtp_timeout']) ? (int)$config['smtp_timeout'] : 15;
+
 		$this->mail->DKIM_domain 		= $this->DKIM_domain;
 		$this->mail->DKIM_private 		= $this->DKIM_private;
 		$this->mail->DKIM_selector 		= $this->DKIM_selector;		//Set this to your own selector
@@ -110,6 +113,7 @@ class wdbmail
 		$this->signupmail->SMTPAuth 			= $this->signup_smtp_auth;			// Enable SMTP authentication
 		$this->signupmail->AuthType 			= $this->signup_smtp_authtype;		// Auth type, tls or ssl
 		$this->signupmail->SMTPOptions 		= $this->signup_smtp_options;
+		$this->signupmail->Timeout			= $this->mail->Timeout;
 
 		// Sign-up and password-reset mail is signed with the same DKIM key as the rest (it is the same domain; only
 		// the SMTP account differs), so it is not the one kind of mail that goes out unsigned.

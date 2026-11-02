@@ -53,6 +53,7 @@ Changes take effect on the next request and the next run of a cron job. The two 
 | `smtp_from` | The From address. Gmail only lets you send as the account's own address or one of its aliases. | `wifidb@example.org` |
 | `smtp_replyto` | Reply-To address, or empty | |
 | `smtp_options` | PHP stream options for the TLS connection. Leave `verify_peer` on; only a mail server with a self-signed certificate needs it off. | |
+| `smtp_timeout` | Seconds to wait for the mail server before giving up on a message (both accounts). A sign-up or password reset then says the mail couldn't be sent, instead of the page timing out. | `15` |
 | `smtp_debug` | `0` off, `2` print the whole conversation with the server, for finding a problem. **The log includes the encoded login** (base64 is not encryption), so do not post it anywhere | `0` |
 | `signup_smtp_*` | The same set of settings (`host`, `port`, `user`, `pass`, `from`, `replyto`, `secure`, `auth`, `authtype`, `options`, `debug`) for the sign-up account. Leave them all out to use the main account. | |
 | `DKIM_domain` | The domain that signs: the part after `@` in the From address, or a parent of it | `example.org` |

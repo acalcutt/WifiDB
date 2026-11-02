@@ -49,6 +49,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **A mail server that doesn't answer no longer breaks the sign-up page.** PHPMailer waited up to 5 minutes for it, and the web server gave up after 30 seconds with an error page (the account was made, but the page never said so). It now gives up after 15 seconds (`smtp_timeout`) and the page says the confirmation mail couldn't be sent.
 - **Signing in to an account that hasn't confirmed its e-mail says so** (it said "Unknown Return."), and a username that doesn't exist no longer gives PHP warnings; it's still answered as a wrong password.
 - **The site says when the database needs updating.** If the database hasn't had every migration in `sql/migrations/`, pages answer 503 naming the missing ones and saying to run `tools/utilites/migrate.php`, and the daemons don't start, instead of failing on a missing table. This replaces the old check of `settings.version`, which opened a second database connection on every request and pointed at install pages that no longer exist. `migrate.php` and `backup.php` still run.
 - **The footer's version is the released one.** It showed a fixed "v0.40 Beta"; it now shows `VERSION` (`v0.40.0`), from `lib/version.inc.php`, which the version bump updates with `VERSION`.
