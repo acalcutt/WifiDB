@@ -26,10 +26,11 @@ sqlsrv=${WIFIDB_SQLSRV:-auto}
 log() { echo "[install-wifidb] $*"; }
 
 log "installing packages"
+# mdbtools: mdb-export reads the Access database Vistumbler saves (.mdb uploads)
 apt-get update -q
 apt-get install -y -q --no-install-recommends \
     apache2 php-fpm php-cli php-gd php-zip php-bcmath php-mbstring php-curl php-xml php-sqlite3 php-apcu php-mysql php-pgsql \
-    mariadb-client postgresql-client unzip rsync tar gzip
+    mariadb-client postgresql-client unzip rsync tar gzip mdbtools
 phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
 log "PHP $phpver"
 

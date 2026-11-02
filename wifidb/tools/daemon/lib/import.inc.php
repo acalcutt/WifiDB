@@ -2377,16 +2377,26 @@ class import extends dbcore
 			return array(-1, "File does not exist");
 		}
 		
+		// mdbtools' mdb-export reads each table out of the Access file as CSV. The file and table names are quoted for
+		// the shell: an upload's name comes from whoever uploaded it.
+		$mdb_export = is_executable('/usr/bin/mdb-export') ? '/usr/bin/mdb-export' : trim((string)shell_exec('command -v mdb-export 2>/dev/null'));
+		if($mdb_export === '')
+		{
+			return array(-1, "Reading a Vistumbler .mdb needs mdbtools (mdb-export), which isn't installed on this server");
+		}
+		$export_table = function ($table) use ($mdb_export, $source) {
+			return (string)shell_exec(escapeshellarg($mdb_export).' '.escapeshellarg($source).' '.escapeshellarg($table).' 2>&1');
+		};
+
 		$apdata = array();
 		$gdata = array();
 		$hdata = array();
 		$NewAPs = 0;
 		$ap_count = 0;
 		$gps_count = 0;
-		
+
 		$table = "GPS";
-		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
-		$output = shell_exec($command);
+		$output = $export_table($table);
 		$gps_return	 = explode("\n", $output);
 		$gps_lcount = count($gps_return);
 		foreach ($gps_return as $key => $gps)
@@ -2424,8 +2434,7 @@ class import extends dbcore
 		}
 		
 		$table = "AP";
-		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
-		$output = shell_exec($command);
+		$output = $export_table($table);
 		$ap_return	 = explode("\n", $output);
 		$ap_lcount = count($ap_return);
 		foreach ($ap_return as $key => $ap)
@@ -2553,8 +2562,7 @@ class import extends dbcore
 		}
 		
 		$table = "Hist";
-		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
-		$output = shell_exec($command);
+		$output = $export_table($table);
 		$hist_return	 = explode("\n", $output);
 		$hist_lcount = count($hist_return);
 		foreach ($hist_return as $key => $hist)
