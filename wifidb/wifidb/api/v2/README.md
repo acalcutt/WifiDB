@@ -26,7 +26,7 @@ Notes common to v2 endpoints:
     - Params: `user` (required — username), `labeled`, `all`, `new_icons`, `xml`
     - Output: KML/KMZ network links or folder containing the user's lists with GPS results.
 
-  - Region / bulk funcs: `exp_daily`, `exp_all`, `exp_country` (requires `country_code`), `exp_admin1` (requires `country_code` + `admin1_id`), `exp_admin2` (requires `country_code` + `admin1_id` + `admin2_id`), `exp_all_netlink`, `exp_latest_netlink`, `exp_user_netlink` (requires `user`), `exp_ap_netlink` (requires `id`).
+  - Bulk funcs: `exp_daily`, `exp_all`, `exp_all_netlink`, `exp_latest_netlink`, `exp_user_netlink` (requires `user`), `exp_ap_netlink` (requires `id`).
 
 - Common query parameters:
   - `id` — numeric id for APs/lists
