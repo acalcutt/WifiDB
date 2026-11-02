@@ -215,6 +215,25 @@ class api extends dbcore
 		}
 	}
 	
+	/**
+	 * Puts an API upload on the import queue (lib/import_queue.inc.php: once only, by way of the shared files bucket
+	 * when there is one, marked with this node). @return array the API's answer: "message" and "importnum", or "error"
+	 */
+	public function QueueUpload($upload, array $f)
+	{
+		require_once dirname(__FILE__).'/import_queue.inc.php';
+		list($queued, $detail) = ImportQueue::Add($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array(), $f, $upload,
+			function ($line) { $this->logd($line, "error"); });
+		switch($queued)
+		{
+			case 'queued':   return array("message" => "File has been inserted for importing at a scheduled time.", "importnum" => $detail, "filehash" => $f['hash'], "title" => $f['title'], "user" => $f['file_user']);
+			case 'waiting':  return array("error" => "File Hash already waiting for import: ".$f['hash']);
+			case 'imported': return array("error" => "File Hash already exists in WiFiDB:  ".$f['hash']);
+			case 'unstored': return array("error" => "The file could not be stored for importing. Please try again in a while.");
+			default:         return array("error" => array("desc" => "There was an error inserting file for scheduled import."));
+		}
+	}
+
 	public function ImportVS1($details = array())
 	{
 		$user		= $details['user'];
@@ -229,22 +248,6 @@ class api extends dbcore
 		$filename	= $details['file_name'];
 		$file_orig	= $details['file_orig'];
 		$upload		= $this->PATH.'import/up/'.$filename;   # where api/import.php put it; removed again if it isn't queued
-
-		$found = $this->sql->conn->prepare("SELECT (SELECT COUNT(*) FROM files_tmp WHERE hash = ?) + (SELECT COUNT(*) FROM files_importing WHERE hash = ?) AS waiting, (SELECT COUNT(*) FROM files WHERE hash = ?) AS imported");
-		$found->execute(array($hash, $hash, $hash));
-		$found = $found->fetch(2);
-		if((int)$found['waiting'] > 0)
-		{
-			@unlink($upload);
-			$this->mesg = array("error"=>"File Hash already waiting for import: $hash");
-			return -1;
-		}
-		if((int)$found['imported'] > 0)
-		{
-			@unlink($upload);
-			$this->mesg = array("error"=>"File Hash already exists in WiFiDB:  $hash");
-			return -1;
-		}
 
 		switch($ext)
 		{
@@ -306,51 +309,9 @@ class api extends dbcore
 				}
 				else
 				{
-					// with the shared files in S3 (several nodes on one database) the upload goes there before it's queued,
-					// so whichever node's importer takes it can fetch it; if it can't, it isn't queued at all
-					try
-					{
-						require_once dirname(__FILE__).'/shared_files.inc.php';
-						$shared = SharedFiles::FromSettings($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
-						if($shared) { $shared->PutUpload($filename, $upload); }
-					}
-					catch(Throwable $e)
-					{
-						@unlink($upload);
-						$this->logd("Could not put the upload $filename in the shared files bucket: ".$e->getMessage(), "error");
-						$this->mesg = array("error" => "The file could not be stored for importing. Please try again in a while.");
-						return -1;
-					}
-					# the same columns on all three databases (the MariaDB form here still had the old names)
-					$sql = "INSERT INTO files_tmp (file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-					$result = $this->sql->conn->prepare( $sql );
-					$result->bindValue(1, $filename, PDO::PARAM_STR);
-					$result->bindValue(2, $file_orig, PDO::PARAM_STR);
-					$result->bindValue(3, $date, PDO::PARAM_STR);
-					$result->bindValue(4, $user, PDO::PARAM_STR);
-					$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-					$result->bindValue(6, $notes, PDO::PARAM_STR);
-					$result->bindValue(7, $title, PDO::PARAM_STR);
-					$result->bindValue(8, $size, PDO::PARAM_STR);
-					$result->bindValue(9, $hash, PDO::PARAM_STR);
-					$result->bindValue(10, $type, PDO::PARAM_STR);
-					try
-					{
-						$result->execute();
-						$this->mesg = array("message" => "File has been inserted for importing at a scheduled time.","importnum" => $this->sql->conn->lastInsertId(),"filehash" => $hash,"title" => $title,"user" => $user);
-						# with the bucket, it's where uploads are kept: this node's copy goes (the importer fetches it)
-						if($shared) { @unlink($upload); }
-					}
-					catch(PDOException $e)
-					{
-						$this->logd("Could not queue the API upload $filename: ".$e->getMessage(), "error");
-						$this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import."));
-						if($shared)
-						{
-							try { $shared->DeleteUpload($filename); } catch(Throwable $ignored) { /* nothing queued points at it */ }
-						}
-					}
+					$this->mesg = $this->QueueUpload($upload, array('file_name' => $filename, 'file_orig' => $file_orig, 'file_date' => $date,
+						'file_user' => $user, 'otherusers' => $otherusers, 'notes' => $notes, 'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type));
+					if(isset($this->mesg['error'])) { return -1; }
 				}
 				break;
 			default:

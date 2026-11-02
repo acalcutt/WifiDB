@@ -250,63 +250,64 @@ class daemon extends wdbcli
 
 	public function GetNextImportID()
 	{
-		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
+		# Which waiting files this node may take: any, with the shared files bucket (it fetches what it hasn't got);
+		# without it only the uploads that came in here, as the file is on this node's disk, and those queued before
+		# uploads were marked with their node.
+		$mine = "";
+		$params = array();
+		try
 		{
-			# Take the oldest waiting file and move it to files_importing in one transaction. SKIP LOCKED: two importers
-			# running at once each get a different file instead of waiting on, or both taking, the same one.
-			$this->sql->conn->beginTransaction();
-			try
-			{
-				$next = $this->sql->conn->query("SELECT id, file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, type FROM files_tmp ORDER BY file_date ASC, id ASC LIMIT 1 FOR UPDATE SKIP LOCKED")->fetch(2);
-				$LastInsert = "";
-				if($next)
-				{
-					$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
-					$this->sql->conn->prepare($sql)->execute(array($next['file_name'], $next['file_orig'], $next['file_user'], $next['otherusers'], $next['title'],
-						$next['notes'], $next['size'], $next['file_date'], $next['hash'], $next['id'], $next['type']));
-					$LastInsert = $this->sql->conn->lastInsertId();
-					$this->sql->conn->prepare("DELETE FROM files_tmp WHERE id = ?")->execute(array($next['id']));
-				}
-				$this->sql->conn->commit();
-			}
-			catch(Throwable $e)
-			{
-				$this->sql->conn->rollBack();
-				throw $e;
-			}
+			require_once $this->PATH.'lib/shared_files.inc.php';
+			$shared = SharedFiles::FromSettings($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
 		}
-		else if($this->sql->service == "sqlsrv")
+		catch(Throwable $e) { $shared = null; }
+		if(!$shared)
 		{
-			# One statement takes the oldest waiting file off the queue, so two importers never get the same one. READPAST
-			# skips a row another importer has locked instead of waiting on it and then finding nothing, and the move into
-			# files_importing is in the same transaction, so a file can't drop out of the queue between the two.
-			$this->sql->conn->beginTransaction();
-			try
+			$mine = " WHERE (node_name = ? OR node_name IS NULL)";
+			$params[] = $this->node_name;
+		}
+		$columns = "id, file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, type, node_name";
+		$LastInsert = "";
+		$this->sql->conn->beginTransaction();
+		try
+		{
+			if($this->sql->service == "sqlsrv")
 			{
-				$daemon_sql = "DELETE files_tmp\n"
-					. "OUTPUT DELETED.id, DELETED.file_name, DELETED.file_orig, DELETED.file_user, DELETED.otherusers, DELETED.title, DELETED.notes, DELETED.size, DELETED.file_date, DELETED.hash, DELETED.type\n"
-					. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp WITH (UPDLOCK, READPAST, ROWLOCK) ORDER BY file_date ASC, id ASC)";
-				$rows = $this->sql->conn->query($daemon_sql)->fetchAll(2);
-				$LastInsert = "";
-				if($rows)
-				{
-					$next = $rows[0];
-					$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
-					$this->sql->conn->prepare($sql)->execute(array($next['file_name'], $next['file_orig'], $next['file_user'], $next['otherusers'], $next['title'],
-						$next['notes'], $next['size'], $next['file_date'], $next['hash'], $next['id'], $next['type']));
-					$LastInsert = $this->sql->conn->lastInsertId();
-				}
-				$this->sql->conn->commit();
+				# One statement takes the oldest waiting file off the queue, so two importers never get the same one.
+				# READPAST skips a row another importer has locked instead of waiting on it and then finding nothing.
+				$prep = $this->sql->conn->prepare("DELETE files_tmp\n"
+					. "OUTPUT DELETED.".str_replace(", ", ", DELETED.", $columns)."\n"
+					. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp WITH (UPDLOCK, READPAST, ROWLOCK)$mine ORDER BY file_date ASC, id ASC)");
+				$prep->execute($params);
+				$rows = $prep->fetchAll(2);
+				$next = $rows ? $rows[0] : null;
 			}
-			catch(Throwable $e)
+			else
 			{
-				$this->sql->conn->rollBack();
-				throw $e;
+				# SKIP LOCKED: two importers running at once each get a different file instead of waiting on, or both
+				# taking, the same one
+				$prep = $this->sql->conn->prepare("SELECT $columns FROM files_tmp$mine ORDER BY file_date ASC, id ASC LIMIT 1 FOR UPDATE SKIP LOCKED");
+				$prep->execute($params);
+				$next = $prep->fetch(2);
 			}
+			# moved into files_importing in the same transaction, so a file can't drop out of the queue between the two
+			if($next)
+			{
+				$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type, node_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+				$this->sql->conn->prepare($sql)->execute(array($next['file_name'], $next['file_orig'], $next['file_user'], $next['otherusers'], $next['title'],
+					$next['notes'], $next['size'], $next['file_date'], $next['hash'], $next['id'], $next['type'], $next['node_name']));
+				$LastInsert = $this->sql->conn->lastInsertId();
+				if($this->sql->service != "sqlsrv") { $this->sql->conn->prepare("DELETE FROM files_tmp WHERE id = ?")->execute(array($next['id'])); }
+			}
+			$this->sql->conn->commit();
+		}
+		catch(Throwable $e)
+		{
+			$this->sql->conn->rollBack();
+			throw $e;
 		}
 		# 0 when nothing is waiting: the id is then looked up, and PostgreSQL won't take '' for a number
 		return (int)$LastInsert;
-		
 	}
 
 	function ImportProcess($file_to_Import = array())
@@ -674,8 +675,9 @@ class daemon extends wdbcli
 			$this->verbosed("Already queued or imported. ({$file})\r\n");
 			return 0;
 		}
-		$prep = $this->sql->conn->prepare("INSERT INTO files_tmp (type, file_name, file_orig, file_date, file_user, notes, title, size, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
-		$prep->execute(array($type, $file, $file_orig, $date, $user, $notes, $title, $size1, $hash));
+		# queued for this node: the file is on its disk
+		$prep = $this->sql->conn->prepare("INSERT INTO files_tmp (type, file_name, file_orig, file_date, file_user, notes, title, size, hash, node_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		$prep->execute(array($type, $file, $file_orig, $date, $user, $notes, $title, $size1, $hash, $this->node_name));
 		$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
 		return 1;
 	}

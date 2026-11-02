@@ -447,8 +447,8 @@ function reset_file($dbcore, $File_ID)
 
 		// Copy file info to files_tmp for re-import
 		$sqlhp = "INSERT INTO files_tmp\n"
-			. "(file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
-			. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+			. "(file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name)\n"
+			. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name\n"
 			. "FROM files\n"
 			. "WHERE id = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
@@ -813,8 +813,8 @@ function reset_failed_file($dbcore, $File_ID)
 			try
 			{
 				$sqlhp = "INSERT INTO files_tmp\n"
-					. "(file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
-					. "SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+					. "(file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name)\n"
+					. "SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name\n"
 					. "FROM files_importing\n"
 					. "WHERE id = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);
@@ -1125,7 +1125,7 @@ function reset_files_bad($dbcore, $Bad_ID)
 			}
 
 			// Insert into files_tmp from files_bad
-			$sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type FROM files_bad WHERE id = ?";
+			$sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, NULLIF(node_name, '0') FROM files_bad WHERE id = ?";
 			$res = $dbcore->sql->conn->prepare($sql);
 			$res->bindParam(1, $Bad_ID, PDO::PARAM_INT);
 			$res->execute();

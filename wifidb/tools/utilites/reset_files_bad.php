@@ -70,7 +70,7 @@ if($tmp_exists && $tmp_exists['id']){
 $retry = true;
 while($retry){
     try{
-        $sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type FROM files_bad WHERE id = ?";
+        $sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, NULLIF(node_name, '0') FROM files_bad WHERE id = ?";
         $res = $dbcore->sql->conn->prepare($sql);
         $res->bindParam(1, $bad_id, PDO::PARAM_INT);
         $res->execute();

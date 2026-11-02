@@ -127,7 +127,8 @@ every node reads. The first boot adds a new node's `settings` and `schedule` row
   backups'). The bucket is then where uploads are kept: each one is put there (`PREFIX/uploads/`) before it's queued,
   and the node it came in on lets its own copy go; whichever node imports it fetches it and removes that working copy
   afterwards; deleting an import moves it to `PREFIX/deleted/` (or `user_deleted/`) in the bucket, with the same note
-  beside it as `import/up/deleted/` has. Without it, an upload can only be imported by the node it came in on.
+  beside it as `import/up/deleted/` has. Without it, each upload is queued with the name of the node it came in on
+  (`files_tmp.node_name`) and only that node's importer takes it, since the file is on its disk; the others leave it.
 - **Admin jobs** (delete or reset an import, and so on) are taken by one node each.
 - **Work one node does for all** (the tile and GeoJSON builds, the manufacturer list, the nightly backup) runs under a
   lock held in the database (`tools/daemon/lock_run.php`): whichever node starts it first does it, and the others skip

@@ -117,6 +117,7 @@ $web = array(
     'root'          => $root,
     'hosturl'       => $hosturl,
     'WebSocketURL'  => preg_replace('#^http#', 'ws', $site) . '/ws/',
+    'wifidb_nodename' => $e('NODE'),   // the upload page marks what it queues with it (lib/import_queue.inc.php)
     'srvc'          => $e('DB_TYPE'),
     'driver'        => $e('DB_TYPE'),
     'port'          => (int)$e('DB_PORT'),

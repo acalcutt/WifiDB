@@ -143,8 +143,8 @@ if($File_ID)
 		try 
 		{
 			$sqlhp = "INSERT INTO files_tmp\n"
-				.	 "(file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
-					. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+				.	 "(file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name)\n"
+					. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name\n"
 					. "FROM files\n"
 					. "WHERE id = ?";
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);

@@ -157,73 +157,22 @@ switch($func)
 								{
 									$mesg .= "<h3>With help from: ".$otherusers."<BR></h3>";
 								}
-								// the same file twice is queued once: already waiting, importing or imported (MariaDB's files_tmp
-								// also has a unique key on hash; SQL Server's and PostgreSQL's don't, so it's checked here for all)
-								$dup = $dbcore->sql->conn->prepare("SELECT (SELECT COUNT(*) FROM files_tmp WHERE hash = ?) + (SELECT COUNT(*) FROM files_importing WHERE hash = ?) + (SELECT COUNT(*) FROM files WHERE hash = ?) AS n");
-								$dup->execute(array($hash, $hash, $hash));
-								if((int)$dup->fetchColumn() > 0)
+								// onto the import queue (lib/import_queue.inc.php): once only, by way of the shared files bucket
+								// when there is one, and marked with this node
+								require_once '../lib/import_queue.inc.php';
+								list($queued, $import_number) = ImportQueue::Add($dbcore->sql->conn, $config, array('file_name' => $filename,
+									'file_orig' => $filename_orig, 'file_date' => $date, 'file_user' => $user, 'otherusers' => $otherusers,
+									'notes' => $notes, 'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type), $uploadfile,
+									function ($line) use ($dbcore) { $dbcore->logd($line, "error"); });
+								if($queued === 'waiting' || $queued === 'imported')
 								{
-									unlink($uploadfile);
 									$mesg .= "<h2>File (".htmlspecialchars($filename_orig, ENT_QUOTES).") has already been uploaded</h2>";
-									break;
 								}
-
-								// with the shared files in S3 (several nodes on one database) the upload goes there before it's
-								// queued, so whichever node's importer takes it can fetch it; if it can't, it isn't queued at all
-								try
+								elseif($queued === 'unstored')
 								{
-									require_once '../lib/shared_files.inc.php';
-									$shared = SharedFiles::FromSettings($dbcore->sql->conn, $config);
-									if($shared) { $shared->PutUpload($filename, $uploadfile); }
-								}
-								catch(Throwable $e)
-								{
-									unlink($uploadfile);
-									$dbcore->logd("Could not put the upload $filename in the shared files bucket: ".$e->getMessage(), "error");
 									$mesg .= "<h2>File (".htmlspecialchars($filename_orig, ENT_QUOTES).") could not be stored for importing. Please try again in a while.</h2>";
-									break;
 								}
-
-								//lets try a scheduled import table that has a cron job
-								//that runs and imports all of them at once into the DB
-								//in order that they where uploaded
-
-								if($dbcore->sql->service == "mysql")
-									{$sql = "INSERT INTO `files_tmp`(`file_name`, `file_orig`, `file_date`, `file_user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-								else if($dbcore->sql->service == "sqlsrv")
-									{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-								else if($dbcore->sql->service == "pgsql")
-									{$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-
-								$result = $dbcore->sql->conn->prepare( $sql );
-								$result->bindValue(1, $filename, PDO::PARAM_STR);
-								$result->bindValue(2, $filename_orig, PDO::PARAM_STR);
-								$result->bindValue(3, $date, PDO::PARAM_STR);
-								$result->bindValue(4, $user, PDO::PARAM_STR);
-								$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-								$result->bindValue(6, $notes, PDO::PARAM_STR);
-								$result->bindValue(7, $title, PDO::PARAM_STR);
-								$result->bindValue(8, $size, PDO::PARAM_STR);
-								$result->bindValue(9, $hash, PDO::PARAM_STR);
-								$result->bindValue(10, $type, PDO::PARAM_STR);
-								$import_number = 0;
-								try
-								{
-									$result->execute();
-									$import_number = $dbcore->sql->conn->lastInsertId();
-								}
-								catch(PDOException $e)
-								{
-									$dbcore->logd("Could not queue the upload $filename: ".$e->getMessage(), "error");
-								}
-								// with the bucket, it's where uploads are kept: this node's copy goes once the file is queued (the
-								// importer fetches it), and the bucket's goes if it wasn't
-								if($shared)
-								{
-									try { if($import_number) { unlink($uploadfile); } else { $shared->DeleteUpload($filename); } }
-									catch(Throwable $e) { $dbcore->logd("Could not tidy up after the upload $filename: ".$e->getMessage(), "error"); }
-								}
-								if($import_number)
+								elseif($queued === 'queued')
 								{
 									$mesg .= "<h2>File ($filename_orig) has been inserted for importing at a scheduled time. Import Number: {$import_number}</h2>";
 									$message .= "File ($filename_orig) has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";

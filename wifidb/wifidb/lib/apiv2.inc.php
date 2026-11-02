@@ -511,31 +511,7 @@ class apiv2 extends dbcore
 			$exp = explode("|", $user);
 			$user = $exp[0];
 		}
-		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT hash FROM files_tmp WHERE hash = ? LIMIT 1");}
-		else if($this->sql->service == "sqlsrv")
-			{$tmp_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files_tmp WHERE hash = ?");}
-		$tmp_prep->bindParam(1, $hash, PDO::PARAM_STR);
-		$tmp_prep->execute();
-		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
-			{$files_prep = $this->sql->conn->prepare("SELECT hash FROM files WHERE hash = ? LIMIT 1");}
-		else if($this->sql->service == "sqlsrv")
-			{$files_prep = $this->sql->conn->prepare("SELECT TOP 1 hash FROM files WHERE hash = ?");}
-		$files_prep->bindParam(1, $hash, PDO::PARAM_STR);
-		$files_prep->execute();
-
-		$tmp_ret = $tmp_prep->fetch(2);
-		$files_ret = $files_prep->fetch(2);
-		if($tmp_ret['hash'] != "")
-		{
-			$this->mesg = array("error" => "File Hash already waiting for import: ".$hash);
-			return -1;
-		}
-		if($files_ret['hash'] != "")
-		{
-			$this->mesg = array("error" => "File Hash already exists in WiFiDB:  $hash");
-			return -1;
-		}
+		$upload = $this->PATH.'import/up/'.$filename;   # where api/v2/import.php put it; removed again if it isn't queued
 		$this->mesg['import']["title"] = $title;
 		$this->mesg['import']["user"] = $user;
 		if($otherusers)
@@ -605,33 +581,38 @@ class apiv2 extends dbcore
 				$array = $stmt->fetch(2);
 				if($this->sec->CheckReservedUser($user) == 1 || $this->sec->CheckReservedUser($otherusers) == 1)
 				{
+					@unlink($upload);
 					$this->mesg = array("error" => "Reserved users are not allowed to import.");
 				}
 				else if($array['username'] && $array['import_require_login'] == 1 && $this->sec->APILoginCheck($array['username'], $apikey) != 1)
 				{
+					@unlink($upload);
 					$this->mesg = array("error" => "Your account requires an api key to import. Please make sure your api key is set correctly");
 				}
 				else
 				{
-					$sql = "INSERT INTO files_tmp(file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-					$result = $this->sql->conn->prepare( $sql );
-					$result->bindValue(1, $filename, PDO::PARAM_STR);
-					$result->bindValue(2, $file_orig, PDO::PARAM_STR);
-					$result->bindValue(3, $date, PDO::PARAM_STR);
-					$result->bindValue(4, $user, PDO::PARAM_STR);
-					$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-					$result->bindValue(6, $notes, PDO::PARAM_STR);
-					$result->bindValue(7, $title, PDO::PARAM_STR);
-					$result->bindValue(8, $size, PDO::PARAM_STR);
-					$result->bindValue(9, $hash, PDO::PARAM_STR);
-					$result->bindValue(10, $type, PDO::PARAM_STR);
-					$result->execute();
-					$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
-					$this->mesg['import']["importnum"] = $this->sql->conn->lastInsertId();
-					$this->mesg['import']["filehash"] = $hash;
+					// onto the import queue (lib/import_queue.inc.php): once only, by way of the shared files bucket when
+					// there is one, and marked with this node
+					require_once dirname(__FILE__).'/import_queue.inc.php';
+					list($queued, $detail) = ImportQueue::Add($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array(), array('file_name' => $filename,
+						'file_orig' => $file_orig, 'file_date' => $date, 'file_user' => $user, 'otherusers' => $otherusers, 'notes' => $notes,
+						'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type), $upload, function ($line) { $this->logd($line, "error"); });
+					switch($queued)
+					{
+						case 'queued':
+							$this->mesg['import']["message"] = "File has been inserted for importing at a scheduled time.";
+							$this->mesg['import']["importnum"] = $detail;
+							$this->mesg['import']["filehash"] = $hash;
+							break;
+						case 'waiting':  $this->mesg = array("error" => "File Hash already waiting for import: ".$hash); return -1;
+						case 'imported': $this->mesg = array("error" => "File Hash already exists in WiFiDB:  $hash"); return -1;
+						case 'unstored': $this->mesg = array("error" => "The file could not be stored for importing. Please try again in a while."); return -1;
+						default:         $this->mesg = array("error" => array("desc" => "There was an error inserting file for scheduled import.")); return -1;
+					}
 				}
 				break;
 			default:
+				@unlink($upload);
 				$this->mesg = array("error" => "Failure.... File is not supported. Try one of the supported file http://wifidb.net/wifidb/import/?func=supported_files");
 				break;
 		}
