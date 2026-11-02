@@ -154,7 +154,10 @@ way supports MariaDB only, and the first boot stops with a message if you ask it
    container first: a volume can't be attached to two).
 2. Put the same `firstboot.env` in (or leave it: the settings are already on the data disk, and the first boot keeps
    them).
-3. Start it. The first boot finds the settings and the database, and skips the schema load.
+3. Start it. The first boot finds the settings and the database, skips the schema load, and applies any new database
+   migrations (`tools/utilites/migrate.php`). Until a database has every migration the code has, the site answers
+   503 saying which are missing and what to run, and the daemons don't start: another node still on the old code,
+   or a copy of the site installed by hand, sees that page until `migrate.php` has been run once.
 4. Point HAProxy's backend at the new container. Keep the old one until you're sure; the data disk is the only thing
    it shares, so start with a backup of the database.
 

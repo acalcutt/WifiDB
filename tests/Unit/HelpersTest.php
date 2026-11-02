@@ -134,6 +134,29 @@ final class HelpersTest extends TestCase
         $this->assertSame('"/wifidb/cp/index.php"', wifidb_js_string('/wifidb/cp/index.php'));
     }
 
+    public function testPendingMigrationsAreTheFilesTheDatabaseHasNotApplied(): void
+    {
+        $dir = sys_get_temp_dir() . '/wifidb-pending-' . getmypid() . '-' . bin2hex(random_bytes(3));
+        mkdir("$dir/sqlite", 0777, true);
+        foreach (['0001_one', '0002_two', '0003_three'] as $id) { file_put_contents("$dir/sqlite/$id.sql", '-- x'); }
+        $db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+        try {
+            $this->assertSame(['0001_one', '0002_two', '0003_three'], wifidb_migrations_pending($db, 'sqlite', $dir), 'no schema_migrations table yet: all of them');
+            $this->assertSame(0, (int)$db->query("SELECT COUNT(*) FROM sqlite_master WHERE name = 'schema_migrations'")->fetchColumn(), 'and the check made no table');
+            $db->exec("CREATE TABLE schema_migrations (id TEXT PRIMARY KEY, started TEXT, applied TEXT)");
+            $db->exec("INSERT INTO schema_migrations VALUES ('0001_one', 'x', 'x'), ('0002_two', 'x', NULL)");
+            $this->assertSame(['0002_two', '0003_three'], wifidb_migrations_pending($db, 'sqlite', $dir), 'one still being applied counts as pending');
+            $db->exec("UPDATE schema_migrations SET applied = 'x'");
+            $db->exec("INSERT INTO schema_migrations VALUES ('0003_three', 'x', 'x')");
+            $this->assertSame([], wifidb_migrations_pending($db, 'sqlite', $dir));
+            $this->assertSame([], wifidb_migrations_pending($db, 'sqlite', "$dir/nowhere"), 'no migrations folder: nothing to wait for');
+        } finally {
+            array_map('unlink', glob("$dir/sqlite/*"));
+            rmdir("$dir/sqlite");
+            rmdir($dir);
+        }
+    }
+
     public function testSqlServerIsEncryptedAndTrustsItsCertificateUnlessToldOtherwise(): void
     {
         $this->assertSame(';Encrypt=true;TrustServerCertificate=true', wifidb_sqlsrv_security([]), 'as it always was');

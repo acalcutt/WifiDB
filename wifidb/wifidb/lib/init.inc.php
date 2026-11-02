@@ -230,6 +230,31 @@ catch (Exception $e) {
 	throw new ErrorException($e);
 }
 
+// The database has to have every migration this code has (sql/migrations/, applied by tools/utilites/migrate.php; the
+// Proxmox template applies them on each first boot). One query on the site's own connection; what has to run before
+// they're applied (migrate.php) defines WIFIDB_SKIP_MIGRATION_CHECK.
+if(!defined('WIFIDB_SKIP_MIGRATION_CHECK') && isset($dbcore->sql->conn))
+{
+	$pending = wifidb_migrations_pending($dbcore->sql->conn, $dbcore->sql->service, $config['wifidb_tools'].'../sql/migrations');
+	if($pending)
+	{
+		$why = "The database needs updating before WifiDB can run: ".count($pending)." migration".(count($pending) == 1 ? "" : "s")
+			." not applied yet (".implode(', ', $pending)."). An administrator needs to run tools/utilites/migrate.php.";
+		if(strtolower(SWITCH_SCREEN) === "cli")
+		{
+			fwrite(STDERR, $why."\n");
+			exit(1);
+		}
+		http_response_code(503);
+		header('Retry-After: 300');
+		header('Content-Type: text/html; charset=utf-8');
+		echo "<!DOCTYPE html>\n<html><head><title>WifiDB is being updated</title></head><body><h1>WifiDB is being updated</h1><p>"
+			.htmlspecialchars($why, ENT_QUOTES)."</p></body></html>\n";
+		exit;
+	}
+	unset($pending);
+}
+
 
 if(!function_exists('CLIErrorHandlingFunction'))
 {

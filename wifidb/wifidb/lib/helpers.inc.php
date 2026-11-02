@@ -114,3 +114,21 @@ if(!function_exists('wifidb_json_safe')) {
 		return json_encode($value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
 	}
 }
+
+// The migrations in $dir/<dialect>/ the database hasn't applied (schema_migrations), cheaply enough for every request:
+// one query, nothing created (lib/migrate.inc.php is what applies them). No such folder (a copy of the site without
+// sql/): none. No schema_migrations table yet: all of them.
+if(!function_exists('wifidb_migrations_pending')) {
+	function wifidb_migrations_pending($conn, $dialect, $dir)
+	{
+		$files = glob(rtrim($dir, '/\\').'/'.$dialect.'/*.sql');
+		if(!$files) { return array(); }
+		$ids = array();
+		foreach($files as $file) { $ids[] = basename($file, '.sql'); }
+		try { $applied = $conn->query("SELECT id FROM schema_migrations WHERE applied IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN); }
+		catch(Throwable $e) { $applied = array(); }
+		$pending = array_values(array_diff($ids, $applied));
+		sort($pending, SORT_STRING);
+		return $pending;
+	}
+}

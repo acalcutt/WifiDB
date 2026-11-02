@@ -22,6 +22,7 @@ server's admin page, say) shows up in the list and restores the same way.
 */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
+define("WIFIDB_SKIP_MIGRATION_CHECK", true);   # a backup before applying migrations is just when one is wanted
 if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to create and configure your [tools]/daemon.config.inc.php\r\n");}
 require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 require_once $daemon_config['wifidb_install'].'/lib/backups.inc.php';

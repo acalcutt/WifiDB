@@ -9,6 +9,7 @@ template does both for you on every first boot.
 */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
+define("WIFIDB_SKIP_MIGRATION_CHECK", true);   # it's what applies them
 if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to create and configure your [tools]/daemon.config.inc.php\r\n");}
 require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 require_once $daemon_config['wifidb_install'].'/lib/migrate.inc.php';
