@@ -33,6 +33,10 @@ class dbcore
 		$switches, $theme, $This_is_me, $thread_id, $tile_cache, $tile_max_gz_bytes, $tile_max_zoom, $tile_min_zoom,
 		$tileserver_gl_url, $time_format, $timeout, $TOOLS_PATH, $URL_PATH, $ver_array, $ver_str, $verbose, $vs1_htmlpath,
 		$vs1_out, $wdbmail, $WebSocketURL, $WEP_loc, $WPA_loc, $xml, $Zip;
+	// the tile settings the constructor copies from config by name, when config has them (lib/mvt.inc.php reads them)
+	public $tile_archive_dir, $tile_archive_generate, $tile_archive_keep, $tile_archive_url, $tile_mlt_archive_dir,
+		$tile_mlt_archive_generate, $tile_mlt_output_dir, $tile_output_dir, $tile_swarm_browser, $tile_swarm_category_prefix,
+		$tile_swarm_infohash_max_days, $tile_swarm_public_key, $tile_swarm_url;
 	public $cli;
 	public function __construct($config = NULL, $sql = null)
 	{
