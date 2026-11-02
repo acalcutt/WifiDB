@@ -16,9 +16,6 @@ if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon co
 require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $lastedit			=	"2025-12-16";
-// Postgres will not LIKE-compare a timestamp; MySQL and SQL Server convert
-// implicitly. $fa_txt keeps the shared queries usable on all three.
-$fa_txt = ($dbcore->sql->service == "pgsql") ? "fa::text" : "fa";
 $dbcore->daemon_name	=	"Stats";
 
 $arguments = $dbcore->parseArgs($argv);
@@ -202,6 +199,9 @@ function updateCache($dbcore, $cache_key, $cache_data) {
  * Generate and cache all statistics
  */
 function generateStatsCache($dbcore) {
+	// Postgres will not LIKE-compare a timestamp; MySQL and SQL Server convert
+	// implicitly. $fa_txt keeps the shared queries usable on all three.
+	$fa_txt = ($dbcore->sql->service == "pgsql") ? "fa::text" : "fa";
 	$dbcore->verbosed("Generating statistics cache...", 1);
 	$start_time = microtime(true);
 
