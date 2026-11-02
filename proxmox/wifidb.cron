@@ -14,6 +14,8 @@ MAILTO=""
 * * * * *   www-data  /opt/wifidb/tools/cron/import_files
 * * * * *   www-data  /opt/wifidb/tools/cron/statsd
 * * * * *   www-data  /opt/wifidb/tools/cron/admind
+# this node's report for admin/servers.php (version, load, memory, disks, services)
+* * * * *   www-data  /opt/wifidb/tools/cron/server_status
 0 12 * * *  www-data  /opt/wifidb/tools/cron/export_kml
 0 11 2 * *  www-data  /opt/wifidb/tools/cron/update_manuf
 5 0 * * *   www-data  /opt/wifidb/tools/cron/update_geojson
