@@ -372,16 +372,23 @@ Go here to reset it to one you choose:
 		$contents .= "Validation Link: ".$this->URL_PATH."login.php?func=".$function."&username=$username&validate_code=$validate_code \r\n";
 		$contents .= "\r\nVistumbler WiFiDB (".$this->URL_PATH.")";
 	
-		try 
+		// send() says it failed by returning false (this PHPMailer doesn't throw): the member must be told the mail isn't
+		// coming, not to wait for it
+		try
 		{
 			$this->signupmail->addAddress($to);     // Add a recipient
 			$this->signupmail->Subject = $subject;
 			$this->signupmail->Body    = $contents;
-			$this->signupmail->send();
-		} 
-		catch (Exception $e) 
+			$sent = $this->signupmail->send();
+		}
+		catch (Exception $e)
 		{
-			echo 'Validation email could not be sent. Mailer Error: ', $this->signupmail->ErrorInfo;
+			$sent = false;
+		}
+		$this->signupmail->clearAddresses();
+		if(!$sent)
+		{
+			$this->sec->logd('Validation email to '.$username.' could not be sent. Mailer Error: '.$this->signupmail->ErrorInfo, 'error');
 			return 0;
 		}
 		
