@@ -54,6 +54,10 @@ out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/stat
 check "...and fills the stats cache" test "$(sqlq 'select count(*) from stats_cache')" -gt 0
 out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
 check "...and started again at once, waits for its next run" sh -c 'echo "$0" | grep -q "There are no jobs that need to be run"' "$out"
+# a run that died (a restart mid-run) leaves its row 'Running' with its pid: the next run takes it back
+sqlq "UPDATE schedule SET status = 'Running', pid = 999999, nextrun = '2000-01-01 00:00:00' WHERE daemon = 'Stats'" >/dev/null
+out=$(docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/daemon/statsd.php -o -v 2>&1 | tr -d '\0')
+check "...and takes back a schedule row left 'Running' by a run that died" sh -c 'echo "$0" | grep -q "left running by a process that.s gone" && echo "$0" | grep -q "Statistics cache generation complete"' "$out"
 
 # last, as it removes data: one file's readings and GPS points
 fid=$(sqlq "select min(id) from files where completed = 1")

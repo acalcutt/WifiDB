@@ -104,6 +104,7 @@ if(!$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
+	$dbcore->ReleaseDeadClaims();   # a row left 'Running' by a run that died is taken again
 	#Claim a schedule ID, once its next run is due (cron starts this each minute; the stats are worked out each interval)
 	$currentrun = date("Y-m-d G:i:s");
 	if($dbcore->sql->service == "mysql")

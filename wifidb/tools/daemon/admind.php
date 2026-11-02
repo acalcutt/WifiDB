@@ -108,6 +108,7 @@ if(!$dbcore->ForceDaemonRun)
 
 	$currentrun = date("Y-m-d G:i:s");
 
+	$dbcore->ReleaseDeadClaims();   # a row left 'Running' by a run that died is taken again
 	// Claim a schedule ID
 	if($dbcore->sql->service == "mysql")
 		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}

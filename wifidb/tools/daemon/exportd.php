@@ -106,6 +106,7 @@ if(!$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
+	$dbcore->ReleaseDeadClaims();   # a row left 'Running' by a run that died is taken again
 	#Claim a import schedule ID
 	if($dbcore->sql->service == "mysql")
 		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `enabled` = 1 LIMIT 1";}

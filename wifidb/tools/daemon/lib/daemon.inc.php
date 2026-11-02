@@ -248,6 +248,22 @@ class daemon extends wdbcli
 		$run("DELETE FROM cell_id WHERE file_id = ? AND NOT EXISTS (SELECT 1 FROM cell_hist h WHERE h.cell_id = cell_id.cell_id)");
 	}
 
+	# A run that died (it failed, or was killed by a restart mid-run) leaves its schedule row 'Running' with its pid, and
+	# nothing would take that row again, so the daemon would never run here again. The rows are this node's, so the pids
+	# are processes here: a row whose process is gone is set back to waiting before this daemon claims one.
+	public function ReleaseDeadClaims()
+	{
+		$prep = $this->sql->conn->prepare("SELECT id, pid FROM schedule WHERE nodename = ? AND daemon = ? AND status = ?");
+		$prep->execute(array($this->node_name, $this->daemon_name, $this->StatusRunning));
+		foreach($prep->fetchAll(2) as $row)
+		{
+			$pid = (int)$row['pid'];
+			if($pid > 0 && file_exists("/proc/$pid")) { continue; }
+			$this->sql->conn->prepare("UPDATE schedule SET status = ? WHERE id = ? AND status = ?")->execute(array($this->StatusWaiting, $row['id'], $this->StatusRunning));
+			$this->verbosed("Schedule row ".$row['id']." was left running by a process that's gone (pid $pid): set back to waiting.", 1);
+		}
+	}
+
 	public function GetNextImportID()
 	{
 		# Which waiting files this node may take: any, with the shared files bucket (it fetches what it hasn't got);
