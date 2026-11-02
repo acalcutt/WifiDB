@@ -113,6 +113,7 @@ check "an access point that does not exist is a 404" test "$(http "$ct1" "http:/
 check "a non-numeric ap is a 404, not an error" test "$(http "$ct1" "http://127.0.0.1/api/wifi/signal.png?ap=1%20OR%201=1")" = 404
 check "the schema was loaded" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from information_schema.tables where table_schema=\"wifi\"")" -gt 20'
 check "this node is named testnode" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select node_name from settings limit 1")" = testnode'
+check "admin jobs will run here (an Admin schedule row, migration 0006)" docker exec "$db" sh -c 'test "$(mariadb -uwifidb -ptestpw wifi -N -e "select count(*) from schedule where nodename = '"'"'testnode'"'"' and daemon = '"'"'Admin'"'"' and enabled = 1")" = 1'
 check "schedulecheck prints a number" docker exec "$ct1" sh -c 'out=$(su -s /bin/bash www-data -c "php /opt/wifidb/tools/daemon/schedulecheck.php Import"); echo "$out"; case "$out" in (*[!0-9]*|"") exit 1;; esac'
 check "the cron file is installed" docker exec "$ct1" sh -c 'test "$(grep -c update_mvt /etc/cron.d/wifidb)" -ge 20'
 check "a cron wrapper runs" docker exec "$ct1" su -s /bin/bash www-data -c '/opt/wifidb/tools/cron/import_files'

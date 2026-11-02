@@ -170,6 +170,16 @@ check "...and removed the copy it fetched" docker exec "$ctb" test ! -e "/var/ww
 check "the bucket still has it" test "$(helper "$ctb" has-upload "$name")" = 1
 if [ "$(sqlq "select count(*) from files where completed = 1 and node_name = 'node-b'")" != 1 ]; then echo "$imp" | grep -v Deprecated | tail -20 | sed 's/^/       /'; fi
 
+log "an admin job: deleting the import node-b made, done by node-a's admind"
+check "each node has an Admin schedule row (migration 0006)" test "$(sqlq "select count(*) from schedule where daemon = 'Admin' and enabled = 1")" = 2
+fid=$(sqlq "select id from files where node_name = 'node-b'")
+sqlq "INSERT INTO admin_jobs (job_type, target_id, target_table, requested_by, status, created_at) VALUES ('delete_file', $fid, 'files', 'test', 'pending', '2026-01-01 00:00:00')" >/dev/null
+adm=$(docker exec "$cta" runuser -u www-data -- php /opt/wifidb/tools/daemon/admind.php -o -v 2>&1 | tr -d '\0')
+check "node-a's admind did it" test "$(sqlq "select status from admin_jobs where target_id = $fid")|$(sqlq "select nodename from admin_jobs where target_id = $fid")" = "completed|node-a"
+check "...the import is gone" test "$(sqlq "select count(*) from files where id = $fid")" = 0
+check "...and its upload moved to deleted/ in the bucket" test "$(helper "$ctb" has-upload "$name")$(helper "$ctb" has-deleted "$name")" = 01
+if [ "$(sqlq "select status from admin_jobs where target_id = $fid")" != completed ]; then echo "$adm" | grep -v Deprecated | tail -15 | sed 's/^/       /'; fi
+
 log "the lock, across the two nodes"
 docker exec -d "$cta" runuser -u www-data -- sh -c 'php /opt/wifidb/tools/daemon/lock_run.php twonodes sleep 15 > /var/tmp/lock.out 2>&1'
 sleep 5

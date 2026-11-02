@@ -3,6 +3,7 @@
 //   php test-two-nodes.php set-shared ENDPOINT BUCKET KEY_ID SECRET   save Shared files in S3 in Site Settings
 //   php test-two-nodes.php secret                                      print the S3 secret as this node reads it
 //   php test-two-nodes.php has-upload NAME                             1 if the bucket has that upload, else 0
+//   php test-two-nodes.php has-deleted NAME                            1 if it's in deleted/ in the bucket, else 0
 require '/var/www/wifidb/lib/config.inc.php';
 require_once '/var/www/wifidb/lib/helpers.inc.php';
 require_once '/var/www/wifidb/lib/site_settings.inc.php';
@@ -18,9 +19,11 @@ switch($argv[1] ?? '')
 		echo (new SiteSettings($pdo, $config))->Get('files_s3_secret');
 		break;
 	case 'has-upload':
+	case 'has-deleted':
 		$s = new SiteSettings($pdo, $config);
 		$s3 = new S3Client($s->Get('files_s3_endpoint'), 'garage', $s->Get('files_s3_bucket'), $s->Get('files_s3_key_id'), $s->Get('files_s3_secret'));
-		echo $s3->Head(SharedFiles::FromSettings($pdo, $config)->UploadKey($argv[2])) ? 1 : 0;
+		$shared = SharedFiles::FromSettings($pdo, $config);
+		echo $s3->Head($argv[1] === 'has-upload' ? $shared->UploadKey($argv[2]) : $shared->FolderKey('deleted', $argv[2])) ? 1 : 0;
 		break;
 	default:
 		fwrite(STDERR, "usage: php test-two-nodes.php set-shared|secret|has-upload ...\n");

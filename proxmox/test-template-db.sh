@@ -81,6 +81,7 @@ log "checking the site"
 check "the schema was loaded" test "$(sqlq "select count(*) from information_schema.tables where table_schema = '$schema'")" -gt 30
 check "...and the migrations applied" test "$(sqlq "select count(*) from schema_migrations where applied is not null")" -ge 4
 check "this node is named testnode" test "$(sqlq "select min(node_name) from settings")" = testnode
+check "admin jobs will run here (an Admin schedule row, migration 0006)" test "$(sqlq "select count(*) from schedule where nodename = 'testnode' and daemon = 'Admin' and enabled = 1")" = 1
 check "/health/ready answers 200" test "$(docker exec "$ct" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/health/ready)" = 200
 tzc="wifidb_client_check=1; wifidb_client_timezone=0; wifidb_client_dst=0"
 errors='Undefined (constant|variable|array key)|Fatal error|Uncaught|Parse error|Stack trace|Call to undefined|SQLSTATE|PDOException'
