@@ -204,8 +204,9 @@ While(1)
 
 		$dbcore->verbosed("Processing admin job ID: $admin_job_id, Type: {$admin_job['job_type']}");
 
-		// Mark job as running
-		$sql = "UPDATE admin_jobs SET status = 'running', started_at = ?, nodename = ?, pid = ? WHERE id = ?";
+		// Mark job as running, only if it's still pending: with more than one node, another admind may have read the same
+		// job in the meantime, and only the one whose update lands gets it
+		$sql = "UPDATE admin_jobs SET status = 'running', started_at = ?, nodename = ?, pid = ? WHERE id = ? AND status = 'pending'";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$started_at = date('Y-m-d H:i:s');
 		$prep->bindParam(1, $started_at, PDO::PARAM_STR);
@@ -213,6 +214,11 @@ While(1)
 		$prep->bindParam(3, $dbcore->This_is_me, PDO::PARAM_INT);
 		$prep->bindParam(4, $admin_job_id, PDO::PARAM_INT);
 		$prep->execute();
+		if($prep->rowCount() !== 1)
+		{
+			$dbcore->verbosed("Admin job $admin_job_id was taken by another node.");
+			continue;
+		}
 
 		// Process the job
 		$job_result = process_admin_job($dbcore, $admin_job);
