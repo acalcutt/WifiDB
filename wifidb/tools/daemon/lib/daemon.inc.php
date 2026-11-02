@@ -277,36 +277,31 @@ class daemon extends wdbcli
 		}
 		else if($this->sql->service == "sqlsrv")
 		{
-			$daemon_sql = "DELETE files_tmp\n"
-				. "OUTPUT DELETED.id, DELETED.file_name, DELETED.file_orig, DELETED.file_user, DELETED.otherusers, DELETED.title, DELETED.notes, DELETED.size, DELETED.file_date, DELETED.hash, DELETED.type\n"
-				. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp ORDER BY file_date ASC)";
-
-			$result = $this->sql->conn->prepare($daemon_sql);
-			$result->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-			$temp_imp_id_arr = $result->fetch();
-			if($temp_imp_id_arr['id'] != '')
+			# One statement takes the oldest waiting file off the queue, so two importers never get the same one. READPAST
+			# skips a row another importer has locked instead of waiting on it and then finding nothing, and the move into
+			# files_importing is in the same transaction, so a file can't drop out of the queue between the two.
+			$this->sql->conn->beginTransaction();
+			try
 			{
-				$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
-				$result2 = $this->sql->conn->prepare($sql);
-				$result2->bindParam(1, $temp_imp_id_arr['file_name'], PDO::PARAM_STR);
-				$result2->bindParam(2, $temp_imp_id_arr['file_orig'], PDO::PARAM_STR);
-				$result2->bindParam(3, $temp_imp_id_arr['file_user'], PDO::PARAM_STR);
-				$result2->bindParam(4, $temp_imp_id_arr['otherusers'], PDO::PARAM_STR);
-				$result2->bindParam(5, $temp_imp_id_arr['title'], PDO::PARAM_STR);
-				$result2->bindParam(6, $temp_imp_id_arr['notes'], PDO::PARAM_STR);
-				$result2->bindParam(7, $temp_imp_id_arr['size'], PDO::PARAM_STR);
-				$result2->bindParam(8, $temp_imp_id_arr['file_date'], PDO::PARAM_STR);
-				$result2->bindParam(9, $temp_imp_id_arr['hash'], PDO::PARAM_STR);
-				$result2->bindParam(10, $temp_imp_id_arr['id'], PDO::PARAM_INT);
-				$result2->bindParam(11, $temp_imp_id_arr['type'], PDO::PARAM_STR);
-				$result2->execute();
-				$this->sql->checkError(__LINE__, __FILE__);
-				$LastInsert = $this->sql->conn->lastInsertID();
-			}
-			else
-			{
+				$daemon_sql = "DELETE files_tmp\n"
+					. "OUTPUT DELETED.id, DELETED.file_name, DELETED.file_orig, DELETED.file_user, DELETED.otherusers, DELETED.title, DELETED.notes, DELETED.size, DELETED.file_date, DELETED.hash, DELETED.type\n"
+					. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp WITH (UPDLOCK, READPAST, ROWLOCK) ORDER BY file_date ASC, id ASC)";
+				$rows = $this->sql->conn->query($daemon_sql)->fetchAll(2);
 				$LastInsert = "";
+				if($rows)
+				{
+					$next = $rows[0];
+					$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+					$this->sql->conn->prepare($sql)->execute(array($next['file_name'], $next['file_orig'], $next['file_user'], $next['otherusers'], $next['title'],
+						$next['notes'], $next['size'], $next['file_date'], $next['hash'], $next['id'], $next['type']));
+					$LastInsert = $this->sql->conn->lastInsertId();
+				}
+				$this->sql->conn->commit();
+			}
+			catch(Throwable $e)
+			{
+				$this->sql->conn->rollBack();
+				throw $e;
 			}
 		}
 		# 0 when nothing is waiting: the id is then looked up, and PostgreSQL won't take '' for a number
