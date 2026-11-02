@@ -18,6 +18,8 @@ class ServerStatus
 	const GONE_SECONDS = 7 * 86400;
 	/** Free space below this share of a disk is called out. */
 	const LOW_DISK = 0.10;
+	/** The reports as they're kept: paths and addresses readable in the table */
+	const JSON = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 	/** The services a node is expected to run (the two daemons can be switched off per node). */
 	const SERVICES = array('apache2', 'php-fpm', 'cron', 'wifidb-monitord', 'wifidb-websocketd', 'wifidb-update.timer');
 
@@ -68,13 +70,13 @@ class ServerStatus
 	/** The minute's report: this node's version and what Collect() found. */
 	public static function Report(PDO $conn, $node, $version, array $info)
 	{
-		self::Put($conn, $node, array('version' => (string)$version, 'reported_at' => self::Now(), 'info' => json_encode($info)));
+		self::Put($conn, $node, array('version' => (string)$version, 'reported_at' => self::Now(), 'info' => json_encode($info, self::JSON)));
 	}
 
 	/** The releases the updater found (newest first, as WifidbReleases gives them), or why it couldn't. */
 	public static function SetReleases(PDO $conn, $node, $releases, $error = '')
 	{
-		self::Put($conn, $node, array('releases' => json_encode(array('list' => $releases, 'error' => (string)$error)), 'releases_at' => self::Now()));
+		self::Put($conn, $node, array('releases' => json_encode(array('list' => $releases, 'error' => (string)$error), self::JSON), 'releases_at' => self::Now()));
 	}
 
 	/** How this node's update for request $request is going. */
