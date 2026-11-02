@@ -102,6 +102,10 @@ check "...served as image/png" sh -c 'docker exec "$0" curl -s -o /dev/null -w "
 check "signal.svg is an SVG with the access point in it" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.svg?$1" | grep -q "SSID: My Net"' "$ct1" "$vq"
 check "the old graph page (index.php) accepts Vistumbler's address" test "$(http "$ct1" "http://127.0.0.1/api/wifi/index.php?$vq")" = 200
 check "...and does not echo a script from the address" sh -c '! docker exec "$0" curl -s "http://127.0.0.1/api/wifi/index.php?SSID=%3Cscript%3Ealert(1)%3C/script%3E&Sig=1-2" | grep -q "<script>alert"' "$ct1"
+# The API's own host name (api.wifidb.net on wifidb.net): api.wifidb.test here, from WIFIDB_URL
+check "api.<site> serves the API at its top" sh -c 'docker exec "$0" curl -s -H "Host: api.wifidb.test" http://127.0.0.1/index.php | grep -q "WiFiDB API Version"' "$ct1"
+check "...Vistumbler's signal graph too" sh -c 'docker exec "$0" curl -s -H "Host: api.wifidb.test" "http://127.0.0.1/wifi/signal.png?$1" | head -c 8 | od -An -c | tr -d " " | grep -q "211PNG"' "$ct1" "$vq"
+check "...and the site is still what any other name gets" sh -c '! docker exec "$0" curl -s -H "Host: wifidb.test" http://127.0.0.1/index.php | grep -q "WiFiDB API Version" && ! docker exec "$0" curl -s -H "Host: other.example" http://127.0.0.1/index.php | grep -q "WiFiDB API Version"' "$ct1"
 check "the graph writes nothing to a tmp folder" docker exec "$ct1" sh -c 'test -z "$(ls /var/www/wifidb/api/wifi/tmp 2>/dev/null)"'
 # An access point from the database: ?ap=
 docker exec "$db" mariadb -uwifidb -ptestpw wifi -e "
