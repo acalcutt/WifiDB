@@ -7,7 +7,8 @@ if ps -ef | grep -v grep | grep manufupd.php ; then
 else
 	echo Starting ManufUpd Daemon...
 		timestamp=$(date +%s)
-        php ../daemon/manufupd.php -o -v > ../log/manufupd/manufupd${timestamp}.log &
+        # lock_run.php: with more than one node on the database, one of them updates the list
+        php ../daemon/lock_run.php manufupd php ../daemon/manufupd.php -o -v > ../log/manufupd/manufupd${timestamp}.log &
 fi
 
 echo "Cleaning up old logs..."

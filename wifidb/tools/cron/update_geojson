@@ -25,7 +25,8 @@ if ! flock -n 9; then
     echo "GeoJSON Daemon already running for [${FILE_ARG:-all}]. Skipping."
 else
     echo "Starting GeoJSON Daemon [${FILE_ARG:-all}]..."
-    php ../daemon/geojsond.php $FILE_OPT > "$LOG_GJ" &
+    # lock_run.php: with more than one node on the database, only one of them builds it at a time
+    php ../daemon/lock_run.php "geojsond_${FILE_ARG:-all}" php ../daemon/geojsond.php $FILE_OPT > "$LOG_GJ" &
     echo "Launched PID $! — log: $LOG_GJ"
 fi
 
@@ -40,7 +41,7 @@ if [ -z "$FILE_ARG" ]; then
         echo "Cell GeoJSON Daemon already running. Skipping."
     else
         echo "Starting Cell GeoJSON Daemon..."
-        php ../daemon/cell_geojsond.php > "$LOG_CJ" &
+        php ../daemon/lock_run.php cell_geojsond php ../daemon/cell_geojsond.php > "$LOG_CJ" &
         echo "Launched PID $! — log: $LOG_CJ"
     fi
 fi

@@ -7,7 +7,8 @@ cd ${0%/*}
 mkdir -p ../log/backups
 log=../log/backups/backups_$(date -u +%Y%m%d).log
 if [ "${1:-}" = "daily" ]; then
-	php ../utilites/backup.php daily >> "$log" 2>&1
+	# one node makes it, when more than one shares the database (lock_run.php)
+	php ../daemon/lock_run.php backup_daily php ../utilites/backup.php daily >> "$log" 2>&1
 fi
 php ../utilites/backup.php run-queue >> "$log" 2>&1
 find ../log/backups/ -mtime +14 -type f -delete

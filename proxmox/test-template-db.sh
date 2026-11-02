@@ -138,6 +138,7 @@ if [ -n "${IMPORT_SAMPLES:-}" ]; then
     . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"
 fi
 . "$(dirname "$(readlink -f "$0")")/test-utilities.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-nodelock.inc.sh"
 
 log "backup and restore"
 bk() { docker exec "$ct" runuser -u www-data -- php /opt/wifidb/tools/utilites/backup.php "$@"; }

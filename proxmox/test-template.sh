@@ -141,6 +141,7 @@ if [ -n "${IMPORT_SAMPLES:-}" ]; then
     . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"
 fi
 . "$(dirname "$(readlink -f "$0")")/test-utilities.inc.sh"
+. "$(dirname "$(readlink -f "$0")")/test-nodelock.inc.sh"
 
 log "keeping a setting on the data disk, then moving to a new container"
 docker exec "$ct1" sh -c 'echo "// marker" >> /srv/wifidb-data/config/web.overrides.php'

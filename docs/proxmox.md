@@ -28,7 +28,12 @@ its own disk.
   - **PostgreSQL 11 or later:** a database the user owns (it doesn't need to be a superuser), e.g.
     `CREATE ROLE wifidb LOGIN PASSWORD '…'; CREATE DATABASE wifi OWNER wifidb ENCODING 'UTF8';`
 - A name for this node. The database has a row per node (`settings.node_name`, `schedule.nodename`); the daemons and
-  cron jobs only work on their own node's rows. Several nodes can share one database.
+  cron jobs only work on their own node's rows. Several nodes can share one database: each upload is imported by one
+  node (they take files from the queue in the database), each admin job is done by one, and the work one node does for
+  all (tiles, GeoJSON, the manufacturer list, the nightly backup) runs under a lock held in the database
+  (`tools/daemon/lock_run.php`), so whichever node starts it first does it and the others skip that run. Enable the
+  KML export and stats daemons in `schedule` on one node only. Uploads and generated files are still on each node's
+  own data disk.
 
 ## Create the container
 
