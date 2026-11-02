@@ -58,6 +58,7 @@ switch($func)
 			break;
 
 			case "validate":
+			case "NotValidated":
 				$message = 'This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.';
 				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);

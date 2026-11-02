@@ -498,6 +498,15 @@ class security
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 		$newArray = $result->fetch(2);
+		if(!$newArray)
+		{
+			# no such member: answered as a wrong password is, so the form doesn't say who has an account
+			$this->login_val = "p_fail";
+			$this->login_check = 0;
+			$this->mesg[] = "Username or Password is incorrect.";
+			$this->logd("Login for a user that does not exist: ".var_export($username, 1), "error");
+			return 1;
+		}
 		$validate = $newArray['validated']+0;
 		if($validate === 1)
 		{

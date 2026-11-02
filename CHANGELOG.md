@@ -47,6 +47,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Signing in to an account that hasn't confirmed its e-mail says so** (it said "Unknown Return."), and a username that doesn't exist no longer gives PHP warnings; it's still answered as a wrong password.
 - **The site says when the database needs updating.** If the database hasn't had every migration in `sql/migrations/`, pages answer 503 naming the missing ones and saying to run `tools/utilites/migrate.php`, and the daemons don't start, instead of failing on a missing table. This replaces the old check of `settings.version`, which opened a second database connection on every request and pointed at install pages that no longer exist. `migrate.php` and `backup.php` still run.
 - **The footer's version is the released one.** It showed a fixed "v0.40 Beta"; it now shows `VERSION` (`v0.40.0`), from `lib/version.inc.php`, which the version bump updates with `VERSION`.
 - **Admin jobs (deleting and resetting imports) and the Stats page's figures were never worked out on a new install:** admind and statsd only run for a node with an `Admin` or `Stats` row in `schedule`, and the schema had neither. Migration 0006 gives each node without one an `Admin` row; migration 0007, if no node has a `Stats` row, gives each node one, switched on for the first node only and run hourly. Run `tools/utilites/migrate.php`; rows you already have are left alone. statsd also waited for nothing: started by cron each minute, it worked the stats out each minute; it now waits for its next run.
