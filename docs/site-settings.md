@@ -16,6 +16,10 @@ It needs admin mode (see [two-factor.md](two-factor.md)).
 | Google Analytics measurement ID | `analytics_id` | `G-…` (or paste Google's whole tag). Empty: no analytics. See below. |
 | AdSense publisher ID, ad units | `adsense_client`, `adsense_slot`, `adsense_slot_menu` | `ca-pub-…` and the ad units' numbers (or paste their code): the ad at the foot of each page, and the one under the mobile theme's menu. Empty: no ads (or none there). |
 | Visitors' consent to analytics and ad cookies | `analytics_consent` (where it's required) | Who sees the cookie banner. See below. |
+| ads.txt | `ads_txt` | Served at `/ads.txt`. Empty: the AdSense line for the publisher ID (none without one). |
+| Site description | `site_description` | The description search engines and shared links show. |
+| Keep search engines out | `search_noindex` (off) | For a test or staging copy. See below. |
+| Google Search Console, Bing Webmaster Tools verification | `google_site_verification`, `bing_site_verification` | The code from the tag each gives (or paste the tag), to prove the site is yours. |
 
 Each setting starts with the value in `config.inc.php`, under the same name. Once it is saved on the page, the saved
 value is used, and the page says where each value comes from. The values are kept in the `site_settings` table
@@ -46,6 +50,23 @@ it opens and knows a country, so if DB-IP is down, moves or goes away, the copy 
 `geoip_country_db` is where the copy is (the Proxmox template: `/srv/wifidb-data/geoip/`, starting from a copy the
 template was built with) and `geoip_country_source` where it's fetched from: DB-IP's unless set, or any other MMDB
 country database (MaxMind's GeoLite2, IPinfo's), with `%s` for the month. Without a copy, everyone is asked.
+
+## Search engines: robots.txt, the sitemaps and ads.txt
+
+These are made by `site_files.php` (`lib/site_files.inc.php`) from the site's own address and Site Settings; the site's
+`.htaccess` sends the names there, so the site's folder has to be the host's document root, with `AllowOverride` on (as
+the Proxmox template has it).
+
+- **robots.txt** keeps crawlers out of members' and administrators' pages, signing in, uploads, exports and the API, and
+  names the sitemap.
+- **sitemap.xml** lists the sitemaps: the main pages, each member with a finished import, and each finished import (at
+  most 50,000 to a file, `sitemap-imports-2.xml` and so on). Access points' own pages aren't listed: there are millions,
+  and each names a network and its MAC address.
+- **ads.txt** is Site Settings' text, or the line AdSense asks for when there's a publisher ID, or nothing.
+- Every page's canonical link and `og:url` use the site's own address (`hosturl`), so a second node or a staging copy
+  doesn't claim to be another site, and its description and verification codes come from Site Settings.
+- **Keep search engines out**: every page says `noindex`, robots.txt turns all crawlers away, and there's no sitemap. For
+  a test or staging copy.
 
 Signing in with Google, GitHub, Discord or Facebook is set up on its own page, **Sign-in Providers**
 (`admin/logins.php`), kept in the same table: see [linked-logins.md](linked-logins.md).

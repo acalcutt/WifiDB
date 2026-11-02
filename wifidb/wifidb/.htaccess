@@ -1,0 +1,7 @@
+# robots.txt, ads.txt and the sitemaps are made by site_files.php from the site's address and Site Settings. Crawlers
+# look for them at the top of the host, so this folder has to be the host's document root (it is in the Proxmox
+# template, whatever WIFIDB_ROOT is), with AllowOverride letting this file rewrite.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(robots\.txt|ads\.txt|sitemap\.xml|sitemap-[a-z]+(-[0-9]+)?\.xml)$ site_files.php?file=$1 [NC,L]
+</IfModule>

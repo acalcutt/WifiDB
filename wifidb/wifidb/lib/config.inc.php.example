@@ -304,12 +304,12 @@ $config = array
 	'csv_out'			   =>   'out/csv/',
 	'region_out'			   =>   'out/region/',
 
-	# Google Analytics, AdSense and when visitors are asked about cookies are set on Site Settings (admin/settings.php).
+	# Google Analytics, AdSense, when visitors are asked about cookies, ads.txt and what search engines read (the site's
+	# description, verification codes, keeping them out) are set on Site Settings (admin/settings.php).
 	# The country database that "ask where it's required" looks visitors up in (lib/visitor_country.inc.php), kept up to
 	# date by tools/cron/update_geoip; empty: none, so everyone is asked. The Proxmox template keeps it on the data disk.
 	'geoip_country_db'	   =>   '',
 	# where update_geoip fetches it from: empty for DB-IP's free one; %s is the month (2026-11), .gz is unpacked
 	'geoip_country_source' =>   '',
-	'header'				=> '<meta name="description" content="Vistumbler WifiDB is a project to collect wireless accesss points gathered by Vistumbler or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, wifi, database, DB, php" />',
 	'googleApiKey'		 =>   '', # Google Geocoding API key (leave empty for none)
 );

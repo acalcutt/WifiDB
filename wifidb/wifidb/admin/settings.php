@@ -43,7 +43,7 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 	{
 		if($def[0] === 'bool') { $values[$name] = isset($_POST[$name]); continue; }
 		if($def[0] === 'choice') { $values[$name] = isset($_POST[$name]) ? (string)$_POST[$name] : null; continue; }
-		if($def[0] === 'text')
+		if($def[0] === 'text' || $def[0] === 'lines')
 		{
 			# an ID pasted with the tag around it is taken out of it; one that isn't an ID saves nothing
 			list($values[$name], $wrong) = SiteSettings::Clean($name, isset($_POST[$name]) ? (string)$_POST[$name] : '');

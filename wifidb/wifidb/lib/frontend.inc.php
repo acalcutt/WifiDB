@@ -39,7 +39,6 @@ class frontend extends dbcore
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
 			$this->sec->LoginCheck();
 			$this->meta = new stdClass();
-			$this->meta->header = isset($config['header']) ? $config['header'] : '';
 
 			$this->smarty = new Smarty();
 			$this->smarty->template_dir = $config['wifidb_install'].'themes/'.$this->theme.'/templates/';
@@ -50,7 +49,6 @@ class frontend extends dbcore
 			$this->smarty->assign('themeurl', $this->URL_PATH.'themes/'.$this->theme.'/');
 			$this->smarty->assign('wifidb_host_url', $this->URL_PATH);
 			$this->wifidb_host_url = $this->URL_PATH;
-			$this->smarty->assign('wifidb_seo_content', $this->meta->header);
 			$this->smarty->assign('wifidb_theme', $this->theme);
 			$this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
 			$this->smarty->assign('tileserver_gl_url', $this->tileserver_gl_url);
@@ -178,7 +176,8 @@ class frontend extends dbcore
 
 
 	/**
-	 * Google Analytics, AdSense and the cookie banner as Site Settings has them, for header.tpl and footer.tpl: nothing of
+	 * Google Analytics, AdSense, the cookie banner and what search engines read, as Site Settings has them, for header.tpl
+	 * and footer.tpl: nothing of
 	 * Google's loads until an ID is set, and the banner is for the visitors "Visitors' consent" says to ask (by their
 	 * country, from $geoipDb, lib/visitor_country.inc.php; not looked up for one who has already chosen).
 	 */
@@ -211,6 +210,13 @@ class frontend extends dbcore
 		$this->smarty->assign('wifidb_adsense_slot', $slot);
 		$this->smarty->assign('wifidb_adsense_slot_menu', $client !== '' ? $settings->Get('adsense_slot_menu') : '');
 		$this->smarty->assign('wifidb_geoip_credit', $credit);
+
+		# What search engines read (Site Settings), and this site's own address for the canonical link, not wifidb.net's
+		$this->smarty->assign('wifidb_site_description', $settings->Get('site_description'));
+		$this->smarty->assign('wifidb_noindex', $settings->Get('search_noindex'));
+		$this->smarty->assign('wifidb_google_verification', $settings->Get('google_site_verification'));
+		$this->smarty->assign('wifidb_bing_verification', $settings->Get('bing_site_verification'));
+		$this->smarty->assign('wifidb_site_origin', preg_replace('#^(https?://[^/]+).*$#i', '$1', $this->URL_PATH));
 	}
 
 	function htmlfooter()

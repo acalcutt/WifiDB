@@ -26,6 +26,8 @@ version 2 of the License, or (at your option) any later version.
 								<input id="{$s.name}" name="{$s.name}" type="checkbox"{if $s.value} checked{/if}>
 								{elseif $s.type == 'text'}
 								<input id="{$s.name}" name="{$s.name}" type="text" size="40" value="{$s.value|escape:'html':'UTF-8':false}">
+								{elseif $s.type == 'lines'}
+								<textarea id="{$s.name}" name="{$s.name}" rows="5" cols="60">{$s.value|escape:'html':'UTF-8':false}</textarea>
 								{elseif $s.type == 'choice'}
 								{foreach $s.options as $option => $optionLabel}
 								<label><input name="{$s.name}" type="radio" value="{$option|escape:'html':'UTF-8':false}"{if $s.value == $option} checked{/if}> {$optionLabel|escape:'html':'UTF-8':false}</label><br>

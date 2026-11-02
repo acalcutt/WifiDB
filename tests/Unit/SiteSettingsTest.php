@@ -124,6 +124,23 @@ final class SiteSettingsTest extends TestCase
         $this->assertSame(['garage', ''], SiteSettings::Clean('backup_s3_region', ' garage '), 'others are only trimmed');
     }
 
+    public function testWhatSearchEnginesRead(): void
+    {
+        $this->assertSame(['abcDEF123_-xyz', ''], SiteSettings::Clean('google_site_verification', '<meta name="google-site-verification" content="abcDEF123_-xyz" />'));
+        $this->assertSame(['0123456789ABCDEF0123456789ABCDEF', ''], SiteSettings::Clean('bing_site_verification', '<meta name="msvalidate.01" content="0123456789ABCDEF0123456789ABCDEF" />'));
+        $this->assertNotSame('', SiteSettings::Clean('google_site_verification', 'not "a" code')[1]);
+        $this->assertSame(['A wireless database, of networks.', ''], SiteSettings::Clean('site_description', "  A <b>wireless</b>   database,\n of networks. "));
+        $this->assertNotSame('', SiteSettings::Clean('site_description', str_repeat('x', 301))[1]);
+        $this->assertSame(["google.com, pub-1, DIRECT\nexample.com, 2, RESELLER", ''], SiteSettings::Clean('ads_txt', "google.com, pub-1, DIRECT\r\nexample.com, 2, RESELLER\r\n"));
+
+        $s = $this->settings();
+        $this->assertStringStartsWith('Vistumbler WiFiDB is', $s->Get('site_description'));
+        $this->assertFalse($s->Get('search_noindex'));
+        $this->assertSame(['ads_txt'], $s->Save(['ads_txt' => "line one\nline two"], 'root'));
+        $this->assertSame("line one\nline two", $this->settings()->Get('ads_txt'), 'several lines kept as they are');
+        $this->assertSame('lines', array_column($s->Describe(), null, 'name')['ads_txt']['type']);
+    }
+
     public function testADatabaseWithoutTheTableFallsBackToConfig(): void
     {
         $bare = new SiteSettings(new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]), ['signups_open' => 0]);

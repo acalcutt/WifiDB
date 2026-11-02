@@ -23,16 +23,19 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>{$wifidb_page_label|default:""} | Vistumbler WiFiDB</title>
-	{$wifidb_seo_content|default:""}
-	
+	<meta name="description" content="{$wifidb_site_description|default:''|escape:'html':'UTF-8':false}" />
+	{if $wifidb_noindex|default:false}<meta name="robots" content="noindex, nofollow" />{/if}
+	{if $wifidb_google_verification|default:''}<meta name="google-site-verification" content="{$wifidb_google_verification|escape:'html':'UTF-8':false}" />{/if}
+	{if $wifidb_bing_verification|default:''}<meta name="msvalidate.01" content="{$wifidb_bing_verification|escape:'html':'UTF-8':false}" />{/if}
+
 	<!-- Open Graph -->
 	<meta property="og:title" content="{$wifidb_page_label|default:""} | Vistumbler WiFiDB" />
 	<meta property="og:type" content="website" />
-	<meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
+	<meta property="og:url" content="{$wifidb_site_origin|default:''|escape:'html':'UTF-8':false}{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 	<meta property="og:image" content="{$themeurl}img/logo.png" />
-	<meta property="og:description" content="Vistumbler WiFiDB is a global open-source wireless network database. Upload, map, and analyze WiFi access points." />
+	<meta property="og:description" content="{$wifidb_site_description|default:''|escape:'html':'UTF-8':false}" />
 
-	<link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
+	<link rel="canonical" href="{$wifidb_site_origin|default:''|escape:'html':'UTF-8':false}{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 
 	{$WebSocketScripts|default:""}
 	{$wifidb_meta_header|default:""}

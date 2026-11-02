@@ -15,8 +15,8 @@ require_once dirname(__FILE__).'/totp.inc.php';
 class SiteSettings
 {
 	/**
-	 * name => [type ('bool', 'text', 'secret' or 'choice'), label, help, default when config.inc.php doesn't say, and for a
-	 * choice its options: value => label]
+	 * name => [type ('bool', 'text', 'lines' (text of several lines), 'secret' or 'choice'), label, help, default when
+	 * config.inc.php doesn't say, and for a choice its options: value => label]
 	 */
 	const SETTINGS = array(
 		'signups_open'      => array('bool', 'Sign-ups are open',
@@ -56,6 +56,17 @@ class SiteSettings
 			'The data-ad-slot number of the display ad unit shown at the foot of each page (or paste its code).', ''),
 		'adsense_slot_menu' => array('text', 'AdSense ad unit under the menu',
 			'The mobile theme shows a second ad under its menu: that ad unit\'s number (or its code). Empty: none there.', ''),
+		'ads_txt'           => array('lines', 'ads.txt',
+			'Served at /ads.txt, for ad networks to check who may sell the ad space. Empty: the AdSense line for the publisher ID above (none without one).', ''),
+		'site_description'  => array('text', 'Site description',
+			"What search engines and shared links show under the site's name.",
+			'Vistumbler WiFiDB is a global open-source wireless network database. Upload, map, and analyze WiFi access points.'),
+		'search_noindex'    => array('bool', 'Keep search engines out',
+			'For a test or staging copy: every page asks search engines not to index it, robots.txt turns crawlers away, and there is no sitemap.', 0),
+		'google_site_verification' => array('text', 'Google Search Console verification',
+			'The code in the HTML tag Search Console gives to prove the site is yours (or paste the whole tag).', ''),
+		'bing_site_verification'   => array('text', 'Bing Webmaster Tools verification',
+			'The code in the msvalidate.01 tag Bing gives (or paste the whole tag).', ''),
 		'analytics_consent' => array('choice', "Visitors' consent to analytics and ad cookies",
 			"Ask where it's required: only visitors in the EU and the rest of the European Economic Area, the UK and Switzerland see the cookie banner (by the country of their address, looked up on this server; anyone whose country can't be told is asked too); everyone else isn't asked. Ask every visitor: everyone sees the banner. Don't ask: nobody does, which is only allowed where consent isn't required. Until a visitor allows them, Google is told not to use cookies for analytics or personalized ads.",
 			'region', array('region' => "Ask where it's required", 'ask' => 'Ask every visitor', 'off' => "Don't ask")),
@@ -71,6 +82,18 @@ class SiteSettings
 		if($value === '') { return array('', ''); }
 		switch($name)
 		{
+			case 'google_site_verification':
+			case 'bing_site_verification':
+				if(preg_match('/content\s*=\s*["\']([^"\']*)["\']/i', $value, $m)) { $value = trim($m[1]); }
+				return preg_match('/^[A-Za-z0-9_\-]{8,128}$/', $value) ? array($value, '')
+					: array($value, "That isn't a site verification code (letters, numbers, - and _).");
+			case 'site_description':
+				$value = trim(preg_replace('/\s+/u', ' ', strip_tags($value)));
+				return mb_strlen($value) <= 300 ? array($value, '') : array($value, 'The site description can be at most 300 characters.');
+			case 'ads_txt':
+				$value = trim(str_replace("\r", '', $value));
+				if(strlen($value) > 20000) { return array($value, 'ads.txt can be at most 20,000 characters.'); }
+				return preg_match('/[\x00-\x08\x0b-\x1f\x7f]/', $value) ? array($value, 'ads.txt has characters it can\'t.') : array($value, '');
 			case 'analytics_id':
 				return preg_match('/\b(G-[A-Z0-9]{4,20})\b/i', $value, $m) ? array(strtoupper($m[1]), '')
 					: array($value, "That isn't a Google Analytics measurement ID (G- and letters and numbers).");
@@ -169,7 +192,7 @@ class SiteSettings
 			$raw = (string)$this->rows[$name];
 			if($type === 'bool') { return $raw === '1'; }
 			if($type === 'choice') { return isset($def[4][$raw]) ? $raw : (string)$default; }
-			if($type === 'text') { return $raw; }
+			if($type === 'text' || $type === 'lines') { return $raw; }
 			$plain = Totp::Unprotect($raw, $this->key);
 			return $plain === false ? '' : $plain;
 		}
@@ -225,7 +248,7 @@ class SiteSettings
 			{
 				$new = trim((string)$values[$name]);
 				if($type === 'choice' && !isset($def[4][$new])) { continue; }   # not one of its options
-				$plain = ($type === 'text' || $type === 'choice');
+				$plain = ($type !== 'secret');
 				if($new === $this->Get($name) && ($plain || $this->Source($name) === 'saved')) { continue; }
 				$stored = ($new === '' || $plain) ? $new : Totp::Protect($new, $this->key);
 			}
