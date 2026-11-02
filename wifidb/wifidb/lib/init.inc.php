@@ -72,51 +72,6 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 	}
 	require $config['wifidb_tools'].'daemon.config.inc.php';
 }
-if($config['srvc'] == "mysql")
-{
-	$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'].';charset='.$config['charset'];
-	$options = array(
-		PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$config['charset'].' COLLATE '.$config['collate']
-	);
-	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-	$sql = "SELECT `version` FROM `settings` LIMIT 1";
-}
-else if($config['srvc'] == "sqlsrv")
-{
-	// LoginTimeout=15: bound connect time when SQL is down without being so tight
-	// it aborts a busy-but-alive server's handshake (3s caused SQLSTATE 08001).
-	// See SQL.inc.php for the full rationale.
-	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].wifidb_sqlsrv_security($config).';LoginTimeout=15';
-	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
-	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
-	$sql = "SELECT TOP 1 [version] FROM [settings]";
-}
-else if($config['srvc'] == "pgsql")
-{
-	// See SQL.inc.php for why client_encoding is UTF8 rather than $config['charset'].
-	$dsn = $config['srvc'].':host='.$config['host'].';port='.$config['port'].';dbname='.$config['db'].";options='--client_encoding=UTF8';connect_timeout=15";
-	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
-	$sql = "SELECT version FROM settings LIMIT 1";
-}
-
-$res = $conn->query($sql);
-$fetch = $res->fetch(2);
-$db_version = $fetch['version'];
-unset($res, $conn, $fetch, $sql);
-
-if($db_version != '0.40')
-{
-	$cwd = getcwd().'/';
-	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
-	if($cwd != $gen_cwd)
-	{
-		throw new ErrorException('The database is not in the 0.40 format, you will need to do an upgrade first.<br>
-				If this database is older than Version 0.30 I would do a Full Fresh Install, After making a backup of all your data.
-				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
-	}
-	unset($cwd, $gen_cwd);
-}
-unset($db_version);
 
 if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
