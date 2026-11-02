@@ -306,6 +306,21 @@ class api extends dbcore
 				}
 				else
 				{
+					// with the shared files in S3 (several nodes on one database) the upload goes there before it's queued,
+					// so whichever node's importer takes it can fetch it; if it can't, it isn't queued at all
+					try
+					{
+						require_once dirname(__FILE__).'/shared_files.inc.php';
+						$shared = SharedFiles::FromSettings($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
+						if($shared) { $shared->PutUpload($filename, $upload); }
+					}
+					catch(Throwable $e)
+					{
+						@unlink($upload);
+						$this->logd("Could not put the upload $filename in the shared files bucket: ".$e->getMessage(), "error");
+						$this->mesg = array("error" => "The file could not be stored for importing. Please try again in a while.");
+						return -1;
+					}
 					# the same columns on all three databases (the MariaDB form here still had the old names)
 					$sql = "INSERT INTO files_tmp (file_name, file_orig, file_date, file_user, otherusers, notes, title, size, hash, type) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 

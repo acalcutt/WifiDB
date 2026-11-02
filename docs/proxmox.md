@@ -28,12 +28,8 @@ its own disk.
   - **PostgreSQL 11 or later:** a database the user owns (it doesn't need to be a superuser), e.g.
     `CREATE ROLE wifidb LOGIN PASSWORD '…'; CREATE DATABASE wifi OWNER wifidb ENCODING 'UTF8';`
 - A name for this node. The database has a row per node (`settings.node_name`, `schedule.nodename`); the daemons and
-  cron jobs only work on their own node's rows. Several nodes can share one database: each upload is imported by one
-  node (they take files from the queue in the database), each admin job is done by one, and the work one node does for
-  all (tiles, GeoJSON, the manufacturer list, the nightly backup) runs under a lock held in the database
-  (`tools/daemon/lock_run.php`), so whichever node starts it first does it and the others skip that run. Enable the
-  KML export and stats daemons in `schedule` on one node only. Uploads and generated files are still on each node's
-  own data disk.
+  cron jobs only work on their own node's rows. Several nodes can share one database: see
+  [Several nodes on one database](#several-nodes-on-one-database).
 
 ## Create the container
 
@@ -115,6 +111,22 @@ unchanged and don't compress `.pbf`, `.mlt` or `.pmtiles` responses there.
 
 The import cron wrappers ask the database whether a run is due through `tools/daemon/schedulecheck.php`, so they work the
 same on MySQL and SQL Server and hold no credentials.
+
+## Several nodes on one database
+
+Two or more containers can share one database behind HAProxy, each with its own data disk and its own `WIFIDB_NODE`.
+
+- **Imports:** the queue is in the database, and each node's importer takes the next file in one step, so every upload
+  is imported once. Set up **Shared files in S3** in Site Settings (`files_s3_*`; a bucket of its own, not the
+  backups'): each upload is put there before it's queued, and a node importing an upload that came in on another node
+  fetches it, then removes its copy once the import is done. Without it, an upload can only be imported by the node it
+  came in on.
+- **Admin jobs** (delete or reset an import, and so on) are taken by one node each.
+- **Work one node does for all** (the tile and GeoJSON builds, the manufacturer list, the nightly backup) runs under a
+  lock held in the database (`tools/daemon/lock_run.php`): whichever node starts it first does it, and the others skip
+  that run. If that node stops, its lock goes with its database connection.
+- **Scheduled daemons** have rows per node in `schedule`: enable the KML export and stats daemons on one node only.
+- The generated files (tiles, GeoJSON, exports) are still on the disk of the node that built them.
 
 ## SQL Server
 

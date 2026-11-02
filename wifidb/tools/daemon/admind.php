@@ -267,6 +267,20 @@ $dbcore->verbosed("Done");
 exit($dbcore->return_message);
 
 /**
+ * The shared files bucket (Site Settings), or null when uploads stay on each node's disk
+ */
+function admind_shared_files($dbcore)
+{
+	static $shared = false;
+	if($shared === false)
+	{
+		require_once $dbcore->PATH.'lib/shared_files.inc.php';
+		$shared = SharedFiles::FromSettings($dbcore->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
+	}
+	return $shared;
+}
+
+/**
  * Process an admin job based on its type
  */
 function process_admin_job($dbcore, $job)
@@ -597,6 +611,13 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 		}
 
 		$source_file = $upload_path . $file_info['file_name'];
+		// with the shared files in S3, an upload that came in on another node is fetched first so it's kept here too
+		$shared = admind_shared_files($dbcore);
+		if($shared && !file_exists($source_file))
+		{
+			try { $shared->FetchUpload($file_info['file_name'], $source_file); }
+			catch(Throwable $e) { $dbcore->verbosed("Could not fetch ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
+		}
 		if(file_exists($source_file))
 		{
 			// Save file info to txt
@@ -607,6 +628,12 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 			file_put_contents($info_file, $info_content);
 
 			rename($source_file, $deleted_path . $file_info['file_name']);
+			// ...and the bucket's copy goes, as the one in import/up did
+			if($shared)
+			{
+				try { $shared->DeleteUpload($file_info['file_name']); }
+				catch(Throwable $e) { $dbcore->verbosed("Could not remove ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
+			}
 		}
 
 		return array('success' => true, 'message' => "File ID $File_ID deleted successfully");
@@ -994,6 +1021,13 @@ function delete_failed_file($dbcore, $File_Import_ID)
 		}
 
 		$source_file = $upload_path . $file_info['file_name'];
+		// with the shared files in S3, an upload that came in on another node is fetched first so it's kept here too
+		$shared = admind_shared_files($dbcore);
+		if($shared && !file_exists($source_file))
+		{
+			try { $shared->FetchUpload($file_info['file_name'], $source_file); }
+			catch(Throwable $e) { $dbcore->verbosed("Could not fetch ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
+		}
 		if(file_exists($source_file))
 		{
 			// Save file info to txt
@@ -1004,6 +1038,12 @@ function delete_failed_file($dbcore, $File_Import_ID)
 			file_put_contents($info_file, $info_content);
 
 			rename($source_file, $deleted_path . $file_info['file_name']);
+			// ...and the bucket's copy goes, as the one in import/up did
+			if($shared)
+			{
+				try { $shared->DeleteUpload($file_info['file_name']); }
+				catch(Throwable $e) { $dbcore->verbosed("Could not remove ".$file_info['file_name']." from the shared files bucket: ".$e->getMessage(), -1); }
+			}
 		}
 
 		return array('success' => true, 'message' => "Failed file ID $File_Import_ID deleted successfully");

@@ -168,6 +168,22 @@ switch($func)
 									break;
 								}
 
+								// with the shared files in S3 (several nodes on one database) the upload goes there before it's
+								// queued, so whichever node's importer takes it can fetch it; if it can't, it isn't queued at all
+								try
+								{
+									require_once '../lib/shared_files.inc.php';
+									$shared = SharedFiles::FromSettings($dbcore->sql->conn, $config);
+									if($shared) { $shared->PutUpload($filename, $uploadfile); }
+								}
+								catch(Throwable $e)
+								{
+									unlink($uploadfile);
+									$dbcore->logd("Could not put the upload $filename in the shared files bucket: ".$e->getMessage(), "error");
+									$mesg .= "<h2>File (".htmlspecialchars($filename_orig, ENT_QUOTES).") could not be stored for importing. Please try again in a while.</h2>";
+									break;
+								}
+
 								//lets try a scheduled import table that has a cron job
 								//that runs and imports all of them at once into the DB
 								//in order that they where uploaded

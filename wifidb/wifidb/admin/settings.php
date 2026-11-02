@@ -58,26 +58,29 @@ if($_SERVER['REQUEST_METHOD'] === 'POST')
 		elseif($check === 'unreachable') { $result = 'unreachable'; }
 	}
 
-	# a changed S3 location for backup copies is tried before it's saved
-	$s3 = array();
-	$s3Changed = false;
-	foreach(array('endpoint', 'region', 'bucket', 'key_id', 'secret') as $part)
+	# a changed S3 location (for backup copies, or for the shared files) is tried before it's saved
+	foreach(array('backup_s3_', 'files_s3_') as $group)
 	{
-		$name = 'backup_s3_'.$part;
-		$s3[$part] = ($values[$name] !== null) ? $values[$name] : $settings->Get($name);
-		if($values[$name] !== null && $values[$name] !== $settings->Get($name)) { $s3Changed = true; }
-	}
-	if(($result === 'saved' || $result === 'unreachable') && $s3Changed && $s3['endpoint'] !== '')
-	{
-		try
+		$s3 = array();
+		$s3Changed = false;
+		foreach(array('endpoint', 'region', 'bucket', 'key_id', 'secret') as $part)
 		{
-			require_once '../lib/s3.inc.php';
-			(new S3Client($s3['endpoint'], $s3['region'], $s3['bucket'], $s3['key_id'], $s3['secret']))->Check();
+			$name = $group.$part;
+			$s3[$part] = ($values[$name] !== null) ? $values[$name] : $settings->Get($name);
+			if($values[$name] !== null && $values[$name] !== $settings->Get($name)) { $s3Changed = true; }
 		}
-		catch(Throwable $e)
+		if(($result === 'saved' || $result === 'unreachable') && $s3Changed && $s3['endpoint'] !== '')
 		{
-			$result = 'bad_s3';
-			$detail = $e->getMessage();
+			try
+			{
+				require_once '../lib/s3.inc.php';
+				(new S3Client($s3['endpoint'], $s3['region'], $s3['bucket'], $s3['key_id'], $s3['secret']))->Check();
+			}
+			catch(Throwable $e)
+			{
+				$result = 'bad_s3';
+				$detail = $e->getMessage();
+			}
 		}
 	}
 

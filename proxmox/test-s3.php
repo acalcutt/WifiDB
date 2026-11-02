@@ -73,6 +73,24 @@ try
 	$got = $elsewhere->Get('wifidb-backup-20270102-000000');
 	check("...whole, and it's listed as a backup", ($got['state'] ?? '') === 'done' && hash_file('sha256', "$tmp/elsewhere/wifidb-backup-20270102-000000.tar") === hash_file('sha256', "$tmp/here/wifidb-backup-20270102-000000.tar"), json_encode($got));
 	$c->Delete('wifidb.test/wifidb-backup-20270102-000000.tar');
+
+	# the shared files: an upload put in by one node, fetched by another that hasn't got it, then deleted
+	require $argv[1].'/shared_files.inc.php';
+	check("no shared files bucket set up: each node keeps its own", SharedFiles::FromSettings($db, $config) === null);
+	(new SiteSettings($db, $config))->Save(array('files_s3_endpoint' => getenv('S3_ENDPOINT'), 'files_s3_region' => getenv('S3_REGION'), 'files_s3_bucket' => getenv('S3_BUCKET'),
+		'files_s3_prefix' => 'shared-test', 'files_s3_key_id' => getenv('S3_KEY_ID'), 'files_s3_secret' => getenv('S3_SECRET')), 'test');
+	$shared = SharedFiles::FromSettings($db, $config);
+	check("Site Settings name the shared files bucket", $shared instanceof SharedFiles);
+	file_put_contents("$tmp/upload.vs1", "# Vistumbler VS1 - Detailed Export Version 4.0\r\n".str_repeat("x", 5000));
+	$shared->PutUpload('12345_upload.vs1', "$tmp/upload.vs1");
+	check("an upload goes in under uploads/", $c->Head('shared-test/uploads/12345_upload.vs1') !== null);
+	mkdir("$tmp/node2");
+	check("another node fetches it", $shared->FetchUpload('12345_upload.vs1', "$tmp/node2/12345_upload.vs1")
+		&& hash_file('sha256', "$tmp/node2/12345_upload.vs1") === hash_file('sha256', "$tmp/upload.vs1") && !file_exists("$tmp/node2/12345_upload.vs1.part"));
+	check("...an upload the bucket hasn't got is false, not an error", $shared->FetchUpload('99999_none.vs1', "$tmp/node2/99999_none.vs1") === false && !file_exists("$tmp/node2/99999_none.vs1"));
+	check("...and a name can't reach out of uploads/", $shared->UploadKey('../../backups/x.tar') === 'shared-test/uploads/x.tar');
+	$shared->DeleteUpload('12345_upload.vs1');
+	check("a deleted upload is gone from the bucket", $c->Head('shared-test/uploads/12345_upload.vs1') === null);
 }
 catch(Throwable $e)
 {

@@ -35,6 +35,16 @@ class SiteSettings
 			'The folder in the bucket, so several sites can share one. Empty: this site\'s domain.', ''),
 		'backup_s3_key_id'  => array('text', 'S3 key ID', 'A key that can only reach this bucket.', ''),
 		'backup_s3_secret'  => array('secret', 'S3 secret key', 'Saving checks the bucket with these keys.', ''),
+		'files_s3_endpoint' => array('text', 'Shared files in S3: address',
+			'An S3-compatible service (Garage, MinIO, AWS), without the bucket, for the files every node needs: each upload is put there before it is queued, and a node importing an upload it doesn\'t have fetches it. For several nodes on one database. Empty: uploads stay on the disk of the node they came in on.', ''),
+		'files_s3_region'   => array('text', 'Shared files S3 region',
+			'Garage: the s3_region in its garage.toml (usually garage). AWS: the bucket\'s region.', 'garage'),
+		'files_s3_bucket'   => array('text', 'Shared files S3 bucket',
+			'Not the backups\' bucket. Keep it private: uploads are members\' own files.', ''),
+		'files_s3_prefix'   => array('text', 'Shared files S3 folder',
+			'The folder in the bucket, so several sites can share one. Empty: this site\'s domain.', ''),
+		'files_s3_key_id'   => array('text', 'Shared files S3 key ID', 'A key that can only reach this bucket.', ''),
+		'files_s3_secret'   => array('secret', 'Shared files S3 secret key', 'Saving checks the bucket with these keys.', ''),
 	);
 
 	private $conn;

@@ -11,6 +11,8 @@ It needs admin mode (see [two-factor.md](two-factor.md)).
 | New accounts confirm their e-mail | `email_validation` | A new member clicks a link in an e-mail before signing in. Needs working mail. |
 | Check sign-ups and messages with CleanTalk | `cleantalk_enabled` (off) | See below. |
 | CleanTalk access key | `cleantalk_key` | Encrypted with `two_factor_key`, never shown again. |
+| Backups: nightly, copies in S3 | `backup_daily`, `backup_s3_*` | See [backups.md](backups.md). |
+| Shared files in S3 | `files_s3_*` | For several nodes on one database: uploads go to this bucket so any node can import them. See [proxmox.md](proxmox.md#several-nodes-on-one-database). |
 
 Each setting starts with the value in `config.inc.php`, under the same name. Once it is saved on the page, the saved
 value is used, and the page says where each value comes from. The values are kept in the `site_settings` table

@@ -325,6 +325,27 @@ class daemon extends wdbcli
 		$file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));		
 
 		$source = $this->PATH.'import/up/'.$file_name;
+		// an upload that came in on another node (several nodes on one database) is fetched from the shared files bucket
+		$fetch_error = '';
+		$fetched = false;
+		if(!file_exists($source))
+		{
+			try
+			{
+				require_once $this->PATH.'lib/shared_files.inc.php';
+				$shared = SharedFiles::FromSettings($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
+				if($shared && $shared->FetchUpload($file_name, $source))
+				{
+					$fetched = true;
+					$this->verbosed("Fetched $file_name from the shared files bucket.", 1);
+				}
+			}
+			catch(Throwable $e)
+			{
+				$fetch_error = "Could not fetch it from the shared files bucket: ".$e->getMessage();
+				$this->verbosed($fetch_error, -1);
+			}
+		}
 		if(file_exists($source) && filesize($source) > 0)//make sure the file exists (by size: a zip or database file may have no line breaks in it)
 		{
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
@@ -604,8 +625,10 @@ class daemon extends wdbcli
 			//$this->logd("File is empty or not valid. $source ($importing_id)","Warning", $this->This_is_me);
 			$this->verbosed("File is empty. Skipping and deleting from files_importing. $source ($importing_id |-| $file_hash)\n");
 			//unlink($source);
-			$this->cleanBadImport(0, $importing_id, 'Empty or not valid');
+			$this->cleanBadImport(0, $importing_id, $fetch_error !== '' ? $fetch_error : (file_exists($source) ? 'Empty or not valid' : 'The file is missing from import/up'));
 		}
+		// a copy fetched only to import here goes again: the bucket and the node it came in on keep it
+		if($fetched && file_exists($source)) { unlink($source); }
 		return 1;
 	}
 

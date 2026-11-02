@@ -4,6 +4,7 @@
 ### ✨ Features and improvements
 - _...Add new stuff here..._
 - **SQL Server connection security is a setting.** `sqlsrv_encrypt` and `sqlsrv_trust_server_certificate` in `config.inc.php` (both on by default, as before; `WIFIDB_SQLSRV_TRUST_CERT=0` on the Proxmox template). Turn the second off once the SQL Server has a certificate the web server trusts, and the connection is checked as well as encrypted.
+- **Shared files in S3, for several nodes on one database.** With *Shared files in S3* set in Site Settings, each upload (from the upload page or Vistumbler's API) is put in the bucket before it's queued, so any node's importer can fetch it; a node that fetched an upload removes its copy after importing, and deleting an import removes the bucket's copy too. If the bucket can't be reached, the upload is refused rather than queued where only one node can see it. See `docs/proxmox.md`.
 - **More than one node on one database.** Building tiles and GeoJSON, updating the manufacturer list and the nightly backup now run under a lock held in the database (`tools/daemon/lock_run.php`, used by the cron scripts), so only one node does each at a time; on one node nothing changes. An admin job is now taken by one node only, and on SQL Server the importer takes the next file in one transaction, passing over files another importer holds. See `docs/proxmox.md`.
 - **PostgreSQL support** (merged from the postgresql branch): `blank_db.pgsql`, a `pgsql` branch for the queries, PostgreSQL migrations, backups that move to and from it, and the Proxmox template (`WIFIDB_DB_TYPE=pgsql`). The database user needs to own its database, not be a superuser. `tools/utilites/pg_audit.py` lists query sites still to check.
 - **Usernames are matched exactly in the API export too** (`api/v2/export.php` still used `LIKE`).
@@ -42,6 +43,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **Uploads from Vistumbler (the API) failed on MariaDB and PostgreSQL,** and were reported as failed even when they were queued; `.netxml` uploads through it were refused as unsupported.
 - **Imports on MariaDB failed at the first file.** Adding an access point had no MariaDB version (only SQL Server's and PostgreSQL's), so every import stopped on a foreign key error; and taking the next file off the queue used column names MariaDB no longer has.
 - **A file the importer can't read no longer stops the import run.** A file that isn't what its type says, or one that trips a bug, used to end the run and stay "importing" for good. Now it goes to the bad files with the error as its reason, what it got as far as writing is taken out again, and the next file is imported.
 - **`.gz` and `.VSZ` uploads always failed:** the `import/up/extract` folder they're unpacked into was never made. The importer makes it now. A `.VSZ` without a line-break byte in it was also taken for an empty file.
