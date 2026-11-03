@@ -190,7 +190,7 @@ switch($func)
 		$proof = $tf->VerifyPasskey($user, $dbcore->sec->mfa_session, (string)@$in['id'], (string)@$in['clientDataJSON'], (string)@$in['authenticatorData'], (string)@$in['signature']);
 		if(!$proof['ok'])
 		{
-			$dbcore->sec->logd("Passkey failed for ".var_export($user, 1).": ".$proof['error'], "error");
+			$dbcore->sec->logd("Passkey failed for ".var_export($user, 1).": ".$proof['error'].(isset($proof['reason']) ? ', '.$proof['reason'] : ''), "error");
 			echo json_encode(array('ok' => false, 'error' => $proof['error']));
 			break;
 		}

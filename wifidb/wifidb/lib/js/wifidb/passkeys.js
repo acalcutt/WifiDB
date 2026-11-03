@@ -33,7 +33,10 @@
 		return !!(root.navigator && root.navigator.credentials && root.PublicKeyCredential);
 	}
 
-	/** extra: fields to send along with the answer (e.g. remember); userVerification: 'required' to demand a PIN or fingerprint */
+	/**
+	 * extra: fields to send along with the answer (e.g. remember). Whether to ask for the PIN or fingerprint comes from
+	 * the server (user_verification: 'required' for admin mode); userVerification overrides it.
+	 */
 	function signIn(beginUrl, finishUrl, extra, userVerification) {
 		return postJson(beginUrl, {}).then(function (options) {
 			if (!options.ok) { return options; }
@@ -41,7 +44,7 @@
 				challenge: toBuffer(options.challenge),
 				rpId: options.rp_id,
 				allowCredentials: (options.allow || []).map(function (id) { return { type: 'public-key', id: toBuffer(id) }; }),
-				userVerification: userVerification || 'discouraged',
+				userVerification: userVerification || options.user_verification || 'discouraged',
 				timeout: 60000
 			} }).then(function (credential) {
 				var answer = Object.assign({}, extra || {}, {

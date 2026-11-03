@@ -310,12 +310,17 @@ class TwoFactor
 		return $this->Fail($username, 'wrong_code');
 	}
 
-	/** The passkeys' IDs and the challenge to send the browser for a sign-in with one */
-	public function StartPasskeyAssertion($username, $sessionHash)
+	/**
+	 * The passkeys' IDs and the challenge to send the browser for a sign-in with one.
+	 * @param bool $requireUserVerification tell the browser to ask for the PIN or fingerprint, as admin mode needs:
+	 *        without it the browser may only ask for a touch, and VerifyPasskey(..., true) then refuses the answer
+	 */
+	public function StartPasskeyAssertion($username, $sessionHash, $requireUserVerification = false)
 	{
 		$challenge = Webauthn::NewChallenge();
 		$this->SetChallenge($username, $sessionHash, 'pkget:' . $challenge);
-		return array('challenge' => $challenge, 'rp_id' => $this->rpId, 'allow' => $this->CredentialIds($username));
+		return array('challenge' => $challenge, 'rp_id' => $this->rpId, 'allow' => $this->CredentialIds($username),
+			'user_verification' => $requireUserVerification ? 'required' : 'discouraged');
 	}
 
 	/** @param bool $requireUserVerification demand a PIN or fingerprint, not just a touch (admin mode does) */
@@ -334,7 +339,8 @@ class TwoFactor
 		}
 		catch(WebauthnException $e)
 		{
-			return $this->Fail($username, 'passkey_rejected');
+			// the reason is for the log only
+			return $this->Fail($username, 'passkey_rejected') + array('reason' => $e->getMessage());
 		}
 		$this->Run("UPDATE user_two_factor SET sign_count = ?, last_used = ? WHERE id = ?", array($result['sign_count'], $this->Stamp(), $method['id']));
 		return array('ok' => true, 'via' => 'passkey');

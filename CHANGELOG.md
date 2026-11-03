@@ -53,6 +53,7 @@
 
 ### 🐞 Bug fixes
 - _...Add new stuff here..._
+- **A passkey turns on admin mode.** Admin mode needs the passkey to check who you are (a PIN or fingerprint), but the page asked the browser not to, so the browser at most asked for a touch and the passkey was refused. The server now tells the browser to ask. The page says why a passkey was refused (too many tries, too slow, not on the account), and the log says what was wrong with it, for admin mode and for signing in.
 - **A sign-up, resent confirmation or password reset whose mail couldn't be sent says so.** It told the member the mail was on its way whenever the mail server refused it or couldn't be reached, because PHPMailer says so by returning false rather than by an error. The reason now goes in the log.
 - **A mail server that doesn't answer no longer breaks the sign-up page.** PHPMailer waited up to 5 minutes for it, and the web server gave up after 30 seconds with an error page (the account was made, but the page never said so). It now gives up after 15 seconds (`smtp_timeout`) and the page says the confirmation mail couldn't be sent.
 - **Signing in to an account that hasn't confirmed its e-mail says so** (it said "Unknown Return."), and a username that doesn't exist no longer gives PHP warnings; it's still answered as a wrong password.

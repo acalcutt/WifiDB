@@ -392,14 +392,21 @@ final class TwoFactorTest extends TestCase
         $this->addPasskey($passkey);
         $id = Webauthn::Base64UrlEncode($passkey->credentialId);
 
-        // a touch only (user present, not verified): refused
-        $start = $this->tf->StartPasskeyAssertion(self::USER, self::HASH);
+        // the browser is told to ask for it (a sign-in doesn't)
+        $this->assertSame('discouraged', $this->tf->StartPasskeyAssertion(self::USER, self::HASH)['user_verification']);
+        $start = $this->tf->StartPasskeyAssertion(self::USER, self::HASH, true);
+        $this->assertSame('required', $start['user_verification']);
+
+        // a touch only (user present, not verified): refused, and the log can say why
         [$cd, $ad, $sig] = $passkey->assert($start['challenge'], $this->tf->origin, $this->tf->rpId, 1, 0x01);
-        $this->assertFalse($this->tf->StepUpWithPasskey(self::USER, self::HASH, $id, $cd, $ad, $sig)['ok']);
+        $refused = $this->tf->StepUpWithPasskey(self::USER, self::HASH, $id, $cd, $ad, $sig);
+        $this->assertFalse($refused['ok']);
+        $this->assertSame('passkey_rejected', $refused['error']);
+        $this->assertSame('the passkey did not verify the user', $refused['reason']);
         $this->assertFalse($this->tf->AdminModeActive(self::USER, self::HASH));
 
         // a PIN or fingerprint (user present and verified): admin mode turns on
-        $start = $this->tf->StartPasskeyAssertion(self::USER, self::HASH);
+        $start = $this->tf->StartPasskeyAssertion(self::USER, self::HASH, true);
         [$cd, $ad, $sig] = $passkey->assert($start['challenge'], $this->tf->origin, $this->tf->rpId, 2, 0x05);
         $this->assertTrue($this->tf->StepUpWithPasskey(self::USER, self::HASH, $id, $cd, $ad, $sig)['ok']);
         $this->assertTrue($this->tf->AdminModeActive(self::USER, self::HASH));

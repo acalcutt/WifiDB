@@ -73,11 +73,13 @@ try
 		case 'passkey_finish':
 			$isJson = isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') === 0;
 			if(!$post || !$isJson || !$tf) { $json(array('ok' => false, 'error' => 'bad_request'), 403); break; }
-			if($func === 'passkey_begin') { $json(array('ok' => true) + $tf->StartPasskeyAssertion($username, $session)); break; }
+			// admin mode needs the PIN or fingerprint, so the browser is told to ask for it
+			if($func === 'passkey_begin') { $json(array('ok' => true) + $tf->StartPasskeyAssertion($username, $session, true)); break; }
 			$in = json_decode(file_get_contents('php://input'), true);
 			$in = is_array($in) ? $in : array();
 			$proof = $tf->StepUpWithPasskey($username, $session, (string)@$in['id'], (string)@$in['clientDataJSON'], (string)@$in['authenticatorData'], (string)@$in['signature']);
 			if($proof['ok']) { $dbcore->sec->logd("Admin mode on for ".$username." (passkey)", "Info"); }
+			else { $dbcore->sec->logd("Admin mode refused for ".var_export($username, 1)." (passkey): ".$proof['error'].(isset($proof['reason']) ? ', '.$proof['reason'] : ''), "error"); }
 			$json($proof['ok'] ? array('ok' => true, 'redirect' => $return) : array('ok' => false, 'error' => $proof['error']));
 			break;
 

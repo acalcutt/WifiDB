@@ -56,8 +56,12 @@ version 2 of the License, or (at your option) any later version.
 			msg.textContent = 'Waiting for your passkey...';
 			WifiDBPasskeys.signIn('admin_mode.php?func=passkey_begin&return=' + wifidbAdminReturn, 'admin_mode.php?func=passkey_finish&return=' + wifidbAdminReturn, {})
 			.then(function (answer) {
-				if (answer && answer.ok) { window.location = answer.redirect; }
-				else { msg.textContent = 'That passkey did not work. It has to check who you are too (a PIN or fingerprint).'; }
+				if (answer && answer.ok) { window.location = answer.redirect; return; }
+				var error = answer && answer.error;
+				msg.textContent = error === 'throttled' ? 'Too many wrong tries. Wait a few minutes and try again.'
+					: error === 'expired' ? 'That took too long. Try again.'
+					: error === 'unknown_passkey' ? 'That passkey is not on your account.'
+					: 'That passkey did not work. It has to check who you are too (a PIN or fingerprint).';
 			})
 			.catch(function () { msg.textContent = 'The passkey was not used.'; });
 		});
