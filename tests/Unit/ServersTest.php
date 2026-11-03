@@ -94,4 +94,62 @@ final class ServersTest extends TestCase
         }
         $this->assertSame(['has never reported'], ServerStatus::Warnings(['info' => []], $now));
     }
+
+    private static function catalog(array $archives): array
+    {
+        return ['format' => 'pmtiles-swarm-catalog/1', 'count' => count($archives), 'archives' => $archives];
+    }
+
+    public function testTheSwarmReportKeepsItsStateAndEachCategorysNewestBuild(): void
+    {
+        $info = ServerStatus::SwarmInfo('active', ['status' => 'ok', 'engine' => 'libtorrent', 'version' => '0.107.2'], self::catalog([
+            ['infoHash' => 'new', 'categories' => ['wifidb-weekly'], 'createdAt' => '2026-11-03T06:00:00.000Z'],
+            ['infoHash' => 'old', 'categories' => ['wifidb-weekly'], 'createdAt' => '2026-11-02T06:00:00.000Z'],
+            ['infoHash' => 'd1', 'categories' => ['wifidb-daily'], 'createdAt' => '2026-11-03T07:00:00.000Z'],
+        ]), 'builds');
+        $this->assertSame(['service' => 'active', 'role' => 'builds', 'status' => 'ok', 'version' => '0.107.2', 'archives' => 3,
+            'newest' => ['wifidb-daily' => ['hash' => 'd1', 'at' => '2026-11-03T07:00:00.000Z'],
+                         'wifidb-weekly' => ['hash' => 'new', 'at' => '2026-11-03T06:00:00.000Z']]], $info);
+
+        $down = ServerStatus::SwarmInfo('active', ['status' => 'unavailable', 'version' => '0.107.2', 'error' => 'engine not ready'], null);
+        $this->assertSame(['service' => 'active', 'role' => '', 'status' => 'unavailable', 'version' => '0.107.2', 'error' => 'engine not ready'], $down);
+        $this->assertSame('no answer', ServerStatus::SwarmInfo('active', null, null)['status']);
+    }
+
+    public function testSwarmWarnings(): void
+    {
+        $now = strtotime('2026-11-03 12:00:00 UTC');
+        $row = ['reported_at' => '2026-11-03 11:59:30', 'version' => '1.0.0', 'info' => ['services' => ['apache2' => 'active']]];
+        $this->assertSame([], ServerStatus::Warnings($row, $now), 'a node without the swarm says nothing of it');
+
+        $swarm = ['service' => 'active', 'role' => 'follows', 'status' => 'ok'];
+        foreach ([
+            'pmtiles-swarm is failed' => ['service' => 'failed'] + $swarm,
+            "pmtiles-swarm isn't answering on port 8090" => ['status' => 'no answer'] + $swarm,
+            'pmtiles-swarm says it is offline: taken out of rotation' => ['status' => 'offline', 'error' => 'taken out of rotation'] + $swarm,
+        ] as $expected => $state) {
+            $this->assertSame([$expected], ServerStatus::Warnings(['info' => $row['info'] + ['swarm' => $state]] + $row, $now));
+        }
+        $this->assertSame([], ServerStatus::Warnings(['info' => $row['info'] + ['swarm' => $swarm]] + $row, $now));
+    }
+
+    public function testAFollowerIsBehindOnlyOnceTheNewestBuildHasHadTimeToReachIt(): void
+    {
+        $now = strtotime('2026-11-03 12:00:00 UTC');
+        $builder = ['role' => 'builds', 'newest' => [
+            'wifidb-weekly' => ['hash' => 'w2', 'at' => '2026-11-03T06:00:00.000Z'],     // hours ago
+            'wifidb-daily' => ['hash' => 'd9', 'at' => '2026-11-03T11:50:00.000Z'],      // ten minutes ago: still on its way
+            'wifidb-monthly' => ['hash' => 'm1', 'at' => '2026-11-01T00:00:00.000Z'],
+        ]];
+        $follower = ['service' => 'active', 'role' => 'follows', 'status' => 'ok', 'newest' => [
+            'wifidb-weekly' => ['hash' => 'w1', 'at' => '2026-11-02T06:05:00.000Z'],
+            'wifidb-daily' => ['hash' => 'd8', 'at' => '2026-11-03T10:52:00.000Z'],
+            'wifidb-monthly' => ['hash' => 'm1', 'at' => '2026-11-01T00:03:00.000Z'],
+        ]];
+        $this->assertSame(['wifidb-weekly'], ServerStatus::SwarmBehind($follower, $builder, $now));
+        $row = ['reported_at' => '2026-11-03 11:59:30', 'info' => ['swarm' => $follower]];
+        $this->assertSame(["pmtiles-swarm hasn't got the newest build of wifidb-weekly"], ServerStatus::Warnings($row, $now, '', $builder));
+        $this->assertSame([], ServerStatus::Warnings(['info' => ['swarm' => ['role' => 'builds'] + $follower]] + $row, $now, '', $builder),
+            'only a following node is compared');
+    }
 }

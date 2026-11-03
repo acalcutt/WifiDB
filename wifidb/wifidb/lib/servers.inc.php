@@ -22,6 +22,10 @@ class ServerStatus
 	const JSON = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 	/** The services a node is expected to run (the two daemons can be switched off per node). */
 	const SERVICES = array('apache2', 'php-fpm', 'cron', 'wifidb-monitord', 'wifidb-websocketd', 'wifidb-update.timer');
+	/** pmtiles-swarm's public port on the node itself (docs/pmtiles-swarm.md) */
+	const SWARM_URL = 'http://127.0.0.1:8090';
+	/** How long a node following the swarm may go without the building node's newest build of a category. */
+	const SWARM_LAG_SECONDS = 1800;
 
 	/** The updater's states, and what the page calls them. */
 	const STATES = array(
@@ -146,7 +150,7 @@ class ServerStatus
 	 * @param int $now Unix time
 	 * @param string $newest the newest version any node runs (or the newest release)
 	 */
-	public static function Warnings(array $row, $now, $newest = '')
+	public static function Warnings(array $row, $now, $newest = '', $builder_swarm = null)
 	{
 		$out = array();
 		$seen = self::Time($row['reported_at'] ?? null);
@@ -170,11 +174,93 @@ class ServerStatus
 		{
 			if($state !== 'active' && $state !== 'off') { $out[] = $service.' is '.$state; }
 		}
+		$swarm = $info['swarm'] ?? null;
+		if(is_array($swarm))
+		{
+			if(($swarm['service'] ?? '') !== 'active') { $out[] = 'pmtiles-swarm is '.($swarm['service'] ?? 'unknown'); }
+			elseif(($swarm['status'] ?? '') === 'no answer') { $out[] = "pmtiles-swarm isn't answering on port 8090"; }
+			elseif(($swarm['status'] ?? '') !== 'ok') { $out[] = 'pmtiles-swarm says it is '.$swarm['status'].(!empty($swarm['error']) ? ': '.$swarm['error'] : ''); }
+			if(is_array($builder_swarm) && ($swarm['role'] ?? '') === 'follows')
+			{
+				$behind = self::SwarmBehind($swarm, $builder_swarm, $now);
+				if($behind) { $out[] = "pmtiles-swarm hasn't got the newest build of ".implode(', ', $behind); }
+			}
+		}
 		if(($row['update_state'] ?? '') === 'failed' || ($row['update_state'] ?? '') === 'rolled_back')
 		{
 			$out[] = 'its last update '.self::STATES[$row['update_state']].': '.($row['update_message'] ?? '');
 		}
 		return $out;
+	}
+
+	/**
+	 * The categories whose newest build on the building node a following node hasn't got, once that build is old enough
+	 * to have reached it (SWARM_LAG_SECONDS).
+	 * @param array $swarm the following node's info['swarm']
+	 * @param array $builder_swarm the building node's
+	 * @return string[]
+	 */
+	public static function SwarmBehind(array $swarm, array $builder_swarm, $now)
+	{
+		$out = array();
+		foreach(($builder_swarm['newest'] ?? array()) as $category => $build)
+		{
+			$at = strtotime((string)($build['at'] ?? ''));
+			if(!$at || $now - $at < self::SWARM_LAG_SECONDS) { continue; }
+			if(($swarm['newest'][$category]['hash'] ?? '') !== ($build['hash'] ?? '')) { $out[] = $category; }
+		}
+		return $out;
+	}
+
+	/**
+	 * What the minute's report keeps of pmtiles-swarm: its service, what /health says, and the newest build of each
+	 * category in /api/catalog (both answered on its public port, without its API key).
+	 * @param string $state systemctl is-active's answer
+	 * @param array|null $health /health, or null when it didn't answer
+	 * @param array|null $catalog /api/catalog
+	 * @param string $role 'builds' on the node that builds the archives (tile_archive_generate), 'follows' on the others
+	 */
+	public static function SwarmInfo($state, $health, $catalog, $role = '')
+	{
+		$out = array('service' => $state !== '' ? (string)$state : 'unknown', 'role' => (string)$role, 'status' => 'no answer');
+		if(is_array($health))
+		{
+			$out['status'] = (string)($health['status'] ?? 'unknown');
+			if(isset($health['version'])) { $out['version'] = (string)$health['version']; }
+			if(!empty($health['error'])) { $out['error'] = (string)$health['error']; }
+		}
+		if(is_array($catalog) && is_array($catalog['archives'] ?? null))
+		{
+			$out['archives'] = count($catalog['archives']);
+			$newest = array();
+			foreach($catalog['archives'] as $a)
+			{
+				$at = (string)($a['createdAt'] ?? '');
+				foreach((array)($a['categories'] ?? array()) as $category)
+				{
+					if(!isset($newest[$category]) || strtotime($at) > strtotime($newest[$category]['at'])) { $newest[$category] = array('hash' => (string)($a['infoHash'] ?? ''), 'at' => $at); }
+				}
+			}
+			ksort($newest);
+			$out['newest'] = $newest;
+		}
+		return $out;
+	}
+
+	/** pmtiles-swarm on this node, when it runs it (it's switched on per node), or null. */
+	public static function CollectSwarm($role = '', $base = self::SWARM_URL)
+	{
+		if(trim((string)@shell_exec("systemctl is-enabled pmtiles-swarm 2>/dev/null")) !== 'enabled') { return null; }
+		$state = trim((string)@shell_exec("systemctl is-active pmtiles-swarm 2>/dev/null"));
+		return self::SwarmInfo($state, self::FetchJson("$base/health"), $state === 'active' ? self::FetchJson("$base/api/catalog") : null, $role);
+	}
+
+	/** A JSON answer from $url, an error status's too (/health says why with a 503), or null. */
+	private static function FetchJson($url)
+	{
+		$body = @file_get_contents($url, false, stream_context_create(array('http' => array('timeout' => 5, 'ignore_errors' => true))));
+		$data = $body === false ? null : json_decode($body, true);
+		return is_array($data) ? $data : null;
 	}
 
 	public static function Ago($seconds)
@@ -186,10 +272,12 @@ class ServerStatus
 	}
 
 	/**
-	 * This machine's state, for the minute's report: load, CPUs, memory, the disks WifiDB uses, its services, PHP.
+	 * This machine's state, for the minute's report: load, CPUs, memory, the disks WifiDB uses, its services, PHP, and
+	 * pmtiles-swarm when it runs here.
 	 * @param string[] $disks paths whose filesystems to measure
+	 * @param string $swarm_role see SwarmInfo()
 	 */
-	public static function Collect(array $disks = array('/', '/srv/wifidb-data'))
+	public static function Collect(array $disks = array('/', '/srv/wifidb-data'), $swarm_role = '')
 	{
 		$info = array('php' => PHP_VERSION, 'host' => gethostname());
 		$load = function_exists('sys_getloadavg') ? sys_getloadavg() : false;
@@ -223,6 +311,8 @@ class ServerStatus
 				if($state !== 'active' && trim((string)@shell_exec("systemctl is-enabled $unit 2>/dev/null")) === 'disabled') { $state = 'off'; }
 				$info['services'][$service] = $state !== '' ? $state : 'unknown';
 			}
+			$swarm = self::CollectSwarm($swarm_role);
+			if($swarm !== null) { $info['swarm'] = $swarm; }
 		}
 		return $info;
 	}

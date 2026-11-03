@@ -80,6 +80,9 @@ It runs as its own account, `pmtiles-swarm`, which can't read the site's setting
 delete the file). The API key is `auth.apiKey` in the settings.
 
 With the shared files bucket (Site Settings), `tools/cron/out_sync` leaves `out/pmtiles` and `out/pmtiles-mlt` to the
+**Admin > Servers** shows each node's swarm: running and answering, its release, publishing or mirroring, how many
+archives, and a warning when a mirroring node falls behind ([updates.md](updates.md)).
+
 swarm on these nodes (`out_sync_skip`), and goes on syncing the GeoJSON and KML exports.
 
 **Its settings.** Every first boot writes the parts that make it this site's node: the watch entries for the archive

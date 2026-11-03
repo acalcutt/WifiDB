@@ -174,11 +174,25 @@ fi
 docker exec "$ctb" sh -c 'echo partial > /srv/wifidb-data/out/pmtiles/weekly-20990101000000.pmtiles.incomplete'
 check "an archive still downloading isn't served" test "$(docker exec "$ctb" curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/out/pmtiles/weekly-20990101000000.pmtiles.incomplete)" = 403
 
+log "the Servers page's reports"
+status_report() { docker exec "$1" runuser -u www-data -- php /opt/wifidb/tools/daemon/server_status.php; }
+report() { # report NODE PHP-EXPRESSION: of that node's report ($i), read in a container
+    sqlq "select info from server_status where node_name = '$1'" | docker exec -i "$cta" php -r '$i = json_decode(stream_get_contents(STDIN), true); echo '"$2"';'
+}
+status_report "$cta"; status_report "$ctb"
+swver=$(docker exec "$cta" node -p "require('/var/lib/pmtiles-swarm/node_modules/pmtiles-swarm/package.json').version")
+check "node-a reports its swarm running, answering and publishing the archives" test "$(report node-a '$i["swarm"]["service"]."|".$i["swarm"]["status"]."|".$i["swarm"]["role"]')" = "active|ok|builds"
+check "...its release ($swver)" test "$(report node-a '$i["swarm"]["version"]')" = "$swver"
+check "...and the newest weekly build" test "$(report node-a '$i["swarm"]["newest"]["wifidb-weekly"]["hash"]')" = "$ih"
+check "node-b reports its swarm mirroring them, with the same build" test "$(report node-b '$i["swarm"]["status"]."|".$i["swarm"]["role"]."|".$i["swarm"]["newest"]["wifidb-weekly"]["hash"]')" = "ok|follows|$ih"
+
 log "switching it off"
 docker exec "$ctb" sed -i 's/^WIFIDB_SWARM=1$/WIFIDB_SWARM=0/' /etc/wifidb/firstboot.env
 docker exec "$ctb" /usr/local/sbin/wifidb-firstboot >> "$work/again.out" 2>&1
 check "WIFIDB_SWARM=0 stops it" sh -c '! docker exec "$0" systemctl is-active -q pmtiles-swarm && ! docker exec "$0" systemctl is-enabled -q pmtiles-swarm' "$ctb"
 check "...and keeps what it had" docker exec "$ctb" test -f /srv/wifidb-data/swarm/swarm.config.json
+status_report "$ctb"
+check "...and its report no longer has a swarm" test "$(report node-b 'isset($i["swarm"]) ? "yes" : "no"')" = no
 
 [ $fail = 0 ] && log "all checks passed" || log "some checks failed"
 exit $fail

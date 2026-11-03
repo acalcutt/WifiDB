@@ -115,11 +115,25 @@ try
 	foreach($releases as $rel) { if(empty($rel['prerelease'])) { $newest = $rel['version']; break; } }
 	foreach($rows as $row) { if($row['version'] && ($newest === '' || WifidbVersion::Compare($row['version'], $newest) > 0)) { $newest = $row['version']; } }
 	$now = time();
+	// the swarm of the node that builds the archives, which the others' are compared with
+	$builder_swarm = null;
+	foreach($rows as $row) { if(($row['info']['swarm']['role'] ?? '') === 'builds') { $builder_swarm = $row['info']['swarm']; } }
 	foreach($rows as $row)
 	{
 		$seen = ServerStatus::Time($row['reported_at'] ?? null);
 		if($seen && $now - $seen > ServerStatus::GONE_SECONDS) { continue; }
 		$info = $row['info'];
+		$swarm = null;
+		if(is_array($info['swarm'] ?? null))
+		{
+			$sw = $info['swarm'];
+			$detail = array();
+			if(!empty($sw['version'])) { $detail[] = $sw['version']; }
+			if(($sw['role'] ?? '') !== '') { $detail[] = $sw['role'] === 'builds' ? 'publishes the archives' : 'mirrors them'; }
+			if(isset($sw['archives'])) { $detail[] = $sw['archives'].' archive'.($sw['archives'] == 1 ? '' : 's'); }
+			$state = ($sw['service'] ?? '') !== 'active' ? ($sw['service'] ?? 'unknown') : ($sw['status'] ?? 'unknown');
+			$swarm = array('state' => $state, 'ok' => $state === 'ok', 'detail' => implode(', ', $detail));
+		}
 		$disks = array();
 		foreach(($info['disks'] ?? array()) as $path => $d) { $disks[] = $path.': '.$human($d['free']).' free of '.$human($d['total']); }
 		$servers[] = array(
@@ -130,11 +144,12 @@ try
 			'memory' => isset($info['memory']['total']) ? $human($info['memory']['total'] - $info['memory']['available']).' used of '.$human($info['memory']['total']) : '',
 			'disks' => $disks,
 			'services' => $info['services'] ?? array(),
+			'swarm' => $swarm,
 			'php' => $info['php'] ?? '',
 			'update' => ($row['update_state'] && $request && (int)$row['update_request'] === (int)$request['id'])
 				? (ServerStatus::STATES[$row['update_state']] ?? $row['update_state']).($row['update_message'] ? ': '.$row['update_message'] : '') : '',
 			'updating' => in_array($row['update_state'], ServerStatus::ACTIVE_STATES, true),
-			'warnings' => ServerStatus::Warnings($row, $now, $newest),
+			'warnings' => ServerStatus::Warnings($row, $now, $newest, $builder_swarm),
 		);
 	}
 }

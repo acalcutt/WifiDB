@@ -24,7 +24,7 @@ version 2 of the License, or (at your option) any later version.
 						<td>{$s.version|escape:'html':'UTF-8':false}{if $s.update}<br><small>{if $s.updating}<strong>{/if}{$s.update|escape:'html':'UTF-8':false}{if $s.updating}</strong>{/if}</small>{/if}</td>
 						<td>{$s.seen|escape:'html':'UTF-8':false}</td>
 						<td><small>{if $s.load}load {$s.load|escape:'html':'UTF-8':false}<br>{/if}{if $s.memory}{$s.memory|escape:'html':'UTF-8':false}<br>{/if}{foreach $s.disks as $d}{$d|escape:'html':'UTF-8':false}<br>{/foreach}</small></td>
-						<td><small>{foreach $s.services as $name => $state}{$name|escape:'html':'UTF-8':false}: {if $state != 'active' && $state != 'off'}<font color="Red">{/if}{$state|escape:'html':'UTF-8':false}{if $state != 'active' && $state != 'off'}</font>{/if}<br>{/foreach}</small></td>
+						<td><small>{foreach $s.services as $name => $state}{$name|escape:'html':'UTF-8':false}: {if $state != 'active' && $state != 'off'}<font color="Red">{/if}{$state|escape:'html':'UTF-8':false}{if $state != 'active' && $state != 'off'}</font>{/if}<br>{/foreach}{if $s.swarm}pmtiles-swarm: {if !$s.swarm.ok}<font color="Red">{/if}{$s.swarm.state|escape:'html':'UTF-8':false}{if !$s.swarm.ok}</font>{/if}{if $s.swarm.detail}<br>&nbsp;&nbsp;{$s.swarm.detail|escape:'html':'UTF-8':false}{/if}<br>{/if}</small></td>
 						<td><form method="post" action="{$wifidb_host_url}admin/servers.php"><input type="hidden" name="action" value="forget"><input type="hidden" name="node" value="{$s.node|escape:'html':'UTF-8':false}"><input type="submit" value="Forget"></form></td>
 					</tr>
 					{if $s.warnings}
