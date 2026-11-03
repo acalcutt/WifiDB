@@ -3,6 +3,12 @@
 ## master
 ### ✨ Features and improvements
 - _...Add new stuff here..._
+
+### 🐞 Bug fixes
+- _...Add new stuff here..._
+
+## 1.0.0-rc.1
+### ✨ Features and improvements
 - **Updates bring pmtiles-swarm's release too.** The template records the pmtiles-swarm release it was built with (npm's `package.json` and `package-lock.json`, in `/opt/wifidb/swarm`), and each update package carries it. On a server with another release, the first boot installs it with `npm ci` beside the installed one and switches over once it's in, its WebRTC binary loads and it answers on port 8090; otherwise the one before stays or goes back, with a warning. A rolled-back update puts back the release that goes with the old code. To try another release on one server, change `/opt/wifidb/swarm` and run the first boot. See `docs/pmtiles-swarm.md`.
 - **Admin > Servers shows pmtiles-swarm** on the servers that run it: whether it's running and answering, its release, whether it publishes the archives or mirrors them, and how many categories it has. It calls out a swarm that's stopped or not answering, and a mirroring server that still hasn't got the newest build of a category half an hour after the publishing server made it. Each server reads its swarm's public `/health` and `/categories.xml` on port 8090, so the site needs no key of the swarm's.
 - **An Admin section in the menu** for administrators, after WiFiDB Links: **Turn on admin mode**, and while it's on, the admin pages (Files Bad, Site Settings, Sign-in Providers, Mail, Backups, Servers, Traffic) and **Leave admin mode**. The admin pages were mixed in with WiFiDB Links and showed even outside admin mode, where each only sent you to turn it on.
@@ -58,7 +64,6 @@
 - **Smarty 4.5.8** (was 3.1.39), installed with Composer and pinned to that exact version in composer.json instead of being copied into the repository. Upgrading it is a one-line change plus a test run (the tests compile every template). The Proxmox template runs `composer install --no-dev` when it is built.
 
 ### 🐞 Bug fixes
-- _...Add new stuff here..._
 - **The scheduling page's Daemon Status shows the daemons again on current Linux.** The monitor daemon asked `ps` for each daemon in a format the `ps` in the Proxmox template (procps-ng 4.0.4, Ubuntu 26.04) refuses, so every daemon showed in red as pid 0 with "There was no data in the PS return", running or not. It now asks for the fields by name.
 - **The map shows the attribution once.** Each tile archive's attribution had its build date in it (`© WifiDB 2026-11-02`), so every archive's was different, and the map listed one for every source; `api/tilejson.php` had a third wording. Every source now carries the same one, `© WifiDB contributors`, linked to the site's own address (`mvt_attribution()`). Archives built before this keep theirs until their next build.
 - **Each tile archive build has a name of its own** (`<bucket>-YYYYMMDDhhmmss.pmtiles`, UTC; it was the date alone). `daily` and `cell_daily` are rebuilt every hour, so every build after a day's first was renamed over the file pmtiles-swarm had already made a torrent of: the swarm went on seeding bytes that were gone, and never published the new ones. Older builds named by the date alone are retired as before. The archive folder also refuses `*.incomplete` files, which a node mirroring the archives downloads into.
