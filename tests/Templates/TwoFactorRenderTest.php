@@ -310,6 +310,28 @@ final class TwoFactorRenderTest extends TestCase
         $this->assertStringContainsString('location.reload()', $html);
     }
 
+    #[DataProvider('themes')]
+    public function testTheControlPanelHasAnAdminSectionForAdministratorsOnly(string $theme): void
+    {
+        $member = $this->smarty($theme)->fetch('user_cp_header.tpl');
+        $this->assertStringContainsString('cp/security.php', $member);
+        $this->assertStringNotContainsString('admin_mode.php', $member);
+
+        $smarty = $this->smarty($theme);
+        $smarty->assign('wifidb_is_admin', true);
+        $smarty->assign('wifidb_admin_mode', false);
+        $off = $smarty->fetch('user_cp_header.tpl');
+        $this->assertStringContainsString('<td class="subheading">Admin</td>', $off);
+        $this->assertStringContainsString('cp/admin_mode.php?return=https%3A%2F%2Fwifidb.example.com%2Fcp%2F">Turn on admin mode<', $off, 'and back to the control panel');
+        $this->assertStringNotContainsString('Leave admin mode', $off);
+
+        $smarty->assign('wifidb_admin_mode', true);
+        $on = $smarty->fetch('user_cp_header.tpl');
+        $this->assertStringContainsString('Admin mode is on.', $on);
+        $this->assertStringContainsString('admin_mode.php?func=off">Leave admin mode<', $on);
+        $this->assertStringNotContainsString('Turn on admin mode', $on);
+    }
+
     public function testTheMobileMenuOffersAdminModeOnlyToAdministratorsAndShowsTheWayOut(): void
     {
         $member = $this->smarty('vistumbler_mobile')->fetch('navigation.tpl');

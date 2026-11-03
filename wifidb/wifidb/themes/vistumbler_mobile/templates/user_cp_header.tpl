@@ -34,4 +34,19 @@ if not, write to the
 							<a href="?func=myimports">My Imports</a>
 						</td>
 					</tr>
+					{if $wifidb_is_admin|default:false}
+					<tr>
+						<td class="subheading">Admin</td>
+					</tr>
+					<tr>
+						<td class="header">
+							{if $wifidb_admin_mode|default:false}
+							Admin mode is on.
+							<a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a>
+							{else}
+							<a href="{$wifidb_host_url}cp/admin_mode.php?return={"`$wifidb_host_url`cp/"|escape:'url'}">Turn on admin mode</a>
+							{/if}
+						</td>
+					</tr>
+					{/if}
 				</table>
