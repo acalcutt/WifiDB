@@ -13,7 +13,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Sign-in providers</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">Members can link a Google, GitHub, Discord or Facebook account under Preferences, Security, and then sign in with it instead of their password (still with their second factor, if they have it on).
+							<td class="header wrap" colspan="2">Members can link a Google, GitHub, Discord or Facebook account under Preferences, Security, and then sign in with it instead of their password (still with their second factor, if they have it on).
 								Nothing is matched by e-mail address: only an account a member linked signs in to theirs.
 								To turn one on, make an OAuth app in that provider's console, give it the address below as its redirect URI (authorized redirect URI, callback URL), and save its client ID and secret here.</td>
 						</tr>

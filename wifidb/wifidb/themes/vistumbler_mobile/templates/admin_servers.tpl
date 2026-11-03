@@ -12,7 +12,7 @@ version 2 of the License, or (at your option) any later version.
 						<td class="subheading" colspan="6">Servers</td>
 					</tr>
 					<tr>
-						<td class="header" colspan="6">Each server reports every minute. One that stops reporting is called out after five minutes and drops off after a week.</td>
+						<td class="header wrap" colspan="6">Each server reports every minute. One that stops reporting is called out after five minutes and drops off after a week.</td>
 					</tr>
 					{if $servers_message}<tr><td class="light-centered" colspan="6">{if $servers_problem}<font color="Red">{/if}{$servers_message|escape:'html':'UTF-8':false}{if $servers_problem}</font>{/if}</td></tr>{/if}
 					<tr class="header">
@@ -40,7 +40,7 @@ version 2 of the License, or (at your option) any later version.
 						<td class="subheading" colspan="2">Updates</td>
 					</tr>
 					<tr>
-						<td class="header" colspan="2">This server runs {$servers_running|escape:'html':'UTF-8':false}. An update goes to every server, one at a time: each downloads the release's update package, checks it against the release's SHA256SUMS, waits for its running jobs, installs it, applies the database migrations and checks the site answers, and puts its old version back if it doesn't. Only Proxmox containers update this way (docs/updates.md).</td>
+						<td class="header wrap" colspan="2">This server runs {$servers_running|escape:'html':'UTF-8':false}. An update goes to every server, one at a time: each downloads the release's update package, checks it against the release's SHA256SUMS, waits for its running jobs, installs it, applies the database migrations and checks the site answers, and puts its old version back if it doesn't. Only Proxmox containers update this way (docs/updates.md).</td>
 					</tr>
 					{if $servers_request}
 					<tr class="dark">

@@ -49,6 +49,20 @@ final class TemplateCompileTest extends TestCase
         $this->assertFileExists($template->compiled->filepath, "$name did not compile");
     }
 
+    // .header doesn't wrap (it's a column's heading), so a sentence in it runs past the page's edge: one needs .wrap
+    #[DataProvider('templates')]
+    public function testASentenceInAHeaderCellWraps(string $templateDir, string $name): void
+    {
+        preg_match_all('/<td class="header([^"]*)"[^>]*>(.*?)<\/td>/s', file_get_contents("$templateDir/$name"), $cells, PREG_SET_ORDER);
+        foreach ($cells as [, $more, $content]) {
+            $text = trim(preg_replace('/\s+/', ' ', strip_tags(preg_replace('/\{[^}]*\}/', '', $content))));
+            if (strlen($text) > 80) {
+                $this->assertStringContainsString('wrap', $more, "$name: \"" . substr($text, 0, 60) . '..." needs class="header wrap"');
+            }
+        }
+        $this->addToAssertionCount(1);
+    }
+
     public function testBothThemesAreCovered(): void
     {
         $themes = array_unique(array_map(fn ($case) => basename(dirname($case[0])), self::templates()));

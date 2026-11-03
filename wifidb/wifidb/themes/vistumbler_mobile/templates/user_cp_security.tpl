@@ -13,7 +13,7 @@ version 2 of the License, or (at your option) any later version.
 						<td class="subheading" colspan="5">Two-factor sign-in</td>
 					</tr>
 					<tr>
-						<td class="header" colspan="5">
+						<td class="header wrap" colspan="5">
 							{if $security_has}
 								Signing in {if $security_asks_login}asks{else}does not ask{/if} for a second factor. Turning on admin mode always does.
 							{else}
@@ -37,12 +37,12 @@ version 2 of the License, or (at your option) any later version.
 					</tr>
 					{/foreach}
 					<tr>
-						<td colspan="5" align="center">
+						<td class="light-centered" colspan="5">
 							<a href="{$wifidb_host_url}cp/security.php?func=totp_add">Add an authenticator app</a>
 							<span id="wifidb_passkey_area" hidden>
 								| <input type="text" id="wifidb_passkey_name" placeholder="Name this passkey" maxlength="100"> <button type="button" id="wifidb_passkey_add">Add a passkey</button>
 							</span>
-							<p id="wifidb_passkey_msg"></p>
+							<div id="wifidb_passkey_msg"></div>
 							<div id="wifidb_passkey_codes" hidden>
 								<p><b>Your recovery codes.</b> Each works once if you lose your device. They are shown only now; keep them somewhere safe.</p>
 								<pre id="wifidb_passkey_codes_list"></pre>
@@ -94,7 +94,7 @@ version 2 of the License, or (at your option) any later version.
 						<td class="subheading" colspan="4">Linked accounts</td>
 					</tr>
 					<tr>
-						<td class="header" colspan="4">
+						<td class="header wrap" colspan="4">
 							{if $security_linked_now}Your {$security_linked_now|escape:'html':'UTF-8':false} account is linked. {/if}
 							Sign in with a linked account instead of your password. Signing in still asks for a second factor if you have it on.
 						</td>

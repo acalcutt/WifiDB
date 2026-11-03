@@ -13,7 +13,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Site settings</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">These start from config.inc.php. Once saved here, the value here is used. Every change leaves the administrators a notice.</td>
+							<td class="header wrap" colspan="2">These start from config.inc.php. Once saved here, the value here is used. Every change leaves the administrators a notice.</td>
 						</tr>
 						{if $settings_message}<tr><td class="light-centered" colspan="2">{if $settings_problem}<font color="Red">{/if}{$settings_message|escape:'html':'UTF-8':false}{if $settings_problem}</font>{/if}</td></tr>{/if}
 						{if $settings_unencrypted}<tr><td class="light-centered" colspan="2"><font color="Red">two_factor_key is not set in config.inc.php, so a key saved here is stored unencrypted.</font></td></tr>{/if}

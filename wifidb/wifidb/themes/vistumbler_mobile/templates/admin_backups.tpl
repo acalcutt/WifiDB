@@ -9,7 +9,7 @@ version 2 of the License, or (at your option) any later version.
 				{include file="topmenu.tpl"}
 				<table class="content_table">
 					<tr><td class="subheading">Backups</td></tr>
-					<tr><td class="header">A backup holds the whole database (every member, import, access point and setting) and the key that unlocks the saved authenticator apps. One made on SQL Server restores on MariaDB and the other way round, so it also moves a site to a new server. Uploaded files and exports aren't in it.</td></tr>
+					<tr><td class="header wrap">A backup holds the whole database (every member, import, access point and setting) and the key that unlocks the saved authenticator apps. One made on SQL Server restores on MariaDB and the other way round, so it also moves a site to a new server. Uploaded files and exports aren't in it.</td></tr>
 					{if $backups_message}<tr><td class="light-centered">{if $backups_problem}<font color="Red">{/if}{$backups_message|escape:'html':'UTF-8':false}{if $backups_problem}</font>{/if}</td></tr>{/if}
 					{if !$backups_ready}<tr><td class="light-centered"><font color="Red">The backups folder ({$backups_dir|escape:'html':'UTF-8':false}) can't be written, so nothing here can run. Set backup_dir in config.inc.php.</font></td></tr>{/if}
 					{if $backups_stale}<tr><td class="light-centered"><font color="Red">A request has waited more than five minutes. Check that cron runs tools/cron/backups each minute.</font></td></tr>{/if}

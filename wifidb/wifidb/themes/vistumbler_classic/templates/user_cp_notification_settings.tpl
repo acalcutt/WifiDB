@@ -14,7 +14,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Notification Settings</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2"><a href="{$wifidb_host_url}cp/notifications.php">Back to notifications</a>. Errors and warnings for administrators are always shown. E-mail is chosen separately, under Email Preferences.</td>
+							<td class="header wrap" colspan="2"><a href="{$wifidb_host_url}cp/notifications.php">Back to notifications</a>. Errors and warnings for administrators are always shown. E-mail is chosen separately, under Email Preferences.</td>
 						</tr>
 						{if $notification_saved}<tr><td class="light-centered" colspan="2">Saved.</td></tr>{/if}
 						{foreach item=p key=type from=$notification_prefs name=prefs}

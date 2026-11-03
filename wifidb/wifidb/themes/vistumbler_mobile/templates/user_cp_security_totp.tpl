@@ -14,7 +14,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Add an authenticator app</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">Scan this with an authenticator app (Aegis, Google Authenticator, 1Password, ...), or type the key in, then enter the 6 digits it shows.</td>
+							<td class="header wrap" colspan="2">Scan this with an authenticator app (Aegis, Google Authenticator, 1Password, ...), or type the key in, then enter the 6 digits it shows.</td>
 						</tr>
 						{if $totp_error}<tr><td class="light-centered" colspan="2"><font color="Red">That code did not match. Try the newest one.</font></td></tr>{/if}
 						<tr class="dark">

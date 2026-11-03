@@ -13,7 +13,7 @@ version 2 of the License, or (at your option) any later version.
 						<td class="subheading">{$recovery_headline|escape:'html':'UTF-8':false}</td>
 					</tr>
 					<tr>
-						<td class="header">Keep these recovery codes somewhere safe. Each works once if you lose your device, and this is the only time they are shown.</td>
+						<td class="header wrap">Keep these recovery codes somewhere safe. Each works once if you lose your device, and this is the only time they are shown.</td>
 					</tr>
 					<tr class="dark">
 						<td align="center"><pre>{foreach item=code from=$recovery_codes}{$code|escape:'html':'UTF-8':false}

@@ -122,6 +122,11 @@ th, td {
 	white-space: nowrap;
 }
 
+/* a sentence or more above a table, not a column's heading: it wraps to the table's width */
+.header.wrap {
+	white-space: normal;
+}
+
 .cell_border {
 	border: 1px inset black;
 }

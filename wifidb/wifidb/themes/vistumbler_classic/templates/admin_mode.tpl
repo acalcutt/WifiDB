@@ -24,7 +24,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Admin mode</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">Admin actions (resetting and deleting imports, daemons and schedules) need a fresh code each time you turn admin mode on. A code that signed you in will not work here. It stays on until you have not used an admin page for {$admin_minutes} minutes, or you leave it.</td>
+							<td class="header wrap" colspan="2">Admin actions (resetting and deleting imports, daemons and schedules) need a fresh code each time you turn admin mode on. A code that signed you in will not work here. It stays on until you have not used an admin page for {$admin_minutes} minutes, or you leave it.</td>
 						</tr>
 						{if $admin_error}<tr><td class="light-centered" colspan="2"><font color="Red">{$admin_error|escape:'html':'UTF-8':false}</font></td></tr>{/if}
 						<tr class="dark">

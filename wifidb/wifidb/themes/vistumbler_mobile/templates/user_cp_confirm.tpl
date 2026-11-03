@@ -14,7 +14,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Confirm it is you</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">You asked to be checked before your preferences are saved. Enter a code, or use a passkey; your preferences then stay open for 10 minutes.</td>
+							<td class="header wrap" colspan="2">You asked to be checked before your preferences are saved. Enter a code, or use a passkey; your preferences then stay open for 10 minutes.</td>
 						</tr>
 						{if $confirm_error}<tr><td class="light-centered" colspan="2"><font color="Red">{$confirm_error|escape:'html':'UTF-8':false}</font></td></tr>{/if}
 						<tr class="dark">

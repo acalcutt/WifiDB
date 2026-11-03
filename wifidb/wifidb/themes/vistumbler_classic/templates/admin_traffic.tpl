@@ -12,7 +12,7 @@ version 2 of the License, or (at your option) any later version.
 						<td class="subheading">Traffic</td>
 					</tr>
 					<tr>
-						<td class="header">Page views of the site's pages (not the API, map tiles or downloads), and unique visitors, counted by the site on every node and added up each minute. Times are UTC. Bots aren't counted, and no visitor's address is kept.</td>
+						<td class="header wrap">Page views of the site's pages (not the API, map tiles or downloads), and unique visitors, counted by the site on every node and added up each minute. Times are UTC. Bots aren't counted, and no visitor's address is kept.</td>
 					</tr>
 					{if $traffic_error}<tr><td class="light-centered"><font color="Red">{$traffic_error|escape:'html':'UTF-8':false}</font></td></tr>{/if}
 					<tr class="light"><td><canvas id="traffic_hours" height="90"></canvas></td></tr>

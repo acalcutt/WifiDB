@@ -40,7 +40,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Mail</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">How the site sends mail: sign-up confirmations, password resets, and the notifications members ask for.
+							<td class="header wrap" colspan="2">How the site sends mail: sign-up confirmations, password resets, and the notifications members ask for.
 								These start from config.inc.php. Once saved here, the value here is used, on every server. Every change leaves the administrators a notice.
 								{if $mail_validation}New accounts confirm their e-mail (Site Settings), so without working mail nobody can finish signing up.{/if}</td>
 						</tr>
@@ -50,21 +50,21 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Mail account</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">The account the site's mail goes out from.</td>
+							<td class="header wrap" colspan="2">The account the site's mail goes out from.</td>
 						</tr>
 						{call name=mail_rows rows=$mail_main}
 						<tr>
 							<td class="subheading" colspan="2">Sign-up account (if wanted)</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">Sign-up confirmations and password resets can go out from another account, so the notifications don't use up its sending limit. Anything left empty here is the mail account's.</td>
+							<td class="header wrap" colspan="2">Sign-up confirmations and password resets can go out from another account, so the notifications don't use up its sending limit. Anything left empty here is the mail account's.</td>
 						</tr>
 						{call name=mail_rows rows=$mail_signup}
 						<tr>
 							<td class="subheading" colspan="2">Signing in with a Google account (OAuth)</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">For Gmail or Google Workspace, instead of an app password: make an OAuth client (a Web application) in a Google Cloud project, with the scope https://mail.google.com/ on its consent screen and the address below as its authorized redirect URI, and save its client ID and secret here; then connect the account below.
+							<td class="header wrap" colspan="2">For Gmail or Google Workspace, instead of an app password: make an OAuth client (a Web application) in a Google Cloud project, with the scope https://mail.google.com/ on its consent screen and the address below as its authorized redirect URI, and save its client ID and secret here; then connect the account below.
 								For Workspace, make the consent screen Internal. For a gmail.com account, publish it (In production): one left in Testing gets tokens that stop working after 7 days.</td>
 						</tr>
 						<tr class="dark">
@@ -76,7 +76,7 @@ version 2 of the License, or (at your option) any later version.
 							<td class="subheading" colspan="2">Signing (DKIM)</td>
 						</tr>
 						<tr>
-							<td class="header" colspan="2">A signature receivers check against a record in the domain's DNS, so the site's mail isn't taken for spam.
+							<td class="header wrap" colspan="2">A signature receivers check against a record in the domain's DNS, so the site's mail isn't taken for spam.
 								Gmail and Google Workspace sign the mail they send for you already; this is for any other mail server, or for a signature of the site's own as well.</td>
 						</tr>
 						{call name=mail_rows rows=$mail_signing}
