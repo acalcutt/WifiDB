@@ -274,15 +274,16 @@ class dbcore
 			if(file_exists($WFDBD_PID)) #Check and see if the PID File exists
 			{
 				$pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
-				exec('ps -p '.(int)$pid_open[0].' -o "%p|" -o %mem -o "|%C|%x|%a"' , $output); #execute PS for the PID given (a number, nothing else, goes to the shell).
-				if(isset($output[1])) #if there was data returned from PS lets parse it.
+				# Named fields with empty headers: procps-ng 4.0.4 (Ubuntu 26.04) refuses the old AIX format ("%p|...") and prints nothing.
+				exec('ps -p '.(int)$pid_open[0].' -o pid= -o pmem= -o pcpu= -o time= -o args=' , $output); #execute PS for the PID given (a number, nothing else, goes to the shell).
+				if(isset($output[0]) && trim($output[0]) !== '') #if there was data returned from PS lets parse it.
 				{
-					$pieces = explode("|", $output[1]);
-					$pid = trim($pieces[0]);
-					$mem = trim($pieces[1]);
-					$cpu = trim($pieces[2]);
-					$time = trim($pieces[3]);
-					$cmd = trim($pieces[4]);
+					$pieces = preg_split('/\s+/', trim($output[0]), 5);
+					$pid = $pieces[0];
+					$mem = $pieces[1] ?? '0';
+					$cpu = $pieces[2] ?? '0';
+					$time = $pieces[3] ?? '0:00';
+					$cmd = $pieces[4] ?? '';
 					$ret = array('OS'=>'Linux','pid'=>$pid,'time'=>$time,'cpu'=>$cpu.'%','mem'=>$mem.'%','cmd'=>$cmd,'color'=>'green','errc'=>-5);
 					return $ret; # and return it
 				}else

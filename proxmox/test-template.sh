@@ -77,6 +77,15 @@ for svc in apache2 cron wifidb-monitord wifidb-websocketd; do
         docker exec "$ct1" journalctl -u "$svc" --no-pager 2>&1 | tail -12 | sed "s/^/       /"
     }
 done
+# monitord records each daemon it finds a PID file for, with what ps says of it (the scheduling page's Daemon Status).
+# The template's procps-ng 4.0.4 refused the format it used to ask for, and every daemon showed as pid 0 with no data from ps.
+ws_pid=$(docker exec "$ct1" systemctl show -p MainPID --value wifidb-websocketd)
+for _ in $(seq 20); do
+    rec=$(docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select concat(pid, '|', pidcmd) from daemon_pid_stats where pidfile = 'websocketd_$ws_pid.pid'" 2>/dev/null)
+    [ "${rec%%|*}" = "$ws_pid" ] && break
+    sleep 2
+done
+check "monitord records the websocket daemon's PID ($ws_pid) and command" sh -c 'test "${0%%|*}" = "$1" && echo "$0" | grep -q "websocketd.php"' "$rec" "$ws_pid"
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
 # A page can answer 200 and still carry a PHP error box (PHP 8 made an undefined constant fatal). Look at the text.
