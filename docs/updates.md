@@ -58,8 +58,8 @@ WIFIDB_UPDATE_TOKEN=…                                # a private project: GitL
 ```
 
 GitLab is the default. The token is sent only to that host: a download handed off to another host (GitLab's object
-storage, GitHub's) goes without it. After changing these, run `systemctl restart wifidb-firstboot` (or let the next
-update's first boot pick them up).
+storage, GitHub's) goes without it. After changing these, run `/usr/local/sbin/wifidb-firstboot` (or let the next
+update's first boot pick them up). `systemctl restart wifidb-firstboot` does nothing once a first boot has finished.
 
 ## The release files
 

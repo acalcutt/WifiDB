@@ -1,6 +1,7 @@
 #!/bin/bash
-# Makes this container a WiFiDB node. Run once by wifidb-firstboot.service on a new container (and again by hand
-# after editing /etc/wifidb/firstboot.env: systemctl restart wifidb-firstboot).
+# Makes this container a WiFiDB node. Run once by wifidb-firstboot.service on a new container, until it succeeds (after
+# a failed attempt: systemctl restart wifidb-firstboot). After that the unit doesn't run again, since it needs
+# /etc/wifidb/firstboot-pending; to apply an edited /etc/wifidb/firstboot.env, run this script itself, as an update does.
 #
 # The settings come from /etc/wifidb/firstboot.env (see that file). In short:
 #   - everything that must survive an upgrade goes in /srv/wifidb-data (mount a second disk there): uploads,
