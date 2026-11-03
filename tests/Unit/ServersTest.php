@@ -95,21 +95,20 @@ final class ServersTest extends TestCase
         $this->assertSame(['has never reported'], ServerStatus::Warnings(['info' => []], $now));
     }
 
-    private static function catalog(array $archives): array
+    public function testTheSwarmReportKeepsItsStateAndEachCategorysCurrentBuild(): void
     {
-        return ['format' => 'pmtiles-swarm-catalog/1', 'count' => count($archives), 'archives' => $archives];
-    }
+        // as pmtiles-swarm's /categories.xml has it (src/feed.js): an item for each category's current build
+        $item = fn (string $hash, string $date, string ...$cats) => "<item><title>$hash.pmtiles</title><guid isPermaLink=\"false\">$hash</guid>"
+            . "<pubDate>$date</pubDate>" . implode('', array_map(fn ($c) => "<category>$c</category>", $cats))
+            . "<enclosure url=\"http://x/$hash.torrent\" length=\"1\" type=\"application/x-bittorrent\"/><pmtiles:infohash>$hash</pmtiles:infohash></item>";
+        $xml = '<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:pmtiles="https://github.com/TechIdiots-LLC/pmtiles-swarm"><channel><title>t</title>'
+            . $item('new', 'Tue, 03 Nov 2026 06:00:00 GMT', 'wifidb-weekly') . $item('d1', 'Tue, 03 Nov 2026 07:00:00 GMT', 'wifidb-daily') . '</channel></rss>';
+        $newest = ServerStatus::CategoriesFeed($xml);
+        $this->assertSame(['wifidb-daily' => ['hash' => 'd1', 'at' => '2026-11-03T07:00:00Z'], 'wifidb-weekly' => ['hash' => 'new', 'at' => '2026-11-03T06:00:00Z']], $newest);
+        $this->assertNull(ServerStatus::CategoriesFeed('{"error":"authentication required"}'));
 
-    public function testTheSwarmReportKeepsItsStateAndEachCategorysNewestBuild(): void
-    {
-        $info = ServerStatus::SwarmInfo('active', ['status' => 'ok', 'engine' => 'libtorrent', 'version' => '0.107.2'], self::catalog([
-            ['infoHash' => 'new', 'categories' => ['wifidb-weekly'], 'createdAt' => '2026-11-03T06:00:00.000Z'],
-            ['infoHash' => 'old', 'categories' => ['wifidb-weekly'], 'createdAt' => '2026-11-02T06:00:00.000Z'],
-            ['infoHash' => 'd1', 'categories' => ['wifidb-daily'], 'createdAt' => '2026-11-03T07:00:00.000Z'],
-        ]), 'builds');
-        $this->assertSame(['service' => 'active', 'role' => 'builds', 'status' => 'ok', 'version' => '0.107.2', 'archives' => 3,
-            'newest' => ['wifidb-daily' => ['hash' => 'd1', 'at' => '2026-11-03T07:00:00.000Z'],
-                         'wifidb-weekly' => ['hash' => 'new', 'at' => '2026-11-03T06:00:00.000Z']]], $info);
+        $info = ServerStatus::SwarmInfo('active', ['status' => 'ok', 'engine' => 'libtorrent', 'version' => '0.107.2'], $newest, 'builds');
+        $this->assertSame(['service' => 'active', 'role' => 'builds', 'status' => 'ok', 'version' => '0.107.2', 'categories' => 2, 'newest' => $newest], $info);
 
         $down = ServerStatus::SwarmInfo('active', ['status' => 'unavailable', 'version' => '0.107.2', 'error' => 'engine not ready'], null);
         $this->assertSame(['service' => 'active', 'role' => '', 'status' => 'unavailable', 'version' => '0.107.2', 'error' => 'engine not ready'], $down);

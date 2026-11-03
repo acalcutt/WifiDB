@@ -14,7 +14,7 @@ that isn't running (one switched off for that server is fine), and an update tha
 drops off; **Forget** removes one now (it comes back if it reports again).
 
 On a server running [pmtiles-swarm](pmtiles-swarm.md), the Services column shows it too: whether it answers on port 8090,
-its release, whether it publishes the archives or mirrors them, and how many it has. The page calls out a swarm that's
+its release, whether it publishes the archives or mirrors them, and how many categories it has. The page calls out a swarm that's
 stopped or not answering, and a mirroring server that still hasn't got the publishing server's newest build of a
 category half an hour after it was made.
 

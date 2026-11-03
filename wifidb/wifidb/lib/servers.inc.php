@@ -213,14 +213,14 @@ class ServerStatus
 	}
 
 	/**
-	 * What the minute's report keeps of pmtiles-swarm: its service, what /health says, and the newest build of each
-	 * category in /api/catalog (both answered on its public port, without its API key).
+	 * What the minute's report keeps of pmtiles-swarm: its service, what /health says, and the current build of each
+	 * category (both answered on its public port, without its API key, which /api/ wants).
 	 * @param string $state systemctl is-active's answer
 	 * @param array|null $health /health, or null when it didn't answer
-	 * @param array|null $catalog /api/catalog
+	 * @param array|null $newest CategoriesFeed()'s, or null when it didn't answer
 	 * @param string $role 'builds' on the node that builds the archives (tile_archive_generate), 'follows' on the others
 	 */
-	public static function SwarmInfo($state, $health, $catalog, $role = '')
+	public static function SwarmInfo($state, $health, $newest, $role = '')
 	{
 		$out = array('service' => $state !== '' ? (string)$state : 'unknown', 'role' => (string)$role, 'status' => 'no answer');
 		if(is_array($health))
@@ -229,22 +229,35 @@ class ServerStatus
 			if(isset($health['version'])) { $out['version'] = (string)$health['version']; }
 			if(!empty($health['error'])) { $out['error'] = (string)$health['error']; }
 		}
-		if(is_array($catalog) && is_array($catalog['archives'] ?? null))
+		if(is_array($newest))
 		{
-			$out['archives'] = count($catalog['archives']);
-			$newest = array();
-			foreach($catalog['archives'] as $a)
-			{
-				$at = (string)($a['createdAt'] ?? '');
-				foreach((array)($a['categories'] ?? array()) as $category)
-				{
-					if(!isset($newest[$category]) || strtotime($at) > strtotime($newest[$category]['at'])) { $newest[$category] = array('hash' => (string)($a['infoHash'] ?? ''), 'at' => $at); }
-				}
-			}
-			ksort($newest);
+			$out['categories'] = count($newest);
 			$out['newest'] = $newest;
 		}
 		return $out;
+	}
+
+	/**
+	 * /categories.xml (RSS, an item for each category's current build) as category => array(hash, at), or null when it
+	 * isn't such a feed.
+	 */
+	public static function CategoriesFeed($xml)
+	{
+		$feed = @simplexml_load_string((string)$xml);
+		if($feed === false || !isset($feed->channel)) { return null; }
+		$newest = array();
+		foreach($feed->channel->item as $item)
+		{
+			$hash = (string)$item->children('pmtiles', true)->infohash;
+			$at = gmdate('Y-m-d\TH:i:s\Z', (int)strtotime((string)$item->pubDate));
+			foreach($item->category as $category)
+			{
+				$category = (string)$category;
+				if(!isset($newest[$category]) || strcmp($at, $newest[$category]['at']) > 0) { $newest[$category] = array('hash' => $hash, 'at' => $at); }
+			}
+		}
+		ksort($newest);
+		return $newest;
 	}
 
 	/** pmtiles-swarm on this node, when it runs it (it's switched on per node), or null. */
@@ -252,15 +265,15 @@ class ServerStatus
 	{
 		if(trim((string)@shell_exec("systemctl is-enabled pmtiles-swarm 2>/dev/null")) !== 'enabled') { return null; }
 		$state = trim((string)@shell_exec("systemctl is-active pmtiles-swarm 2>/dev/null"));
-		return self::SwarmInfo($state, self::FetchJson("$base/health"), $state === 'active' ? self::FetchJson("$base/api/catalog") : null, $role);
+		$health = json_decode((string)self::Fetch("$base/health"), true);
+		return self::SwarmInfo($state, is_array($health) ? $health : null,
+			$state === 'active' ? self::CategoriesFeed(self::Fetch("$base/categories.xml?limit=0")) : null, $role);
 	}
 
-	/** A JSON answer from $url, an error status's too (/health says why with a 503), or null. */
-	private static function FetchJson($url)
+	/** What $url answers, an error status's body too (/health says why with a 503), or false. */
+	private static function Fetch($url)
 	{
-		$body = @file_get_contents($url, false, stream_context_create(array('http' => array('timeout' => 5, 'ignore_errors' => true))));
-		$data = $body === false ? null : json_decode($body, true);
-		return is_array($data) ? $data : null;
+		return @file_get_contents($url, false, stream_context_create(array('http' => array('timeout' => 5, 'ignore_errors' => true))));
 	}
 
 	public static function Ago($seconds)

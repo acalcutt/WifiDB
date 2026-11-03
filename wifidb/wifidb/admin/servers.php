@@ -130,7 +130,7 @@ try
 			$detail = array();
 			if(!empty($sw['version'])) { $detail[] = $sw['version']; }
 			if(($sw['role'] ?? '') !== '') { $detail[] = $sw['role'] === 'builds' ? 'publishes the archives' : 'mirrors them'; }
-			if(isset($sw['archives'])) { $detail[] = $sw['archives'].' archive'.($sw['archives'] == 1 ? '' : 's'); }
+			if(isset($sw['categories'])) { $detail[] = $sw['categories'].' categor'.($sw['categories'] == 1 ? 'y' : 'ies'); }
 			$state = ($sw['service'] ?? '') !== 'active' ? ($sw['service'] ?? 'unknown') : ($sw['status'] ?? 'unknown');
 			$swarm = array('state' => $state, 'ok' => $state === 'ok', 'detail' => implode(', ', $detail));
 		}
