@@ -40,6 +40,17 @@ final class MvtArchiveTest extends TestCase
         $this->assertFileDoesNotExist("{$this->dir}/daily.pmtiles.building");
     }
 
+    public function testEverySourceCarriesOneAttributionWithNoDateInIt(): void
+    {
+        $site = (object)['URL_PATH' => 'https://wifidb.example.com/'];
+        $this->assertSame('<a href="https://wifidb.example.com/" target="_blank">&copy; WifiDB contributors</a>', mvt_attribution($site));
+        // the map lists each different string once: a build date made one line per source
+        foreach (['tools/daemon/mvtd.php', 'tools/daemon/mltd.php', 'wifidb/api/tilejson.php'] as $file) {
+            $source = file_get_contents(__DIR__ . '/../../wifidb/' . $file);
+            $this->assertMatchesRegularExpression("/'attribution'\s*=>\s*mvt_attribution\(\\\$dbcore\),/", $source, $file);
+        }
+    }
+
     public function testOlderBuildsAreRetiredIncludingOnesNamedByTheDateAlone(): void
     {
         // from before the time was in the name: today's sorts below today's new builds

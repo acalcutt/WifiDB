@@ -120,8 +120,8 @@ $config = array
 	# do not belong in the checkout.
 	# Exactly ONE node in a cluster generates archives; the rest subscribe to it
 	# through pmtiles-swarm.  Two nodes building independently produce different
-	# bytes for the same bucket — the attribution and 'generated' fields carry
-	# the run date, age_days is measured from the scan — so they would seed two
+	# bytes for the same bucket — the 'generated' field carries the run's time,
+	# age_days is measured from the scan — so they would seed two
 	# swarms, publish competing BEP 46 records, and serve disagreeing ETags.
 	# Set false on the subscribers: their daemons then skip archived buckets
 	# before the database scan, and flat buckets carry on generating as usual.

@@ -199,6 +199,20 @@ function mvt_buckets(): array {
 }
 
 /**
+ * The attribution every tile source of the site carries: each archive's
+ * metadata (mvtd.php and mltd.php, which pmtiles-swarm serves as the
+ * archive's TileJSON) and api/tilejson.php's own.
+ *
+ * One string, with no date in it.  The map's attribution control lists each
+ * different string once, so a build date in it put a line on the map for
+ * every source, all saying the same thing.
+ */
+function mvt_attribution($dbcore): string {
+    $site = (isset($dbcore->URL_PATH) && $dbcore->URL_PATH !== '') ? (string)$dbcore->URL_PATH : 'https://wifidb.net/';
+    return '<a href="' . htmlspecialchars($site, ENT_QUOTES) . '" target="_blank">&copy; WifiDB contributors</a>';
+}
+
+/**
  * How a bucket is stored: 'dir' for a flat .pbf tree, 'pmtiles' for a single
  * archive.
  *
@@ -535,8 +549,8 @@ function mvt_archive_file(string $root, string $bucket): string {
  * Whether this node generates archives, as opposed to receiving them.
  *
  * Two nodes running the same daemons against the same database do not produce
- * the same archive: the attribution and 'generated' fields carry the run's
- * date, and age_days is measured from the moment of the scan.  Different bytes
+ * the same archive: the 'generated' field carries the run's time, and
+ * age_days is measured from the moment of the scan.  Different bytes
  * mean a different infohash, so each node would seed its own swarm for the same
  * bucket, share nothing, publish competing BEP 46 records under the same salt,
  * and serve ETags that disagree — which breaks a range-reading client the

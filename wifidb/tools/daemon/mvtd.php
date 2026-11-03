@@ -888,8 +888,7 @@ foreach ($buckets as $bucket) {
                 'format'      => 'pbf',
                 'type'        => 'overlay',
                 'description' => "WifiDB {$bucket}",
-                'attribution' => '<a href="https://wifidb.net/" target="_blank">&copy; WifiDB</a> '
-                    . date('Y-m-d'),
+                'attribution' => mvt_attribution($dbcore),
                 'generated'   => gmdate('c'),
                 // What this build was made from, read back by the next run
                 // to decide whether rebuilding would change anything.

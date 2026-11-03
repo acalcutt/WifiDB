@@ -737,8 +737,7 @@ foreach ($buckets as $bucket) {
                 'format'      => 'mlt',
                 'type'        => 'overlay',
                 'description' => "WifiDB {$bucket}",
-                'attribution' => '<a href="https://wifidb.net/" target="_blank">&copy; WifiDB</a> '
-                    . date('Y-m-d'),
+                'attribution' => mvt_attribution($dbcore),
                 'generated'   => gmdate('c'),
                 // Read back by the next run to decide whether rebuilding
                 // would change anything. Same shape as the MVT archive.
