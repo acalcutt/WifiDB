@@ -73,6 +73,9 @@ WIFIDB_EXTERNAL_PROXY=192.168.1.1 # the proxy's address(es), for real visitor IP
 #WIFIDB_SQLSRV_TRUST_CERT=0       # SQL Server: check its certificate (default 1: accept a self-signed one)
 #WIFIDB_TWO_FACTOR_KEY=…          # another node on the same database: the first node's two_factor_key
 #WIFIDB_API_HOST="api.wifidb.example.com api.old.example.com" # the API's own names (api/ at their top); default api.<site>, empty for none
+#WIFIDB_SWARM=1                   # pmtiles-swarm: share the tile archives and serve tiles on port 8090 (pmtiles-swarm.md)
+#WIFIDB_SWARM_FOLLOW=http://wifidb-a.lan:8090 # every node but the one that builds the archives: that one's address
+#WIFIDB_SWARM_PORT=6881           # BitTorrent (and WebTorrent on the next port), forwarded to this node, TCP and UDP
 ```
 
 The first boot writes the settings that differ from the defaults to `/srv/wifidb-data/config/*.overrides.php`, loads
@@ -107,7 +110,8 @@ unchanged and don't compress `.pbf`, `.mlt` or `.pmtiles` responses there.
 ## What runs
 
 - **Services** (systemd): `wifidb-monitord` (watches the other daemons) and `wifidb-websocketd` (live pages). Both
-  restart themselves.
+  restart themselves. With `WIFIDB_SWARM=1`, also `pmtiles-swarm`, which shares the tile archives between the nodes
+  and serves tiles from them ([pmtiles-swarm.md](pmtiles-swarm.md)).
 - **Cron** (`/etc/cron.d/wifidb`): the imports, exports, statistics, admin jobs, the manufacturer and swarm updates,
   and the MVT and MLT tile builds, at the times wifidb.net uses. To keep different times across upgrades, copy the
   file to `/srv/wifidb-data/cron.d/wifidb` and edit that; the first boot installs it over the shipped one.
@@ -145,7 +149,8 @@ every node reads. The first boot adds a new node's `settings` and `schedule` row
   keeps serving if the bucket is out of reach). An archive's hard-linked stable name and the exports' symbolic links
   are kept as links, so a big archive is in the bucket once. The tile trees (`out/tiles`, `out/tiles-mlt`) aren't
   synced: each node fills its own from the database as tiles are asked for. Without the bucket, the generated files
-  are only on the node that built them.
+  are only on the node that built them. With pmtiles-swarm on ([pmtiles-swarm.md](pmtiles-swarm.md)), the swarm
+  carries the tile archives instead, bucket or not, and `out_sync` leaves them to it.
 
 ## SQL Server
 

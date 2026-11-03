@@ -84,7 +84,7 @@ for d in import/up out; do
         ln -s "$DATA/$d" "$WEB/$d"
     fi
 done
-install -d -o www-data -g www-data "$DATA/import/up/backup" "$DATA/import/up/convert" "$DATA/import/up/extract" "$DATA/out/geojson"
+install -d -o www-data -g www-data "$DATA/import/up/backup" "$DATA/import/up/convert" "$DATA/import/up/extract" "$DATA/out/geojson" "$DATA/out/pmtiles"
 # whole-site backups (admin/backups.php, tools/utilites/backup.php): member data, so only www-data reads them
 install -d -m 0700 -o www-data -g www-data "$DATA/backups" "$DATA/backups/queue"
 if [ ! -L "$TOOLS/log" ]; then
@@ -103,7 +103,20 @@ install -d -o www-data -g www-data "$DATA/geoip"
 if [ ! -f "$DATA/geoip/dbip-country-lite.mmdb" ] && [ -f /opt/wifidb/geoip/dbip-country-lite.mmdb ]; then
     cp -p /opt/wifidb/geoip/dbip-country-lite.mmdb "$DATA/geoip/"
 fi
-chown -R www-data:www-data "$DATA"
+# All www-data's, except what pmtiles-swarm keeps: its own folder, and the archives it shares with the site (below)
+install -d -o www-data -g www-data "$DATA/out/pmtiles-mlt"
+find "$DATA" \( -path "$DATA/swarm" -o -path "$DATA/out/pmtiles" -o -path "$DATA/out/pmtiles-mlt" \) -prune \
+    -o -exec chown -h www-data:www-data {} +
+for d in "$DATA/out/pmtiles" "$DATA/out/pmtiles-mlt"; do
+    if getent group pmtiles-swarm >/dev/null; then
+        # The tile archives, shared through the swarm's group: what the site builds here takes the group, so the swarm
+        # can read it, and a node following another downloads into here
+        chown www-data:pmtiles-swarm "$d"
+        chmod 2775 "$d"
+    else
+        chown www-data:www-data "$d"
+    fi
+done
 
 # Smarty's compiled templates and cache: the container's own, rebuilt as needed
 for sub in templates_c cache configs; do
@@ -343,6 +356,161 @@ if [ "${WIFIDB_UPDATES:-1}" = 0 ]; then
     log "updates from admin/servers.php are switched off"
 else
     systemctl enable --now wifidb-update.timer 2>/dev/null || log "WARNING: the updater's timer could not be switched on"
+fi
+
+# ── pmtiles-swarm ────────────────────────────────────────────────────────────
+# Shares the map's tile archives over BitTorrent and serves tiles from them on port 8090 (docs/pmtiles-swarm.md). The
+# node that builds the archives watches the archive folder and publishes each build; a node with WIFIDB_SWARM_FOLLOW
+# follows that one, a feed per category, downloading each build into its own archive folder under the same name and
+# pointing <bucket>.pmtiles at it, so its site and its swarm serve the same bytes. Its settings, catalog and signing key
+# live on the data disk in $DATA/swarm. This sets the parts that make it this site's node; anything else saved there,
+# the console's password and API key included, is kept.
+SWARM_BIN=/var/lib/pmtiles-swarm/node_modules/.bin/pmtiles-swarm
+SWARM_DIR=$DATA/swarm
+SWARM_CONFIG=$SWARM_DIR/swarm.config.json
+SWARM_FOLLOW=${WIFIDB_SWARM_FOLLOW:-}
+SWARM_FOLLOW=${SWARM_FOLLOW%/}
+SWARM_PORT=${WIFIDB_SWARM_PORT:-6881}
+if [ "${WIFIDB_SWARM:-0}" = 1 ] && [ ! -x "$SWARM_BIN" ]; then
+    log "WARNING: WIFIDB_SWARM=1, but this template was built without pmtiles-swarm; it stays off"
+elif [ "${WIFIDB_SWARM:-0}" = 1 ]; then
+    case "$SWARM_PORT" in ''|*[!0-9]*) die "WIFIDB_SWARM_PORT must be a port number, not '$SWARM_PORT'" ;; esac
+    case "$SWARM_FOLLOW" in ''|http://*|https://*) ;; *) die "WIFIDB_SWARM_FOLLOW must start http:// or https://, not '$SWARM_FOLLOW'" ;; esac
+    install -d -o pmtiles-swarm -g pmtiles-swarm -m 0750 "$SWARM_DIR" "$SWARM_DIR/data"
+    install -d -o pmtiles-swarm -g pmtiles-swarm -m 0755 "$SWARM_DIR/archives"
+    swarm_password=""
+    if [ ! -f "$SWARM_CONFIG" ]; then
+        # a console password and an API key of its own: the node won't listen on a reachable address without them
+        swarm_password=$(node -e "process.stdout.write(require('crypto').randomBytes(15).toString('base64url'))")
+        (cd / && "$SWARM_BIN" init --config "$SWARM_CONFIG" --data-dir "$SWARM_DIR/data" \
+            --save-path "$SWARM_DIR/archives" "--password=$swarm_password" >/dev/null)
+    fi
+    # Only the node that builds signs the current build of each category into the DHT (BEP 46), with a key of its own.
+    # Copy the old one here before the first boot to keep the magnets a site has already handed out.
+    if [ -z "$SWARM_FOLLOW" ] && [ ! -s "$SWARM_DIR/publisher.pem" ]; then
+        (umask 077 && "$SWARM_BIN" publisher-key > "$SWARM_DIR/publisher.pem")
+    fi
+    # What the site says: its buckets, their categories' prefix, how many builds it keeps, where the archives are read
+    # from (their web seed), whether this node builds them, whether MLT archives are built too, and the swarm's name
+    mapfile -t swarm_site < <(php -r '
+        require "/var/www/wifidb/lib/config.inc.php";
+        require "/var/www/wifidb/lib/mvt.inc.php";
+        echo (string)($config["tile_swarm_category_prefix"] ?? "") ?: "wifidb-", "\n";
+        echo max(1, (int)($config["tile_archive_keep"] ?? 2)), "\n";
+        echo implode(",", mvt_buckets()), "\n";
+        echo rtrim((string)($config["tile_archive_url"] ?? ""), "/"), "\n";
+        $node = (object)array("tile_archive_generate" => $config["tile_archive_generate"] ?? 1, "node_name" => getenv("NODE"));
+        echo mvt_generates_archives($node, "mvt") ? "builds" : "no", "\n";
+        echo empty($config["tile_mlt_archive_generate"]) ? "no" : "mlt", "\n";
+        echo rtrim((string)($config["tile_swarm_url"] ?? ""), "/"), "\n";')
+    [ "${#swarm_site[@]}" -ge 6 ] || die "could not read the tile settings from $WEB/lib/config.inc.php"
+    web_seed=${swarm_site[3]:-$SITE_URL${ROOT:+/$ROOT}/out/pmtiles}
+    # One node builds the archives and the rest follow it; a node doing both would put its own builds where it
+    # downloads the other's (tile_archive_generate names the node that builds)
+    if [ -n "$SWARM_FOLLOW" ] && [ "${swarm_site[4]}" = builds ]; then
+        log "WARNING: this node follows $SWARM_FOLLOW but builds archives too (tile_archive_generate): name the node that builds"
+    elif [ -z "$SWARM_FOLLOW" ] && [ "${swarm_site[4]}" != builds ]; then
+        log "WARNING: this node doesn't build the archives (tile_archive_generate), so it has nothing to publish: set WIFIDB_SWARM_FOLLOW"
+    fi
+    env CONFIG="$SWARM_CONFIG" OUT="$DATA/out" FOLLOW="$SWARM_FOLLOW" PORT="$SWARM_PORT" PROXY="$PROXY" \
+        PREFIX="${swarm_site[0]}" KEEP="${swarm_site[1]}" BUCKETS="${swarm_site[2]}" WEB_SEED="$web_seed" \
+        MLT="${swarm_site[5]}" SWARM_URL="${swarm_site[6]:-}" SITE_OUT="$SITE_URL${ROOT:+/$ROOT}/out" \
+        KEY="$SWARM_DIR/publisher.pem" FRESH="${swarm_password:+1}" node -e '
+        const fs = require("fs");
+        const e = process.env;
+        const c = JSON.parse(fs.readFileSync(e.CONFIG, "utf8"));
+        const port = Number(e.PORT);
+        if (e.FRESH) {
+            // A new node starts as wifidb.net'"'"'s swarm is set up: behind a firewall with its ports forwarded by hand, so
+            // no UPnP or NAT-PMP; an MD5 of each archive in the feed; the feed named for what it carries. The console
+            // changes these from then on.
+            c.libtorrent = { ...(c.libtorrent ?? {}), dht: true, lsd: true, upnp: false, natpmp: false };
+            c.md5 = true;
+            c.feedTitle = "WifiDB tile archives";
+            c.feedCopyright = "WifiDB contributors";
+            c.subscriptionIntervalSeconds = 120;
+        }
+        // The rest is this site'"'"'s, written every time.
+        // The console stays inside the container; tiles and feeds are on 8090, for the proxy and the other nodes.
+        c.adminHost = "127.0.0.1";
+        // A download is saved under its own name, the one the building node gave it.
+        c.savePathLayout = "flat";
+        // HAProxy does TLS: believe its X-Forwarded-Proto and Host, so the URLs the node hands out are the public ones.
+        c.trustProxy = ["loopback", ...e.PROXY.split(/\s+/).filter(Boolean)].join(", ");
+        if (e.SWARM_URL) c.publishingUrl = e.SWARM_URL;
+        c.libtorrent = { ...(c.libtorrent ?? {}), listen: `0.0.0.0:${port},[::]:${port}` };
+        c.webtorrent = { ...(c.webtorrent ?? {}), clientOptions: { ...(c.webtorrent?.clientOptions ?? {}), torrentPort: port + 1 } };
+        // The archive folders are this site'"'"'s to manage: their watch entries, or the subscriptions into them, are
+        // written afresh. MVT archives always, MLT ones when the site builds them (tile_mlt_archive_generate).
+        const folders = [{ dir: `${e.OUT}/pmtiles`, prefix: e.PREFIX, seed: e.WEB_SEED }];
+        if (e.MLT === "mlt") {
+            const seed = e.WEB_SEED.endsWith("/pmtiles") ? `${e.WEB_SEED}-mlt` : `${e.SITE_OUT}/pmtiles-mlt`;
+            folders.push({ dir: `${e.OUT}/pmtiles-mlt`, prefix: `${e.PREFIX}mlt-`, seed });
+        }
+        const ours = (path) => path === `${e.OUT}/pmtiles` || path === `${e.OUT}/pmtiles-mlt`;
+        c.watch = (c.watch ?? []).filter((w) => !ours(w?.path));
+        c.subscriptions = (c.subscriptions ?? []).filter((s) => !ours(s?.savePath));
+        // Builds kept: a few more of those rebuilt hourly or daily, as wifidb.net keeps them; tile_archive_keep for the rest
+        const keeps = { daily: 4, cell_daily: 4, weekly: 3, cell_weekly: 3 };
+        for (const folder of folders) {
+            for (const bucket of e.BUCKETS.split(",")) {
+                const category = folder.prefix + bucket.replaceAll("_", "-");
+                const keep = Math.max(keeps[bucket] ?? 0, Number(e.KEEP));
+                // <bucket>.pmtiles is the name the site reads the newest build by: the swarm points it there too
+                const latest = { latestLink: `${bucket}.pmtiles`, latestLinkType: "hard" };
+                if (!e.FOLLOW) {
+                    // <bucket>-<date and time>.pmtiles; small pieces, since most of the archives are small
+                    c.watch.push({ path: folder.dir, match: `${bucket}-*.pmtiles`, categories: [category],
+                        webSeedBase: folder.seed, pieceLength: 1048576, keep, ...latest });
+                } else {
+                    c.subscriptions.push({ url: `${e.FOLLOW}/feed/${category}.xml`, mode: "mirror", categories: [category],
+                        savePath: folder.dir, newest: 1, keep, ...latest });
+                }
+            }
+        }
+        if (e.FOLLOW) {
+            c.subscriptionsEnabled = true;
+            c.mutable = { ...(c.mutable ?? {}), publish: false };
+        } else {
+            c.mutable = { ...(c.mutable ?? {}), publish: true, keyPath: e.KEY };
+        }
+        fs.writeFileSync(e.CONFIG + ".new", JSON.stringify(c, null, 2) + "\n");
+        fs.renameSync(e.CONFIG + ".new", e.CONFIG);'
+    chown pmtiles-swarm:pmtiles-swarm "$SWARM_CONFIG"
+    chmod 0600 "$SWARM_CONFIG"
+    if [ -f "$SWARM_DIR/publisher.pem" ]; then chown pmtiles-swarm:pmtiles-swarm "$SWARM_DIR/publisher.pem"; chmod 0400 "$SWARM_DIR/publisher.pem"; fi
+    # The unit, from this configuration: which folders it may write to (ReadWritePaths) follows what it watches or
+    # downloads into
+    (cd / && "$SWARM_BIN" init --systemd --config "$SWARM_CONFIG" >/dev/null)
+    install -m 0644 "$SWARM_DIR/pmtiles-swarm.service" /etc/systemd/system/pmtiles-swarm.service
+    rm -f "$SWARM_DIR/pmtiles-swarm.service"
+    systemctl daemon-reload
+    systemctl enable pmtiles-swarm >/dev/null 2>&1
+    systemctl restart pmtiles-swarm
+    # The swarm carries the archives between the nodes: out_sync (the shared files bucket) leaves them to it
+    printf '%s\n' "\$config['out_sync_skip'][] = 'pmtiles';" "\$config['out_sync_skip'][] = 'pmtiles-mlt';" >> "$WEB/lib/config.inc.php"
+    if [ -n "$swarm_password" ]; then
+        (
+            umask 077
+            cat > /root/pmtiles-swarm-first-login.txt <<LOGIN
+pmtiles-swarm's console is on port 8091 inside this container only:
+  ssh -L 8091:127.0.0.1:8091 root@<this container>, then http://127.0.0.1:8091/
+  user name: admin
+  password:  $swarm_password
+The API key ('Authorization: Bearer <key>') is auth.apiKey in $SWARM_CONFIG.
+Keep the password somewhere safer, then delete this file. Settings: $SWARM_CONFIG, then systemctl restart pmtiles-swarm.
+LOGIN
+        )
+    fi
+    if [ -n "$SWARM_FOLLOW" ]; then
+        log "pmtiles-swarm follows $SWARM_FOLLOW, into $DATA/out/pmtiles"
+    else
+        log "pmtiles-swarm publishes the archives built in $DATA/out/pmtiles (web seed $web_seed)"
+    fi
+    log "         tiles and feeds on port 8090; BitTorrent on $SWARM_PORT and $((SWARM_PORT + 1)), TCP and UDP"
+elif [ -f /etc/systemd/system/pmtiles-swarm.service ]; then
+    systemctl disable --now pmtiles-swarm 2>/dev/null || true
+    log "pmtiles-swarm is switched off"
 fi
 
 # ── Start everything ─────────────────────────────────────────────────────────

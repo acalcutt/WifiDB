@@ -2,7 +2,7 @@
 # Installs WiFiDB into a running Ubuntu container (build-template.sh runs this inside it).
 #
 # Expects the source tree unpacked at /usr/local/src/wifidb (a `git archive` of the repository) and these files
-# beside this script: install-files.sh (the code and the system files, also used by updates), wifidb-firstboot,
+# beside this script: install-files.sh (the code and the system files, also used by updates), install-swarm.sh, wifidb-firstboot,
 # wifidb-firstboot.service, wifidb-monitord.service, wifidb-websocketd.service, wifidb-update and its units,
 # wifidb.cron and wifidb-apache.conf.
 #
@@ -17,11 +17,16 @@
 #   auto (default)  install it if it can be, otherwise carry on with MariaDB only and say so
 #   yes             fail the build if it can't be installed
 #   no              skip it
+#
+# pmtiles-swarm (install-swarm.sh), which shares the map's tile archives between the nodes and serves tiles from them,
+# is installed from npm, off until firstboot.env turns it on. WIFIDB_SWARM_PACKAGE is what npm installs: the release
+# below by default, another version, a tarball from `npm pack`, or none to leave it out.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 here=$(cd "$(dirname "$0")" && pwd)
 src=/usr/local/src/wifidb
 sqlsrv=${WIFIDB_SQLSRV:-auto}
+swarm=${WIFIDB_SWARM_PACKAGE:-pmtiles-swarm@0.107.2}
 
 log() { echo "[install-wifidb] $*"; }
 
@@ -51,6 +56,17 @@ if [ "$sqlsrv" != "no" ]; then
         rm -f "/etc/php/$phpver/mods-available/sqlsrv.ini" "/etc/php/$phpver/mods-available/pdo_sqlsrv.ini"
         rm -f /etc/apt/sources.list.d/mssql-release.list
         apt-get purge -y -q php-dev build-essential unixodbc-dev >/dev/null 2>&1 || true
+    fi
+fi
+
+if [ "$swarm" != none ]; then
+    log "pmtiles-swarm"
+    if bash "$here/install-swarm.sh" "$swarm" > /var/log/wifidb-swarm-install.log 2>&1; then
+        tail -1 /var/log/wifidb-swarm-install.log
+    else
+        tail -40 /var/log/wifidb-swarm-install.log
+        log "pmtiles-swarm could not be installed (WIFIDB_SWARM_PACKAGE=none builds without it)"
+        exit 1
     fi
 fi
 

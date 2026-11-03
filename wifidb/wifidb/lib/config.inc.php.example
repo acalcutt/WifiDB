@@ -226,6 +226,12 @@ $config = array
 	# in the archive directory for why.
 	'tile_archive_url'			=>   '',   // e.g. 'https://wifidb.net/out/pmtiles'
 
+	# Folders under out/ that tools/cron/out_sync leaves alone, with the shared
+	# files bucket.  On a node where pmtiles-swarm carries the tile archives
+	# between the nodes (the Proxmox template's WIFIDB_SWARM=1 sets this to
+	# array('pmtiles')), two copies arriving by two routes would race.
+	'out_sync_skip'				=>   array(),
+
 	#-------------Themes Settings--------------#
 	'default_theme'		 =>   'vistumbler_mobile',
 	'default_refresh'	   =>   15,

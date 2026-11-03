@@ -13,8 +13,10 @@
 # keys, machine ID), and export the filesystem.
 #
 # Environment:
-#   UBUNTU_VERSION  base image, default 26.04
-#   WIFIDB_SQLSRV   auto (default), yes or no: whether the SQL Server driver is required (see install-wifidb.sh)
+#   UBUNTU_VERSION        base image, default 26.04
+#   WIFIDB_SQLSRV         auto (default), yes or no: whether the SQL Server driver is required (see install-wifidb.sh)
+#   WIFIDB_SWARM_PACKAGE  the pmtiles-swarm to install: install-wifidb.sh's release by default, another npm version
+#                         (pmtiles-swarm@0.108.0), a tarball from `npm pack`, or none
 set -euo pipefail
 tarball=$(readlink -f "$1")
 # -m: the output's folder may not exist yet
@@ -48,16 +50,22 @@ docker exec "$name" install -d /usr/local/src/wifidb /usr/local/src/wifidb-proxm
 docker cp "$tarball" "$name:/usr/local/src/wifidb-src.tar.gz"
 docker exec "$name" sh -c 'tar -xzf /usr/local/src/wifidb-src.tar.gz -C /usr/local/src/wifidb && rm /usr/local/src/wifidb-src.tar.gz'
 docker cp "$here/." "$name:/usr/local/src/wifidb-proxmox/"
+swarm=${WIFIDB_SWARM_PACKAGE:-}
+if [ -f "$swarm" ]; then
+    # a tarball from npm pack: npm installs it from inside the container
+    docker cp "$swarm" "$name:/usr/local/src/pmtiles-swarm.tgz"
+    swarm=/usr/local/src/pmtiles-swarm.tgz
+fi
 
 log "running the installer (this takes a while)"
-docker exec -e WIFIDB_SQLSRV="${WIFIDB_SQLSRV:-auto}" "$name" \
+docker exec -e WIFIDB_SQLSRV="${WIFIDB_SQLSRV:-auto}" -e WIFIDB_SWARM_PACKAGE="$swarm" "$name" \
     bash /usr/local/src/wifidb-proxmox/install-wifidb.sh </dev/null \
     > "$output.install.log" 2>&1 || {
         tail -50 "$output.install.log"
         log "the installer failed; full log in $output.install.log"
         exit 1
     }
-grep -E 'WARNING|pdo_sqlsrv is installed' "$output.install.log" || true
+grep -E 'WARNING|pdo_sqlsrv is installed|pmtiles-swarm .* is installed' "$output.install.log" || true
 
 log "preparing for first boot"
 # -i: the script comes on stdin
@@ -133,6 +141,15 @@ WIFIDB_DB_TYPE=mariadb            # mariadb, sqlsrv for SQL Server, or pgsql for
 # daemon (live updates on the Import Status and Live APs pages). Set to 0 on a node that shouldn't run one.
 #WIFIDB_MONITORD=1
 #WIFIDB_WEBSOCKETD=1
+#
+# pmtiles-swarm (docs/pmtiles-swarm.md): shares the map's tile archives over BitTorrent and serves tiles from them on
+# port 8090; point the proxy's data.<site> name (tile_swarm_url) at port 8090 of every node. Off by default. The node
+# that builds the archives (tile_archive_generate) publishes them; every other node follows that one, at its address.
+#WIFIDB_SWARM=1
+#WIFIDB_SWARM_FOLLOW=http://wifidb-a.example.lan:8090
+# The BitTorrent port, forwarded to this container from the internet (TCP and UDP), and WebTorrent's, the next one up.
+# Give each node behind the same public address a port of its own.
+#WIFIDB_SWARM_PORT=6881
 ENV
 cat > /etc/motd <<'MOTD'
 
@@ -142,7 +159,7 @@ cat > /etc/motd <<'MOTD'
 
 MOTD
 # leave no build leftovers
-rm -rf /usr/local/src/wifidb /usr/local/src/wifidb-proxmox
+rm -rf /usr/local/src/wifidb /usr/local/src/wifidb-proxmox /usr/local/src/pmtiles-swarm.tgz
 apt-get clean
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /root/.bash_history /root/.cache
 journalctl --rotate >/dev/null 2>&1 || true

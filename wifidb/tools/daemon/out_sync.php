@@ -19,8 +19,10 @@ require_once $daemon_config['wifidb_install']."/lib/out_sync.inc.php";
 
 $shared = SharedFiles::FromSettings($dbcore->sql->conn, $config);
 if(!$shared) { exit(0); }   # no bucket: each node keeps its own out/
+# out_sync_skip: folders something else carries, such as the tile archives where pmtiles-swarm does (docs/pmtiles-swarm.md)
+$dirs = array_values(array_diff(OutSync::DIRS, (array)($config['out_sync_skip'] ?? array())));
 $sync = new OutSync($shared->S3(), $shared->Prefix(), rtrim($daemon_config['wifidb_install'], '/').'/out',
-	rtrim($config['wifidb_tools'], '/').'/log/out-sync-state.json');
+	rtrim($config['wifidb_tools'], '/').'/log/out-sync-state.json', $dirs);
 if(in_array('-v', $argv, true)) { $sync->log = function ($line) { echo $line."\n"; }; }
 $did = $sync->Run();
 $counts = array_filter(array_intersect_key($did, array_flip(array('pushed', 'pulled', 'removed_remote', 'removed_here'))));

@@ -72,7 +72,9 @@ Options -Indexes
 # writer's own scratch files alongside the finished archive, because an atomic
 # rename requires the same filesystem. A half-written archive served to a
 # client parses as a valid header pointing at bytes that are not there yet.
-<FilesMatch "\.(building|tmp)$">
+# On a node mirroring the archives, pmtiles-swarm downloads each one here as
+# {name}.incomplete and renames it when it's whole: the same thing, arriving.
+<FilesMatch "\.(building|tmp|incomplete)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
