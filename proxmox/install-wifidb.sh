@@ -10,6 +10,7 @@
 #   /var/www/wifidb              the web site            (from wifidb/wifidb)
 #   /opt/wifidb/tools            daemons and cron jobs   (from wifidb/tools)
 #   /opt/wifidb/sql              blank_db.sql, blank_db.sqlsrv, blank_db.pgsql and migrations/ (applied by tools/utilites/migrate.php)
+#   /opt/wifidb/swarm            the pmtiles-swarm release the code goes with (package.json, package-lock.json)
 #   /srv/wifidb-data             everything that must survive an upgrade (made at first boot): uploads, generated
 #                                files, logs and the two config files. Mount a second disk here.
 #
@@ -63,6 +64,13 @@ if [ "$swarm" != none ]; then
     log "pmtiles-swarm"
     if bash "$here/install-swarm.sh" "$swarm" > /var/log/wifidb-swarm-install.log 2>&1; then
         tail -1 /var/log/wifidb-swarm-install.log
+        # The release this template's code goes with, as npm installed it: the update packages cut from the template
+        # carry it, and wifidb-firstboot installs it on a node that has another (docs/pmtiles-swarm.md). A tarball from
+        # `npm pack` isn't on npm for a node to fetch, so a template built from one doesn't record it.
+        if [ ! -f "$swarm" ]; then
+            install -d /opt/wifidb/swarm
+            install -m 0644 /var/lib/pmtiles-swarm/package.json /var/lib/pmtiles-swarm/package-lock.json /opt/wifidb/swarm/
+        fi
     else
         tail -40 /var/log/wifidb-swarm-install.log
         log "pmtiles-swarm could not be installed (WIFIDB_SWARM_PACKAGE=none builds without it)"

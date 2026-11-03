@@ -32,9 +32,11 @@ server, `wifidb-update` (root's, run each minute by `wifidb-update.timer`) does 
    database is backed up another way.
 4. It stops cron and the two daemons and waits for running jobs (an import, a tile build) for up to 30 minutes, then
    stops what's left (a stopped job's schedule row is taken back on its next run). It saves the system files it's
-   about to replace, moves the code aside (`/var/www/wifidb.old`, `/opt/wifidb/tools.old`, `/opt/wifidb/sql.old`),
-   installs the package (`install-files.sh`, the same script the template build uses) and runs `wifidb-firstboot`
-   again, which keeps the settings on the data disk, applies the new database migrations and starts everything.
+   about to replace, moves the code aside (`/var/www/wifidb.old`, `/opt/wifidb/tools.old`, `/opt/wifidb/sql.old`,
+   `/opt/wifidb/swarm.old`), installs the package (`install-files.sh`, the same script the template build uses) and
+   runs `wifidb-firstboot` again, which keeps the settings on the data disk, applies the new database migrations,
+   installs the release's pmtiles-swarm if the server has another ([pmtiles-swarm.md](pmtiles-swarm.md)) and starts
+   everything.
 5. It checks the site answers on the new version (`/health/ready`, and the home page without a PHP error). If it
    doesn't, or anything in step 4 failed, it puts the old code and system files back and runs the first boot again:
    the page says "failed, old version back" and why.
@@ -77,7 +79,8 @@ Both pipelines (GitLab's `.gitlab-ci.yml`, GitHub's `release.yml`) publish, for 
 | `SHA256SUMS` | every file's SHA-256 |
 
 The update package holds `wifidb-update-<version>/` with `VERSION`, `web/` (the site, with Composer's `vendor/`),
-`tools/`, `sql/` (`blank_db.*` and `migrations/`) and `proxmox/` (`install-files.sh` and the system files it installs:
+`tools/`, `sql/` (`blank_db.*` and `migrations/`), `swarm/` (the pmtiles-swarm release it goes with: npm's
+`package.json` and `package-lock.json`, not the package itself, which the first boot fetches from npm) and `proxmox/` (`install-files.sh` and the system files it installs:
 Apache and PHP-FPM settings, the cron file, the services, the first boot and the updater). Releases from before
 update packages don't show in the list: those servers are updated by a new container from the template, as before.
 

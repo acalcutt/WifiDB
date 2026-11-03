@@ -365,12 +365,69 @@ fi
 # pointing <bucket>.pmtiles at it, so its site and its swarm serve the same bytes. Its settings, catalog and signing key
 # live on the data disk in $DATA/swarm. This sets the parts that make it this site's node; anything else saved there,
 # the console's password and API key included, is kept.
-SWARM_BIN=/var/lib/pmtiles-swarm/node_modules/.bin/pmtiles-swarm
+SWARM_HOME=/var/lib/pmtiles-swarm
+SWARM_BIN=$SWARM_HOME/node_modules/.bin/pmtiles-swarm
 SWARM_DIR=$DATA/swarm
 SWARM_CONFIG=$SWARM_DIR/swarm.config.json
 SWARM_FOLLOW=${WIFIDB_SWARM_FOLLOW:-}
 SWARM_FOLLOW=${SWARM_FOLLOW%/}
 SWARM_PORT=${WIFIDB_SWARM_PORT:-6881}
+SWARM_PIN=/opt/wifidb/swarm
+
+# The pmtiles-swarm release this code goes with: $SWARM_PIN holds the package.json and package-lock.json npm wrote when
+# the template was built, and an update package brings its own. Where another release is installed, this one is
+# installed from npm beside it, exactly as the lock file says, and takes over once it's in and its WebRTC binary loads;
+# the one before is kept in $SWARM_HOME/previous until the new one answers (below). Done with the swarm on or off, so
+# turning it on starts the release the code goes with.
+swarm_was=""
+swarm_want=""
+if [ -x "$SWARM_BIN" ] && [ -f "$SWARM_PIN/package-lock.json" ]; then
+    swarm_want=$(node -p "require('$SWARM_PIN/package-lock.json').packages['node_modules/pmtiles-swarm'].version" 2>/dev/null || true)
+    swarm_have=$(node -p "require('$SWARM_HOME/node_modules/pmtiles-swarm/package.json').version" 2>/dev/null || true)
+    if [ -n "$swarm_want" ] && [ "$swarm_want" != "$swarm_have" ]; then
+        log "pmtiles-swarm $swarm_have is installed; installing $swarm_want, which this release of WifiDB goes with"
+        next=$SWARM_HOME/next
+        rm -rf "$next"
+        install -d "$next"
+        cp "$SWARM_PIN/package.json" "$SWARM_PIN/package-lock.json" "$next/"
+        if (cd "$next" && env npm_config_cache=/tmp/wifidb-npm-cache npm_config_update_notifier=false \
+                npm ci --omit=dev --no-audit --no-fund && node -e "import('node-datachannel')") >> /var/log/wifidb-swarm-install.log 2>&1; then
+            rm -rf "$SWARM_HOME/previous"
+            install -d "$SWARM_HOME/previous"
+            for f in node_modules package.json package-lock.json; do
+                if [ -e "$SWARM_HOME/$f" ]; then mv "$SWARM_HOME/$f" "$SWARM_HOME/previous/"; fi
+                mv "$next/$f" "$SWARM_HOME/"
+            done
+            chown -R pmtiles-swarm:pmtiles-swarm "$SWARM_HOME"
+            swarm_was=$swarm_have
+        else
+            log "WARNING: pmtiles-swarm $swarm_want couldn't be installed (see /var/log/wifidb-swarm-install.log); $swarm_have stays"
+        fi
+        rm -rf "$next" /tmp/wifidb-npm-cache
+    fi
+fi
+swarm_put_back() { # the release that was installed before this first boot's, back in its place
+    rm -rf "$SWARM_HOME/node_modules" "$SWARM_HOME/package.json" "$SWARM_HOME/package-lock.json"
+    mv "$SWARM_HOME/previous/"* "$SWARM_HOME/"
+    rmdir "$SWARM_HOME/previous"
+}
+swarm_start() { # its unit, from the installed release and this configuration, and (re)start it
+    # which folders it may write to (ReadWritePaths) follows what it watches or downloads into
+    (cd / && "$SWARM_BIN" init --systemd --config "$SWARM_CONFIG" >/dev/null)
+    install -m 0644 "$SWARM_DIR/pmtiles-swarm.service" /etc/systemd/system/pmtiles-swarm.service
+    rm -f "$SWARM_DIR/pmtiles-swarm.service"
+    systemctl daemon-reload
+    systemctl enable pmtiles-swarm >/dev/null 2>&1
+    systemctl restart pmtiles-swarm
+}
+swarm_answers() { # its public port answers /health within two minutes
+    for _ in $(seq 60); do
+        curl -fs -o /dev/null --max-time 5 http://127.0.0.1:8090/health && return 0
+        sleep 2
+    done
+    return 1
+}
+
 if [ "${WIFIDB_SWARM:-0}" = 1 ] && [ ! -x "$SWARM_BIN" ]; then
     log "WARNING: WIFIDB_SWARM=1, but this template was built without pmtiles-swarm; it stays off"
 elif [ "${WIFIDB_SWARM:-0}" = 1 ]; then
@@ -479,14 +536,18 @@ elif [ "${WIFIDB_SWARM:-0}" = 1 ]; then
     chown pmtiles-swarm:pmtiles-swarm "$SWARM_CONFIG"
     chmod 0600 "$SWARM_CONFIG"
     if [ -f "$SWARM_DIR/publisher.pem" ]; then chown pmtiles-swarm:pmtiles-swarm "$SWARM_DIR/publisher.pem"; chmod 0400 "$SWARM_DIR/publisher.pem"; fi
-    # The unit, from this configuration: which folders it may write to (ReadWritePaths) follows what it watches or
-    # downloads into
-    (cd / && "$SWARM_BIN" init --systemd --config "$SWARM_CONFIG" >/dev/null)
-    install -m 0644 "$SWARM_DIR/pmtiles-swarm.service" /etc/systemd/system/pmtiles-swarm.service
-    rm -f "$SWARM_DIR/pmtiles-swarm.service"
-    systemctl daemon-reload
-    systemctl enable pmtiles-swarm >/dev/null 2>&1
-    systemctl restart pmtiles-swarm
+    swarm_start
+    if [ -n "$swarm_was" ]; then
+        if swarm_answers; then
+            rm -rf "$SWARM_HOME/previous"
+            log "pmtiles-swarm $swarm_want is running (was $swarm_was)"
+        else
+            log "WARNING: pmtiles-swarm $swarm_want didn't answer on port 8090; $swarm_was goes back"
+            journalctl -u pmtiles-swarm --no-pager -o cat -n 20 2>/dev/null | sed 's/^/         /' || true
+            swarm_put_back
+            swarm_start
+        fi
+    fi
     # The swarm carries the archives between the nodes: out_sync (the shared files bucket) leaves them to it
     printf '%s\n' "\$config['out_sync_skip'][] = 'pmtiles';" "\$config['out_sync_skip'][] = 'pmtiles-mlt';" >> "$WEB/lib/config.inc.php"
     if [ -n "$swarm_password" ]; then
@@ -511,6 +572,11 @@ LOGIN
 elif [ -f /etc/systemd/system/pmtiles-swarm.service ]; then
     systemctl disable --now pmtiles-swarm 2>/dev/null || true
     log "pmtiles-swarm is switched off"
+fi
+if [ -n "$swarm_was" ] && [ "${WIFIDB_SWARM:-0}" != 1 ]; then
+    # off, it can't be asked whether it answers: the install and its WebRTC binary loading are the check
+    rm -rf "$SWARM_HOME/previous"
+    log "pmtiles-swarm $swarm_want is installed (was $swarm_was), for when it's switched on"
 fi
 
 # ── Start everything ─────────────────────────────────────────────────────────

@@ -7,7 +7,8 @@
 #   WEB    the site, with Composer's vendor/ already in it   -> /var/www/wifidb
 #   TOOLS  the daemons and cron jobs                         -> /opt/wifidb/tools
 #   SQL    blank_db.sql, blank_db.sqlsrv, blank_db.pgsql and migrations/   -> /opt/wifidb/sql
-# The system files are taken from beside this script.
+# The system files are taken from beside this script, and an update package's pmtiles-swarm release (swarm/) from
+# beside its folder.
 set -euo pipefail
 [ $# -eq 3 ] || { echo "usage: $0 WEB TOOLS SQL" >&2; exit 2; }
 web=$(readlink -f "$1"); tools=$(readlink -f "$2"); sql=$(readlink -f "$3")
@@ -22,6 +23,12 @@ install -d /var/www/wifidb /opt/wifidb/tools /opt/wifidb/sql
 rsync -a --delete "$web/" /var/www/wifidb/
 rsync -a --delete "$tools/" /opt/wifidb/tools/
 rsync -a --delete "$sql/" /opt/wifidb/sql/
+# The pmtiles-swarm release this code goes with, from an update package (its swarm/, beside this script's folder):
+# wifidb-firstboot installs it where another one is. install-wifidb.sh writes the template's own.
+if [ -f "$here/../swarm/package-lock.json" ]; then
+    install -d /opt/wifidb/swarm
+    install -m 0644 "$here/../swarm/package.json" "$here/../swarm/package-lock.json" /opt/wifidb/swarm/
+fi
 # the config files are made at first boot; the working copy's examples stay in the tree
 rm -f /var/www/wifidb/lib/config.inc.php /opt/wifidb/tools/daemon.config.inc.php
 # the data folders live on the data disk (see wifidb-firstboot), so the copies in the code are just placeholders

@@ -11,8 +11,9 @@ Each run refreshes the release list (hourly) for the page. If an update is asked
      only names a version) and checks it against the release's SHA256SUMS;
   3. backs the site up first, if asked (once, by the first node to update);
   4. stops cron and the daemons and waits for running jobs, saves the system files it will replace, moves the old code
-     aside (/var/www/wifidb.old, /opt/wifidb/tools.old, /opt/wifidb/sql.old), installs the package
-     (proxmox/install-files.sh) and runs wifidb-firstboot, which applies the database migrations and starts it all;
+     aside (/var/www/wifidb.old, /opt/wifidb/tools.old, /opt/wifidb/sql.old, /opt/wifidb/swarm.old), installs the
+     package (proxmox/install-files.sh) and runs wifidb-firstboot, which applies the database migrations, installs the
+     package's pmtiles-swarm release if this node has another, and starts it all;
   5. checks the site answers, on the new version. If anything from step 4 on fails, the old code and system files go
      back and the first boot runs again.
 How it goes is shown on admin/servers.php and logged to /var/log/wifidb-update.log.
@@ -25,7 +26,9 @@ const CONF = '/etc/wifidb/updates.conf';
 const WORK = '/var/lib/wifidb/updates';
 const LOGFILE = '/var/log/wifidb-update.log';
 const WEB = '/var/www/wifidb';
-const CODE_DIRS = array('/var/www/wifidb', '/opt/wifidb/tools', '/opt/wifidb/sql');
+// the code, set aside for a rollback; /opt/wifidb/swarm (the pmtiles-swarm release the code goes with) is on a node
+// only when its template has it
+const CODE_DIRS = array('/var/www/wifidb', '/opt/wifidb/tools', '/opt/wifidb/sql', '/opt/wifidb/swarm');
 const FIRSTBOOT = '/usr/local/sbin/wifidb-firstboot';
 const RELEASES_EVERY = 3600;
 // how long to wait for running jobs (an import, a tile build) before stopping them anyway
@@ -197,6 +200,7 @@ $state = function ($state, $message = '') use ($conn, $node, $id, $version) {
 $dir = WORK.'/'.preg_replace('/[^0-9A-Za-z.-]/', '', $version);
 $rollback = WORK.'/rollback.tar';
 $moved = false;
+$aside = array();   # each code folder: true if it was moved aside, false if this node had none
 try
 {
 	// 1. the package, checked against SHA256SUMS
@@ -237,7 +241,9 @@ try
 	foreach(CODE_DIRS as $code)
 	{
 		run('rm -rf '.escapeshellarg("$code.old"));
+		if(!file_exists($code)) { $aside[$code] = false; continue; }
 		if(run('mv -T '.escapeshellarg($code).' '.escapeshellarg("$code.old")) !== 0) { throw new RuntimeException("couldn't move $code aside"); }
+		$aside[$code] = true;
 		$moved = true;   # from here a failure puts back what was moved
 	}
 	if(run('bash '.escapeshellarg("$root/proxmox/install-files.sh").' '.escapeshellarg("$root/web").' '.escapeshellarg("$root/tools").' '.escapeshellarg("$root/sql")) !== 0)
@@ -270,6 +276,7 @@ catch(Throwable $e)
 		foreach(CODE_DIRS as $code)
 		{
 			if(is_dir("$code.old")) { run('rm -rf '.escapeshellarg($code)); run('mv -T '.escapeshellarg("$code.old").' '.escapeshellarg($code)); }
+			elseif(($aside[$code] ?? null) === false) { run('rm -rf '.escapeshellarg($code)); }   # the package brought it
 		}
 		if(is_file($rollback)) { run('tar -xPf '.escapeshellarg($rollback)); }
 		run('systemctl daemon-reload');

@@ -72,6 +72,7 @@ details. In short:
 | `/srv/wifidb-data/swarm/publisher.pem` | the building node's BEP 46 signing key |
 | `/srv/wifidb-data/out/pmtiles/` | the archives, shared with the site through the `pmtiles-swarm` group |
 | `/var/lib/pmtiles-swarm/` | the package, in its own account's home |
+| `/opt/wifidb/swarm/` | the release this WifiDB goes with (below) |
 
 It runs as its own account, `pmtiles-swarm`, which can't read the site's settings (or its database password).
 `journalctl -u pmtiles-swarm` has its log. Its console is on port 8091 inside the container: `ssh -L
@@ -79,10 +80,10 @@ It runs as its own account, `pmtiles-swarm`, which can't read the site's setting
 `/root/pmtiles-swarm-first-login.txt` (written at the first boot that turned it on: keep it somewhere safer, then
 delete the file). The API key is `auth.apiKey` in the settings.
 
-With the shared files bucket (Site Settings), `tools/cron/out_sync` leaves `out/pmtiles` and `out/pmtiles-mlt` to the
 **Admin > Servers** shows each node's swarm: running and answering, its release, publishing or mirroring, how many
 archives, and a warning when a mirroring node falls behind ([updates.md](updates.md)).
 
+With the shared files bucket (Site Settings), `tools/cron/out_sync` leaves `out/pmtiles` and `out/pmtiles-mlt` to the
 swarm on these nodes (`out_sync_skip`), and goes on syncing the GeoJSON and KML exports.
 
 **Its settings.** Every first boot writes the parts that make it this site's node: the watch entries for the archive
@@ -108,14 +109,27 @@ point `<bucket>.pmtiles` at each download themselves, and the building node reco
 
 ## Upgrading pmtiles-swarm
 
-A new template brings the release it was built with (`WIFIDB_SWARM_PACKAGE` in `proxmox/build-template.sh` builds one
-with another). In place, as root in the container:
+Each WifiDB release goes with one pmtiles-swarm release: the one its template was built with (the default in
+`proxmox/install-wifidb.sh`; `WIFIDB_SWARM_PACKAGE` in `proxmox/build-template.sh` builds with another). The template
+keeps npm's `package.json` and `package-lock.json` for it in `/opt/wifidb/swarm`, and the release's update package
+carries them, so **updating from Admin > Servers updates pmtiles-swarm too**, every node to the same release.
+
+The first boot (which an update runs) compares that release with the one installed in `/var/lib/pmtiles-swarm`. When
+they differ, it installs the release with `npm ci`, exactly as the lock file says, beside the installed one, and
+switches over once it's in and its WebRTC binary loads. It then restarts the swarm and waits for `/health`: if the
+new release doesn't answer within two minutes, the one before goes back, and the first boot says so. A release that
+can't be installed (npm out of reach) leaves the installed one running, with a warning. If the update itself is put
+back, `/opt/wifidb/swarm` goes back with the code, and the first boot puts back the pmtiles-swarm that goes with it.
+`/var/log/wifidb-swarm-install.log` has npm's output.
+
+The first boot keeps a node on that release, so one installed by hand is replaced the next time it runs. To try
+another on one node, change the release it goes with, as root in the container, and run the first boot:
 
 ```bash
-env npm_config_cache=/tmp/npm-cache npm install --prefix /var/lib/pmtiles-swarm pmtiles-swarm@<version>
-chown -R pmtiles-swarm:pmtiles-swarm /var/lib/pmtiles-swarm
+cd /opt/wifidb/swarm && env npm_config_cache=/tmp/npm-cache npm install --package-lock-only --no-audit --no-fund pmtiles-swarm@<version>
 rm -rf /tmp/npm-cache
-/usr/local/sbin/wifidb-firstboot       # writes its unit from the new release and restarts it
+/usr/local/sbin/wifidb-firstboot       # installs it, writes its unit from it and restarts it
 ```
 
-Read that release's changelog first, and keep every node on the same release.
+The next update brings its own release again. Read a release's changelog before moving to it. A template built from
+a tarball (`npm pack`) doesn't record its release, so its nodes keep what they have until an update brings one.
