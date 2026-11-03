@@ -142,7 +142,8 @@ every node reads. The first boot adds a new node's `settings` and `schedule` row
   lock held in the database (`tools/daemon/lock_run.php`): whichever node starts it first does it, and the others skip
   that run. If that node stops, its lock goes with its database connection.
 - **Scheduled daemons** have rows per node in `schedule`: the KML export and stats daemons belong on one node only
-  (a node the first boot adds has them off).
+  (a node the first boot adds has them off). To move one, in admin mode on the scheduling page's *Daemon Schedule*,
+  disable (⏸) its row on the old node and enable (✔) the new node's.
 - **Generated files:** with the shared files bucket, `tools/cron/out_sync` keeps the tile archives (`out/pmtiles`,
   `out/pmtiles-mlt`), the GeoJSON and the KML exports (`out/daemon`) the same on every node, every two minutes:
   whichever node built a file pushes it, the others pull it, and each serves them from its own disk as before (so it

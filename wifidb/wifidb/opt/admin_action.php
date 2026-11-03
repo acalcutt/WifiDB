@@ -568,6 +568,59 @@ switch($action)
 		}
 		break;
 
+	case "disable_schedule":
+	case "enable_schedule":
+		$schedule_id = filter_input(INPUT_GET, 'schedule_id', FILTER_SANITIZE_NUMBER_INT);
+		if(!$schedule_id || !is_numeric($schedule_id))
+		{
+			die("Invalid schedule ID");
+		}
+		$enable = ($action == "enable_schedule") ? 1 : 0;
+
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.".$dbcore->sql->ident('interval').", schedule.status, schedule.nextrun FROM schedule WHERE schedule.id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $schedule_id, PDO::PARAM_INT);
+		$prep->execute();
+		$schedule_info = $prep->fetch(PDO::FETCH_ASSOC);
+
+		if(!$schedule_info)
+		{
+			die("Schedule not found");
+		}
+
+		// Confirmed with a POST: the session cookie is SameSite=Lax, so another site can't send one for an admin
+		if($confirm == "yes" && $_SERVER['REQUEST_METHOD'] === 'POST')
+		{
+			$result = set_schedule_enabled($dbcore, $schedule_id, $enable);
+
+			if($result['success'])
+			{
+				$message = "Schedule ID {$schedule_id} ({$schedule_info['daemon']} on {$schedule_info['nodename']}) is now ".($enable ? "enabled" : "disabled").".";
+				$message_type = "success";
+			}
+			else
+			{
+				$message = "Error updating schedule: " . $result['error'];
+				$message_type = "error";
+			}
+
+			$dbcore->smarty->assign("wifidb_page_label", "Admin Action Result");
+			$dbcore->smarty->assign("message", $message);
+			$dbcore->smarty->assign("message_type", $message_type);
+			$dbcore->smarty->assign("return_url", $return_url ? $return_url : $dbcore->wifidb_host_url.'opt/scheduling.php?func=schedule');
+			$dbcore->smarty->display('admin_action_result.tpl');
+		}
+		else
+		{
+			$dbcore->smarty->assign("wifidb_page_label", $enable ? "Confirm Enable Schedule" : "Confirm Disable Schedule");
+			$dbcore->smarty->assign("schedule_info", $schedule_info);
+			$dbcore->smarty->assign("action", $action);
+			$dbcore->smarty->assign("schedule_id", $schedule_id);
+			$dbcore->smarty->assign("return_url", $return_url);
+			$dbcore->smarty->display('admin_action_confirm.tpl');
+		}
+		break;
+
 	default:
 		die("Invalid action");
 }
@@ -612,6 +665,27 @@ function run_schedule_now($dbcore, $schedule_id)
 		$sql = "UPDATE schedule SET status = 'Waiting', pid = '', nextrun = ? WHERE id = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $next_run, PDO::PARAM_STR);
+		$prep->bindParam(2, $schedule_id, PDO::PARAM_INT);
+		$prep->execute();
+
+		return array('success' => true);
+	}
+	catch(Exception $e)
+	{
+		return array('success' => false, 'error' => $e->getMessage());
+	}
+}
+
+/**
+ * Turn a daemon schedule on or off. Off, the daemons no longer claim it; a run already going finishes.
+ */
+function set_schedule_enabled($dbcore, $schedule_id, $enabled)
+{
+	try
+	{
+		$sql = "UPDATE schedule SET enabled = ? WHERE id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $enabled, PDO::PARAM_INT);
 		$prep->bindParam(2, $schedule_id, PDO::PARAM_INT);
 		$prep->execute();
 

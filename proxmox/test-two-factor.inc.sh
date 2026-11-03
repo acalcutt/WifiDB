@@ -93,6 +93,19 @@ check "the admin pages now open" test "$(adm_get 'http://127.0.0.1/opt/schedulin
 check "an admin action gets past the gate (it then finds there is no such PID record)" sh -c 'echo "$0" | grep -q "PID record not found"' "$(adm_get 'http://127.0.0.1/opt/admin_action.php?action=delete_daemon_pid&pidfile=nothing' )"
 check "the menu now offers the way out" sh -c 'echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
 
+log "turning a scheduled job off and on (admin actions)"
+sched_id=$(docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select id from schedule where nodename = 'testnode' and daemon = 'Admin'")
+sched_enabled() { docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select enabled from schedule where id = $sched_id"; }
+check "the schedule page offers to disable a job in admin mode" sh -c 'echo "$0" | grep -q "action=disable_schedule&amp;schedule_id=$1&amp;"' "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=schedule')" "$sched_id"
+check "disabling asks first, with a form that posts" sh -c 'echo "$0" | grep -q "<form method=\"post\"" && echo "$0" | grep -q "Confirm Disable"' "$(adm_get "http://127.0.0.1/opt/admin_action.php?action=disable_schedule&schedule_id=$sched_id")"
+adm_get "http://127.0.0.1/opt/admin_action.php?action=disable_schedule&schedule_id=$sched_id&confirm=yes" >/dev/null
+check "...a link that confirms (a GET) changes nothing" test "$(sched_enabled)" = 1
+check "...the form's POST disables it" sh -c 'echo "$0" | grep -q "is now disabled"' "$(adm_get -X POST --data '' "http://127.0.0.1/opt/admin_action.php?action=disable_schedule&schedule_id=$sched_id&confirm=yes")"
+check "...and the job is off" test "$(sched_enabled)" = 0
+check "the page then says so, and offers to enable it" sh -c 'echo "$0" | grep -q "(disabled)" && echo "$0" | grep -q "action=enable_schedule&amp;schedule_id=$1&amp;"' "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=schedule')" "$sched_id"
+adm_get -X POST --data '' "http://127.0.0.1/opt/admin_action.php?action=enable_schedule&schedule_id=$sched_id&confirm=yes" >/dev/null
+check "enabling turns it back on" test "$(sched_enabled)" = 1
+
 log "site settings, the sign-ups switch and CleanTalk"
 # CleanTalk is pointed at a closed port, so nothing here reaches cleantalk.org and its failing open is what gets tested
 docker exec "$ct1" php -r '$f = "/srv/wifidb-data/config/web.overrides.php"; $c = include $f; $c["cleantalk_server"] = $c["cleantalk_api"] = "http://127.0.0.1:9/"; file_put_contents($f, "<?php\nreturn " . var_export($c, true) . ";\n");'

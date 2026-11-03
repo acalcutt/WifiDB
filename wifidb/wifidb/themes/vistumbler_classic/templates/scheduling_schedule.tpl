@@ -79,11 +79,11 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_schedule from=$wifidb_schedules}
 						<tr class="{$wifidb_schedule.color}">
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if $wifidb_admin_mode|default:false} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a> <a href="{$wifidb_host_url}opt/admin_action.php?action=run_schedule_now&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Run Now">&#9658;</a>{/if}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.id|escape:'htmlall'}{if $wifidb_admin_mode|default:false} <a href="{$wifidb_host_url}opt/admin_action.php?action=reset_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Reset this schedule">&#x21bb;</a> <a href="{$wifidb_host_url}opt/admin_action.php?action=run_schedule_now&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Run Now">&#9658;</a>{if $wifidb_schedule.enabled} <a href="{$wifidb_host_url}opt/admin_action.php?action=disable_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Disable this job">&#x23F8;&#xFE0E;</a>{else} <a href="{$wifidb_host_url}opt/admin_action.php?action=enable_schedule&amp;schedule_id={$wifidb_schedule.id}&amp;return={$wifidb_host_url|escape:'url'}opt/scheduling.php?func=schedule" title="Enable this job">&#x2714;&#xFE0E;</a>{/if}{/if}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nodename|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.daemon|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.interval|escape:'htmlall'} minutes</td>
-							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.status|escape:'htmlall'}</td>
+							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.status|escape:'htmlall'}{if !$wifidb_schedule.enabled} (disabled){/if}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.schedpid|escape:'htmlall'}</td>
 							<td class="{$wifidb_schedule.color}">{$wifidb_schedule.nextrun_local|escape:'htmlall'}</td>
 						</tr>

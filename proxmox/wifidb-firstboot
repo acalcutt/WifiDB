@@ -312,7 +312,7 @@ else
     if [ "${count:-0}" = 0 ]; then
         # A node joining a database other nodes use: it gets rows of its own, copied from the first node's, with
         # imports and admin jobs on (each file and job goes to one node) and the rest (the KML export, stats) left to
-        # the node that has them; turn them on in schedule to move them.
+        # the node that has them; enable them on the scheduling page (admin mode) to move them.
         from=$(dbphp '
             $node = getenv("NODE");
             $from = $pdo->query("SELECT node_name FROM settings ORDER BY id")->fetchColumn();
