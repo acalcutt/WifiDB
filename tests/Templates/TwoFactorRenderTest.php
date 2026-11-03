@@ -332,21 +332,39 @@ final class TwoFactorRenderTest extends TestCase
         $this->assertStringNotContainsString('Turn on admin mode', $on);
     }
 
-    public function testTheMobileMenuOffersAdminModeOnlyToAdministratorsAndShowsTheWayOut(): void
+    public static function menus(): array
     {
-        $member = $this->smarty('vistumbler_mobile')->fetch('navigation.tpl');
-        $this->assertStringNotContainsString('admin_mode.php', $member);
-        $this->assertStringNotContainsString('func=bad', $member);
+        return ['classic' => ['vistumbler_classic', 'header.tpl'], 'mobile' => ['vistumbler_mobile', 'navigation.tpl']];
+    }
 
-        $smarty = $this->smarty('vistumbler_mobile');
+    #[DataProvider('menus')]
+    public function testTheMenuHasAnAdminSectionWhoseLinksComeWithAdminMode(string $theme, string $template): void
+    {
+        $member = $this->smarty($theme)->fetch($template);
+        foreach (['>Admin<', 'admin_mode.php', 'func=bad', 'admin/settings.php'] as $text) {
+            $this->assertStringNotContainsString($text, $member);
+        }
+
+        $smarty = $this->smarty($theme);
         $smarty->assign('wifidb_is_admin', true);
         $smarty->assign('wifidb_admin_mode', false);
-        $off = $smarty->fetch('navigation.tpl');
-        $this->assertStringContainsString('cp/admin_mode.php">Admin mode<', $off);
-        $this->assertStringNotContainsString('Leave admin mode', $off);
+        $off = $smarty->fetch($template);
+        $this->assertMatchesRegularExpression('#>Admin</(div|li)>\s*<(div|li)[^>]*><a href="https://wifidb\.example\.com/cp/admin_mode\.php">Turn on admin mode</a>#', $off,
+            'the heading, with the one link under it');
+        foreach (['admin/settings.php', 'func=bad', 'Leave admin mode'] as $text) {
+            $this->assertStringNotContainsString($text, $off, 'the admin pages wait for admin mode');
+        }
 
         $smarty->assign('wifidb_admin_mode', true);
-        $on = $smarty->fetch('navigation.tpl');
-        $this->assertStringContainsString('admin_mode.php?func=off">Leave admin mode<', $on);
+        $on = $smarty->fetch($template);
+        foreach (['opt/scheduling.php?func=bad', 'admin/settings.php', 'admin/logins.php', 'admin/mail.php', 'admin/backups.php', 'admin/servers.php',
+            'admin/traffic.php', 'cp/admin_mode.php?func=off">Leave admin mode<'] as $link) {
+            $this->assertStringContainsString($link, $on);
+        }
+        $this->assertStringNotContainsString('Turn on admin mode', $on);
+        $heading = strpos($on, '>Admin<');
+        $this->assertGreaterThan(strpos($on, 'Support Forum'), $heading, "after the site's own links");
+        $this->assertLessThan(strpos($on, 'admin/settings.php'), $heading, 'the admin pages are under it');
+        $this->assertLessThan(strpos($on, 'Other Projects'), strpos($on, 'Leave admin mode'), 'and before the other projects');
     }
 }

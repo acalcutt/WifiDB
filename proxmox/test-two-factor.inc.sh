@@ -84,14 +84,14 @@ status() { sed -n '1s/^HTTP\/[0-9.]* \([0-9]*\).*/\1/p'; }
 check "an administrator who is signed in but not in admin mode is sent to turn it on" sh -c 'echo "$0" | grep -q "cp/admin_mode.php"' "$(adm_get 'http://127.0.0.1/opt/admin_action.php?action=reset_file&file_id=1' | location)"
 check "...for the bad files page too" sh -c 'echo "$0" | grep -q "cp/admin_mode.php"' "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | location)"
 check "the admin mode page asks for a code" sh -c 'echo "$0" | grep -q "Turn on admin mode"' "$(adm_get 'http://127.0.0.1/cp/admin_mode.php')"
-check "the menu offers admin mode, and no admin buttons" sh -c 'echo "$0" | grep -q "cp/admin_mode.php\">Admin mode" && ! echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
+check "the menu's Admin section offers admin mode, and no admin pages yet" sh -c 'echo "$0" | grep -q "cp/admin_mode.php\">Turn on admin mode" && ! echo "$0" | grep -q "Leave admin mode" && ! echo "$0" | grep -q "admin/settings.php"' "$(adm_get 'http://127.0.0.1/')"
 check "a wrong code is refused" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$(adm_get -X POST -d code=000000 'http://127.0.0.1/cp/admin_mode.php?func=proc' | location)"
 check "a code used to sign in cannot turn it on" sh -c 'echo "$0" | grep -q "e=wrong_code"' "$(adm_get -X POST --data-urlencode "code=$(adm_code 1)" 'http://127.0.0.1/cp/admin_mode.php?func=proc' | location)"
 back=$(adm_get -X POST --data-urlencode "code=$(adm_code 2)" 'http://127.0.0.1/cp/admin_mode.php?func=proc&return=%2Fopt%2Fscheduling.php%3Ffunc%3Dbad' | location)
 check "a fresh code turns admin mode on and goes back to where the admin was" sh -c 'echo "$0" | grep -q "scheduling.php?func=bad"' "$back"
 check "the admin pages now open" test "$(adm_get 'http://127.0.0.1/opt/scheduling.php?func=bad' | status)" = 200
 check "an admin action gets past the gate (it then finds there is no such PID record)" sh -c 'echo "$0" | grep -q "PID record not found"' "$(adm_get 'http://127.0.0.1/opt/admin_action.php?action=delete_daemon_pid&pidfile=nothing' )"
-check "the menu now offers the way out" sh -c 'echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
+check "the menu now lists the admin pages, and the way out" sh -c 'echo "$0" | grep -q "admin/settings.php" && echo "$0" | grep -q "Leave admin mode"' "$(adm_get 'http://127.0.0.1/')"
 
 log "turning a scheduled job off and on (admin actions)"
 sched_id=$(docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select id from schedule where nodename = 'testnode' and daemon = 'Admin'")

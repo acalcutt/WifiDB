@@ -89,20 +89,6 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
-                                {if $wifidb_is_admin|default:false}
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></div>
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></div>
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/mail.php">Mail</a></div>
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/backups.php">Backups</a></div>
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/servers.php">Servers</a></div>
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></div>
-                                {if $wifidb_admin_mode|default:false}
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></div>
-                                {else}
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php">Admin mode</a></div>
-                                {/if}
-                                {/if}
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></div>
@@ -110,6 +96,21 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=user&ord=ASC&from=0&inc=100">Users</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
 								<div class="inside_text_bold"><a href="https://forum.techidiots.net/forum/">Support Forum</a></div>
+								{if $wifidb_is_admin|default:false}
+								<div class="inside_dark_header" style="margin-top: 5px">Admin</div>
+								{if $wifidb_admin_mode|default:false}
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/mail.php">Mail</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/backups.php">Backups</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/servers.php">Servers</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></div>
+								{else}
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php">Turn on admin mode</a></div>
+								{/if}
+								{/if}
 								<!--
                                 {if $login_val eq "1"}
                                 <div class="inside_text_bold"><strong>

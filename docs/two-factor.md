@@ -20,8 +20,8 @@ Open **User Control Panel → Security** (`cp/security.php`).
 ## Admin mode (administrators)
 
 Being an Administrator is not enough to use the admin buttons (reset or delete any import, failed and bad files, daemon
-PIDs, schedules) or the Files Bad page. Turn on **Admin mode** first, from the menu or the **Admin** section of the User
-Control Panel: it asks for an authenticator or
+PIDs, schedules) or the Files Bad page. Turn on **Admin mode** first, from the **Admin** section of the menu or of the
+User Control Panel (the menu's lists the admin pages once it's on): it asks for an authenticator or
 recovery code, or a passkey, **every time**. The code that signed you in or confirmed your preferences does not count, a
 code can't be used twice, a passkey must also check the person (PIN or fingerprint), and "remember this computer" does not
 apply. It ends after 30 minutes without using an admin page, or with **Leave admin mode**. An administrator with no

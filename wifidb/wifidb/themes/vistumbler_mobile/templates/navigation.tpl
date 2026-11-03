@@ -18,20 +18,6 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></li>
-						{if $wifidb_is_admin|default:false}
-						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></li>
-						<li><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></li>
-						<li><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></li>
-						<li><a href="{$wifidb_host_url}admin/mail.php">Mail</a></li>
-						<li><a href="{$wifidb_host_url}admin/backups.php">Backups</a></li>
-						<li><a href="{$wifidb_host_url}admin/servers.php">Servers</a></li>
-						<li><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></li>
-						{if $wifidb_admin_mode|default:false}
-						<li><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></li>
-						{else}
-						<li><a href="{$wifidb_host_url}cp/admin_mode.php">Admin mode</a></li>
-						{/if}
-						{/if}
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></li>
 						<li><a href="{$wifidb_host_url}opt/search.php">Search</a></li>
 						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></li>
@@ -39,6 +25,21 @@ You should have received a copy of the GNU General Public License along with thi
 						<li><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=file_user&ord=ASC&from=0&inc=100">Users</a></li>
 						<li><a href="{$wifidb_host_url}themes/">Themes</a></li>
 						<li><a href="https://forum.techidiots.net/forum/">Support Forum</a></li>
+						{if $wifidb_is_admin|default:false}
+						<li class="inside_dark_header">Admin</li>
+						{if $wifidb_admin_mode|default:false}
+						<li><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></li>
+						<li><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></li>
+						<li><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></li>
+						<li><a href="{$wifidb_host_url}admin/mail.php">Mail</a></li>
+						<li><a href="{$wifidb_host_url}admin/backups.php">Backups</a></li>
+						<li><a href="{$wifidb_host_url}admin/servers.php">Servers</a></li>
+						<li><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></li>
+						<li><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></li>
+						{else}
+						<li><a href="{$wifidb_host_url}cp/admin_mode.php">Turn on admin mode</a></li>
+						{/if}
+						{/if}
 						<li class="inside_dark_header">Other Projects</li>
 						<li><a class="inside_text_bold" href="http://www.vistumbler.net">Vistumbler Home</a></li>
 						<li><a href="http://www.techidiots.net/project-pages">TechIdiots Projects</a></li>					
