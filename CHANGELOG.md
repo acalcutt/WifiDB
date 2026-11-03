@@ -5,6 +5,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
+- **Update every server works on SQL Server.** Asking for an update from Admin > Servers failed with "That didn't work": the request named its `backup` column, a reserved word in SQL Server, without brackets.
 - _...Add new stuff here..._
 
 ## 1.0.0-rc.1
