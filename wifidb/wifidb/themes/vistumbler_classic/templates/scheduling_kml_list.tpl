@@ -30,7 +30,7 @@ if not, write to the
 						</tr>
 						{foreach item=wifidb_kml from=$files}
 						<tr class="{$wifidb_kml.class}">
-							<td><a class="links" href="{$wifidb_kml.fileurl}">{$wifidb_kml.filename}</a></td>
+							<td><a class="links" href="{$wifidb_kml.fileurl}">{$wifidb_kml.filename|escape:'html':'UTF-8':false}</a></td>
 							<td>{$wifidb_kml.filesize}</td>
 						</tr>								
 						{/foreach}

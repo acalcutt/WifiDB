@@ -24,7 +24,7 @@ if not, write to the
 					<table class="content_table">
 						<tbody>
 							<tr class="header">
-								<th class="header" colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.user}">{$wifidb_all_user_aps.user}</a></th>
+								<th class="header" colspan="2">Access Points For: <a class="links" href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&amp;user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}">{$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}</a></th>
 							</tr>
 							<tr class="dark">
 								<td class="dark" width="190px"><b>Access Points (New / Total)</b></td>
@@ -37,9 +37,9 @@ if not, write to the
 							<tr class="dark">
 								<td class="dark" width="190px"><b>Export To</b></td>
 								<td class="dark">
-									<a class="links" href="{$wifidb_host_url}opt/geojson.php?func=user_all&amp;from=0&amp;inc=50000&amp;user={$wifidb_all_user_aps.user}">JSON</a> |
-									<a class="links" href="{$wifidb_host_url}opt/export.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user}">KMZ</a> |
-									<a class="links" href="{$wifidb_host_url}opt/gpx.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user}">GPX</a>
+									<a class="links" href="{$wifidb_host_url}opt/geojson.php?func=user_all&amp;from=0&amp;inc=50000&amp;user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}">JSON</a> |
+									<a class="links" href="{$wifidb_host_url}opt/export.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}">KMZ</a> |
+									<a class="links" href="{$wifidb_host_url}opt/gpx.php?func=user_all&amp;from=0&amp;inc=25000&amp;user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}">GPX</a>
 								</td>
 							</tr>
 						</tbody>
@@ -55,71 +55,71 @@ if not, write to the
 								<th class="header">
 									<div>ID</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=AP_ID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=AP_ID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=AP_ID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=AP_ID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AP_ID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>SSID</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=SSID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'SSID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=SSID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'SSID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=SSID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'SSID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=SSID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'SSID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Mac Address</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=BSSID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'BSSID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=BSSID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'BSSID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=BSSID&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'BSSID' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=BSSID&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'BSSID' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Authentication</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=AUTH&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AUTH' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=AUTH&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AUTH' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=AUTH&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'AUTH' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=AUTH&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'AUTH' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Encryption</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=ENCR&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ENCR' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=ENCR&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ENCR' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=ENCR&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'ENCR' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=ENCR&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'ENCR' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Radio</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=RADTYPE&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'RADTYPE' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=RADTYPE&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'RADTYPE' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=RADTYPE&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'RADTYPE' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=RADTYPE&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'RADTYPE' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Channel</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=CHAN&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'CHAN' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=CHAN&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'CHAN' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=CHAN&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'CHAN' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=CHAN&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'CHAN' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>First Active</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=fa&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=fa&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=fa&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=fa&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'fa' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Last Active</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=la&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=la&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=la&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=la&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'la' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 								<th class="header">
 									<div>Points</div>
 									<div>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
-										<a href="?func=allap&user={$wifidb_all_user_aps.user}&sort=points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=points&ord=ASC"><img title="Ascending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'ASC'}{$themeurl}img/list_up_sel.png{else}{$themeurl}img/list_up.png{/if}"></a>
+										<a href="?func=allap&user={$wifidb_all_user_aps.user|escape:'html':'UTF-8':false}&sort=points&ord=DESC"><img title="Descending" height="15" width="15" border="0" src="{if $sort == 'points' && $ord == 'DESC'}{$themeurl}img/list_down_sel.png{else}{$themeurl}img/list_down.png{/if}"></a>
 									</div>
 								</th>
 							</tr>
@@ -141,12 +141,12 @@ if not, write to the
 								{/if}
 								</td>
 								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.id}</a></td>
-								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid}</a></td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio}</td>
-								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan}</td>
+								<td class="{$wifidb_users_aps.class}"><a class="links" href="{$wifidb_host_url}opt/fetch.php?id={$wifidb_users_aps.id}">{$wifidb_users_aps.ssid|escape:'html':'UTF-8':false}</a></td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.mac|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.auth|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.encry|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.radio|escape:'html':'UTF-8':false}</td>
+								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.chan|escape:'html':'UTF-8':false}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.fa}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.la}</td>
 								<td class="{$wifidb_users_aps.class}">{$wifidb_users_aps.points}</td>

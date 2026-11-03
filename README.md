@@ -1,7 +1,7 @@
 Vistumbler WiFiDB -> Read-me
 ===================
 
-Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to manage Wireless Access points made with the Vistumber Wireless scanning software  
+Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or MariaDB, that is intended to manage Wireless Access points made with the Vistumber Wireless scanning software  
 
   Project Phase: Beta
   --------------
@@ -13,13 +13,20 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 		
   Requirements
   --------------
-* PHP 7.2 or later  
-	* GD2 (included with PHP now)  
-	* ZipArchive class  
-	* SQLiteDatabase class  
-	* bcmath class  
-* Microsoft SQL 2019 or Later (needed for UTF8 Support)  
-* Apache 2.4 or later  
+* PHP 8.2 or later (8.3 or 8.4 recommended)  
+	* Use a release with the October 2026 security fixes (CVE-2026-109618 and CVE-2026-109619): 8.2.35, 8.3.36, 8.4.27, 8.5.12 or later, or your distribution's patched package.  
+	* PHP 8.1 and earlier, including 7.x, are not supported.  
+	* Extensions: gd, zip, bcmath, mbstring, curl, xml, sockets (the websocket daemon)  
+	* A database driver, one of:  
+		* pdo_mysql (PHP's driver for MariaDB), for MariaDB  
+		* pdo_sqlsrv and Microsoft's ODBC Driver 18 for SQL Server (msodbcsql18), for SQL Server  
+		* pdo_pgsql, for PostgreSQL  
+* One of the following databases  
+	* MariaDB 10.6 or later (utf8mb4). MySQL is not supported: blank_db.sql uses index sizes that only MariaDB allows  
+	* Microsoft SQL Server 2019 or later (needed for UTF8 support)  
+	* PostgreSQL 11 or later (needed for covering indexes)  
+* Apache 2.4 or later
+* Composer 2, to install Smarty (it is pinned to 4.5.8 in composer.json and composer.lock, not kept in the repository)  
 * A Web-browser (doh!)  
 
   Installation
@@ -27,22 +34,76 @@ Vistumbler WiFiDB is a PHP, and MSSQL based set of scripts that is intended to m
 	NOTE: If you are using Linux, you must chown & chgrp the wifidb folder, to the user 
 	that you have apache or what ever HTTP server you are using 
 	
-	1.) Set up a debian instance with apache and php  
-	2.) Set up a Microsoft SQL Instance (The free sql developer version, windows or linux, will work fine)  
+	1.) Set up a Debian or Ubuntu instance with apache and PHP 8.2 or later and the extensions above  
+	2.) Set up a database server, MariaDB or Microsoft SQL Server (the free developer edition, windows or linux, will work fine)  
 	3.) Create tools directory (ex. /opt/wdbtools/)  
-	4.) Copy the /wifidb/tools folder from gitbub into the tools directory created in the previous step  
-	5.) Copy the /wifidb/wifidb folder from github into your website root directory  
-	6.) Create a blank mssql database(ex. wifi) and import the 'blank_db.sqlsrv' file into it. (Note: Replace all instances of 'prod_wifi' in blank_db.sqlsrv with what you named your database)  
-	7.) Create a mssql user that has access to the database created in the previous step  
-	8.) Update your daemon config file, [tools]/daemon.config.inc.php  
-	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php  
+	4.) Copy the /wifidb/tools folder from this repository into the tools directory created in the previous step  
+	5.) Copy the /wifidb/wifidb folder from this repository into your website root directory, then install Smarty:  
+		composer install --no-dev   (run in the repository: it fills wifidb/wifidb/vendor, so run it before copying, or copy the vendor folder with the site)  
+	6.) Create a blank database (ex. wifi) and import the schema into it  
+		* MariaDB: import 'blank_db.sql'  
+		* SQL Server: import 'blank_db.sqlsrv' (Note: Replace all instances of 'prod_wifi' in blank_db.sqlsrv with what you named your database)  
+		* PostgreSQL: createdb wifi; psql -d wifi -f blank_db.pgsql (it names no database, so there is nothing to replace)  
+	7.) Create a database user that has access to the database created in the previous step  
+	8.) Update your daemon config file, [tools]/daemon.config.inc.php (start from daemon.config.inc.php.example)  
+	9.) Update your website config file, [webroot]wifidb/lib/config.inc.php (start from config.inc.php.example)  
+		In the "SQL Info" section, use the SQL Server settings ('srvc' => 'sqlsrv'), the MariaDB settings ('srvc' => 'mysql', which is the name of PHP's driver for it) or the PostgreSQL settings ('srvc' => 'pgsql', port 5432).  
+
+  PostgreSQL and identifier case
+  --------------
+	The schema keeps mixed-case names (GPS_ID, ModDate, ValidGPS, Country, ...) because the PHP layer reads result rows
+	by those exact keys. MariaDB and SQL Server match column names case-insensitively; PostgreSQL folds unquoted
+	identifiers to lower case. blank_db.pgsql therefore creates every identifier double-quoted, and the pgsql query
+	branches must double-quote any mixed-case column they reference (tools/utilites/pg_check_case.py checks this;
+	tools/utilites/pg_audit.py lists query sites that have no pgsql branch). A plain lower-case name needs no quoting.
 	
   To Import Manually:  
 	cd [tools]/daemon  
 	php importd.php -o -v  
 
   To Import by Cron Job:  
-	Schedule the .sh files in [tools]/cron  
+	Schedule the scripts in [tools]/cron (the ones that talk to SQL Server use sqlcmd, edit their server, user and password lines first)  
+
+  Daemons:  
+	The scripts in [tools]/daemon each run one background job: importd (imports uploaded files), exportd and  
+	geojsond (exports), statsd (caches the statistics), mvtd and mltd (map tiles), manufupd (MAC manufacturers),  
+	admind (clears stale daemon PID files) and websocketd. rund.php starts and stops them.  
+
+  Upgrading from an older install:  
+	* Install PHP 8.2 or later and make sure the extensions above are present.  
+	* Back up the user_info table first. Passwords are now stored with bcrypt cost 12. Existing passwords keep working  
+	  and each one is upgraded the next time its user logs in.  
+	* Smarty is now installed with Composer (pinned to 4.5.8): run composer install --no-dev, and a symlink to a numbered Smarty folder is no longer needed. Delete the contents of [webroot]/wifidb/smarty/templates_c/ so the templates recompile. The old wifidb/smarty/libs folder can be removed.  
+	* Themes are chosen from the folders in [webroot]/wifidb/themes/; a theme cookie naming anything else is ignored.  
+	* Some old utilities in [tools]/utilites were removed because they could not run against the current code.  
+
+  Running the Tests:  
+	The tests need no web server, config file or database, just PHP 8.2 or later and Composer.  
+	composer install  
+	vendor/bin/phpunit  
+
+	They cover the helper functions, password and key generation, coordinate and signal conversions, and a compile of  
+	every Smarty template in both themes, which catches a template syntax error without running the site.  
+	CI (.gitlab-ci.yml and .github/workflows/ci.yml) lints every PHP file and runs the tests on PHP 8.2, 8.3, 8.4 and 8.5.  
+
+  Mail:  
+	docs/email.md describes every mail setting, DKIM, SPF and DMARC; php tools/utilites/check_mail.php checks them.  
+
+  Sign-in:  
+	docs/two-factor.md covers authenticator apps, passkeys, recovery codes, the key to set, and notifications.  
+
+  Site settings:  
+	docs/site-settings.md covers the administrators' Site Settings page, closing sign-ups, and the CleanTalk spam check.  
+
+  Backups:  
+	docs/backups.md covers backups, restoring, moving to a new server or the other database, transfer keys and S3 copies.  
+
+  Releasing:  
+	New entries go in CHANGELOG.md under "## master". To make a release, run the bump:  
+	GitLab: Build > Pipelines > New pipeline, set BUMP_VERSION (patch, minor, major, ...).  
+	GitHub: Actions > Create bump version PR > Run workflow.  
+	It raises VERSION, moves the "## master" entries into the new version and opens a merge request. Merging it builds  
+	and boot-tests the Proxmox template and publishes the release with that version's changelog as the notes.  
 
   Change Log:  
 		/[WiFiDB Path]/ver.php  

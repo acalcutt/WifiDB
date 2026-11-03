@@ -1,0 +1,143 @@
+<?php
+/*
+test-s3.php, run by test-s3.sh against a real S3 service (a one-node Garage): lib/s3.inc.php puts, lists, reads,
+resumes and deletes, and a wrong secret is refused.
+  php test-s3.php LIB_DIR    Environment: S3_ENDPOINT, S3_BUCKET, S3_KEY_ID, S3_SECRET, S3_REGION
+*/
+require $argv[1].'/s3.inc.php';
+$failed = 0;
+function check($what, $ok, $detail = '') { global $failed; echo ($ok ? "  ok   " : "  FAIL ").$what.($ok || $detail === '' ? '' : "\n       ".$detail)."\n"; if(!$ok) { $failed = 1; } }
+$s3 = function ($secret = null) { return new S3Client(getenv('S3_ENDPOINT'), getenv('S3_REGION'), getenv('S3_BUCKET'), getenv('S3_KEY_ID'), $secret ?? getenv('S3_SECRET')); };
+$c = $s3();
+$c->partSize = 5 * 1048576;
+$tmp = sys_get_temp_dir();
+
+try
+{
+	check("the bucket answers", $c->Check());
+	file_put_contents("$tmp/small", "hello\x00\xff");
+	$c->PutFile('backups/site one/small.bin', "$tmp/small", array('sha256' => hash_file('sha256', "$tmp/small")));
+	$big = "$tmp/big";
+	$fh = fopen($big, 'wb'); for($i = 0; $i < 13; $i++) { fwrite($fh, random_bytes(1048576)); } fclose($fh);
+	# in 5 MB parts here (64 MB normally): three of them, the last one short
+	$c->singlePutMax = 1048576;
+	$said = array();
+	$c->log = function ($line) use (&$said) { $said[] = $line; };
+	$c->PutFile('backups/site one/big.bin', $big, array('sha256' => hash_file('sha256', $big)));
+	check("a big file goes up in parts", in_array('  sent 3 of 3 parts', $said, true), json_encode($said));
+	$list = $c->ListObjects('backups/site one/');
+	check("both are listed, with their sizes", array_map(function ($o) { return array($o[0], $o[1]); }, $list) === array(array('backups/site one/big.bin', 13 * 1048576), array('backups/site one/small.bin', 7)), json_encode($list));
+	$head = $c->Head('backups/site one/small.bin');
+	check("its metadata comes back", ($head['meta']['sha256'] ?? '') === hash_file('sha256', "$tmp/small"), json_encode($head));
+	check("a missing object is null, not an error", $c->Head('backups/nothing') === null);
+
+	# download, cut off part way, then carry on
+	$dest = "$tmp/got";
+	$fh = fopen($big, 'rb'); file_put_contents($dest, fread($fh, 3 * 1048576 + 17)); fclose($fh);
+	$c->GetFile('backups/site one/big.bin', $dest);
+	check("a download carries on from where it stopped and comes out whole", hash_file('sha256', $dest) === hash_file('sha256', $big));
+	@unlink($dest);
+	$c->GetFile('backups/site one/small.bin', $dest);
+	check("binary bytes come back as they went", file_get_contents($dest) === "hello\x00\xff");
+
+	try { $s3('wrong')->ListObjects(); check("a wrong secret is refused", false); }
+	catch(S3Exception $e) { check("a wrong secret is refused", true); echo "       (".$e->getMessage().")\n"; }
+
+	$c->Delete('backups/site one/small.bin');
+	$c->Delete('backups/site one/big.bin');
+	check("deleted objects are gone", $c->ListObjects('backups/') === array());
+
+	# the backups' use of it: settings from Site Settings, copy two backups up (keeping one), fetch it back elsewhere
+	require $argv[1].'/backups.inc.php';
+	require_once $argv[1].'/site_settings.inc.php';
+	$db = new PDO('sqlite::memory:', null, null, array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+	$db->exec("CREATE TABLE site_settings (name TEXT PRIMARY KEY, value TEXT, updated_by TEXT, updated_at TEXT)");
+	$db->exec("CREATE TABLE user_info (id INTEGER PRIMARY KEY, username TEXT)");
+	$db->exec("INSERT INTO user_info (username) VALUES ('alice')");
+	$config = array('hosturl' => 'https://wifidb.test/', 'two_factor_key' => Totp::GenerateKey(), 'backup_dir' => "$tmp/here", 'backup_s3_keep' => 1);
+	(new SiteSettings($db, $config))->Save(array('backup_s3_endpoint' => getenv('S3_ENDPOINT'), 'backup_s3_region' => getenv('S3_REGION'), 'backup_s3_bucket' => getenv('S3_BUCKET'),
+		'backup_s3_key_id' => getenv('S3_KEY_ID'), 'backup_s3_secret' => getenv('S3_SECRET')), 'test');
+	$here = new BackupService($config, $db, 'sqlite');
+	$here->Ready();
+	foreach(array('wifidb-backup-20270101-000000', 'wifidb-backup-20270102-000000') as $n)
+	{
+		(new WifidbBackup($db, 'sqlite'))->Export("$tmp/here/$n.tar", array('site' => 'https://wifidb.test/', 'migrations' => array()));
+		check("$n is copied to the bucket", $here->Run(array('action' => 'upload', 'name' => $n, 'requested_by' => 'test')), json_encode($here->Job()['error'] ?? ''));
+	}
+	$remote = $here->RemoteBackups();
+	check("only the newest copy is kept (backup_s3_keep 1), under the site's domain", array_column($remote, 'name') === array('wifidb-backup-20270102-000000')
+		&& $c->ListObjects('wifidb.test/')[0][0] === 'wifidb.test/wifidb-backup-20270102-000000.tar', json_encode($remote));
+	$elsewhere = new BackupService(array('backup_dir' => "$tmp/elsewhere") + $config, $db, 'sqlite');
+	$elsewhere->Ready();
+	check("another server fetches it", $elsewhere->Run(array('action' => 'fetch', 'name' => 'wifidb-backup-20270102-000000', 'requested_by' => 'test')), json_encode($elsewhere->Job()['error'] ?? ''));
+	$got = $elsewhere->Get('wifidb-backup-20270102-000000');
+	check("...whole, and it's listed as a backup", ($got['state'] ?? '') === 'done' && hash_file('sha256', "$tmp/elsewhere/wifidb-backup-20270102-000000.tar") === hash_file('sha256', "$tmp/here/wifidb-backup-20270102-000000.tar"), json_encode($got));
+	$c->Delete('wifidb.test/wifidb-backup-20270102-000000.tar');
+
+	# the shared files: an upload put in by one node, fetched by another that hasn't got it, then deleted
+	require $argv[1].'/shared_files.inc.php';
+	check("no shared files bucket set up: each node keeps its own", SharedFiles::FromSettings($db, $config) === null);
+	(new SiteSettings($db, $config))->Save(array('files_s3_endpoint' => getenv('S3_ENDPOINT'), 'files_s3_region' => getenv('S3_REGION'), 'files_s3_bucket' => getenv('S3_BUCKET'),
+		'files_s3_prefix' => 'shared-test', 'files_s3_key_id' => getenv('S3_KEY_ID'), 'files_s3_secret' => getenv('S3_SECRET')), 'test');
+	$shared = SharedFiles::FromSettings($db, $config);
+	check("Site Settings name the shared files bucket", $shared instanceof SharedFiles);
+	file_put_contents("$tmp/upload.vs1", "# Vistumbler VS1 - Detailed Export Version 4.0\r\n".str_repeat("x", 5000));
+	$shared->PutUpload('12345_upload.vs1', "$tmp/upload.vs1");
+	check("an upload goes in under uploads/", $c->Head('shared-test/uploads/12345_upload.vs1') !== null);
+	mkdir("$tmp/node2");
+	check("another node fetches it", $shared->FetchUpload('12345_upload.vs1', "$tmp/node2/12345_upload.vs1")
+		&& hash_file('sha256', "$tmp/node2/12345_upload.vs1") === hash_file('sha256', "$tmp/upload.vs1") && !file_exists("$tmp/node2/12345_upload.vs1.part"));
+	check("...an upload the bucket hasn't got is false, not an error", $shared->FetchUpload('99999_none.vs1', "$tmp/node2/99999_none.vs1") === false && !file_exists("$tmp/node2/99999_none.vs1"));
+	check("...and a name can't reach out of uploads/", $shared->UploadKey('../../backups/x.tar') === 'shared-test/uploads/x.tar');
+	$shared->DeleteUpload('12345_upload.vs1');
+	check("a deleted upload is gone from the bucket", $c->Head('shared-test/uploads/12345_upload.vs1') === null);
+	$shared->PutUpload('67890_upload.vs1', "$tmp/upload.vs1");
+	check("a deleted import's upload moves to deleted/ in the bucket", $shared->MoveUpload('67890_upload.vs1', 'user_deleted', 'hash|vistumbler|67890_upload.vs1')
+		&& $c->Head('shared-test/uploads/67890_upload.vs1') === null && ($c->Head('shared-test/user_deleted/67890_upload.vs1')['size'] ?? 0) === filesize("$tmp/upload.vs1"));
+	$c->GetFile('shared-test/user_deleted/67890_upload.txt', "$tmp/note.txt");
+	check("...with a note of what it was beside it", file_get_contents("$tmp/note.txt") === 'hash|vistumbler|67890_upload.vs1');
+	check("...and one the bucket hasn't got is false, not an error", $shared->MoveUpload('00000_none.vs1', 'deleted', 'x') === false);
+	check("...and the folder can't reach out of the prefix", $shared->FolderKey('../x', 'a.vs1') === 'shared-test/x/a.vs1' && $shared->FolderKey('', 'a.vs1') === 'shared-test/deleted/a.vs1');
+	foreach($c->ListObjects('shared-test/') as $o) { $c->Delete($o[0]); }
+
+	# out/ kept the same on two nodes through the bucket (lib/out_sync.inc.php)
+	require $argv[1].'/out_sync.inc.php';
+	foreach(array('a', 'b') as $n) { mkdir("$tmp/out-$n/pmtiles", 0777, true); mkdir("$tmp/out-$n/daemon/2026-11-01", 0777, true); }
+	$A = new OutSync($c, 'sync-test', "$tmp/out-a", "$tmp/state-a.json");
+	$B = new OutSync($c, 'sync-test', "$tmp/out-b", "$tmp/state-b.json");
+	file_put_contents("$tmp/out-a/pmtiles/daily-20261101.pmtiles", str_repeat('tiles', 1000));
+	link("$tmp/out-a/pmtiles/daily-20261101.pmtiles", "$tmp/out-a/pmtiles/daily.pmtiles");
+	file_put_contents("$tmp/out-a/daemon/2026-11-01/full_db.kmz", 'kmz');
+	symlink("$tmp/out-a/daemon/2026-11-01/full_db.kmz", "$tmp/out-a/daemon/full_db.kmz");
+	file_put_contents("$tmp/out-a/pmtiles/weekly.pmtiles.building", 'half');
+	file_put_contents("$tmp/out-a/pmtiles/.htaccess", 'each node its own');
+	$did = $A->Run();
+	check("node A pushes its new files (not the one still being written, nor dot files)", $did['pushed'] === 4 && !$did['errors'], json_encode($did));
+	$objects = array_column($c->ListObjects('sync-test/out/'), 1, 0);
+	check("...a hard-linked archive is in the bucket once (its other name an empty marker)", ($objects['sync-test/out/pmtiles/daily.pmtiles'] ?? -1) === 0
+		&& ($objects['sync-test/out/pmtiles/daily-20261101.pmtiles'] ?? 0) === 5000, json_encode($objects));
+	$did = $B->Run();
+	check("node B pulls them", $did['pulled'] === 4 && !$did['errors'], json_encode($did));
+	$st = stat("$tmp/out-b/pmtiles/daily.pmtiles");
+	check("...the archive's stable name a hard link again, the export's a symbolic link", $st['nlink'] === 2 && $st['ino'] === stat("$tmp/out-b/pmtiles/daily-20261101.pmtiles")['ino']
+		&& readlink("$tmp/out-b/daemon/full_db.kmz") === "$tmp/out-a/daemon/2026-11-01/full_db.kmz");
+	check("...and nothing to do on either side next time", array_sum(array_slice($A->Run(), 0, 4)) === 0 && array_sum(array_slice($B->Run(), 0, 4)) === 0);
+	sleep(1);
+	file_put_contents("$tmp/out-a/daemon/2026-11-01/full_db.kmz", 'kmz, rebuilt');
+	unlink("$tmp/out-a/pmtiles/daily.pmtiles");
+	unlink("$tmp/out-a/pmtiles/daily-20261101.pmtiles");
+	$A->Run();
+	$did = $B->Run();
+	check("a rebuilt file reaches the other node, and removed ones go from it", file_get_contents("$tmp/out-b/daemon/2026-11-01/full_db.kmz") === 'kmz, rebuilt'
+		&& !file_exists("$tmp/out-b/pmtiles/daily.pmtiles") && !file_exists("$tmp/out-b/pmtiles/daily-20261101.pmtiles"), json_encode($did));
+	file_put_contents("$tmp/out-b/daemon/2026-11-01/daily_db.kmz", 'from b');
+	$B->Run();
+	$A->Run();
+	check("...and it works the other way round too", @file_get_contents("$tmp/out-a/daemon/2026-11-01/daily_db.kmz") === 'from b');
+	foreach($c->ListObjects('sync-test/') as $o) { $c->Delete($o[0]); }
+}
+catch(Throwable $e)
+{
+	check("the S3 test stopped", false, $e->getMessage());
+}
+exit($failed);

@@ -86,6 +86,8 @@ switch($func)
 				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT \"SSID\" FROM wifi_ap WHERE \"AP_ID\" = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -105,6 +107,8 @@ switch($func)
 				{$sql = "SELECT DISTINCT(`file_user`) AS `user` FROM `files` ORDER BY `file_user` ASC";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT DISTINCT([file_user]) AS [user] FROM [files] ORDER BY [file_user] ASC";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT DISTINCT(file_user) AS user FROM files ORDER BY file_user ASC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll(2);
@@ -112,9 +116,11 @@ switch($func)
 			{
 				$username = $user['user'];
 				if($dbcore->sql->service == "mysql")
-					{$sql1 = "SELECT `id` FROM `files` WHERE `file_user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
+					{$sql1 = "SELECT `id` FROM `files` WHERE `file_user` = ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [file_user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
+					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [file_user] = ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql1 = "SELECT id FROM files WHERE file_user = ? And \"ValidGPS\" = 1 ORDER BY id ASC LIMIT 1";}
 				$prep1 = $dbcore->sql->conn->prepare($sql1);
 				$prep1->bindParam(1, $username, PDO::PARAM_STR);
 				$prep1->execute();
@@ -143,6 +149,8 @@ switch($func)
 					{$sql = "SELECT `date` FROM `files` WHERE `completed` = 1 ORDER BY `date` DESC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT TOP 1 [date] FROM [files] WHERE [completed] = 1 ORDER BY [date] DESC";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT date FROM files WHERE completed = 1 ORDER BY date DESC LIMIT 1";}
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
 				$datestamp = $date_fetch['date'];
@@ -157,6 +165,8 @@ switch($func)
 				{$sql = "SELECT `id` FROM `files` WHERE `date` LIKE ? ORDER BY `date` DESC";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [id] FROM [files] WHERE [date] LIKE ? ORDER BY [date] DESC";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT id FROM files WHERE date LIKE ? ORDER BY date DESC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $date_search, PDO::PARAM_STR);
 			$prep->execute();
@@ -179,6 +189,13 @@ switch($func)
 							. "FROM [wifi_hist]\n"
 							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
+				else if($dbcore->sql->service == "pgsql")
+					{
+						$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+							. "FROM wifi_hist\n"
+							. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+							. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
@@ -216,9 +233,11 @@ switch($func)
 		case "exp_user_all":
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			if($dbcore->sql->service == "mysql")
-				{$sql = "SELECT `id`, `file_user` AS `user`, `title`, `file_date` AS `date` FROM `files` WHERE `file_user` LIKE ? And `ValidGPS` = 1";}
+				{$sql = "SELECT `id`, `file_user` AS `user`, `title`, `file_date` AS `date` FROM `files` WHERE `file_user` = ? And `ValidGPS` = 1";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql = "SELECT [id], [file_user] AS [user], [title], [file_date] AS [date] FROM [files] WHERE [file_user] LIKE ? And [ValidGPS] = 1";}
+				{$sql = "SELECT [id], [file_user] AS [user], [title], [file_date] AS [date] FROM [files] WHERE [file_user] = ? And [ValidGPS] = 1";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT id, file_user AS user, title, file_date AS date FROM files WHERE file_user = ? And \"ValidGPS\" = 1";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $user, PDO::PARAM_STR);
 			$prep->execute();
@@ -242,6 +261,13 @@ switch($func)
 							. "FROM [wifi_hist]\n"
 							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
+				else if($dbcore->sql->service == "pgsql")
+					{
+						$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+							. "FROM wifi_hist\n"
+							. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+							. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
@@ -280,6 +306,8 @@ switch($func)
 				{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT title FROM files WHERE id = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -325,6 +353,8 @@ switch($func)
 				{$sql = "SELECT DISTINCT(`File_ID`) FROM `wifi_hist` WHERE `AP_ID` = ? ORDER BY `File_ID`";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT DISTINCT([File_ID]) FROM [wifi_hist] WHERE [AP_ID] = ? ORDER BY [File_ID]";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT DISTINCT(\"File_ID\") FROM wifi_hist WHERE \"AP_ID\" = ? ORDER BY \"File_ID\"";}
 			$prep_file_id = $dbcore->sql->conn->prepare($sql);
 			$prep_file_id->bindParam(1, $id, PDO::PARAM_INT);
 			$prep_file_id->execute();
@@ -336,6 +366,8 @@ switch($func)
 					{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ? And `ValidGPS` = 1";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ? And [ValidGPS] = 1";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT title, date FROM files WHERE id = ? And \"ValidGPS\" = 1";}
 				$prep_file = $dbcore->sql->conn->prepare($sql);
 				$prep_file->bindParam(1, $file_id['File_ID'], PDO::PARAM_INT);
 				$prep_file->execute();
@@ -357,6 +389,13 @@ switch($func)
 								. "FROM [wifi_hist]\n"
 								. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 								. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+						}
+					else if($dbcore->sql->service == "pgsql")
+						{
+							$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+								. "FROM wifi_hist\n"
+								. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+								. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 						}
 					$result = $dbcore->sql->conn->prepare($sql);
 					$result->bindParam(1, $id, PDO::PARAM_INT);
@@ -396,6 +435,8 @@ switch($func)
 				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT \"SSID\" FROM wifi_ap WHERE \"AP_ID\" = ?";}
 			$prep_name = $dbcore->sql->conn->prepare($sql);
 			$prep_name->bindParam(1, $id, PDO::PARAM_INT);
 			$prep_name->execute();
@@ -407,6 +448,8 @@ switch($func)
 				{$sql = "SELECT `title`, `date` FROM `files` WHERE `id` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [title], [date] FROM [files] WHERE [id] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT title, date FROM files WHERE id = ?";}
 			$prep_title = $dbcore->sql->conn->prepare($sql);
 			$prep_title->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep_title->execute();
@@ -421,154 +464,6 @@ switch($func)
 			if($labeled){$file_name = $title."_Labeled.kmz";}else{$file_name = $title.".kmz";}
 			break;
 			
-		case "exp_all_countries":
-			$sql = "SELECT DISTINCT(country_code) FROM `wifi_ap` WHERE `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `country_code`";
-			$result = $dbcore->sql->conn->query($sql);
-			while($country_fetch = $result->fetch(2))
-			{
-				$country_code = $country_fetch['country_code'];
-				
-				$sql = "SELECT `Country` FROM `geonames_country_names` WHERE `ISO` = ? LIMIT 1";
-				$prep_country = $dbcore->sql->conn->prepare($sql);
-				$prep_country->bindParam(1, $country_code, PDO::PARAM_STR);
-				$prep_country->execute();
-				$country_fetch = $prep_country->fetch(2);
-				$country_asciiname = $country_fetch['Country'];
-				
-				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/v2/export.php?func=exp_country&#x26;country_code='.$country_code.'&#x26;debug='.$debug, $country_asciiname, 1, 0, "onChange", 86400, 0);
-			}
-			$results = $dbcore->createKML->createKMLstructure('All Countries', $results);
-			if($labeled){$file_name = "All_Countries_Labeled.kmz";}else{$file_name = "All_Countries	.kmz";}
-			break;
-			
-		case "exp_country":
-			$country_code = $_REQUEST['country_code'];
-			#Get admin1 ids in this country code
-			$sql = "SELECT DISTINCT(admin1_id) FROM `wifi_ap` WHERE `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin1_id`";
-			$prep_ap = $dbcore->sql->conn->prepare($sql);
-			$prep_ap->bindParam(1, $country_code, PDO::PARAM_STR);
-			$prep_ap->execute();
-			$fetchaps = $prep_ap->fetchAll();
-			foreach($fetchaps as $ap)
-			{
-				$admin1_id = $ap['admin1_id'];
-				
-				$sql = "SELECT `asciiname` FROM `geonames_admin1` WHERE `id` = ? LIMIT 1";
-				$prep_admin1 = $dbcore->sql->conn->prepare($sql);
-				$prep_admin1->bindParam(1, $admin1_id, PDO::PARAM_INT);
-				$prep_admin1->execute();
-				$admin1_fetch = $prep_admin1->fetch(2);
-				$admin1_asciiname = $admin1_fetch['asciiname'];
-				
-				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/v2/export.php?func=exp_admin1&#x26;country_code='.$country_code.'&#x26;admin1_id='.$admin1_id.'&#x26;debug='.$debug, $admin1_asciiname, 1, 1, "onChange", 86400, 0);
-			}
-			
-			$sql = "SELECT `Country` FROM `geonames_country_names` WHERE `ISO` = ? LIMIT 1";
-			$prep_country = $dbcore->sql->conn->prepare($sql);
-			$prep_country->bindParam(1, $country_code, PDO::PARAM_STR);
-			$prep_country->execute();
-			$country_fetch = $prep_country->fetch(2);
-			$country_asciiname = $country_fetch['Country'];
-			
-			$results = $dbcore->createKML->createKMLstructure($country_asciiname, $results);
-			if($labeled){$file_name = "country_".$country_asciiname."Labeled.kmz";}else{$file_name = "country_".$country_asciiname.".kmz";}
-			break;
-			
-		case "exp_admin1":
-			$country_code = $_REQUEST['country_code'];		
-			$admin1_id = $_REQUEST['admin1_id'];
-			$box_latlon = array();
-			$results = '';
-			#Get APs in this admin2 region
-			$sql = "SELECT DISTINCT(admin2_id) FROM `wifi_ap` WHERE `admin1_id` = ?  And `country_code` = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00' ORDER BY `admin2_id`";
-			$prep_ap = $dbcore->sql->conn->prepare($sql);
-			$prep_ap->bindParam(1, $admin1_id, PDO::PARAM_INT);
-			$prep_ap->bindParam(2, $country_code, PDO::PARAM_STR);
-			$prep_ap->execute();
-			$fetchaps = $prep_ap->fetchAll();
-			foreach($fetchaps as $ap)
-			{
-				$admin2_id = $ap['admin2_id'];
-				
-				$sql = "SELECT `asciiname` FROM `geonames_admin2` WHERE `id` = ? LIMIT 1";
-				$prep_admin2 = $dbcore->sql->conn->prepare($sql);
-				$prep_admin2->bindParam(1, $admin2_id, PDO::PARAM_INT);
-				$prep_admin2->execute();
-				$admin2_fetch = $prep_admin2->fetch(2);
-				$admin2_asciiname = $admin2_fetch['asciiname'];
-				
-				$results .= $dbcore->createKML->createNetworkLink($dbcore->URL_PATH.'api/v2/export.php?func=exp_admin2&#x26;country_code='.$country_code.'&#x26;admin1_id='.$admin1_id.'&#x26;admin2_id='.$admin2_id.'&#x26;debug='.$debug, $admin2_asciiname, 1, 0, "onChange", 86400, 0);
-				
-			}
-			
-			$sql = "SELECT `asciiname` FROM `geonames_admin1` WHERE `id` = ? LIMIT 1";
-			$prep_admin1 = $dbcore->sql->conn->prepare($sql);
-			$prep_admin1->bindParam(1, $admin1_id, PDO::PARAM_INT);
-			$prep_admin1->execute();
-			$admin1_fetch = $prep_admin1->fetch(2);
-			$admin1_asciiname = $admin1_fetch['asciiname'];
-			
-			$results = $dbcore->createKML->createKMLstructure($admin1_asciiname, $results);
-			if($labeled){$file_name = "admin1_".$admin1_asciiname."Labeled.kmz";}else{$file_name = "admin1_".$admin1_asciiname.".kmz";}
-			break;
-			
-		case "exp_admin2":
-			$country_code = $_REQUEST['country_code'];		
-			$admin1_id = $_REQUEST['admin1_id'];
-			$admin2_id = $_REQUEST['admin2_id'];
-			$box_latlon = array();
-			$results = '';
-			#Get APs in this admin2 region
-			$sql = "SELECT `AP_ID`, `lat`, `long` FROM `wifi_ap` WHERE `admin2_id` = ? And `admin1_id` = ?  And country_code = ? And `lat` != '0.0000' AND `mac` != '00:00:00:00:00:00'";
-			$prep_ap = $dbcore->sql->conn->prepare($sql);
-			$prep_ap->bindParam(1, $admin2_id, PDO::PARAM_INT);
-			$prep_ap->bindParam(2, $admin1_id, PDO::PARAM_INT);
-			$prep_ap->bindParam(3, $country_code, PDO::PARAM_STR);
-			$prep_ap->execute();
-			$fetchaps = $prep_ap->fetchAll();
-			foreach($fetchaps as $ap)
-			{
-				$ap_id = $ap['AP_ID'];
-				$ap_lat = $ap['lat'];
-				$ap_long = $ap['long'];
-				
-				#Add gps to region array
-				$latlon_info = array(
-				"lat" => $latlon_fetch['lat'],
-				"long" => $latlon_fetch['long'],
-				);
-				$box_latlon[] = $latlon_info;
-
-				list($results_temp, $export_ssid) = $dbcore->export->ExportSingleAp($ap_id, $labeled, $new_icons);
-				$results .= $results_temp;
-				
-			
-			}
-			if($results)
-			{
-				$final_box = $dbcore->export->FindBox($box_latlon);
-				list($distance_calc, $minLodPix, $distance) = $dbcore->export->distance($final_box[0], $final_box[2], $final_box[1], $final_box[3], "K"); # North, East, South, West
-				$KML_region = $dbcore->createKML->PlotRegionBox($final_box, $distance_calc, $minLodPix, uniqid());
-				$results = $dbcore->createKML->createFolder("APs", $KML_Region.$results, 0);
-				If($debug)
-				{
-					$KML_Box = $dbcore->createKML->minLodPixels($final_box, 0);
-					$results .= $dbcore->createKML->createFolder("minLodPixels Box", $KML_Box, 0, 0, 0);
-				}
-			}
-			
-			$sql = "SELECT `asciiname` FROM `geonames_admin2` WHERE `id` = ? LIMIT 1";
-			$prep_admin2 = $dbcore->sql->conn->prepare($sql);
-			$prep_admin2->bindParam(1, $admin2_id, PDO::PARAM_INT);
-			$prep_admin2->execute();
-			$admin2_fetch = $prep_admin2->fetch(2);
-			$admin2_asciiname = $admin2_fetch['asciiname'];
-			
-			$results = $dbcore->createKML->createKMLstructure($admin2_asciiname, $results);
-			if($labeled){$file_name = "admin2_".$admin2_asciiname."Labeled.kmz";}else{$file_name = "admin2_".$admin2_asciiname.".kmz";}
-			
-			break;
-
 		default:
 			echo 'No function or incorrect function has been given...what am I supposed to do with this request?';
 			die();

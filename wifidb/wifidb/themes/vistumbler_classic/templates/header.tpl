@@ -1,49 +1,50 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html lang="en">
     <head>
-<!-- Google tag (gtag.js) -->
-{literal}
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-S1ZD9TQYZK"></script>
+{if $wifidb_tracking|default:false}
+<!-- Google consent mode: nothing uses cookies for analytics or personalized ads until the visitor allows it, and only
+     the visitors Site Settings says to ask are asked (lib/js/cookie-consent.js) -->
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'analytics_storage': 'denied'
-  });
-
-{/literal}
-  gtag('config', 'G-S1ZD9TQYZK', {ldelim} 'ip_version': '{$ip_version|default:""}' {rdelim});
-{literal}
+  function gtag(){ldelim}dataLayer.push(arguments);{rdelim}
+  gtag('consent', 'default', {ldelim} 'ad_storage': 'denied', 'analytics_storage': 'denied', 'ad_user_data': 'denied', 'ad_personalization': 'denied' {rdelim});
+  window.WIFIDB_CONSENT = {ldelim} ask: {if $wifidb_consent_ask}true{else}false{/if} {rdelim};
 </script>
-{/literal}
+<script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
+{/if}
+{if $wifidb_analytics_id|default:''}
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id={$wifidb_analytics_id|escape:'url'}"></script>
+<script>
+  gtag('js', new Date());
+  gtag('config', '{$wifidb_analytics_id|escape:'javascript'}', {ldelim} 'ip_version': '{$ip_version|default:""|escape:'javascript'}' {rdelim});
+</script>
+{/if}
         <link rel="stylesheet" href="{$themeurl}styles.css" />
         <link rel="stylesheet" href="{$wifidb_host_url}lib/js/sceditor/minified/themes/default.min.css" id="theme-style" />
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/sceditor.min.js"></script>
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/icons/monocons.js"></script>
         <script src="{$wifidb_host_url}lib/js/sceditor/minified/formats/bbcode.js"></script>
         <title>Wireless DataBase  {$wifidb_version_label|default:""}  --&gt; {$wifidb_page_label|default:""}</title>
-        {$wifidb_seo_content|default:""}
+        <meta name="description" content="{$wifidb_site_description|default:''|escape:'html':'UTF-8':false}" />
+        {if $wifidb_noindex|default:false}<meta name="robots" content="noindex, nofollow" />{/if}
+        {if $wifidb_google_verification|default:''}<meta name="google-site-verification" content="{$wifidb_google_verification|escape:'html':'UTF-8':false}" />{/if}
+        {if $wifidb_bing_verification|default:''}<meta name="msvalidate.01" content="{$wifidb_bing_verification|escape:'html':'UTF-8':false}" />{/if}
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        
+
         <!-- Open Graph -->
         <meta property="og:title" content="{$wifidb_page_label|default:""} | Vistumbler WiFiDB" />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+        <meta property="og:url" content="{$wifidb_site_origin|default:''|escape:'html':'UTF-8':false}{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
         <meta property="og:image" content="{$themeurl}img/logo.png" />
-        <meta property="og:description" content="Vistumbler WiFiDB is a global open-source wireless network database." />
-        <link rel="canonical" href="https://wifidb.net{$smarty.server.REQUEST_URI}" />
+        <meta property="og:description" content="{$wifidb_site_description|default:''|escape:'html':'UTF-8':false}" />
+        <link rel="canonical" href="{$wifidb_site_origin|default:''|escape:'html':'UTF-8':false}{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 
         {$wifidb_meta_header}
         {$redirect_func}
         <!-- QR loader for client-side QR generation (shared) -->
-        <script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
     </head>
     <body style="background-color: #145285" {$redirect_html}>
-        <!-- Cookie consent & consent-mode helper (shared) -->
-        <script src="{$wifidb_host_url}lib/js/cookie-consent.js"></script>
         {$install_header|default:""}
         {$wifidb_announce_header|default:""}
         
@@ -88,9 +89,6 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php">Files Importing</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=waiting">Files Waiting</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=done">Files Completed</a></div>
-                                {if ($wifidb_login_priv_name|default:"") == "Administrator"}
-                                <div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
-                                {/if}
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=schedule">Schedule</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/search.php">Search</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=daemon_kml">KMZ Exports</a></div>
@@ -98,6 +96,21 @@
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/userstats.php?func=allusers&sort=user&ord=ASC&from=0&inc=100">Users</a></div>
 								<div class="inside_text_bold"><a href="{$wifidb_host_url}themes/">Themes</a></div>
 								<div class="inside_text_bold"><a href="https://forum.techidiots.net/forum/">Support Forum</a></div>
+								{if $wifidb_is_admin|default:false}
+								<div class="inside_dark_header" style="margin-top: 5px">Admin</div>
+								{if $wifidb_admin_mode|default:false}
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}opt/scheduling.php?func=bad">Files Bad</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/settings.php">Site Settings</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/logins.php">Sign-in Providers</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/mail.php">Mail</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/backups.php">Backups</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/servers.php">Servers</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}admin/traffic.php">Traffic</a></div>
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php?func=off">Leave admin mode</a></div>
+								{else}
+								<div class="inside_text_bold"><a href="{$wifidb_host_url}cp/admin_mode.php">Turn on admin mode</a></div>
+								{/if}
+								{/if}
 								<!--
                                 {if $login_val eq "1"}
                                 <div class="inside_text_bold"><strong>
@@ -128,7 +141,7 @@
                             </td>
                             <!-- ------ WiFiDB Login Bar ---- -->
                             <td class="cell_top_mid" style="height: 20px" align="left">
-                                {if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a>{/if}
+                                {if ($wifidb_login_logged_in|default:0) == 1}<a class="links" href="{$wifidb_host_url}cp/index.php">{$wifidb_login_user|escape:'html':'UTF-8':false}</a> | <a class="links" href="{$wifidb_host_url}cp/messages.php">Inbox{if $wifidb_message_unread_count gt 0} <b>({$wifidb_message_unread_count})</b>{/if}</a> | <a class="links" href="{$wifidb_host_url}cp/notifications.php">Alerts{if $wifidb_notification_unread_count|default:0 gt 0} <b>({$wifidb_notification_unread_count})</b>{/if}</a>{/if}
                             </td>
                             <td class="cell_top_mid" style="height: 20px" align="right">
                                 <a class="links" href="{$wifidb_host_url}login.php{$wifidb_current_uri|default:""}">{$wifidb_login_label|default:'login'}</a>

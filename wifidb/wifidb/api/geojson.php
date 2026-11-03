@@ -1,6 +1,6 @@
 <?php
 error_reporting(1);
-@ini_set('display_errors', 1);
+@ini_set('display_errors', 0);
 /*
 Copyright (C) 2021 Andrew Calcutt
 
@@ -37,7 +37,8 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		$Import_Map_Data = "";
 		
-		$sql = "SELECT id, ssid, mac, auth, encry, sectype, radio, chan, sig, username, session_id, ap_hash, BTx, OTx, NT, Label, FA, LA, lat, long\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # live_aps's mixed-case columns, quoted on PostgreSQL
+		$sql = "SELECT id, ssid, mac, auth, encry, sectype, radio, chan, sig, username, session_id, ap_hash, ".$q('BTx').", ".$q('OTx').", ".$q('NT').", ".$q('Label').", ".$q('FA').", ".$q('LA').", lat, long\n"
 					. "FROM live_aps\n"
 					. "WHERE lat <> '0.0000' AND id = ?";
 
@@ -84,6 +85,8 @@ switch($func)
 			{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT \"SSID\" FROM wifi_ap WHERE \"AP_ID\" = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -149,6 +152,8 @@ switch($func)
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT title FROM files WHERE id = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -172,6 +177,8 @@ switch($func)
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT title FROM files WHERE id = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -206,6 +213,8 @@ switch($func)
 				{$sql = "SELECT file_date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY file_date DESC LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 [file_date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [file_date] DESC";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT file_date FROM files WHERE completed = 1 AND \"ValidGPS\" = 1 ORDER BY file_date DESC LIMIT 1";}
 			$date_query = $dbcore->sql->conn->query($sql);
 			$date_fetch = $date_query->fetch(2);
 			$start_date = date('Y-m-d',strtotime($date_fetch['file_date']));
@@ -237,8 +246,8 @@ switch($func)
 		break;
 
 	case "exp_search":
-		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+		$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+		$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 		
 		if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 		if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}

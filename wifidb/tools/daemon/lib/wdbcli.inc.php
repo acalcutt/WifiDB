@@ -7,6 +7,8 @@
  */
 class wdbcli extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $log_path;
     function __construct($config, $daemon_config)
     {
         parent::__construct($config);

@@ -59,7 +59,7 @@ switch($func)
 		$otherusers = (empty($_POST['otherusers'])) ? "" : $_POST['otherusers'];
 		$type = (empty($_POST['type'])) ? "" : $_POST['type'];
 		
-		$sql = "SELECT username FROM user_info WHERE username LIKE ?";
+		$sql = "SELECT username FROM user_info WHERE username = ?";
 		$stmt = $dbcore->sql->conn->prepare($sql);
 		$stmt->bindParam(1, $user, PDO::PARAM_STR);
 		$stmt->execute();
@@ -157,39 +157,29 @@ switch($func)
 								{
 									$mesg .= "<h3>With help from: ".$otherusers."<BR></h3>";
 								}
-								//lets try a scheduled import table that has a cron job
-								//that runs and imports all of them at once into the DB
-								//in order that they where uploaded
-								
-								if($dbcore->sql->service == "mysql")
-									{$sql = "INSERT INTO `files_tmp`(`file_name`, `file_orig`, `file_date`, `file_user`, `otherusers`, `notes`, `title`, `size`, `hash`, `type`) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-								else if($dbcore->sql->service == "sqlsrv")
-									{$sql = "INSERT INTO [files_tmp]([file_name], [file_orig], [file_date], [file_user], [otherusers], [notes], [title], [size], [hash], [type]) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
-
-								$result = $dbcore->sql->conn->prepare( $sql );
-								$result->bindValue(1, $filename, PDO::PARAM_STR);
-								$result->bindValue(2, $filename_orig, PDO::PARAM_STR);
-								$result->bindValue(3, $date, PDO::PARAM_STR);
-								$result->bindValue(4, $user, PDO::PARAM_STR);
-								$result->bindValue(5, $otherusers, PDO::PARAM_STR);
-								$result->bindValue(6, $notes, PDO::PARAM_STR);
-								$result->bindValue(7, $title, PDO::PARAM_STR);
-								$result->bindValue(8, $size, PDO::PARAM_STR);
-								$result->bindValue(9, $hash, PDO::PARAM_STR);
-								$result->bindValue(10, $type, PDO::PARAM_STR);
-								$result->execute();
-								if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() != 0)
+								// onto the import queue (lib/import_queue.inc.php): once only, by way of the shared files bucket
+								// when there is one, and marked with this node
+								require_once '../lib/import_queue.inc.php';
+								list($queued, $import_number) = ImportQueue::Add($dbcore->sql->conn, $config, array('file_name' => $filename,
+									'file_orig' => $filename_orig, 'file_date' => $date, 'file_user' => $user, 'otherusers' => $otherusers,
+									'notes' => $notes, 'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type), $uploadfile,
+									function ($line) use ($dbcore) { $dbcore->logd($line, "error"); });
+								if($queued === 'waiting' || $queued === 'imported')
 								{
-									$mesg .= "<h2>File ($filename_orig) has been inserted for importing at a scheduled time. Import Number: {$dbcore->sql->conn->lastInsertId()}</h2>";
-									$message .= "File ($filename_orig) has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
+									$mesg .= "<h2>File (".htmlspecialchars($filename_orig, ENT_QUOTES).") has already been uploaded</h2>";
 								}
-								else if($dbcore->sql->checkError() === 0 && $dbcore->sql->conn->lastInsertId() == 0)
+								elseif($queued === 'unstored')
 								{
-									$mesg .= "<h2>File ($filename_orig) has already been inserted</h2>";
+									$mesg .= "<h2>File (".htmlspecialchars($filename_orig, ENT_QUOTES).") could not be stored for importing. Please try again in a while.</h2>";
+								}
+								elseif($queued === 'queued')
+								{
+									$mesg .= "<h2>File ($filename_orig) has been inserted for importing at a scheduled time. Import Number: {$import_number}</h2>";
+									$message .= "File ($filename_orig) has been inserted for importing at a later time at a scheduled time.\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->URL_PATH."/import/up/".$rand."_".$filename."\r\n".$dbcore->URL_PATH."/opt/scheduling.php\r\n\r\n-WiFiDB Daemon.";
 								}
 								else
 								{
-									$mesg .= "<h2>There was an error inserting file for scheduled import.</h2>".var_export($dbcore->sql->conn->errorInfo());
+									$mesg .= "<h2>There was an error inserting file for scheduled import.</h2>";
 									$message .= "New Import Failed!\r\nUser: $user\r\nTitle: $title\r\nFile: ".$dbcore->PATH."/import/up/$rand.'_'.$filename\r\n\r\n-WiFiDB Daemon.\r\n There was an error inserting file for schedualing.\r\n\r\n";
 									#$dbcore->mail_admins($message, $subject, $type);
 								}

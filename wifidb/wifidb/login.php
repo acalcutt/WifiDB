@@ -27,10 +27,28 @@ include('lib/init.inc.php');
 $dbcore->smarty->assign('wifidb_page_label', 'User Login');
 
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
-if(isset($_REQUEST['return'])){$return = $_REQUEST['return'];}else{$return="";}
+$return = wifidb_safe_return(isset($_REQUEST['return']) ? $_REQUEST['return'] : '', $dbcore->sec->domain, '');
 
 if($return == ''){$return = '/'.$dbcore->root;}
 $root_path = ($dbcore->root != '' ? '/'.trim($dbcore->root, '/') : '');
+# Site Settings can close sign-ups: the link goes away and the form and its handler say so
+$signups_open = $dbcore->sec->Setting('signups_open');
+$dbcore->smarty->assign('wifidb_signups_open', $signups_open);
+if(!$signups_open && ($func === 'create_user_form' || $func === 'create_user_proc'))
+{
+	$dbcore->smarty->assign('wifidb_page_label', 'Sign-ups Closed');
+	$dbcore->smarty->assign('message', "<h2>Sign-ups are closed right now.</h2>");
+	$dbcore->smarty->display('login_result.tpl');
+	exit;
+}
+# "Sign in with Google" and the like, for the providers an administrator turned on (admin/logins.php)
+$linked_logins = array();
+try
+{
+	foreach($dbcore->sec->LinkedLogins()->EnabledProviders() as $provider) { $linked_logins[] = array('id' => $provider, 'name' => LinkedLogins::Name($provider)); }
+}
+catch(Throwable $e) {}
+$dbcore->smarty->assign('wifidb_linked_logins', $linked_logins);
 switch($func)
 {
 	case "login_proc":
@@ -39,6 +57,8 @@ switch($func)
 		$Bender_remember_me = (@$_POST['Bender_remmeber_me'] == "Yes" ? 1 : 0 );
 		
 		$dbcore->sec->Login($username, $password, $Bender_remember_me);
+		require_once 'lib/traffic.inc.php';
+		Traffic::Note($config, in_array($dbcore->sec->login_val, array('good', 'mfa_required'), true) ? 'login' : 'login_failed');   # admin/traffic.php
 		switch($dbcore->sec->login_val)
 		{
 			case "locked":
@@ -48,6 +68,7 @@ switch($func)
 			break;
 
 			case "validate":
+			case "NotValidated":
 				$message = 'This user is not validated yet. You should be getting an email soon if not already from the Database with a link to validate your email address first so that we can verify that you are in fact a real person. The administrator of the site has enabled this by default.';
 				if($return){$return = $root_path.'/login.php?return='.urlencode($return);}else{$return = $root_path.'/login.php';}
 				$dbcore->redirect_page($return, 5000);
@@ -82,6 +103,12 @@ switch($func)
 				$dbcore->redirect_page($return, 2000);
 			break;
 
+			case "mfa_required":
+				# The password was right; the second step comes next.
+				header('Location: '.$root_path.'/login.php?func=mfa&return='.urlencode($return));
+				exit;
+			break;
+
 			case "cookie_fail":
 				$message = "Set Cookie fail, check the bottom of the glass, or your browser.";
 			break;
@@ -92,6 +119,85 @@ switch($func)
 		}
 		$dbcore->smarty->assign('message', $message);
 		$dbcore->smarty->display('login_result.tpl');
+	break;
+
+	#---# The second step of signing in: an authenticator or recovery code, or a passkey. Only for a session whose password
+	#---# was right (sec->mfa_pending); anything else has nothing to do here.
+	case "mfa":
+		if(!$dbcore->sec->mfa_pending) { header('Location: '.$return); exit; }
+		$tf = $dbcore->sec->TwoFactor();
+		$hasPasskey = false;
+		foreach($tf->Methods($dbcore->sec->mfa_user) as $method) { if($method['type'] === 'passkey') { $hasPasskey = true; } }
+		$errors = array(
+			'wrong_code' => 'That code did not work. Try the newest one from your app, or a recovery code.',
+			'throttled'  => 'Too many wrong tries. Wait a few minutes and try again.',
+		);
+		$e = (string)filter_input(INPUT_GET, 'e', FILTER_SANITIZE_SPECIAL_CHARS);
+		$dbcore->smarty->assign('wifidb_page_label', 'Sign In: Second Step');
+		$dbcore->smarty->assign('mfa_user', $dbcore->sec->mfa_user);
+		$dbcore->smarty->assign('mfa_return', $return);
+		$dbcore->smarty->assign('mfa_error', isset($errors[$e]) ? $errors[$e] : '');
+		$dbcore->smarty->assign('mfa_has_passkey', $hasPasskey);
+		$dbcore->smarty->assign('mfa_can_remember', $tf->DeviceToken($dbcore->sec->mfa_user) !== '');
+		$dbcore->smarty->display('login_mfa.tpl');
+	break;
+
+	#---#
+	case "mfa_proc":
+		if($_SERVER['REQUEST_METHOD'] !== 'POST' || !$dbcore->sec->mfa_pending) { header('Location: '.$return); exit; }
+		$tf = $dbcore->sec->TwoFactor();
+		$user = $dbcore->sec->mfa_user;
+		$proof = $tf->VerifyCode($user, isset($_POST['code']) ? $_POST['code'] : '');
+		if(!$proof['ok'])
+		{
+			$dbcore->sec->logd("Second factor failed for ".var_export($user, 1).": ".$proof['error'], "error");
+			header('Location: '.$root_path.'/login.php?func=mfa&e='.urlencode($proof['error']).'&return='.urlencode($return));
+			exit;
+		}
+		$tf->MfaDone($user, $dbcore->sec->mfa_session);
+		if(@$_POST['remember'] === 'yes') { $dbcore->sec->RememberThisComputer($user); }
+		$dbcore->sec->logd("Second factor accepted for ".var_export($user, 1)." (".$proof['via'].")", "message");
+		if($proof['via'] === 'recovery')
+		{
+			$left = $tf->RecoveryCodesLeft($user);
+			$dbcore->sec->Tell($user, 'A recovery code was used to sign in', "A recovery code was used to sign in to your account. You have $left left; you can make new ones under Preferences, Security. If this was not you, change your password.", $dbcore->URL_PATH.'cp/security.php');
+		}
+		header('Location: '.$return);
+		exit;
+	break;
+
+	#---# Passkeys: the page's script asks for a challenge, signs it, and sends the answer back (JSON).
+	case "mfa_passkey_begin":
+	case "mfa_passkey_finish":
+		header('Content-Type: application/json');
+		header('Cache-Control: no-store');
+		$isJson = isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') === 0;
+		if($_SERVER['REQUEST_METHOD'] !== 'POST' || !$isJson || !$dbcore->sec->mfa_pending)
+		{
+			http_response_code(403);
+			echo json_encode(array('ok' => false, 'error' => 'not_pending'));
+			break;
+		}
+		$tf = $dbcore->sec->TwoFactor();
+		$user = $dbcore->sec->mfa_user;
+		if($func === 'mfa_passkey_begin')
+		{
+			echo json_encode(array('ok' => true) + $tf->StartPasskeyAssertion($user, $dbcore->sec->mfa_session));
+			break;
+		}
+		$in = json_decode(file_get_contents('php://input'), true);
+		$in = is_array($in) ? $in : array();
+		$proof = $tf->VerifyPasskey($user, $dbcore->sec->mfa_session, (string)@$in['id'], (string)@$in['clientDataJSON'], (string)@$in['authenticatorData'], (string)@$in['signature']);
+		if(!$proof['ok'])
+		{
+			$dbcore->sec->logd("Passkey failed for ".var_export($user, 1).": ".$proof['error'].(isset($proof['reason']) ? ', '.$proof['reason'] : ''), "error");
+			echo json_encode(array('ok' => false, 'error' => $proof['error']));
+			break;
+		}
+		$tf->MfaDone($user, $dbcore->sec->mfa_session);
+		if(!empty($in['remember'])) { $dbcore->sec->RememberThisComputer($user); }
+		$dbcore->sec->logd("Passkey accepted for ".var_export($user, 1), "message");
+		echo json_encode(array('ok' => true, 'redirect' => $return));
 	break;
 
 	#---#
@@ -118,6 +224,8 @@ switch($func)
 			{$sql = "DELETE FROM `user_login_hashes` WHERE `username` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "DELETE FROM [user_login_hashes] WHERE [username] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "DELETE FROM user_login_hashes WHERE username = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->execute();
@@ -175,6 +283,11 @@ switch($func)
 			$dbcore->smarty->assign('message', "<font color='Red'><h2>Passwords is blank.</h2></font>");
 			$dbcore->smarty->display('create_user.tpl');
 		}
+		else if(($refused = $dbcore->sec->SpamRefusal('newuser', $email, $username)) !== '')
+		{
+			$dbcore->smarty->assign('message', "<font color='Red'><h2>This sign-up was refused by the spam check: ".htmlspecialchars($refused, ENT_QUOTES, 'UTF-8')."</h2></font>");
+			$dbcore->smarty->display('create_user.tpl');
+		}
 		else
 		{
 			#var_dump("Start Create User");
@@ -184,11 +297,34 @@ switch($func)
 			switch($ret)
 			{
 				case 1:
+					require_once 'lib/traffic.inc.php';
+					Traffic::Note($config, 'signup');   # admin/traffic.php
 					$subject = "Vistumbler WifiDB - User '$username' Created";
 					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n";
-					$dbcore->wdbmail->mail_users($message, $subject, "new_users", 0);
+					$dbcore->wdbmail->notify('new_user', $subject, $message, $dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user=".urlencode($username), 'new_users', null, "New member: $username");
+					# signed up after signing in with an outside account nobody had linked (logins.php): the new account gets it
+					$linked_note = '';
+					$link_token = (isset($_COOKIE[LinkedLogins::LINK_COOKIE]) && is_string($_COOKIE[LinkedLogins::LINK_COOKIE])) ? $_COOKIE[LinkedLogins::LINK_COOKIE] : '';
+					try
+					{
+						$logins = $dbcore->sec->LinkedLogins();
+						$held = $logins->Unlinked($link_token, $link_token);
+						if($held && $held['username'] === '')
+						{
+							$logins->UnlinkedDone($link_token);
+							$dbcore->sec->LinkedLoginCookie(LinkedLogins::LINK_COOKIE, '');
+							$logins->Link($username, $held['provider'], $held['identity']);
+							$linked_name = LinkedLogins::Name($held['provider']);
+							$dbcore->sec->logd("A ".$linked_name." account was linked to new member ".var_export($username, 1), "message");
+							$linked_note = "<h2>Your $linked_name account is linked to it: once you can sign in, Sign in with $linked_name works too.</h2>";
+						}
+					}
+					catch(Throwable $e)
+					{
+						$dbcore->sec->logd("Could not link an outside account to new member ".var_export($username, 1).": ".$e->getMessage(), "error");
+					}
 					#User created!, now if the admin has enabled Email Confirmation before a user can be used, send it out, other wise let them login.
-					if($dbcore->sec->email_validation)
+					if($dbcore->sec->Setting('email_validation'))
 					{
 						$msg = "The WiFiDB requires confirmation before you can log in. Please click the following link to activate your account";
 						$subject = "Vistumbler WifiDB - New User Confirmation";
@@ -203,7 +339,7 @@ switch($func)
 					{
 						$message = "<font color='Green'><h2>User Created! Go ahead and login.</h2></font>";
 					}
-					$dbcore->smarty->assign('message', $message);
+					$dbcore->smarty->assign('message', $message.$linked_note);
 					$dbcore->smarty->display('login_index.tpl');
 				break;
 
@@ -220,12 +356,14 @@ switch($func)
 	break;
 
 	case "validate_user":
-		$validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
+		$validate_code = wifidb_input_string(INPUT_GET, 'validate_code');
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `code` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [username] FROM [user_validate] WHERE [code] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_validate WHERE code = ?";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->execute(array($validate_code));
 		$v_array = $result->fetch(2);
@@ -237,6 +375,8 @@ switch($func)
 				{$update = "UPDATE `user_info` SET `validated` = '0' WHERE `username` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$update = "UPDATE [user_info] SET [validated] = '0' WHERE [username] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$update = "UPDATE user_info SET validated = '0' WHERE username = ?";}
 			$result = $dbcore->sql->conn->prepare($update);
 			$result->bindParam(1, $username);
 			$result->execute();
@@ -248,6 +388,8 @@ switch($func)
 					{$delete = "DELETE FROM `user_validate` WHERE `username` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$delete = "DELETE FROM [user_validate] WHERE [username] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$delete = "DELETE FROM user_validate WHERE username = ?";}
 				$result = $dbcore->sql->conn->prepare($delete);
 				$result->bindParam(1, $username);
 				$result->execute();
@@ -283,9 +425,11 @@ switch($func)
 		
 		#Get users email address
 		if($dbcore->sql->service == "mysql")
-			{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";}
+			{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
-			{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] LIKE ?";}
+			{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql0 = "SELECT email FROM user_info WHERE username = ? LIMIT 1";}
 		$prep = $dbcore->sql->conn->prepare($sql0);
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->execute();
@@ -330,9 +474,11 @@ switch($func)
 		else
 		{
 			if($dbcore->sql->service == "mysql")
-				{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` LIKE ? LIMIT 1";}
+				{$sql0 = "SELECT `email` FROM `user_info` WHERE `username` = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
-				{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] LIKE ?";}
+				{$sql0 = "SELECT TOP 1 [email] FROM [user_info] WHERE [username] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql0 = "SELECT email FROM user_info WHERE username = ? LIMIT 1";}
 			$prep = $dbcore->sql->conn->prepare($sql0);
 			$prep->bindParam(1, $username, PDO::PARAM_STR);
 			$prep->execute();
@@ -364,13 +510,15 @@ switch($func)
 	
 	case "reset_password_validated":
 		$username = filter_input(INPUT_GET, 'username', FILTER_SANITIZE_SPECIAL_CHARS);
-		$validate_code = filter_input(INPUT_GET, 'validate_code', FILTER_SANITIZE_STRING);
+		$validate_code = wifidb_input_string(INPUT_GET, 'validate_code');
 
 		#Check if username and validation code exist
 		if($dbcore->sql->service == "mysql")
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [username] FROM [user_validate] WHERE [username] = ? AND [code] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_validate WHERE username = ? AND code = ? LIMIT 1";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
 		$result->bindParam(2, $validate_code);
@@ -393,8 +541,8 @@ switch($func)
 	break;
 	
 	case "reset_password_finish":
-		$username = filter_input(INPUT_POST, 'usernameh', FILTER_SANITIZE_STRING);
-		$validate_code = filter_input(INPUT_POST, 'validate_code', FILTER_SANITIZE_STRING);
+		$username = wifidb_input_string(INPUT_POST, 'usernameh');
+		$validate_code = wifidb_input_string(INPUT_POST, 'validate_code');
 		$newpassword = filter_input(INPUT_POST, 'newpassword', FILTER_SANITIZE_SPECIAL_CHARS);
 		$newpassword2 = filter_input(INPUT_POST, 'newpassword2', FILTER_SANITIZE_SPECIAL_CHARS);
 		
@@ -403,6 +551,8 @@ switch($func)
 			{$sql = "SELECT `username` FROM `user_validate` WHERE `username` = ? AND `code` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [username] FROM [user_validate] WHERE [username] = ? AND [code] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_validate WHERE username = ? AND code = ? LIMIT 1";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $username);
 		$result->bindParam(2, $validate_code);
@@ -415,13 +565,14 @@ switch($func)
 			if($newpassword === $newpassword2)
 			{
 				#Change the users password, validate them, and unlock account
-				$salt			   = $dbcore->sec->GenerateKey(29);
-				$password_hashed	= crypt($newpassword, '$2a$07$'.$salt.'$');
+				$password_hashed	= $dbcore->sec->HashPassword($newpassword);
 
 				if($dbcore->sql->service == "mysql")
-					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` LIKE ?";}
+					{$update = "UPDATE `user_info` SET `password` = ?, validated = 0, locked = 0 WHERE `username` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
-					{$update = "UPDATE [user_info] SET [password] = ?, validated = 0, locked = 0 WHERE [username] LIKE ?";}
+					{$update = "UPDATE [user_info] SET [password] = ?, validated = 0, locked = 0 WHERE [username] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$update = "UPDATE user_info SET password = ?, validated = 0, locked = 0 WHERE username = ?";}
 				$prep1 = $dbcore->sql->conn->prepare($update);
 				$prep1->bindParam(1, $password_hashed, PDO::PARAM_STR);
 				$prep1->bindParam(2, $db_username, PDO::PARAM_STR);
@@ -434,6 +585,8 @@ switch($func)
 						{$delete = "DELETE FROM `user_validate` WHERE `username` = ?";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$delete = "DELETE FROM [user_validate] WHERE [username] = ?";}
+					else if($dbcore->sql->service == "pgsql")
+						{$delete = "DELETE FROM user_validate WHERE username = ?";}
 					$result = $dbcore->sql->conn->prepare($delete);
 					$result->bindParam(1, $db_username);
 					$result->execute();

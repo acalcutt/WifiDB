@@ -39,13 +39,13 @@ if not, write to the
 					</tr>
 					<tr>
 						<td class="light">
-							{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}
+							{if $message.title eq ''}[Blank Title]{else}{$message.title|escape:'html':'UTF-8':false}{/if}
 						</td>
 						<td class="light">
-							{$message.username1}
+							{$message.username1|escape:'html':'UTF-8':false}
 						</td>
 						<td class="light">
-							{$message.username2}
+							{$message.username2|escape:'html':'UTF-8':false}
 						</td>						
 						<td class="light">
 							{$message.stimestamp}
@@ -71,7 +71,7 @@ if not, write to the
 						readOnly: true,
 						toolbar: '',
 						resizeMaxHeight: -1,
-						style: '{$themeurl}lib/sceditor/minified/themes/content/default.min.css',
+						style: '{$wifidb_host_url}lib/js/sceditor/minified/themes/content/default.min.css',
 						emoticonsRoot: '{$themeurl}img/'
 					});
 				</script>

@@ -179,7 +179,7 @@ $tilejson = [
     'name'          => $bucket_meta[$bucket]['name'],
     'description'   => $bucket_meta[$bucket]['desc'],
     'version'       => '1.0.0',
-    'attribution'   => '<a href="https://wifidb.net">© WifiDB contributors</a>',
+    'attribution'   => mvt_attribution($dbcore),   // the same string the archives carry, so the map shows it once
     'scheme'        => 'xyz',
     'tiles'         => [$tiles_url],
     'minzoom'       => $tile_minzoom,

@@ -1,6 +1,6 @@
 ﻿<?php
 error_reporting(1);
-@ini_set('display_errors', 1);
+@ini_set('display_errors', 0);
 /*
 Copyright (C) 2021 Andrew Calcutt
 
@@ -180,7 +180,7 @@ $zoom = filter_input(INPUT_GET, 'zoom', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLA
 $bearing = filter_input(INPUT_GET, 'bearing', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 $pitch = filter_input(INPUT_GET, 'pitch', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
 
-$style = filter_input(INPUT_GET, 'style', FILTER_SANITIZE_STRING);
+$style = wifidb_input_string(INPUT_GET, 'style');
 $styles = array("WDB_OSM","OpenMapTiles","protomaps","WDB_BASIC_OVERTURE","WDB_SAT");
 if(!in_array($style, $styles)){$style = "WDB_OSM";}
 
@@ -231,7 +231,7 @@ function mvt_history_layers($cGeoJSON, bool $colored, string $visibility): array
 switch($func)
 {
 	case "wifidbmap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -290,7 +290,7 @@ switch($func)
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "heatmap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -335,15 +335,16 @@ switch($func)
 		$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 		$title = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 		
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
 		#Get Point count and division count
-		$sql = "SELECT Count(AP_ID) As point_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(".$q('AP_ID').") As point_count\n"
 			. "FROM wifi_ap\n"
 			. "WHERE\n"
-			. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
+			. "	".$q('File_ID')." IN (SELECT id FROM files WHERE ".$q('ValidGPS')." = 1 AND file_user = ?)";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -415,15 +416,16 @@ switch($func)
 	case "user_list":
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
 		#Get Point count and division count
-		$sql = "SELECT Count(DISTINCT wifi_hist.AP_ID) AS point_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(DISTINCT wifi_hist.".$q('AP_ID').") AS point_count\n"
 			. "From wifi_hist\n"
-			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.AP_ID = wap.AP_ID\n"
-			. "WHERE wifi_hist.File_ID = ? AND wap.HighGps_ID IS NOT NULL";
+			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.".$q('AP_ID')." = wap.".$q('AP_ID')."\n"
+			. "WHERE wifi_hist.".$q('File_ID')." = ? AND wap.".$q('HighGps_ID')." IS NOT NULL";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -436,6 +438,8 @@ switch($func)
 			{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT title FROM files WHERE id = ?";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -520,7 +524,7 @@ switch($func)
 		$dbcore->smarty->display('map.tpl');
 		break;
 	case "exp_ap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -538,6 +542,13 @@ switch($func)
 					. "FROM [wifi_ap]\n"
 					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
 					. "WHERE [wifi_ap].[AP_ID] = ?";
+			}
+		else if($dbcore->sql->service == "pgsql")
+			{
+				$sql = "SELECT wifi_gps.\"Lat\", wifi_gps.\"Lon\", wifi_ap.\"SSID\" AS ssid\n"
+					. "FROM wifi_ap\n"
+					. "LEFT JOIN wifi_gps ON wifi_ap.\"HighGps_ID\" = wifi_gps.\"GPS_ID\"\n"
+					. "WHERE wifi_ap.\"AP_ID\" = ?";
 			}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
@@ -596,7 +607,7 @@ switch($func)
 		break;
 
 	case "exp_ap_sig":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","signal","rssi","hist_date");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -604,13 +615,14 @@ switch($func)
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 		#Get Point count and division count
-		$sql = "SELECT Count(wh.Hist_ID) As point_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(wh.".$q('Hist_ID').") As point_count\n"
 			. "FROM wifi_hist AS wh\n"
-			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wh.GPS_ID\n";
+			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = wh.".$q('GPS_ID')."\n";
 		if($file_id)
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ? And wh.File_ID = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND wh.".$q('AP_ID')." = ? And wh.".$q('File_ID')." = ?\n";}
 		else
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND wh.AP_ID = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND wh.".$q('AP_ID')." = ?\n";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		if($file_id){$result->bindParam(2, $file_id, PDO::PARAM_INT);}
@@ -620,10 +632,10 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get Marker Centerpoint
-		$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, wifi_ap.SSID, wifi_ap.SECTYPE\n"
+		$sql = "SELECT wifi_gps.".$q('Lat').", wifi_gps.".$q('Lon').", wifi_ap.".$q('SSID').", wifi_ap.".$q('SECTYPE')."\n"
 			. "FROM wifi_ap\n"
-			. "LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID\n"
-			. "WHERE wifi_ap.AP_ID = ?";
+			. "LEFT JOIN wifi_gps ON wifi_ap.".$q('HighGps_ID')." = wifi_gps.".$q('GPS_ID')."\n"
+			. "WHERE wifi_ap.".$q('AP_ID')." = ?";
 		$prepc = $dbcore->sql->conn->prepare($sql);
 		$prepc->bindParam(1, $id, PDO::PARAM_INT);
 		$prepc->execute();
@@ -675,7 +687,7 @@ switch($func)
 		break;
 
 	case "exp_cid":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -738,7 +750,7 @@ switch($func)
 		break;
 
 	case "exp_cell_sig":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","rssi","hist_date");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
@@ -746,13 +758,14 @@ switch($func)
 		$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 		#Get Point count and division count
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
 		$sql = "SELECT Count(ch.cell_hist_id) As point_count\n"
 			. "FROM cell_hist AS ch\n"
-			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = ch.gps_id\n";
+			. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = ch.gps_id\n";
 		if($file_id)
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ? And ch.file_id = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND ch.cell_id = ? And ch.file_id = ?\n";}
 		else
-			{$sql .= "WHERE wGPS.Lat <> '0.0000' AND ch.cell_id = ?\n";}
+			{$sql .= "WHERE wGPS.".$q('Lat')." <> '0.0000' AND ch.cell_id = ?\n";}
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		if($file_id){$result->bindParam(2, $file_id, PDO::PARAM_INT);}
@@ -762,9 +775,9 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get Marker Centerpoint
-		$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, cell_id.ssid\n"
+		$sql = "SELECT wifi_gps.".$q('Lat').", wifi_gps.".$q('Lon').", cell_id.ssid\n"
 			. "FROM cell_id\n"
-			. "LEFT JOIN wifi_gps ON wifi_gps.GPS_ID = cell_id.highgps_id\n"
+			. "LEFT JOIN wifi_gps ON wifi_gps.".$q('GPS_ID')." = cell_id.highgps_id\n"
 			. "WHERE cell_id.cell_id = ?";
 		$prepc = $dbcore->sql->conn->prepare($sql);
 		$prepc->bindParam(1, $id, PDO::PARAM_INT);
@@ -818,7 +831,7 @@ switch($func)
 		break;
 
 	case "exp_live_ap":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 
@@ -879,13 +892,13 @@ switch($func)
 		break;
 		
 	case "exp_search":
-		$sig_label = filter_input(INPUT_GET, 'sig_label', FILTER_SANITIZE_STRING);
+		$sig_label = wifidb_input_string(INPUT_GET, 'sig_label');
 		$sig_labels = array("none","ssid","chan","FA","LA","points","high_gps_sig","high_gps_rssi");
 		if(!in_array($sig_label, $sig_labels)){$sig_label = "none";}
 		
 		define("SWITCH_EXTRAS", "export");
-		$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-		$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+		$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+		$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 
 		$sorts=array("AP_ID","SSID","mac","chan","radio","auth","encry","FA","LA","points","ModDate");
 		if(!in_array($sort, $sorts)){$sort = "ModDate";}

@@ -21,6 +21,22 @@ if not, write to the
 
 class dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $alerts_message_flag, $AllDateRange, $apache_group, $apache_user, $bypass_check, $colors, $convert,
+		$createGeoJSON, $createGPX, $createKML, $csv_htmlpath, $csv_out, $daemon_htmlpath, $daemon_name, $daemon_out,
+		$daemon_version, $daemonize, $date_format, $datetime_format, $dBmDissociationSignal, $dBmMaxSignal, $debug,
+		$default_dst, $default_refresh, $default_timezone, $dim, $EndDaate, $export, $ForceDaemonRun, $Func, $gpx_htmlpath,
+		$gpx_out, $graphs, $HOSTURL, $import, $ImportID, $job_interval, $kml_htmlpath, $kml_out, $KML_SOURCE_URL, $lang,
+		$languages, $lastedit, $LocateList, $log_interval, $log_level, $Log_Type, $LogFile, $login_check, $mesg, $named,
+		$open_loc, $PATH, $PATH_THEMES, $pid_file, $pid_file_loc, $rebuild, $region_htmlpath, $region_out, $reserved_users,
+		$return_message, $root, $RunOnceThrough, $sec, $smarty_path, $Spawn, $sql, $StartDate, $supported_extentions,
+		$switches, $theme, $This_is_me, $thread_id, $tile_cache, $tile_max_gz_bytes, $tile_max_zoom, $tile_min_zoom,
+		$tileserver_gl_url, $time_format, $timeout, $TOOLS_PATH, $URL_PATH, $ver_array, $ver_str, $verbose, $vs1_htmlpath,
+		$vs1_out, $wdbmail, $WebSocketURL, $WEP_loc, $WPA_loc, $xml, $Zip;
+	// the tile settings the constructor copies from config by name, when config has them (lib/mvt.inc.php reads them)
+	public $tile_archive_dir, $tile_archive_generate, $tile_archive_keep, $tile_archive_url, $tile_mlt_archive_dir,
+		$tile_mlt_archive_generate, $tile_mlt_output_dir, $tile_output_dir, $tile_swarm_browser, $tile_swarm_category_prefix,
+		$tile_swarm_infohash_max_days, $tile_swarm_public_key, $tile_swarm_url;
 	public $cli;
 	public function __construct($config = NULL, $sql = null)
 	{
@@ -77,7 +93,7 @@ class dbcore
 		$this->kml_htmlpath			 = $this->URL_PATH.$config['kml_out'];
 		$this->csv_out				  = $this->PATH.$config['csv_out'];
 		$this->csv_htmlpath			 = $this->URL_PATH.$config['csv_out'];		$this->tile_cache		   = $this->PATH.(isset($config['tile_cache']) ? $config['tile_cache'] : 'out/tile_cache/');
-		if (isset($_COOKIE['wifidb_theme']) && $_COOKIE['wifidb_theme'] != '') {$this->theme = $_COOKIE['wifidb_theme'];}else{$this->theme = $config['default_theme'];}
+		$this->theme = wifidb_resolve_theme(@$_COOKIE['wifidb_theme'], $config['wifidb_install'], $config['default_theme']);
 		$this->PATH_THEMES			  = $this->PATH.'themes/'.$this->theme;
 
 		$this->open_loc				 = $config['open_loc'];
@@ -108,7 +124,7 @@ class dbcore
 		}
 
 		$this->ver_array				=   array(
-			"wifidb"					=>  "v0.40 Beta",
+			"wifidb"					=>  "v".(require dirname(__FILE__).'/version.inc.php'),   # the footer's, and the daemons' banners
 			"codename"				  =>  "Phoenix",
 			"Last_Core_Edit"			=>  "09-04-2018"
 			);
@@ -258,15 +274,16 @@ class dbcore
 			if(file_exists($WFDBD_PID)) #Check and see if the PID File exists
 			{
 				$pid_open = file($WFDBD_PID); #open it and get the PID of the daemon
-				exec('ps -p '.$pid_open[0].' -o "%p|" -o %mem -o "|%C|%x|%a"' , $output); #execute PS for the PID given.
-				if(isset($output[1])) #if there was data returned from PS lets parse it.
+				# Named fields with empty headers: procps-ng 4.0.4 (Ubuntu 26.04) refuses the old AIX format ("%p|...") and prints nothing.
+				exec('ps -p '.(int)$pid_open[0].' -o pid= -o pmem= -o pcpu= -o time= -o args=' , $output); #execute PS for the PID given (a number, nothing else, goes to the shell).
+				if(isset($output[0]) && trim($output[0]) !== '') #if there was data returned from PS lets parse it.
 				{
-					$pieces = explode("|", $output[1]);
-					$pid = trim($pieces[0]);
-					$mem = trim($pieces[1]);
-					$cpu = trim($pieces[2]);
-					$time = trim($pieces[3]);
-					$cmd = trim($pieces[4]);
+					$pieces = preg_split('/\s+/', trim($output[0]), 5);
+					$pid = $pieces[0];
+					$mem = $pieces[1] ?? '0';
+					$cpu = $pieces[2] ?? '0';
+					$time = $pieces[3] ?? '0:00';
+					$cmd = $pieces[4] ?? '';
 					$ret = array('OS'=>'Linux','pid'=>$pid,'time'=>$time,'cpu'=>$cpu.'%','mem'=>$mem.'%','cmd'=>$cmd,'color'=>'green','errc'=>-5);
 					return $ret; # and return it
 				}else
@@ -285,7 +302,7 @@ class dbcore
 			if(file_exists($WFDBD_PID)) #Check to see if the file exists.
 			{
 				$pid_open = file($WFDBD_PID); #Open it and get the PID of the daemon.
-				exec('tasklist /V /FI "PID eq '.$pid_open[0].'" /FO CSV' , $output, $sta); #Execute Tasklist a sysinternals app
+				exec('tasklist /V /FI "PID eq '.(int)$pid_open[0].'" /FO CSV' , $output, $sta); #Execute Tasklist a sysinternals app
 				if(isset($output[2])) #if there was data returned,
 				{
 					$ps_stats = explode("," , $output[2]); #we can parse it for the data.
@@ -559,7 +576,10 @@ class dbcore
 		}
 		$manuf_mac = strtoupper(substr($mac, 0, 6));
 		
-		$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");
+		if($this->sql->service == "pgsql")
+			{$result = $this->sql->conn->prepare('SELECT "Manufacturer" FROM manufacturers WHERE "BSSID" = ?');}
+		else
+			{$result = $this->sql->conn->prepare("SELECT Manufacturer FROM manufacturers WHERE BSSID = ?");}
 		$result->bindParam(1, $manuf_mac, PDO::PARAM_STR);
 		$result->execute();
 		$fetch = $result->fetch(2);

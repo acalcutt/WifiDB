@@ -29,7 +29,8 @@ if ! flock -n 9; then
 fi
 
 echo "Starting MLT Tile Daemon [${BUCKET:-all}]..."
-php ../daemon/mltd.php $BUCKET_ARG > "$LOGFILE" &
+# lock_run.php: with more than one node on the database, only one of them builds a bucket at a time
+php ../daemon/lock_run.php "mltd_${BUCKET:-all}" php ../daemon/mltd.php $BUCKET_ARG > "$LOGFILE" &
 echo "Launched PID $! — log: $LOGFILE"
 
 echo "Cleaning up old logs..."

@@ -24,11 +24,11 @@ if not, write to the
 					<table class="content_table">
 						<tr>
 							<th width="30%" class="dark">Email</th>
-							<td class="light"><input type="text" name="email" size="75%" value="{$user_cp_profile.email}"> Hide? <input name="h_email" type="checkbox" {$user_cp_profile.hide_email}></td>
+							<td class="light"><input type="text" name="email" size="75%" value="{$user_cp_profile.email|escape:'html':'UTF-8':false}"> Hide? <input name="h_email" type="checkbox" {$user_cp_profile.hide_email}></td>
 						</tr>
 						<tr>
 							<th width="30%" class="dark">Website</th>
-							<td class="light"><input type="text" name="website" size="75%" value="{$user_cp_profile.website}"></td>
+							<td class="light"><input type="text" name="website" size="75%" value="{$user_cp_profile.website|escape:'html':'UTF-8':false}"></td>
 						</tr>
 						<tr>
 							<th width="30%" class="dark">Vistumbler Version</th>
@@ -48,7 +48,8 @@ if not, write to the
 											window.WIFIDB = window.WIFIDB || {};
 											WIFIDB.theme_url = '{$themeurl}';
 										</script>
-										<script src="{$wifidb_host_url}lib/js/qrcode.min.js"></script>
+										<script src="{$wifidb_host_url}lib/js/qrcode-generator/qrcode.js"></script>
+										<script src="{$wifidb_host_url}lib/js/wifidb/qrcode.js"></script>
 										<div id="wifidb_link_qr" style="margin-top:8px"></div>
 										<p id="wifidb_link_msg">This generates a one-time linking token (expires in 5 minutes).</p>
 									</div>
@@ -76,9 +77,6 @@ if not, write to the
 														if (typeof window.makeQRCode === 'function') {
 															qrdiv.innerHTML = '';
 															window.makeQRCode(qrdiv, data.redeem_url, {width:180, height:180});
-														} else if (typeof window.QRCode === 'function') {
-															qrdiv.innerHTML = '';
-															new QRCode(qrdiv, {text: data.redeem_url, width:180, height:180});
 														} else {
 															qrdiv.innerHTML = '<div class="wifidb-qr-error">QR generation unavailable</div>';
 														}

@@ -39,22 +39,56 @@ $config = array
 	'wifidb_email_updates'  =>   1,
 	'GeoNamesLoopGiveUp'	=>   5000,
 	'reserved_users'		=>   'wifidb:recover:root:system:admin:hack:virus',
+	// Two-factor sign-in (Preferences -> Security). The key encrypts authenticator secrets in the database; make one with
+	//   php -r 'echo base64_encode(random_bytes(32)), PHP_EOL;'
+	// and keep it: with a different key the saved authenticators stop working. The Proxmox template makes one for you.
+	'two_factor_key'		=>   '',
+	'two_factor_issuer'		=>   'WifiDB',
+	// Starting values for the settings on Site Settings (admin/settings.php). Once an administrator saves them there,
+	// the saved value is used and these are ignored. email_validation above is one of them too.
+	'signups_open'			=>   1,
+	'cleantalk_enabled'		=>   0,     // check sign-ups and private messages with CleanTalk (cleantalk.org)
+	'cleantalk_key'			=>   '',
+	// Whole-site backups (admin/backups.php, docs/backups.md). backup_dir '' means {wifidb_tools}/backups; it holds
+	// member data, so keep it out of the web root. The newest backup_keep of the daily backups are kept.
+	'backup_dir'			=>   '',
+	'backup_keep'			=>   7,
+	'backup_s3_keep'		=>   30,    // copies kept in the S3 bucket (Site Settings), when one is set up
 	'dBmMaxSignal'		  =>   '-30',
 	'dBmDissociationSignal'	=>   '-85',
 	'verbose'			   =>   1,
 	'EnableAPIKey'		  =>   0,
 	#----------SMTP Settings------------#
+	# Starting values for the Mail page (admin/mail.php), as wifidb_email_updates above is: once an administrator saves
+	# one there, the saved value is used. smtp_timeout, smtp_options, smtp_debug, DKIM_private, DKIM_passphrase,
+	# ListUnsubscribe and XMailer are set only here. docs/email.md
 	'smtp_debug'			=>   0,						 // Enable verbose debug output 0:disable 2:verbose
 	'smtp_host'			 =>   'smtp.someemail.com',	  // Specify main and backup SMTP servers
 	'smtp_port'			 =>   587,					   // Specify smtp port
 	'smtp_user'			 =>   'wifidb@someemail.com',	// SMTP username
 	'smtp_pass'			 =>   'supersecretpw',		   // SMTP password	
 	'smtp_from'			 =>   'wifidb@someemail.com',	// SMTP from
+	'smtp_from_name'		=>   '',						// shown with the From address, such as WiFiDB ('' for the address alone)
 	'smtp_replyto'		  =>   '',						// SMTP reply to
 	'smtp_secure'		   =>   'tls',					 // Auth type, tls or ssl
 	'smtp_auth'			 =>   true,
 	'smtp_authtype'		 =>   'LOGIN',
+	'smtp_timeout'		  =>   15,						// seconds to wait for the mail server before giving up on a message
 	'smtp_options'		  =>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
+	#----------Sign-up mail (optional)------------#
+	# Sign-up and password-reset mail can go out from a different account than the site's other mail. If these are
+	# left out (as here), it uses the SMTP settings above. To use a separate account, uncomment and set them.
+	#'signup_smtp_debug'		=>   0,
+	#'signup_smtp_host'		=>   'smtp.someemail.com',
+	#'signup_smtp_port'		=>   587,
+	#'signup_smtp_user'		=>   'wifidb_signup@someemail.com',
+	#'signup_smtp_pass'		=>   'supersecretpw',
+	#'signup_smtp_from'		=>   'wifidb_signup@someemail.com',
+	#'signup_smtp_replyto'		=>   'wifidb_signup@someemail.com',
+	#'signup_smtp_secure'		=>   'tls',
+	#'signup_smtp_auth'		=>   true,
+	#'signup_smtp_authtype'	=>   'LOGIN',
+	#'signup_smtp_options'		=>   array('ssl' => array('verify_peer' => true, 'verify_peer_name' => true, 'allow_self_signed' => false)),
 	'DKIM_domain'		   =>   'someemail.com',
 	'DKIM_private'		  =>   'private.pem',
 	'DKIM_selector'		 =>   'wdb',
@@ -86,8 +120,8 @@ $config = array
 	# do not belong in the checkout.
 	# Exactly ONE node in a cluster generates archives; the rest subscribe to it
 	# through pmtiles-swarm.  Two nodes building independently produce different
-	# bytes for the same bucket — the attribution and 'generated' fields carry
-	# the run date, age_days is measured from the scan — so they would seed two
+	# bytes for the same bucket — the 'generated' field carries the run's time,
+	# age_days is measured from the scan — so they would seed two
 	# swarms, publish competing BEP 46 records, and serve disagreeing ETags.
 	# Set false on the subscribers: their daemons then skip archived buckets
 	# before the database scan, and flat buckets carry on generating as usual.
@@ -192,6 +226,12 @@ $config = array
 	# in the archive directory for why.
 	'tile_archive_url'			=>   '',   // e.g. 'https://wifidb.net/out/pmtiles'
 
+	# Folders under out/ that tools/cron/out_sync leaves alone, with the shared
+	# files bucket.  On a node where pmtiles-swarm carries the tile archives
+	# between the nodes (the Proxmox template's WIFIDB_SWARM=1 sets this to
+	# array('pmtiles')), two copies arriving by two routes would race.
+	'out_sync_skip'				=>   array(),
+
 	#-------------Themes Settings--------------#
 	'default_theme'		 =>   'vistumbler_mobile',
 	'default_refresh'	   =>   15,
@@ -238,12 +278,26 @@ $config = array
 	'db'				  	=>   'wifi',
 	'db_user'			   =>   'wdbuser',
 	'db_pwd'				=>   'supersecretpw',
+	# How the SQL Server connection is secured. Encrypted by default. sqlsrv_trust_server_certificate accepts the
+	# server's certificate without checking it, which a self-signed one (SQL Server's default) needs; set it to false
+	# once the server has a certificate this machine trusts, and the connection is then checked as well as encrypted.
+	'sqlsrv_encrypt'		=>   true,
+	'sqlsrv_trust_server_certificate' => true,
 	#MySQL Server
 	#'srvc'				  =>   'mysql',
 	#'host'				  =>   'localhost',
 	#'db'				  	=>   'wifi',
 	#'db_user'			   =>   'wdbuser',
 	#'db_pwd'				=>   'supersecretpw',
+	#PostgreSQL Server
+	#'srvc'				  =>   'pgsql',
+	#'driver'				=>   'pgsql',
+	#'port'					=>   5432,
+	#'host'				  =>   'localhost',
+	#'db'				  	=>   'wifi',
+	#'db_user'			   =>   'wdbuser',
+	#'db_pwd'				=>   'supersecretpw',
+	#'charset'/'collate'/'engine' below are MySQL-only and ignored by sqlsrv/pgsql.
 	'charset'			   =>   'utf8mb4',
 	'collate'			   =>   'utf8mb4_unicode_ci',
 	'engine'				=>   'innodb',
@@ -260,9 +314,12 @@ $config = array
 	'csv_out'			   =>   'out/csv/',
 	'region_out'			   =>   'out/region/',
 
-	#---------------- Header and Footer Additional Info -----------------#
-	'ads'				   => '', # <-- put the code for your ads in here www.google.com/adsense
-	'header'				=> '<meta name="description" content="Vistumbler WifiDB is a project to collect wireless accesss points gathered by Vistumbler or other wireless network scanners. It generates statistics and maps from user uploaded wireless scans. It allows users to keep track of their uploads." /><meta name="keywords" content="WiFiDB, linux, windows, vistumbler, Wireless, wifi, database, DB, php" />',
-	'tracker'			   => '', # <-- put the code for the url tracker that you use here (ie - www.google.com/analytics )
+	# Google Analytics, AdSense, when visitors are asked about cookies, ads.txt and what search engines read (the site's
+	# description, verification codes, keeping them out) are set on Site Settings (admin/settings.php).
+	# The country database that "ask where it's required" looks visitors up in (lib/visitor_country.inc.php), kept up to
+	# date by tools/cron/update_geoip; empty: none, so everyone is asked. The Proxmox template keeps it on the data disk.
+	'geoip_country_db'	   =>   '',
+	# where update_geoip fetches it from: empty for DB-IP's free one; %s is the month (2026-11), .gz is unpacked
+	'geoip_country_source' =>   '',
 	'googleApiKey'		 =>   '', # Google Geocoding API key (leave empty for none)
 );

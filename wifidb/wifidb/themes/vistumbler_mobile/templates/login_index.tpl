@@ -38,12 +38,12 @@ if not, write to the
 								<td><input type="password" name="time_pass"></td>
 							</tr>
 							<tr>
-								<td colspan="2"><p align="center"><input type="hidden" name="return" value="{$logon_return_url}"><input type="submit" value="Login"></p></td>
+								<td colspan="2"><p align="center"><input type="hidden" name="return" value="{$logon_return_url|escape:'html':'UTF-8':false}"><input type="submit" value="Login"></p></td>
 							</tr>
 							<tr>
 								<td colspan="2">
 									<p align="center">
-										<a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br>
+										{if $wifidb_signups_open|default:true}<a class="links" href="{$wifidb_host_url}login.php?func=create_user_form">Create a user account</a><br>{/if}
 										<a class="links" href="{$wifidb_host_url}login.php?func=reset_user_pass_request">Forgot your password?</a>
 									</p>
 								</td>
@@ -51,5 +51,14 @@ if not, write to the
 						</tbody>
 					</table>
 				</form>
+				{if $wifidb_linked_logins}
+				<form method="get" action="{$wifidb_host_url}logins.php">
+					<p align="center">
+						<input type="hidden" name="func" value="start"><input type="hidden" name="return" value="{$logon_return_url|escape:'html':'UTF-8':false}">
+						Or sign in with
+						{foreach item=p from=$wifidb_linked_logins}<button type="submit" name="provider" value="{$p.id|escape:'html':'UTF-8':false}">{$p.name|escape:'html':'UTF-8':false}</button> {/foreach}
+					</p>
+				</form>
+				{/if}
 			</div>
 {include file="footer.tpl"}

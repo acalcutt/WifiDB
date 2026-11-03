@@ -21,12 +21,12 @@ if not, write to the
 
 class misc
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $ver_array;
     function __construct($dbcore)
     {
         $this->ver_array['Misc'] = array(
                                     "getTZ"                 =>	"1.0",
-                                    "tar_file"              =>	"1.1",
-                                    "get_set"               =>	"1.0",
                                     "top_ssids"             =>  "1.1"
                                     );
     }
@@ -71,45 +71,6 @@ class misc
             return $timezones[$offset];
     }
 
-    #======================#
-    #   Tar a file up      #
-    #======================#
-    function tar_file($file)
-    {
-        $start = microtime(1);
-        $filename_exp = explode( ".", $file);
-        $filename_strip = $filename_exp[0];
-        $archive = $this->TOOLS_PATH."/backups/".$filename_strip.".tar.gz";
-        $script = "tar -czfv $archive $file";
-        $results = system($script,$retval);
-        if(!$results)
-        {
-            $stop = microtime(1);
-            $time = ($stop-$start);
-            $mbps = ((filesize($file)/1024)/1024)/$time;
-            $return = array( $results, $retval, $time, $mbps, $archive );
-            return $return;
-        }else
-        {
-            return 0;
-        }
-    }
-
-    #======================#
-    #   Get Set values     #
-    #======================#
-    function get_set($table,$column)
-    {
-        $sql = "SHOW COLUMNS FROM $table LIKE '$column'";
-        if (!($ret = mysql_query($sql)))
-        die("Error: Could not show columns");
-
-        $line = mysql_fetch_assoc($ret);
-        $set = $line['Type'];
-        $set = substr($set,5,strlen($set)-7); // Remove "set(" at start and ");" at end
-        return preg_split("/','/",$set); // Split into and array
-    }
-
     #===================================================================#
     #   Calculate the number of times each unique ssid is in the DB     #
     #===================================================================#
@@ -118,7 +79,7 @@ class misc
         $ssids = array();
         $number = array();
         echo "Select from Pointers Table\r\n";
-        $sql = "SELECT * FROM `wifi_ap`";
+        $sql = "SELECT * FROM wifi_ap";
         $result = $this->sql->conn->query($sql);
         $total_rows = $result->rowCount();
         if($total_rows != 0)
@@ -134,7 +95,10 @@ class misc
             echo "Find out the number of each SSID\r\n";
             foreach($ssids as $key=>$ssid)
             {
-                $sql = "SELECT * FROM `wifi_ap` WHERE `ssid` LIKE '$ssid'";
+                if($this->sql->service == "pgsql")
+                    {$sql = 'SELECT * FROM wifi_ap WHERE "SSID" LIKE '."'$ssid'";}
+                else
+                    {$sql = "SELECT * FROM wifi_ap WHERE SSID LIKE '$ssid'";}
                 $result = $this->sql->conn->query($sql);
                 $total_rows = $result->rowCount();
                 $num_ssid[]	= array( 0=>$total_rows, 1=>$ssid);

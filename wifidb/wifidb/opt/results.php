@@ -22,7 +22,7 @@ define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
-$func	=   filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
+$func	=   wifidb_input_string(INPUT_GET, 'func');
 
 if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'] === "%" or @$_REQUEST['chan'] === "%" or @$_REQUEST['auth'] === "%" or @$_REQUEST['encry'] === "%" )
 {
@@ -31,8 +31,8 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$dbcore->smarty->display('search_results.tpl');
 }else
 {
-	$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-	$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+	$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+	$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 	$from   =	filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 	$inc   =	filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 	$map_inc   =	filter_input(INPUT_GET, 'map_inc', FILTER_SANITIZE_NUMBER_INT);
@@ -48,8 +48,11 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	if ($from == ""){$from = 0;}
 	if ($inc == ""){$inc = 100;}
 	if ($map_inc == ""){$map_inc = 50000;}
-	if ($ord == ""){$ord = "ASC";}
-	if ($sort == ""){$sort = "ssid";}
+	# sort and ord go into ORDER BY: only these, and each column named as it is in wifi_ap (PostgreSQL minds the case)
+	$ord = (strtoupper((string)$ord) === "DESC") ? "DESC" : "ASC";
+	$sorts = array("ap_id" => "AP_ID", "ssid" => "SSID", "bssid" => "BSSID", "chan" => "CHAN", "auth" => "AUTH", "encr" => "ENCR",
+		"radtype" => "RADTYPE", "fa" => "fa", "la" => "la", "points" => "points", "moddate" => "ModDate");
+	$sort = isset($sorts[strtolower((string)$sort)]) ? $sorts[strtolower((string)$sort)] : "SSID";
 	$labeled = 0;
 	$new_icons = 0;
 	$to = ($from + $inc);

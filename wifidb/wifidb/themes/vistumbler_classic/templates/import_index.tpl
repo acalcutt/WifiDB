@@ -21,7 +21,7 @@ if not, write to the
 			<div class="main">
 				{include file="topmenu.tpl"}
 				<div class="center">
-					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if ($wifidb_login_priv_name|default:"") == "Administrator"} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
+					<span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php"><img src="{$themeurl}img/file-importing.png" style="vertical-align: middle;"/> Files Importing ({$importing_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=waiting"><img src="{$themeurl}img/file-waiting.png" style="vertical-align: middle;"/> Files Waiting ({$waiting_count})</a></span> | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=done"><img src="{$themeurl}img/file-complete.png" style="vertical-align: middle;"/> Files Completed ({$complete_count})</a></span> {if $wifidb_admin_mode|default:false} | <span class="nowrap"><a class="links" style="text-decoration: none;" href="{$wifidb_host_url}opt/scheduling.php?func=bad"><img src="{$themeurl}img/file-bad.png" style="vertical-align: middle;"/> Files Bad ({$bad_count})</a></span>{/if}
 					<h2>{$mesg}</h2>
 					Vistumbler 
 					<a href="https://github.com/acalcutt/Vistumbler/wiki/Vistumbler-VS1-Format" target="_blank">VS1</a> /
@@ -39,7 +39,7 @@ if not, write to the
 							<ul class="wrapper">
 								<li class="form-row"><label for="title">Title of Import:</label><input type="text" name="title" id="title" class="form-input"></li>
 								<li class="form-row"><label for="files">File(s):</label><input name="upload[]" type="file" id="files" multiple="multiple" class="form-input" /></li>
-								<li class="form-row"><label for="user">Username:</label><input type="text" name="user" id="user" {if $wifidb_login_user}value="{$wifidb_login_user}" readonly{/if} class="form-input"></li>
+								<li class="form-row"><label for="user">Username:</label><input type="text" name="user" id="user" {if $wifidb_login_user}value="{$wifidb_login_user|escape:'html':'UTF-8':false}" readonly{/if} class="form-input"></li>
 								<li class="form-row"><label for="otherusers">Other Users (Separate by a pipe "|" ):</label><input type="text" name="otherusers" id="otherusers" class="form-input"></li>
 								<li class="form-row"><label for="notes">Notes:</label><textarea name="notes" id="notes" rows="4" cols="30" class="form-input"></textarea></li>
 								<li class="form-row"><label for="type">Import Type:</label>

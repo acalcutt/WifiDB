@@ -1,0 +1,146 @@
+<!--
+Backups (admin/backups.php).
+This program is free software; you can redistribute it and/or modify it under the terms
+of the GNU General Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+-->
+{include file="header.tpl"}
+			<div class="main">
+				{include file="topmenu.tpl"}
+				<table class="content_table">
+					<tr><td class="subheading">Backups</td></tr>
+					<tr><td class="header wrap">A backup holds the whole database (every member, import, access point and setting) and the key that unlocks the saved authenticator apps. One made on SQL Server restores on MariaDB and the other way round, so it also moves a site to a new server. Uploaded files and exports aren't in it.</td></tr>
+					{if $backups_message}<tr><td class="light-centered">{if $backups_problem}<font color="Red">{/if}{$backups_message|escape:'html':'UTF-8':false}{if $backups_problem}</font>{/if}</td></tr>{/if}
+					{if !$backups_ready}<tr><td class="light-centered"><font color="Red">The backups folder ({$backups_dir|escape:'html':'UTF-8':false}) can't be written, so nothing here can run. Set backup_dir in config.inc.php.</font></td></tr>{/if}
+					{if $backups_stale}<tr><td class="light-centered"><font color="Red">A request has waited more than five minutes. Check that cron runs tools/cron/backups each minute.</font></td></tr>{/if}
+				</table>
+
+				{if $backups_pending || $backups_job}
+				<table class="content_table">
+					<tr><td class="subheading">Status</td></tr>
+					{foreach $backups_pending as $p}
+					<tr class="light"><td>Waiting to start: {$p.action|escape:'html':'UTF-8':false} {$p.name|default:''|escape:'html':'UTF-8':false}, asked for by {$p.requested_by|escape:'html':'UTF-8':false}</td></tr>
+					{/foreach}
+					{if $backups_job}
+					<tr class="dark"><td>
+						<strong>{$backups_job.action|escape:'html':'UTF-8':false}</strong> {$backups_job.name|default:''|escape:'html':'UTF-8':false}: {$backups_job.state|escape:'html':'UTF-8':false}
+						(started {$backups_job.started|escape:'html':'UTF-8':false} UTC{if $backups_job.finished|default:''}, finished {$backups_job.finished|escape:'html':'UTF-8':false} UTC{/if})
+						{if $backups_job.error|default:''}<br><font color="Red">{$backups_job.error|escape:'html':'UTF-8':false}</font>{/if}
+						{if $backups_job.log_text|default:''}<pre class="backup-log">{$backups_job.log_text|escape:'html':'UTF-8':false}</pre>{/if}
+					</td></tr>
+					{/if}
+					{if $backups_busy}
+					<tr class="light"><td><small>This page reloads every 10 seconds while something runs.</small><script>setTimeout(function () { location.reload(); }, 10000);</script></td></tr>
+					{/if}
+				</table>
+				{/if}
+
+				<form method="post" action="{$wifidb_host_url}admin/backups.php">
+					<input type="hidden" name="action" value="export">
+					<table class="content_table">
+						<tr><td class="subheading">Make a backup</td></tr>
+						<tr class="light"><td>The site stays up while it runs, so changes made meanwhile may be only partly in it. It's written to {$backups_dir|escape:'html':'UTF-8':false}. <input type="submit" value="Back up now"></td></tr>
+					</table>
+				</form>
+
+				<table class="content_table">
+					<tr><td class="subheading" colspan="6">Backups on this server</td></tr>
+					{if $backups_list}
+					<tr class="header"><th>Backup</th><th>Made (UTC)</th><th>Status</th><th>Size</th><th>From</th><th></th></tr>
+					{foreach $backups_list as $b}
+					<tr class="{cycle values='light,dark'}">
+						<td><code>{$b.name|escape:'html':'UTF-8':false}</code>{if $b.kind|default:''}<br><small>{$b.kind|escape:'html':'UTF-8':false}</small>{/if}</td>
+						<td>{$b.created|default:''|escape:'html':'UTF-8':false}</td>
+						<td>{$b.state|default:''|escape:'html':'UTF-8':false}
+							{if ($b.state|default:'') == 'running'}<br><small>{$b.step|default:''|escape:'html':'UTF-8':false}</small>
+							{elseif $b.error|default:''}<br><small><font color="Red">{$b.error|escape:'html':'UTF-8':false}</font></small>{/if}</td>
+						<td>{$b.size_text|escape:'html':'UTF-8':false}{if $b.rows|default:0}<br><small>{$b.rows|number_format} rows</small>{/if}</td>
+						<td>{$b.source.site|default:''|escape:'html':'UTF-8':false}{if $b.source.service|default:''}<br><small>{if $b.source.service == 'sqlsrv'}SQL Server{else}MariaDB{/if}</small>{/if}</td>
+						<td>
+							{if ($b.state|default:'') == 'done'}
+							<a href="{$wifidb_host_url}admin/backups.php?func=download&amp;name={$b.name|escape:'url'}">Download</a>{if $b.sha256|default:''}<br><small title="SHA-256 of the whole file">SHA-256 {$b.sha256|truncate:12:'…'|escape:'html':'UTF-8':false}</small>{/if}
+							<form method="post" action="{$wifidb_host_url}admin/backups.php">
+								<input type="hidden" name="action" value="restore"><input type="hidden" name="name" value="{$b.name|escape:'html':'UTF-8':false}">
+								<input type="text" name="confirm" size="14" placeholder="{$backups_domain|escape:'html':'UTF-8':false}" title="Type this site's domain to confirm">
+								<input type="submit" value="Restore">
+							</form>
+							{/if}
+							{if ($b.state|default:'') == 'done' && $backups_s3}
+							<form method="post" action="{$wifidb_host_url}admin/backups.php">
+								<input type="hidden" name="action" value="upload"><input type="hidden" name="name" value="{$b.name|escape:'html':'UTF-8':false}">
+								<input type="submit" value="Copy to S3">{if $b.s3|default:''}<br><small>copied {$b.s3|escape:'html':'UTF-8':false}</small>{/if}
+							</form>
+							{/if}
+							{if ($b.state|default:'') != 'running'}
+							<form method="post" action="{$wifidb_host_url}admin/backups.php">
+								<input type="hidden" name="action" value="delete"><input type="hidden" name="name" value="{$b.name|escape:'html':'UTF-8':false}">
+								<input type="submit" value="Delete">
+							</form>
+							{/if}
+						</td>
+					</tr>
+					{/foreach}
+					<tr><td colspan="6"><small>Restore replaces all of this site's data with the backup and signs everyone out; afterwards you sign in with an account from the backup. Type this site's domain to confirm. The scheduled imports and exports wait until it's done.</small></td></tr>
+					{else}
+					<tr class="light"><td colspan="6">No backups yet.</td></tr>
+					{/if}
+				</table>
+
+				<table class="content_table">
+					<tr><td class="subheading" colspan="4">Copies in S3</td></tr>
+					{if !$backups_s3}
+					<tr class="light"><td colspan="4">No bucket is set up. Give one on <a href="{$wifidb_host_url}admin/settings.php">Site Settings</a> (Garage, MinIO or AWS) and each nightly backup is copied there too, so it survives losing this server.</td></tr>
+					{elseif $backups_remote_error}
+					<tr class="light"><td colspan="4"><font color="Red">The bucket couldn't be listed: {$backups_remote_error|escape:'html':'UTF-8':false}</font></td></tr>
+					{elseif $backups_remote}
+					<tr class="header"><th>Backup</th><th>Copied (UTC)</th><th>Size</th><th></th></tr>
+					{foreach $backups_remote as $o}
+					<tr class="{cycle values='light,dark'}">
+						<td><code>{$o.name|escape:'html':'UTF-8':false}</code></td><td>{$o.modified|replace:'T':' '|truncate:16:''|escape:'html':'UTF-8':false}</td><td>{$o.size_text|escape:'html':'UTF-8':false}</td>
+						<td>{if $o.here}<small>also here</small>{else}<form method="post" action="{$wifidb_host_url}admin/backups.php"><input type="hidden" name="action" value="fetch"><input type="hidden" name="name" value="{$o.name|escape:'html':'UTF-8':false}"><input type="submit" value="Fetch to this server"></form>{/if}</td>
+					</tr>
+					{/foreach}
+					<tr><td colspan="4"><small>In {$backups_s3_where|escape:'html':'UTF-8':false}/ in the bucket. A fetched backup shows up above and restores from there.</small></td></tr>
+					{else}
+					<tr class="light"><td colspan="4">Nothing in the bucket yet ({$backups_s3_where|escape:'html':'UTF-8':false}/).</td></tr>
+					{/if}
+				</table>
+
+				<form method="post" action="{$wifidb_host_url}admin/backups.php" autocomplete="off">
+					<input type="hidden" name="action" value="import">
+					<table class="content_table">
+						<tr><td class="subheading" colspan="2">Copy a backup from another server</td></tr>
+						<tr class="light"><td width="25%">Other server</td><td><input type="text" name="url" size="40" placeholder="https://old.example.com"></td></tr>
+						<tr class="dark"><td>Its transfer key</td><td><input type="password" name="key" size="40"><br><small>Made on that server's Backups page (transfer key, below).</small></td></tr>
+						<tr class="light"><td>Backup</td><td><input type="text" name="import_name" size="34" placeholder="its newest">
+							<br><label><input type="checkbox" name="fresh"> have it make a new backup first</label></td></tr>
+						<tr class="dark"><td>Then</td><td><label><input type="checkbox" name="restore"> restore it here, replacing this site's data</label>
+							<br><input type="text" name="confirm" size="34" placeholder="type {$backups_domain|escape:'html':'UTF-8':false} to confirm a restore"></td></tr>
+						<tr class="light"><td></td><td><label><input type="checkbox" name="insecure"> don't check its TLS certificate (a test server with a self-signed one)</label></td></tr>
+						<tr class="dark"><td></td><td><input type="submit" value="Copy it here"><br><small>It's copied 16 MB at a time; if the copy is cut off, asking again carries on where it stopped. The whole file is checked against the other server's SHA-256 before it's used.</small></td></tr>
+					</table>
+				</form>
+
+				<table class="content_table">
+					<tr><td class="subheading">Transfer key</td></tr>
+					<tr class="light"><td>Lets another WifiDB server list this server's backups, copy them, and ask for a new one. That's all it can do. It expires after {$backups_key_days} days, only one exists at a time, and backups never include it.</td></tr>
+					{if $backups_new_key}
+					<tr class="dark"><td><strong>The new key</strong> (shown only now; give it to the other server's administrator):<br><code id="wifidb_transfer_key">{$backups_new_key|escape:'html':'UTF-8':false}</code></td></tr>
+					{elseif $backups_key}
+					<tr class="dark"><td>{if $backups_key.expired}The last key has expired.{else}A key is active, made by {$backups_key.created_by|escape:'html':'UTF-8':false}; it expires {$backups_key.expires|date_format:'%Y-%m-%d %H:%M'} UTC.{/if}</td></tr>
+					{/if}
+					<tr class="light"><td>
+						<form method="post" action="{$wifidb_host_url}admin/backups.php" style="display:inline"><input type="hidden" name="action" value="create_key"><input type="submit" value="{if $backups_key || $backups_new_key}Make a new key{else}Make a key{/if}"></form>
+						{if $backups_key || $backups_new_key}<form method="post" action="{$wifidb_host_url}admin/backups.php" style="display:inline"><input type="hidden" name="action" value="revoke_key"><input type="submit" value="Revoke the key"></form>{/if}
+					</td></tr>
+				</table>
+
+				<table class="content_table">
+					<tr><td class="subheading">From the command line</td></tr>
+					<tr class="light"><td><pre class="backup-log">php tools/utilites/backup.php export
+php tools/utilites/backup.php list
+php tools/utilites/backup.php restore wifidb-backup-YYYYMMDD-HHMMSS --yes</pre>
+						<small>A downloaded backup can be copied (scp or rsync) into {$backups_dir|escape:'html':'UTF-8':false} on another server: it shows up here and restores the same way. See docs/backups.md.</small></td></tr>
+				</table>
+			</div>
+{include file="footer.tpl"}

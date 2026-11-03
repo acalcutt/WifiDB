@@ -1,0 +1,14 @@
+[Unit]
+Description=Set up this WiFiDB container (first boot)
+After=network-online.target systemd-resolved.service
+Wants=network-online.target
+ConditionPathExists=/etc/wifidb/firstboot-pending
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/wifidb-firstboot
+TimeoutStartSec=900
+
+[Install]
+WantedBy=multi-user.target

@@ -594,17 +594,17 @@ $dated = mvt_publish_archive("{$pubdir}/monthly.pmtiles.building", $pubdir, 'mon
 // A stable filename alone is imported once by pmtiles-swarm's watcher and
 // never again: replacing a watched file fires chokidar's 'change', and
 // WatchManager only listens for 'add'. Verified against chokidar directly.
-check('the build lands under a dated name', $dated !== null && preg_match('#/monthly-\d{8}\.pmtiles$#', $dated) === 1, (string)$dated);
+check('the build lands under a dated name', $dated !== null && preg_match('#/monthly-\d{14}\.pmtiles$#', $dated) === 1, (string)$dated);
 check('the temporary is gone', !file_exists("{$pubdir}/monthly.pmtiles.building"));
 check('the stable name exists', is_file("{$pubdir}/monthly.pmtiles"));
 check('and holds the same bytes', file_get_contents("{$pubdir}/monthly.pmtiles") === 'build A');
 
-// Simulate a later build. Same day, so the dated name collides -- which is the
-// common case for a bucket rebuilt more than once in a day, and must overwrite
-// rather than fail.
+// A later build the same day -- daily is rebuilt hourly -- gets a name of its
+// own, so the swarm never sees a file it made a torrent of replaced.
+sleep(1);
 file_put_contents("{$pubdir}/monthly.pmtiles.building", 'build B');
 $dated2 = mvt_publish_archive("{$pubdir}/monthly.pmtiles.building", $pubdir, 'monthly', 2);
-check('a same-day rebuild replaces the dated build', $dated2 === $dated);
+check('a same-day rebuild gets a name of its own', $dated2 !== null && $dated2 !== $dated && is_file($dated));
 check('the stable name follows the new build',
     file_get_contents("{$pubdir}/monthly.pmtiles") === 'build B');
 
@@ -612,11 +612,12 @@ check('the stable name follows the new build',
 foreach (['20260101', '20260202', '20260303'] as $day) {
     file_put_contents("{$pubdir}/monthly-{$day}.pmtiles", "old {$day}");
 }
+sleep(1);
 file_put_contents("{$pubdir}/monthly.pmtiles.building", 'build C');
-mvt_publish_archive("{$pubdir}/monthly.pmtiles.building", $pubdir, 'monthly', 2);
+$dated3 = mvt_publish_archive("{$pubdir}/monthly.pmtiles.building", $pubdir, 'monthly', 2);
 $remaining = glob("{$pubdir}/monthly-[0-9]*.pmtiles") ?: [];
 check('older builds are retired', count($remaining) === 2, count($remaining) . ' left');
-check('the newest is kept', in_array($dated, $remaining, true));
+check('the newest two are kept', in_array($dated3, $remaining, true) && in_array($dated2, $remaining, true));
 
 // Another bucket's builds must not be swept up by the glob.
 file_put_contents("{$pubdir}/weekly-20260101.pmtiles", 'other bucket');

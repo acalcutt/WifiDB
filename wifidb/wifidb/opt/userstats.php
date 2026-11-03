@@ -12,10 +12,10 @@ define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
-$func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_STRING);
-$user = filter_input(INPUT_GET, 'user', FILTER_SANITIZE_STRING);
-$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+$func = wifidb_input_string(INPUT_GET, 'func');
+$user = wifidb_input_string(INPUT_GET, 'user');
+$sort = wifidb_input_string(INPUT_GET, 'sort');
+$ord = wifidb_input_string(INPUT_GET, 'ord');
 $row = filter_input(INPUT_GET, 'row', FILTER_SANITIZE_NUMBER_INT);
 $from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 $inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
@@ -73,9 +73,9 @@ switch($func)
 			$ap_info = $UserListArray['data'];
 			$file_info = $UserListArray['file_info'];
 
-			$sql = "SELECT Count(DISTINCT wifi_hist.AP_ID) As ApCount\n"
+			$sql = "SELECT Count(DISTINCT wifi_hist.".$dbcore->sql->ident('AP_ID').") As ApCount\n"
 				. "FROM wifi_hist\n"
-				. "WHERE wifi_hist.File_ID = ?";
+				. "WHERE wifi_hist.".$dbcore->sql->ident('File_ID')." = ?";
 			$sqlprep = $dbcore->sql->conn->prepare($sql);
 			$sqlprep->bindParam(1,$row, PDO::PARAM_INT);
 			$sqlprep->execute();
@@ -163,7 +163,7 @@ switch($func)
 			break;
 		#-------------
 		case "":
-			$dbcore->all_users();
+			$dbcore->AllUsers("file_user", "ASC", 0, 250);
 			$dbcore->smarty->assign('wifidb_imports_all' , $dbcore->all_users_data);
 			$dbcore->smarty->display('users_index.tpl');
 			break;

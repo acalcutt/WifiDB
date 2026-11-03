@@ -1,0 +1,143 @@
+<?php
+// Small standalone helpers used by init.inc.php. No config or database needed, so they can be unit tested.
+// The theme name comes from a cookie and ends up in template/compile paths, so only accept an existing folder under themes/.
+if(!function_exists('wifidb_resolve_theme')) {
+	function wifidb_resolve_theme($requested, $install, $default)
+	{
+		if(is_string($requested) && preg_match('/^[A-Za-z0-9_-]+$/', $requested) && is_dir($install.'themes/'.$requested))
+		{
+			return $requested;
+		}
+		return $default;
+	}
+}
+// Replacement for the FILTER_SANITIZE_STRING filter, which is deprecated in PHP 8.1. Same result: tags stripped, quotes encoded.
+if(!function_exists('wifidb_sanitize_string')) {
+	function wifidb_sanitize_string($value)
+	{
+		return str_replace(array("'", '"'), array('&#39;', '&#34;'), strip_tags((string)$value));
+	}
+	function wifidb_input_string($type, $name)
+	{
+		$value = filter_input($type, $name, FILTER_UNSAFE_RAW);
+		return is_string($value) ? wifidb_sanitize_string($value) : $value;
+	}
+}
+
+// Where to send someone back to after login or an action: a path on this site, or an address on this site's own host.
+// Anything else (another site, "//evil.example", javascript:, control characters) gives $default.
+if(!function_exists('wifidb_safe_return')) {
+	function wifidb_safe_return($value, $siteHost, $default = '')
+	{
+		if(!is_string($value)) { return $default; }
+		if(preg_match('/[\x00-\x1f\x7f]/', $value) || strpos($value, chr(92)) !== false) { return $default; }
+		$value = trim($value);
+		if($value === '') { return $default; }
+		if($value[0] === '/')
+		{
+			// "//host" means another site to a browser
+			return (isset($value[1]) && $value[1] === '/') ? $default : $value;
+		}
+		if(preg_match('#^https?://#i', $value))
+		{
+			$host = parse_url($value, PHP_URL_HOST);
+			if(is_string($host) && $siteHost !== '' && strcasecmp($host, $siteHost) === 0) { return $value; }
+		}
+		return $default;
+	}
+}
+
+// A value as a JavaScript string literal (quotes included) that is safe inside an inline <script> block.
+if(!function_exists('wifidb_js_string')) {
+	function wifidb_js_string($value)
+	{
+		return json_encode((string)$value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+	}
+}
+
+// A short-lived database connection from the web site's config, for small standalone pages (/health/ready, the signal
+// graph) that must not load the whole application. $timeout bounds connecting to the server.
+if(!function_exists('wifidb_pdo_from_config')) {
+	/**
+	 * The part of a SQL Server connection string that says how the link is secured, from config.inc.php:
+	 * sqlsrv_encrypt (encrypt the connection; on unless set to false) and sqlsrv_trust_server_certificate (accept the
+	 * server's certificate without checking it against the trusted roots; on unless set to false, as WiFiDB always
+	 * has, since most SQL Servers present a self-signed one). Turn the second off once the server has a certificate
+	 * this machine trusts.
+	 */
+	function wifidb_sqlsrv_security($config)
+	{
+		$on = function ($key) use ($config) { return !isset($config[$key]) || filter_var($config[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false; };
+		return ';Encrypt=' . ($on('sqlsrv_encrypt') ? 'true' : 'false') . ';TrustServerCertificate=' . ($on('sqlsrv_trust_server_certificate') ? 'true' : 'false');
+	}
+
+	function wifidb_pdo_from_config($config, $timeout = 2)
+	{
+		if($config['srvc'] === 'sqlsrv')
+		{
+			$dsn = 'sqlsrv:Server=' . $config['host'] . ',' . (int)$config['port'] . ';Database=' . $config['db'] . wifidb_sqlsrv_security($config) . ';LoginTimeout=' . (int)$timeout;
+			$options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+		}
+		elseif($config['srvc'] === 'pgsql')
+		{
+			$dsn = 'pgsql:host=' . $config['host'] . ';port=' . (int)$config['port'] . ';dbname=' . $config['db'] . ';connect_timeout=' . max(1, (int)$timeout);
+			$options = array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+		}
+		else
+		{
+			$dsn = 'mysql:host=' . $config['host'] . ';port=' . (int)$config['port'] . ';dbname=' . $config['db'] . ';charset=' . $config['charset'];
+			$options = array(PDO::ATTR_TIMEOUT => (int)$timeout, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION);
+		}
+		return new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
+	}
+}
+
+// The readings of an access point as the compact rows the signal chart draws: [date, signal, rssi]. $signals are rows
+// with Sig, RSSI and Hist_Date (or GPS_Date), as the details page reads them.
+if(!function_exists('wifidb_signal_points')) {
+	function wifidb_signal_points($signals)
+	{
+		$out = array();
+		foreach($signals as $row)
+		{
+			$date = isset($row['Hist_Date']) ? $row['Hist_Date'] : (isset($row['GPS_Date']) ? $row['GPS_Date'] : '');
+			$out[] = array(substr((string)$date, 0, 19), (int)(isset($row['Sig']) ? $row['Sig'] : 0), (isset($row['RSSI']) && $row['RSSI'] !== null && $row['RSSI'] !== '') ? (int)$row['RSSI'] : null);
+		}
+		return $out;
+	}
+}
+
+// Rows as JSON that is safe to put inside an HTML attribute or a script (no <, >, & or quotes survive unescaped).
+if(!function_exists('wifidb_json_safe')) {
+	function wifidb_json_safe($value)
+	{
+		return json_encode($value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+	}
+}
+
+// A MySQL PDO attribute by name (INIT_COMMAND, USE_BUFFERED_QUERY): Pdo\Mysql's constant from PHP 8.4 on, since 8.5
+// deprecates PDO::MYSQL_ATTR_*, and PDO's before. Checked without the autoloader, which throws for a class it doesn't know.
+if(!function_exists('wifidb_mysql_attr')) {
+	function wifidb_mysql_attr($name)
+	{
+		return class_exists('Pdo\Mysql', false) ? constant('Pdo\Mysql::ATTR_'.$name) : constant('PDO::MYSQL_ATTR_'.$name);
+	}
+}
+
+// The migrations in $dir/<dialect>/ the database hasn't applied (schema_migrations), cheaply enough for every request:
+// one query, nothing created (lib/migrate.inc.php is what applies them). No such folder (a copy of the site without
+// sql/): none. No schema_migrations table yet: all of them.
+if(!function_exists('wifidb_migrations_pending')) {
+	function wifidb_migrations_pending($conn, $dialect, $dir)
+	{
+		$files = glob(rtrim($dir, '/\\').'/'.$dialect.'/*.sql');
+		if(!$files) { return array(); }
+		$ids = array();
+		foreach($files as $file) { $ids[] = basename($file, '.sql'); }
+		try { $applied = $conn->query("SELECT id FROM schema_migrations WHERE applied IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN); }
+		catch(Throwable $e) { $applied = array(); }
+		$pending = array_values(array_diff($ids, $applied));
+		sort($pending, SORT_STRING);
+		return $pending;
+	}
+}

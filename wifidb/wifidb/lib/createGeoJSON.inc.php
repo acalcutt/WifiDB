@@ -20,6 +20,8 @@ if not, write to the
 */
 class createGeoJSON
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $convert, $daemon_out, $data, $GeoJSON_out, $title, $URL_BASE, $users;
 
 	/**
 	 * Where a bucket's vector tiles come from.

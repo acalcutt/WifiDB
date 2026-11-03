@@ -1,0 +1,599 @@
+#!/bin/bash
+# Makes this container a WiFiDB node. Run once by wifidb-firstboot.service on a new container, until it succeeds (after
+# a failed attempt: systemctl restart wifidb-firstboot). After that the unit doesn't run again, since it needs
+# /etc/wifidb/firstboot-pending; to apply an edited /etc/wifidb/firstboot.env, run this script itself, as an update does.
+#
+# The settings come from /etc/wifidb/firstboot.env (see that file). In short:
+#   - everything that must survive an upgrade goes in /srv/wifidb-data (mount a second disk there): uploads,
+#     generated files, logs, and the settings that differ from the release's defaults
+#   - the code, the release's default config files and the services belong to the container and are replaced when
+#     you move to a new template: create the new container, attach the same data disk, start it
+#   - an empty database gets the schema loaded; a database that already has it is left alone
+set -euo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+
+ENV_FILE=/etc/wifidb/firstboot.env
+PENDING=/etc/wifidb/firstboot-pending
+DATA=/srv/wifidb-data
+WEB=/var/www/wifidb
+TOOLS=/opt/wifidb/tools
+
+log() { echo "[wifidb-firstboot] $*"; }
+die() { echo "[wifidb-firstboot] ERROR: $*" >&2; exit 1; }
+
+if [ -f "$ENV_FILE" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+    set +a
+fi
+
+DB_TYPE=${WIFIDB_DB_TYPE:-mariadb}
+case "$DB_TYPE" in
+    # the config calls MariaDB "mysql", the name of the PHP driver that talks to it
+    mariadb|mysql) DB_TYPE=mysql; DB_PORT=${WIFIDB_DB_PORT:-3306} ;;
+    sqlsrv) DB_PORT=${WIFIDB_DB_PORT:-1433} ;;
+    pgsql|postgres|postgresql) DB_TYPE=pgsql; DB_PORT=${WIFIDB_DB_PORT:-5432} ;;
+    *) die "WIFIDB_DB_TYPE must be mariadb, sqlsrv or pgsql (it is '$DB_TYPE')" ;;
+esac
+DB_HOST=${WIFIDB_DB_HOST:-}
+DB_NAME=${WIFIDB_DB_NAME:-wifi}
+DB_USER=${WIFIDB_DB_USER:-wifidb}
+DB_PASS=${WIFIDB_DB_PASS:-}
+# SQL Server: 0 checks the server's certificate against the trusted roots (needs one this container trusts); 1, the
+# default, accepts it as it is, which SQL Server's own self-signed certificate needs
+SQLSRV_TRUST_CERT=${WIFIDB_SQLSRV_TRUST_CERT:-1}
+[ -n "$DB_HOST" ] || die "set WIFIDB_DB_HOST in $ENV_FILE, then: systemctl restart wifidb-firstboot"
+[ -n "$DB_PASS" ] || die "set WIFIDB_DB_PASS in $ENV_FILE, then: systemctl restart wifidb-firstboot"
+if [ "$DB_TYPE" = sqlsrv ] && ! php -m | grep -x pdo_sqlsrv >/dev/null; then
+    die "this template was built without the SQL Server driver; use WIFIDB_DB_TYPE=mariadb or a template that has it"
+fi
+
+NODE=${WIFIDB_NODE:-$(hostname -s)}
+ROOT=${WIFIDB_ROOT:-}
+ROOT=${ROOT#/}; ROOT=${ROOT%/}
+SITE_URL=${WIFIDB_URL:-http://$(hostname -f 2>/dev/null || hostname)}
+SITE_URL=${SITE_URL%/}
+PROXY=${WIFIDB_EXTERNAL_PROXY:-}
+# The API's own host names (api.wifidb.net, and older ones such as api.vistumbler.net), separated by spaces. Default:
+# api. and the site's domain (without www.), when it has one; WIFIDB_API_HOST= (empty) for none.
+site_host=$(printf '%s' "$SITE_URL" | sed -E 's#^[A-Za-z]+://##; s#[:/].*$##; s#^www\.##')
+if [[ "$site_host" == *.* && "$site_host" =~ [A-Za-z] ]]; then api_default="api.$site_host"; else api_default=""; fi
+API_HOST=${WIFIDB_API_HOST-$api_default}
+# Several nodes on one database need the same key: it encrypts the authenticator secrets and Site Settings' secrets,
+# which every node reads. Empty: kept from the data disk, or made here (the first node).
+TWO_FACTOR_KEY=${WIFIDB_TWO_FACTOR_KEY:-}
+phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
+
+export DB_TYPE DB_HOST DB_PORT DB_NAME DB_USER DB_PASS SQLSRV_TRUST_CERT NODE ROOT SITE_URL DATA TWO_FACTOR_KEY
+
+# ── The data disk ────────────────────────────────────────────────────────────
+log "data folder $DATA"
+if mountpoint -q "$DATA"; then log "(a separate disk is mounted there)"; else log "(no separate disk: it's part of the container's disk)"; fi
+install -d -o www-data -g www-data "$DATA" "$DATA/config" "$DATA/cron.d" "$DATA/log"
+
+# import/up/ holds the uploads and out/ everything the daemons generate. The code's own placeholder files
+# (index.php, .htaccess) are copied over them, so a new release's versions win and the generated files stay.
+# import/ itself stays with the release: its index.php is the upload page, which finds lib/ by a relative path and
+# would break if PHP saw it on the data disk.
+for d in import/up out; do
+    if [ ! -L "$WEB/$d" ]; then
+        install -d -o www-data -g www-data "$DATA/$d"
+        rsync -a "$WEB/$d/" "$DATA/$d/"
+        rm -rf "${WEB:?}/$d"
+        ln -s "$DATA/$d" "$WEB/$d"
+    fi
+done
+install -d -o www-data -g www-data "$DATA/import/up/backup" "$DATA/import/up/convert" "$DATA/import/up/extract" "$DATA/out/geojson" "$DATA/out/pmtiles"
+# whole-site backups (admin/backups.php, tools/utilites/backup.php): member data, so only www-data reads them
+install -d -m 0700 -o www-data -g www-data "$DATA/backups" "$DATA/backups/queue"
+if [ ! -L "$TOOLS/log" ]; then
+    rm -rf "${TOOLS:?}/log"
+    ln -s "$DATA/log" "$TOOLS/log"
+fi
+# the cron wrappers write to ../log/<name>/
+for sub in $(grep -ho '\.\./log/[A-Za-z_]*' "$TOOLS"/cron/* 2>/dev/null | sed 's#.*/##' | sort -u); do
+    install -d -o www-data -g www-data "$DATA/log/$sub"
+done
+install -d -o www-data -g www-data "$DATA/log/daemon"
+# The country database the cookie banner asks by (lib/visitor_country.inc.php): kept on the data disk, starting from the
+# copy the template was built with. cp -p keeps that copy's date, so tools/cron/update_geoip fetches a newer one once
+# it's a month old; until then, and whenever a fetch fails, the one here is used.
+install -d -o www-data -g www-data "$DATA/geoip"
+if [ ! -f "$DATA/geoip/dbip-country-lite.mmdb" ] && [ -f /opt/wifidb/geoip/dbip-country-lite.mmdb ]; then
+    cp -p /opt/wifidb/geoip/dbip-country-lite.mmdb "$DATA/geoip/"
+fi
+# All www-data's, except what pmtiles-swarm keeps: its own folder, and the archives it shares with the site (below)
+install -d -o www-data -g www-data "$DATA/out/pmtiles-mlt"
+find "$DATA" \( -path "$DATA/swarm" -o -path "$DATA/out/pmtiles" -o -path "$DATA/out/pmtiles-mlt" \) -prune \
+    -o -exec chown -h www-data:www-data {} +
+for d in "$DATA/out/pmtiles" "$DATA/out/pmtiles-mlt"; do
+    if getent group pmtiles-swarm >/dev/null; then
+        # The tile archives, shared through the swarm's group: what the site builds here takes the group, so the swarm
+        # can read it, and a node following another downloads into here
+        chown www-data:pmtiles-swarm "$d"
+        chmod 2775 "$d"
+    else
+        chown www-data:www-data "$d"
+    fi
+done
+
+# Smarty's compiled templates and cache: the container's own, rebuilt as needed
+for sub in templates_c cache configs; do
+    install -d -o www-data -g www-data "$WEB/smarty/$sub"
+    for theme in "$WEB"/themes/*/; do
+        [ -d "${theme}templates" ] && install -d -o www-data -g www-data "$WEB/smarty/$sub/$(basename "$theme")"
+    done
+done
+
+# ── Settings ─────────────────────────────────────────────────────────────────
+# Only the differences from the release's defaults are kept on the data disk; the config files the code reads are
+# the release's examples with a line at the end that loads those differences.
+write_overrides() {
+    php <<'PHP'
+<?php
+$e = function ($k, $d = '') { $v = getenv($k); return ($v === false || $v === '') ? $d : $v; };
+$root = $e('ROOT');
+$site = $e('SITE_URL');
+// hosturl and root are joined as hosturl.root.'/', so the trailing slash only goes in when there is a root
+$hosturl = $root === '' ? $site : $site . '/';
+$web = array(
+    'wifidb_tools'  => '/opt/wifidb/tools/',
+    'wifidb_install' => '/var/www/wifidb/',
+    'root'          => $root,
+    'hosturl'       => $hosturl,
+    'WebSocketURL'  => preg_replace('#^http#', 'ws', $site) . '/ws/',
+    'wifidb_nodename' => $e('NODE'),   // the upload page marks what it queues with it (lib/import_queue.inc.php)
+    'srvc'          => $e('DB_TYPE'),
+    'driver'        => $e('DB_TYPE'),
+    'port'          => (int)$e('DB_PORT'),
+    'host'          => $e('DB_HOST'),
+    'db'            => $e('DB_NAME'),
+    'db_user'       => $e('DB_USER'),
+    'db_pwd'        => $e('DB_PASS'),
+    'sqlsrv_trust_server_certificate' => $e('SQLSRV_TRUST_CERT', '1') !== '0',
+    'pid_file_loc'  => '/run/wifidb/',
+);
+$daemon = array(
+    'wifidb_install'     => '/var/www/wifidb/',
+    'daemon_path'        => '/opt/wifidb/tools/daemon/',
+    'daemon_log_folder'  => '/opt/wifidb/tools/log/',
+    'wifidb_nodename'    => $e('NODE'),
+    'pid_file_loc'       => '/run/wifidb/',
+    'WebSocketBindIP'    => '127.0.0.1',
+    'WebSocketPort'      => 9000,
+);
+$dir = $e('DATA') . '/config';
+// The key that encrypts saved authenticator secrets: WIFIDB_TWO_FACTOR_KEY when given (every node on one database
+// has to have the same), else made once and kept when the settings are regenerated, since a new key would make every
+// saved authenticator useless.
+$old = is_file("$dir/web.overrides.php") ? @include "$dir/web.overrides.php" : array();
+$web['two_factor_key'] = $e('TWO_FACTOR_KEY') !== '' ? $e('TWO_FACTOR_KEY')
+    : ((is_array($old) && !empty($old['two_factor_key'])) ? $old['two_factor_key'] : base64_encode(random_bytes(32)));
+file_put_contents("$dir/web.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($web, true) . ";\n");
+file_put_contents("$dir/daemon.overrides.php", "<?php\n// Settings that differ from the release's defaults. Edit freely; wifidb-firstboot leaves this file alone.\nreturn " . var_export($daemon, true) . ";\n");
+PHP
+}
+
+if [ ! -f "$DATA/config/web.overrides.php" ] || [ "${WIFIDB_REGENERATE:-0}" = 1 ]; then
+    log "writing $DATA/config/*.overrides.php"
+    write_overrides
+else
+    log "keeping the settings in $DATA/config (WIFIDB_REGENERATE=1 rewrites them from firstboot.env)"
+fi
+chown www-data:www-data "$DATA"/config/*.overrides.php
+chmod 0640 "$DATA"/config/*.overrides.php
+
+make_config() { # make_config EXAMPLE TARGET VARIABLE OVERRIDES
+    sed 's/\r$//; /^?>[[:space:]]*$/d' "$1" > "$2"
+    printf '\n// Added by wifidb-firstboot: the settings that differ from the defaults above.\n$%s = array_merge($%s, require %s);\n' "$3" "$3" "'$4'" >> "$2"
+    chown root:www-data "$2"
+    chmod 0640 "$2"
+}
+make_config "$WEB/lib/config.inc.php.example" "$WEB/lib/config.inc.php" config "$DATA/config/web.overrides.php"
+# backups and the country database go on the data disk unless the overrides say otherwise, and a restore puts the
+# backup's two_factor_key in the overrides
+printf '$config['"'"'overrides_file'"'"'] = %s;
+if(empty($config['"'"'backup_dir'"'"'])) { $config['"'"'backup_dir'"'"'] = %s; }
+if(empty($config['"'"'geoip_country_db'"'"'])) { $config['"'"'geoip_country_db'"'"'] = %s; }
+' "'$DATA/config/web.overrides.php'" "'$DATA/backups'" "'$DATA/geoip/dbip-country-lite.mmdb'" >> "$WEB/lib/config.inc.php"
+make_config "$TOOLS/daemon.config.inc.php.example" "$TOOLS/daemon.config.inc.php" daemon_config "$DATA/config/daemon.overrides.php"
+
+# ── The web server ───────────────────────────────────────────────────────────
+if [ -n "$PROXY" ]; then
+    log "behind a proxy: $PROXY"
+    cat > /etc/apache2/conf-available/wifidb-proxy.conf <<CONF
+# The proxy in front of this container does TLS and adds the visitor's address in X-Forwarded-For.
+RemoteIPHeader X-Forwarded-For
+RemoteIPInternalProxy $PROXY
+CONF
+    a2enconf -q wifidb-proxy >/dev/null
+else
+    a2disconf -q wifidb-proxy >/dev/null 2>&1 || true
+fi
+if [ -n "$ROOT" ]; then
+    cat > /etc/apache2/conf-available/wifidb-root.conf <<CONF
+Alias /$ROOT /var/www/wifidb
+CONF
+    a2enconf -q wifidb-root >/dev/null
+    a2disconf -q wifidb-legacy >/dev/null 2>&1 || true
+else
+    a2disconf -q wifidb-root >/dev/null 2>&1 || true
+    # the site used to live under /wifidb/; old links keep working
+    cat > /etc/apache2/conf-available/wifidb-legacy.conf <<'CONF'
+RedirectMatch 301 ^/wifidb/?(.*)$ /$1
+CONF
+    a2enconf -q wifidb-legacy >/dev/null
+fi
+# The API's own host name, as wifidb.net has api.wifidb.net: the api/ folder at its top, so
+# https://api.<site>/import.php is /api/import.php. Named zz- so it loads after wifidb.conf, which stays the default
+# for every other name.
+if [ -n "${API_HOST// /}" ]; then
+    # several names, separated by spaces (api.wifidb.net api.vistumbler.net): the first is the ServerName, the rest aliases
+    read -r -a api_names <<< "$API_HOST"
+    api_alias=""
+    [ "${#api_names[@]}" -gt 1 ] && api_alias="ServerAlias ${api_names[*]:1}"
+    log "the API also answers at ${api_names[*]}"
+    cat > /etc/apache2/sites-available/zz-wifidb-api.conf <<CONF
+<VirtualHost *:80>
+    ServerName ${api_names[0]}
+    $api_alias
+    DocumentRoot /var/www/wifidb/api
+    Include /etc/apache2/wifidb-slow-pool.conf
+    <Directory /var/www/wifidb/api>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    SetEnvIf X-Forwarded-Proto https HTTPS=on
+    ErrorLog \${APACHE_LOG_DIR}/wifidb-api-error.log
+    CustomLog \${APACHE_LOG_DIR}/wifidb-api-access.log combined
+</VirtualHost>
+CONF
+    a2ensite -q zz-wifidb-api >/dev/null
+else
+    a2dissite -q zz-wifidb-api >/dev/null 2>&1 || true
+fi
+
+# Cron times kept on the data disk replace the shipped ones
+if [ -f "$DATA/cron.d/wifidb" ]; then
+    log "using the cron times in $DATA/cron.d/wifidb"
+    install -m 0644 "$DATA/cron.d/wifidb" /etc/cron.d/wifidb
+fi
+
+# ── The database ─────────────────────────────────────────────────────────────
+dbphp() { # dbphp 'php code using $pdo'
+    php -r '
+        $t = getenv("DB_TYPE"); $h = getenv("DB_HOST"); $p = getenv("DB_PORT"); $n = getenv("DB_NAME");
+        $dsn = $t === "mysql" ? "mysql:host=$h;port=$p;dbname=$n;charset=utf8mb4"
+             : ($t === "pgsql" ? "pgsql:host=$h;port=$p;dbname=$n;connect_timeout=10"
+                               : "sqlsrv:Server=$h,$p;Database=$n;Encrypt=true;TrustServerCertificate=" . (getenv("SQLSRV_TRUST_CERT") === "0" ? "false" : "true") . ";LoginTimeout=10");
+        $pdo = new PDO($dsn, getenv("DB_USER"), getenv("DB_PASS"), array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION));
+        '"$1"
+}
+
+log "waiting for the database at $DB_HOST:$DB_PORT"
+ready=0
+for _ in $(seq 60); do
+    if dbphp '' 2>/tmp/wifidb-db-error; then ready=1; break; fi
+    sleep 2
+done
+if [ "$ready" != 1 ]; then
+    cat /tmp/wifidb-db-error >&2
+    die "could not connect to the database as $DB_USER on $DB_HOST:$DB_PORT/$DB_NAME. Check firstboot.env, then: systemctl restart wifidb-firstboot"
+fi
+
+if dbphp '$pdo->query("SELECT COUNT(*) FROM settings")->fetchColumn();' 2>/dev/null; then
+    log "the database already has the WiFiDB tables; leaving them alone"
+    fresh=0
+else
+    log "empty database: loading the schema"
+    if [ "$DB_TYPE" = mysql ]; then
+        MYSQL_PWD="$DB_PASS" mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" "$DB_NAME" < /opt/wifidb/sql/blank_db.sql
+    elif [ "$DB_TYPE" = pgsql ]; then
+        # blank_db.pgsql is one transaction and names no database, so it loads into the one the connection is to
+        PGPASSWORD="$DB_PASS" psql -q -v ON_ERROR_STOP=1 -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f /opt/wifidb/sql/blank_db.pgsql >/dev/null
+    else
+        sed "s/prod_wifi/$DB_NAME/g" /opt/wifidb/sql/blank_db.sqlsrv > /tmp/wifidb-schema.sql
+        /opt/mssql-tools18/bin/sqlcmd -C -b -S "$DB_HOST,$DB_PORT" -U "$DB_USER" -P "$DB_PASS" -d "$DB_NAME" -i /tmp/wifidb-schema.sql
+        rm -f /tmp/wifidb-schema.sql
+    fi
+    fresh=1
+fi
+
+if [ "$fresh" = 1 ]; then
+    # the schema ships with a node called 'prod'
+    log "naming this node '$NODE'"
+    dbphp '
+        $s = $pdo->prepare("UPDATE settings SET node_name = ?"); $s->execute(array(getenv("NODE")));
+        $s = $pdo->prepare("UPDATE schedule SET nodename = ?"); $s->execute(array(getenv("NODE")));'
+else
+    count=$(dbphp '$s = $pdo->prepare("SELECT COUNT(*) FROM settings WHERE node_name = ?"); $s->execute(array(getenv("NODE"))); echo (int)$s->fetchColumn();')
+    if [ "${count:-0}" = 0 ]; then
+        # A node joining a database other nodes use: it gets rows of its own, copied from the first node's, with
+        # imports and admin jobs on (each file and job goes to one node) and the rest (the KML export, stats) left to
+        # the node that has them; enable them on the scheduling page (admin mode) to move them.
+        from=$(dbphp '
+            $node = getenv("NODE");
+            $from = $pdo->query("SELECT node_name FROM settings ORDER BY id")->fetchColumn();
+            if($from === false) { exit; }
+            $pdo->prepare("INSERT INTO settings (daemon_state, version, apswithgps, last_export_file, node_name) SELECT daemon_state, version, apswithgps, last_export_file, ? FROM settings WHERE node_name = ?")->execute(array($node, $from));
+            $i = getenv("DB_TYPE") === "mysql" ? chr(96)."interval".chr(96) : chr(34)."interval".chr(34);
+            $pdo->prepare("INSERT INTO schedule (nodename, daemon, enabled, $i, status, nextrun) SELECT ?, daemon, CASE WHEN daemon IN (?, ?) THEN enabled ELSE 0 END, $i, ?, nextrun FROM schedule WHERE nodename = ?")
+                ->execute(array($node, "Import", "Admin", "Waiting", $from));
+            echo $from;')
+        if [ -n "$from" ]; then
+            log "the node '$NODE' is new to this database: added it alongside '$from' (imports and admin jobs on here;"
+            log "         the KML export and stats stay with '$from'). It needs '$from''s two_factor_key: WIFIDB_TWO_FACTOR_KEY."
+        else
+            log "WARNING: the database has no settings row for any node, so the import/export/admin jobs will do nothing here."
+        fi
+    fi
+fi
+
+# The schema above is the base; everything added since (two-factor sign-in, notifications, ...) is a numbered
+# migration. Several nodes starting at once is fine: each migration is claimed by one of them.
+log "applying database migrations"
+runuser -u www-data -- php /opt/wifidb/tools/utilites/migrate.php || die "the database migrations failed; see above. Fix the cause, then: systemctl restart wifidb-firstboot"
+
+# ── Updates (admin/servers.php) ──────────────────────────────────────────────
+# wifidb-update (as root, from its timer) does the update an administrator asks for, from the releases at the place
+# set here. Root's own file: the page only names a version, so it can't point the updater anywhere else.
+(
+    umask 077
+    cat > /etc/wifidb/updates.conf <<CONF
+# Written by wifidb-firstboot from firstboot.env (WIFIDB_UPDATES, WIFIDB_UPDATE_*). See docs/updates.md.
+UPDATES=${WIFIDB_UPDATES:-1}
+SOURCE=${WIFIDB_UPDATE_SOURCE:-gitlab}
+GITLAB_URL=${WIFIDB_UPDATE_GITLAB_URL:-https://gitlab.techidiots.net}
+GITLAB_PROJECT=${WIFIDB_UPDATE_GITLAB_PROJECT:-techidiots-llc/WifiDB}
+GITHUB_REPO=${WIFIDB_UPDATE_GITHUB_REPO:-}
+TOKEN=${WIFIDB_UPDATE_TOKEN:-}
+CONF
+)
+if [ "${WIFIDB_UPDATES:-1}" = 0 ]; then
+    systemctl disable --now wifidb-update.timer 2>/dev/null || true
+    log "updates from admin/servers.php are switched off"
+else
+    systemctl enable --now wifidb-update.timer 2>/dev/null || log "WARNING: the updater's timer could not be switched on"
+fi
+
+# ── pmtiles-swarm ────────────────────────────────────────────────────────────
+# Shares the map's tile archives over BitTorrent and serves tiles from them on port 8090 (docs/pmtiles-swarm.md). The
+# node that builds the archives watches the archive folder and publishes each build; a node with WIFIDB_SWARM_FOLLOW
+# follows that one, a feed per category, downloading each build into its own archive folder under the same name and
+# pointing <bucket>.pmtiles at it, so its site and its swarm serve the same bytes. Its settings, catalog and signing key
+# live on the data disk in $DATA/swarm. This sets the parts that make it this site's node; anything else saved there,
+# the console's password and API key included, is kept.
+SWARM_HOME=/var/lib/pmtiles-swarm
+SWARM_BIN=$SWARM_HOME/node_modules/.bin/pmtiles-swarm
+SWARM_DIR=$DATA/swarm
+SWARM_CONFIG=$SWARM_DIR/swarm.config.json
+SWARM_FOLLOW=${WIFIDB_SWARM_FOLLOW:-}
+SWARM_FOLLOW=${SWARM_FOLLOW%/}
+SWARM_PORT=${WIFIDB_SWARM_PORT:-6881}
+SWARM_PIN=/opt/wifidb/swarm
+
+# The pmtiles-swarm release this code goes with: $SWARM_PIN holds the package.json and package-lock.json npm wrote when
+# the template was built, and an update package brings its own. Where another release is installed, this one is
+# installed from npm beside it, exactly as the lock file says, and takes over once it's in and its WebRTC binary loads;
+# the one before is kept in $SWARM_HOME/previous until the new one answers (below). Done with the swarm on or off, so
+# turning it on starts the release the code goes with.
+swarm_was=""
+swarm_want=""
+if [ -x "$SWARM_BIN" ] && [ -f "$SWARM_PIN/package-lock.json" ]; then
+    swarm_want=$(node -p "require('$SWARM_PIN/package-lock.json').packages['node_modules/pmtiles-swarm'].version" 2>/dev/null || true)
+    swarm_have=$(node -p "require('$SWARM_HOME/node_modules/pmtiles-swarm/package.json').version" 2>/dev/null || true)
+    if [ -n "$swarm_want" ] && [ "$swarm_want" != "$swarm_have" ]; then
+        log "pmtiles-swarm $swarm_have is installed; installing $swarm_want, which this release of WifiDB goes with"
+        next=$SWARM_HOME/next
+        rm -rf "$next"
+        install -d "$next"
+        cp "$SWARM_PIN/package.json" "$SWARM_PIN/package-lock.json" "$next/"
+        if (cd "$next" && env npm_config_cache=/tmp/wifidb-npm-cache npm_config_update_notifier=false \
+                npm ci --omit=dev --no-audit --no-fund && node -e "import('node-datachannel')") >> /var/log/wifidb-swarm-install.log 2>&1; then
+            rm -rf "$SWARM_HOME/previous"
+            install -d "$SWARM_HOME/previous"
+            for f in node_modules package.json package-lock.json; do
+                if [ -e "$SWARM_HOME/$f" ]; then mv "$SWARM_HOME/$f" "$SWARM_HOME/previous/"; fi
+                mv "$next/$f" "$SWARM_HOME/"
+            done
+            chown -R pmtiles-swarm:pmtiles-swarm "$SWARM_HOME"
+            swarm_was=$swarm_have
+        else
+            log "WARNING: pmtiles-swarm $swarm_want couldn't be installed (see /var/log/wifidb-swarm-install.log); $swarm_have stays"
+        fi
+        rm -rf "$next" /tmp/wifidb-npm-cache
+    fi
+fi
+swarm_put_back() { # the release that was installed before this first boot's, back in its place
+    rm -rf "$SWARM_HOME/node_modules" "$SWARM_HOME/package.json" "$SWARM_HOME/package-lock.json"
+    mv "$SWARM_HOME/previous/"* "$SWARM_HOME/"
+    rmdir "$SWARM_HOME/previous"
+}
+swarm_start() { # its unit, from the installed release and this configuration, and (re)start it
+    # which folders it may write to (ReadWritePaths) follows what it watches or downloads into
+    (cd / && "$SWARM_BIN" init --systemd --config "$SWARM_CONFIG" >/dev/null)
+    install -m 0644 "$SWARM_DIR/pmtiles-swarm.service" /etc/systemd/system/pmtiles-swarm.service
+    rm -f "$SWARM_DIR/pmtiles-swarm.service"
+    systemctl daemon-reload
+    systemctl enable pmtiles-swarm >/dev/null 2>&1
+    systemctl restart pmtiles-swarm
+}
+swarm_answers() { # its public port answers /health within two minutes
+    for _ in $(seq 60); do
+        curl -fs -o /dev/null --max-time 5 http://127.0.0.1:8090/health && return 0
+        sleep 2
+    done
+    return 1
+}
+
+if [ "${WIFIDB_SWARM:-0}" = 1 ] && [ ! -x "$SWARM_BIN" ]; then
+    log "WARNING: WIFIDB_SWARM=1, but this template was built without pmtiles-swarm; it stays off"
+elif [ "${WIFIDB_SWARM:-0}" = 1 ]; then
+    case "$SWARM_PORT" in ''|*[!0-9]*) die "WIFIDB_SWARM_PORT must be a port number, not '$SWARM_PORT'" ;; esac
+    case "$SWARM_FOLLOW" in ''|http://*|https://*) ;; *) die "WIFIDB_SWARM_FOLLOW must start http:// or https://, not '$SWARM_FOLLOW'" ;; esac
+    install -d -o pmtiles-swarm -g pmtiles-swarm -m 0750 "$SWARM_DIR" "$SWARM_DIR/data"
+    install -d -o pmtiles-swarm -g pmtiles-swarm -m 0755 "$SWARM_DIR/archives"
+    swarm_password=""
+    if [ ! -f "$SWARM_CONFIG" ]; then
+        # a console password and an API key of its own: the node won't listen on a reachable address without them
+        swarm_password=$(node -e "process.stdout.write(require('crypto').randomBytes(15).toString('base64url'))")
+        (cd / && "$SWARM_BIN" init --config "$SWARM_CONFIG" --data-dir "$SWARM_DIR/data" \
+            --save-path "$SWARM_DIR/archives" "--password=$swarm_password" >/dev/null)
+    fi
+    # Only the node that builds signs the current build of each category into the DHT (BEP 46), with a key of its own.
+    # Copy the old one here before the first boot to keep the magnets a site has already handed out.
+    if [ -z "$SWARM_FOLLOW" ] && [ ! -s "$SWARM_DIR/publisher.pem" ]; then
+        (umask 077 && "$SWARM_BIN" publisher-key > "$SWARM_DIR/publisher.pem")
+    fi
+    # What the site says: its buckets, their categories' prefix, how many builds it keeps, where the archives are read
+    # from (their web seed), whether this node builds them, whether MLT archives are built too, and the swarm's name
+    mapfile -t swarm_site < <(php -r '
+        require "/var/www/wifidb/lib/config.inc.php";
+        require "/var/www/wifidb/lib/mvt.inc.php";
+        echo (string)($config["tile_swarm_category_prefix"] ?? "") ?: "wifidb-", "\n";
+        echo max(1, (int)($config["tile_archive_keep"] ?? 2)), "\n";
+        echo implode(",", mvt_buckets()), "\n";
+        echo rtrim((string)($config["tile_archive_url"] ?? ""), "/"), "\n";
+        $node = (object)array("tile_archive_generate" => $config["tile_archive_generate"] ?? 1, "node_name" => getenv("NODE"));
+        echo mvt_generates_archives($node, "mvt") ? "builds" : "no", "\n";
+        echo empty($config["tile_mlt_archive_generate"]) ? "no" : "mlt", "\n";
+        echo rtrim((string)($config["tile_swarm_url"] ?? ""), "/"), "\n";')
+    [ "${#swarm_site[@]}" -ge 6 ] || die "could not read the tile settings from $WEB/lib/config.inc.php"
+    web_seed=${swarm_site[3]:-$SITE_URL${ROOT:+/$ROOT}/out/pmtiles}
+    # One node builds the archives and the rest follow it; a node doing both would put its own builds where it
+    # downloads the other's (tile_archive_generate names the node that builds)
+    if [ -n "$SWARM_FOLLOW" ] && [ "${swarm_site[4]}" = builds ]; then
+        log "WARNING: this node follows $SWARM_FOLLOW but builds archives too (tile_archive_generate): name the node that builds"
+    elif [ -z "$SWARM_FOLLOW" ] && [ "${swarm_site[4]}" != builds ]; then
+        log "WARNING: this node doesn't build the archives (tile_archive_generate), so it has nothing to publish: set WIFIDB_SWARM_FOLLOW"
+    fi
+    env CONFIG="$SWARM_CONFIG" OUT="$DATA/out" FOLLOW="$SWARM_FOLLOW" PORT="$SWARM_PORT" PROXY="$PROXY" \
+        PREFIX="${swarm_site[0]}" KEEP="${swarm_site[1]}" BUCKETS="${swarm_site[2]}" WEB_SEED="$web_seed" \
+        MLT="${swarm_site[5]}" SWARM_URL="${swarm_site[6]:-}" SITE_OUT="$SITE_URL${ROOT:+/$ROOT}/out" \
+        KEY="$SWARM_DIR/publisher.pem" FRESH="${swarm_password:+1}" node -e '
+        const fs = require("fs");
+        const e = process.env;
+        const c = JSON.parse(fs.readFileSync(e.CONFIG, "utf8"));
+        const port = Number(e.PORT);
+        if (e.FRESH) {
+            // A new node starts as wifidb.net'"'"'s swarm is set up: behind a firewall with its ports forwarded by hand, so
+            // no UPnP or NAT-PMP; an MD5 of each archive in the feed; the feed named for what it carries. The console
+            // changes these from then on.
+            c.libtorrent = { ...(c.libtorrent ?? {}), dht: true, lsd: true, upnp: false, natpmp: false };
+            c.md5 = true;
+            c.feedTitle = "WifiDB tile archives";
+            c.feedCopyright = "WifiDB contributors";
+            c.subscriptionIntervalSeconds = 120;
+        }
+        // The rest is this site'"'"'s, written every time.
+        // The console stays inside the container; tiles and feeds are on 8090, for the proxy and the other nodes.
+        c.adminHost = "127.0.0.1";
+        // A download is saved under its own name, the one the building node gave it.
+        c.savePathLayout = "flat";
+        // HAProxy does TLS: believe its X-Forwarded-Proto and Host, so the URLs the node hands out are the public ones.
+        c.trustProxy = ["loopback", ...e.PROXY.split(/\s+/).filter(Boolean)].join(", ");
+        if (e.SWARM_URL) c.publishingUrl = e.SWARM_URL;
+        c.libtorrent = { ...(c.libtorrent ?? {}), listen: `0.0.0.0:${port},[::]:${port}` };
+        c.webtorrent = { ...(c.webtorrent ?? {}), clientOptions: { ...(c.webtorrent?.clientOptions ?? {}), torrentPort: port + 1 } };
+        // The archive folders are this site'"'"'s to manage: their watch entries, or the subscriptions into them, are
+        // written afresh. MVT archives always, MLT ones when the site builds them (tile_mlt_archive_generate).
+        const folders = [{ dir: `${e.OUT}/pmtiles`, prefix: e.PREFIX, seed: e.WEB_SEED }];
+        if (e.MLT === "mlt") {
+            const seed = e.WEB_SEED.endsWith("/pmtiles") ? `${e.WEB_SEED}-mlt` : `${e.SITE_OUT}/pmtiles-mlt`;
+            folders.push({ dir: `${e.OUT}/pmtiles-mlt`, prefix: `${e.PREFIX}mlt-`, seed });
+        }
+        const ours = (path) => path === `${e.OUT}/pmtiles` || path === `${e.OUT}/pmtiles-mlt`;
+        c.watch = (c.watch ?? []).filter((w) => !ours(w?.path));
+        c.subscriptions = (c.subscriptions ?? []).filter((s) => !ours(s?.savePath));
+        // Builds kept: a few more of those rebuilt hourly or daily, as wifidb.net keeps them; tile_archive_keep for the rest
+        const keeps = { daily: 4, cell_daily: 4, weekly: 3, cell_weekly: 3 };
+        for (const folder of folders) {
+            for (const bucket of e.BUCKETS.split(",")) {
+                const category = folder.prefix + bucket.replaceAll("_", "-");
+                const keep = Math.max(keeps[bucket] ?? 0, Number(e.KEEP));
+                // <bucket>.pmtiles is the name the site reads the newest build by: the swarm points it there too
+                const latest = { latestLink: `${bucket}.pmtiles`, latestLinkType: "hard" };
+                if (!e.FOLLOW) {
+                    // <bucket>-<date and time>.pmtiles; small pieces, since most of the archives are small
+                    c.watch.push({ path: folder.dir, match: `${bucket}-*.pmtiles`, categories: [category],
+                        webSeedBase: folder.seed, pieceLength: 1048576, keep, ...latest });
+                } else {
+                    c.subscriptions.push({ url: `${e.FOLLOW}/feed/${category}.xml`, mode: "mirror", categories: [category],
+                        savePath: folder.dir, newest: 1, keep, ...latest });
+                }
+            }
+        }
+        if (e.FOLLOW) {
+            c.subscriptionsEnabled = true;
+            c.mutable = { ...(c.mutable ?? {}), publish: false };
+        } else {
+            c.mutable = { ...(c.mutable ?? {}), publish: true, keyPath: e.KEY };
+        }
+        fs.writeFileSync(e.CONFIG + ".new", JSON.stringify(c, null, 2) + "\n");
+        fs.renameSync(e.CONFIG + ".new", e.CONFIG);'
+    chown pmtiles-swarm:pmtiles-swarm "$SWARM_CONFIG"
+    chmod 0600 "$SWARM_CONFIG"
+    if [ -f "$SWARM_DIR/publisher.pem" ]; then chown pmtiles-swarm:pmtiles-swarm "$SWARM_DIR/publisher.pem"; chmod 0400 "$SWARM_DIR/publisher.pem"; fi
+    swarm_start
+    if [ -n "$swarm_was" ]; then
+        if swarm_answers; then
+            rm -rf "$SWARM_HOME/previous"
+            log "pmtiles-swarm $swarm_want is running (was $swarm_was)"
+        else
+            log "WARNING: pmtiles-swarm $swarm_want didn't answer on port 8090; $swarm_was goes back"
+            journalctl -u pmtiles-swarm --no-pager -o cat -n 20 2>/dev/null | sed 's/^/         /' || true
+            swarm_put_back
+            swarm_start
+        fi
+    fi
+    # The swarm carries the archives between the nodes: out_sync (the shared files bucket) leaves them to it
+    printf '%s\n' "\$config['out_sync_skip'][] = 'pmtiles';" "\$config['out_sync_skip'][] = 'pmtiles-mlt';" >> "$WEB/lib/config.inc.php"
+    if [ -n "$swarm_password" ]; then
+        (
+            umask 077
+            cat > /root/pmtiles-swarm-first-login.txt <<LOGIN
+pmtiles-swarm's console is on port 8091 inside this container only:
+  ssh -L 8091:127.0.0.1:8091 root@<this container>, then http://127.0.0.1:8091/
+  user name: admin
+  password:  $swarm_password
+The API key ('Authorization: Bearer <key>') is auth.apiKey in $SWARM_CONFIG.
+Keep the password somewhere safer, then delete this file. Settings: $SWARM_CONFIG, then systemctl restart pmtiles-swarm.
+LOGIN
+        )
+    fi
+    if [ -n "$SWARM_FOLLOW" ]; then
+        log "pmtiles-swarm follows $SWARM_FOLLOW, into $DATA/out/pmtiles"
+    else
+        log "pmtiles-swarm publishes the archives built in $DATA/out/pmtiles (web seed $web_seed)"
+    fi
+    log "         tiles and feeds on port 8090; BitTorrent on $SWARM_PORT and $((SWARM_PORT + 1)), TCP and UDP"
+elif [ -f /etc/systemd/system/pmtiles-swarm.service ]; then
+    systemctl disable --now pmtiles-swarm 2>/dev/null || true
+    log "pmtiles-swarm is switched off"
+fi
+if [ -n "$swarm_was" ] && [ "${WIFIDB_SWARM:-0}" != 1 ]; then
+    # off, it can't be asked whether it answers: the install and its WebRTC binary loading are the check
+    rm -rf "$SWARM_HOME/previous"
+    log "pmtiles-swarm $swarm_want is installed (was $swarm_was), for when it's switched on"
+fi
+
+# ── Start everything ─────────────────────────────────────────────────────────
+systemd-tmpfiles --create /etc/tmpfiles.d/wifidb.conf
+log "starting the services"
+systemctl enable --now "php${phpver}-fpm" apache2 cron
+# The two daemons can be switched off per node (WIFIDB_MONITORD=0, WIFIDB_WEBSOCKETD=0 in firstboot.env).
+for pair in "wifidb-monitord:${WIFIDB_MONITORD:-1}" "wifidb-websocketd:${WIFIDB_WEBSOCKETD:-1}"; do
+    unit=${pair%%:*}
+    if [ "${pair##*:}" = 0 ]; then
+        systemctl disable --now "$unit" 2>/dev/null || true
+        log "$unit is switched off"
+    else
+        systemctl enable --now "$unit"
+    fi
+done
+systemctl reload apache2 || systemctl restart apache2
+
+rm -f "$PENDING"
+log "done: $SITE_URL${ROOT:+/$ROOT} (node '$NODE', $DB_TYPE database '$DB_NAME' on $DB_HOST)"

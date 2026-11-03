@@ -104,11 +104,25 @@ if(!$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
-	#Claim a schedule ID
+	$dbcore->ReleaseDeadClaims();   # a row left 'Running' by a run that died is taken again
+	#Claim a schedule ID, once its next run is due (cron starts this each minute; the stats are worked out each interval)
+	$currentrun = date("Y-m-d G:i:s");
 	if($dbcore->sql->service == "mysql")
-		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `enabled` = 1 LIMIT 1";}
+		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
-		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [enabled] = 1";}
+		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
+	else if($dbcore->sql->service == "pgsql")
+		{
+			// Postgres has neither UPDATE TOP (n) nor UPDATE ... LIMIT, so the row
+			// is picked by a subquery. FOR UPDATE SKIP LOCKED also stops two daemons
+			// claiming the same schedule row, which the MSSQL form does not.
+			// Bind order is unchanged: the SET parameters stay 1-4 and the WHERE
+			// parameters follow in the same sequence inside the subquery.
+			$sql = "UPDATE schedule SET pid = ?, pidfile = ?, logfile = ?, status = ?"
+				. " WHERE id = (SELECT id FROM schedule"
+				. "   WHERE nodename = ? And daemon = ? And status != ? And nextrun <= ? And enabled = 1"
+				. "   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1)";
+		}
 	$prepus = $dbcore->sql->conn->prepare($sql);
 	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -117,10 +131,12 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus->bindParam(5, $dbcore->node_name, PDO::PARAM_STR);
 	$prepus->bindParam(6, $dbcore->daemon_name, PDO::PARAM_STR);
 	$prepus->bindParam(7, $dbcore->StatusRunning, PDO::PARAM_STR);
+	$prepus->bindParam(8, $currentrun, PDO::PARAM_STR);
 	$prepus->execute();
 
 	#Start claimed schedule ID, if one exists
-	$sql = "SELECT id, interval FROM schedule WHERE pid = ? And pidfile = ?";
+	// "interval" is a reserved word: quoted on Postgres, and named with its table for MariaDB;
+	$sql = "SELECT schedule.id, schedule.".$dbcore->sql->ident('interval')." FROM schedule WHERE pid = ? And pidfile = ?";
 	$prepgj = $dbcore->sql->conn->prepare($sql);
 	$prepgj->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepgj->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -155,6 +171,11 @@ function updateCache($dbcore, $cache_key, $cache_data) {
 	if($dbcore->sql->service == "mysql") {
 		$sql = "INSERT INTO stats_cache (cache_key, cache_data, updated_at) VALUES (?, ?, ?)
 				ON DUPLICATE KEY UPDATE cache_data = VALUES(cache_data), updated_at = VALUES(updated_at)";
+	} else if($dbcore->sql->service == "pgsql") {
+		// stats_cache.cache_key already carries a unique constraint
+		// (UQ_stats_cache_key), so it is the conflict target directly.
+		$sql = "INSERT INTO stats_cache (cache_key, cache_data, updated_at) VALUES (?, ?, ?)
+				ON CONFLICT (cache_key) DO UPDATE SET cache_data = EXCLUDED.cache_data, updated_at = EXCLUDED.updated_at";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "MERGE INTO stats_cache AS target
 				USING (SELECT ? AS cache_key, ? AS cache_data, ? AS updated_at) AS source
@@ -179,12 +200,16 @@ function updateCache($dbcore, $cache_key, $cache_data) {
  * Generate and cache all statistics
  */
 function generateStatsCache($dbcore) {
+	// Postgres will not LIKE-compare a timestamp; MySQL and SQL Server convert
+	// implicitly. $fa_txt keeps the shared queries usable on all three.
+	$fa_txt = ($dbcore->sql->service == "pgsql") ? "fa::text" : "fa";
 	$dbcore->verbosed("Generating statistics cache...", 1);
 	$start_time = microtime(true);
 
 	// 1. Summary counts
 	$dbcore->verbosed("  - Generating summary counts...", 1);
-	$sql = "SELECT SECTYPE, count(AP_ID) AS ap_count FROM wifi_ap WHERE BSSID <> '00:00:00:00:00:00' AND fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' GROUP BY SECTYPE";
+	$sec_c = $dbcore->sql->ident('SECTYPE'); $ap_c = $dbcore->sql->ident('AP_ID'); $bssid_c = $dbcore->sql->ident('BSSID');
+	$sql = "SELECT ".$sec_c.", count(".$ap_c.") AS ap_count FROM wifi_ap WHERE ".$bssid_c." <> '00:00:00:00:00:00' AND fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' GROUP BY ".$sec_c;
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$seclist = $result->fetchAll(2);
@@ -198,7 +223,7 @@ function generateStatsCache($dbcore) {
 	}
 
 	// Cell tower counts
-	$sql = "SELECT type, count(cell_id) AS cell_count FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE') GROUP BY type";
+	$sql = "SELECT type, count(cell_id) AS cell_count FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE') GROUP BY type";
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$celllist = $result->fetchAll(2);
@@ -210,7 +235,7 @@ function generateStatsCache($dbcore) {
 	}
 
 	// Bluetooth counts
-	$sql = "SELECT type, count(cell_id) AS bt_count FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE') GROUP BY type";
+	$sql = "SELECT type, count(cell_id) AS bt_count FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type IN ('BT','BLE') GROUP BY type";
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$btlist = $result->fetchAll(2);
@@ -248,6 +273,24 @@ function generateStatsCache($dbcore) {
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND BSSID <> '00:00:00:00:00:00'
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
 				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		// to_char() is the Postgres equivalent of MySQL DATE_FORMAT / T-SQL FORMAT.
+		// fa is a timestamp, so "NOT LIKE '1970-01-01%'" needs an explicit ::text.
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month,
+			COUNT(*) as new_count,
+			SUM(CASE WHEN \"SECTYPE\" = 1 THEN 1 ELSE 0 END) as open_count,
+			SUM(CASE WHEN \"SECTYPE\" = 2 THEN 1 ELSE 0 END) as wep_count,
+			SUM(CASE WHEN \"SECTYPE\" = 3 THEN 1 ELSE 0 END) as secure_count,
+			/* compute auth_open_count from AUTH (include WEP as Open for auth chart) */
+			SUM(CASE WHEN \"SECTYPE\" = 1  OR \"SECTYPE\" = 2 THEN 1 ELSE 0 END) as auth_open_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa3_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA2%' THEN 1 ELSE 0 END) as auth_wpa2_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%WPA%' AND \"AUTH\" NOT LIKE '%WPA2%' AND \"AUTH\" NOT LIKE '%WPA3%' THEN 1 ELSE 0 END) as auth_wpa_count,
+			SUM(CASE WHEN \"AUTH\" LIKE '%OWE%' THEN 1 ELSE 0 END) as auth_owe_count
+		FROM wifi_ap
+		WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND \"BSSID\" <> '00:00:00:00:00:00'
+		GROUP BY to_char(fa, 'YYYY-MM')
+		ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month,
 			COUNT(*) as new_count,
@@ -322,6 +365,12 @@ function generateStatsCache($dbcore) {
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
 				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month, COUNT(*) as new_count
+				FROM cell_id
+				WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE')
+				GROUP BY to_char(fa, 'YYYY-MM')
+				ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month, COUNT(*) as new_count
 				FROM cell_id
@@ -353,6 +402,12 @@ function generateStatsCache($dbcore) {
 				WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')
 				GROUP BY DATE_FORMAT(fa, '%Y-%m')
 				ORDER BY month ASC";
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT to_char(fa, 'YYYY-MM') as month, COUNT(*) as new_count
+				FROM cell_id
+				WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' AND type IN ('BT','BLE')
+				GROUP BY to_char(fa, 'YYYY-MM')
+				ORDER BY month ASC";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT FORMAT(fa, 'yyyy-MM') as month, COUNT(*) as new_count
 				FROM cell_id
@@ -381,6 +436,8 @@ function generateStatsCache($dbcore) {
 	$top_n = 100; // Cache top 100, page can limit display
 	if($dbcore->sql->service == "mysql") {
 		$sql = "SELECT AP_ID, SSID, BSSID, AUTH, ENCR, points, HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' ORDER BY points DESC LIMIT ?";
+	} else if($dbcore->sql->service == "pgsql") {
+		$sql = "SELECT \"AP_ID\", \"SSID\", \"BSSID\", \"AUTH\", \"ENCR\", points, \"HighGps_ID\" FROM wifi_ap WHERE fa IS NOT NULL AND fa::text NOT LIKE '1970-01-01%' ORDER BY points DESC LIMIT ?";
 	} else if($dbcore->sql->service == "sqlsrv") {
 		$sql = "SELECT TOP (?) AP_ID, SSID, BSSID, AUTH, ENCR, points, HighGps_ID FROM wifi_ap WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' ORDER BY points DESC";
 	}
@@ -406,10 +463,10 @@ function generateStatsCache($dbcore) {
 
 	// 6. Top Cell towers
 	$dbcore->verbosed("  - Generating top Cell towers...", 1);
-	if($dbcore->sql->service == "mysql") {
-		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE') ORDER BY points DESC LIMIT ?";
+	if($dbcore->sql->service == "mysql" || $dbcore->sql->service == "pgsql") {
+		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE') ORDER BY points DESC LIMIT ?";
 	} else if($dbcore->sql->service == "sqlsrv") {
-		$sql = "SELECT TOP (?) cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE') ORDER BY points DESC";
+		$sql = "SELECT TOP (?) cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type NOT IN ('BT','BLE') ORDER BY points DESC";
 	}
 	$prep = $dbcore->sql->conn->prepare($sql);
 	$prep->bindParam(1, $top_n, PDO::PARAM_INT);
@@ -432,10 +489,10 @@ function generateStatsCache($dbcore) {
 
 	// 7. Top Bluetooth devices
 	$dbcore->verbosed("  - Generating top Bluetooth devices...", 1);
-	if($dbcore->sql->service == "mysql") {
-		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE') ORDER BY points DESC LIMIT ?";
+	if($dbcore->sql->service == "mysql" || $dbcore->sql->service == "pgsql") {
+		$sql = "SELECT cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type IN ('BT','BLE') ORDER BY points DESC LIMIT ?";
 	} else if($dbcore->sql->service == "sqlsrv") {
-		$sql = "SELECT TOP (?) cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND fa NOT LIKE '1970-01-01%' AND type IN ('BT','BLE') ORDER BY points DESC";
+		$sql = "SELECT TOP (?) cell_id, ssid, mac, type, points, highgps_id FROM cell_id WHERE fa IS NOT NULL AND ".$fa_txt." NOT LIKE '1970-01-01%' AND type IN ('BT','BLE') ORDER BY points DESC";
 	}
 	$prep = $dbcore->sql->conn->prepare($sql);
 	$prep->bindParam(1, $top_n, PDO::PARAM_INT);

@@ -1,0 +1,14 @@
+#!/bin/bash
+# The country database for asking cookie consent where it's required (tools/utilites/update_geoip.php): a new copy when
+# this node's is over a month old. Each node has its own, so no lock.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+mkdir -p ../log
+LOGFILE="../log/update_geoip.log"
+echo "[$(date -u '+%Y-%m-%d %H:%M:%S')] $(php ../utilites/update_geoip.php "$@" 2>&1)" >> "$LOGFILE"
+
+if [ -f "$LOGFILE" ] && [ "$(wc -c < "$LOGFILE")" -gt 262144 ]; then
+    tail -c 65536 "$LOGFILE" > "$LOGFILE.trimmed" && mv "$LOGFILE.trimmed" "$LOGFILE"
+fi
+exit 0

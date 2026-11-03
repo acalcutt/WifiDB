@@ -1,0 +1,16 @@
+#!/bin/bash
+# Keeps this node's generated files (tile archives, GeoJSON, KML exports) the same as the other nodes', through the
+# shared files bucket (Site Settings); does nothing without one. A run still going makes this one exit at once.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+mkdir -p ../log
+LOGFILE="../log/out_sync.log"
+exec 9>"/tmp/out_sync.lock"
+flock -n 9 || exit 0
+php ../daemon/out_sync.php >> "$LOGFILE" 2>&1
+
+if [ -f "$LOGFILE" ] && [ "$(wc -c < "$LOGFILE")" -gt 1048576 ]; then
+    tail -c 262144 "$LOGFILE" > "$LOGFILE.trimmed" && mv "$LOGFILE.trimmed" "$LOGFILE"
+fi
+exit 0

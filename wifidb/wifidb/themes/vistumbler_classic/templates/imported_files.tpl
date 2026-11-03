@@ -37,10 +37,10 @@ if not, write to the
 												</tr>
 												<tr class="{$wifidb_imported_class}">
 													<td>{$wifidb_imported.id}</td>
-													<td>{$wifidb_imported.filename}</td>
+													<td>{$wifidb_imported.filename|escape:'html':'UTF-8':false}</td>
 													<td>{$wifidb_imported.date}</td>
-													<td>{$wifidb_imported.username}</td>
-													<td>{$wifidb_imported.title}</td>
+													<td>{$wifidb_imported.username|escape:'html':'UTF-8':false}</td>
+													<td>{$wifidb_imported.title|escape:'html':'UTF-8':false}</td>
 												</tr>
 												<tr class="sub_head">
 													<th></th>

@@ -31,30 +31,19 @@ $func = isset($_REQUEST['func']) ? $_REQUEST['func'] : '';
 $row = (int)(isset($_REQUEST['row']) && $_REQUEST['row'] ? $_REQUEST['row']: 0);
 $id = (int)(isset($_REQUEST['id']) && $_REQUEST['id'] ? $_REQUEST['id']: 0);
 	
-if($dbcore->sql->service == "mysql")
-	{$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"
-	. "whFA.Hist_Date As FA,\n"
-	. "whLA.Hist_Date As LA,\n"
-	. "wGPS.Lat As Lat,\n"
-	. "wGPS.Lon As Lon,\n"
-	. "wf.user As user\n"
-	. "FROM `wifi_ap` AS wap\n"
-	. "LEFT JOIN wifi_hist AS whFA ON whFA.Hist_ID = wap.FirstHist_ID\n"
-	. "LEFT JOIN wifi_hist AS whLA ON whLA.Hist_ID = wap.LastHist_ID\n"
-	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-	. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-	. "WHERE wap.AP_ID = ?";}
-else if($dbcore->sql->service == "sqlsrv")
-	{$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.FLAGS, wap.ap_hash,\n"
-	. "wap.fa As FA,\n"
-	. "wap.la As LA,\n"
-	. "wGPS.Lat As Lat,\n"
-	. "wGPS.Lon As Lon,\n"
-	. "wf.[user] As [user]\n"
+# One query for every database: mixed-case names are quoted on PostgreSQL by ident(). (The MariaDB and SQL Server
+# versions read columns that no longer exist: FirstHist_ID, LastHist_ID and files.user.)
+$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };
+$sql = "SELECT wap.".$q('AP_ID').", wap.".$q('BSSID').", wap.".$q('SSID').", wap.".$q('CHAN').", wap.".$q('AUTH').", wap.".$q('ENCR').", wap.".$q('SECTYPE').", wap.".$q('RADTYPE').", wap.".$q('NETTYPE').", wap.".$q('BTX').", wap.".$q('OTX').", wap.".$q('FLAGS').", wap.ap_hash,\n"
+	. "wap.fa As ".$q('FA').",\n"
+	. "wap.la As ".$q('LA').",\n"
+	. "wGPS.".$q('Lat')." As ".$q('Lat').",\n"
+	. "wGPS.".$q('Lon')." As ".$q('Lon').",\n"
+	. "wf.file_user As file_user\n"
 	. "FROM wifi_ap AS wap\n"
-	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-	. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-	. "WHERE wap.AP_ID = ?";}
+	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = wap.".$q('HighGps_ID')."\n"
+	. "LEFT JOIN files AS wf ON wf.id = wap.".$q('File_ID')."\n"
+	. "WHERE wap.".$q('AP_ID')." = ?";
 $result = $dbcore->sql->conn->prepare($sql);
 $result->bindParam(1, $id, PDO::PARAM_INT);
 $result->execute();
@@ -66,7 +55,7 @@ $pointer = $result->fetch(2);
 
 switch ($func) {
 	case "graph_list_ap":
-		$sql = "SELECT * FROM wifi_hist WHERE AP_ID = ? AND File_ID = ? ORDER BY Hist_Date ASC";
+		$sql = "SELECT * FROM wifi_hist WHERE ".$q('AP_ID')." = ? AND ".$q('File_ID')." = ? ORDER BY ".$q('Hist_Date')." ASC";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->bindParam(2, $row, PDO::PARAM_INT);
@@ -75,7 +64,7 @@ switch ($func) {
 		$sig_size = $result->rowCount();
 		break;
 	default:
-		$sql = "SELECT * FROM wifi_hist WHERE AP_ID = ? ORDER BY Hist_Date ASC";
+		$sql = "SELECT * FROM wifi_hist WHERE ".$q('AP_ID')." = ? ORDER BY ".$q('Hist_Date')." ASC";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -105,7 +94,7 @@ $apdata = array(
 	"fa"=>$pointer['FA'],
 	"lu"=>$pointer['LA'],
 	"nt"=>$pointer['NETTYPE'],
-	"user"=>$pointer['user'],
+	"user"=>$pointer['file_user'],
 	"name"=>$pointer['ap_hash'],
 	"sig"=>$sig
 );

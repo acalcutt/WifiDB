@@ -1,0 +1,17 @@
+#!/bin/bash
+# This node's page views and events, added to the traffic counts in the database (tools/daemon/traffic.php), each minute.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+mkdir -p ../log/traffic
+LOGFILE="../log/traffic.log"
+# one at a time: a slow run (a busy database) isn't joined by the next minute's
+exec 9>../log/traffic/.flush.lock
+flock -n 9 || exit 0
+php ../daemon/traffic.php >> "$LOGFILE" 2>&1
+
+# Only failures are written; keep the log from growing without bound
+if [ -f "$LOGFILE" ] && [ "$(wc -c < "$LOGFILE")" -gt 1048576 ]; then
+    tail -c 262144 "$LOGFILE" > "$LOGFILE.trimmed" && mv "$LOGFILE.trimmed" "$LOGFILE"
+fi
+exit 0

@@ -83,20 +83,12 @@ switch($func)
 			$user = ($_REQUEST['user'] ? $_REQUEST['user'] : die("User value is empty"));
 			$user_fn = preg_replace(array('/\s/', '/\.[\.]+/', '/[^\w_\.\-]/'), array('_', '.', ''), $user);
 			$title = $user."'s Network Link";
-			if($dbcore->sql->service == "mysql")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
-			else if($dbcore->sql->service == "sqlsrv")
-				{
-					$sql = "SELECT Count(AP_ID) As ap_count\n"
-						. "FROM wifi_ap\n"
-						. "WHERE\n"
-						. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND [user] LIKE ?)";
-				}
+			# one query for every database (the three there were read files.[user], which is now file_user)
+			$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+			$sql = "SELECT Count(".$q('AP_ID').") As ap_count\n"
+				. "FROM wifi_ap\n"
+				. "WHERE\n"
+				. "	".$q('File_ID')." IN (SELECT id FROM files WHERE ".$q('ValidGPS')." = 1 AND file_user = ?)";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $user, PDO::PARAM_STR);
 			$result->execute();
@@ -134,6 +126,8 @@ switch($func)
 				{$sql = "SELECT `SSID` FROM `wifi_ap` WHERE `AP_ID` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [SSID] FROM [wifi_ap] WHERE [AP_ID] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT \"SSID\" FROM wifi_ap WHERE \"AP_ID\" = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -153,6 +147,8 @@ switch($func)
 				{$sql = "SELECT DISTINCT(`user`) FROM `files` ORDER BY `user` ASC";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT DISTINCT([user]) FROM [files] ORDER BY [user] ASC";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT DISTINCT(user) FROM files ORDER BY user ASC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->execute();
 			$fetch_user = $prep->fetchAll(2);
@@ -163,6 +159,8 @@ switch($func)
 					{$sql1 = "SELECT `id` FROM `files` WHERE `user` LIKE ? And `ValidGPS` = 1 ORDER BY `id` ASC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql1 = "SELECT TOP 1 [id] FROM [files] WHERE [user] LIKE ? And [ValidGPS] = 1 ORDER BY [id] ASC";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql1 = "SELECT id FROM files WHERE user LIKE ? And \"ValidGPS\" = 1 ORDER BY id ASC LIMIT 1";}
 				$prep1 = $dbcore->sql->conn->prepare($sql1);
 				$prep1->bindParam(1, $username, PDO::PARAM_STR);
 				$prep1->execute();
@@ -191,6 +189,8 @@ switch($func)
 					{$sql = "SELECT `file_date` FROM `files` WHERE `completed` = 1 And `ValidGPS` = 1 ORDER BY `file_date` DESC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT TOP 1 [file_date] FROM [files] WHERE [completed] = 1 And [ValidGPS] = 1 ORDER BY [file_date] DESC";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT file_date FROM files WHERE completed = 1 And \"ValidGPS\" = 1 ORDER BY file_date DESC LIMIT 1";}
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
 				$datestamp = $date_fetch['file_date'];
@@ -207,6 +207,8 @@ switch($func)
 				{$sql = "SELECT `id`, `title` FROM `files` WHERE `file_date` LIKE ? ORDER BY `file_date` DESC";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [id], [title] FROM [files] WHERE [file_date] LIKE ? ORDER BY [file_date] DESC";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT id, title FROM files WHERE file_date LIKE ? ORDER BY file_date DESC";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $date_search, PDO::PARAM_STR);
 			$prep->execute();
@@ -229,6 +231,13 @@ switch($func)
 							. "FROM [wifi_hist]\n"
 							. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_id] = [wifi_gps].[GPS_id]\n"
 							. "WHERE [wifi_hist].[file_id] = ? And [wifi_gps].[Lat] != '0.0000'";
+					}
+				else if($dbcore->sql->service == "pgsql")
+					{
+						$sql = "SELECT wifi_gps.\"Lat\" AS \"Lat\", wifi_gps.\"Lon\" AS \"Lon\"\n"
+							. "FROM wifi_hist\n"
+							. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+							. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"Lat\" != '0.0000'";
 					}
 				$result = $dbcore->sql->conn->prepare($sql);
 				$result->bindParam(1, $import['id'], PDO::PARAM_INT);
@@ -291,6 +300,8 @@ switch($func)
 				{$sql = "SELECT `title` FROM `files` WHERE `id` = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT [title] FROM [files] WHERE [id] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT title FROM files WHERE id = ?";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -314,7 +325,7 @@ switch($func)
 			$file_id = (int)($_REQUEST['file_id'] ? $_REQUEST['file_id']: 0);
 
 			#Get SSID
-			$sql = "SELECT SSID FROM wifi_ap WHERE AP_ID = ?";
+			$sql = "SELECT ".$dbcore->sql->ident('SSID')." FROM wifi_ap WHERE ".$dbcore->sql->ident('AP_ID')." = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $id, PDO::PARAM_INT);
 			$prep->execute();
@@ -396,6 +407,8 @@ switch($func)
 					{$sql = "SELECT date FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY date DESC LIMIT 1";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT TOP 1 [file_date] FROM files WHERE completed = 1 AND ValidGPS = 1 ORDER BY [file_date] DESC";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT file_date FROM files WHERE completed = 1 AND \"ValidGPS\" = 1 ORDER BY file_date DESC LIMIT 1";}
 				$date_query = $dbcore->sql->conn->query($sql);
 				$date_fetch = $date_query->fetch(2);
 				$start_date = date('Y-m-d',strtotime($date_fetch['date']));
@@ -418,8 +431,8 @@ switch($func)
 			break;
 
 		case "exp_search":
-			$ord	=   filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
-			$sort   =	filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
+			$ord	=   wifidb_input_string(INPUT_GET, 'ord');
+			$sort   =	wifidb_input_string(INPUT_GET, 'sort');
 			
 			if(@$_REQUEST['ssid']){$ssid = $_REQUEST['ssid'];}else{$ssid = "";}
 			if(@$_REQUEST['mac']){$mac = $_REQUEST['mac'];}else{$mac = "";}

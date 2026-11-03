@@ -29,13 +29,11 @@ abstract class WebSocketServer{
         socket_set_option($this->master, SOL_SOCKET, SO_REUSEADDR, 1) or die("Failed: socket_option()");
         socket_bind($this->master, $addr, $port)                      or die("Failed: socket_bind()");
 
-        stream_set_blocking ($this->master, true);
-        stream_socket_enable_crypto ($this->master, true, STREAM_CRYPTO_METHOD_TLS_SERVER);
-        stream_set_blocking ($this->master, false);
+        // (PHP 8: a Socket is not a stream, so the stream_* calls that used to be here are gone; TLS is done by the proxy)
 
         socket_listen($this->master, 20)                              or die("Failed: socket_listen()");
         $this->sockets['m'] = $this->master;
-        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: ".$this->master);
+        $this->stdout("Server started\nListening on: $addr:$port\nMaster socket: #".spl_object_id($this->master));
     }
 
   abstract protected function process($user,$message); // Called immediately when the data is recieved.
@@ -70,7 +68,7 @@ abstract class WebSocketServer{
     foreach ($this->heldMessages as $key => $hm) {
       $found = false;
       foreach ($this->users as $currentUser) {
-        if ($hm['user']->socket == $currentUser->socket) {
+        if ($hm['user']->socket === $currentUser->socket) {
           $found = true;
           if ($currentUser->handshake) {
             unset($this->heldMessages[$key]);
@@ -109,16 +107,16 @@ abstract class WebSocketServer{
       $this->tick();
       @socket_select($read,$write,$except,1);
       foreach ($read as $socket) {
-        if ($socket == $this->master) {
+        if ($socket === $this->master) {
           $client = socket_accept($socket);
 
-          if ($client < 0) {
+          if ($client === false) {
             $this->stderr("Failed: socket_accept()");
             continue;
           } 
           else {
             $this->connect($client);
-            $this->stdout("Client connected. " . $client);
+            $this->stdout("Client connected. #" . spl_object_id($client));
           }
         } 
         else {
@@ -138,7 +136,7 @@ abstract class WebSocketServer{
               case 121: // EREMOTEIO    -- Rempte I/O error -- Their hard drive just blew up.
               case 125: // ECANCELED    -- Operation canceled
                 
-                $this->stderr("Unusual disconnect on socket " . $socket);
+                $this->stderr("Unusual disconnect on socket #" . spl_object_id($socket));
                 $this->disconnect($socket, true, $sockErrNo); // disconnect before clearing error, in case someone with their own implementation wants to check for error conditions on the socket.
                 break;
               default:
@@ -149,7 +147,7 @@ abstract class WebSocketServer{
           }
           elseif ($numBytes == 0) {
             $this->disconnect($socket);
-            $this->stderr("Client disconnected. TCP connection lost: " . $socket);
+            $this->stderr("Client disconnected. TCP connection lost: #" . spl_object_id($socket));
           } 
           else {
             $user = $this->getUserBySocket($socket);
@@ -309,7 +307,7 @@ abstract class WebSocketServer{
 
   protected function getUserBySocket($socket) {
     foreach ($this->users as $user) {
-      if ($user->socket == $socket) {
+      if ($user->socket === $socket) {
         return $user;
       }
     }

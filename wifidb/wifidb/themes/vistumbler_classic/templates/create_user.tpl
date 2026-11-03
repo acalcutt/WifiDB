@@ -2,6 +2,7 @@
                                     <font color="green"><h2>Create User</h2></font>
                                     <h3>{$message}</h3>
                                         <form method="post" action="{$wifidb_host_url}login.php?func=create_user_proc">
+{include file="spam_check_fields.tpl"}
                                             <table align="center">
                                                 <tr>
                                                     <td colspan="2"><p align="center"><img src="{$themeurl}img/logo.png"></p></td>

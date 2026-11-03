@@ -199,6 +199,20 @@ function mvt_buckets(): array {
 }
 
 /**
+ * The attribution every tile source of the site carries: each archive's
+ * metadata (mvtd.php and mltd.php, which pmtiles-swarm serves as the
+ * archive's TileJSON) and api/tilejson.php's own.
+ *
+ * One string, with no date in it.  The map's attribution control lists each
+ * different string once, so a build date in it put a line on the map for
+ * every source, all saying the same thing.
+ */
+function mvt_attribution($dbcore): string {
+    $site = (isset($dbcore->URL_PATH) && $dbcore->URL_PATH !== '') ? (string)$dbcore->URL_PATH : 'https://wifidb.net/';
+    return '<a href="' . htmlspecialchars($site, ENT_QUOTES) . '" target="_blank">&copy; WifiDB contributors</a>';
+}
+
+/**
  * How a bucket is stored: 'dir' for a flat .pbf tree, 'pmtiles' for a single
  * archive.
  *
@@ -535,8 +549,8 @@ function mvt_archive_file(string $root, string $bucket): string {
  * Whether this node generates archives, as opposed to receiving them.
  *
  * Two nodes running the same daemons against the same database do not produce
- * the same archive: the attribution and 'generated' fields carry the run's
- * date, and age_days is measured from the moment of the scan.  Different bytes
+ * the same archive: the 'generated' field carries the run's time, and
+ * age_days is measured from the moment of the scan.  Different bytes
  * mean a different infohash, so each node would seed its own swarm for the same
  * bucket, share nothing, publish competing BEP 46 records under the same salt,
  * and serve ETags that disagree — which breaks a range-reading client the
@@ -621,13 +635,20 @@ function mvt_generates_archives($dbcore, string $which = 'mvt'): bool {
  * watcher skips it — otherwise it is imported as a second archive of the same
  * bytes, under a name that changes every build.
  *
+ * Why the time as well as the date: daily and cell_daily are rebuilt every
+ * hour.  With the date alone, every build after a day's first was renamed over
+ * a file the swarm had already made a torrent of, so it went on seeding a
+ * torrent whose bytes were gone, and a mirror saving the builds under their own
+ * names refuses a second archive with a name it already holds.  UTC, so the
+ * names sort the same on every node.
+ *
  * @param string $tmp    The .building file to publish.
  * @param string $dir    Archive directory.
  * @param string $bucket Bucket name, used for both filenames.
  * @param int    $keep   How many dated builds to retain, newest first.
  */
 function mvt_publish_archive(string $tmp, string $dir, string $bucket, int $keep = 2): ?string {
-    $dated  = $dir . '/' . $bucket . '-' . date('Ymd') . '.pmtiles';
+    $dated  = $dir . '/' . $bucket . '-' . gmdate('YmdHis') . '.pmtiles';
     $stable = $dir . '/' . $bucket . '.pmtiles';
 
     // Same directory, so this is atomic: a reader holds either the whole
@@ -661,7 +682,9 @@ function mvt_publish_archive(string $tmp, string $dir, string $bucket, int $keep
     }
 
     // Retire older builds, newest kept. Sorting by name works because the
-    // suffix is YYYYMMDD, which is why it is not a locale-formatted date.
+    // suffix is YYYYMMDDhhmmss, which is why it is not a locale-formatted date;
+    // a build named by the date alone, from before the time was added, still
+    // sorts below every later build of that day ('.' is below any digit).
     $builds = glob($dir . '/' . $bucket . '-[0-9]*.pmtiles') ?: [];
     rsort($builds);
     foreach (array_slice($builds, max(1, $keep)) as $old) {

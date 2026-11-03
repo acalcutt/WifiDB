@@ -30,6 +30,7 @@ require $daemon_config['wifidb_install'].'/lib/init.inc.php';
 $page_size = 100000;
 $out_file  = rtrim($daemon_config['wifidb_install'], '/') . '/out/geojson/cell_networks.json';
 $tmp_file  = $out_file . '.tmp';
+if (!is_dir(dirname($out_file))) { mkdir(dirname($out_file), 0775, true); }
 
 // ── SQL — keyset pagination: AND cell_id.cell_id > ? ... LIMIT/FETCH ? ───────
 // MySQL: LEFT JOIN cell_carriers eliminates the per-row lookup.
@@ -67,6 +68,23 @@ if ($dbcore->sql->service === 'mysql') {
               AND cell_id.cell_id > ?
             ORDER BY cell_id.cell_id
             OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
+} else if ($dbcore->sql->service === 'pgsql') {
+    // wifi_gps's columns are mixed case (quoted); cell_id's and files' are lower case
+    $sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type,
+                   cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,
+                   c_gps.\"Lat\" AS lat, c_gps.\"Lon\" AS lon,
+                   c_file.file_user AS file_user,
+                   cell_carriers.network, cell_carriers.country
+            FROM cell_id
+            INNER JOIN wifi_gps AS c_gps ON c_gps.\"GPS_ID\" = cell_id.highgps_id
+            INNER JOIN files    AS c_file ON c_file.id   = cell_id.file_id
+            LEFT  OUTER JOIN cell_carriers
+                   ON CAST(mcc AS varchar) = SUBSTRING(cell_id.mac, 1, 3)
+                  AND CAST(mnc AS varchar) = SUBSTRING(cell_id.mac, 4, 3)
+            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL
+              AND cell_id.cell_id > ?
+            ORDER BY cell_id.cell_id
+            LIMIT ?";
 }
 
 echo "Writing cell GeoJSON to: {$out_file}\n";

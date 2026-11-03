@@ -43,23 +43,23 @@ if not, write to the
 					<tr class="{$message.class}">
 						<td class="{$message.class}">
 						{if $message.read eq 1}
-							<a href="{$wifidb_host_url}cp/messages.php?func=replymsg&id={$message.id}">{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}</a> 
+							<a href="{$wifidb_host_url}cp/messages.php?func=replymsg&id={$message.id}">{if $message.title eq ''}[Blank Title]{else}{$message.title|escape:'html':'UTF-8':false}{/if}</a> 
 						{else}
-							<a href="{$wifidb_host_url}cp/messages.php?func=replymsg&id={$message.id}"><b>{if $message.title eq ''}[Blank Title]{else}{$message.title}{/if}</b></a> 
+							<a href="{$wifidb_host_url}cp/messages.php?func=replymsg&id={$message.id}"><b>{if $message.title eq ''}[Blank Title]{else}{$message.title|escape:'html':'UTF-8':false}{/if}</b></a> 
 						{/if}
 						</td>
 						<td class="{$message.class}">
 						{if $message.user1read eq 1}
-							{$message.username1}
+							{$message.username1|escape:'html':'UTF-8':false}
 						{else}
-							<b>{$message.username1}</b>
+							<b>{$message.username1|escape:'html':'UTF-8':false}</b>
 						{/if}
 						</td>
 						<td class="{$wifidb_ap.class}">
 						{if $message.user2read eq 1}
-							{$message.username2}
+							{$message.username2|escape:'html':'UTF-8':false}
 						{else}
-							<b>{$message.username2}</b>
+							<b>{$message.username2|escape:'html':'UTF-8':false}</b>
 						{/if}
 						</td>						
 						<td class="{$message.class}">

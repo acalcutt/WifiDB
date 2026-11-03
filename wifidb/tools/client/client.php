@@ -106,7 +106,7 @@ if($sent === false)
 }
 
 function getIPs($withV6 = true) {
-    preg_match_all('/inet'.($withV6 ? '6?' : '').' addr: ?([^ ]+)/', `ifconfig`, $ips);
+    preg_match_all('/inet'.($withV6 ? '6?' : '').' addr: ?([^ ]+)/', shell_exec("ifconfig"), $ips);
     return $ips[1];
 }
 

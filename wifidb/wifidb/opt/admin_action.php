@@ -12,17 +12,13 @@ define("SWITCH_EXTRAS", "export");
 
 require '../lib/init.inc.php';
 
-// Check if user is logged in and is an Administrator
-if($dbcore->sec->priv_name != "Administrator")
-{
-	header("HTTP/1.1 403 Forbidden");
-	die("Access denied. Administrator privileges required.");
-}
+// An Administrator, and in admin mode (a second factor proven for this, see cp/admin_mode.php)
+$dbcore->sec->RequireAdminMode('opt/scheduling.php?func=bad');
 
-$action = filter_input(INPUT_GET, 'action', FILTER_SANITIZE_STRING);
+$action = wifidb_input_string(INPUT_GET, 'action');
 $file_id = filter_input(INPUT_GET, 'file_id', FILTER_SANITIZE_NUMBER_INT);
-$confirm = filter_input(INPUT_GET, 'confirm', FILTER_SANITIZE_STRING);
-$return_url = filter_input(INPUT_GET, 'return', FILTER_SANITIZE_URL);
+$confirm = wifidb_input_string(INPUT_GET, 'confirm');
+$return_url = wifidb_safe_return(filter_input(INPUT_GET, 'return', FILTER_UNSAFE_RAW), $dbcore->sec->domain, '');
 
 /**
  * Queue an admin job for background processing
@@ -343,17 +339,17 @@ switch($action)
 		// If form submitted (POST), perform update
 		if($_SERVER['REQUEST_METHOD'] === 'POST')
 		{
-			$post_title = filter_input(INPUT_POST, 'title', FILTER_SANITIZE_STRING);
-			$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_STRING);
+			$post_title = wifidb_input_string(INPUT_POST, 'title');
+			$post_type = wifidb_input_string(INPUT_POST, 'type');
 
 			// Validate type against allowed import types
 			$allowed_types = array('vistumbler','ns1','wardrive','wiglewificsv','swardriving','kismet');
 			if(!in_array($post_type, $allowed_types)){
 				$post_type = '';
 			}
-			$post_file_user = filter_input(INPUT_POST, 'file_user', FILTER_SANITIZE_STRING);
-			$post_otherusers = filter_input(INPUT_POST, 'otherusers', FILTER_SANITIZE_STRING);
-			$post_notes = filter_input(INPUT_POST, 'notes', FILTER_SANITIZE_STRING);
+			$post_file_user = wifidb_input_string(INPUT_POST, 'file_user');
+			$post_otherusers = wifidb_input_string(INPUT_POST, 'otherusers');
+			$post_notes = wifidb_input_string(INPUT_POST, 'notes');
 
 			$sql = "UPDATE files_bad SET title = ?, type = ?, file_user = ?, otherusers = ?, notes = ? WHERE id = ?";
 			$prep = $dbcore->sql->conn->prepare($sql);
@@ -398,7 +394,7 @@ switch($action)
 		}
 
 	case "delete_daemon_pid":
-		$pidfile = filter_input(INPUT_GET, 'pidfile', FILTER_SANITIZE_STRING);
+		$pidfile = wifidb_input_string(INPUT_GET, 'pidfile');
 		if(empty($pidfile))
 		{
 			die("Invalid pidfile");
@@ -461,7 +457,8 @@ switch($action)
 		}
 
 		// Get schedule info for confirmation (include pidfile for cleanup)
-		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.interval, schedule.status, schedule.pid, schedule.pidfile FROM schedule WHERE schedule.id = ?";
+		// "interval" is a reserved word in Postgres and must be quoted there;
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.".$dbcore->sql->ident('interval').", schedule.status, schedule.pid, schedule.pidfile FROM schedule WHERE schedule.id = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $schedule_id, PDO::PARAM_INT);
 		$prep->execute();
@@ -571,6 +568,59 @@ switch($action)
 		}
 		break;
 
+	case "disable_schedule":
+	case "enable_schedule":
+		$schedule_id = filter_input(INPUT_GET, 'schedule_id', FILTER_SANITIZE_NUMBER_INT);
+		if(!$schedule_id || !is_numeric($schedule_id))
+		{
+			die("Invalid schedule ID");
+		}
+		$enable = ($action == "enable_schedule") ? 1 : 0;
+
+		$sql = "SELECT schedule.id, schedule.nodename, schedule.daemon, schedule.enabled, schedule.".$dbcore->sql->ident('interval').", schedule.status, schedule.nextrun FROM schedule WHERE schedule.id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $schedule_id, PDO::PARAM_INT);
+		$prep->execute();
+		$schedule_info = $prep->fetch(PDO::FETCH_ASSOC);
+
+		if(!$schedule_info)
+		{
+			die("Schedule not found");
+		}
+
+		// Confirmed with a POST: the session cookie is SameSite=Lax, so another site can't send one for an admin
+		if($confirm == "yes" && $_SERVER['REQUEST_METHOD'] === 'POST')
+		{
+			$result = set_schedule_enabled($dbcore, $schedule_id, $enable);
+
+			if($result['success'])
+			{
+				$message = "Schedule ID {$schedule_id} ({$schedule_info['daemon']} on {$schedule_info['nodename']}) is now ".($enable ? "enabled" : "disabled").".";
+				$message_type = "success";
+			}
+			else
+			{
+				$message = "Error updating schedule: " . $result['error'];
+				$message_type = "error";
+			}
+
+			$dbcore->smarty->assign("wifidb_page_label", "Admin Action Result");
+			$dbcore->smarty->assign("message", $message);
+			$dbcore->smarty->assign("message_type", $message_type);
+			$dbcore->smarty->assign("return_url", $return_url ? $return_url : $dbcore->wifidb_host_url.'opt/scheduling.php?func=schedule');
+			$dbcore->smarty->display('admin_action_result.tpl');
+		}
+		else
+		{
+			$dbcore->smarty->assign("wifidb_page_label", $enable ? "Confirm Enable Schedule" : "Confirm Disable Schedule");
+			$dbcore->smarty->assign("schedule_info", $schedule_info);
+			$dbcore->smarty->assign("action", $action);
+			$dbcore->smarty->assign("schedule_id", $schedule_id);
+			$dbcore->smarty->assign("return_url", $return_url);
+			$dbcore->smarty->display('admin_action_confirm.tpl');
+		}
+		break;
+
 	default:
 		die("Invalid action");
 }
@@ -615,6 +665,27 @@ function run_schedule_now($dbcore, $schedule_id)
 		$sql = "UPDATE schedule SET status = 'Waiting', pid = '', nextrun = ? WHERE id = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $next_run, PDO::PARAM_STR);
+		$prep->bindParam(2, $schedule_id, PDO::PARAM_INT);
+		$prep->execute();
+
+		return array('success' => true);
+	}
+	catch(Exception $e)
+	{
+		return array('success' => false, 'error' => $e->getMessage());
+	}
+}
+
+/**
+ * Turn a daemon schedule on or off. Off, the daemons no longer claim it; a run already going finishes.
+ */
+function set_schedule_enabled($dbcore, $schedule_id, $enabled)
+{
+	try
+	{
+		$sql = "UPDATE schedule SET enabled = ? WHERE id = ?";
+		$prep = $dbcore->sql->conn->prepare($sql);
+		$prep->bindParam(1, $enabled, PDO::PARAM_INT);
 		$prep->bindParam(2, $schedule_id, PDO::PARAM_INT);
 		$prep->execute();
 

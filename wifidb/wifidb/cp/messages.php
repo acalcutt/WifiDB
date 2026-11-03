@@ -35,6 +35,8 @@ if($username)
 		{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
+	else if($dbcore->sql->service == "pgsql")
+		{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 	$result = $dbcore->sql->conn->prepare($sql0);
 	$result->bindParam(1, $username, PDO::PARAM_STR);
 	$result->execute();
@@ -54,11 +56,10 @@ if($username)
 				. "FROM pm\n"
 				. "INNER JOIN user_info AS u1 ON pm.user1 = u1.id\n"
 				. "INNER JOIN user_info AS u2 ON pm.user2 = u2.id\n"
-				. "WHERE u2.username LIKE ? And pm.user2del = 0\n"
+				. "WHERE u2.username = ? And pm.user2del = 0\n"
 				. "ORDER BY pm.stimestamp DESC";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
-			$result->bindParam(2, $username, PDO::PARAM_STR);
 			$result->execute();
 
 			$row_color = 0;
@@ -100,11 +101,10 @@ if($username)
 				. "FROM pm\n"
 				. "INNER JOIN user_info AS u1 ON pm.user1 = u1.id\n"
 				. "INNER JOIN user_info AS u2 ON pm.user2 = u2.id\n"
-				. "WHERE u1.username LIKE ? And pm.user1del = 0\n"
+				. "WHERE u1.username = ? And pm.user1del = 0\n"
 				. "ORDER BY pm.stimestamp DESC";
 			$result = $dbcore->sql->conn->prepare($sql);
 			$result->bindParam(1, $username, PDO::PARAM_STR);
-			$result->bindParam(2, $username, PDO::PARAM_STR);
 			$result->execute();
 
 			$row_color = 0;
@@ -366,7 +366,16 @@ if($username)
 			$smt->execute();
 			$touser = $smt->fetch(2);
 			
-			if($message)
+			# members without a track record have their messages checked for spam (when CleanTalk is on)
+			$refused = ($message && !$dbcore->sec->HasTrackRecord($username))
+				? $dbcore->sec->SpamRefusal('message', $userArray['email'], $username, trim($subject."\n".$message))
+				: '';
+			if($refused !== '')
+			{
+				$dbcore->redirect_page('/wifidb/cp/messages.php?func=sendmsg', 4000);
+				$cp_profile['message'] = "<br>The message was not sent: the spam check refused it (".htmlspecialchars($refused, ENT_QUOTES, 'UTF-8').").<br><br>";
+			}
+			elseif($message)
 			{
 				if($userArray['id'] && $to_id)
 				{

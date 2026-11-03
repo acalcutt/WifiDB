@@ -2589,12 +2589,6 @@ ALTER TABLE `cell_hist`
   ADD KEY `hist_date` (`hist_date`);
 
 --
--- Indexes for table `cell_id`
---
-ALTER TABLE `cell_id`
-  ADD PRIMARY KEY (`cell_id`);
-
---
 -- Indexes for table `daemon_pid_stats`
 --
 ALTER TABLE `daemon_pid_stats`

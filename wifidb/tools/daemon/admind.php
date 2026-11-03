@@ -108,11 +108,24 @@ if(!$dbcore->ForceDaemonRun)
 
 	$currentrun = date("Y-m-d G:i:s");
 
+	$dbcore->ReleaseDeadClaims();   # a row left 'Running' by a run that died is taken again
 	// Claim a schedule ID
 	if($dbcore->sql->service == "mysql")
 		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `nextrun` <= ? And `enabled` = 1 LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [nextrun] <= ? And [enabled] = 1";}
+	else if($dbcore->sql->service == "pgsql")
+		{
+			// Postgres has neither UPDATE TOP (n) nor UPDATE ... LIMIT, so the row
+			// is picked by a subquery. FOR UPDATE SKIP LOCKED also stops two daemons
+			// claiming the same schedule row, which the MSSQL form does not.
+			// Bind order is unchanged: the SET parameters stay 1-4 and the WHERE
+			// parameters follow in the same sequence inside the subquery.
+			$sql = "UPDATE schedule SET pid = ?, pidfile = ?, logfile = ?, status = ?"
+				. " WHERE id = (SELECT id FROM schedule"
+				. "   WHERE nodename = ? And daemon = ? And status != ? And nextrun <= ? And enabled = 1"
+				. "   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1)";
+		}
 	$prepus = $dbcore->sql->conn->prepare($sql);
 	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -125,7 +138,8 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus->execute();
 
 	// Get claimed schedule ID
-	$sql = "SELECT schedule.id, schedule.interval FROM schedule WHERE pid = ? And pidfile = ?";
+	// "interval" is a reserved word in Postgres and must be quoted there;
+	$sql = "SELECT schedule.id, schedule.".$dbcore->sql->ident('interval')." FROM schedule WHERE pid = ? And pidfile = ?";
 	$prepgj = $dbcore->sql->conn->prepare($sql);
 	$prepgj->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepgj->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -169,6 +183,8 @@ While(1)
 		{$sql = "SELECT id, job_type, target_id, target_table, requested_by FROM admin_jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql = "SELECT TOP 1 id, job_type, target_id, target_table, requested_by FROM admin_jobs WHERE status = 'pending' ORDER BY created_at ASC";}
+	else if($dbcore->sql->service == "pgsql")
+		{$sql = "SELECT id, job_type, target_id, target_table, requested_by FROM admin_jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1";}
 
 	$result = $dbcore->sql->conn->prepare($sql);
 	$result->execute();
@@ -189,8 +205,9 @@ While(1)
 
 		$dbcore->verbosed("Processing admin job ID: $admin_job_id, Type: {$admin_job['job_type']}");
 
-		// Mark job as running
-		$sql = "UPDATE admin_jobs SET status = 'running', started_at = ?, nodename = ?, pid = ? WHERE id = ?";
+		// Mark job as running, only if it's still pending: with more than one node, another admind may have read the same
+		// job in the meantime, and only the one whose update lands gets it
+		$sql = "UPDATE admin_jobs SET status = 'running', started_at = ?, nodename = ?, pid = ? WHERE id = ? AND status = 'pending'";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$started_at = date('Y-m-d H:i:s');
 		$prep->bindParam(1, $started_at, PDO::PARAM_STR);
@@ -198,6 +215,11 @@ While(1)
 		$prep->bindParam(3, $dbcore->This_is_me, PDO::PARAM_INT);
 		$prep->bindParam(4, $admin_job_id, PDO::PARAM_INT);
 		$prep->execute();
+		if($prep->rowCount() !== 1)
+		{
+			$dbcore->verbosed("Admin job $admin_job_id was taken by another node.");
+			continue;
+		}
 
 		// Process the job
 		$job_result = process_admin_job($dbcore, $admin_job);
@@ -244,6 +266,54 @@ if(!$dbcore->ForceDaemonRun)
 unlink($dbcore->pid_file);
 $dbcore->verbosed("Done");
 exit($dbcore->return_message);
+
+/**
+ * The shared files bucket (Site Settings), or null when uploads stay on each node's disk
+ */
+function admind_shared_files($dbcore)
+{
+	static $shared = false;
+	if($shared === false)
+	{
+		require_once $dbcore->PATH.'lib/shared_files.inc.php';
+		$shared = SharedFiles::FromSettings($dbcore->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
+	}
+	return $shared;
+}
+
+/**
+ * Moves a deleted import's upload to the deleted folder, with a note of what it was beside it (NAME.txt). With the
+ * shared files in S3 that's in the bucket, where uploads are kept, and a working copy on this node just goes; an
+ * upload the bucket hasn't got (one from before it was set up) is moved in import/up as without it.
+ */
+function admind_move_to_deleted($dbcore, $file_info, $folder)
+{
+	$name = $file_info['file_name'];
+	$source_file = $dbcore->PATH.'import/up/'.$name;
+	$note = $file_info['hash'].'|'.$file_info['type'].'|'.$name.'|'.$file_info['file_orig'].'|'.$file_info['file_user'].'|'
+		.$file_info['title'].'|'.$file_info['file_date'].'|'.$file_info['notes'];
+	$shared = admind_shared_files($dbcore);
+	if($shared)
+	{
+		try
+		{
+			if($shared->MoveUpload($name, $folder, $note))
+			{
+				if(file_exists($source_file)) { unlink($source_file); }
+				return;
+			}
+		}
+		catch(Throwable $e)
+		{
+			$dbcore->verbosed("Could not move $name to $folder/ in the shared files bucket: ".$e->getMessage(), -1);
+		}
+	}
+	if(!file_exists($source_file)) { return; }
+	$deleted_path = $dbcore->PATH.'import/up/'.$folder.'/';
+	if(!is_dir($deleted_path)) { mkdir($deleted_path, 0755, true); }
+	file_put_contents($deleted_path.pathinfo($name, PATHINFO_FILENAME).'.txt', $note);
+	rename($source_file, $deleted_path.$name);
+}
 
 /**
  * Process an admin job based on its type
@@ -295,6 +365,8 @@ function reset_file($dbcore, $File_ID)
 			{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT \"AP_ID\" FROM wifi_ap WHERE \"File_ID\" = ?";}
 		$apl = $dbcore->sql->conn->prepare($sql);
 		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$apl->execute();
@@ -307,6 +379,8 @@ function reset_file($dbcore, $File_ID)
 				{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` != ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? AND [File_ID] != ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sqlhp = "SELECT \"File_ID\" FROM wifi_hist WHERE \"AP_ID\" = ? AND \"File_ID\" != ? LIMIT 1";}
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -320,6 +394,8 @@ function reset_file($dbcore, $File_ID)
 					{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sqlu = "UPDATE wifi_ap SET \"File_ID\" = ? WHERE \"AP_ID\" = ?";}
 				$prep = $dbcore->sql->conn->prepare($sqlu);
 				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 				$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
@@ -332,6 +408,8 @@ function reset_file($dbcore, $File_ID)
 			{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT cell_id FROM cell_id WHERE file_id = ?";}
 		$apl = $dbcore->sql->conn->prepare($sql);
 		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$apl->execute();
@@ -344,6 +422,8 @@ function reset_file($dbcore, $File_ID)
 				{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? AND `file_id` != ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? AND [file_id] != ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sqlhp = "SELECT file_id FROM cell_hist WHERE cell_id = ? AND file_id != ? LIMIT 1";}
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
 			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -357,6 +437,8 @@ function reset_file($dbcore, $File_ID)
 					{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sqlu = "UPDATE cell_id SET file_id = ? WHERE cell_id = ?";}
 				$prep = $dbcore->sql->conn->prepare($sqlu);
 				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 				$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
@@ -366,8 +448,8 @@ function reset_file($dbcore, $File_ID)
 
 		// Copy file info to files_tmp for re-import
 		$sqlhp = "INSERT INTO files_tmp\n"
-			. "(file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
-			. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+			. "(file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name)\n"
+			. "SELECT file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name\n"
 			. "FROM files\n"
 			. "WHERE id = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
@@ -375,19 +457,19 @@ function reset_file($dbcore, $File_ID)
 		$resgps->execute();
 
 		// Delete wifi_hist records
-		$sqlhp = "DELETE FROM wifi_hist WHERE File_ID = ?";
+		$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
 
 		// Delete wifi_ap records
-		$sqlhp = "DELETE FROM wifi_ap WHERE File_ID = ?";
+		$sqlhp = "DELETE FROM wifi_ap WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
 
 		// Delete wifi_gps records
-		$sqlhp = "DELETE FROM wifi_gps WHERE File_ID = ?";
+		$sqlhp = "DELETE FROM wifi_gps WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
@@ -442,6 +524,8 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 			{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT \"AP_ID\" FROM wifi_ap WHERE \"File_ID\" = ?";}
 		$apl = $dbcore->sql->conn->prepare($sql);
 		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$apl->execute();
@@ -454,6 +538,8 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 				{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` != ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? AND [File_ID] != ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sqlhp = "SELECT \"File_ID\" FROM wifi_hist WHERE \"AP_ID\" = ? AND \"File_ID\" != ? LIMIT 1";}
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -467,6 +553,8 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 					{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sqlu = "UPDATE wifi_ap SET \"File_ID\" = ? WHERE \"AP_ID\" = ?";}
 				$prep = $dbcore->sql->conn->prepare($sqlu);
 				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 				$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
@@ -479,6 +567,8 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 			{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT cell_id FROM cell_id WHERE file_id = ?";}
 		$apl = $dbcore->sql->conn->prepare($sql);
 		$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$apl->execute();
@@ -491,6 +581,8 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 				{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? AND `file_id` != ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? AND [file_id] != ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sqlhp = "SELECT file_id FROM cell_hist WHERE cell_id = ? AND file_id != ? LIMIT 1";}
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
 			$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -504,6 +596,8 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 					{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sqlu = "UPDATE cell_id SET file_id = ? WHERE cell_id = ?";}
 				$prep = $dbcore->sql->conn->prepare($sqlu);
 				$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 				$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
@@ -512,17 +606,17 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 		}
 
 		// Delete records
-		$sqlhp = "DELETE FROM wifi_hist WHERE File_ID = ?";
+		$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
 
-		$sqlhp = "DELETE FROM wifi_ap WHERE File_ID = ?";
+		$sqlhp = "DELETE FROM wifi_ap WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
 
-		$sqlhp = "DELETE FROM wifi_gps WHERE File_ID = ?";
+		$sqlhp = "DELETE FROM wifi_gps WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
@@ -543,26 +637,7 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 		$resgps->execute();
 
 		// Move uploaded file to deleted folder
-		$upload_path = $dbcore->PATH . 'import/up/';
-		$deleted_path = $dbcore->PATH . 'import/up/' . $deleted_folder . '/';
-
-		if(!is_dir($deleted_path))
-		{
-			mkdir($deleted_path, 0755, true);
-		}
-
-		$source_file = $upload_path . $file_info['file_name'];
-		if(file_exists($source_file))
-		{
-			// Save file info to txt
-			$info_file = $deleted_path . pathinfo($file_info['file_name'], PATHINFO_FILENAME) . '.txt';
-			$info_content = $file_info['hash'] . '|' . $file_info['type'] . '|' . $file_info['file_name'] . '|'
-				. $file_info['file_orig'] . '|' . $file_info['file_user'] . '|' . $file_info['title'] . '|'
-				. $file_info['file_date'] . '|' . $file_info['notes'];
-			file_put_contents($info_file, $info_content);
-
-			rename($source_file, $deleted_path . $file_info['file_name']);
-		}
+		admind_move_to_deleted($dbcore, $file_info, $deleted_folder);
 
 		return array('success' => true, 'message' => "File ID $File_ID deleted successfully");
 	}
@@ -588,6 +663,8 @@ function reset_failed_file($dbcore, $File_ID)
 			{$sqlhp = "SELECT `hash` FROM `files_importing` WHERE `id` = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sqlhp = "SELECT TOP 1 [hash] FROM [files_importing] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sqlhp = "SELECT hash FROM files_importing WHERE id = ? LIMIT 1";}
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$resgps->execute();
@@ -601,6 +678,8 @@ function reset_failed_file($dbcore, $File_ID)
 				{$sqlhp = "SELECT `id` FROM `files` WHERE `hash` = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [id] FROM [files] WHERE [hash] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sqlhp = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $File_Hash, PDO::PARAM_STR);
 			$resgps->execute();
@@ -616,6 +695,8 @@ function reset_failed_file($dbcore, $File_ID)
 					{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT \"AP_ID\" FROM wifi_ap WHERE \"File_ID\" = ?";}
 				$apl = $dbcore->sql->conn->prepare($sql);
 				$apl->bindParam(1, $Partial_File_ID, PDO::PARAM_INT);
 				$apl->execute();
@@ -628,6 +709,8 @@ function reset_failed_file($dbcore, $File_ID)
 						{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID != ? LIMIT 1";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? And [File_ID] != ?";}
+					else if($dbcore->sql->service == "pgsql")
+						{$sqlhp = "SELECT \"File_ID\" FROM wifi_hist WHERE \"AP_ID\" = ? And \"File_ID\" != ? LIMIT 1";}
 					$resgps = $dbcore->sql->conn->prepare($sqlhp);
 					$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 					$resgps->bindParam(2, $Partial_File_ID, PDO::PARAM_INT);
@@ -641,6 +724,8 @@ function reset_failed_file($dbcore, $File_ID)
 							{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
 						else if($dbcore->sql->service == "sqlsrv")
 							{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+						else if($dbcore->sql->service == "pgsql")
+							{$sqlu = "UPDATE wifi_ap SET \"File_ID\" = ? WHERE \"AP_ID\" = ?";}
 						$prep = $dbcore->sql->conn->prepare($sqlu);
 						$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 						$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
@@ -653,6 +738,8 @@ function reset_failed_file($dbcore, $File_ID)
 					{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT cell_id FROM cell_id WHERE file_id = ?";}
 				$apl = $dbcore->sql->conn->prepare($sql);
 				$apl->bindParam(1, $Partial_File_ID, PDO::PARAM_INT);
 				$apl->execute();
@@ -665,6 +752,8 @@ function reset_failed_file($dbcore, $File_ID)
 						{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? And `file_id != ? LIMIT 1";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? And [file_id] != ?";}
+					else if($dbcore->sql->service == "pgsql")
+						{$sqlhp = "SELECT file_id FROM cell_hist WHERE cell_id = ? And file_id != ? LIMIT 1";}
 					$resgps = $dbcore->sql->conn->prepare($sqlhp);
 					$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
 					$resgps->bindParam(2, $Partial_File_ID, PDO::PARAM_INT);
@@ -678,6 +767,8 @@ function reset_failed_file($dbcore, $File_ID)
 							{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
 						else if($dbcore->sql->service == "sqlsrv")
 							{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
+						else if($dbcore->sql->service == "pgsql")
+							{$sqlu = "UPDATE cell_id SET file_id = ? WHERE cell_id = ?";}
 						$prep = $dbcore->sql->conn->prepare($sqlu);
 						$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 						$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
@@ -687,9 +778,9 @@ function reset_failed_file($dbcore, $File_ID)
 
 				// Delete partial data for the found File ID
 				$tables = array(
-					"DELETE FROM wifi_hist WHERE File_ID = ?",
-					"DELETE FROM wifi_ap WHERE File_ID = ?",
-					"DELETE FROM wifi_gps WHERE File_ID = ?",
+					"DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?",
+					"DELETE FROM wifi_ap WHERE ".$dbcore->sql->ident('File_ID')." = ?",
+					"DELETE FROM wifi_gps WHERE ".$dbcore->sql->ident('File_ID')." = ?",
 					"DELETE FROM cell_hist WHERE file_id = ?",
 					"DELETE FROM cell_id WHERE file_id = ?",
 					"DELETE FROM files WHERE id = ?"
@@ -723,8 +814,8 @@ function reset_failed_file($dbcore, $File_ID)
 			try
 			{
 				$sqlhp = "INSERT INTO files_tmp\n"
-					. "(file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type)\n"
-					. "SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type\n"
+					. "(file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name)\n"
+					. "SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name\n"
 					. "FROM files_importing\n"
 					. "WHERE id = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);
@@ -781,6 +872,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 				{$sqlhp = "SELECT `id` FROM `files` WHERE `hash` = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sqlhp = "SELECT TOP 1 [id] FROM [files] WHERE [hash] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sqlhp = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
 			$resgps = $dbcore->sql->conn->prepare($sqlhp);
 			$resgps->bindParam(1, $File_Hash, PDO::PARAM_STR);
 			$resgps->execute();
@@ -796,6 +889,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 					{$sql = "SELECT `AP_ID` FROM `wifi_ap` WHERE File_ID = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT [AP_ID] FROM [wifi_ap] WHERE File_ID = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT \"AP_ID\" FROM wifi_ap WHERE \"File_ID\" = ?";}
 				$apl = $dbcore->sql->conn->prepare($sql);
 				$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
 				$apl->execute();
@@ -808,6 +903,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 						{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? AND `File_ID` != ? LIMIT 1";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? AND [File_ID] != ?";}
+					else if($dbcore->sql->service == "pgsql")
+						{$sqlhp = "SELECT \"File_ID\" FROM wifi_hist WHERE \"AP_ID\" = ? AND \"File_ID\" != ? LIMIT 1";}
 					$resgps = $dbcore->sql->conn->prepare($sqlhp);
 					$resgps->bindParam(1, $AP_ID, PDO::PARAM_INT);
 					$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -821,6 +918,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 							{$sqlu = "UPDATE `wifi_ap` SET `File_ID` = ? WHERE `AP_ID` = ?";}
 						else if($dbcore->sql->service == "sqlsrv")
 							{$sqlu = "UPDATE [wifi_ap] SET [File_ID] = ? WHERE [AP_ID] = ?";}
+						else if($dbcore->sql->service == "pgsql")
+							{$sqlu = "UPDATE wifi_ap SET \"File_ID\" = ? WHERE \"AP_ID\" = ?";}
 						$prep = $dbcore->sql->conn->prepare($sqlu);
 						$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 						$prep->bindParam(2, $AP_ID, PDO::PARAM_INT);
@@ -833,6 +932,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 					{$sql = "SELECT `cell_id` FROM `cell_id` WHERE file_id = ?";}
 				else if($dbcore->sql->service == "sqlsrv")
 					{$sql = "SELECT [cell_id] FROM [cell_id] WHERE [file_id] = ?";}
+				else if($dbcore->sql->service == "pgsql")
+					{$sql = "SELECT cell_id FROM cell_id WHERE file_id = ?";}
 				$apl = $dbcore->sql->conn->prepare($sql);
 				$apl->bindParam(1, $File_ID, PDO::PARAM_INT);
 				$apl->execute();
@@ -845,6 +946,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 						{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? AND `file_id` != ? LIMIT 1";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? AND [file_id] != ?";}
+					else if($dbcore->sql->service == "pgsql")
+						{$sqlhp = "SELECT file_id FROM cell_hist WHERE cell_id = ? AND file_id != ? LIMIT 1";}
 					$resgps = $dbcore->sql->conn->prepare($sqlhp);
 					$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
 					$resgps->bindParam(2, $File_ID, PDO::PARAM_INT);
@@ -858,6 +961,8 @@ function delete_failed_file($dbcore, $File_Import_ID)
 							{$sqlu = "UPDATE `cell_id` SET `file_id` = ? WHERE `cell_id` = ?";}
 						else if($dbcore->sql->service == "sqlsrv")
 							{$sqlu = "UPDATE [cell_id] SET [file_id] = ? WHERE [cell_id] = ?";}
+						else if($dbcore->sql->service == "pgsql")
+							{$sqlu = "UPDATE cell_id SET file_id = ? WHERE cell_id = ?";}
 						$prep = $dbcore->sql->conn->prepare($sqlu);
 						$prep->bindParam(1, $New_File_ID, PDO::PARAM_INT);
 						$prep->bindParam(2, $cell_id, PDO::PARAM_INT);
@@ -866,19 +971,19 @@ function delete_failed_file($dbcore, $File_Import_ID)
 				}
 
 				// Delete wifi_hist records
-				$sqlhp = "DELETE FROM wifi_hist WHERE File_ID = ?";
+				$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);
 				$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 				$resgps->execute();
 
 				// Delete wifi_ap records
-				$sqlhp = "DELETE FROM wifi_ap WHERE File_ID = ?";
+				$sqlhp = "DELETE FROM wifi_ap WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);
 				$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 				$resgps->execute();
 
 				// Delete wifi_gps records
-				$sqlhp = "DELETE FROM wifi_gps WHERE File_ID = ?";
+				$sqlhp = "DELETE FROM wifi_gps WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);
 				$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
 				$resgps->execute();
@@ -910,26 +1015,7 @@ function delete_failed_file($dbcore, $File_Import_ID)
 		$prep->execute();
 
 		// Move uploaded file to deleted folder
-		$upload_path = $dbcore->PATH . 'import/up/';
-		$deleted_path = $dbcore->PATH . 'import/up/deleted/';
-
-		if(!is_dir($deleted_path))
-		{
-			mkdir($deleted_path, 0755, true);
-		}
-
-		$source_file = $upload_path . $file_info['file_name'];
-		if(file_exists($source_file))
-		{
-			// Save file info to txt
-			$info_file = $deleted_path . pathinfo($file_info['file_name'], PATHINFO_FILENAME) . '.txt';
-			$info_content = $file_info['hash'] . '|' . $file_info['type'] . '|' . $file_info['file_name'] . '|'
-				. $file_info['file_orig'] . '|' . $file_info['file_user'] . '|' . $file_info['title'] . '|'
-				. $file_info['file_date'] . '|' . $file_info['notes'];
-			file_put_contents($info_file, $info_content);
-
-			rename($source_file, $deleted_path . $file_info['file_name']);
-		}
+		admind_move_to_deleted($dbcore, $file_info, 'deleted');
 
 		return array('success' => true, 'message' => "Failed file ID $File_Import_ID deleted successfully");
 	}
@@ -991,6 +1077,8 @@ function reset_files_bad($dbcore, $Bad_ID)
 			{$sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, error_msg FROM files_bad WHERE id = ? LIMIT 1";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [id], [file_name], [file_orig], [file_user], [otherusers], [notes], [title], [size], [file_date], [hash], [converted], [prev_ext], [type], [error_msg] FROM [files_bad] WHERE [id] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sql = "SELECT id, file_name, file_orig, file_user, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, error_msg FROM files_bad WHERE id = ? LIMIT 1";}
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $Bad_ID, PDO::PARAM_INT);
 		$prep->execute();
@@ -1010,6 +1098,8 @@ function reset_files_bad($dbcore, $Bad_ID)
 				{$sql = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 [id] FROM [files] WHERE [hash] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT id FROM files WHERE hash = ? LIMIT 1";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $hash, PDO::PARAM_STR);
 			$prep->execute();
@@ -1024,6 +1114,8 @@ function reset_files_bad($dbcore, $Bad_ID)
 				{$sql = "SELECT id FROM files_tmp WHERE hash = ? LIMIT 1";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 [id] FROM [files_tmp] WHERE [hash] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "SELECT id FROM files_tmp WHERE hash = ? LIMIT 1";}
 			$prep = $dbcore->sql->conn->prepare($sql);
 			$prep->bindParam(1, $hash, PDO::PARAM_STR);
 			$prep->execute();
@@ -1034,7 +1126,7 @@ function reset_files_bad($dbcore, $Bad_ID)
 			}
 
 			// Insert into files_tmp from files_bad
-			$sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type FROM files_bad WHERE id = ?";
+			$sql = "INSERT INTO files_tmp (file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, node_name) SELECT file_user, file_name, file_orig, otherusers, notes, title, size, file_date, hash, converted, prev_ext, type, NULLIF(node_name, '0') FROM files_bad WHERE id = ?";
 			$res = $dbcore->sql->conn->prepare($sql);
 			$res->bindParam(1, $Bad_ID, PDO::PARAM_INT);
 			$res->execute();
@@ -1044,6 +1136,8 @@ function reset_files_bad($dbcore, $Bad_ID)
 				{$sql = "DELETE FROM files_bad WHERE id = ?";}
 			else if($dbcore->sql->service == "sqlsrv")
 				{$sql = "DELETE FROM [files_bad] WHERE [id] = ?";}
+			else if($dbcore->sql->service == "pgsql")
+				{$sql = "DELETE FROM files_bad WHERE id = ?";}
 			$res = $dbcore->sql->conn->prepare($sql);
 			$res->bindParam(1, $Bad_ID, PDO::PARAM_INT);
 			$res->execute();

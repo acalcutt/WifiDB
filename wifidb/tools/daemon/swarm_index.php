@@ -556,4 +556,12 @@ if (in_array('--record', $argv, true)) {
     exit(0);
 }
 
+// Only the node that builds the archives refreshes. Every node's swarm is asked on its own loopback, and the table is
+// one for the whole site: a node mirroring the archives holds a build only once its download has finished, so its
+// answer would sometimes put the record back a build.
+if (!mvt_generates_archives($dbcore, 'mvt')) {
+    swarm_log('this node does not build the archives (tile_archive_generate); the node that does keeps the record');
+    exit(0);
+}
+
 exit(swarm_refresh($dbcore, swarm_arg($argv, 'url')));

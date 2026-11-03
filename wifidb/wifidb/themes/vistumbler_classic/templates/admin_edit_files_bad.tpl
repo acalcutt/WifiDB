@@ -3,7 +3,7 @@
 			{include file="topmenu.tpl"}
 			<div class="center">
 				<h2>Edit Rejected Import</h2>
-				<form method="post" action="{$wifidb_host_url}opt/admin_action.php?action=edit_files_bad&amp;file_id={$file_id}{if $return_url}&amp;return={$return_url}{/if}">
+				<form method="post" action="{$wifidb_host_url}opt/admin_action.php?action=edit_files_bad&amp;file_id={$file_id}{if $return_url}&amp;return={$return_url|escape:'html':'UTF-8':false}{/if}">
 					<table class="content_table">
 						<tr class="subheading"><th class="subheading">Field</th><th class="subheading">Value</th></tr>
 						<tr class="light"><td class="light"><strong>File ID</strong></td><td class="light">{$file_info.id}</td></tr>
@@ -25,7 +25,7 @@
 						<tr class="dark"><td class="dark"><strong>Notes</strong></td><td class="dark"><textarea name="notes" style="width:100%">{$file_info.notes|escape:'htmlall'}</textarea></td></tr>
 						<tr class="light"><td class="light" colspan="2" style="text-align:center; padding:12px;">
 							<button type="submit" style="padding:8px 16px;">Save Changes</button>
-							<a href="{if $return_url}{$return_url}{else}{$wifidb_host_url}opt/scheduling.php?func=bad{/if}" style="margin-left:12px;">Cancel</a>
+							<a href="{if $return_url}{$return_url|escape:'html':'UTF-8':false}{else}{$wifidb_host_url}opt/scheduling.php?func=bad{/if}" style="margin-left:12px;">Cancel</a>
 						</td></tr>
 					</table>
 				</form>

@@ -1,7 +1,11 @@
 <?php
 require(dirname(__FILE__).'/config.inc.php');
-require(dirname(__FILE__).'/../smarty/libs/Autoloader.php');
-Smarty_Autoloader::register();
+// Smarty comes from Composer (composer install --no-dev, which fills wifidb/vendor); see README.md
+if(!is_file(dirname(__FILE__).'/../vendor/autoload.php'))
+{
+	die("Smarty is not installed: run `composer install --no-dev` in the repository, or use the Proxmox template (README.md).\n");
+}
+require(dirname(__FILE__).'/../vendor/autoload.php');
 /*
 Init.inc.php, Initialization script for WiFiDB both CLI and HTTP
 Copyright (C) 2022 Andrew Calcutt 2016 Phil Ferland
@@ -22,6 +26,7 @@ if not, write to the
    Boston, MA 02111-1307 USA
 */
 date_default_timezone_set('UTC'); //setting the time zone to GMT(Zulu) for internal keeping, displays will soon be customizable for the users time zone
+require_once(dirname(__FILE__).'/helpers.inc.php');
 if(!function_exists('WiFiDBexception_handler')) {
 	function WiFiDBexception_handler($err)
 	{
@@ -31,7 +36,7 @@ if(!function_exists('WiFiDBexception_handler')) {
 			case "html":
 				$WWW_DIR = $config['wifidb_install'];
 				$URL_PATH = $config['hosturl'].$config['root'].'/';
-				if (isset($_COOKIE['wifidb_theme']) && $_COOKIE['wifidb_theme'] != '') {$theme = $_COOKIE['wifidb_theme'];}else{$theme = $config['default_theme'];}
+				$theme = wifidb_resolve_theme(@$_COOKIE['wifidb_theme'], $config['wifidb_install'], $config['default_theme']);
 				
 				$smarty = new Smarty();
 				$smarty->template_dir = $config['wifidb_install'].'themes/'.$theme.'/templates/';
@@ -67,44 +72,6 @@ if(strtolower(SWITCH_SCREEN) == "cli")
 	}
 	require $config['wifidb_tools'].'daemon.config.inc.php';
 }
-if($config['srvc'] == "mysql")
-{
-	$dsn = $config['srvc'].':dbname='.$config['db'].';host='.$config['host'].';charset='.$config['charset'];
-	$options = array(
-		PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES '.$config['charset'].' COLLATE '.$config['collate']
-	);
-	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd'], $options);
-	$sql = "SELECT `version` FROM `settings` LIMIT 1";
-}
-else if($config['srvc'] == "sqlsrv")
-{
-	// LoginTimeout=15: bound connect time when SQL is down without being so tight
-	// it aborts a busy-but-alive server's handshake (3s caused SQLSTATE 08001).
-	// See SQL.inc.php for the full rationale.
-	$dsn = $config['srvc'].':Server='.$config['host'].';Database='.$config['db'].';TrustServerCertificate=true;LoginTimeout=15';
-	$conn = new PDO($dsn, $config['db_user'], $config['db_pwd']);
-	$conn->setAttribute(PDO::SQLSRV_ATTR_ENCODING, PDO::SQLSRV_ENCODING_UTF8);
-	$sql = "SELECT TOP 1 [version] FROM [settings]";
-}
-
-$res = $conn->query($sql);
-$fetch = $res->fetch(2);
-$db_version = $fetch['version'];
-unset($res, $conn, $fetch, $sql);
-
-if($db_version != '0.40')
-{
-	$cwd = getcwd().'/';
-	$gen_cwd = $_SERVER['DOCUMENT_ROOT'].$config['root'].'/install/upgrade/';
-	if($cwd != $gen_cwd)
-	{
-		throw new ErrorException('The database is not in the 0.40 format, you will need to do an upgrade first.<br>
-				If this database is older than Version 0.30 I would do a Full Fresh Install, After making a backup of all your data.
-				Please go '.$config['hosturl'].$config['root'].'/install/ to do that, or you can run the new command line upgrader in the tools folder');
-	}
-	unset($cwd, $gen_cwd);
-}
-unset($db_version);
 
 if( (strtolower(SWITCH_SCREEN) === "html") && ( strtolower(SWITCH_EXTRAS) !== "api") && ( strtolower(SWITCH_EXTRAS) !== "apiv2")  )
 {
@@ -261,6 +228,31 @@ try
 }
 catch (Exception $e) {
 	throw new ErrorException($e);
+}
+
+// The database has to have every migration this code has (sql/migrations/, applied by tools/utilites/migrate.php; the
+// Proxmox template applies them on each first boot). One query on the site's own connection; what has to run before
+// they're applied (migrate.php) defines WIFIDB_SKIP_MIGRATION_CHECK.
+if(!defined('WIFIDB_SKIP_MIGRATION_CHECK') && isset($dbcore->sql->conn))
+{
+	$pending = wifidb_migrations_pending($dbcore->sql->conn, $dbcore->sql->service, $config['wifidb_tools'].'../sql/migrations');
+	if($pending)
+	{
+		$why = "The database needs updating before WifiDB can run: ".count($pending)." migration".(count($pending) == 1 ? "" : "s")
+			." not applied yet (".implode(', ', $pending)."). An administrator needs to run tools/utilites/migrate.php.";
+		if(strtolower(SWITCH_SCREEN) === "cli")
+		{
+			fwrite(STDERR, $why."\n");
+			exit(1);
+		}
+		http_response_code(503);
+		header('Retry-After: 300');
+		header('Content-Type: text/html; charset=utf-8');
+		echo "<!DOCTYPE html>\n<html><head><title>WifiDB is being updated</title></head><body><h1>WifiDB is being updated</h1><p>"
+			.htmlspecialchars($why, ENT_QUOTES)."</p></body></html>\n";
+		exit;
+	}
+	unset($pending);
 }
 
 

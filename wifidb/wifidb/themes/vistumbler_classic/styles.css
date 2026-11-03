@@ -397,6 +397,11 @@ table.asscotable {
 	white-space: nowrap;
 }
 
+/* a sentence or more above a table, not a column's heading: it wraps to the table's width */
+.header.wrap {
+	white-space: normal;
+}
+
 .header-centered {
 	text-align: center;
 	background-color: #5b86aa;

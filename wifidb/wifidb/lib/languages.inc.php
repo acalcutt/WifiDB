@@ -21,6 +21,8 @@ if not, write to the
 
 class languages
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $base, $code, $current_language, $supported_languages;
     function __construct($basepath)
     {
         $this->base                 = $basepath;

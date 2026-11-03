@@ -1,6 +1,6 @@
 <?php
 error_reporting(1);
-@ini_set('display_errors', 1);
+@ini_set('display_errors', 0);
 /*
 Copyright (C) 2021 Andrew Calcutt
 
@@ -38,10 +38,11 @@ switch($func)
 		if(!is_numeric($from)){$from = 0;}
 		if(!is_numeric($inc)){$inc = 50000;}		
 
-		$sql = "SELECT Count(AP_ID) As ap_count\n"
+		$q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
+		$sql = "SELECT Count(".$q('AP_ID').") As ap_count\n"
 			. "FROM wifi_ap\n"
 			. "WHERE\n"
-			. "	File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user LIKE ?)";
+			. "	".$q('File_ID')." IN (SELECT id FROM files WHERE ".$q('ValidGPS')." = 1 AND file_user = ?)";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();

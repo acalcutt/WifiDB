@@ -1,0 +1,9 @@
+[Unit]
+Description=Look for an update asked for on admin/servers.php every minute
+
+[Timer]
+OnCalendar=*:0/1
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

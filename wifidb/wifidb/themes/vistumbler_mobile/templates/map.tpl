@@ -6,7 +6,7 @@
 						<td align="left">
 {if $func eq "exp_cell_sig"}
 							<div style='text-align: center;'>
-								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$id}"><b>{$ssid}</b></a> (Cell ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?func=cid&id={$id}"><b>{$ssid|escape:'html':'UTF-8':false}</b></a> (Cell ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								<a href="{$wifidb_host_url}api/gpx.php?func=exp_cell_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export Cell Signals to GPX{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
@@ -15,7 +15,7 @@
 							</div>
 {elseif $func eq "exp_ap_sig"}
 							<div style='text-align: center;'>
-								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid}</b></a> (AP ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								Signal History for <a href="{$wifidb_host_url}opt/fetch.php?id={$id}"><b>{$ssid|escape:'html':'UTF-8':false}</b></a> (AP ID:{$id}{if $file_id ne 0} - File ID:{$file_id}{/if}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to JSON{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_ap&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to KMZ{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								<a href="{$wifidb_host_url}api/gpx.php?func=exp_ap_sig&id={$id}{if $file_id ne 0}&file_id={$file_id}{/if}" title="Export AP Signals to GPX{if $file_id ne 0} (for this file){/if}"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
@@ -24,15 +24,15 @@
 							</div>
 {elseif $func eq "user_all"}
 							<div style='text-align: center;'>
-								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user}"><b>{$user}</b></a> ({if $ldivs lte 1}Points:{$point_count}{else}Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
-									<a href="{$wifidb_host_url}opt/geojson.php?&func=user_all&user={$user}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
-									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$user}" title="Export User APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
-									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&user={$user}" title="Export User APs to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
+								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=alluserlists&user={$user|escape:'html':'UTF-8':false}"><b>{$user|escape:'html':'UTF-8':false}</b></a> ({if $ldivs lte 1}Points:{$point_count}{else}Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+									<a href="{$wifidb_host_url}opt/geojson.php?&func=user_all&user={$user|escape:'html':'UTF-8':false}" title="Export User APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
+									<a href="{$wifidb_host_url}opt/export.php?func=user_all&user={$user|escape:'html':'UTF-8':false}" title="Export User APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
+									<a href="{$wifidb_host_url}opt/gpx.php?func=user_all&user={$user|escape:'html':'UTF-8':false}" title="Export User APs to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
 								<br>
 							</div>
 {elseif $func eq "user_list"}
 							<div style='text-align: center;'>
-								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$id}"><b>{$title}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
+								List APs for <a href="{$wifidb_host_url}opt/userstats.php?func=useraplist&row={$id}"><b>{$title|escape:'html':'UTF-8':false}</b></a> (File ID:{$id}{if $ldivs lte 1} - Points:{$point_count}{else} - Points:({$from} - {(($from / $inc) + 1) * $inc}){/if})
 								<a href="{$wifidb_host_url}api/geojson.php?func=exp_list&id={$id}" title="Export List APs to JSON"><img width="20px" src="{$themeurl}img/json_on.png"></a>
 								<a href="{$wifidb_host_url}api/export.php?func=exp_list&id={$id}" title="Export List APs to KMZ"><img width="20px" src="{$themeurl}img/kmz_on.png"></a>
 								<a href="{$wifidb_host_url}api/gpx.php?func=exp_list&id={$id}" title="Export List APs to GPX"><img width="20px" src="{$themeurl}img/gpx_on.png"></a>
@@ -169,7 +169,7 @@
 								<div>
 		{for $cdiv=1 to $ldivs}
 			{if $from eq (($cdiv - 1) * $inc)}<b>{/if}
-									<a href="{$wifidb_host_url}opt/map.php?func=user_all&user={$user}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show User APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
+									<a href="{$wifidb_host_url}opt/map.php?func=user_all&user={$user|escape:'html':'UTF-8':false}&from={($cdiv - 1) * $inc}&inc={$inc}" title="Show User APs {($cdiv - 1) * $inc} - {$cdiv * $inc} on Map">Points {($cdiv - 1) * $inc} - {if $cdiv eq $ldivs}{$point_count}{else}{$cdiv * $inc}{/if}</a><br>
 			{if $from eq (($cdiv - 1) * $inc)}</b>{/if}
 		{/for}
 								</div>
@@ -325,7 +325,7 @@
 		var map = new maplibregl.Map({
 			transformRequest: swarmTransformRequest,
 			container: 'map',
-			style: '{$tileserver_gl_url}/styles/{$style}/style.json',
+			style: '{$tileserver_gl_url}/styles/{$style|escape:'html':'UTF-8':false}/style.json',
 			center: {$centerpoint},
 			zoom: {$zoom},
 			pitch: {$pitch},

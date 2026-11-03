@@ -35,11 +35,19 @@ if($username)
 		{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
+	else if($dbcore->sql->service == "pgsql")
+		{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 	$result = $dbcore->sql->conn->prepare($sql0);
 	$result->bindParam(1, $username, PDO::PARAM_STR);
 	$result->execute();
 	$userArray = $result->fetch();
 	$user_id = $userArray['id'];
+
+	// A member who chose to be asked before saving preferences confirms first (cp/confirm.php), then has a few minutes.
+	if(in_array($func, array('profile', 'pref', 'update_user_profile', 'update_user_pref'), true))
+	{
+		$dbcore->sec->RequirePreferencesConfirmation($func === 'update_user_pref' ? 'cp/index.php?func=pref' : 'cp/index.php?func=profile');
+	}
 
 	switch($func)
 	{
@@ -81,7 +89,7 @@ if($username)
 			$cp_profile = array();
 			if($userArray['id'])
 			{
-				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, Vis_ver = ?, apikey = ?, import_require_login = ? WHERE id = ?";
+				$sql1 = "UPDATE user_info SET email = ?, h_email = ?, website = ?, ".$dbcore->sql->ident('Vis_ver')." = ?, apikey = ?, import_require_login = ? WHERE id = ?";
 				$result = $dbcore->sql->conn->prepare($sql1);
 				$result->bindParam(1, $email, PDO::PARAM_STR);
 				$result->bindParam(2, $h_email, PDO::PARAM_STR);
@@ -162,8 +170,8 @@ if($username)
 
 		##-------------##
 		case 'myimports':
-			$sort = filter_input(INPUT_GET, 'sort', FILTER_SANITIZE_STRING);
-			$ord = filter_input(INPUT_GET, 'ord', FILTER_SANITIZE_STRING);
+			$sort = wifidb_input_string(INPUT_GET, 'sort');
+			$ord = wifidb_input_string(INPUT_GET, 'ord');
 			$from = filter_input(INPUT_GET, 'from', FILTER_SANITIZE_NUMBER_INT);
 			$inc = filter_input(INPUT_GET, 'inc', FILTER_SANITIZE_NUMBER_INT);
 

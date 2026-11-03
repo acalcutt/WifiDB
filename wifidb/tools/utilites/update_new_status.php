@@ -8,7 +8,8 @@ require $daemon_config['wifidb_install']."/lib/init.inc.php";
 
 $dbcore->verbosed("Gathered AP data");
 
-$sql = "SELECT AP_ID, File_ID FROM wifi_ap WHERE AP_ID > 3500000 AND AP_ID <= 5000000 ORDER BY AP_ID ASC";
+$ap_c = $dbcore->sql->ident('AP_ID'); $file_c = $dbcore->sql->ident('File_ID'); $new_c = $dbcore->sql->ident('New');
+$sql = "SELECT ".$ap_c.", ".$file_c." FROM wifi_ap WHERE ".$ap_c." > 3500000 AND ".$ap_c." <= 5000000 ORDER BY ".$ap_c." ASC";
 $result = $dbcore->sql->conn->query($sql);
 
 echo "Rows that need updating: ".$result->rowCount()."\r\n";
@@ -20,14 +21,14 @@ while($ap = $result->fetch(1))
 
 	echo "-------------------- $AP_ID - $File_ID --------------------\r\n";
 	
-	$sql = "UPDATE wifi_hist SET New = 1 WHERE AP_ID = ? AND File_ID = ?";
+	$sql = "UPDATE wifi_hist SET ".$new_c." = 1 WHERE ".$ap_c." = ? AND ".$file_c." = ?";
 	echo "UPDATE wifi_hist SET New = 1 WHERE AP_ID = $AP_ID AND File_ID = $File_ID\r\n";
 	$prep1 = $dbcore->sql->conn->prepare($sql);
 	$prep1->bindParam(1, $AP_ID, PDO::PARAM_INT);
 	$prep1->bindParam(2, $File_ID, PDO::PARAM_INT);
 	$prep1->execute();
 	
-	$sql = "UPDATE wifi_hist SET New = 0 WHERE AP_ID = ? AND File_ID != ?";
+	$sql = "UPDATE wifi_hist SET ".$new_c." = 0 WHERE ".$ap_c." = ? AND ".$file_c." != ?";
 	echo "UPDATE wifi_hist SET New = 0 WHERE AP_ID = $AP_ID AND File_ID != $File_ID\r\n";
 	$prep2 = $dbcore->sql->conn->prepare($sql);
 	$prep2->bindParam(1, $AP_ID, PDO::PARAM_INT);

@@ -7,6 +7,7 @@
 					<h2>Create User</h2>
 					<h3>{$message}</h3>
 					<form method="post" action="{$wifidb_host_url}login.php?func=create_user_proc">
+{include file="spam_check_fields.tpl"}
 						<table align="center">
 							<tr>
 								<td>Username</td>

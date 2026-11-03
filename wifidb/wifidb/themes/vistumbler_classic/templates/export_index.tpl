@@ -31,7 +31,7 @@ if not, write to the
                                                             <select name="id">
 
                                                                 {foreach name=outer item=export_titles from=$wifidb_export_imports_all}
-                                                                <option value="{$export_titles.id}">User: {$export_titles.username} - Title: {$export_titles.title} - # APs: {$export_titles.aps} - # Date: {$export_titles.date}</option>
+                                                                <option value="{$export_titles.id}">User: {$export_titles.username|escape:'html':'UTF-8':false} - Title: {$export_titles.title|escape:'html':'UTF-8':false} - # APs: {$export_titles.aps} - # Date: {$export_titles.date}</option>
                                                                 {foreachelse}
                                                                 <option value="">No Imports</option>
                                                                 {/foreach}
@@ -57,7 +57,7 @@ if not, write to the
                                                     <td>
                                                         <select name="user">
                                                             {foreach name=outer item=export_user from=$wifidb_export_users_all}
-                                                            <option value="{$export_user}">{$export_user}</option>
+                                                            <option value="{$export_user|escape:'html':'UTF-8':false}">{$export_user|escape:'html':'UTF-8':false}</option>
                                                             {foreachelse}
                                                             <option value="">No Users</option>
                                                             {/foreach}

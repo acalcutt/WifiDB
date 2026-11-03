@@ -55,3 +55,10 @@ wifidb/.idea/encodings.xml
 .idea/vcs.xml
 .idea/WiFiDB.iml
 .idea/workspace.xml
+
+# Composer packages (Smarty, and PHPUnit for development)
+/wifidb/wifidb/vendor/
+.phpunit.cache/
+# compiled and cached templates
+/wifidb/wifidb/smarty/templates_c/*
+!/wifidb/wifidb/smarty/templates_c/.gitkeep

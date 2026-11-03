@@ -7,7 +7,7 @@ if ps -ef | grep -v grep | grep cell_geojsond.php ; then
 else
 	echo Starting Cell GeoJSON Daemon...
 		timestamp=$(date +%s)
-        php ../daemon/cell_geojsond.php -o -v > ../log/cell_geojson/cell_geojsond_${timestamp}.log &
+        php ../daemon/lock_run.php cell_geojsond php ../daemon/cell_geojsond.php -o -v > ../log/cell_geojson/cell_geojsond_${timestamp}.log &
 fi
 
 echo "Cleaning up old logs..."

@@ -2,6 +2,11 @@
 
 class security
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $activatecode, $apikey, $check_error, $cli, $config_fails, $date_format, $datetime_format, $domain, $email_validation,
+		$EnableAPIKey, $HOSTURL, $last_login, $log_level, $Log_Type, $login_check, $login_val, $LoginLabel, $LoginUri,
+		$LoginUser, $mesg, $PATH, $priv_name, $privs, $reserved_users, $root, $SessionID, $sql, $ssl, $This_is_me,
+		$time_format, $timeout, $TOOLS_PATH, $URL_PATH;
 	#private $pass_hash;
 	public  $username;
 	function __construct(&$dbcore, $config)
@@ -46,8 +51,162 @@ class security
 		$this->domain	 = parse_url($this->URL_PATH, PHP_URL_HOST);
 		$folder = parse_url($this->URL_PATH, PHP_URL_PATH);
 		$this->PATH = $folder;
+		$this->two_factor_config = array(
+			'two_factor_key'    => isset($config['two_factor_key']) ? $config['two_factor_key'] : '',
+			'two_factor_issuer' => isset($config['two_factor_issuer']) ? $config['two_factor_issuer'] : 'WifiDB',
+			'hosturl'           => $this->HOSTURL,
+		);
+		$this->site_config = $config;
 	}
-	
+
+	# Site settings an administrator can change from the site: see lib/site_settings.inc.php
+	private $site_settings = null;
+	private $site_config = array();
+
+	/** @return SiteSettings */
+	public function Settings()
+	{
+		if($this->site_settings === null)
+		{
+			require_once dirname(__FILE__).'/site_settings.inc.php';
+			$this->site_settings = new SiteSettings($this->sql->conn, $this->site_config);
+		}
+		return $this->site_settings;
+	}
+
+	/** One site setting (saved on admin/settings.php, else from config.inc.php). */
+	public function Setting($name)
+	{
+		return $this->Settings()->Get($name);
+	}
+
+	/**
+	 * CleanTalk for this key; with no key, the one saved on admin/settings.php. cleantalk_server and cleantalk_api in
+	 * config.inc.php point it somewhere else (tests).
+	 */
+	public function CleanTalk($key = null)
+	{
+		require_once dirname(__FILE__).'/cleantalk.inc.php';
+		return new CleanTalk($key === null ? $this->Setting('cleantalk_key') : $key, null,
+			!empty($this->site_config['cleantalk_server']) ? $this->site_config['cleantalk_server'] : null,
+			!empty($this->site_config['cleantalk_api']) ? $this->site_config['cleantalk_api'] : null);
+	}
+
+	const TRACK_RECORD_DAYS = 90;
+
+	/**
+	 * Has this member shown they are a person: a finished import, an account this old, or moderator rank or higher?
+	 * Their private messages skip the spam check.
+	 */
+	public function HasTrackRecord($username)
+	{
+		$prep = $this->sql->conn->prepare("SELECT permissions, join_date FROM user_info WHERE username = ?");
+		$prep->execute(array($username));
+		$member = $prep->fetch(PDO::FETCH_ASSOC);
+		if(!$member) { return false; }
+		if((int)$member['permissions'] >= 100) { return true; }
+		$joined = $member['join_date'] ? strtotime($member['join_date']) : false;
+		if($joined && $joined <= time() - self::TRACK_RECORD_DAYS * 86400) { return true; }
+		$prep = $this->sql->conn->prepare("SELECT COUNT(*) FROM files WHERE file_user = ? AND completed = 1");
+		$prep->execute(array($username));
+		return (int)$prep->fetchColumn() > 0;
+	}
+
+	/**
+	 * Asks CleanTalk (when it's on) about a sign-up ('newuser') or a private message ('message'), from the request being
+	 * handled. The form's ct_js and ct_t fields (spam_check_fields.tpl) say whether its script ran and when it was shown.
+	 * @return string '' to go ahead (also when CleanTalk is off or can't be reached), else why it was refused
+	 */
+	public function SpamRefusal($kind, $email, $nickname, $message = '')
+	{
+		$cleantalk = $this->SpamCheck();
+		if(!$cleantalk) { return ''; }
+		$ip = isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';   # the visitor's, behind the proxy too (mod_remoteip)
+		$jsOn = isset($_POST['ct_js']) && $_POST['ct_js'] === '1';
+		$shown = isset($_POST['ct_t']) ? (int)$_POST['ct_t'] : 0;
+		$elapsed = ($shown > 0 && $shown <= time()) ? time() - $shown : null;
+		$agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+		try
+		{
+			$verdict = ($kind === 'message')
+				? $cleantalk->CheckMessage($message, $email, $nickname, $ip, $jsOn, $elapsed, $agent)
+				: $cleantalk->CheckNewUser($email, $nickname, $ip, $jsOn, $elapsed, $agent);
+		}
+		catch(Throwable $e)
+		{
+			$this->logd("CleanTalk check failed, let through: ".$e->getMessage(), "error");
+			return '';
+		}
+		if(!$verdict['checked'])
+		{
+			$this->logd("CleanTalk did not check a ".$kind." from ".$nickname." (".$ip."), let through: ".$verdict['reason'], "error");
+			return '';
+		}
+		if($verdict['allow']) { return ''; }
+		$this->logd("CleanTalk refused a ".$kind." from ".$nickname." <".$email."> (".$ip."): ".$verdict['reason'], "error");
+		return $verdict['reason'] !== '' ? $verdict['reason'] : 'It looked like spam.';
+	}
+
+	/** CleanTalk when it's turned on and has a key, else null (nothing is checked). */
+	public function SpamCheck()
+	{
+		if(!$this->Setting('cleantalk_enabled') || $this->Setting('cleantalk_key') === '') { return null; }
+		return $this->CleanTalk();
+	}
+
+	# Two-factor sign-in: see lib/two_factor.inc.php
+	public $mfa_pending = false;   # the cookie is a real session whose password was right but whose second factor is not done
+	public $mfa_user = '';
+	public $mfa_session = '';
+	private $two_factor = null;
+	private $two_factor_config = array();
+
+	/** @return TwoFactor|null null if it can't be used (the tables are missing, the site hasn't been migrated yet) */
+	public function TwoFactor()
+	{
+		if($this->two_factor === null)
+		{
+			try
+			{
+				$dir = dirname(__FILE__);
+				require_once $dir.'/totp.inc.php';
+				require_once $dir.'/webauthn.inc.php';
+				require_once $dir.'/two_factor.inc.php';
+				$this->two_factor = new TwoFactor($this->sql->conn, $this->two_factor_config);
+			}
+			catch(Throwable $e)
+			{
+				return null;
+			}
+		}
+		return $this->two_factor;
+	}
+
+	# Signing in with a linked Google, GitHub, Discord or Facebook account: see lib/linked_logins.inc.php
+	private $linked_logins = null;
+
+	/** @return LinkedLogins */
+	public function LinkedLogins()
+	{
+		if($this->linked_logins === null)
+		{
+			require_once dirname(__FILE__).'/linked_logins.inc.php';
+			# linked_logins_endpoints in config.inc.php points a provider somewhere else (tests)
+			$this->linked_logins = new LinkedLogins($this->sql->conn, $this->Settings(), $this->URL_PATH, null, null,
+				!empty($this->site_config['linked_logins_endpoints']) ? $this->site_config['linked_logins_endpoints'] : array());
+		}
+		return $this->linked_logins;
+	}
+
+	/** Sets (or, with '', removes) one of the linked sign-in's cookies: for this site, kept from scripts, for $ttl seconds. */
+	public function LinkedLoginCookie($name, $value, $ttl = 0)
+	{
+		if($this->cli) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		setcookie($name, $value, array("expires" => $value === '' ? time() - 3600 : time() + $ttl, "path" => $path, "domain" => $this->domain,
+			"secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
+	}
+
 	
 	public function logd($message = '', $type = "message", $prefix = "")
 	{
@@ -149,7 +308,7 @@ class security
 			@list($cookie_pass_seed, $username) = explode(':', base64_decode(@$_COOKIE['WiFiDB_login_yes']));
 		}
 		#var_dump($username);
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql0 = "SELECT * FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql0 = "SELECT TOP 1 * FROM user_info WHERE username = ?";}
@@ -159,7 +318,7 @@ class security
 		$newArray = $result->fetch(2);
 
 		#var_dump($newArray);
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql1 = "SELECT * FROM user_login_hashes WHERE username = ? AND hash = ? ORDER BY id DESC LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql1 = "SELECT TOP 1 * FROM user_login_hashes WHERE username = ? AND hash = ? ORDER BY id DESC";}
@@ -224,10 +383,10 @@ class security
 		}
 
 		#Check if username already exists
-		if($this->sql->service == "mysql")
-			{$sql = "SELECT username FROM user_info WHERE username LIKE ? LIMIT 1";}
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
+			{$sql = "SELECT username FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
-			{$sql = "SELECT TOP 1 [username] FROM user_info WHERE [username] LIKE ?";}
+			{$sql = "SELECT TOP 1 [username] FROM user_info WHERE [username] = ?";}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -240,7 +399,7 @@ class security
 		}
 
 		#Check if the email address already exists
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql = "SELECT email FROM user_info WHERE email LIKE ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT TOP 1 [email] FROM user_info WHERE [email] LIKE ?";}
@@ -256,9 +415,8 @@ class security
 		}
 
 		#Create the user account
-		$salt			   = $this->GenerateKey(29);
-		$password_hashed	= crypt($password, '$2a$07$'.$salt.'$');
-		$uid				= implode(str_split($this->GenerateKey(25), 5), "-");
+		$password_hashed	= $this->HashPassword($password);
+		$uid				= implode("-", str_split($this->GenerateKey(25), 5));
 		$join_date		  = date($this->datetime_format);
 		$api_key			= $this->GenerateKey(64);
 
@@ -267,7 +425,8 @@ class security
 		$prep->bindParam(1, $username, PDO::PARAM_STR);
 		$prep->bindParam(2, $password_hashed, PDO::PARAM_STR);
 		$prep->bindParam(3, $uid, PDO::PARAM_STR);
-		$prep->bindParam(4, $this->email_validation, PDO::PARAM_STR);
+		$validation = $this->Setting('email_validation') ? '1' : '0';
+		$prep->bindParam(4, $validation, PDO::PARAM_STR);
 		$prep->bindParam(5, $email, PDO::PARAM_STR);
 		$prep->bindParam(6, $join_date, PDO::PARAM_STR);
 		$prep->bindParam(7, $api_key, PDO::PARAM_STR);
@@ -286,9 +445,13 @@ class security
 		$base			=   'ABCDEFGHKLMNOPQRSTWXYZabcdefghjkmnpqrstwxyz123456789';
 		$max			=   strlen($base)-1;
 		$activatecode	=   '';
-		mt_srand((double)microtime()*1000000);
-		while( strlen($activatecode) < $len ){$activatecode .= $base{mt_rand(0,$max)};}
+		while( strlen($activatecode) < $len ){$activatecode .= $base[random_int(0,$max)];}
 		return $activatecode;
+	}
+
+	function HashPassword($password)
+	{
+		return password_hash($password, PASSWORD_BCRYPT, array("cost" => 12));
 	}
 
 	function GenerateSessionCookie($Bender_remember_me = 0, $authoritah = 0)
@@ -326,7 +489,7 @@ class security
 				{$path  = '/'.trim($this->root, '/').'/';}
 				else{$path  = '/';}
 			}
-			if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), $cookie_timeout, $path, $this->domain, $this->ssl))
+			if(!setcookie($cookie_name, base64_encode($this->SessionID.":".$this->username), array("expires" => $cookie_timeout, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax")))
 			{
 				$this->login_val = "cookie_fail";
 				$this->login_check = 0;
@@ -352,7 +515,7 @@ class security
 			return 0;
 		}
 		
-		if($this->sql->service == "mysql")
+		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{$sql0 = "SELECT id, validated, locked, login_fails, username, password FROM user_info WHERE username = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql0 = "SELECT TOP 1 id, validated, locked, login_fails, username, password FROM user_info WHERE username = ?";}
@@ -360,6 +523,15 @@ class security
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$this->sql->checkError( $result->execute(), __LINE__, __FILE__);
 		$newArray = $result->fetch(2);
+		if(!$newArray)
+		{
+			# no such member: answered as a wrong password is, so the form doesn't say who has an account
+			$this->login_val = "p_fail";
+			$this->login_check = 0;
+			$this->mesg[] = "Username or Password is incorrect.";
+			$this->logd("Login for a user that does not exist: ".var_export($username, 1), "error");
+			return 1;
+		}
 		$validate = $newArray['validated']+0;
 		if($validate === 1)
 		{
@@ -383,30 +555,18 @@ class security
 		$db_pass = $newArray['password'];
 		$fails = $newArray['login_fails'];
 		$this->username = $newArray['username'];
-		$pass_hash = crypt($password, $newArray['password']);
-		if($db_pass === $pass_hash)
+		if(password_verify($password, $db_pass))
 		{
-			if($this->GenerateSessionCookie($Bender_remember_me, $authoritah))
+			# Upgrade hashes created with the old low-cost crypt() settings.
+			if(password_needs_rehash($db_pass, PASSWORD_BCRYPT, array("cost" => 12)))
 			{
-				$date = date($this->datetime_format);
-				$sql1 = "UPDATE user_info SET login_fails = '0', last_login = ? WHERE id = ? ";
-				$prep = $this->sql->conn->prepare($sql1);
-				$prep->bindParam(1, $date, PDO::PARAM_STR);
-				$prep->bindParam(2, $id, PDO::PARAM_INT);
-				$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
-				
-				$this->login_val = "good";
-				$this->login_check = 1;
-				$this->logd("Login Successful for ".var_export($username, 1), "message");
-				$this->mesg[] = "User is logged in.";
-				return 1;
+				$new_hash = $this->HashPassword($password);
+				$rehash = $this->sql->conn->prepare("UPDATE user_info SET password = ? WHERE id = ?");
+				$rehash->bindParam(1, $new_hash, PDO::PARAM_STR);
+				$rehash->bindParam(2, $id, PDO::PARAM_INT);
+				$rehash->execute();
 			}
-			else
-			{
-				$this->logd("Failed to generate session cookie.", "error");
-				$this->login_val = "cookie_fail";
-				return 0;
-			}
+			return $this->SignedIn($id, $Bender_remember_me, $authoritah, "Password");
 		}else
 		{
 			#Failed Password check.
@@ -441,6 +601,220 @@ class security
 		}
 	}
 	
+	/**
+	 * The member ($this->username, user_info.id $id) proved who they are ($how, for the log): their session starts, and
+	 * waits for its second factor if they ask for one.
+	 */
+	private function SignedIn($id, $Bender_remember_me, $authoritah, $how)
+	{
+		if(!$this->GenerateSessionCookie($Bender_remember_me, $authoritah))
+		{
+			$this->logd("Failed to generate session cookie.", "error");
+			$this->login_val = "cookie_fail";
+			return 0;
+		}
+		$date = date($this->datetime_format);
+		$sql1 = "UPDATE user_info SET login_fails = '0', last_login = ? WHERE id = ? ";
+		$prep = $this->sql->conn->prepare($sql1);
+		$prep->bindParam(1, $date, PDO::PARAM_STR);
+		$prep->bindParam(2, $id, PDO::PARAM_INT);
+		$this->sql->checkError( $prep->execute(), __LINE__, __FILE__);
+
+		$this->login_val = "good";
+		$this->login_check = 1;
+		if($this->StartSecondFactor($this->username))
+		{
+			# Who it is was proved, but this member asks for a second factor: the session grants nothing until it is done.
+			$this->login_val = "mfa_required";
+			$this->login_check = 0;
+			$this->logd($how." accepted for ".var_export($this->username, 1).", waiting for the second factor", "message");
+			$this->mesg[] = "A second factor is needed.";
+			return 1;
+		}
+		$this->logd("Login Successful for ".var_export($this->username, 1)." (".$how.")", "message");
+		$this->mesg[] = "User is logged in.";
+		return 1;
+	}
+
+	/**
+	 * Signs in a member who signed in with an outside account linked to theirs (lib/linked_logins.inc.php): as Login()
+	 * does after the right password, so the account must be confirmed and not locked, and the second factor is still
+	 * asked for. Sets login_val as Login() does: good, mfa_required, NotValidated, locked, u_fail or cookie_fail.
+	 */
+	public function LoginLinked($username, $Bender_remember_me = 0, $how = "Linked account")
+	{
+		if($this->sql->service == "sqlsrv")
+			{$sql0 = "SELECT TOP 1 id, validated, locked, username FROM user_info WHERE username = ?";}
+		else
+			{$sql0 = "SELECT id, validated, locked, username FROM user_info WHERE username = ? LIMIT 1";}
+		$result = $this->sql->conn->prepare($sql0);
+		$result->execute(array($username));
+		$member = $result->fetch(PDO::FETCH_ASSOC);
+		if(!$member)
+		{
+			$this->login_val = "u_fail";
+			$this->login_check = 0;
+			$this->logd("Failed to login, a linked account's user is gone: ".var_export($username, 1), "error");
+			return 0;
+		}
+		if((int)$member['validated'] === 1)
+		{
+			$this->login_val = 'NotValidated';
+			$this->login_check = 0;
+			return 0;
+		}
+		if((int)$member['locked'] === 1)
+		{
+			$this->login_val = 'locked';
+			$this->login_check = 0;
+			$this->logd("Failed to login, user locked: ".var_export($username, 1), "error");
+			return 0;
+		}
+		$this->username = $member['username'];
+		return $this->SignedIn($member['id'], $Bender_remember_me, 0, $how);
+	}
+
+	/**
+	 * Called with a session that has just been created. Does this member ask for a second factor at sign-in, and is
+	 * this computer one they chose to remember? @return bool true if the session has been made to wait for one
+	 */
+	private function StartSecondFactor($username)
+	{
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try
+		{
+			if(!$tf->AsksAtLogin($username)) { return false; }
+			$token = isset($_COOKIE['WiFiDB_device']) ? $_COOKIE['WiFiDB_device'] : '';
+			if($tf->DeviceTrusted($username, $token))
+			{
+				$tf->MfaDone($username, $this->SessionID);
+				return false;
+			}
+			$tf->MarkPending($username, $this->SessionID);
+			return true;
+		}
+		catch(Throwable $e)
+		{
+			# the tables aren't there (not migrated yet), so nobody can have two-factor set up
+			return false;
+		}
+	}
+
+	/**
+	 * Is this session waiting for its second factor, or old enough that it is due again? Either way it grants nothing.
+	 * @return bool
+	 */
+	private function SecondFactorPending($username, $sessionHash)
+	{
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try
+		{
+			if($tf->IsPending($username, $sessionHash)) { return true; }
+			if($tf->MfaStale($username, $sessionHash))
+			{
+				$tf->MarkPending($username, $sessionHash);
+				return true;
+			}
+		}
+		catch(Throwable $e)
+		{
+			return false;
+		}
+		return false;
+	}
+
+	/** "Remember this computer": a signed cookie that lets this member skip the second factor at sign-in for 30 days. */
+	public function RememberThisComputer($username)
+	{
+		$tf = $this->TwoFactor();
+		$token = $tf ? $tf->DeviceToken($username) : '';
+		if($token === '' || $this->cli) { return false; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		return setcookie('WiFiDB_device', $token, array("expires" => time() + TwoFactor::DEVICE_DAYS * 86400, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
+	}
+
+	public function ForgetThisComputer()
+	{
+		if($this->cli) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		setcookie('WiFiDB_device', '', array("expires" => time() - 3600, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
+	}
+
+	/** Must this signed-in member confirm a second factor before saving preferences (their choice), and haven't yet? */
+	public function PreferencesNeedConfirmation()
+	{
+		if(!$this->login_check || $this->SessionID === '') { return false; }
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try { return $tf->NeedsPreferencesCheck($this->LoginUser, $this->SessionID); }
+		catch(Throwable $e) { return false; }
+	}
+
+	/** Sends the member to confirm, then back to where they were. Call before showing or saving a preferences page. */
+	public function RequirePreferencesConfirmation($postedBackTo = 'cp/index.php?func=profile')
+	{
+		if(!$this->PreferencesNeedConfirmation()) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		$back = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $path.$postedBackTo : $_SERVER['REQUEST_URI'];   # a saved form can't be replayed after the check, so the page it came from
+		header('Location: '.$path.'cp/confirm.php?return='.urlencode($back));
+		exit;
+	}
+
+	/** Is the signed-in member an Administrator by rank? Says nothing about admin mode. */
+	public function IsAdministrator()
+	{
+		return $this->login_check && $this->priv_name === "Administrator";
+	}
+
+	/**
+	 * Is this session in admin mode: an Administrator who proved a second factor for it, within the last
+	 * ADMIN_MODE_MINUTES of using admin pages? $slide = false only looks (the header), so browsing ordinary pages
+	 * doesn't keep it open.
+	 */
+	public function AdminModeActive($slide = false)
+	{
+		if(!$this->IsAdministrator() || $this->SessionID === '') { return false; }
+		$tf = $this->TwoFactor();
+		if(!$tf) { return false; }
+		try { return $tf->AdminModeActive($this->LoginUser, $this->SessionID, $slide); }
+		catch(Throwable $e) { return false; }
+	}
+
+	/**
+	 * The gate for every admin action. Not an Administrator: 403. An Administrator who isn't in admin mode: sent to
+	 * cp/admin_mode.php and back here after (a form that was being posted can't be replayed, so it returns to $postedBackTo).
+	 */
+	public function RequireAdminMode($postedBackTo = 'opt/scheduling.php')
+	{
+		if(!$this->IsAdministrator())
+		{
+			header("HTTP/1.1 403 Forbidden");
+			die("Access denied. Administrator privileges required.");
+		}
+		if($this->AdminModeActive(true)) { return; }
+		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+		$back = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $path.$postedBackTo : $_SERVER['REQUEST_URI'];
+		header('Location: '.$path.'cp/admin_mode.php?return='.urlencode($back));
+		exit;
+	}
+
+	/** Leaves the member an in-app notice about their own account (a method added, a recovery code used). Never throws. */
+	public function Tell($username, $title, $body, $link = '')
+	{
+		try
+		{
+			require_once dirname(__FILE__).'/notify.inc.php';
+			$notifier = new Notifier($this->sql->conn);
+			$notifier->Notify('security', $title, $body, $link, array($username));
+		}
+		catch(Throwable $e)
+		{
+			$this->logd("Could not leave a notice for ".$username.": ".$e->getMessage(), "error");
+		}
+	}
+
 	function APILoginCheck($username = '', $apikey = '')
 	{
 		if($username && $apikey)
@@ -526,6 +900,20 @@ class security
 		$login_id = $fetch['id'];
 		if($login_id)
 		{
+			if($this->SecondFactorPending($username, $cookie_pass))
+			{
+				# A real session, but its second factor isn't done: the page sees nobody signed in, and login.php can ask for it.
+				$this->mfa_pending = true;
+				$this->mfa_user = $username;
+				$this->mfa_session = $cookie_pass;
+				$this->LoginLabel = "";
+				$this->LoginUser = "";
+				$this->LoginUri = '?return='.urlencode($return_url);
+				$this->login_val = "mfa_pending";
+				$this->login_check = 0;
+				return -1;
+			}
+			$this->SessionID = $cookie_pass;   # the pages that change two-factor settings need to know which session they are
 			$this->check_privs();
 			$this->LoginLabel = "Logout";
 			$this->LoginUser = $username;
@@ -582,7 +970,7 @@ class security
 				$this->login_check = 0;
 				return -2;
 			}
-			if($this->sql->service == "mysql")
+			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 				{$sql = "SELECT locked, validated, disabled, apikey FROM user_info WHERE username = ? LIMIT 1";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "SELECT TOP 1 locked, validated, disabled, apikey FROM user_info WHERE username = ?";}

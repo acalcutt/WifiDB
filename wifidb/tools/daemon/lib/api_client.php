@@ -9,6 +9,8 @@
 
 class api_client
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $apikey, $id, $ip_addr, $lastlogin, $loginQuote, $sock, $username;
     function __construct() {
         $this->id = 0;
         $this->sock = "";

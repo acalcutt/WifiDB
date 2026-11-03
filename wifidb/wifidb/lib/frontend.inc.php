@@ -25,6 +25,10 @@ if not, write to the
 #===========================================================#
 class frontend extends dbcore
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $all_users_aps, $all_users_data, $footer, $login_bar, $meta, $pages_together, $smarty,
+		$user_all_imports_data, $users_import_aps, $wifidb_host_url;
+	private $visitor_country = false;   # VisitorCountry(): false until looked up, then the code or null
 	#===========================#
 	#   __construct (default)   #
 	#===========================#
@@ -36,9 +40,6 @@ class frontend extends dbcore
 			require_once($config['wifidb_install'].'/lib/misc.inc.php');
 			$this->sec->LoginCheck();
 			$this->meta = new stdClass();
-			$this->meta->ads = isset($config['ads']) ? $config['ads'] : '';
-			$this->meta->tracker = isset($config['tracker']) ? $config['tracker'] : '';
-			$this->meta->header = isset($config['header']) ? $config['header'] : '';
 
 			$this->smarty = new Smarty();
 			$this->smarty->template_dir = $config['wifidb_install'].'themes/'.$this->theme.'/templates/';
@@ -49,7 +50,6 @@ class frontend extends dbcore
 			$this->smarty->assign('themeurl', $this->URL_PATH.'themes/'.$this->theme.'/');
 			$this->smarty->assign('wifidb_host_url', $this->URL_PATH);
 			$this->wifidb_host_url = $this->URL_PATH;
-			$this->smarty->assign('wifidb_seo_content', $this->meta->header);
 			$this->smarty->assign('wifidb_theme', $this->theme);
 			$this->smarty->assign('wifidb_version_label', $this->ver_array['wifidb']);
 			$this->smarty->assign('tileserver_gl_url', $this->tileserver_gl_url);
@@ -66,6 +66,8 @@ class frontend extends dbcore
 			// Check if Client IP contains a colon, which indicates IPv6
 			$ip_version = (strpos($client_ip, ':') !== false) ? 'IPv6' : 'IPv4';
 			$this->smarty->assign('ip_version', $ip_version);
+			$this->AssignTracking(isset($config['geoip_country_db']) ? $config['geoip_country_db'] : '');
+			$this->CountPageView($config);
 
 			$this->smarty->assign('critical_error_message', '');
 
@@ -75,9 +77,14 @@ class frontend extends dbcore
 			$this->smarty->assign('wifidb_login_user', $this->sec->LoginUser);
 			$this->smarty->assign('wifidb_login_privs', $this->sec->privs);
 			$this->smarty->assign('wifidb_login_priv_name', $this->sec->priv_name);
+			# Admin buttons show only in admin mode; an Administrator outside it sees a link to turn it on
+			$this->smarty->assign('wifidb_is_admin', $this->sec->IsAdministrator());
+			$this->smarty->assign('wifidb_admin_mode', $this->sec->AdminModeActive(false));
 			$this->smarty->assign('wifidb_login_logged_in', $this->sec->login_check);
 			$this->smarty->assign('wifidb_message_unread_count', $this->GetMessageCount($this->sec->LoginUser));
+			$this->smarty->assign('wifidb_notification_unread_count', $this->GetNotificationCount($this->sec->LoginUser));
 			$this->smarty->assign('wifidb_current_uri', $this->sec->LoginUri);
+			$this->smarty->assign('ct_form_time', time());   # spam_check_fields.tpl: when a form was shown
 			#$this->smarty->assign('wifidb_current_uri', '?return='.$_SERVER['PHP_SELF']);
 			$this->htmlheader();
 			$this->htmlfooter();
@@ -104,7 +111,7 @@ class frontend extends dbcore
 			#Get Unread Message Count
 			$sql = "SELECT COUNT(pm.id) AS unread_count FROM pm\n"
 				. "INNER JOIN user_info ON user_info.id = pm.user2\n"
-				. "WHERE user2read = 0 And user2del = 0 And user_info.username LIKE ?";
+				. "WHERE user2read = 0 And user2del = 0 And user_info.username = ?";
 			$result = $this->sql->conn->prepare($sql);
 			$result->bindParam(1, $username);
 			$result->execute();
@@ -112,6 +119,22 @@ class frontend extends dbcore
 			$message_count = $array['unread_count'];
 		}
 		return $message_count;
+	}
+
+	// The count shown in the header. A missing table (a site that has not run its migrations yet) must not break the page.
+	function GetNotificationCount($username="")
+	{
+		if(!$username) { return 0; }
+		try
+		{
+			require_once dirname(__FILE__)."/notify.inc.php";
+			$notifier = new Notifier($this->sql->conn);
+			return $notifier->UnreadCount($username);
+		}
+		catch(Throwable $e)
+		{
+			return 0;
+		}
 	}
 
 	function GetAnnouncement()
@@ -129,7 +152,7 @@ class frontend extends dbcore
 
 	function htmlheader()
 	{
-		if(@WIFIDB_INSTALL_FLAG != "installing" && $this->sec->login_check)
+		if((!defined('WIFIDB_INSTALL_FLAG') || WIFIDB_INSTALL_FLAG != "installing") && $this->sec->login_check)
 		{
 			$this->smarty->assign("login_val", "1");
 			$login_bar = 'Welcome, <a class="links" href="'.$this->URL_PATH.'cp/">'.$this->sec->username.'</a>';
@@ -154,6 +177,90 @@ class frontend extends dbcore
 	}
 
 
+	/**
+	 * Google Analytics, AdSense, the cookie banner and what search engines read, as Site Settings has them, for header.tpl
+	 * and footer.tpl: nothing of
+	 * Google's loads until an ID is set, and the banner is for the visitors "Visitors' consent" says to ask (by their
+	 * country, from $geoipDb, lib/visitor_country.inc.php; not looked up for one who has already chosen).
+	 */
+	private function AssignTracking($geoipDb)
+	{
+		$settings = $this->sec->Settings();
+		$analytics = $settings->Get('analytics_id');
+		$client = $settings->Get('adsense_client');
+		$slot = $client !== '' ? $settings->Get('adsense_slot') : '';
+		$tracking = ($analytics !== '' || $client !== '');
+		$ask = false;
+		$credit = false;
+		if($tracking)
+		{
+			require_once dirname(__FILE__).'/cookie_consent.inc.php';
+			require_once dirname(__FILE__).'/visitor_country.inc.php';
+			$mode = CookieConsent::Mode($settings->Get('analytics_consent'));
+			$country = null;
+			if($mode === 'region')
+			{
+				$credit = is_string($geoipDb) && $geoipDb !== '' && is_file($geoipDb);   # DB-IP's licence asks for a link
+				if(!isset($_COOKIE[CookieConsent::COOKIE])) { $country = $this->VisitorCountry($geoipDb); }
+			}
+			$ask = CookieConsent::Ask($mode, $country);
+		}
+		$this->smarty->assign('wifidb_tracking', $tracking);
+		$this->smarty->assign('wifidb_consent_ask', $ask);
+		$this->smarty->assign('wifidb_analytics_id', $analytics);
+		$this->smarty->assign('wifidb_adsense_client', $slot !== '' ? $client : '');
+		$this->smarty->assign('wifidb_adsense_slot', $slot);
+		$this->smarty->assign('wifidb_adsense_slot_menu', $client !== '' ? $settings->Get('adsense_slot_menu') : '');
+		$this->smarty->assign('wifidb_geoip_credit', $credit);
+
+		# What search engines read (Site Settings), and this site's own address for the canonical link, not wifidb.net's
+		$this->smarty->assign('wifidb_site_description', $settings->Get('site_description'));
+		$this->smarty->assign('wifidb_noindex', $settings->Get('search_noindex'));
+		$this->smarty->assign('wifidb_google_verification', $settings->Get('google_site_verification'));
+		$this->smarty->assign('wifidb_bing_verification', $settings->Get('bing_site_verification'));
+		$this->smarty->assign('wifidb_site_origin', preg_replace('#^(https?://[^/]+).*$#i', '$1', $this->URL_PATH));
+	}
+
+	/**
+	 * The visitor's country (lib/visitor_country.inc.php), looked up once a page and kept for a day for each address in
+	 * APCu, when this node has it (the cookie banner and the traffic counts both ask). @return string|null
+	 */
+	private function VisitorCountry($geoipDb)
+	{
+		if($this->visitor_country !== false) { return $this->visitor_country; }
+		require_once dirname(__FILE__).'/visitor_country.inc.php';
+		$ip = isset($_SERVER['REMOTE_ADDR']) ? (string)$_SERVER['REMOTE_ADDR'] : '';
+		# (a CDN that says the country: nothing to look up)
+		$cache = !isset($_SERVER['HTTP_CF_IPCOUNTRY']) && $ip !== '' && function_exists('apcu_fetch') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN);
+		if($cache)
+		{
+			$cached = apcu_fetch('wifidb_country_'.$ip, $found);
+			if($found) { return $this->visitor_country = ($cached === '' ? null : $cached); }
+		}
+		$this->visitor_country = VisitorCountry::Lookup($_SERVER, $geoipDb);
+		if($cache) { apcu_store('wifidb_country_'.$ip, (string)$this->visitor_country, 86400); }
+		return $this->visitor_country;
+	}
+
+	/** This page view, for admin/traffic.php (lib/traffic.inc.php). Never in the page's way. */
+	private function CountPageView(array $config)
+	{
+		try
+		{
+			require_once dirname(__FILE__).'/traffic.inc.php';
+			$traffic = Traffic::ForConfig($config);
+			$agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+			if($traffic === null || $_SERVER['REQUEST_METHOD'] !== 'GET' || Traffic::IsBot($agent)) { return; }
+			# the script from the site's root: opt/fetch.php
+			$script = isset($_SERVER['SCRIPT_NAME']) ? (string)$_SERVER['SCRIPT_NAME'] : '';
+			$base = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
+			$page = strpos($script, $base) === 0 ? substr($script, strlen($base)) : ltrim($script, '/');
+			$traffic->Page($page, (string)$this->sec->LoginUser, $_SERVER,
+				$this->VisitorCountry(isset($config['geoip_country_db']) ? $config['geoip_country_db'] : ''));
+		}
+		catch(Throwable $e) {}
+	}
+
 	function htmlfooter()
 	{
 		$out = '';
@@ -173,7 +280,6 @@ class frontend extends dbcore
 			}
 
 		}
-		$this->footer = $this->meta->tracker.$this->meta->ads;
 		return 1;
 	}
 
@@ -182,6 +288,9 @@ class frontend extends dbcore
 	#===================================#
 	Public function AllUsers($sort = "file_user", $ord = "ASC", $from = 0, $inc = 250)
 	{
+		// $sort is also handed to GeneratePages() to build paging URLs, so quote a
+		// copy for the SQL rather than mutating the original.
+		$sort_sql = $this->sql->sortIdent($sort);
 		#Total Users
 		$sql = "SELECT COUNT(DISTINCT file_user)\n"
 			. "FROM files\n"
@@ -194,12 +303,27 @@ class frontend extends dbcore
 		$flip = 0;
 		$rowid = $from;
 		
-		$sql = "SELECT file_user, Count(id) As FileCount, MAX(ValidGPS) As ValidGPS, SUM(aps) As ApCount, SUM(gps) As GpsCount,AVG(NewAPPercent) As NewAPPercent,MIN(file_date) As FirstImport,MAX(file_date) As LastImport\n"
-			. "FROM files\n"
-			. "WHERE completed = 1\n"
-			. "GROUP BY file_user\n"
-			. "ORDER BY $sort $ord\n";
+		if($this->sql->service == "pgsql")
+		{
+			// Postgres lower-cases unquoted identifiers *and* unquoted aliases, so
+			// both the ValidGPS/NewAPPercent columns and every alias this method
+			// reads back by name ($userfetch['FileCount'], ...) must be quoted.
+			$sql = 'SELECT file_user, Count(id) As "FileCount", MAX("ValidGPS") As "ValidGPS", SUM(aps) As "ApCount", SUM(gps) As "GpsCount",AVG("NewAPPercent") As "NewAPPercent",MIN(file_date) As "FirstImport",MAX(file_date) As "LastImport"'."\n"
+				. "FROM files\n"
+				. "WHERE completed = 1\n"
+				. "GROUP BY file_user\n"
+				. "ORDER BY $sort_sql $ord\n";
+		}
+		else
+		{
+			$sql = "SELECT file_user, Count(id) As FileCount, MAX(ValidGPS) As ValidGPS, SUM(aps) As ApCount, SUM(gps) As GpsCount,AVG(NewAPPercent) As NewAPPercent,MIN(file_date) As FirstImport,MAX(file_date) As LastImport\n"
+				. "FROM files\n"
+				. "WHERE completed = 1\n"
+				. "GROUP BY file_user\n"
+				. "ORDER BY $sort_sql $ord\n";
+		}
 		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
+		else if($this->sql->service == "pgsql"){$sql .= "LIMIT $inc OFFSET $from";}
 		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$result = $this->sql->conn->query($sql);
 		$result->execute();
@@ -211,7 +335,7 @@ class frontend extends dbcore
 			#Check If Registered User
 			$sql = "SELECT id\n"
 				. "FROM user_info\n"
-				. "WHERE username like ? And validated = 0";
+				. "WHERE username = ? And validated = 0";
 			$vres = $this->sql->conn->prepare($sql);
 			$vres->bindParam(1, $userfetch['file_user']);
 			$vres->execute();
@@ -243,25 +367,47 @@ class frontend extends dbcore
 	{
 		if($user == ""){return 0;}
 
+		// See AllUsers(): $sort is reused for paging URLs, so quote a copy.
+		$sort_sql = $this->sql->sortIdent($sort);
 		$prep = array();
 		$apprep = array();
 		$prep['allaps'] = array();
 		$prep['user'] = $user;
 
-		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
-			. "FROM wifi_hist\n"
-			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
-			. "WHERE files.file_user LIKE ?";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT COUNT(DISTINCT "AP_ID")'."\n"
+					. "FROM wifi_hist\n"
+					. 'INNER JOIN files ON files.id = wifi_hist."File_ID"'."\n"
+					. "WHERE files.file_user = ?";
+			}
+		else
+			{
+				$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
+					. "FROM wifi_hist\n"
+					. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
+					. "WHERE files.file_user = ?";
+			}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
 		$rows = $result->fetch(1);
 		$prep['total_aps'] = $rows[0];
 
-		$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
-			. "FROM wifi_hist\n"
-			. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
-			. "WHERE files.file_user LIKE ? And wifi_hist.New = 1";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT COUNT(DISTINCT "AP_ID")'."\n"
+					. "FROM wifi_hist\n"
+					. 'INNER JOIN files ON files.id = wifi_hist."File_ID"'."\n"
+					. 'WHERE files.file_user = ? And wifi_hist."New" = 1';
+			}
+		else
+			{
+				$sql = "SELECT COUNT(DISTINCT AP_ID)\n"
+					. "FROM wifi_hist\n"
+					. "INNER JOIN files ON files.id = wifi_hist.File_ID\n"
+					. "WHERE files.file_user = ? And wifi_hist.New = 1";
+			}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $user, PDO::PARAM_STR);
 		$result->execute();
@@ -269,15 +415,30 @@ class frontend extends dbcore
 		$prep['new_aps'] = $rows[0];
 		$flip = 0;
 
-		$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-			. "wGPS.Lat As Lat,\n"
-			. "wGPS.Lon As Lon\n"
-			. "FROM wifi_ap AS wap\n"
-			. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-			. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
-			. "WHERE f.file_user LIKE ? And f.completed = 1\n"
-			. "ORDER BY $sort $ord\n";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points,'."\n"
+					. 'wGPS."Lat" As "Lat",'."\n"
+					. 'wGPS."Lon" As "Lon"'."\n"
+					. 'FROM wifi_ap AS wap'."\n"
+					. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
+					. 'LEFT JOIN files AS f ON f.id = wap."File_ID"'."\n"
+					. 'WHERE f.file_user = ? And f.completed = 1'."\n"
+					. "ORDER BY $sort_sql $ord\n";
+			}
+		else
+			{
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
+					. "wGPS.Lat As Lat,\n"
+					. "wGPS.Lon As Lon\n"
+					. "FROM wifi_ap AS wap\n"
+					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
+					. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
+					. "WHERE f.file_user = ? And f.completed = 1\n"
+					. "ORDER BY $sort_sql $ord\n";
+			}
 		if($this->sql->service == "mysql"){$sql .= "LIMIT $from, $inc";}
+		else if($this->sql->service == "pgsql"){$sql .= "LIMIT $inc OFFSET $from";}
 		else if($this->sql->service == "sqlsrv"){$sql .= "OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		$result1 = $this->sql->conn->prepare($sql);
 		$result1->bindParam(1, $user, PDO::PARAM_STR);
@@ -322,8 +483,13 @@ class frontend extends dbcore
 	function UsersLists($username = "", $sort = "id", $ord = "DESC", $from = 0, $inc = 100)
 	{
 		if($username == ""){return 0;}
-		
-		$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user LIKE ? And ValidGPS = 1";
+
+		// See AllUsers(): $sort is reused for paging URLs, so quote a copy.
+		$sort_sql = $this->sql->sortIdent($sort);
+		if($this->sql->service == "pgsql")
+			{$sql = 'SELECT COUNT(id) AS "ApCount" FROM files WHERE file_user = ? And "ValidGPS" = 1';}
+		else
+			{$sql = "SELECT COUNT(id) AS ApCount FROM files WHERE file_user = ? And ValidGPS = 1";}
 		$globeprep = $this->sql->conn->prepare($sql);
 		$globeprep->bindParam(1, $username, PDO::PARAM_STR);
 		$globeprep->execute();
@@ -331,17 +497,30 @@ class frontend extends dbcore
 		if($globeprepfetch['ApCount'] !== "0"){$user_validgps = 1;}else{$user_validgps = 0;}
 		
 		#Total APs
-		$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user like ? GROUP BY file_user";
+		if($this->sql->service == "pgsql")
+			{$sql = 'SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG("NewAPPercent") As "NewAPPercent" FROM files WHERE file_user = ? GROUP BY file_user';}
+		else
+			{$sql = "SELECT SUM(aps) As aps, SUM(gps) As gps, Min(file_date) As fa, Max(file_date) As la, AVG(NewAPPercent) As NewAPPercent FROM files WHERE file_user = ? GROUP BY file_user";}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
 		$user_counts = $result->fetch(2);
 
 		#New APs
-		$sql = "SELECT COUNT(AP_ID)\n"
-			. "FROM wifi_ap\n"
-			. "INNER JOIN files ON files.id = wifi_ap.File_ID\n"
-			. "WHERE files.file_user LIKE ?";
+		if($this->sql->service == "pgsql")
+			{
+				$sql = 'SELECT COUNT("AP_ID")'."\n"
+					. "FROM wifi_ap\n"
+					. 'INNER JOIN files ON files.id = wifi_ap."File_ID"'."\n"
+					. "WHERE files.file_user = ?";
+			}
+		else
+			{
+				$sql = "SELECT COUNT(AP_ID)\n"
+					. "FROM wifi_ap\n"
+					. "INNER JOIN files ON files.id = wifi_ap.File_ID\n"
+					. "WHERE files.file_user = ?";
+			}
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -352,7 +531,7 @@ class frontend extends dbcore
 
 		$sql = "SELECT COUNT(id)\n"
 			. "FROM files\n"
-			. "WHERE file_user LIKE ? And file_date != '' And completed = 1";
+			. "WHERE file_user = ? And ".($this->sql->service == "pgsql" ? "file_date IS NOT NULL" : "file_date != ''")." And completed = 1";   # PostgreSQL won't compare a date with ''
 		$result = $this->sql->conn->prepare($sql);
 		$result->bindParam(1, $username, PDO::PARAM_STR);
 		$result->execute();
@@ -364,13 +543,19 @@ class frontend extends dbcore
 			{
 				$sql = "SELECT `id`\n"
 					. "FROM `user_info`\n"
-					. "WHERE `username` like ? And `validated` = 0";
+					. "WHERE `username` = ? And `validated` = 0";
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
 				$sql = "SELECT [id]\n"
 					. "FROM [user_info]\n"
-					. "WHERE [username] like ? And [validated] = 0";
+					. "WHERE [username] = ? And [validated] = 0";
+			}
+		else if($this->sql->service == "pgsql")
+			{
+				$sql = "SELECT id\n"
+					. "FROM user_info\n"
+					. "WHERE username = ? And validated = 0";
 			}
 		$vres = $this->sql->conn->prepare($sql);
 		$vres->bindParam(1, $username);
@@ -379,8 +564,12 @@ class frontend extends dbcore
 		$regid = $vfetch ? $vfetch[0] : null;
 
 		#Get All Imports for User
-		$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user LIKE ? And file_date != '' And completed = 1 ORDER BY $sort $ord";
+		if($this->sql->service == "pgsql")
+			{$sql1 = 'SELECT id, file_orig, title, notes, file_date, aps, gps, "ValidGPS", "NewAPPercent" FROM files WHERE file_user = ? And file_date IS NOT NULL And completed = 1 ORDER BY '."$sort_sql $ord";}
+		else
+			{$sql1 = "SELECT id, file_orig, title, notes, file_date, aps, gps, ValidGPS, NewAPPercent FROM files WHERE file_user = ? And file_date != '' And completed = 1 ORDER BY $sort_sql $ord";}
 		if($this->sql->service == "mysql"){$sql1 .= " LIMIT $from, $inc";}
+		else if($this->sql->service == "pgsql"){$sql1 .= " LIMIT $inc OFFSET $from";}
 		else if($this->sql->service == "sqlsrv"){$sql1 .= " OFFSET $from ROWS FETCH NEXT $inc ROWS ONLY";}
 		
 		$other_imports = $this->sql->conn->prepare($sql1);
@@ -507,13 +696,13 @@ class frontend extends dbcore
 	function redirect_page($return = "", $delay = 0)
 	{
 		if($return == ''){$return = $this->URL_PATH;}
+		$target = wifidb_js_string($return);
 		$this->smarty->assign("redirect_func", "<script type=\"text/javascript\">
 			function reload()
 			{
-				//window.open('{$return}')
-				location.href = '{$return}';
+				location.href = {$target};
 			}
 		</script>");
-		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', {$delay})\"");
+		$this->smarty->assign("redirect_html", " onload=\"setTimeout('reload()', ".(int)$delay.")\"");
 	}
 }

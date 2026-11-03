@@ -20,6 +20,8 @@ if not, write to the
 */
 class createGPX
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $URL_BASE;
 
 	public function __construct($URL_PATH)
 	{
@@ -42,7 +44,7 @@ class createGPX
 			case 2:
 				$sec_type_colorhex = "#ffa500";
 				break;
-			case 3;
+			case 3:
 				$sec_type_colorhex = "#ff0000";
 				break;
 			default:

@@ -1,0 +1,291 @@
+#!/usr/bin/php
+<?php
+/*
+wifidb-update: updates this container to the release asked for on admin/servers.php (docs/updates.md). Installed as
+/usr/local/sbin/wifidb-update and run once a minute by wifidb-update.timer, as root: an update replaces the code and
+the system files and runs the first boot again, which the site's own user can't, so the page only asks.
+
+Each run refreshes the release list (hourly) for the page. If an update is asked for that this node hasn't done:
+  1. it takes the update lock in the database, so the nodes update one at a time;
+  2. downloads the release's update package from the source in /etc/wifidb/updates.conf (root's own file: the request
+     only names a version) and checks it against the release's SHA256SUMS;
+  3. backs the site up first, if asked (once, by the first node to update);
+  4. stops cron and the daemons and waits for running jobs, saves the system files it will replace, moves the old code
+     aside (/var/www/wifidb.old, /opt/wifidb/tools.old, /opt/wifidb/sql.old, /opt/wifidb/swarm.old), installs the
+     package (proxmox/install-files.sh) and runs wifidb-firstboot, which applies the database migrations, installs the
+     package's pmtiles-swarm release if this node has another, and starts it all;
+  5. checks the site answers, on the new version. If anything from step 4 on fails, the old code and system files go
+     back and the first boot runs again.
+How it goes is shown on admin/servers.php and logged to /var/log/wifidb-update.log.
+
+  wifidb-update              do what's asked (the timer)
+  wifidb-update --releases   fetch the release list now
+  wifidb-update --status     show the request and this node's state
+*/
+const CONF = '/etc/wifidb/updates.conf';
+const WORK = '/var/lib/wifidb/updates';
+const LOGFILE = '/var/log/wifidb-update.log';
+const WEB = '/var/www/wifidb';
+// the code, set aside for a rollback; /opt/wifidb/swarm (the pmtiles-swarm release the code goes with) is on a node
+// only when its template has it
+const CODE_DIRS = array('/var/www/wifidb', '/opt/wifidb/tools', '/opt/wifidb/sql', '/opt/wifidb/swarm');
+const FIRSTBOOT = '/usr/local/sbin/wifidb-firstboot';
+const RELEASES_EVERY = 3600;
+// how long to wait for running jobs (an import, a tile build) before stopping them anyway
+const JOBS_WAIT = 1800;
+// the system files install-files.sh replaces, saved first so a rollback can put them back
+const SYSTEM_FILES = array('/etc/apache2/sites-available/wifidb.conf', '/etc/apache2/wifidb-slow-pool.conf',
+	'/etc/apache2/conf-available/wifidb-tuning.conf', '/etc/php/*/fpm/pool.d/www.conf', '/etc/php/*/fpm/pool.d/wdb-*.conf',
+	'/etc/php/*/fpm/conf.d/90-wifidb.ini', '/etc/php/*/cli/conf.d/90-wifidb.ini', '/etc/sysctl.d/90-wifidb.conf',
+	'/etc/systemd/system/wifidb-*.service', '/etc/systemd/system/wifidb-*.timer', '/etc/cron.d/wifidb', '/etc/tmpfiles.d/wifidb.conf',
+	'/usr/local/sbin/wifidb-firstboot', '/usr/local/sbin/wifidb-dkim', '/usr/local/sbin/wifidb-update');
+
+function say($line)
+{
+	$line = '['.gmdate('Y-m-d H:i:s').'] '.$line;
+	echo $line."\n";
+	@file_put_contents(LOGFILE, $line."\n", FILE_APPEND);
+}
+
+/** Runs a shell command, its output to the log. @return int its exit code */
+function run($command, &$output = null)
+{
+	say("\$ $command");
+	exec($command.' 2>&1', $lines, $code);
+	$output = implode("\n", $lines);
+	if($output !== '') { @file_put_contents(LOGFILE, $output."\n", FILE_APPEND); }
+	if($code !== 0) { say("(exit $code)"); }
+	return $code;
+}
+
+function services($action)
+{
+	$fpm = 'php'.PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'-fpm';
+	$units = $action === 'stop-site' ? array('apache2', $fpm) : array('cron', 'wifidb-monitord', 'wifidb-websocketd');
+	run('systemctl stop '.implode(' ', array_map('escapeshellarg', $units)));
+}
+
+/** Waits for WifiDB's jobs (cron's imports, exports, tile builds) to finish; stops what's still going after JOBS_WAIT. */
+function wait_for_jobs()
+{
+	$until = time() + JOBS_WAIT;
+	while(time() < $until)
+	{
+		// [/]: the pattern mustn't match the shell running pgrep, whose own command line has it
+		exec("pgrep -f '[/]opt/wifidb/tools/'", $pids, $code);
+		if($code !== 0) { return; }
+		$pids = null;
+		sleep(10);
+	}
+	say("jobs still running after ".(JOBS_WAIT / 60)." minutes: stopping them (their schedule rows are taken back on the next run)");
+	run("pkill -TERM -f '[/]opt/wifidb/tools/'");
+	sleep(10);
+	run("pkill -KILL -f '[/]opt/wifidb/tools/'");
+}
+
+/** The site answers on 127.0.0.1, without a PHP error, running $version. */
+function site_answers($version, &$why)
+{
+	$why = '';
+	for($try = 0; $try < 18; $try++)
+	{
+		sleep($try ? 5 : 2);
+		$installed = @file_get_contents(WEB.'/lib/version.inc.php');
+		if(!preg_match("/return '([^']*)';/", (string)$installed, $m) || $m[1] !== $version) { $why = "the code there isn't $version"; continue; }
+		list($status) = fetch('http://127.0.0.1/health/ready');
+		if($status !== 200) { $why = "/health/ready answers $status"; continue; }
+		list($status, $body) = fetch('http://127.0.0.1/', array('Cookie: wifidb_client_check=1; wifidb_client_timezone=0'));
+		if($status !== 200) { $why = "the home page answers $status"; continue; }
+		if(preg_match('/Fatal error|Uncaught|Parse error|Stack trace/', $body)) { $why = "the home page shows a PHP error"; continue; }
+		return true;
+	}
+	return false;
+}
+
+function fetch($url, array $headers = array())
+{
+	$ch = curl_init($url);
+	curl_setopt_array($ch, array(CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 30, CURLOPT_HTTPHEADER => $headers));
+	$body = curl_exec($ch);
+	return array((int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE), (string)$body);
+}
+
+function installed_version()
+{
+	return preg_match("/return '([^']*)';/", (string)@file_get_contents(WEB.'/lib/version.inc.php'), $m) ? $m[1] : '';
+}
+
+/**
+ * updates.conf: KEY=value lines, # or ; for a comment. Read by hand, not as an INI file: PHP's INI parser takes a #
+ * comment as a syntax error (and then reads nothing), and a token can have characters INI gives a meaning to.
+ */
+function read_conf($file)
+{
+	$conf = array();
+	foreach(is_file($file) ? (array)file($file, FILE_IGNORE_NEW_LINES) : array() as $line)
+	{
+		$line = trim($line);
+		if($line === '' || $line[0] === '#' || $line[0] === ';' || strpos($line, '=') === false) { continue; }
+		list($key, $value) = explode('=', $line, 2);
+		$value = trim($value);
+		if(strlen($value) >= 2 && ($value[0] === '"' || $value[0] === "'") && substr($value, -1) === $value[0]) { $value = substr($value, 1, -1); }
+		$conf[trim($key)] = $value;
+	}
+	return $conf;
+}
+
+if(function_exists('posix_geteuid') && posix_geteuid() !== 0) { fwrite(STDERR, "wifidb-update has to run as root\n"); exit(1); }
+$conf = read_conf(CONF);
+if(($conf['UPDATES'] ?? '1') !== '1' && !in_array('--status', $argv, true)) { exit(0); }
+
+// the site's own code, read now: an update moves it aside
+require WEB.'/lib/config.inc.php';
+foreach(array('helpers', 'nodelock', 'servers', 'releases', 'import_queue') as $lib) { require_once WEB."/lib/$lib.inc.php"; }
+try
+{
+	$conn = wifidb_pdo_from_config($config, 15);
+	$conn->query("SELECT COUNT(*) FROM server_update_requests")->fetchColumn();
+}
+catch(Throwable $e)
+{
+	// no database yet (the first boot hasn't run), or no migration 0008 yet: nothing to do
+	exit(0);
+}
+$node = ImportQueue::NodeName($config);
+$releases = new WifidbReleases(array('source' => $conf['SOURCE'] ?? 'gitlab', 'gitlab_url' => $conf['GITLAB_URL'] ?? '',
+	'gitlab_project' => $conf['GITLAB_PROJECT'] ?? '', 'github_repo' => $conf['GITHUB_REPO'] ?? '', 'token' => $conf['TOKEN'] ?? ''));
+$row = ServerStatus::Get($conn, $node);
+$request = ServerStatus::LatestRequest($conn);
+
+if(in_array('--status', $argv, true))
+{
+	echo "node:      $node, running ".installed_version()."\n";
+	echo "source:    ".($conf['SOURCE'] ?? 'gitlab')." (".(($conf['UPDATES'] ?? '1') === '1' ? 'updates on' : 'updates off').")\n";
+	echo "request:   ".($request ? "v".$request['version']." (#".$request['id'].", by ".$request['requested_by']." at ".$request['requested_at'].")" : 'none')."\n";
+	echo "this node: ".($row && $row['update_state'] ? $row['update_state']." for #".$row['update_request'].": ".$row['update_message'] : 'nothing yet')."\n";
+	exit(0);
+}
+
+// the release list, for the page (and for an update, fresh)
+$list = $row['releases'] ?? array();
+if(!$row || in_array('--releases', $argv, true) || time() - (int)ServerStatus::Time($row['releases_at'] ?? null) > RELEASES_EVERY)
+{
+	try { $list = $releases->Fetch(); ServerStatus::SetReleases($conn, $node, $list); }
+	catch(Throwable $e) { ServerStatus::SetReleases($conn, $node, $list, $e->getMessage()); say("couldn't read the release list: ".$e->getMessage()); }
+}
+
+if(!$request) { exit(0); }
+$id = (int)$request['id'];
+$version = $request['version'];
+if($row && (int)$row['update_request'] === $id && in_array($row['update_state'], ServerStatus::FINISHED_STATES, true)) { exit(0); }
+$current = installed_version();
+if(WifidbVersion::Compare($current, $version) === 0)
+{
+	ServerStatus::SetUpdate($conn, $node, $id, $version, 'done', "already on $version");
+	exit(0);
+}
+
+if(!NodeLock::Take($conn, 'wifidb-update'))
+{
+	if(($row['update_state'] ?? '') !== 'waiting' || (int)($row['update_request'] ?? 0) !== $id)
+	{
+		ServerStatus::SetUpdate($conn, $node, $id, $version, 'waiting', 'another server is updating');
+	}
+	exit(0);
+}
+$state = function ($state, $message = '') use ($conn, $node, $id, $version) {
+	say("$state".($message !== '' ? ": $message" : ''));
+	ServerStatus::SetUpdate($conn, $node, $id, $version, $state, $message);
+};
+$dir = WORK.'/'.preg_replace('/[^0-9A-Za-z.-]/', '', $version);
+$rollback = WORK.'/rollback.tar';
+$moved = false;
+$aside = array();   # each code folder: true if it was moved aside, false if this node had none
+try
+{
+	// 1. the package, checked against SHA256SUMS
+	$state('downloading', "v$version from ".($conf['SOURCE'] ?? 'gitlab'));
+	try { $list = $releases->Fetch(); ServerStatus::SetReleases($conn, $node, $list); }
+	catch(Throwable $e) { say("couldn't refresh the release list: ".$e->getMessage()); }
+	$release = WifidbReleases::Find($list, $version);
+	if(!$release) { throw new RuntimeException("there's no release v$version with an update package"); }
+	run('rm -rf '.escapeshellarg($dir));
+	@mkdir($dir, 0700, true);
+	$package = $releases->Download($release, $dir);
+	if(run('tar -xzf '.escapeshellarg($package).' -C '.escapeshellarg($dir)) !== 0) { throw new RuntimeException("the update package didn't unpack"); }
+	$root = "$dir/wifidb-update-$version";
+	foreach(array('web/vendor/autoload.php', 'web/lib/version.inc.php', 'tools/daemon', 'sql/migrations', 'proxmox/install-files.sh') as $need)
+	{
+		if(!file_exists("$root/$need")) { throw new RuntimeException("the update package has no $need"); }
+	}
+
+	// 2. a backup first, if asked: once, by the first node to update
+	if(!empty($request['backup']) && empty($request['backup_taken']))
+	{
+		$state('backing_up');
+		if(run('runuser -u www-data -- php /opt/wifidb/tools/utilites/backup.php export') !== 0) { throw new RuntimeException("the backup failed (see /srv/wifidb-data/log/backups)"); }
+		$conn->prepare("UPDATE server_update_requests SET backup_taken = 1 WHERE id = ?")->execute(array($id));
+	}
+
+	// 3. install
+	$state('installing', 'waiting for running jobs');
+	services('stop-jobs');
+	wait_for_jobs();
+	$state('installing', "from $current");
+	$files = array();
+	foreach(SYSTEM_FILES as $pattern) { $files = array_merge($files, glob($pattern) ?: array()); }
+	if(run('tar -cPf '.escapeshellarg($rollback).' '.implode(' ', array_map('escapeshellarg', $files))) !== 0) { throw new RuntimeException("couldn't save the system files"); }
+	services('stop-site');
+	// mv, not rename(): a folder that came with a container's image (Docker's overlay filesystem) can't be renamed, only
+	// copied to the new name, which mv does and rename() doesn't for a folder
+	foreach(CODE_DIRS as $code)
+	{
+		run('rm -rf '.escapeshellarg("$code.old"));
+		if(!file_exists($code)) { $aside[$code] = false; continue; }
+		if(run('mv -T '.escapeshellarg($code).' '.escapeshellarg("$code.old")) !== 0) { throw new RuntimeException("couldn't move $code aside"); }
+		$aside[$code] = true;
+		$moved = true;   # from here a failure puts back what was moved
+	}
+	if(run('bash '.escapeshellarg("$root/proxmox/install-files.sh").' '.escapeshellarg("$root/web").' '.escapeshellarg("$root/tools").' '.escapeshellarg("$root/sql")) !== 0)
+	{
+		throw new RuntimeException("install-files.sh failed (see ".LOGFILE.")");
+	}
+	if(run(FIRSTBOOT) !== 0) { throw new RuntimeException("the first boot failed (see ".LOGFILE.")"); }
+
+	// 4. the site answers, on the new version
+	$state('checking');
+	if(!site_answers($version, $why)) { throw new RuntimeException("the site doesn't answer: $why"); }
+	$state('done', "updated from $current");
+	run('rm -rf '.escapeshellarg($dir));
+}
+catch(Throwable $e)
+{
+	$why = $e->getMessage();
+	if(!$moved)
+	{
+		// nothing was replaced: start again what was stopped
+		$state('failed', $why);
+		run('systemctl start cron');
+		foreach(array('wifidb-monitord', 'wifidb-websocketd') as $unit) { run("systemctl is-enabled -q $unit && systemctl start $unit"); }
+	}
+	else
+	{
+		$state('rolling_back', $why);
+		services('stop-site');
+		services('stop-jobs');
+		foreach(CODE_DIRS as $code)
+		{
+			if(is_dir("$code.old")) { run('rm -rf '.escapeshellarg($code)); run('mv -T '.escapeshellarg("$code.old").' '.escapeshellarg($code)); }
+			elseif(($aside[$code] ?? null) === false) { run('rm -rf '.escapeshellarg($code)); }   # the package brought it
+		}
+		if(is_file($rollback)) { run('tar -xPf '.escapeshellarg($rollback)); }
+		run('systemctl daemon-reload');
+		run(FIRSTBOOT);
+		if(site_answers($current, $back)) { $state('rolled_back', $why); }
+		else { $state('failed', "$why; and $current didn't come back either: $back"); }
+	}
+}
+finally
+{
+	NodeLock::Release($conn, 'wifidb-update');
+}

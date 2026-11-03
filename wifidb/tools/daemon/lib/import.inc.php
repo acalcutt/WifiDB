@@ -10,7 +10,9 @@ You should have received a copy of the GNU General Public License along with thi
 
 class import extends dbcore
 {
-	function __construct($config, $convert_obj = NULL, $verbose)
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $rssi_signals_flag;
+	function __construct($config, $convert_obj, $verbose)
 	{
 		if($convert_obj === NULL)
 		{die("Convert Object is null...");}
@@ -131,6 +133,51 @@ class import extends dbcore
 					}
 				}
 			}
+			else if($this->sql->service == "pgsql")
+			{
+				// Postgres equivalent of the MERGE above. cell_hash is
+				// md5(mac+ssid+authmode+chan+type), i.e. exactly the tuple the MERGE
+				// matches on, so conflicting on the unique cell_hash index is the
+				// same test. "xmax = 0" is the standard way to tell an inserted row
+				// from an updated one; it is turned into the INSERT/UPDATE string
+				// here so the caller's comparison stays unchanged.
+				$retry = true;
+				while ($retry)
+				{
+					try
+					{
+						$sql = "INSERT INTO cell_id (file_id, mac, ssid, authmode, chan, type, cell_hash, \"ModDate\")\n"
+							. "VALUES (:file_id, :mac, :ssid, :authmode, :chan, :type, :cell_hash, CURRENT_TIMESTAMP)\n"
+							. "ON CONFLICT (cell_hash) DO UPDATE SET \"ModDate\" = CURRENT_TIMESTAMP\n"
+							. "RETURNING cell_id, CASE WHEN xmax = 0 THEN 'INSERT' ELSE 'UPDATE' END AS action";
+
+						$prep = $this->sql->conn->prepare($sql);
+						$prep->bindParam(':file_id', $file_id);
+						$prep->bindParam(':mac', $cells['bssid']);
+						$prep->bindParam(':ssid', $cells['ssid']);
+						$prep->bindParam(':authmode', $cells['flags']);
+						$prep->bindParam(':chan', $cells['chan']);
+						$prep->bindParam(':type', $cells['type']);
+						$prep->bindParam(':cell_hash', $cells['cell_hash']);
+
+						$prep->execute();
+						$addresult = $prep->fetch(2);
+						$cell_id = $addresult['cell_id'];
+						$ap_action = $addresult['action'];
+						if($ap_action == "INSERT")
+						{
+							$new = 1;
+							$NewCells++;
+						}
+						$retry = false;
+					}
+					catch (Exception $e)
+					{
+						$retry = $this->sql->isPDOException($this->sql->conn, $e);
+						$cell_id = 0;
+					}
+				}
+			}
 			else if($this->sql->service == "mysql")
 			{
 				// Upsert on the cell_unique key. REPLACE INTO would delete a known cell and insert it under a new id,
@@ -168,7 +215,9 @@ class import extends dbcore
 				if($this->sql->service == "mysql")
 					{$sql = "INSERT INTO cell_hist (cell_id, gps_id, file_id, rssi, new, hist_date) VALUES ";}
 				else if($this->sql->service == "sqlsrv")
-					{$sql = "INSERT INTO [cell_hist] ([cell_id], [gps_id], [file_id], [rssi], [new], [hist_date]) VALUES ";}		
+					{$sql = "INSERT INTO [cell_hist] ([cell_id], [gps_id], [file_id], [rssi], [new], [hist_date]) VALUES ";}
+				else if($this->sql->service == "pgsql")
+					{$sql = "INSERT INTO cell_hist (cell_id, gps_id, file_id, rssi, new, hist_date) VALUES ";}		
 
 				$HighRSSIwGPS = -1000;
 				$Insert_Size = 0;
@@ -191,6 +240,8 @@ class import extends dbcore
 							{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
 						else if($this->sql->service == "sqlsrv")
 							{$GID_SQL = "SELECT TOP 1 [GPS_ID], [GPS_Date], [Lat], [Lon] FROM [wifi_gps] WHERE [File_ID] = ? AND [File_GPS_ID] = ?";}
+						else if($this->sql->service == "pgsql")
+							{$GID_SQL = "SELECT \"GPS_ID\", \"GPS_Date\", \"Lat\", \"Lon\" FROM wifi_gps WHERE \"File_ID\" = ? AND \"File_GPS_ID\" = ? LIMIT 1";}
 						$gidprep = $this->sql->conn->prepare($GID_SQL);
 						$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
 						$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
@@ -270,6 +321,8 @@ class import extends dbcore
 			{$sql = "INSERT INTO `wifi_gps` (`File_ID`, `File_GPS_ID`, `Lat`, `Lon`, `NumOfSats`, `AccuracyMeters`, `HorDilPitch`, `Alt`, `Geo`, `KPH`, `MPH`, `TrackAngle`, `GPS_Date`) VALUES ";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "INSERT INTO [wifi_gps] ([File_ID], [File_GPS_ID], [Lat], [Lon], [NumOfSats], [AccuracyMeters], [HorDilPitch], [Alt], [Geo], [KPH], [MPH], [TrackAngle], [GPS_Date]) VALUES ";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "INSERT INTO wifi_gps (\"File_ID\", \"File_GPS_ID\", \"Lat\", \"Lon\", \"NumOfSats\", \"AccuracyMeters\", \"HorDilPitch\", \"Alt\", \"Geo\", \"KPH\", \"MPH\", \"TrackAngle\", \"GPS_Date\") VALUES ";}
 
 		$Insert_Size = 0;
 		$Insert_Limit = 150; //SQL Server supports a maximum of 2100 parameters. 2100 / 14 parameters = 150
@@ -385,6 +438,14 @@ class import extends dbcore
 					$prepc->bindParam(2, $skew_seconds, PDO::PARAM_INT);
 					$prepc->execute();
 				}
+				else if($this->sql->service == "pgsql")
+				{
+					$sqlc = 'UPDATE wifi_gps SET "GPS_Date" = NULL WHERE "File_ID" = ? AND "GPS_Date" > (CURRENT_TIMESTAMP AT TIME ZONE \'UTC\') + (? * INTERVAL \'1 second\')';
+					$prepc = $this->sql->conn->prepare($sqlc);
+					$prepc->bindParam(1, $file_id, PDO::PARAM_INT);
+					$prepc->bindParam(2, $skew_seconds, PDO::PARAM_INT);
+					$prepc->execute();
+				}
 				$retry = false;
 			}
 			catch (Exception $e) {
@@ -428,6 +489,8 @@ class import extends dbcore
 								{$sql = "UPDATE wifi_ap SET RADTYPE = ? WHERE AP_ID = ?";}
 							else if($this->sql->service == "sqlsrv")
 								{$sql = "UPDATE [wifi_ap] SET [RADTYPE] = ? WHERE [AP_ID] = ?";}
+							else if($this->sql->service == "pgsql")
+								{$sql = "UPDATE wifi_ap SET \"RADTYPE\" = ? WHERE \"AP_ID\" = ?";}
 							$prepu = $this->sql->conn->prepare($sql);
 							$prepu->bindParam(1, $aps['radio'], PDO::PARAM_STR);
 							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
@@ -451,6 +514,8 @@ class import extends dbcore
 								{$sql = "UPDATE wifi_ap SET FLAGS = ? WHERE AP_ID = ?";}
 							else if($this->sql->service == "sqlsrv")
 								{$sql = "UPDATE [wifi_ap] SET [FLAGS] = ? WHERE [AP_ID] = ?";}
+							else if($this->sql->service == "pgsql")
+								{$sql = "UPDATE wifi_ap SET \"FLAGS\" = ? WHERE \"AP_ID\" = ?";}
 							$prepu = $this->sql->conn->prepare($sql);
 							$prepu->bindParam(1, $aps['flags'], PDO::PARAM_STR);
 							$prepu->bindParam(2, $ap_id, PDO::PARAM_INT);
@@ -479,7 +544,9 @@ class import extends dbcore
 			if($this->sql->service == "mysql")
 				{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES ";}
 			else if($this->sql->service == "sqlsrv")
-				{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES ";}		
+				{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES ";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "INSERT INTO wifi_hist (\"AP_ID\", \"GPS_ID\", \"File_ID\", \"Sig\", \"RSSI\", \"New\", \"Hist_Date\") VALUES ";}		
 
 			$Insert_Size = 0;
 			$Insert_Limit = 250; //SQL Server supports a maximum of 2100 parameters. 2100 / 8 parameters = 262.5
@@ -506,6 +573,8 @@ class import extends dbcore
 						{$GID_SQL = "SELECT `GPS_ID`, `GPS_Date`, `Lat`, `Lon` FROM `wifi_gps` WHERE `File_ID` = ? AND `File_GPS_ID` = ? LIMIT 1";}
 					else if($this->sql->service == "sqlsrv")
 						{$GID_SQL = "SELECT TOP 1 [GPS_ID], [GPS_Date], [Lat], [Lon] FROM [wifi_gps] WHERE [File_ID] = ? AND [File_GPS_ID] = ?";}
+					else if($this->sql->service == "pgsql")
+						{$GID_SQL = "SELECT \"GPS_ID\", \"GPS_Date\", \"Lat\", \"Lon\" FROM wifi_gps WHERE \"File_ID\" = ? AND \"File_GPS_ID\" = ? LIMIT 1";}
 					$gidprep = $this->sql->conn->prepare($GID_SQL);
 					$gidprep->bindParam(1, $file_id, PDO::PARAM_INT);
 					$gidprep->bindParam(2, $file_gps_id, PDO::PARAM_INT);
@@ -577,8 +646,81 @@ class import extends dbcore
 	private function InsertAp($File_ID, $BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS)
 	{
 		$ap_hash = md5($SSID.$BSSID.$CHAN.$SECTYPE.$AUTH.$ENCR);
-		
-		if($this->sql->service == "sqlsrv")
+		$return = 0;
+
+		if($this->sql->service == "mysql")
+		{
+			// MariaDB's version of the MERGE below, on the unique ap_hash key. LAST_INSERT_ID(AP_ID) makes lastInsertId()
+			// the access point's id whether it was added or already there, and rowCount() says which (1 added, 2 updated).
+			$retry = true;
+			while ($retry)
+			{
+				try
+				{
+					$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, FLAGS, ap_hash, File_ID)\n"
+						. "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)\n"
+						. "ON DUPLICATE KEY UPDATE ModDate = CURRENT_TIMESTAMP(3), AP_ID = LAST_INSERT_ID(AP_ID)";
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->execute(array($BSSID, $SSID, $CHAN, $AUTH, $ENCR, $SECTYPE, $RADTYPE, $NETTYPE, $BTX, $OTX, $FLAGS, $ap_hash, $File_ID));
+					$action = $prep->rowCount() == 1 ? 'INSERT' : 'UPDATE';
+					$prep = $this->sql->conn->prepare("SELECT AP_ID, RADTYPE, FLAGS FROM wifi_ap WHERE AP_ID = ?");
+					$prep->execute(array($this->sql->conn->lastInsertId()));
+					$return = $prep->fetch(2);
+					if($return) { $return['$action'] = $action; }
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					$return = 0;
+				}
+			}
+		}
+		else if($this->sql->service == "pgsql")
+		{
+			// Postgres equivalent of the MERGE below. ap_hash is
+			// md5(SSID+BSSID+CHAN+SECTYPE+AUTH+ENCR), exactly the tuple the MERGE
+			// matches on, so conflicting on the unique ap_hash index is the same
+			// test. The action column is aliased "$action" -- legal as a quoted
+			// identifier in Postgres -- so the caller reads the same key it does
+			// for sqlsrv. Note it is built with single quotes to stop PHP
+			// interpolating $action.
+			$retry = true;
+			while ($retry)
+			{
+				try
+				{
+					$sql = 'INSERT INTO wifi_ap ("BSSID", "SSID", "CHAN", "AUTH", "ENCR", "SECTYPE", "RADTYPE", "NETTYPE", "BTX", "OTX", "FLAGS", ap_hash, "File_ID", "ModDate")'."\n"
+						. 'VALUES (:BSSID, :SSID, :CHAN, :AUTH, :ENCR, :SECTYPE, :RADTYPE, :NETTYPE, :BTX, :OTX, :FLAGS, :ap_hash, :File_ID, CURRENT_TIMESTAMP)'."\n"
+						. 'ON CONFLICT (ap_hash) DO UPDATE SET "ModDate" = CURRENT_TIMESTAMP'."\n"
+						. 'RETURNING "AP_ID", CASE WHEN xmax = 0 THEN \'INSERT\' ELSE \'UPDATE\' END AS "$action", "RADTYPE", "FLAGS"';
+
+					$prep = $this->sql->conn->prepare($sql);
+					$prep->bindParam(':BSSID', $BSSID, PDO::PARAM_STR);
+					$prep->bindParam(':SSID', $SSID, PDO::PARAM_STR);
+					$prep->bindParam(':CHAN', $CHAN, PDO::PARAM_INT);
+					$prep->bindParam(':AUTH', $AUTH, PDO::PARAM_STR);
+					$prep->bindParam(':ENCR', $ENCR, PDO::PARAM_STR);
+					$prep->bindParam(':SECTYPE', $SECTYPE, PDO::PARAM_INT);
+					$prep->bindParam(':RADTYPE', $RADTYPE, PDO::PARAM_STR);
+					$prep->bindParam(':NETTYPE', $NETTYPE, PDO::PARAM_STR);
+					$prep->bindParam(':BTX', $BTX, PDO::PARAM_STR);
+					$prep->bindParam(':OTX', $OTX, PDO::PARAM_STR);
+					$prep->bindParam(':FLAGS', $FLAGS, PDO::PARAM_STR);
+					$prep->bindParam(':ap_hash', $ap_hash, PDO::PARAM_STR);
+					$prep->bindParam(':File_ID', $File_ID, PDO::PARAM_INT);
+					$prep->execute();
+					$return = $prep->fetch(2);
+					$retry = false;
+				}
+				catch (Exception $e)
+				{
+					$retry = $this->sql->isPDOException($this->sql->conn, $e);
+					$return = 0;
+				}
+			}
+		}
+		else if($this->sql->service == "sqlsrv")
 		{			
 			$retry = true;
 			while ($retry)
@@ -656,6 +798,8 @@ class import extends dbcore
 					{$sql = "INSERT INTO wifi_gps (File_ID, File_GPS_ID, Lat, Lon, NumOfSats, HorDilPitch, Alt, Geo, KPH, MPH, TrackAngle, AccuracyMeters, GPS_Date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "INSERT INTO [wifi_gps] ([File_ID], [File_GPS_ID], [Lat], [Lon], [NumOfSats], [HorDilPitch], [Alt], [Geo], [KPH], [MPH], [TrackAngle], [AccuracyMeters], [GPS_Date]) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
+				else if($this->sql->service == "pgsql")
+					{$sql = "INSERT INTO wifi_gps (\"File_ID\", \"File_GPS_ID\", \"Lat\", \"Lon\", \"NumOfSats\", \"HorDilPitch\", \"Alt\", \"Geo\", \"KPH\", \"MPH\", \"TrackAngle\", \"AccuracyMeters\", \"GPS_Date\") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";}
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1,$File_ID);
 				$prep->bindParam(2,$g_id);
@@ -694,6 +838,8 @@ class import extends dbcore
 					{$sql = "INSERT INTO wifi_hist (AP_ID, GPS_ID, File_ID, Sig, RSSI, New, Hist_Date) VALUES (?, ?, ?, ?, ?, ?, ?)";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "INSERT INTO [wifi_hist] ([AP_ID], [GPS_ID], [File_ID], [Sig], [RSSI], [New], [Hist_Date]) VALUES (?, ?, ?, ?, ?, ?, ?)";}
+				else if($this->sql->service == "pgsql")
+					{$sql = "INSERT INTO wifi_hist (\"AP_ID\", \"GPS_ID\", \"File_ID\", \"Sig\", \"RSSI\", \"New\", \"Hist_Date\") VALUES (?, ?, ?, ?, ?, ?, ?)";}
 				$preps = $this->sql->conn->prepare($sql);
 				$preps->bindParam(1, $ap_id);
 				$preps->bindParam(2, $gps_id);
@@ -726,6 +872,8 @@ class import extends dbcore
 					{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "UPDATE [files_importing] SET [tot] = ?, [ap] = ? WHERE [id] = ?";}
+				else if($this->sql->service == "pgsql")
+					{$sql = "UPDATE files_importing SET tot = ?, ap = ? WHERE id = ?";}
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $calc, PDO::PARAM_STR);
 				$prep->bindParam(2, $fSSID, PDO::PARAM_STR);
@@ -762,6 +910,13 @@ class import extends dbcore
 						. "LEFT JOIN [wifi_gps] ON [wifi_hist].[GPS_ID] = [wifi_gps].[GPS_ID]\n"
 						. "WHERE [wifi_hist].[File_ID] = ? And [wifi_gps].[GPS_ID] IS NOT NULL And [wifi_gps].[Lat] != '0.0000'";
 				}
+				else if($this->sql->service == "pgsql")
+				{
+					$sql = "SELECT wifi_hist.\"Hist_ID\"\n"
+						. "FROM wifi_hist\n"
+						. "LEFT JOIN wifi_gps ON wifi_hist.\"GPS_ID\" = wifi_gps.\"GPS_ID\"\n"
+						. "WHERE wifi_hist.\"File_ID\" = ? And wifi_gps.\"GPS_ID\" IS NOT NULL And wifi_gps.\"Lat\" != '0.0000' LIMIT 1";
+				}
 				$prepvgps = $this->sql->conn->prepare($sql);
 				$prepvgps->bindParam(1, $file_id, PDO::PARAM_INT);
 				$prepvgps->execute();
@@ -780,7 +935,7 @@ class import extends dbcore
 			while ($retry)
 			{
 				try {
-					$sql = "UPDATE files SET ValidGPS = ? WHERE id = ?";
+					$sql = "UPDATE files SET ".$this->sql->ident('ValidGPS')." = ? WHERE id = ?";
 					$prepvgpsu = $this->sql->conn->prepare($sql);
 					$prepvgpsu->bindParam(1, $ValidGPS, PDO::PARAM_INT);
 					$prepvgpsu->bindParam(2, $file_id, PDO::PARAM_INT);
@@ -798,13 +953,14 @@ class import extends dbcore
 	private function UpdateHighPoints($file_importing_id, $ap_id, $HighRSSIwGPS = -99, $msg = "")
 	{
 		if($HighRSSIwGPS == ""){$HighRSSIwGPS = -99;}
+		$q = function ($name) { return $this->sql->ident($name); };   # mixed-case names, quoted on PostgreSQL
 		
 		#Get AP Info, SSID and old High GPS RSSI value
 		$retry = true;
 		while ($retry)
 		{
 			try {
-				$sql = "SELECT SSID, high_gps_rssi FROM wifi_ap WHERE AP_ID = ?";
+				$sql = "SELECT ".$q('SSID').", high_gps_rssi FROM wifi_ap WHERE ".$q('AP_ID')." = ?";
 				$gaip = $this->sql->conn->prepare($sql);
 				$gaip->bindParam(1, $ap_id, PDO::PARAM_INT);
 				$gaip->execute();
@@ -827,7 +983,7 @@ class import extends dbcore
 		while ($retry)
 		{
 			try {
-				$sql = "SELECT Min(Hist_Date) AS fa, Max(Hist_Date) AS la, Max(RSSI) AS high_rssi, Max(Sig) AS high_sig, Count(Hist_Date) AS points FROM wifi_hist WHERE AP_ID = ? GROUP BY AP_ID";
+				$sql = "SELECT Min(".$q('Hist_Date').") AS fa, Max(".$q('Hist_Date').") AS la, Max(".$q('RSSI').") AS high_rssi, Max(".$q('Sig').") AS high_sig, Count(".$q('Hist_Date').") AS points FROM wifi_hist WHERE ".$q('AP_ID')." = ? GROUP BY ".$q('AP_ID');
 				$hpp = $this->sql->conn->prepare($sql);
 				$hpp->bindParam(1, $ap_id, PDO::PARAM_INT);
 				$hpp->execute();
@@ -844,7 +1000,7 @@ class import extends dbcore
 			while ($retry)
 			{
 				try {
-					$sql = "UPDATE wifi_ap SET fa = ? , la = ? , high_rssi = ? , high_sig = ? , points = ? WHERE AP_ID = ?";
+					$sql = "UPDATE wifi_ap SET fa = ? , la = ? , high_rssi = ? , high_sig = ? , points = ? WHERE ".$q('AP_ID')." = ?";
 					$uhpp = $this->sql->conn->prepare($sql);
 					$uhpp->bindParam(1, $fetchhp['fa'], PDO::PARAM_STR);
 					$uhpp->bindParam(2, $fetchhp['la'], PDO::PARAM_STR);
@@ -885,6 +1041,14 @@ class import extends dbcore
 								. "WHERE wifi_hist.AP_ID = ? And wifi_hist.Hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
 								. "ORDER BY wifi_hist.RSSI DESC, wifi_hist.Hist_Date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, wifi_hist.Hist_ID ASC";
 						}
+					else if($this->sql->service == "pgsql")
+						{
+							$sql = 'SELECT wifi_hist."GPS_ID", wifi_hist."RSSI", wifi_hist."Sig"'."\n"
+								. "FROM wifi_hist\n"
+								. 'INNER JOIN wifi_gps ON wifi_hist."GPS_ID" = wifi_gps."GPS_ID"'."\n"
+								. 'WHERE wifi_hist."AP_ID" = ? And wifi_hist."Hist_Date" IS NOT NULL And wifi_gps."Lat" != '."'0.0000'\n"
+								. 'ORDER BY wifi_hist."RSSI" DESC, wifi_hist."Hist_Date" DESC, wifi_gps."NumOfSats" DESC, wifi_gps."AccuracyMeters" ASC, wifi_hist."Hist_ID" ASC LIMIT 1';
+						}
 					$hgp = $this->sql->conn->prepare($sql);
 					$hgp->bindParam(1, $ap_id, PDO::PARAM_INT);
 					$hgp->execute();
@@ -901,7 +1065,7 @@ class import extends dbcore
 				while ($retry)
 				{
 					try {
-						$sql = "UPDATE wifi_ap SET HighGps_ID = ? , high_gps_rssi = ? , high_gps_sig = ? WHERE AP_ID = ?";
+						$sql = "UPDATE wifi_ap SET ".$q('HighGps_ID')." = ? , high_gps_rssi = ? , high_gps_sig = ? WHERE ".$q('AP_ID')." = ?";
 						$uhgp = $this->sql->conn->prepare($sql);
 						$uhgp->bindParam(1, $fetchhg['GPS_ID'], PDO::PARAM_INT);
 						$uhgp->bindParam(2, $fetchhg['RSSI'], PDO::PARAM_INT);
@@ -932,6 +1096,8 @@ class import extends dbcore
 					{$sql = "UPDATE files_importing SET tot = ? WHERE id = ?";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql = "UPDATE [files_importing] SET [tot] = ? WHERE [id] = ?";}
+				else if($this->sql->service == "pgsql")
+					{$sql = "UPDATE files_importing SET tot = ? WHERE id = ?";}
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $text, PDO::PARAM_STR);
 				$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
@@ -1001,6 +1167,14 @@ class import extends dbcore
 						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.Lat != '0.0000'\n"
 						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.NumOfSats DESC, wifi_gps.AccuracyMeters ASC, cell_hist.cell_hist_id ASC";
 				}
+				else if($this->sql->service == "pgsql")
+				{
+					$sql = "SELECT cell_hist.gps_id, cell_hist.rssi\n"
+						. "FROM cell_hist\n"
+						. "INNER JOIN wifi_gps ON cell_hist.gps_id = wifi_gps.\"GPS_ID\"\n"
+						. "WHERE cell_hist.cell_id = ? And cell_hist.hist_date IS NOT NULL And wifi_gps.\"Lat\" != '0.0000'\n"
+						. "ORDER BY cell_hist.rssi DESC, cell_hist.hist_date DESC, wifi_gps.\"NumOfSats\" DESC, wifi_gps.\"AccuracyMeters\" ASC, cell_hist.cell_hist_id ASC LIMIT 1";
+				}
 				$resgps = $this->sql->conn->prepare($sql);
 				$resgps->bindParam(1, $cell_id, PDO::PARAM_INT);
 				$resgps->execute();
@@ -1022,6 +1196,8 @@ class import extends dbcore
 						{$sql = "UPDATE cell_id SET highgps_id = ?, high_gps_rssi = ? WHERE cell_id = ?";}
 					else if($this->sql->service == "sqlsrv")
 						{$sql = "UPDATE [cell_id] SET [highgps_id] = ?, [high_gps_rssi] = ? WHERE [cell_id] = ?";}
+					else if($this->sql->service == "pgsql")
+						{$sql = "UPDATE cell_id SET highgps_id = ?, high_gps_rssi = ? WHERE cell_id = ?";}
 					$prep = $this->sql->conn->prepare($sql);
 					$prep->bindParam(1, $fetchgps['gps_id'], PDO::PARAM_INT);
 					$prep->bindParam(2, $fetchgps['rssi'], PDO::PARAM_INT);
@@ -1039,7 +1215,7 @@ class import extends dbcore
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 	}
 
-	public function import_wardrive3($source="", $file_id, $file_importing_id)
+	public function import_wardrive3($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1133,7 +1309,7 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_wardrive4($source="", $file_id, $file_importing_id)
+	public function import_wardrive4($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1242,7 +1418,7 @@ class import extends dbcore
 		return $ret;
 	}
 
-	public function import_swardriving($source="", $file_id, $file_importing_id)
+	public function import_swardriving($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1354,7 +1530,7 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_kismetnetxml($source="", $file_id, $file_importing_id)
+	public function import_kismetnetxml($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1600,7 +1776,7 @@ class import extends dbcore
 		}
 	}
 
-	public function import_wiglewificsv($source="", $file_id, $file_importing_id)
+	public function import_wiglewificsv($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1782,7 +1958,7 @@ class import extends dbcore
 		return $ret;
 	}
 		
-	public function import_vistumblercsv($source="", $file_id, $file_importing_id)
+	public function import_vistumblercsv($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -1907,7 +2083,7 @@ class import extends dbcore
 		return $ret;
 	}
 
-	public function import_vs1($source="", $file_id, $file_importing_id)
+	public function import_vs1($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
@@ -2194,23 +2370,33 @@ class import extends dbcore
 		return $ret;
 	}
 	
-	public function import_vistumblermdb($source="", $file_id, $file_importing_id)
+	public function import_vistumblermdb($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{
 			return array(-1, "File does not exist");
 		}
 		
+		// mdbtools' mdb-export reads each table out of the Access file as CSV. The file and table names are quoted for
+		// the shell: an upload's name comes from whoever uploaded it.
+		$mdb_export = is_executable('/usr/bin/mdb-export') ? '/usr/bin/mdb-export' : trim((string)shell_exec('command -v mdb-export 2>/dev/null'));
+		if($mdb_export === '')
+		{
+			return array(-1, "Reading a Vistumbler .mdb needs mdbtools (mdb-export), which isn't installed on this server");
+		}
+		$export_table = function ($table) use ($mdb_export, $source) {
+			return (string)shell_exec(escapeshellarg($mdb_export).' '.escapeshellarg($source).' '.escapeshellarg($table).' 2>&1');
+		};
+
 		$apdata = array();
 		$gdata = array();
 		$hdata = array();
 		$NewAPs = 0;
 		$ap_count = 0;
 		$gps_count = 0;
-		
+
 		$table = "GPS";
-		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
-		$output = shell_exec($command);
+		$output = $export_table($table);
 		$gps_return	 = explode("\n", $output);
 		$gps_lcount = count($gps_return);
 		foreach ($gps_return as $key => $gps)
@@ -2248,8 +2434,7 @@ class import extends dbcore
 		}
 		
 		$table = "AP";
-		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
-		$output = shell_exec($command);
+		$output = $export_table($table);
 		$ap_return	 = explode("\n", $output);
 		$ap_lcount = count($ap_return);
 		foreach ($ap_return as $key => $ap)
@@ -2283,6 +2468,8 @@ class import extends dbcore
 							{$sql = "SELECT AP_ID, BTX, OTX FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
 						else if($this->sql->service == "sqlsrv")
 							{$sql = "SELECT TOP 1 [AP_ID], [BTX], [OTX] FROM [wifi_ap] WHERE [ap_hash] = ?";}
+						else if($this->sql->service == "pgsql")
+							{$sql = "SELECT \"AP_ID\", \"BTX\", \"OTX\" FROM wifi_ap WHERE ap_hash = ? LIMIT 1";}
 						$res = $this->sql->conn->prepare($sql);
 						$res->bindParam(1, $ap_hash, PDO::PARAM_STR);
 						$res->execute();
@@ -2310,6 +2497,8 @@ class import extends dbcore
 									{$sql = "UPDATE wifi_ap SET BTX = ?, OTX = ? WHERE AP_ID = ?";}
 								else if($this->sql->service == "sqlsrv")
 									{$sql = "UPDATE [wifi_ap] SET [BTX] = ?, [OTX] = ? WHERE [AP_ID] = ?";}
+								else if($this->sql->service == "pgsql")
+									{$sql = "UPDATE wifi_ap SET \"BTX\" = ?, \"OTX\" = ? WHERE \"AP_ID\" = ?";}
 								$prepu = $this->sql->conn->prepare($sql);
 								$prepu->bindParam(1, $oa_btx, PDO::PARAM_STR);
 								$prepu->bindParam(2, $oa_otx, PDO::PARAM_STR);
@@ -2332,7 +2521,9 @@ class import extends dbcore
 							if($this->sql->service == "mysql")
 								{$sql = "INSERT INTO wifi_ap (BSSID, SSID, CHAN, AUTH, ENCR, SECTYPE, RADTYPE, NETTYPE, BTX, OTX, ap_hash, File_ID) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
 							else if($this->sql->service == "sqlsrv")
-								{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [BTX], [OTX], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}	
+								{$sql = "INSERT INTO [wifi_ap] ([BSSID], [SSID], [CHAN], [AUTH], [ENCR], [SECTYPE], [RADTYPE], [NETTYPE], [BTX], [OTX], [ap_hash], [File_ID]) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}
+							else if($this->sql->service == "pgsql")
+								{$sql = "INSERT INTO wifi_ap (\"BSSID\", \"SSID\", \"CHAN\", \"AUTH\", \"ENCR\", \"SECTYPE\", \"RADTYPE\", \"NETTYPE\", \"BTX\", \"OTX\", ap_hash, \"File_ID\") VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";}	
 							$prep = $this->sql->conn->prepare($sql);
 							#var_dump($aps);
 							$prep->bindParam(1, $oa_mac, PDO::PARAM_STR);
@@ -2371,8 +2562,7 @@ class import extends dbcore
 		}
 		
 		$table = "Hist";
-		$command = '/usr/bin/mdb-export '.$source.' '.$table.' 2>&1';
-		$output = shell_exec($command);
+		$output = $export_table($table);
 		$hist_return	 = explode("\n", $output);
 		$hist_lcount = count($hist_return);
 		foreach ($hist_return as $key => $hist)
@@ -2441,7 +2631,7 @@ class import extends dbcore
 		return $ret;
 	}
 
-	public function import_ns1($source="", $file_id, $file_importing_id)
+	public function import_ns1($source, $file_id, $file_importing_id)
 	{
 		if(!file_exists($source))
 		{

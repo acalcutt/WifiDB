@@ -34,24 +34,24 @@
             </LineStyle>
         </Style>
         {foreach from=$live item=ap}
-        <Placemark id="{$ap.mac}">
+        <Placemark id="{$ap.mac|escape:'html':'UTF-8':false}">
             <description>
-                <![CDATA[<b>SSID: </b>{$ap.ssid}<br />
-                <b>Mac Address: </b>{$ap.mac}<br />
-                <b>Network Type: </b>{$ap.nt}<br />
-                <b>Radio Type: </b>{$ap.radio}<br />
-                <b>Channel: </b>{$ap.chan}<br />
-                <b>Authentication: </b>{$ap.auth}<br />
-                <b>Encryption: </b>{$ap.encry}<br />
+                <![CDATA[<b>SSID: </b>{$ap.ssid|escape:'html':'UTF-8':false}<br />
+                <b>Mac Address: </b>{$ap.mac|escape:'html':'UTF-8':false}<br />
+                <b>Network Type: </b>{$ap.nt|escape:'html':'UTF-8':false}<br />
+                <b>Radio Type: </b>{$ap.radio|escape:'html':'UTF-8':false}<br />
+                <b>Channel: </b>{$ap.chan|escape:'html':'UTF-8':false}<br />
+                <b>Authentication: </b>{$ap.auth|escape:'html':'UTF-8':false}<br />
+                <b>Encryption: </b>{$ap.encry|escape:'html':'UTF-8':false}<br />
                 <b>Basic Transfer Rates: </b>{$ap.btx}<br />
                 <b>Other Transfer Rates: </b>{$ap.otx}<br />
                 <b><br /><b>Last Updated: </b>{$ap.LA}<br />
                 <b>Latitude: </b>{$ap.lat}<br />
                 <b>Longitude: </b>{$ap.long}<br />
-                <b>Manufacturer: </b>{$ap.manuf}
+                <b>Manufacturer: </b>{$ap.manuf|escape:'html':'UTF-8':false}
             </description>
             <styleUrl>#secureStyleDead</styleUrl>
-            <Point id="{$ap.mac}_GPS">
+            <Point id="{$ap.mac|escape:'html':'UTF-8':false}_GPS">
                 <coordinates>{$ap.long},{$ap.lat},500</coordinates>
             </Point>
         </Placemark>

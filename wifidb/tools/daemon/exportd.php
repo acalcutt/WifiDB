@@ -106,11 +106,24 @@ if(!$dbcore->ForceDaemonRun)
 {
 	$dbcore->verbosed("Running $dbcore->daemon_name jobs for $dbcore->node_name");
 
+	$dbcore->ReleaseDeadClaims();   # a row left 'Running' by a run that died is taken again
 	#Claim a import schedule ID
 	if($dbcore->sql->service == "mysql")
 		{$sql = "UPDATE `schedule` SET `pid` = ?, `pidfile` = ?, `logfile` = ?, `status` = ? WHERE `nodename` = ? And `daemon` = ? And `status` != ? And `enabled` = 1 LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql = "UPDATE TOP (1) [schedule] SET [pid] = ?, [pidfile] = ?, [logfile] = ?, [status] = ? WHERE [nodename] = ? And [daemon] = ? And [status] != ? And [enabled] = 1";}
+	else if($dbcore->sql->service == "pgsql")
+		{
+			// Postgres has neither UPDATE TOP (n) nor UPDATE ... LIMIT, so the row
+			// is picked by a subquery. FOR UPDATE SKIP LOCKED also stops two daemons
+			// claiming the same schedule row, which the MSSQL form does not.
+			// Bind order is unchanged: the SET parameters stay 1-4 and the WHERE
+			// parameters follow in the same sequence inside the subquery.
+			$sql = "UPDATE schedule SET pid = ?, pidfile = ?, logfile = ?, status = ?"
+				. " WHERE id = (SELECT id FROM schedule"
+				. "   WHERE nodename = ? And daemon = ? And status != ? And enabled = 1"
+				. "   ORDER BY id FOR UPDATE SKIP LOCKED LIMIT 1)";
+		}
 	$prepus = $dbcore->sql->conn->prepare($sql);
 	$prepus->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepus->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -122,7 +135,8 @@ if(!$dbcore->ForceDaemonRun)
 	$prepus->execute();
 
 	#Start importing claimed schedule ID, if one exists
-	$sql = "SELECT id, interval FROM schedule WHERE pid = ? And pidfile = ?";
+	// "interval" is a reserved word: quoted on Postgres, and named with its table for MariaDB;
+	$sql = "SELECT schedule.id, schedule.".$dbcore->sql->ident('interval')." FROM schedule WHERE pid = ? And pidfile = ?";
 	$prepgj = $dbcore->sql->conn->prepare($sql);
 	$prepgj->bindParam(1, $dbcore->This_is_me, PDO::PARAM_INT);
 	$prepgj->bindParam(2, $pid_filename, PDO::PARAM_STR);
@@ -158,6 +172,8 @@ While(1)
 		{$sql = "SELECT `apswithgps` FROM `settings` WHERE `node_name` = ? LIMIT 1";}
 	else if($dbcore->sql->service == "sqlsrv")
 		{$sql = "SELECT TOP 1 [apswithgps] FROM [settings] WHERE [node_name] = ?";}
+	else if($dbcore->sql->service == "pgsql")
+		{$sql = "SELECT apswithgps FROM settings WHERE node_name = ? LIMIT 1";}
 	$prep5 = $dbcore->sql->conn->prepare($sql);
 	$prep5->bindParam(1, $dbcore->node_name, PDO::PARAM_STR);
 	$prep5->execute();
@@ -166,7 +182,7 @@ While(1)
 	$dbcore->verbosed("APs with GPS on Last Run: ".$apswithgps_last);
 
 	#Find How Many APs have GPS now
-	$sql = "SELECT Count(AP_ID) As ap_count FROM wifi_ap WHERE HighGPS_ID IS NOT NULL";
+	$sql = "SELECT Count(".$dbcore->sql->ident('AP_ID').") As ap_count FROM wifi_ap WHERE ".$dbcore->sql->ident('HighGps_ID')." IS NOT NULL";
 	$result = $dbcore->sql->conn->query($sql);
 	$result->execute();
 	$ap_countarray = $result->fetch(2);
@@ -191,6 +207,8 @@ While(1)
 			{$sqlup2 = "UPDATE `settings` SET `apswithgps` = ? WHERE `node_name` = ?";}
 		else if($dbcore->sql->service == "sqlsrv")
 			{$sqlup2 = "UPDATE [settings] SET [apswithgps] = ? WHERE [node_name] = ?";}
+		else if($dbcore->sql->service == "pgsql")
+			{$sqlup2 = "UPDATE settings SET apswithgps = ? WHERE node_name = ?";}
 		$prep6 = $dbcore->sql->conn->prepare($sqlup2);
 		$prep6->bindParam(1, $apswithgps_now, PDO::PARAM_INT);
 		$prep6->bindParam(2, $dbcore->node_name, PDO::PARAM_STR);

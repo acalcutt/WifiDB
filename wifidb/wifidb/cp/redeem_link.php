@@ -44,7 +44,7 @@ try {
     };
     error_log("redeem_link.php request: method=" . ($_SERVER['REQUEST_METHOD'] ?? 'UNK') . " token=" . $mask($raw_token) . " ip=" . ($_SERVER['REMOTE_ADDR'] ?? 'unk'));
 
-    $token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_STRING);
+    $token = wifidb_input_string(INPUT_GET, 'token');
 if (!$token) {
     http_response_code(400);
     echo json_encode(array('error' => 'missing_token'));

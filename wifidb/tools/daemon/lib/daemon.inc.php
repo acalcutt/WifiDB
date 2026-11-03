@@ -21,6 +21,9 @@ if not, write to the
 
 class daemon extends wdbcli
 {
+	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
+	public $DaemonSleepTime, $default_notes, $default_title, $default_user, $DeleteDeadPids, $node_name, $NodeSyncing,
+		$NumberOfThreads, $StatusRunning, $StatusWaiting;
 	public function __construct($config, $daemon_config)
 	{
 		parent::__construct($config, $daemon_config);
@@ -64,6 +67,8 @@ class daemon extends wdbcli
 			{$D_SQL = "SELECT daemon_state FROM settings WHERE node_name = ? LIMIT 1";}
 		else if($this->sql->service == "sqlsrv")
 			{$D_SQL = "SELECT TOP 1 [daemon_state] FROM [settings] WHERE [node_name] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$D_SQL = "SELECT daemon_state FROM settings WHERE node_name = ? LIMIT 1";}
 		$Dresult = $this->sql->conn->prepare($D_SQL);
 		$Dresult->bindParam(1, $this->node_name, PDO::PARAM_STR);
 		$Dresult->execute();
@@ -81,6 +86,8 @@ class daemon extends wdbcli
 					{$E_SQL = "SELECT enabled FROM schedule WHERE id = ? LIMIT 1";}
 				else if($this->sql->service == "sqlsrv")
 					{$E_SQL = "SELECT TOP 1 [enabled] FROM [schedule] WHERE [id] = ?";}
+				else if($this->sql->service == "pgsql")
+					{$E_SQL = "SELECT enabled FROM schedule WHERE id = ? LIMIT 1";}
 				$Eresult = $this->sql->conn->prepare($E_SQL);
 				$Eresult->bindParam(1, $sched_id, PDO::PARAM_INT);
 				$Eresult->execute();
@@ -114,6 +121,8 @@ class daemon extends wdbcli
 					{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
 				else if($this->sql->service == "sqlsrv")
 					{$sql_check = "SELECT COUNT([id]) FROM [files] WHERE [hash] = ?";}
+				else if($this->sql->service == "pgsql")
+					{$sql_check = "SELECT COUNT(id) FROM files WHERE hash = ?";}
 				$prep = $this->sql->conn->prepare($sql_check);
 				$prep->bindParam(1, $file_hash1, PDO::PARAM_STR);
 				$prep->execute();
@@ -138,6 +147,8 @@ class daemon extends wdbcli
 		$prep->bindParam(1, $error_msg, PDO::PARAM_STR);
 		$prep->bindParam(2, $file_importing_id, PDO::PARAM_INT);
 		$prep->execute();
+		require_once $this->PATH.'lib/traffic.inc.php';
+		Traffic::Note(isset($GLOBALS['config']) ? $GLOBALS['config'] : null, 'import_failed');   # admin/traffic.php
 		if ($this->sql->checkError()) {
 			$this->verbosed("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1), -1);
 			//$this->logd("Failed to add bad file to bad import table." . var_export($this->sql->conn->errorInfo(), 1));
@@ -150,6 +161,8 @@ class daemon extends wdbcli
 			{$sql = "UPDATE files_bad SET thread_id = ?, node_name = ? WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "UPDATE [files_bad] SET [thread_id] = ?, [node_name] = ? WHERE [id] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "UPDATE files_bad SET thread_id = ?, node_name = ? WHERE id = ?";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $this->thread_id, PDO::PARAM_INT);
 		$prep->bindParam(2, $this->node_name, PDO::PARAM_STR);
@@ -169,6 +182,8 @@ class daemon extends wdbcli
 				{$sql = "DELETE FROM files_importing WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "DELETE FROM [files_importing] WHERE [id] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "DELETE FROM files_importing WHERE id = ?";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_importing_id, PDO::PARAM_INT);
 			$prep->execute();
@@ -186,6 +201,8 @@ class daemon extends wdbcli
 				{$sql = "DELETE FROM files WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$sql = "DELETE FROM [files] WHERE [id] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$sql = "DELETE FROM files WHERE id = ?";}
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $file_id, PDO::PARAM_INT);
 			$prep->execute();
@@ -197,73 +214,121 @@ class daemon extends wdbcli
 				$this->verbosed("Cleaned file from the files table.");
 			}
 		}
+
+		// Tell the member whose file it was; the part after " |=| " is the server's path to it, which they do not need.
+		try
+		{
+			$prep = $this->sql->conn->prepare("SELECT file_user, title, file_orig FROM files_bad WHERE id = ?");
+			$prep->bindParam(1, $thread_row_id, PDO::PARAM_INT);
+			$prep->execute();
+			$bad = $prep->fetch(2);
+			if($bad && $bad['file_user'])
+			{
+				$name = $bad['title'] ? $bad['title'] : $bad['file_orig'];
+				$reason = trim(explode(' |=| ', (string)$error_msg)[0]);
+				$this->wdbmail->notify('import_failed', "Import failed: $name", "Your file $name could not be imported.\r\nReason: $reason", $this->URL_PATH."opt/scheduling.php", '', array($bad['file_user']));
+			}
+		}
+		catch (Throwable $e)
+		{
+			$this->verbosed("Could not tell the user their import failed: ".$e->getMessage(), -1);
+		}
 	}
 
 
+	# Takes out what an import that failed part way got as far as writing, so its files row can go too: its readings, the
+	# access points it made (any another import has since seen are kept, pointing at that import instead), the best-GPS
+	# links other access points had to its GPS points, the GPS points, and its cell readings.
+	public function RemovePartialImport($file_id)
+	{
+		$q = function ($name) { return $this->sql->ident($name); };
+		$run = function ($sql) use ($file_id) { $this->sql->conn->prepare($sql)->execute(array($file_id)); };
+		$run("DELETE FROM wifi_hist WHERE ".$q('File_ID')." = ?");
+		$run("UPDATE wifi_ap SET ".$q('File_ID')." = (SELECT MIN(h.".$q('File_ID').") FROM wifi_hist h WHERE h.".$q('AP_ID')." = wifi_ap.".$q('AP_ID').") "
+			."WHERE ".$q('File_ID')." = ? AND EXISTS (SELECT 1 FROM wifi_hist h WHERE h.".$q('AP_ID')." = wifi_ap.".$q('AP_ID').")");
+		$run("DELETE FROM wifi_ap WHERE ".$q('File_ID')." = ?");
+		$run("UPDATE wifi_ap SET ".$q('HighGps_ID')." = NULL, high_gps_rssi = NULL, high_gps_sig = NULL WHERE ".$q('HighGps_ID')." IN (SELECT ".$q('GPS_ID')." FROM wifi_gps WHERE ".$q('File_ID')." = ?)");
+		$run("DELETE FROM wifi_gps WHERE ".$q('File_ID')." = ?");
+		$run("DELETE FROM cell_hist WHERE file_id = ?");
+		$run("DELETE FROM cell_id WHERE file_id = ? AND NOT EXISTS (SELECT 1 FROM cell_hist h WHERE h.cell_id = cell_id.cell_id)");
+	}
+
+	# A run that died (it failed, or was killed by a restart mid-run) leaves its schedule row 'Running' with its pid, and
+	# nothing would take that row again, so the daemon would never run here again. The rows are this node's, so the pids
+	# are processes here: a row whose process is gone is set back to waiting before this daemon claims one.
+	public function ReleaseDeadClaims()
+	{
+		$prep = $this->sql->conn->prepare("SELECT id, pid FROM schedule WHERE nodename = ? AND daemon = ? AND status = ?");
+		$prep->execute(array($this->node_name, $this->daemon_name, $this->StatusRunning));
+		foreach($prep->fetchAll(2) as $row)
+		{
+			$pid = (int)$row['pid'];
+			if($pid > 0 && file_exists("/proc/$pid")) { continue; }
+			$this->sql->conn->prepare("UPDATE schedule SET status = ? WHERE id = ? AND status = ?")->execute(array($this->StatusWaiting, $row['id'], $this->StatusRunning));
+			$this->verbosed("Schedule row ".$row['id']." was left running by a process that's gone (pid $pid): set back to waiting.", 1);
+		}
+	}
+
 	public function GetNextImportID()
 	{
-		if($this->sql->service == "mysql")
+		# Which waiting files this node may take: any, with the shared files bucket (it fetches what it hasn't got);
+		# without it only the uploads that came in here, as the file is on this node's disk, and those queued before
+		# uploads were marked with their node.
+		$mine = "";
+		$params = array();
+		try
 		{
-			$this->sql->conn->query("LOCK TABLES files_importing WRITE, files_tmp  WRITE");
-
-			$daemon_sql = "INSERT INTO files_importing (file, file_orig, user, otherusers, title, notes, size, date, hash, tmp_id, type) SELECT file, file_orig, user, otherusers, title, notes, size, date, hash, id, type FROM files_tmp ORDER BY date ASC LIMIT 1";
-			$result = $this->sql->conn->prepare($daemon_sql);
-			$result->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-			$LastInsert = $this->sql->conn->lastInsertID();
-			//var_dump($LastInsert);
-
-			$select = "SELECT tmp_id FROM files_importing WHERE id = ?";
-			$prep = $this->sql->conn->prepare($select);
-			$prep->bindParam(1, $LastInsert, PDO::PARAM_INT);
-			$prep->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-			$tmp_id = $prep->fetch(2)['tmp_id'];
-
-			$delete = "DELETE FROM files_tmp WHERE id = ?";
-			$prep = $this->sql->conn->prepare($delete);
-			$prep->bindParam(1, $tmp_id, PDO::PARAM_INT);
-			$prep->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-
-			$this->sql->conn->query("UNLOCK TABLES");
+			require_once $this->PATH.'lib/shared_files.inc.php';
+			$shared = SharedFiles::FromSettings($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
 		}
-		else if($this->sql->service == "sqlsrv")
+		catch(Throwable $e) { $shared = null; }
+		if(!$shared)
 		{
-			$daemon_sql = "DELETE files_tmp\n"
-				. "OUTPUT DELETED.id, DELETED.file_name, DELETED.file_orig, DELETED.file_user, DELETED.otherusers, DELETED.title, DELETED.notes, DELETED.size, DELETED.file_date, DELETED.hash, DELETED.type\n"
-				. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp ORDER BY file_date ASC)";
-
-			$result = $this->sql->conn->prepare($daemon_sql);
-			$result->execute();
-			$this->sql->checkError(__LINE__, __FILE__);
-			$temp_imp_id_arr = $result->fetch();
-			if($temp_imp_id_arr['id'] != '')
+			$mine = " WHERE (node_name = ? OR node_name IS NULL)";
+			$params[] = $this->node_name;
+		}
+		$columns = "id, file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, type, node_name";
+		$LastInsert = "";
+		$this->sql->conn->beginTransaction();
+		try
+		{
+			if($this->sql->service == "sqlsrv")
 			{
-				$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
-				$result2 = $this->sql->conn->prepare($sql);
-				$result2->bindParam(1, $temp_imp_id_arr['file_name'], PDO::PARAM_STR);
-				$result2->bindParam(2, $temp_imp_id_arr['file_orig'], PDO::PARAM_STR);
-				$result2->bindParam(3, $temp_imp_id_arr['file_user'], PDO::PARAM_STR);
-				$result2->bindParam(4, $temp_imp_id_arr['otherusers'], PDO::PARAM_STR);
-				$result2->bindParam(5, $temp_imp_id_arr['title'], PDO::PARAM_STR);
-				$result2->bindParam(6, $temp_imp_id_arr['notes'], PDO::PARAM_STR);
-				$result2->bindParam(7, $temp_imp_id_arr['size'], PDO::PARAM_STR);
-				$result2->bindParam(8, $temp_imp_id_arr['file_date'], PDO::PARAM_STR);
-				$result2->bindParam(9, $temp_imp_id_arr['hash'], PDO::PARAM_STR);
-				$result2->bindParam(10, $temp_imp_id_arr['id'], PDO::PARAM_INT);
-				$result2->bindParam(11, $temp_imp_id_arr['type'], PDO::PARAM_STR);
-				$result2->execute();
-				$this->sql->checkError(__LINE__, __FILE__);
-				$LastInsert = $this->sql->conn->lastInsertID();
+				# One statement takes the oldest waiting file off the queue, so two importers never get the same one.
+				# READPAST skips a row another importer has locked instead of waiting on it and then finding nothing.
+				$prep = $this->sql->conn->prepare("DELETE files_tmp\n"
+					. "OUTPUT DELETED.".str_replace(", ", ", DELETED.", $columns)."\n"
+					. "WHERE files_tmp.id IN (SELECT TOP 1 id FROM files_tmp WITH (UPDLOCK, READPAST, ROWLOCK)$mine ORDER BY file_date ASC, id ASC)");
+				$prep->execute($params);
+				$rows = $prep->fetchAll(2);
+				$next = $rows ? $rows[0] : null;
 			}
 			else
 			{
-				$LastInsert = "";
+				# SKIP LOCKED: two importers running at once each get a different file instead of waiting on, or both
+				# taking, the same one
+				$prep = $this->sql->conn->prepare("SELECT $columns FROM files_tmp$mine ORDER BY file_date ASC, id ASC LIMIT 1 FOR UPDATE SKIP LOCKED");
+				$prep->execute($params);
+				$next = $prep->fetch(2);
 			}
+			# moved into files_importing in the same transaction, so a file can't drop out of the queue between the two
+			if($next)
+			{
+				$sql = "INSERT INTO files_importing (file_name, file_orig, file_user, otherusers, title, notes, size, file_date, hash, tmp_id, type, node_name) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+				$this->sql->conn->prepare($sql)->execute(array($next['file_name'], $next['file_orig'], $next['file_user'], $next['otherusers'], $next['title'],
+					$next['notes'], $next['size'], $next['file_date'], $next['hash'], $next['id'], $next['type'], $next['node_name']));
+				$LastInsert = $this->sql->conn->lastInsertId();
+				if($this->sql->service != "sqlsrv") { $this->sql->conn->prepare("DELETE FROM files_tmp WHERE id = ?")->execute(array($next['id'])); }
+			}
+			$this->sql->conn->commit();
 		}
-		return $LastInsert;
-		
+		catch(Throwable $e)
+		{
+			$this->sql->conn->rollBack();
+			throw $e;
+		}
+		# 0 when nothing is waiting: the id is then looked up, and PostgreSQL won't take '' for a number
+		return (int)$LastInsert;
 	}
 
 	function ImportProcess($file_to_Import = array())
@@ -282,13 +347,36 @@ class daemon extends wdbcli
 		$file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));		
 
 		$source = $this->PATH.'import/up/'.$file_name;
-		if(file_exists($source) && count(file($source)) > 1)//make sure the file exists
+		// an upload that came in on another node (several nodes on one database) is fetched from the shared files bucket
+		$fetch_error = '';
+		$fetched = false;
+		if(!file_exists($source))
+		{
+			try
+			{
+				require_once $this->PATH.'lib/shared_files.inc.php';
+				$shared = SharedFiles::FromSettings($this->sql->conn, isset($GLOBALS['config']) ? $GLOBALS['config'] : array());
+				if($shared && $shared->FetchUpload($file_name, $source))
+				{
+					$fetched = true;
+					$this->verbosed("Fetched $file_name from the shared files bucket.", 1);
+				}
+			}
+			catch(Throwable $e)
+			{
+				$fetch_error = "Could not fetch it from the shared files bucket: ".$e->getMessage();
+				$this->verbosed($fetch_error, -1);
+			}
+		}
+		if(file_exists($source) && filesize($source) > 0)//make sure the file exists (by size: a zip or database file may have no line breaks in it)
 		{
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
 			if($this->sql->service == "mysql")
 				{$update_tmp = "UPDATE files_importing SET tot = 'Preparing for Import', importing = '1' WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")
 				{$update_tmp = "UPDATE [files_importing] SET [tot] = 'Preparing for Import', [importing] = '1' WHERE [id] = ?";}
+			else if($this->sql->service == "pgsql")
+				{$update_tmp = "UPDATE files_importing SET tot = 'Preparing for Import', importing = '1' WHERE id = ?";}
 			$prep4 = $this->sql->conn->prepare($update_tmp);
 			$prep4->bindParam(1, $importing_id, PDO::PARAM_INT);
 			$prep4->execute();
@@ -339,143 +427,156 @@ class daemon extends wdbcli
 					
 					$subject = "Vistumbler WifiDB - File Import Started (User:$file_user ImportID:$importing_id FileID:$file_row Filename:$file_name)";
 					$message = "File has started importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name\r\nFileID: $file_row\r\nImport ID: $importing_id\r\nImport Information: ".$this->URL_PATH."opt/scheduling.php \r\n";
-					$this->wdbmail->mail_users($message, $subject, "schedule");
+					$this->wdbmail->notify('import_started', $subject, $message, $this->URL_PATH."opt/scheduling.php", 'schedule', array($file_user), "Import started: ".($file_title ? $file_title : $file_name));
 				}
 				
-				if($file_type == "vistumbler" || $file_type == "ns1" || $file_type == "")
+				# a parser that throws (a file that isn't what its type says, or a bug) sets this file aside rather than stopping
+				# the run and leaving it half-imported
+				try
 				{
-					if($file_ext == 'csv')
+					if($file_type == "vistumbler" || $file_type == "ns1" || $file_type == "")
 					{
-						$this->verbosed("Importing CSV. ".$source, 1);
-						$tmp = $this->import->import_vistumblercsv($source, $file_row,  $importing_id);
-					}
-					elseif($file_ext == 'mdb')
-					{
-						$this->verbosed("Importing MDB. ".$source, 1);
-						$tmp = $this->import->import_vistumblermdb($source, $file_row,  $importing_id);
-					}
-					elseif($file_ext == 'vsz')
-					{
-						$this->verbosed("Extracting VSZ. ".$source, 1);
-						$path_parts = pathinfo($source);
-						$detination_vs1 = $path_parts['dirname']."/extract/".$path_parts['filename'].".VS1";
-
-						$VSZ = new ZipArchive();
-						if ($VSZ->open($source) === TRUE) {
-							if($fileData = $VSZ->getFromName('data.vs1')) {
-								file_put_contents($detination_vs1, $fileData);
-							}
-						}
-						
-						if (file_exists($detination_vs1)) 
+						if($file_ext == 'csv')
 						{
-							if($this->CheckFileImported($detination_vs1))
+							$this->verbosed("Importing CSV. ".$source, 1);
+							$tmp = $this->import->import_vistumblercsv($source, $file_row,  $importing_id);
+						}
+						elseif($file_ext == 'mdb')
+						{
+							$this->verbosed("Importing MDB. ".$source, 1);
+							$tmp = $this->import->import_vistumblermdb($source, $file_row,  $importing_id);
+						}
+						elseif($file_ext == 'vsz')
+						{
+							$this->verbosed("Extracting VSZ. ".$source, 1);
+							$path_parts = pathinfo($source);
+							$detination_vs1 = $path_parts['dirname']."/extract/".$path_parts['filename'].".VS1";
+							if(!is_dir($path_parts['dirname']."/extract")) { mkdir($path_parts['dirname']."/extract", 0775, true); }
+
+							$VSZ = new ZipArchive();
+							if ($VSZ->open($source) === TRUE) {
+								if($fileData = $VSZ->getFromName('data.vs1')) {
+									file_put_contents($detination_vs1, $fileData);
+								}
+							}
+							
+							if (file_exists($detination_vs1)) 
 							{
-								$tmp = array(-1, "Extracted VS1 has already been imported. ".$detination_vs1);
+								if($this->CheckFileImported($detination_vs1))
+								{
+									$tmp = array(-1, "The VS1 inside this VSZ has already been imported");
+								}
+								else
+								{
+									$this->verbosed("Importing Extracted VSZ. ".$detination_vs1, 1);
+									$tmp = $this->import->import_vs1($detination_vs1, $file_row,  $importing_id);								
+								}
+								unlink($detination_vs1);
 							}
 							else
 							{
-								$this->verbosed("Importing Extracted VSZ. ".$detination_vs1, 1);
-								$tmp = $this->import->import_vs1($detination_vs1, $file_row,  $importing_id);								
+								$tmp = array(-1, "The VSZ could not be opened as a zip file, or has no data.vs1 inside");
 							}
-							unlink($detination_vs1);
+						}
+						elseif($file_ext == 'ns1' || $file_type == "ns1")
+						{
+							$this->verbosed("Importing NS1. ".$source, 1);
+							$tmp = $this->import->import_ns1($source, $file_row,  $importing_id);
 						}
 						else
 						{
-							$tmp = array(-1, "Extracted VS1 Does not exists. ".$detination_vs1);
+							$this->verbosed("Importing VS1. ".$source, 1);
+							$tmp = $this->import->import_vs1($source, $file_row,  $importing_id);
 						}
 					}
-					elseif($file_ext == 'ns1' || $file_type == "ns1")
+					elseif ($file_type == "wardrive")
 					{
-						$this->verbosed("Importing NS1. ".$source, 1);
-						$tmp = $this->import->import_ns1($source, $file_row,  $importing_id);
+						if($file_ext == "db")
+						{
+							$this->verbosed("Importing Wardrive4. ".$source, 1);
+							$tmp = $this->import->import_wardrive4($source, $file_row,  $importing_id);
+						}
+						elseif ($file_ext == "db3")
+						{
+							$this->verbosed("Importing Wardrive3. ".$source, 1);
+							$tmp = $this->import->import_wardrive3($source, $file_row,  $importing_id);
+						}
+						else
+						{
+							$tmp = array(-1, "Unknown File Type");
+						}
 					}
-					else
+					elseif ($file_type == "kismet")
 					{
-						$this->verbosed("Importing VS1. ".$source, 1);
-						$tmp = $this->import->import_vs1($source, $file_row,  $importing_id);
+						if($file_ext == "netxml")
+						{
+							$this->verbosed("Importing Kismet netxml. ".$source, 1);
+							$tmp = $this->import->import_kismetnetxml($source, $file_row,  $importing_id);
+						}
+						else
+						{
+							$tmp = array(-1, "Unknown File Type");
+						}
 					}
-				}
-				elseif ($file_type == "wardrive")
-				{
-					if($file_ext == "db")
+					elseif ($file_type == "wiglewificsv")
 					{
-						$this->verbosed("Importing Wardrive4. ".$source, 1);
-						$tmp = $this->import->import_wardrive4($source, $file_row,  $importing_id);
+						if($file_ext == "gz")
+						{
+							$this->verbosed("Extracting GZ. ".$source, 1);
+							$path_parts = pathinfo($source);
+							$detination_csv = $path_parts['dirname']."/extract/".$path_parts['filename'].".CSV";
+							if(!is_dir($path_parts['dirname']."/extract")) { mkdir($path_parts['dirname']."/extract", 0775, true); }
+
+							$file = gzopen($source, 'rb');
+							$out_file = fopen($detination_csv, 'wb'); 
+
+							while (!gzeof($file)) 
+							{
+								fwrite($out_file, gzread($file, 4096));
+							}
+
+							fclose($out_file);
+							gzclose($file);
+							
+							if (file_exists($detination_csv)) 
+							{
+								if($this->CheckFileImported($detination_csv))
+								{
+									$tmp = array(-1, "The CSV inside this .gz has already been imported");
+								}
+								else
+								{
+									$this->verbosed("Importing Extracted CSV. ".$detination_csv, 1);
+									$tmp = $this->import->import_wiglewificsv($detination_csv, $file_row,  $importing_id);							
+								}
+								unlink($detination_csv);
+							}
+							else
+							{
+								$tmp = array(-1, "The .gz could not be unpacked");
+							}
+						}
+						else
+						{
+							$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
+							$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
+						}
 					}
-					elseif ($file_ext == "db3")
+					elseif ($file_type == "swardriving")
 					{
-						$this->verbosed("Importing Wardrive3. ".$source, 1);
-						$tmp = $this->import->import_wardrive3($source, $file_row,  $importing_id);
+						$this->verbosed("Importing SWardriving. ".$source, 1);
+						$tmp = $this->import->import_swardriving($source, $file_row,  $importing_id);
 					}
 					else
 					{
 						$tmp = array(-1, "Unknown File Type");
 					}
 				}
-				elseif ($file_type == "kismet")
+				catch(Throwable $e)
 				{
-					if($file_ext == "netxml")
-					{
-						$this->verbosed("Importing Kismet netxml. ".$source, 1);
-						$tmp = $this->import->import_kismetnetxml($source, $file_row,  $importing_id);
-					}
-					else
-					{
-						$tmp = array(-1, "Unknown File Type");
-					}
-				}
-				elseif ($file_type == "wiglewificsv")
-				{
-					if($file_ext == "gz")
-					{
-						$this->verbosed("Extracting GZ. ".$source, 1);
-						$path_parts = pathinfo($source);
-						$detination_csv = $path_parts['dirname']."/extract/".$path_parts['filename'].".CSV";
-
-						$file = gzopen($source, 'rb');
-						$out_file = fopen($detination_csv, 'wb'); 
-
-						while (!gzeof($file)) 
-						{
-							fwrite($out_file, gzread($file, 4096));
-						}
-
-						fclose($out_file);
-						gzclose($file);
-						
-						if (file_exists($detination_csv)) 
-						{
-							if($this->CheckFileImported($detination_csv))
-							{
-								$tmp = array(-1, "Extracted CSV has already been imported. ".$detination_csv);
-							}
-							else
-							{
-								$this->verbosed("Importing Extracted CSV. ".$detination_csv, 1);
-								$tmp = $this->import->import_wiglewificsv($detination_csv, $file_row,  $importing_id);							
-							}
-							unlink($detination_csv);
-						}
-						else
-						{
-							$tmp = array(-1, "Extracted CSV Does not exists. ".$detination_csv);
-						}
-					}
-					else
-					{
-						$this->verbosed("Importing Wiggle Wifi. ".$source, 1);
-						$tmp = $this->import->import_wiglewificsv($source, $file_row,  $importing_id);
-					}
-				}
-				elseif ($file_type == "swardriving")
-				{
-					$this->verbosed("Importing SWardriving. ".$source, 1);
-					$tmp = $this->import->import_swardriving($source, $file_row,  $importing_id);
-				}
-				else
-				{
-					$tmp = array(-1, "Unknown File Type");
+					if($this->sql->conn->inTransaction()) { $this->sql->conn->rollBack(); }
+					$this->RemovePartialImport($file_row);
+					$tmp = array(-1, get_class($e).": ".$e->getMessage());
 				}
 			
 				if(@$tmp[0] === -1)
@@ -502,6 +603,8 @@ class daemon extends wdbcli
 						{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, NewAPPercent = ?, completed = 1 WHERE id = ?";}
 					else if($this->sql->service == "sqlsrv")
 						{$update_files_table_sql = "UPDATE [files] SET [aps] = ?, [gps] = ?, [NewAPPercent] = ?, [completed] = 1 WHERE [id] = ?";}
+					else if($this->sql->service == "pgsql")
+						{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, \"NewAPPercent\" = ?, completed = 1 WHERE id = ?";}
 					$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
 					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
 					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
@@ -510,18 +613,22 @@ class daemon extends wdbcli
 
 					$prep_update_files_table->execute();
 					$this->sql->checkError(__LINE__, __FILE__);
+					require_once $this->PATH.'lib/traffic.inc.php';
+					Traffic::Note(isset($GLOBALS['config']) ? $GLOBALS['config'] : null, 'import_done');   # admin/traffic.php
 
 					if($this->sql->service == "mysql")
 						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
 					else if($this->sql->service == "sqlsrv")
 						{$del_file_tmp = "DELETE FROM [files_importing] WHERE [id] = ?";}
+					else if($this->sql->service == "pgsql")
+						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
 					#echo $del_file_tmp."\r\n";
 					$prep = $this->sql->conn->prepare($del_file_tmp);
 					$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
 					$prep->execute();
 					if($this->sql->checkError(__LINE__, __FILE__))
 					{
-						$this->wdbmail->mail_users("Error removing file: $file_name ($importing_id)", "Error removing file: $file_name ($importing_id)", "import", 1);
+						$this->wdbmail->alert("Error removing file: $file_name ($importing_id)", "Error removing file: $file_name ($importing_id)", $this->URL_PATH."opt/scheduling.php");
 						//$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
 						$this->verbosed("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
 						Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
@@ -529,7 +636,7 @@ class daemon extends wdbcli
 					{
 						$subject = "Vistumbler WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
 						$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n";
-						$this->wdbmail->mail_users($message, $subject, "import");
+						$this->wdbmail->notify('import_finished', $subject, $message, $this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row", 'import', array($file_user), "Import finished: ".($file_title ? $file_title : $file_name));
 						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
 					}
 					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];
@@ -542,8 +649,10 @@ class daemon extends wdbcli
 			//$this->logd("File is empty or not valid. $source ($importing_id)","Warning", $this->This_is_me);
 			$this->verbosed("File is empty. Skipping and deleting from files_importing. $source ($importing_id |-| $file_hash)\n");
 			//unlink($source);
-			$this->cleanBadImport(0, $importing_id, 'Empty or not valid');
+			$this->cleanBadImport(0, $importing_id, $fetch_error !== '' ? $fetch_error : (file_exists($source) ? 'Empty or not valid' : 'The file is missing from import/up'));
 		}
+		// a copy fetched only to import here goes again: the bucket and the node it came in on keep it
+		if($fetched && file_exists($source)) { unlink($source); }
 		return 1;
 	}
 
@@ -581,77 +690,19 @@ class daemon extends wdbcli
 			#echo "Recovery import, no previous data :(\n";
 
 		}
-		//$this->logd("=== Start Daemon Prep of ".$file." ===");
-		
-		
-		
-		if($this->sql->service == "sqlsrv")
-		{			
-			$retry = true;
-			while ($retry)
-			{
-				try 
-				{
-					
-					$sql = "MERGE INTO files_tmp WITH (HOLDLOCK)\n"
-						. "	USING (SELECT :s_hash AS hash) AS newcell (hash)\n"
-						. "		ON files_tmp.hash = newcell.hash\n"
-						. "	WHEN NOT MATCHED THEN\n"
-						. "		INSERT (type, file_name, file_orig, file_date, file_user, notes, title, size, hash)\n"
-						. "		VALUES (:type, :file_name, :file_orig, :file_date, :file_user, :notes, :title, :size, :hash);";
-						
-					$prep = $this->sql->conn->prepare($sql);
-					$prep->bindParam(':s_hash', $hash);
-					$prep->bindParam(':type', $type);
-					$prep->bindParam(':file_name', $file);
-					$prep->bindParam(':file_orig', $file_orig);
-					$prep->bindParam(':file_date', $date);
-					$prep->bindParam(':file_user', $user);		
-					$prep->bindParam(':notes', $notes);
-					$prep->bindParam(':title', $title);
-					$prep->bindParam(':size', $size1);
-					$prep->bindParam(':hash', $hash);
-					
-					$prep->execute();
-					$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
-					$retry = false;
-				}
-				catch (Exception $e) 
-				{
-					$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
-					$retry = $this->sql->isPDOException($this->sql->conn, $e);
-					$cell_id = 0;
-				}
-			}
-		}
-		else if($this->sql->service == "mysql")
+		# one query for all three databases: queued unless it's already waiting, importing or imported
+		$dup = $this->sql->conn->prepare("SELECT (SELECT COUNT(*) FROM files_tmp WHERE hash = ?) + (SELECT COUNT(*) FROM files_importing WHERE hash = ?) + (SELECT COUNT(*) FROM files WHERE hash = ?) AS n");
+		$dup->execute(array($hash, $hash, $hash));
+		if((int)$dup->fetchColumn() > 0)
 		{
-			$sql = "INSERT INTO files_tmp (type, file, file_orig, date, user, notes, title, size, hash) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-			$prep = $this->sql->conn->prepare($sql);
-			$prep->bindParam(1, $type, PDO::PARAM_STR);
-			$prep->bindParam(2, $file, PDO::PARAM_STR);
-			$prep->bindParam(3, $file_orig, PDO::PARAM_STR);
-			$prep->bindParam(4, $date, PDO::PARAM_STR);
-			$prep->bindParam(5, $user, PDO::PARAM_STR);
-			$prep->bindParam(6, $notes, PDO::PARAM_STR);
-			$prep->bindParam(7, $title, PDO::PARAM_STR);
-			$prep->bindParam(8, $size1, PDO::PARAM_STR);
-			$prep->bindParam(9, $hash, PDO::PARAM_STR);
-			$prep->execute();
-
-			$err = $this->sql->conn->errorInfo();
-			if($err[0] == "00000")
-			{
-				$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
-				//$this->logd("File Inserted into Files_tmp.".$sql);
-				return 1;
-			}else
-			{
-				$this->verbosed("Failed to insert file info into Files_tmp.\r\n".var_export($this->sql->conn->errorInfo(),1));
-				//$this->logd("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo(),1));
-				throw new ErrorException("Failed to insert file info into Files_tmp.".var_export($this->sql->conn->errorInfo()) );
-			}
+			$this->verbosed("Already queued or imported. ({$file})\r\n");
+			return 0;
 		}
+		# queued for this node: the file is on its disk
+		$prep = $this->sql->conn->prepare("INSERT INTO files_tmp (type, file_name, file_orig, file_date, file_user, notes, title, size, hash, node_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+		$prep->execute(array($type, $file, $file_orig, $date, $user, $notes, $title, $size1, $hash, $this->node_name));
+		$this->verbosed("File Inserted into Files_tmp. ({$file})\r\n");
+		return 1;
 	}
 
 	public function SetNextJob($job_id)
@@ -663,6 +714,8 @@ class daemon extends wdbcli
 			{$sql = "UPDATE schedule SET nextrun = ? , status = ? WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "UPDATE [schedule] SET [nextrun] = ? , [status] = ? WHERE [id] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "UPDATE schedule SET nextrun = ? , status = ? WHERE id = ?";}
 		$prepnr = $this->sql->conn->prepare($sql);
 		$prepnr->bindParam(1, $nextrun, PDO::PARAM_STR);
 		$prepnr->bindParam(2, $this->StatusWaiting, PDO::PARAM_STR);
@@ -681,6 +734,8 @@ class daemon extends wdbcli
 			{$sql = "UPDATE schedule SET status = ?, nextrun = ? WHERE id = ?";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "UPDATE [schedule] SET [status] = ?, [nextrun] = ? WHERE [id] = ?";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "UPDATE schedule SET status = ?, nextrun = ? WHERE id = ?";}
 		$prepsr = $this->sql->conn->prepare($sql);
 		$prepsr->bindParam(1, $this->StatusRunning, PDO::PARAM_STR);
 		$prepsr->bindParam(2, $nextrun, PDO::PARAM_STR);
@@ -696,6 +751,8 @@ class daemon extends wdbcli
 			{$sql = "SELECT count(id) FROM files_tmp";}
 		else if($this->sql->service == "sqlsrv")
 			{$sql = "SELECT count([id]) FROM [files_tmp]";}
+		else if($this->sql->service == "pgsql")
+			{$sql = "SELECT count(id) FROM files_tmp";}
 		$result = $this->sql->conn->query($sql);
 		$fetch = $result->fetch();
 	}
