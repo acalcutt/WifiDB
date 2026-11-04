@@ -1081,10 +1081,32 @@ class import extends dbcore
 			}
 		}
 
+		$this->UpdatePosition($ap_id, false);
 		$this->verbosed("Updated AP Pointer {".$ap_id."}.", 2);
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 	}
-	
+
+	/**
+	 * Where the access point (or cell tower / Bluetooth device) most likely is, from all its readings, now these are in
+	 * (lib/position.inc.php). Before migration 0016_positions there are no columns for it: that's skipped.
+	 */
+	private function UpdatePosition($id, $cell)
+	{
+		if(!class_exists('ApPosition', false)) { require_once rtrim($this->PATH, '/').'/lib/position.inc.php'; }
+		$retry = true;
+		while ($retry)
+		{
+			try {
+				(new ApPosition($this->sql->conn, $this->sql->service))->Update($id, $cell);
+				$retry = false;
+			}
+			catch (Exception $e) {
+				if(stripos($e->getMessage(), 'est_') !== false) { return; }   # not migrated yet
+				$retry = $this->sql->isPDOException($this->sql->conn, $e);
+			}
+		}
+	}
+
 	private function UpdateCellHighPoints($file_importing_id, $cell_id, $msg = "")
 	{
 		$retry = true;
@@ -1211,6 +1233,7 @@ class import extends dbcore
 			}
 		}
 
+		$this->UpdatePosition($cell_id, true);
 		$this->verbosed("Updated Cell ID {".$cell_id."}.", 2);
 		$this->verbosed("------------------------\r\n", 1);# Done with this AP.
 	}
