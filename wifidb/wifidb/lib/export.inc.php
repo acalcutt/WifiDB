@@ -478,19 +478,19 @@ class export extends dbcore
 			// at TOP(n).  Independent of scan depth — unlike OFFSET/FETCH which
 			// re-sorts the full join on every page.
 			if ($last_id !== null) {
+				// (the position is the estimate from all the readings: lib/position.inc.php, est_*)
 				$sql = "SELECT TOP (" . (int)$inc . ") wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR,
 				               wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,
 				               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
-				               wGPS.Lat AS Lat, wGPS.Lon AS Lon, wGPS.Alt AS Alt,
+				               wap.est_lat AS Lat, wap.est_lon AS Lon, wap.est_alt AS Alt, wap.est_accuracy AS Accuracy,
 				               wf.file_user
 				        FROM wifi_ap AS wap
-				        INNER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID
 				        LEFT  JOIN files    AS wf   ON wf.id        = wap.File_ID
 				        WHERE wap.AP_ID > ?
-				          AND wap.HighGps_ID IS NOT NULL
-				          AND wap.points     IS NOT NULL
-				          AND wGPS.Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
-				          AND wGPS.Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))";
+				          AND wap.est_lat IS NOT NULL
+				          AND wap.points  IS NOT NULL
+				          AND wap.est_lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				          AND wap.est_lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))";
 
 				// Rebuild params: keyset needs (last_id, bbox...) in that order.
 				$params = [(int)$last_id, $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
@@ -509,12 +509,12 @@ class export extends dbcore
 
 				$sql .= ' ORDER BY wap.AP_ID OPTION (LOOP JOIN, FORCE ORDER)';
 			} else {
-			// Drive from the GPS bbox subquery so SQL Server uses nested loops
-			// through IX_wifi_ap_HighGps_covering into wifi_ap rather than
-			// scanning millions of date-range wifi_ap rows and hash-joining to wifi_gps.
+			// A range seek on IX_wifi_ap_est_covering (est_lat, est_lon, filtered on
+			// est_lat and points not null), which carries every column this needs,
+			// rather than scanning millions of date-range wifi_ap rows.
 			//
 			// Explicit CAST removes the nvarchar implicit conversion so the
-			// IX_wifi_gps_LatLon statistics are used accurately for cardinality.
+			// index statistics are used accurately for cardinality.
 			//
 			// When $from is null (no pagination — always the case for tile requests)
 			// we use SELECT TOP (n) with no ORDER BY.  This lets SQL Server early-
@@ -533,16 +533,14 @@ class export extends dbcore
 			$sql = "SELECT {$top_clause}wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR,
 			               wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,
 			               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
-			               wGPS.Lat AS Lat, wGPS.Lon AS Lon, wGPS.Alt AS Alt,
+			               wap.est_lat AS Lat, wap.est_lon AS Lon, wap.est_alt AS Alt, wap.est_accuracy AS Accuracy,
 			               wf.file_user
-			        FROM (SELECT GPS_ID, Lat, Lon, Alt
-			              FROM wifi_gps
-			              WHERE Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
-			                AND Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
-			             ) AS wGPS
-			        INNER JOIN wifi_ap AS wap ON wap.HighGps_ID = wGPS.GPS_ID
+			        FROM wifi_ap AS wap
 			        LEFT JOIN files AS wf ON wf.id = wap.File_ID
-			        WHERE wap.points IS NOT NULL";
+			        WHERE wap.est_lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+			          AND wap.est_lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+			          AND wap.est_lat IS NOT NULL
+			          AND wap.points IS NOT NULL";
 
 			if ($start_date !== null && $end_date !== null) {
 				$sql .= ' AND wap.la >= ? AND wap.la < ?';
@@ -574,15 +572,14 @@ class export extends dbcore
 			$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR",
 			               wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX",
 			               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
-			               wGPS."Lat" AS "Lat", wGPS."Lon" AS "Lon", wGPS."Alt" AS "Alt",
+			               wap.est_lat AS "Lat", wap.est_lon AS "Lon", wap.est_alt AS "Alt", wap.est_accuracy AS "Accuracy",
 			               wf.file_user
 			        FROM wifi_ap AS wap
-			        LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"
 			        LEFT JOIN files    AS wf   ON wf.id        = wap."File_ID"
-			        WHERE wap."HighGps_ID" IS NOT NULL
+			        WHERE wap.est_lat IS NOT NULL
 			          AND wap.points IS NOT NULL
-			          AND wGPS."Lat" BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))
-			          AND wGPS."Lon" BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))';
+			          AND wap.est_lat BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))
+			          AND wap.est_lon BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))';
 
 			if ($last_id !== null) {
 				$sql .= ' AND wap."AP_ID" > ?';
@@ -614,15 +611,14 @@ class export extends dbcore
 			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR,
 			               wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX,
 			               wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,
-			               wGPS.Lat AS Lat, wGPS.Lon AS Lon, wGPS.Alt AS Alt,
+			               wap.est_lat AS Lat, wap.est_lon AS Lon, wap.est_alt AS Alt, wap.est_accuracy AS Accuracy,
 			               wf.file_user
 			        FROM wifi_ap AS wap
-			        LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID
 			        LEFT JOIN files    AS wf   ON wf.id        = wap.File_ID
-			        WHERE wap.HighGps_ID IS NOT NULL
+			        WHERE wap.est_lat IS NOT NULL
 			          AND wap.points IS NOT NULL
-			          AND wGPS.Lat BETWEEN ? AND ?
-			          AND wGPS.Lon BETWEEN ? AND ?";
+			          AND wap.est_lat BETWEEN ? AND ?
+			          AND wap.est_lon BETWEEN ? AND ?";
 
 			if ($last_id !== null) {
 				$sql .= ' AND wap.AP_ID > ?';
@@ -684,6 +680,7 @@ class export extends dbcore
 				'lat'           => $this->convert->dm2dd($ap['Lat']),
 				'lon'           => $this->convert->dm2dd($ap['Lon']),
 				'alt'           => $ap['Alt'],
+				'accuracy'      => $ap['Accuracy'],
 				'manuf'         => $this->findManuf($ap['BSSID']),
 				'user'          => $ap['file_user'],
 			];
@@ -1044,18 +1041,18 @@ class export extends dbcore
 			if ($last_id !== null) {
 				// ── Keyset pagination (daemon bulk scan) ────────────────────────
 				// Drive from cell_id PK ordered by cell_id; bbox applied as filter.
+				// (the position is the estimate from all the readings: lib/position.inc.php, est_*)
 				$sql = "SELECT TOP (" . (int)$inc . ")
 				               ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
 				               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
-				               g.Lat AS lat, g.Lon AS lon, f.file_user AS [user]
+				               ci.est_lat AS lat, ci.est_lon AS lon, ci.est_accuracy AS accuracy, f.file_user AS [user]
 				        FROM cell_id AS ci
-				        INNER JOIN wifi_gps AS g ON g.GPS_ID = ci.highgps_id
 				        INNER JOIN files    AS f ON f.id     = ci.file_id
 				        WHERE ci.cell_id > ?
-				          AND ci.highgps_id IS NOT NULL
+				          AND ci.est_lat IS NOT NULL
 				          AND ci.type NOT IN ('BT','BLE')
-				          AND g.Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
-				          AND g.Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))";
+				          AND ci.est_lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				          AND ci.est_lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))";
 				$params = [(int)$last_id, $lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
 				if ($start_date !== null && $end_date !== null) {
 					$sql .= ' AND ci.la >= ? AND ci.la < ?';
@@ -1068,19 +1065,15 @@ class export extends dbcore
 				$sql .= ' ORDER BY ci.cell_id OPTION (LOOP JOIN, FORCE ORDER)';
 			} else {
 				// ── One-shot bbox (on-demand tile request) ──────────────────────
-				// Drive from GPS bbox sub-query; TOP + no ORDER BY for early termination.
+				// A range seek on IX_cell_id_est_latlon; TOP + no ORDER BY for early termination.
 				$sql = "SELECT TOP (" . (int)$inc . ")
 				               ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
 				               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
-				               g.Lat AS lat, g.Lon AS lon, f.file_user AS [user]
-				        FROM (SELECT GPS_ID, Lat, Lon
-				              FROM wifi_gps
-				              WHERE Lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
-				                AND Lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
-				             ) AS g
-				        INNER JOIN cell_id AS ci ON ci.highgps_id = g.GPS_ID
+				               ci.est_lat AS lat, ci.est_lon AS lon, ci.est_accuracy AS accuracy, f.file_user AS [user]
+				        FROM cell_id AS ci
 				        INNER JOIN files   AS f  ON f.id          = ci.file_id
-				        WHERE ci.highgps_id IS NOT NULL
+				        WHERE ci.est_lat BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
+				          AND ci.est_lon BETWEEN CAST(? AS decimal(9,4)) AND CAST(? AS decimal(9,4))
 				          AND ci.type NOT IN ('BT','BLE')";
 				$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
 				if ($start_date !== null && $end_date !== null) {
@@ -1099,14 +1092,13 @@ class export extends dbcore
 			// "user" is a reserved word in Postgres and must stay quoted as an alias.
 			$sql = 'SELECT ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
 			               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
-			               g."Lat" AS lat, g."Lon" AS lon, f.file_user AS "user"
+			               ci.est_lat AS lat, ci.est_lon AS lon, ci.est_accuracy AS accuracy, f.file_user AS "user"
 			        FROM cell_id AS ci
-			        INNER JOIN wifi_gps AS g ON g."GPS_ID" = ci.highgps_id
 			        INNER JOIN files    AS f ON f.id     = ci.file_id
-			        WHERE ci.highgps_id IS NOT NULL
+			        WHERE ci.est_lat IS NOT NULL
 			          AND ci.type NOT IN (\'BT\',\'BLE\')
-			          AND g."Lat" BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))
-			          AND g."Lon" BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))';
+			          AND ci.est_lat BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))
+			          AND ci.est_lon BETWEEN CAST(? AS numeric(9,4)) AND CAST(? AS numeric(9,4))';
 			$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
 
 			if ($last_id !== null) {
@@ -1126,14 +1118,13 @@ class export extends dbcore
 			// ── MySQL ────────────────────────────────────────────────────────────
 			$sql = "SELECT ci.cell_id, ci.mac, ci.ssid, ci.authmode, ci.chan, ci.type,
 			               ci.fa, ci.la, ci.points, ci.high_gps_rssi AS rssi,
-			               g.Lat AS lat, g.Lon AS lon, f.file_user AS `user`
+			               ci.est_lat AS lat, ci.est_lon AS lon, ci.est_accuracy AS accuracy, f.file_user AS `user`
 			        FROM cell_id AS ci
-			        INNER JOIN wifi_gps AS g ON g.GPS_ID = ci.highgps_id
 			        INNER JOIN files    AS f ON f.id     = ci.file_id
-			        WHERE ci.highgps_id IS NOT NULL
+			        WHERE ci.est_lat IS NOT NULL
 			          AND ci.type NOT IN ('BT','BLE')
-			          AND g.Lat BETWEEN ? AND ?
-			          AND g.Lon BETWEEN ? AND ?";
+			          AND ci.est_lat BETWEEN ? AND ?
+			          AND ci.est_lon BETWEEN ? AND ?";
 			$params = [$lat_min_dm, $lat_max_dm, $lon_min_dm, $lon_max_dm];
 
 			if ($last_id !== null) {
@@ -1174,6 +1165,7 @@ class export extends dbcore
 				'rssi'     => (int)$row['rssi'],
 				'lat'      => $this->convert->dm2dd($row['lat']),
 				'lon'      => $this->convert->dm2dd($row['lon']),
+				'accuracy' => $row['accuracy'],
 				'user'     => (string)$row['user'],
 			];
 			$cell_array[]   = $cell_info;

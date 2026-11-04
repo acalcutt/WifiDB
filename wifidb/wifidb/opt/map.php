@@ -425,7 +425,7 @@ switch($func)
 		$sql = "SELECT Count(DISTINCT wifi_hist.".$q('AP_ID').") AS point_count\n"
 			. "From wifi_hist\n"
 			. "LEFT JOIN wifi_ap AS wap ON wifi_hist.".$q('AP_ID')." = wap.".$q('AP_ID')."\n"
-			. "WHERE wifi_hist.".$q('File_ID')." = ? AND wap.".$q('HighGps_ID')." IS NOT NULL";
+			. "WHERE wifi_hist.".$q('File_ID')." = ? AND wap.est_lat IS NOT NULL";
 		$result = $dbcore->sql->conn->prepare($sql);
 		$result->bindParam(1, $id, PDO::PARAM_INT);
 		$result->execute();
@@ -531,23 +531,20 @@ switch($func)
 		$id = (int)($_REQUEST['id'] ? $_REQUEST['id']: 0);
 		if($dbcore->sql->service == "mysql")
 			{
-				$sql = "SELECT `wifi_gps`.`Lat`, `wifi_gps`.`Lon`, `wifi_ap`.`ssid`\n"
+				$sql = "SELECT `wifi_ap`.`est_lat` AS `Lat`, `wifi_ap`.`est_lon` AS `Lon`, `wifi_ap`.`ssid`\n"
 					. "FROM `wifi_ap`\n"
-					. "LEFT JOIN `wifi_gps` ON `wifi_ap`.`HighGps_ID` = `wifi_gps`.`GPS_ID`\n"
 					. "WHERE `wifi_ap`.`AP_ID` = ?";
 			}
 		else if($dbcore->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT [wifi_gps].[Lat], [wifi_gps].[Lon], [wifi_ap].[ssid]\n"
+				$sql = "SELECT [wifi_ap].[est_lat] AS [Lat], [wifi_ap].[est_lon] AS [Lon], [wifi_ap].[ssid]\n"
 					. "FROM [wifi_ap]\n"
-					. "LEFT JOIN [wifi_gps] ON [wifi_ap].[HighGps_ID] = [wifi_gps].[GPS_ID]\n"
 					. "WHERE [wifi_ap].[AP_ID] = ?";
 			}
 		else if($dbcore->sql->service == "pgsql")
 			{
-				$sql = "SELECT wifi_gps.\"Lat\", wifi_gps.\"Lon\", wifi_ap.\"SSID\" AS ssid\n"
+				$sql = "SELECT wifi_ap.est_lat AS \"Lat\", wifi_ap.est_lon AS \"Lon\", wifi_ap.\"SSID\" AS ssid\n"
 					. "FROM wifi_ap\n"
-					. "LEFT JOIN wifi_gps ON wifi_ap.\"HighGps_ID\" = wifi_gps.\"GPS_ID\"\n"
 					. "WHERE wifi_ap.\"AP_ID\" = ?";
 			}
 		$prep = $dbcore->sql->conn->prepare($sql);
@@ -632,9 +629,8 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get Marker Centerpoint
-		$sql = "SELECT wifi_gps.".$q('Lat').", wifi_gps.".$q('Lon').", wifi_ap.".$q('SSID').", wifi_ap.".$q('SECTYPE')."\n"
+		$sql = "SELECT wifi_ap.est_lat AS ".$q('Lat').", wifi_ap.est_lon AS ".$q('Lon').", wifi_ap.".$q('SSID').", wifi_ap.".$q('SECTYPE')."\n"
 			. "FROM wifi_ap\n"
-			. "LEFT JOIN wifi_gps ON wifi_ap.".$q('HighGps_ID')." = wifi_gps.".$q('GPS_ID')."\n"
 			. "WHERE wifi_ap.".$q('AP_ID')." = ?";
 		$prepc = $dbcore->sql->conn->prepare($sql);
 		$prepc->bindParam(1, $id, PDO::PARAM_INT);
@@ -775,9 +771,8 @@ switch($func)
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
 
 		#Get Marker Centerpoint
-		$sql = "SELECT wifi_gps.".$q('Lat').", wifi_gps.".$q('Lon').", cell_id.ssid\n"
+		$sql = "SELECT cell_id.est_lat AS ".$q('Lat').", cell_id.est_lon AS ".$q('Lon').", cell_id.ssid\n"
 			. "FROM cell_id\n"
-			. "LEFT JOIN wifi_gps ON wifi_gps.".$q('GPS_ID')." = cell_id.highgps_id\n"
 			. "WHERE cell_id.cell_id = ?";
 		$prepc = $dbcore->sql->conn->prepare($sql);
 		$prepc->bindParam(1, $id, PDO::PARAM_INT);

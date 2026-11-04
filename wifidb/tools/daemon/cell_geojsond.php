@@ -39,49 +39,46 @@ if (!is_dir(dirname($out_file))) { mkdir(dirname($out_file), 0775, true); }
 if ($dbcore->sql->service === 'mysql') {
     $sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type,
                    cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,
-                   c_gps.lat AS lat, c_gps.lon AS lon,
+                   cell_id.est_lat AS lat, cell_id.est_lon AS lon,
                    c_file.file_user AS file_user,
                    cc.network, cc.country
             FROM cell_id
-            INNER JOIN wifi_gps      AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id
             INNER JOIN files         AS c_file ON c_file.id   = cell_id.file_id
             LEFT  JOIN cell_carriers AS cc
                    ON  cc.mcc = CAST(LEFT(SUBSTRING_INDEX(cell_id.mac, '_', 1), 3) AS UNSIGNED)
                    AND cc.mnc = CAST(SUBSTRING(SUBSTRING_INDEX(cell_id.mac, '_', 1), 4) AS UNSIGNED)
-            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL
+            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.est_lat IS NOT NULL
               AND cell_id.cell_id > ?
             ORDER BY cell_id.cell_id ASC
             LIMIT ?";
 } else if ($dbcore->sql->service === 'sqlsrv') {
     $sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type,
                    cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,
-                   c_gps.lat AS lat, c_gps.lon AS lon,
+                   cell_id.est_lat AS lat, cell_id.est_lon AS lon,
                    c_file.[file_user] AS [file_user],
                    cell_carriers.network, cell_carriers.country
             FROM cell_id
-            INNER JOIN wifi_gps AS c_gps ON c_gps.GPS_ID = cell_id.highgps_id
             INNER JOIN files    AS c_file ON c_file.id   = cell_id.file_id
             LEFT  OUTER JOIN cell_carriers
                    ON CAST(mcc AS varchar) = SUBSTRING(cell_id.mac, 1, 3)
                   AND CAST(mnc AS varchar) = SUBSTRING(cell_id.mac, 4, 3)
-            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL
+            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.est_lat IS NOT NULL
               AND cell_id.cell_id > ?
             ORDER BY cell_id.cell_id
             OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY";
 } else if ($dbcore->sql->service === 'pgsql') {
-    // wifi_gps's columns are mixed case (quoted); cell_id's and files' are lower case
+    // (the position is the estimate from all the readings: lib/position.inc.php, est_*)
     $sql = "SELECT cell_id.cell_id, cell_id.mac, cell_id.ssid, cell_id.authmode, cell_id.chan, cell_id.type,
                    cell_id.fa, cell_id.la, cell_id.points, cell_id.high_gps_rssi AS rssi,
-                   c_gps.\"Lat\" AS lat, c_gps.\"Lon\" AS lon,
+                   cell_id.est_lat AS lat, cell_id.est_lon AS lon,
                    c_file.file_user AS file_user,
                    cell_carriers.network, cell_carriers.country
             FROM cell_id
-            INNER JOIN wifi_gps AS c_gps ON c_gps.\"GPS_ID\" = cell_id.highgps_id
             INNER JOIN files    AS c_file ON c_file.id   = cell_id.file_id
             LEFT  OUTER JOIN cell_carriers
                    ON CAST(mcc AS varchar) = SUBSTRING(cell_id.mac, 1, 3)
                   AND CAST(mnc AS varchar) = SUBSTRING(cell_id.mac, 4, 3)
-            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.highgps_id IS NOT NULL
+            WHERE cell_id.type != 'BT' AND cell_id.type != 'BLE' AND cell_id.est_lat IS NOT NULL
               AND cell_id.cell_id > ?
             ORDER BY cell_id.cell_id
             LIMIT ?";
