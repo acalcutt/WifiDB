@@ -379,7 +379,7 @@ class api extends dbcore
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
 				$prep_sig->bindParam(3, $id, PDO::PARAM_INT);
 				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
-				$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_INT);
+				$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_STR);
 				$prep_sig->execute();
 				$err = $this->sql->conn->errorCode();
 				if($err !== "00000")
@@ -416,15 +416,15 @@ class api extends dbcore
 
 				$prep = $this->sql->conn->prepare($sql);
 				
-				$prep->bindParam(1, $data['lat'], PDO::PARAM_INT);
-				$prep->bindParam(2, $data['long'], PDO::PARAM_INT);
+				$prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
+				$prep->bindParam(2, $data['long'], PDO::PARAM_STR);
 				$prep->bindParam(3, $data['sats'], PDO::PARAM_INT);
-				$prep->bindParam(4, $data['hdp'], PDO::PARAM_INT);
-				$prep->bindParam(5, $data['alt'], PDO::PARAM_INT);
-				$prep->bindParam(6, $data['geo'], PDO::PARAM_INT);
-				$prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
-				$prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
-				$prep->bindParam(9, $data['track'], PDO::PARAM_INT);
+				$prep->bindParam(4, $data['hdp'], PDO::PARAM_STR);
+				$prep->bindParam(5, $data['alt'], PDO::PARAM_STR);
+				$prep->bindParam(6, $data['geo'], PDO::PARAM_STR);
+				$prep->bindParam(7, $data['kmh'], PDO::PARAM_STR);
+				$prep->bindParam(8, $data['mph'], PDO::PARAM_STR);
+				$prep->bindParam(9, $data['track'], PDO::PARAM_STR);
 				$prep->bindParam(10, $data['hist_date'], PDO::PARAM_STR);
 				$prep->bindParam(11, $data['session_id'], PDO::PARAM_STR);
 				$prep->execute();
@@ -447,7 +447,7 @@ class api extends dbcore
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
 				$prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
 				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
-				$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_INT);
+				$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_STR);
 				$prep_sig->execute();
 
 				$err = $this->sql->conn->errorCode();
@@ -490,11 +490,11 @@ class api extends dbcore
 			$prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
 			$prep->bindParam(2, $data['long'], PDO::PARAM_STR);
 			$prep->bindParam(3, $data['sats'], PDO::PARAM_INT);
-			$prep->bindParam(4, $data['hdp'], PDO::PARAM_INT);
-			$prep->bindParam(5, $data['alt'], PDO::PARAM_INT);
-			$prep->bindParam(6, $data['geo'], PDO::PARAM_INT);
-			$prep->bindParam(7, $data['kmh'], PDO::PARAM_INT);
-			$prep->bindParam(8, $data['mph'], PDO::PARAM_INT);
+			$prep->bindParam(4, $data['hdp'], PDO::PARAM_STR);
+			$prep->bindParam(5, $data['alt'], PDO::PARAM_STR);
+			$prep->bindParam(6, $data['geo'], PDO::PARAM_STR);
+			$prep->bindParam(7, $data['kmh'], PDO::PARAM_STR);
+			$prep->bindParam(8, $data['mph'], PDO::PARAM_STR);
 			$prep->bindParam(9, $data['track'], PDO::PARAM_STR);
 			$prep->bindParam(10, $data['hist_date'], PDO::PARAM_STR);
 			$prep->bindParam(11, $data['session_id'], PDO::PARAM_STR);
@@ -520,7 +520,7 @@ class api extends dbcore
 			$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_STR);
 			$prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
 			$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
-			$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_INT);
+			$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_STR);
 			$prep_sig->execute();
 
 			$err = $this->sql->conn->errorCode();
