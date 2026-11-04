@@ -133,6 +133,25 @@ async function loadWebTorrent() {
   }
 }
 __name(loadWebTorrent, "loadWebTorrent");
+function pieceCountOf(torrentId) {
+  if (!(torrentId instanceof Uint8Array)) return 0;
+  const marker = [54, 58, 112, 105, 101, 99, 101, 115];
+  outer: for (let at = 0; at + marker.length < torrentId.length; at++) {
+    for (let n = 0; n < marker.length; n++) {
+      if (torrentId[at + n] !== marker[n]) continue outer;
+    }
+    let digits = "";
+    for (let n = at + marker.length; n < torrentId.length; n++) {
+      const code = torrentId[n];
+      if (code === 58) break;
+      if (code < 48 || code > 57) return 0;
+      digits += String.fromCharCode(code);
+    }
+    return digits ? Math.floor(Number(digits) / 20) : 0;
+  }
+  return 0;
+}
+__name(pieceCountOf, "pieceCountOf");
 var WebTorrentEngine = class {
   static {
     __name(this, "WebTorrentEngine");
@@ -314,7 +333,8 @@ var WebTorrentEngine = class {
       );
       if (resume) addOptions.bitfield = resume.bitfield;
     }
-    const timeoutMs = this.#options.readyTimeoutMs ?? 6e4;
+    const pieces = pieceCountOf(this.#torrentId);
+    const timeoutMs = (this.#options.readyTimeoutMs ?? 6e4) + pieces;
     const torrent = await new Promise((resolve, reject) => {
       let settled = false;
       const finish = /* @__PURE__ */ __name((fn) => {

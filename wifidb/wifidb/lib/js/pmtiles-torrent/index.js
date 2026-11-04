@@ -304,10 +304,46 @@ var TorrentSource = class {
           );
         }
         this.#info = info;
+        this.#prefetchTail(info);
         return info;
       });
     }
     return this.#initPromise;
+  }
+  /**
+   * Raises the last piece of the archive, before anything has read a header.
+   *
+   * Everything else this class prioritises is derived from the header: the root
+   * directory, the JSON metadata, the leaf directories. That leaves a gap at
+   * the beginning, because until the header is readable nothing points anywhere
+   * but at the header — so the structural sections are only ever asked for on a
+   * second pass, after the first has finished.
+   *
+   * The end of the file is the right blind bet for that gap. The PMTiles spec
+   * lets a writer relocate every section but the header, and planetiler uses
+   * that: it reserves 16 KiB at the front, writes tile data from there, and
+   * puts the JSON metadata and then the leaf directories after all of it. On an
+   * archive of that shape the tail is structure rather than tiles, and it is
+   * the half a partial mirror is least likely to have received — tile data
+   * arrives in whatever order the swarm offers it, while nothing at all asks
+   * for the end.
+   *
+   * Deliberately one piece and deliberately not critical. It is a guess: on an
+   * archive laid out the canonical way, tippecanoe's among them, the tail is
+   * ordinary tile data and this fetches a piece nobody wanted. One piece is a
+   * price worth paying for removing a round trip from every planetiler archive;
+   * a larger window would not be.
+   *
+   * @param info Piece geometry, as the engine reported it.
+   */
+  #prefetchTail(info) {
+    if (!this.#options.prefetchDirectories) return;
+    const hint = this.#engine.hint?.bind(this.#engine);
+    if (!hint) return;
+    const length = Math.min(info.pieceLength, info.fileLength);
+    const offset = info.fileLength - length;
+    if (offset < 0 || length <= 0) return;
+    hint(offset, length, "normal");
   }
   /** Maps a file-relative offset to the torrent piece containing it. */
   #pieceIndexOf(fileOffset) {

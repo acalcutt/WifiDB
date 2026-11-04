@@ -6,6 +6,7 @@
 
 ### 🐞 Bug fixes
 - **Update every server works on SQL Server.** Asking for an update from Admin > Servers failed with "That didn't work": the request named its `backup` column, a reserved word in SQL Server, without brackets.
+- **Big tile archives join the swarm in the browser again.** The map waited a fixed 30 seconds for an archive's torrent while the engine allows more for one with many pieces, so a large archive always fell back to plain HTTP. The engine's own budget is now the only one. pmtiles-torrent is 0.11.1, as wifidb.net already ran: it also asks for an archive's last piece first, where planetiler puts the directories, and gives a large archive's metadata longer.
 - _...Add new stuff here..._
 
 ## 1.0.0-rc.1
