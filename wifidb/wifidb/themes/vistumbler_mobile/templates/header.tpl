@@ -37,7 +37,6 @@
 
 	<link rel="canonical" href="{$wifidb_site_origin|default:''|escape:'html':'UTF-8':false}{$smarty.server.REQUEST_URI|escape:'html':'UTF-8':false}" />
 
-	{$WebSocketScripts|default:""}
 	{$wifidb_meta_header|default:""}
 	{$redirect_func|default:""}
 	<!-- QR loader for client-side QR generation -->
