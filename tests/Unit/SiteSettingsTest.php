@@ -124,6 +124,17 @@ final class SiteSettingsTest extends TestCase
         $this->assertSame(['garage', ''], SiteSettings::Clean('backup_s3_region', ' garage '), 'others are only trimmed');
     }
 
+    public function testTheMapsElevationTilesAreATileAddress(): void
+    {
+        $url = 'https://tiles.example.org/dem/{z}/{x}/{y}.png';
+        $this->assertSame([$url, ''], SiteSettings::Clean('map_dem_url', " $url "));
+        $this->assertSame(['', ''], SiteSettings::Clean('map_dem_url', ''), 'empty: no contour lines');
+        foreach (['https://tiles.example.org/dem/{z}/{x}.png', 'javascript:alert(1)//{z}{x}{y}', "https://x/{z}/{x}/{y}.png'+alert(1)+'"] as $bad) {
+            $this->assertNotSame('', SiteSettings::Clean('map_dem_url', $bad)[1], $bad);
+        }
+        $this->assertSame('https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png', $this->settings()->Get('map_dem_url'), 'what the map used before');
+    }
+
     public function testWhatSearchEnginesRead(): void
     {
         $this->assertSame(['abcDEF123_-xyz', ''], SiteSettings::Clean('google_site_verification', '<meta name="google-site-verification" content="abcDEF123_-xyz" />'));

@@ -3,6 +3,7 @@
 ## master
 ### ✨ Features and improvements
 - **Search: choose how each field matches.** Each field on the search page has Equals (the default), Contains, Starts with or Ends with, and so do `api/search.php` (`ssid_op`, `mac_op`, `radio_op`, `chan_op`, `auth_op`, `encry_op`), the results' paging and sorting, and their Map, JSON, KMZ and GPX links. A blank field is no longer searched on at all, and a field is no longer always wrapped in `%…%`, which made every search read the whole table: what made wifidb.net's search time out. A value with a `%` in it is still a `LIKE` pattern as typed. Searching with every field blank sends you to the full list, as `%` did. (wifidb.net ran this from September 2026 without it reaching the repository; there, the Map and exports from a search had stopped working.)
+- **Site Settings: Map elevation tiles.** Where the mobile theme's map gets the elevation it draws contour lines from (Terrarium PNG tiles, an address with `{z}`, `{x}` and `{y}`); `https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png`, as before, unless set. Empty: no contour lines.
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
