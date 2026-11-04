@@ -175,24 +175,63 @@ foreach($inputs as $load => $in)
 	# a place's position also as numbers, for finding the nearest (lib/geonames.inc.php, migration 0013_geonames_coords)
 	$coords = ($load === 'geonames') ? array(array_search('latitude', $columns), array_search('longitude', $columns)) : null;
 	$written = array_merge($columns, $coords ? array('lat', 'lon') : array(), array('loaded_at'));
-	$insert_sql = "INSERT INTO ".$quote($table)." (".implode(", ", array_map($quote, $written)).") VALUES (".implode(", ", array_fill(0, count($written), "?")).")";
+	# several rows to a statement, which is what makes a load of millions take minutes rather than hours: an upsert on
+	# MariaDB and PostgreSQL, a MERGE on SQL Server (which takes at most 2,100 parameters to a statement)
+	$cols_sql = implode(", ", array_map($quote, $written));
+	$row_sql = "(".implode(", ", array_fill(0, count($written), "?")).")";
 	$others = array_slice($written, 1);
-	$update = null;
-	if($service == "mysql")
-	{
-		$insert = $conn->prepare($insert_sql." ON DUPLICATE KEY UPDATE ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = VALUES(".$quote($c).")"; }, $others)));
-	}
-	elseif($service == "pgsql")
-	{
-		$insert = $conn->prepare($insert_sql." ON CONFLICT (".$quote($key).") DO UPDATE SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = EXCLUDED.".$quote($c); }, $others)));
-	}
-	else
-	{
-		# SQL Server: the update, and the insert when it found nothing
-		$insert = $conn->prepare($insert_sql);
-		$update = $conn->prepare("UPDATE ".$quote($table)." SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = ?"; }, $others))." WHERE ".$quote($key)." = ?");
-	}
+	$statement = function ($n) use ($service, $quote, $table, $key, $written, $others, $cols_sql, $row_sql) {
+		$rows = implode(", ", array_fill(0, $n, $row_sql));
+		if($service == "mysql")
+		{
+			return "INSERT INTO ".$quote($table)." ($cols_sql) VALUES $rows ON DUPLICATE KEY UPDATE "
+				.implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = VALUES(".$quote($c).")"; }, $others));
+		}
+		if($service == "pgsql")
+		{
+			return "INSERT INTO ".$quote($table)." ($cols_sql) VALUES $rows ON CONFLICT (".$quote($key).") DO UPDATE SET "
+				.implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = EXCLUDED.".$quote($c); }, $others));
+		}
+		return "MERGE INTO ".$quote($table)." AS t USING (VALUES $rows) AS s ($cols_sql) ON t.".$quote($key)." = s.".$quote($key)
+			." WHEN MATCHED THEN UPDATE SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = s.".$quote($c); }, $others))
+			." WHEN NOT MATCHED THEN INSERT ($cols_sql) VALUES (".implode(", ", array_map(function ($c) use ($quote) { return "s.".$quote($c); }, $written))."));";
+	};
+	$per = ($service == "sqlsrv") ? max(1, intdiv(2000, count($written))) : 500;
+	$prepared = array();
+	# saves rows, inside a savepoint on PostgreSQL, which otherwise gives up on the whole transaction after one failure
+	$save = function (array $rows) use ($conn, $service, $statement, &$prepared) {
+		$n = count($rows);
+		if(!isset($prepared[$n])) { $prepared[$n] = $conn->prepare($statement($n)); }
+		if($service == "pgsql") { $conn->exec("SAVEPOINT geobatch"); }
+		try
+		{
+			$prepared[$n]->execute(array_merge(...array_values($rows)));
+			if($service == "pgsql") { $conn->exec("RELEASE SAVEPOINT geobatch"); }
+		}
+		catch(PDOException $e)
+		{
+			if($service == "pgsql") { $conn->exec("ROLLBACK TO SAVEPOINT geobatch"); }
+			throw $e;
+		}
+	};
 	$loaded = 0; $skipped = 0; $failed = 0;
+	# a batch that can't be saved is tried a row at a time, so one bad line is all that's left out
+	$flush = function (array &$batch) use ($conn, $save, &$loaded, &$failed) {
+		if(!$batch) { return; }
+		try { $save($batch); $loaded += count($batch); }
+		catch(PDOException $e)
+		{
+			foreach($batch as $row)
+			{
+				try { $save(array($row)); $loaded++; }
+				catch(PDOException $e) { $failed++; fwrite(STDERR, "Skipped a line: ".$e->getMessage()."\n"); }
+			}
+		}
+		$batch = array();
+		$conn->commit(); $conn->beginTransaction();
+		echo "\r$loaded";
+	};
+	$batch = array();
 	$conn->beginTransaction();
 	while(($line = fgets($in)) !== false)
 	{
@@ -213,22 +252,12 @@ foreach($inputs as $load => $in)
 			foreach($coords as $i) { $values[] = is_numeric($fields[$i] ?? '') ? $fields[$i] : null; }
 		}
 		$values[] = $stamp;
-		# PostgreSQL gives up on the whole transaction after one failed statement; a savepoint keeps it to the one line
-		if($service == "pgsql") { $conn->exec("SAVEPOINT geoline"); }
-		try
-		{
-			if(!$update || ($update->execute(array_merge(array_slice($values, 1), array($values[0]))) && $update->rowCount() === 0)) { $insert->execute($values); }
-			$loaded++;
-			if($service == "pgsql") { $conn->exec("RELEASE SAVEPOINT geoline"); }
-		}
-		catch(PDOException $e)
-		{
-			if($service == "pgsql") { $conn->exec("ROLLBACK TO SAVEPOINT geoline"); }
-			$failed++;
-			fwrite(STDERR, "Skipped a line: ".$e->getMessage()."\n");
-		}
-		if($loaded % 1000 === 0) { $conn->commit(); $conn->beginTransaction(); echo "\r$loaded"; }
+		# a key twice in a batch would be the same row twice in one statement, which PostgreSQL and SQL Server refuse:
+		# the later line wins, as it would a line at a time
+		$batch["k".$values[0]] = $values;
+		if(count($batch) >= $per) { $flush($batch); }
 	}
+	$flush($batch);
 	$conn->commit();
 	fclose($in);
 	echo "\rLoaded $loaded rows into $table".($skipped + $failed ? ", skipped ".($skipped + $failed) : "").".\n";
