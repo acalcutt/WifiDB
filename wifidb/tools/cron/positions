@@ -1,0 +1,14 @@
+#!/bin/bash
+# Works out where the access points, cell towers and Bluetooth devices most likely are (tools/utilites/update_positions.php,
+# lib/position.inc.php), for those not worked out yet: after an upgrade adds the positions, everything already in the
+# database, a few minutes at a time until it's done; after that each run finds nothing to do. Imports place their own.
+# lock_run.php has the nodes on one database take turns, so only one works on it at once.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+mkdir -p ../log/positions
+LOG=../log/positions/positions_$(date -u +%Y%m%d).log
+php ../daemon/lock_run.php positions php ../utilites/update_positions.php --minutes 4 >> "$LOG" 2>&1
+php ../daemon/lock_run.php positions php ../utilites/update_positions.php --cells --minutes 4 >> "$LOG" 2>&1
+find ../log/positions/ -mtime +30 -type f -delete
+exit 0

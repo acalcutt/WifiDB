@@ -26,6 +26,9 @@ MAILTO=""
 40 4 * * *  www-data  /opt/wifidb/tools/cron/update_geoip
 # the GeoNames places nearby: a refresh when Site Settings says one is due (off unless set; one node does it)
 50 4 * * *  www-data  /opt/wifidb/tools/cron/geonames
+# where each access point and cell most likely is, for those not worked out yet (after an upgrade, until it's all done;
+# then nothing to do). One node at a time.
+*/10 * * * * www-data /opt/wifidb/tools/cron/positions
 5 0 * * *   www-data  /opt/wifidb/tools/cron/update_geojson
 #5 0 * * * www-data  /opt/wifidb/tools/cron/update_cell_geojson
 */15 * * * * www-data /opt/wifidb/tools/cron/update_swarm_index

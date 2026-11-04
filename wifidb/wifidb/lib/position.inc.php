@@ -236,13 +236,14 @@ class ApPosition
 	}
 
 	/**
-	 * Works out one device's position and stores it. With no reading that has a fix, the columns are emptied.
+	 * Works out one device's position and stores it. With no reading that has a fix, the position is emptied and
+	 * est_points is 0: worked out, nothing to place (NULL is "not worked out yet", what update_positions.php looks for).
 	 * @return array|null what was stored (lat and lon in DDMM.MMMM), or null if there was nothing to go on
 	 */
 	public function Update($id, $cell = false)
 	{
 		$est = self::Estimate($this->Readings($id, $cell));
-		$row = $est === null ? array('lat' => null, 'lon' => null, 'alt' => null, 'accuracy' => null, 'points' => null) : array(
+		$row = $est === null ? array('lat' => null, 'lon' => null, 'alt' => null, 'accuracy' => null, 'points' => 0) : array(
 			'lat' => self::DdToDm($est['lat']),
 			'lon' => self::DdToDm($est['lon']),
 			'alt' => $est['alt'] === null ? null : round($est['alt'], 2),

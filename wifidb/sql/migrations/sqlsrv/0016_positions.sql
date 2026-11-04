@@ -1,7 +1,8 @@
 -- Where each access point and cell tower / Bluetooth device most likely is, from all its readings (lib/position.inc.php):
 -- est_lat and est_lon (DDMM.MMMM, as wifi_gps keeps them), est_alt, est_accuracy (metres) and est_points (readings
--- used). Filled here from the strongest reading, as the maps showed until now (est_points NULL: not worked out yet);
--- tools/utilites/update_positions.php then works each one out, and imports keep them up to date.
+-- used; 0: none to place). Filled here from the strongest reading, as the maps showed until now (est_points NULL: not
+-- worked out yet); the positions cron job (tools/utilites/update_positions.php) then works each one out, and imports
+-- keep them up to date.
 ALTER TABLE [dbo].[wifi_ap] ADD [est_lat] [decimal](9,4) NULL, [est_lon] [decimal](9,4) NULL, [est_alt] [decimal](7,2) NULL,
   [est_accuracy] [decimal](10,2) NULL, [est_points] [int] NULL
 GO
@@ -23,4 +24,9 @@ CREATE NONCLUSTERED INDEX [IX_wifi_ap_est_covering] ON [dbo].[wifi_ap]([est_lat]
   WHERE ([est_lat] IS NOT NULL AND [points] IS NOT NULL)
 GO
 CREATE NONCLUSTERED INDEX [IX_cell_id_est_latlon] ON [dbo].[cell_id]([est_lat], [est_lon])
+GO
+-- what's left to work out (est_points NULL), found at once, and an empty index once it's all done
+CREATE NONCLUSTERED INDEX [IX_wifi_ap_est_todo] ON [dbo].[wifi_ap]([AP_ID]) WHERE ([est_points] IS NULL)
+GO
+CREATE NONCLUSTERED INDEX [IX_cell_id_est_todo] ON [dbo].[cell_id]([cell_id]) WHERE ([est_points] IS NULL)
 GO

@@ -5,15 +5,17 @@ likely is, from all its readings (lib/position.inc.php), and stores it in est_la
 est_points: what the maps, tiles and exports show. Imports keep them up to date; this is for what was already there
 (migration 0016_positions filled them from the strongest reading) and for after the calculation changes.
 
-  php update_positions.php [--cells] [--all] [--from ID] [--to ID]
+  php update_positions.php [--cells] [--all] [--from ID] [--to ID] [--minutes N]
 
   --cells     cell towers and Bluetooth devices (cell_id) instead of access points
   --all       every one, again; without it, only those not worked out yet (est_points empty)
   --from/--to an id range, to split a large database between runs
+  --minutes   stop after the batch that passes N minutes (the cron job's runs: tools/cron/positions)
 
 It goes through the table in batches of ids and can be stopped and run again: without --all it picks up where it left
-off. Run it with nothing else importing, or let the imports run: each row is worked out from its readings at the time.
-MariaDB, SQL Server and PostgreSQL.
+off. The cron job runs it every few minutes, one node at a time, until everything is worked out, after which a run only
+finds there is nothing to do; by hand it's for --all (after the calculation changes) or to get it done sooner. Imports
+can carry on meanwhile: each row is worked out from its readings at the time. MariaDB, SQL Server and PostgreSQL.
 */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "daemon");
@@ -28,6 +30,7 @@ $cells = in_array('--cells', $argv, true);
 $all = in_array('--all', $argv, true);
 $from = $opt('--from');
 $to = $opt('--to');
+$minutes = $opt('--minutes');
 
 $position = new ApPosition($dbcore->sql->conn, $dbcore->sql->service);
 $table = $cells ? 'cell_id' : 'wifi_ap';
@@ -52,5 +55,11 @@ while(true)
 		if($position->Update((int)$id, $cells) === null) { $none++; } else { $placed++; }
 	}
 	echo ($cells ? "Cell" : "AP")." ".$last.": ".$checked." checked, ".$placed." placed, ".$none." with no GPS (".(time() - $started)."s)\r\n";
+	if($minutes !== null && time() - $started >= $minutes * 60)
+	{
+		echo "Stopping after ".$minutes." minutes; the next run carries on from here.\r\n";
+		exit(0);
+	}
 }
+if($checked === 0 && !$all) { echo "Nothing left to work out.\r\n"; exit(0); }
 echo "Done: ".$checked." ".($cells ? "cell towers and Bluetooth devices" : "access points").", ".$placed." placed, ".$none." with no reading that has a GPS fix.\r\n";

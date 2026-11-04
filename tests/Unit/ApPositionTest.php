@@ -110,6 +110,8 @@ final class ApPositionTest extends TestCase
 
         $this->assertNull($p->Update(2));
         $this->assertNull($db->query("SELECT est_lat FROM wifi_ap WHERE AP_ID = 2")->fetchColumn());
+        $this->assertSame(0, (int)$db->query("SELECT est_points FROM wifi_ap WHERE AP_ID = 2")->fetchColumn(), 'worked out: nothing to place, not left for the next run');
+        $this->assertNotNull($db->query("SELECT est_points FROM wifi_ap WHERE AP_ID = 2")->fetchColumn());
 
         // an import taken away: what it touched is placed again from what's left
         $db->exec("CREATE TABLE cell_id (cell_id INTEGER PRIMARY KEY, est_lat TEXT, est_lon TEXT, est_alt REAL, est_accuracy REAL, est_points INTEGER)");
