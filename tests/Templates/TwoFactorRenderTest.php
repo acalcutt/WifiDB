@@ -157,6 +157,19 @@ final class TwoFactorRenderTest extends TestCase
     }
 
     #[DataProvider('themes')]
+    public function testTheProfileShowsTheApiKeyWithoutLettingItBeTypedOver(string $theme): void
+    {
+        $smarty = $this->smarty($theme);
+        $smarty->assign('user_cp_profile', ['email' => 'a@example.test', 'website' => '', 'Vis_ver' => '', 'apikey' => 'key"<x>',
+            'import_require_login' => '', 'hide_email' => '']);
+        $html = $smarty->fetch('user_cp_profile.tpl');
+        $this->assertStringNotContainsString('name="apikey"', $html, 'the profile form no longer sends it');
+        $this->assertStringContainsString('value="key&quot;&lt;x&gt;" readonly', $html);
+        $this->assertStringContainsString('form="wifidb_new_apikey"', $html);
+        $this->assertStringContainsString('<form id="wifidb_new_apikey" method="post" action="?func=new_apikey"></form>', $html);
+    }
+
+    #[DataProvider('themes')]
     public function testTheAdminModePageAsksForACodeAndCarriesTheReturnAddressSafely(string $theme): void
     {
         $smarty = $this->smarty($theme);

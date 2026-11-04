@@ -35,8 +35,10 @@ if not, write to the
 							<td class="light"><input type="text" name="Vis_ver" size="75%" value="{$user_cp_profile.Vis_ver}"></td>
 						</tr>
 						<tr>
-							<th width="30%" class="dark">Api Key</th>
-							<td class="light"><input type="text" name="apikey" size="75%" value="{$user_cp_profile.apikey}"></td>
+							<th width="30%" class="dark">API Key</th>
+							<td class="light"><input type="text" id="wifidb_apikey" size="75%" value="{$user_cp_profile.apikey|escape:'html':'UTF-8':false}" readonly onfocus="this.select()" aria-label="Your API key">
+									<button type="submit" form="wifidb_new_apikey" onclick="return confirm('Make a new API key? The old one stops working, and Vistumbler and the app will need the new one.');">Make a new key</button>
+									<br><small>Vistumbler and the app sign in with this. Making a new one stops the old one working.</small></td>
 						</tr>
 						<tr>
 							<th width="30%" class="dark">API Key QR</th>
@@ -100,7 +102,7 @@ if not, write to the
 									</script>
 									{/literal}
 								{else}
-									<p>No API key set yet. Save profile to generate one.</p>
+									<p>No API key yet: use Make a new key above.</p>
 								{/if}
 							</td>
 						</tr>
@@ -115,5 +117,6 @@ if not, write to the
 						</tr>
 					</table>
 				</form>
+				<form id="wifidb_new_apikey" method="post" action="?func=new_apikey"></form>
 			</div>
 {include file="footer.tpl"}
