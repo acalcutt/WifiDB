@@ -294,16 +294,36 @@
 		const swarmReady = Promise.resolve(null);
 {/if}
 {if $wifidb_map_dem_url}
-		// the elevation the contour lines are drawn from (Site Settings: Map elevation tiles)
-		var demSource = new mlcontour.DemSource({
-			url: '{$wifidb_map_dem_url|escape:'javascript'}',
-			encoding: 'terrarium',
-			maxzoom: 11,
-			worker: true,
-			cacheSize: 100,
-			timeoutMs: 10_000
+		// the elevation the contour lines are drawn from (Site Settings: Map elevation tiles). A TileJSON says where its
+		// tiles are, how they're encoded and how far they go; the settings' encoding and highest zoom, when set, win.
+		// maplibre-contour fetches the tiles itself, in its own worker, so they come over HTTPS: a #torrent= fragment
+		// (the pmtiles-swarm convention) is left off, and the swarm doesn't serve them.
+		// Resolves to null, and the map has no contour lines, when the TileJSON can't be read.
+		var demReady = (async function () {
+			var dem = {$wifidb_map_dem};
+			var url = dem.url, encoding = dem.encoding, maxzoom = dem.maxzoom;
+			if (dem.tilejson) {
+				var response = await fetch(url.split('#')[0]);
+				if (!response.ok) throw new Error('HTTP ' + response.status);
+				var tilejson = await response.json();
+				url = tilejson.tiles[0];
+				if (encoding === null) encoding = tilejson.encoding;
+				if (maxzoom === null) maxzoom = tilejson.maxzoom;
+			}
+			var source = new mlcontour.DemSource({
+				url: url,
+				encoding: encoding === 'mapbox' ? 'mapbox' : 'terrarium',
+				maxzoom: typeof maxzoom === 'number' ? maxzoom : 11,
+				worker: true,
+				cacheSize: 100,
+				timeoutMs: 10_000
+			});
+			source.setupMaplibre(maplibregl);
+			return source;
+		})().catch(function (e) {
+			console.warn('[wifidb] no contour lines: the elevation tiles could not be read', e);
+			return null;
 		});
-		demSource.setupMaplibre(maplibregl);
 {/if}
 		maplibregl.setWorkerCount(6)
 
@@ -938,7 +958,10 @@
 			toggle_label();
 {if $wifidb_map_dem_url}
 
-			//Contour lines
+			//Contour lines, once the elevation source is ready (it may have a TileJSON to read first). Asked again
+			// after a basemap switch; the check keeps a second answer from adding them twice.
+			demReady.then(function (demSource) {
+			if (!demSource || map.getSource("contour_source")) return;
 			var layers = map.getStyle().layers;
 			// Find the index of the first symbol layer in the map style
 			var firstSymbolId;
@@ -1010,6 +1033,7 @@
 				},
 				firstSymbolId
 			);
+			});
 {/if}
 		};
 

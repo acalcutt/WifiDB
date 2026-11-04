@@ -219,8 +219,18 @@ class frontend extends dbcore
 		$this->smarty->assign('wifidb_google_verification', $settings->Get('google_site_verification'));
 		$this->smarty->assign('wifidb_bing_verification', $settings->Get('bing_site_verification'));
 		$this->smarty->assign('wifidb_site_origin', preg_replace('#^(https?://[^/]+).*$#i', '$1', $this->URL_PATH));
-		# where the map's contour lines get their elevation (Site Settings)
-		$this->smarty->assign('wifidb_map_dem_url', $settings->Get('map_dem_url'));
+		# where the map's contour lines get their elevation (Site Settings): a tile address, or a TileJSON the map reads
+		# the rest from. encoding and maxzoom are null for "as the TileJSON says" (map.tpl's own defaults otherwise).
+		$dem_url = $settings->Get('map_dem_url');
+		$dem_encoding = $settings->Get('map_dem_encoding');
+		$dem_maxzoom = $settings->Get('map_dem_maxzoom');
+		$this->smarty->assign('wifidb_map_dem_url', $dem_url);
+		$this->smarty->assign('wifidb_map_dem', json_encode(array(
+			'url' => $dem_url,
+			'tilejson' => strpos($dem_url, '{z}') === false,
+			'encoding' => $dem_encoding === 'auto' ? null : $dem_encoding,
+			'maxzoom' => $dem_maxzoom === '' ? null : (int)$dem_maxzoom,
+		), JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT));
 	}
 
 	/**

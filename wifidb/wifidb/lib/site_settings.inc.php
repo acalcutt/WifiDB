@@ -75,8 +75,14 @@ class SiteSettings
 			'allCountries', array('allCountries' => 'Every place', 'cities500' => 'Towns of 500 or more', 'cities1000' => 'Towns of 1,000 or more',
 				'cities5000' => 'Towns of 5,000 or more', 'cities15000' => 'Towns of 15,000 or more')),
 		'map_dem_url'       => array('text', 'Map elevation tiles',
-			"Where the mobile theme's map gets the elevation it draws contour lines from: the address of Terrarium-encoded PNG tiles, with {z}, {x} and {y} in it. Empty: no contour lines.",
+			"Where the mobile theme's map gets the elevation it draws contour lines from: the address of elevation tiles (PNG or WebP) with {z}, {x} and {y} in it, or of their TileJSON (such as a pmtiles-swarm tiles.json, #torrent= and all), which says where the tiles are and how they're encoded. The contours read the tiles over HTTPS, not from the swarm. Empty: no contour lines.",
 			'https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png'),
+		'map_dem_encoding'  => array('choice', 'Map elevation tiles: encoding',
+			"How the elevation is stored in the tiles' colours. As the TileJSON says: its encoding, or Terrarium for a tile address or a TileJSON that doesn't say.",
+			'auto', array('auto' => 'As the TileJSON says', 'terrarium' => 'Terrarium', 'mapbox' => 'Terrain-RGB (Mapbox)')),
+		'map_dem_maxzoom'   => array('text', 'Map elevation tiles: highest zoom',
+			"The most detailed zoom of the elevation tiles the contour lines read (closer in, they're drawn from that one): 0 to 22. Higher draws finer lines but downloads more. Empty: the TileJSON's maxzoom, or 11 for a tile address.",
+			''),
 		'analytics_consent' => array('choice', "Visitors' consent to analytics and ad cookies",
 			"Ask where it's required: only visitors in the EU and the rest of the European Economic Area, the UK and Switzerland see the cookie banner (by the country of their address, looked up on this server; anyone whose country can't be told is asked too); everyone else isn't asked. Ask every visitor: everyone sees the banner. Don't ask: nobody does, which is only allowed where consent isn't required. Until a visitor allows them, Google is told not to use cookies for analytics or personalized ads.",
 			'region', array('region' => "Ask where it's required", 'ask' => 'Ask every visitor', 'off' => "Don't ask")),
@@ -98,8 +104,13 @@ class SiteSettings
 				return preg_match('/^[A-Za-z0-9_\-]{8,128}$/', $value) ? array($value, '')
 					: array($value, "That isn't a site verification code (letters, numbers, - and _).");
 			case 'map_dem_url':
-				return preg_match('#^https?://[^\s"\'<>\\\\]+$#i', $value) && strpos($value, '{z}') !== false && strpos($value, '{x}') !== false && strpos($value, '{y}') !== false
-					? array($value, '') : array($value, 'The elevation tiles need a web address with {z}, {x} and {y} in it.');
+				# a tile address has all three of {z}, {x} and {y}; a TileJSON's has none
+				$parts = (strpos($value, '{z}') !== false) + (strpos($value, '{x}') !== false) + (strpos($value, '{y}') !== false);
+				return preg_match('#^https?://[^\s"\'<>\\\\]+$#i', $value) && ($parts === 0 || $parts === 3)
+					? array($value, '') : array($value, 'The elevation tiles need a web address: of the tiles, with {z}, {x} and {y} in it, or of their TileJSON.');
+			case 'map_dem_maxzoom':
+				return preg_match('/^\d{1,2}$/', $value) && (int)$value <= 22 ? array((string)(int)$value, '')
+					: array($value, 'The highest zoom is a number from 0 to 22.');
 			case 'site_description':
 				$value = trim(preg_replace('/\s+/u', ' ', strip_tags($value)));
 				return mb_strlen($value) <= 300 ? array($value, '') : array($value, 'The site description can be at most 300 characters.');

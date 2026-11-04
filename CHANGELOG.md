@@ -3,6 +3,7 @@
 ## master
 ### ✨ Features and improvements
 - **Live uploads become imports of the member's (live API version 2).** `api/live.php?LiveVersion=1` answers `{"LiveVersion":2}`, so Vistumbler's Auto WiFiDB Upload starts a session with the member's username and API key and a title and notes, and gets back its `SessionID`. Every access point sent with that session is the member's, whatever username comes with it. When Vistumbler stops (`completed=1`), what the session sent is written out as a VS1 and put on the import queue with the session's title and notes, so it's imported as that member's like an upload would be; a finished session takes no more. A wrong API key starts nothing; no username at all starts an anonymous one (`AnonCoward`). A session ID WiFiDB didn't hand out is version 1's and works as before. Migration `0014_live_sessions`.
+- **Site Settings: the map's elevation tiles can be a TileJSON, with their encoding and highest zoom.** Map elevation tiles takes a TileJSON's address as well as a `{z}/{x}/{y}` one (a pmtiles-swarm `tiles.json`, `#torrent=` and all), and the map reads where the tiles are, their encoding and their maxzoom from it. Two new settings, Map elevation tiles: encoding (as the TileJSON says, Terrarium, or Terrain-RGB) and highest zoom, override it; before, the contours always read Terrarium tiles to zoom 11. PNG and WebP tiles both work. The contour lines read the tiles over HTTPS, not from the swarm.
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes

@@ -129,10 +129,23 @@ final class SiteSettingsTest extends TestCase
         $url = 'https://tiles.example.org/dem/{z}/{x}/{y}.png';
         $this->assertSame([$url, ''], SiteSettings::Clean('map_dem_url', " $url "));
         $this->assertSame(['', ''], SiteSettings::Clean('map_dem_url', ''), 'empty: no contour lines');
-        foreach (['https://tiles.example.org/dem/{z}/{x}.png', 'javascript:alert(1)//{z}{x}{y}', "https://x/{z}/{x}/{y}.png'+alert(1)+'"] as $bad) {
+        foreach (['https://tiles.example.org/dem/{z}/{x}.png', 'javascript:alert(1)//{z}{x}{y}', "https://x/{z}/{x}/{y}.png'+alert(1)+'", "https://x/tiles.json'+alert(1)+'"] as $bad) {
             $this->assertNotSame('', SiteSettings::Clean('map_dem_url', $bad)[1], $bad);
         }
         $this->assertSame('https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png', $this->settings()->Get('map_dem_url'), 'what the map used before');
+    }
+
+    public function testTheMapsElevationTilesCanBeATileJson(): void
+    {
+        $url = 'https://swarm.example.org/latest/terrain/tiles.json#torrent=https%3A%2F%2Fswarm.example.org%2Flatest%2Fterrain%2Farchive.torrent&magnet=magnet%3A%3Fxt%3Durn%3Abtih%3A767d';
+        $this->assertSame([$url, ''], SiteSettings::Clean('map_dem_url', $url), 'a pmtiles-swarm tiles.json, #torrent= and all');
+        $this->assertSame('auto', $this->settings()->Get('map_dem_encoding'), 'the encoding the TileJSON gives, unless set');
+        $this->assertSame('', $this->settings()->Get('map_dem_maxzoom'), "and its maxzoom");
+        $this->assertSame(['12', ''], SiteSettings::Clean('map_dem_maxzoom', ' 12 '));
+        $this->assertSame(['0', ''], SiteSettings::Clean('map_dem_maxzoom', '00'));
+        foreach (['23', '-1', '12.5', 'twelve'] as $bad) {
+            $this->assertNotSame('', SiteSettings::Clean('map_dem_maxzoom', $bad)[1], $bad);
+        }
     }
 
     public function testWhatSearchEnginesRead(): void

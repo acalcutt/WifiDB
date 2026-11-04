@@ -79,10 +79,13 @@ sm_map_has() { docker exec -e PAT="$1" -e CK="$tzc; wifidb_theme=vistumbler_mobi
     sh -c 'curl -s -H "Cookie: $CK" "http://127.0.0.1/opt/map.php?func=wifidbmap" | grep -qF "$PAT"'; }
 # (the MariaDB boot test's settings form, sent with only some fields, has saved it empty by now: back to unset)
 sqlq "DELETE FROM site_settings WHERE name = 'map_dem_url'" >/dev/null
-check "the mobile map draws contours from tiles.wifidb.net unless told otherwise" sm_map_has "url: 'https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png'"
+check "the mobile map draws contours from tiles.wifidb.net unless told otherwise" sm_map_has '{"url":"https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png","tilejson":false,"encoding":null,"maxzoom":null}'
 sm_set 'array("map_dem_url" => "https://dem.example.test/{z}/{x}/{y}.png")'
-sm_map_given() { sm_map_has "url: 'https://dem.example.test/{z}/{x}/{y}.png'" && ! sm_map_has jaxa_terrarium; }
+sm_map_given() { sm_map_has '"url":"https://dem.example.test/{z}/{x}/{y}.png"' && ! sm_map_has jaxa_terrarium; }
 check "...from the address Site Settings gives" sm_map_given
+sm_set 'array("map_dem_url" => "https://dem.example.test/tiles.json", "map_dem_encoding" => "mapbox", "map_dem_maxzoom" => "12")'
+check "...or a TileJSON, with the encoding and highest zoom Site Settings gives" sm_map_has '{"url":"https://dem.example.test/tiles.json","tilejson":true,"encoding":"mapbox","maxzoom":12}'
+sm_set 'array("map_dem_encoding" => "auto", "map_dem_maxzoom" => "")'
 sm_set 'array("map_dem_url" => "")'
 sm_map_none() { sm_map_has "maplibregl.Map" && ! sm_map_has DemSource && ! sm_map_has contour_source; }
 check "...and with none, it draws none" sm_map_none
