@@ -1564,35 +1564,10 @@ class export extends dbcore
 
 	function GeoNamesArray($Latdd, $Londd, $from = NULL, $inc = NULL)
 	{
-		$lat_search = bcdiv($Latdd, 1, 1);
-		$long_search = bcdiv($Londd, 1, 1);
 		$list_geonames = array();
-		
-		if($this->sql->service == "pgsql")
-		{
-			// geonames.latitude/longitude are varchar; Postgres will not implicitly
-			// convert them for radians() the way MySQL and SQL Server do.
-			$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
-				. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS miles,\n"
-				. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS kilometers\n"
-				. "FROM geonames \n"
-				. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC";
-		}
-		else
-		{
-			$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
-				. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS miles,\n"
-				. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS kilometers\n"
-				. "FROM geonames \n"
-				. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC";
-		}
-		if($from !== NULL && $inc !== NULL){
-			if($this->sql->service == "mysql"){$sql .=  "\nLIMIT ".$from.", ".$inc;}
-			else if($this->sql->service == "pgsql"){$sql .=  "\nLIMIT ".$inc." OFFSET ".$from;}
-			else if($this->sql->service == "sqlsrv"){$sql .=  "\nOFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
-		}
-		$geoname_res = $this->sql->conn->query($sql);
-		while ($GeonamesArray = $geoname_res->fetch(1))
+		# the places nearest the point, all kinds (lib/geonames.inc.php)
+		require_once dirname(__FILE__).'/geonames.inc.php';
+		foreach(GeoNamesNearby::Nearest($this->sql->conn, $Latdd, $Londd, $inc === NULL ? 1000 : $inc, $from === NULL ? 0 : $from) as $GeonamesArray)
 		{
 			if($GeonamesArray['id'] !== '')
 			{

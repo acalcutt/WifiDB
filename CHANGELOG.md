@@ -10,6 +10,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
+- **Places nearby are the nearest ones, wherever they are.** An access point's places nearby, and `api/geonames.php`, only looked in the 0.1 degree square the point was in (by the text of the latitude and longitude), so a place just over the line was never found, and a point in an empty square found nothing at all. They now look in a box around the point, wider where nothing is close, by the position as numbers: migration `0013_geonames_coords` adds `lat` and `lon` to `geonames` and indexes them, and fills them for the places already loaded (on a big table this takes a while; `load_geonames.php` fills them from then on). Every kind of place is still listed, landmarks too.
 - **`api/geonames.php` finds the place nearest the point asked about.** It measured every place's distance from a point it never set, so the "nearest" was whichever place in the square came first; and a `lat` or `long` that isn't a number gave an error instead of saying so.
 - **WiGLE and SWardriving CSVs sent through `api/v2/import.php` import.** The API took every `.csv` for a Vistumbler one, and a `.wiglecsv` for a type the importer doesn't know; it now looks at what's in the file, as the upload page does.
 - **Update every server works on SQL Server.** Asking for an update from Admin > Servers failed with "That didn't work": the request named its `backup` column, a reserved word in SQL Server, without brackets.

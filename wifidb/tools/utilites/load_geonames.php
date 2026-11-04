@@ -172,7 +172,9 @@ foreach($inputs as $load => $in)
 	# and stamps it with when this load started, so what the file no longer has is what's left with an older stamp
 	$key = $columns[0];
 	$stamp = gmdate('Y-m-d H:i:s');
-	$written = array_merge($columns, array('loaded_at'));
+	# a place's position also as numbers, for finding the nearest (lib/geonames.inc.php, migration 0013_geonames_coords)
+	$coords = ($load === 'geonames') ? array(array_search('latitude', $columns), array_search('longitude', $columns)) : null;
+	$written = array_merge($columns, $coords ? array('lat', 'lon') : array(), array('loaded_at'));
 	$insert_sql = "INSERT INTO ".$quote($table)." (".implode(", ", array_map($quote, $written)).") VALUES (".implode(", ", array_fill(0, count($written), "?")).")";
 	$others = array_slice($written, 1);
 	$update = null;
@@ -206,6 +208,10 @@ foreach($inputs as $load => $in)
 			$values[] = ($v === '' && in_array($column, array('geonameid', 'geonamesid'), true)) ? null : $v;
 		}
 		if($values[0] === null || $values[0] === '') { $skipped++; continue; }   # no key: nothing to find it by again
+		if($coords)
+		{
+			foreach($coords as $i) { $values[] = is_numeric($fields[$i] ?? '') ? $fields[$i] : null; }
+		}
 		$values[] = $stamp;
 		# PostgreSQL gives up on the whole transaction after one failed statement; a savepoint keeps it to the one line
 		if($service == "pgsql") { $conn->exec("SAVEPOINT geoline"); }
