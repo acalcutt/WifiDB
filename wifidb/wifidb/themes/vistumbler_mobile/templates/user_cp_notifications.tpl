@@ -15,7 +15,7 @@ version 2 of the License, or (at your option) any later version.
 					<tr>
 						<td class="header" colspan="3">
 							<form method="post" action="{$wifidb_host_url}cp/notifications.php?func=markall" style="display:inline"><input type="submit" value="Mark all read"{if $notification_unread eq 0} disabled{/if}></form>
-							| <a href="{$wifidb_host_url}cp/notifications.php?func=settings">Choose which alerts you get</a>
+							| <a href="{$wifidb_host_url}cp/index.php?func=notifications">Choose what you are told, and what is e-mailed</a>
 						</td>
 					</tr>
 					{foreach item=n from=$notifications name=list}

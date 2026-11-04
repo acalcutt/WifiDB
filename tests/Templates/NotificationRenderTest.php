@@ -79,13 +79,18 @@ final class NotificationRenderTest extends TestCase
     {
         $smarty = $this->smarty($theme);
         $smarty->assign('notification_prefs', [
-            'import_finished' => ['label' => 'Your import finished', 'on' => true],
-            'export' => ['label' => 'New map data exports', 'on' => false],
+            'import_finished' => ['label' => 'Your import finished', 'on' => true, 'inbox_optional' => true, 'email' => true, 'emailable' => true],
+            'export' => ['label' => 'New map data exports', 'on' => false, 'inbox_optional' => true, 'email' => false, 'emailable' => true],
+            'admin_alert' => ['label' => 'Errors and warnings', 'on' => true, 'inbox_optional' => false, 'email' => false, 'emailable' => true],
         ]);
         $smarty->assign('notification_saved', true);
         $html = $smarty->fetch('user_cp_notification_settings.tpl');
-        $this->assertMatchesRegularExpression('/name="type\[import_finished\]" type="checkbox" checked>/', $html);
-        $this->assertMatchesRegularExpression('/name="type\[export\]" type="checkbox">/', $html);
+        $this->assertMatchesRegularExpression('/name="inbox\[import_finished\]" type="checkbox" checked>/', $html);
+        $this->assertMatchesRegularExpression('/name="email\[import_finished\]" type="checkbox" checked>/', $html);
+        $this->assertMatchesRegularExpression('/name="inbox\[export\]" type="checkbox">/', $html);
+        $this->assertMatchesRegularExpression('/name="email\[export\]" type="checkbox">/', $html);
+        $this->assertStringNotContainsString('name="inbox[admin_alert]"', $html, 'an Inbox alert that is always on has no box');
+        $this->assertMatchesRegularExpression('/name="email\[admin_alert\]" type="checkbox">/', $html);
         $this->assertStringContainsString('Saved.', $html);
     }
 }

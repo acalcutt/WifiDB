@@ -35,8 +35,8 @@ if(!$username)
 }
 
 
-# Choosing which notifications to get is a preference: it asks for the second factor if the member chose that.
-if($func === 'settings') { $dbcore->sec->RequirePreferencesConfirmation('cp/notifications.php?func=settings'); }
+# Choosing which alerts to get, and which to e-mail, is in the control panel now (Notifications)
+if($func === 'settings') { header('Location: index.php?func=notifications'); exit; }
 
 $notifier = new Notifier($dbcore->sql->conn);
 $post = ($_SERVER['REQUEST_METHOD'] === 'POST');
@@ -61,22 +61,6 @@ try
 			if($post) { $notifier->Delete($username, (int)@$_POST['id']); }
 			header('Location: notifications.php?page='.$page);
 			exit;
-
-		case 'settings':
-			$saved = false;
-			if($post)
-			{
-				foreach($notifier->Prefs($username) as $type => $info)
-				{
-					$notifier->SetPref($username, $type, isset($_POST['type'][$type]));
-				}
-				$saved = true;
-			}
-			$dbcore->smarty->assign('wifidb_page_label', 'Notification Settings');
-			$dbcore->smarty->assign('notification_prefs', $notifier->Prefs($username));
-			$dbcore->smarty->assign('notification_saved', $saved);
-			$dbcore->smarty->display('user_cp_notification_settings.tpl');
-			break;
 
 		default:
 			$total = $notifier->Total($username);

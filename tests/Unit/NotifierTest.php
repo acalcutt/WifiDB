@@ -14,7 +14,7 @@ final class NotifierTest extends TestCase
         $this->db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $this->db->exec("CREATE TABLE user_info (username TEXT, admin TEXT DEFAULT '0', disabled TEXT DEFAULT '0', validated TEXT DEFAULT '0')");
         $this->db->exec("CREATE TABLE notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, type TEXT, title TEXT, body TEXT, link TEXT, created TEXT, read_at TEXT)");
-        $this->db->exec("CREATE TABLE notification_prefs (username TEXT, type TEXT, in_app INTEGER, PRIMARY KEY (username, type))");
+        $this->db->exec("CREATE TABLE notification_prefs (username TEXT, type TEXT, in_app INTEGER, email INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (username, type))");
         foreach ([['alice', 0, 0, 0], ['bob', 0, 0, 0], ['root', 1, 0, 0], ['gone', 1, 1, 0], ['pending', 1, 0, 1]] as $u) {
             $this->db->prepare("INSERT INTO user_info (username, admin, disabled, validated) VALUES (?, ?, ?, ?)")->execute($u);
         }
@@ -40,9 +40,10 @@ final class NotifierTest extends TestCase
     public function testAdminAlertsCannotBeSwitchedOff(): void
     {
         $this->assertFalse($this->n->SetPref('root', 'admin_alert', false));
-        $this->db->exec("INSERT INTO notification_prefs VALUES ('root', 'admin_alert', 0)");
+        $this->db->exec("INSERT INTO notification_prefs VALUES ('root', 'admin_alert', 0, 0)");
         $this->assertSame(1, $this->n->Notify('admin_alert', 'Still told'));
-        $this->assertArrayNotHasKey('admin_alert', $this->n->Prefs('root'));
+        $this->assertFalse($this->n->Prefs('root')['admin_alert']['inbox_optional'], 'listed for its e-mail, the Inbox alert always on');
+        $this->assertArrayNotHasKey('security', $this->n->Prefs('root'), 'nothing to choose');
     }
 
     public function testATypeThatIsOffByDefaultNeedsOptIn(): void
@@ -70,6 +71,26 @@ final class NotifierTest extends TestCase
         $this->n->SetPref('bob', 'export', false);
         $this->assertSame(1, (int)$this->db->query("SELECT COUNT(*) FROM notification_prefs WHERE username = 'bob'")->fetchColumn());
         $this->assertFalse($this->n->Prefs('bob')['export']['on']);
+    }
+
+    public function testEmailIsOffUntilChosenAndSeparateFromTheInbox(): void
+    {
+        $this->assertSame(['inbox' => ['alice'], 'email' => []], $this->n->Deliver('import_finished', 'Done', '', '', ['alice']));
+        $this->n->SetEmail('alice', 'import_finished', true);
+        $this->n->SetPref('alice', 'import_finished', false);
+        $this->assertSame(['inbox' => [], 'email' => ['alice']], $this->n->Deliver('import_finished', 'Done', '', '', ['alice']), 'e-mail only');
+        $prefs = $this->n->Prefs('alice')['import_finished'];
+        $this->assertFalse($prefs['on']);
+        $this->assertTrue($prefs['email']);
+        $this->assertSame(1, (int)$this->db->query("SELECT COUNT(*) FROM notification_prefs WHERE username = 'alice'")->fetchColumn(), 'one row for both');
+    }
+
+    public function testEmailGoesToTheTypesAudienceOnly(): void
+    {
+        $this->n->SetEmail('root', 'admin_alert', true);
+        $this->n->SetEmail('alice', 'admin_alert', true);
+        $this->assertSame(['root'], $this->n->Deliver('admin_alert', 'Broke')['email'], 'not a member who is no administrator');
+        $this->assertFalse($this->n->SetEmail('alice', 'security', true), 'security notices are never e-mailed');
     }
 
     public function testAnUnknownTypeIsAProgrammingError(): void

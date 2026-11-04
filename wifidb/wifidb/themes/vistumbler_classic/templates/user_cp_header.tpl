@@ -25,7 +25,7 @@ if not, write to the
 						<td class="header">
 							<a href="?func=profile">Profile</a>
 							|
-							<a href="?func=pref">Email Preferences</a>
+							<a href="?func=notifications">Notifications</a>
 							|
 							<a href="{$wifidb_host_url}cp/security.php">Security</a>
 							|

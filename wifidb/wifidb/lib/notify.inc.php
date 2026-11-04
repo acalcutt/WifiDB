@@ -1,12 +1,13 @@
 <?php
 /*
-notify.inc.php, in-app notifications: what happened (an import finished, a new member, a failure) shown in the control
-panel, so the site does not have to rely on e-mail. E-mail stays for what a member cannot read without signing in
-(validation, password reset) and for whoever also asked for it in their e-mail preferences (wdbmail::mail_users).
+notify.inc.php, notifications: what happened (an import finished, a new member, a failure), as an alert in the member's
+Inbox and, for whoever chose it, by e-mail (wdbmail::notify sends what Deliver() says). E-mail is also what a member
+cannot read without signing in (validation, password reset), which doesn't go through here.
 
 Each kind of notification has a type below. It says who is told (the person it is about, the administrators, or
-everyone who opted in) and whether it is on or off until the member chooses (notification_prefs). Administrator alerts
-are not optional.
+everyone who opted in), whether the Inbox alert is on or off until the member chooses, and whether it can also be
+e-mailed, which is off until they choose (notification_prefs: in_app, email). Administrator and security alerts can't be
+switched off in the Inbox.
 
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
@@ -15,15 +16,18 @@ version 2 of the License, or (at your option) any later version.
 
 class Notifier
 {
-	/** type => [label, audience, default for a member who has not chosen, whether a member may turn it off] */
+	/**
+	 * type => [label, audience, Inbox default for a member who has not chosen, whether a member may turn the Inbox alert
+	 * off, whether it can be e-mailed (sent through wdbmail, which mails it; e-mail is off until chosen)]
+	 */
 	const TYPES = array(
-		'import_started'  => array('Your import started',       'owner',  1, true),
-		'import_finished' => array('Your import finished',      'owner',  1, true),
-		'import_failed'   => array('Your import failed',        'owner',  1, true),
-		'export'          => array('New map data exports',      'all',    0, true),
-		'new_user'        => array('A new member joined',       'admins', 1, true),
-		'admin_alert'     => array('Errors and warnings',       'admins', 1, false),
-		'security'        => array('Sign-in and security changes', 'owner',  1, false),
+		'import_started'  => array('Your import started',       'owner',  1, true,  true),
+		'import_finished' => array('Your import finished',      'owner',  1, true,  true),
+		'import_failed'   => array('Your import failed',        'owner',  1, true,  true),
+		'export'          => array('New map data exports',      'all',    0, true,  true),
+		'new_user'        => array('A new member joined',       'admins', 1, true,  true),
+		'admin_alert'     => array('Errors and warnings',       'admins', 1, false, true),
+		'security'        => array('Sign-in and security changes', 'owner',  1, false, false),
 	);
 
 	private $conn;
@@ -66,28 +70,33 @@ class Notifier
 	 */
 	public function Notify($type, $title, $body = '', $link = '', $users = null)
 	{
-		if(!isset(self::TYPES[$type])) { throw new InvalidArgumentException("Unknown notification type $type"); }
-		list(, $audience, $default, $optional) = self::TYPES[$type];
+		return count($this->Deliver($type, $title, $body, $link, $users)['inbox']);
+	}
 
-		if($users === null)
-		{
-			$users = $this->Audience($type, $audience, $default);
-		}
-		else
-		{
-			$users = $this->Interested(array_values(array_unique(array_map('strval', (array)$users))), $type, $default, $optional);
-		}
+	/**
+	 * Notify(), and who also wants it by e-mail (for the caller to send: wdbmail::notify). The same members are asked
+	 * either way: the person it is about, or the type's audience.
+	 * @return array inbox => usernames given the alert, email => usernames who chose e-mail for this type
+	 */
+	public function Deliver($type, $title, $body = '', $link = '', $users = null)
+	{
+		if(!isset(self::TYPES[$type])) { throw new InvalidArgumentException("Unknown notification type $type"); }
+		list(, $audience, $default, $optional, $emailable) = self::TYPES[$type];
+
+		$candidates = ($users === null) ? $this->Audience($audience) : array_values(array_unique(array_map('strval', (array)$users)));
+		$inbox = $optional ? $this->Wanting($candidates, $type, 'in_app', $default) : $candidates;
+		$email = $emailable ? $this->Wanting($candidates, $type, 'email', 0) : array();
 
 		$title = mb_substr(trim((string)$title), 0, 255);
 		$body = (string)$body;
 		$link = self::CleanLink($link);
 		$now = $this->Now();
-		foreach($users as $user)
+		foreach($inbox as $user)
 		{
 			$this->Run("INSERT INTO notifications (username, type, title, body, link, created) VALUES (?, ?, ?, ?, ?, ?)",
 				array($user, $type, $title, $body, $link, $now));
 		}
-		return count($users);
+		return array('inbox' => $inbox, 'email' => $email);
 	}
 
 	private function Enabled()
@@ -95,7 +104,8 @@ class Notifier
 		return "disabled = '0' AND validated = '0'";
 	}
 
-	private function Audience($type, $audience, $default)
+	/** Every enabled member, or the enabled administrators */
+	private function Audience($audience)
 	{
 		$where = $this->Enabled();
 		if($audience === 'admins') { $where .= " AND admin = '1'"; }
@@ -104,46 +114,73 @@ class Notifier
 		{
 			$everyone[] = (string)$user;
 		}
-		return $this->Interested($everyone, $type, $default, self::TYPES[$type][3]);
+		return $everyone;
 	}
 
-	/** Of these members, the ones who want this type: their own choice if they made one, otherwise the default. */
-	private function Interested($users, $type, $default, $optional)
+	/** Of these members, the ones who want this type ($column: in_app or email): their own choice if they made one, otherwise the default. */
+	private function Wanting($users, $type, $column, $default)
 	{
-		if(!$optional || !$users) { return $users; }
+		if(!$users) { return $users; }
 		$chosen = array();
-		foreach($this->Run("SELECT username, in_app FROM notification_prefs WHERE type = ?", array($type))->fetchAll(PDO::FETCH_ASSOC) as $row)
+		foreach($this->Run("SELECT username, $column FROM notification_prefs WHERE type = ?", array($type))->fetchAll(PDO::FETCH_ASSOC) as $row)
 		{
-			$chosen[(string)$row['username']] = (int)$row['in_app'];
+			$chosen[(string)$row['username']] = (int)$row[$column];
 		}
 		return array_values(array_filter($users, function ($user) use ($chosen, $default) {
 			return (isset($chosen[$user]) ? $chosen[$user] : $default) === 1;
 		}));
 	}
 
-	/** @return array [type => [label, on]] for the preferences page; types a member cannot switch are left out */
+	/**
+	 * For the preferences page: each type the member can choose something about.
+	 * @return array [type => [label, on (Inbox), inbox_optional, email, emailable]]
+	 */
 	public function Prefs($username)
 	{
 		$chosen = array();
-		foreach($this->Run("SELECT type, in_app FROM notification_prefs WHERE username = ?", array($username))->fetchAll(PDO::FETCH_ASSOC) as $row)
+		foreach($this->Run("SELECT type, in_app, email FROM notification_prefs WHERE username = ?", array($username))->fetchAll(PDO::FETCH_ASSOC) as $row)
 		{
-			$chosen[$row['type']] = (int)$row['in_app'];
+			$chosen[$row['type']] = $row;
 		}
 		$out = array();
 		foreach(self::TYPES as $type => $info)
 		{
-			if(!$info[3]) { continue; }
-			$out[$type] = array('label' => $info[0], 'on' => isset($chosen[$type]) ? $chosen[$type] === 1 : $info[2] === 1);
+			if(!$info[3] && !$info[4]) { continue; }
+			$out[$type] = array(
+				'label' => $info[0],
+				'on' => !$info[3] || (isset($chosen[$type]) ? (int)$chosen[$type]['in_app'] === 1 : $info[2] === 1),
+				'inbox_optional' => $info[3],
+				'email' => $info[4] && isset($chosen[$type]) && (int)$chosen[$type]['email'] === 1,
+				'emailable' => $info[4],
+			);
 		}
 		return $out;
 	}
 
+	/** The Inbox alert for a type, on or off. @return bool false for a type that can't be switched off */
 	public function SetPref($username, $type, $on)
 	{
 		if(!isset(self::TYPES[$type]) || !self::TYPES[$type][3]) { return false; }
-		$this->Run("DELETE FROM notification_prefs WHERE username = ? AND type = ?", array($username, $type));
-		$this->Run("INSERT INTO notification_prefs (username, type, in_app) VALUES (?, ?, ?)", array($username, $type, $on ? 1 : 0));
+		$this->Save($username, $type, $on, null);
 		return true;
+	}
+
+	/** E-mail for a type, on or off. @return bool false for a type that is never e-mailed */
+	public function SetEmail($username, $type, $on)
+	{
+		if(!isset(self::TYPES[$type]) || !self::TYPES[$type][4]) { return false; }
+		$this->Save($username, $type, null, $on);
+		return true;
+	}
+
+	/** One row per member and type; null keeps that choice as it was (or the default). */
+	private function Save($username, $type, $inApp, $email)
+	{
+		$row = $this->Run("SELECT in_app, email FROM notification_prefs WHERE username = ? AND type = ?", array($username, $type))->fetch(PDO::FETCH_ASSOC);
+		$inApp = $inApp !== null ? ($inApp ? 1 : 0) : ($row ? (int)$row['in_app'] : self::TYPES[$type][2]);
+		$email = $email !== null ? ($email ? 1 : 0) : ($row ? (int)$row['email'] : 0);
+		$this->Run("DELETE FROM notification_prefs WHERE username = ? AND type = ?", array($username, $type));
+		$this->Run("INSERT INTO notification_prefs (username, type, in_app, email) VALUES (?, ?, ?, ?)", array($username, $type, $inApp, $email));
 	}
 
 	public function UnreadCount($username)

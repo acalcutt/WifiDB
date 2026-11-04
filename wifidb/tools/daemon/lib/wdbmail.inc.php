@@ -327,44 +327,81 @@ Go here to reset it to one you choose:
     }
 
     #===========================================================#
-    #   notify (in-app notification, and e-mail for whoever     #
-    #   also asked for it in their e-mail preferences)          #
+    #   notify (an alert in the Inbox, and e-mail for whoever   #
+    #   chose it under Control Panel -> Notifications)          #
     #===========================================================#
     /**
-     * @param string $type    a Notifier type (import_started, import_finished, kmz, new_user, admin_alert)
-     * @param string $emailType what mail_users() filters on (schedule, import, kmz, new_users), '' for no e-mail
-     * @param array|null $users members the in-app notification is about; null lets the type decide
-     * @param string|null $title short heading for the in-app notification (the e-mail subject is used if none)
-     * @return int members told in-app
+     * @param string $type    a Notifier type (import_started, import_finished, import_failed, export, new_user, admin_alert)
+     * @param array|null $users members the notification is about; null lets the type decide
+     * @param string|null $title short heading for the alert (the e-mail subject is used if none)
+     * @return int members given the alert
      */
-    function notify($type, $subject, $message, $link = '', $emailType = '', $users = null, $title = null)
+    function notify($type, $subject, $message, $link = '', $users = null, $title = null)
     {
-        $told = 0;
         try
         {
-            $told = $this->notifier()->Notify($type, $title !== null ? $title : $subject, $message, $link, $users);
+            $who = $this->notifier()->Deliver($type, $title !== null ? $title : $subject, $message, $link, $users);
         }
         catch (Throwable $e)
         {
             // A notification that cannot be stored must not stop the import or export that raised it.
             echo "Notification not stored: ".$e->getMessage()."\r\n";
+            return 0;
         }
-        if($emailType !== '') { $this->mail_users($message, $subject, $emailType, 0); }
-        return $told;
+        $this->mail_members($who['email'], $subject, $message);
+        return count($who['inbox']);
     }
 
-    /** Tells the administrators something went wrong: in-app, and by e-mail as it always was. */
+    /** Tells the administrators something went wrong: an alert, and e-mail for those who chose it. */
     function alert($subject, $message, $link = '')
     {
         try
         {
-            $this->notifier()->Notify('admin_alert', $subject, $message, $link);
+            $who = $this->notifier()->Deliver('admin_alert', $subject, $message, $link);
         }
         catch (Throwable $e)
         {
             echo "Notification not stored: ".$e->getMessage()."\r\n";
+            return 0;
         }
-        return $this->mail_users($message, $subject, "import", 1);
+        return $this->mail_members($who['email'], $subject." ^*^*^*^ ERROR! ^*^*^*^", $message);
+    }
+
+    /**
+     * E-mails these members (enabled ones with an address), one message each; one refused address doesn't stop the
+     * rest. @return int 1 if every one went (or there was no one, or mail updates are off), 0 if any failed
+     */
+    function mail_members($usernames, $subject, $contents)
+    {
+        if(!$usernames || !$this->wifidb_email_updates) { return 1; }
+        $contents .= "\r\nVistumbler WiFiDB (".$this->URL_PATH.") \r\n";
+        $contents .= "To stop receiving these messages, choose what is e-mailed under Control Panel -> Notifications: ".$this->URL_PATH."cp/index.php?func=notifications";
+        $this->mail->Subject = $subject;
+        $this->mail->Body    = $contents;
+        $allSent = 1;
+        $prep = $this->sql->conn->prepare("SELECT email FROM user_info WHERE username = ? AND disabled = '0' AND validated = '0'");
+        foreach($usernames as $username)
+        {
+            $prep->execute(array($username));
+            $email = (string)$prep->fetchColumn();
+            $prep->closeCursor();
+            if($email === '') { continue; }
+            try
+            {
+                $this->mail->addAddress($email);
+                if (!$this->mail->send()) {
+                    echo "Mailer Error (" . str_replace("@", "&#64;", $email) . ') ' . self::Why($this->mail) . '<br />';
+                    $allSent = 0;
+                }
+            }
+            catch (Exception $e)
+            {
+                echo "Mailer Error (" . str_replace("@", "&#64;", $email) . ') ' . $e->getMessage() . '<br />';
+                $allSent = 0;
+            }
+            $this->mail->clearAddresses();
+        }
+        return $allSent;
     }
 
     function notifier()
@@ -392,7 +429,7 @@ Go here to reset it to one you choose:
             {
 				#Add Signature, Unsubscribe
 				$contents .= "\r\nVistumbler WiFiDB (".$this->URL_PATH.") \r\n";
-				$contents .= "To stop receiving these messages, log into the WifiDB control panel at ".$this->URL_PATH."cp/?func=pref";
+				$contents .= "To stop receiving these messages, choose what is e-mailed under Control Panel -> Notifications: ".$this->URL_PATH."cp/index.php?func=notifications";
 
 				#Create Email Subject and Body
 				if($error_f){$subject .= " ^*^*^*^ ERROR! ^*^*^*^";}

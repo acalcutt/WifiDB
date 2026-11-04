@@ -226,7 +226,7 @@ class daemon extends wdbcli
 			{
 				$name = $bad['title'] ? $bad['title'] : $bad['file_orig'];
 				$reason = trim(explode(' |=| ', (string)$error_msg)[0]);
-				$this->wdbmail->notify('import_failed', "Import failed: $name", "Your file $name could not be imported.\r\nReason: $reason", $this->URL_PATH."opt/scheduling.php", '', array($bad['file_user']));
+				$this->wdbmail->notify('import_failed', "Import failed: $name", "Your file $name could not be imported.\r\nReason: $reason", $this->URL_PATH."opt/scheduling.php", array($bad['file_user']));
 			}
 		}
 		catch (Throwable $e)
@@ -427,7 +427,7 @@ class daemon extends wdbcli
 					
 					$subject = "Vistumbler WifiDB - File Import Started (User:$file_user ImportID:$importing_id FileID:$file_row Filename:$file_name)";
 					$message = "File has started importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name\r\nFileID: $file_row\r\nImport ID: $importing_id\r\nImport Information: ".$this->URL_PATH."opt/scheduling.php \r\n";
-					$this->wdbmail->notify('import_started', $subject, $message, $this->URL_PATH."opt/scheduling.php", 'schedule', array($file_user), "Import started: ".($file_title ? $file_title : $file_name));
+					$this->wdbmail->notify('import_started', $subject, $message, $this->URL_PATH."opt/scheduling.php", array($file_user), "Import started: ".($file_title ? $file_title : $file_name));
 				}
 				
 				# a parser that throws (a file that isn't what its type says, or a bug) sets this file aside rather than stopping
@@ -636,7 +636,7 @@ class daemon extends wdbcli
 					{
 						$subject = "Vistumbler WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
 						$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n";
-						$this->wdbmail->notify('import_finished', $subject, $message, $this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row", 'import', array($file_user), "Import finished: ".($file_title ? $file_title : $file_name));
+						$this->wdbmail->notify('import_finished', $subject, $message, $this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row", array($file_user), "Import finished: ".($file_title ? $file_title : $file_name));
 						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
 					}
 					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];

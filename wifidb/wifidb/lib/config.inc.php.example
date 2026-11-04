@@ -94,7 +94,7 @@ $config = array
 	'DKIM_passphrase'	   =>   '',
 	'DKIM_identity'		 =>   'wifidb@someemail.com',
 	'DKIM_copyHeaderFields' =>   true,
-	'ListUnsubscribe'	   =>   '<wifidb@someemail.com>, <https://wifidb.foo.lan/cp/?func=pref>',
+	'ListUnsubscribe'	   =>   '<wifidb@someemail.com>, <https://wifidb.foo.lan/cp/index.php?func=notifications>',
 	'XMailer'			   =>   'WifiDB <https://wifidb.foo.lan/wifidb/>',
 	
 	#---------------- Daemon Info ----------------#

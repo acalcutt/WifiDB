@@ -43,10 +43,12 @@ if($username)
 	$userArray = $result->fetch();
 	$user_id = $userArray['id'];
 
-	// A member who chose to be asked before saving preferences confirms first (cp/confirm.php), then has a few minutes.
-	if(in_array($func, array('profile', 'pref', 'update_user_profile', 'update_user_pref'), true))
+	// (pref and update_user_pref: Email Preferences' old addresses, still in sent e-mails' unsubscribe links)
+	if($func === 'pref' || $func === 'update_user_pref') { $func = 'notifications'; }
+	// A member who chose to be asked before using preferences confirms first (cp/confirm.php), then they stay open.
+	if(in_array($func, array('profile', 'notifications', 'update_user_profile'), true))
 	{
-		$dbcore->sec->RequirePreferencesConfirmation($func === 'update_user_pref' ? 'cp/index.php?func=pref' : 'cp/index.php?func=profile');
+		$dbcore->sec->RequirePreferencesConfirmation($func === 'notifications' ? 'cp/index.php?func=notifications' : 'cp/index.php?func=profile');
 	}
 
 	switch($func)
@@ -116,56 +118,34 @@ if($username)
 		break;
 
 		##-------------##
-		case 'pref':
-
-			$cp_profile = array();
-			if($userArray['schedule']){$cp_profile['schedule'] = 'checked';}else{$cp_profile['schedule'] = 'unchecked';};
-			if($userArray['imports']){$cp_profile['imports'] = 'checked';}else{$cp_profile['imports'] = 'unchecked';};
-			if($userArray['kmz']){$cp_profile['kmz'] = 'checked';}else{$cp_profile['kmz'] = 'unchecked';};
-			if($userArray['new_users']){$cp_profile['new_users'] = 'checked';}else{$cp_profile['new_users'] = 'unchecked';};
-
-			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
-			$dbcore->smarty->display('user_cp_email_prefs.tpl');
-
-		break;
-
-		##-------------##
-		case 'update_user_pref':
-			$schedule = ((@$_POST['schedule']) == 'on' ? 1 : 0);
-			$imports = ((@$_POST['imports']) == 'on' ? 1 : 0);
-			$kmz = ((@$_POST['kmz']) == 'on' ? 1 : 0);
-			$new_users = ((@$_POST['new_users']) == 'on' ? 1 : 0);
-
-			if($schedule !== (int)$userArray['schedule']){$dbcore->sec->logd("Update email pref schedule for ".$username."(".$user_id.") from ".$userArray['schedule']." to ".$schedule, "message");}
-			if($imports !== (int)$userArray['imports']){$dbcore->sec->logd("Update email pref imports for ".$username."(".$user_id.") from ".$userArray['imports']." to ".$imports, "message");}
-			if($kmz !== (int)$userArray['kmz']){$dbcore->sec->logd("Update email pref kmz for ".$username."(".$user_id.") from ".$userArray['kmz']." to ".$kmz, "message");}
-			if($new_users !== (int)$userArray['new_users']){$dbcore->sec->logd("Update email pref new_users for ".$username."(".$user_id.") from ".$userArray['new_users']." to ".$new_users, "message");}
-
-			$cp_profile = array();
-			if($userArray['id'])
+		case 'notifications':
+			// Each kind: an alert in the Inbox (on unless switched off), and e-mail (off unless chosen). lib/notify.inc.php
+			require_once dirname(__FILE__).'/../lib/notify.inc.php';
+			$saved = false;
+			try
 			{
-				$sql1 = "UPDATE user_info SET schedule = ?, imports = ?, kmz = ?, new_users = ? WHERE id = ?";
-				$result = $dbcore->sql->conn->prepare($sql1);
-				$result->bindParam(1, $schedule, PDO::PARAM_INT);
-				$result->bindParam(2, $imports, PDO::PARAM_INT);
-				$result->bindParam(3, $kmz, PDO::PARAM_INT);
-				$result->bindParam(4, $new_users, PDO::PARAM_INT);
-				$result->bindParam(5, $userArray['id'], PDO::PARAM_INT);
-				if($result->execute())
+				$notifier = new Notifier($dbcore->sql->conn);
+				if($_SERVER['REQUEST_METHOD'] === 'POST')
 				{
-					$cp_profile['message'] = "<br>Updated $username's Preferences<br><br>";
-				}else
-				{
-					$cp_profile['message'] = "<br>There was a serious error: ".$result->errorInfo()."<br><br>";
+					foreach($notifier->Prefs($username) as $type => $info)
+					{
+						if($info['inbox_optional']) { $notifier->SetPref($username, $type, isset($_POST['inbox'][$type])); }
+						if($info['emailable']) { $notifier->SetEmail($username, $type, isset($_POST['email'][$type])); }
+					}
+					$dbcore->sec->logd("Updated notification choices for ".$username."(".$user_id.")", "message");
+					$saved = true;
 				}
-			}else
-			{
-				$cp_profile['message'] = "<br>You are not logged in. Please log in and try again.<br><br>";
+				$dbcore->smarty->assign('wifidb_page_label', 'Notifications');
+				$dbcore->smarty->assign('notification_prefs', $notifier->Prefs($username));
+				$dbcore->smarty->assign('notification_saved', $saved);
+				$dbcore->smarty->display('user_cp_notification_settings.tpl');
 			}
-
-			$dbcore->redirect_page('/wifidb/cp/index.php?func=pref', 2000);
-			$dbcore->smarty->assign('user_cp_profile', $cp_profile);
-			$dbcore->smarty->display('user_cp_msg.tpl');
+			catch(Throwable $e)
+			{
+				// most likely the migration that adds e-mail to notification_prefs hasn't run (tools/utilites/migrate.php)
+				$dbcore->smarty->assign('user_cp_profile', array('message' => "<br>Notifications are not available yet.<br><br>"));
+				$dbcore->smarty->display('user_cp_msg.tpl');
+			}
 		break;
 
 		##-------------##

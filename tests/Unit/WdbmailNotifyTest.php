@@ -29,7 +29,7 @@ final class WdbmailNotifyTest extends TestCase
         $this->db->exec("CREATE TABLE user_info (username TEXT, email TEXT, admin TEXT DEFAULT '0', disabled TEXT DEFAULT '0', validated TEXT DEFAULT '0',
             schedule TEXT DEFAULT '0', imports TEXT DEFAULT '0', kmz TEXT DEFAULT '0', new_users TEXT DEFAULT '0')");
         $this->db->exec("CREATE TABLE notifications (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, type TEXT, title TEXT, body TEXT, link TEXT, created TEXT, read_at TEXT)");
-        $this->db->exec("CREATE TABLE notification_prefs (username TEXT, type TEXT, in_app INTEGER, PRIMARY KEY (username, type))");
+        $this->db->exec("CREATE TABLE notification_prefs (username TEXT, type TEXT, in_app INTEGER, email INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (username, type))");
         $this->db->exec("INSERT INTO user_info (username, email, admin, imports) VALUES
             ('first', 'bad@example.test', '1', '1'), ('second', 'second@example.test', '1', '1'), ('third', 'third@example.test', '0', '1'), ('quiet', 'quiet@example.test', '0', '0')");
 
@@ -69,38 +69,34 @@ final class WdbmailNotifyTest extends TestCase
 
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
-    public function testNotifyStoresInAppAndEmailsOnlyThoseWhoAskedFor(): void
+    public function testNotifyEmailsOnlyTheMemberItIsAboutWhoChoseEmail(): void
     {
         $m = $this->mailer();
-        $this->assertSame(1, $m->notify('import_finished', 'Imported', 'Your file is in', '/wifidb/opt/userstats.php', 'import', ['third']));
+        $this->assertSame(1, $m->notify('import_finished', 'Imported', 'Your file is in', '/wifidb/opt/userstats.php', ['third']));
         $this->assertSame(['Imported'], array_column($m->notifier()->Inbox('third'), 'title'));
-        $this->assertSame(0, $m->notifier()->UnreadCount('quiet'), 'in-app is for the member it is about');
-        $this->assertNotContains('quiet@example.test', $m->mail->sent);
-        $this->assertContains('third@example.test', $m->mail->sent);
+        $this->assertSame([], $m->mail->sent, 'e-mail is off until chosen');
+
+        $m->notifier()->SetEmail('third', 'import_finished', true);
+        $m->notifier()->SetEmail('quiet', 'import_finished', true);
+        $m->notify('import_finished', 'Imported', 'Your file is in', '/wifidb/opt/userstats.php', ['third']);
+        $this->assertSame(['third@example.test'], $m->mail->sent, "not to someone else who chose it: it isn't their import");
+        $this->assertSame(0, $m->notifier()->UnreadCount('quiet'));
     }
 
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
-    public function testNotifyWithNoEmailTypeSendsNoMail(): void
+    public function testAlertReachesAdminsInTheInboxAndByMailIfChosen(): void
     {
         $m = $this->mailer();
-        $m->notify('import_started', 'Started', '', '', '', ['third']);
-        $this->assertSame([], $m->mail->sent);
-        $this->assertSame(1, $m->notifier()->UnreadCount('third'));
-    }
-
-    #[RunInSeparateProcess]
-    #[PreserveGlobalState(false)]
-    public function testAlertReachesAdminsInAppAndByMail(): void
-    {
-        $m = $this->mailer();
+        $m->notifier()->SetEmail('first', 'admin_alert', true);
+        $m->notifier()->SetEmail('second', 'admin_alert', true);
         ob_start();
-        $m->alert('Import failed', 'details here', '/wifidb/opt/scheduling.php');
+        $this->assertSame(0, $m->alert('Import failed', 'details here', '/wifidb/opt/scheduling.php'), 'reports the refused address');
         ob_end_clean();
         $this->assertSame(1, $m->notifier()->UnreadCount('first'));
         $this->assertSame(1, $m->notifier()->UnreadCount('second'));
         $this->assertSame(0, $m->notifier()->UnreadCount('third'), 'not an admin');
-        $this->assertSame(['second@example.test'], $m->mail->sent, 'admins who asked for import mail (the first one refuses)');
+        $this->assertSame(['second@example.test'], $m->mail->sent, 'the admins who chose e-mail (the first one refuses)');
     }
 
     #[RunInSeparateProcess]
@@ -110,7 +106,7 @@ final class WdbmailNotifyTest extends TestCase
         $m = $this->mailer();
         $this->db->exec("DROP TABLE notifications");
         ob_start();
-        $this->assertSame(0, $m->notify('import_finished', 'Imported', '', '', '', ['third']));
+        $this->assertSame(0, $m->notify('import_finished', 'Imported', '', '', ['third']));
         $out = ob_get_clean();
         $this->assertStringContainsString('Notification not stored', $out);
     }

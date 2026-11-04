@@ -84,7 +84,7 @@ Changes take effect on the next request and the next run of a cron job. The moni
 | `DKIM_passphrase` | The key's passphrase, or empty (a key made as below has none) | |
 | `DKIM_identity` | The signing identity, normally the From address | `wifidb@example.org` |
 | `DKIM_copyHeaderFields` | `true` is fine | `true` |
-| `ListUnsubscribe` | The `List-Unsubscribe` header: where to send an unsubscribe request, and the preferences page | `<postmaster@example.org>, <https://wifidb.example.org/cp/?func=pref>` |
+| `ListUnsubscribe` | The `List-Unsubscribe` header: where to send an unsubscribe request, and the preferences page | `<postmaster@example.org>, <https://wifidb.example.org/cp/index.php?func=notifications>` |
 | `XMailer` | What goes in the `X-Mailer` header | |
 
 ## Gmail or Google Workspace

@@ -301,7 +301,7 @@ switch($func)
 					Traffic::Note($config, 'signup');   # admin/traffic.php
 					$subject = "Vistumbler WifiDB - User '$username' Created";
 					$message = "New User '$username' Created.\r\nUser Information: ".$dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user==$username \r\n";
-					$dbcore->wdbmail->notify('new_user', $subject, $message, $dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user=".urlencode($username), 'new_users', null, "New member: $username");
+					$dbcore->wdbmail->notify('new_user', $subject, $message, $dbcore->URL_PATH."opt/userstats.php?func=alluserlists&user=".urlencode($username), null, "New member: $username");
 					# signed up after signing in with an outside account nobody had linked (logins.php): the new account gets it
 					$linked_note = '';
 					$link_token = (isset($_COOKIE[LinkedLogins::LINK_COOKIE]) && is_string($_COOKIE[LinkedLogins::LINK_COOKIE])) ? $_COOKIE[LinkedLogins::LINK_COOKIE] : '';

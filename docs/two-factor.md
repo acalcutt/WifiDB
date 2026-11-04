@@ -47,9 +47,11 @@ A member deleting their own imports is an ordinary action and does not need admi
 ## Notifications
 
 **Inbox → Alerts** lists what happened: imports starting, finishing or failing (with the reason), new members and errors
-for administrators. The Inbox link at the top counts unread alerts with unread messages. "Choose which alerts you get"
-picks which kinds you want; errors for administrators can't be switched off.
-E-mail is separate (Email Preferences), and sign-up validation and password reset always stay e-mail.
+for administrators. The Inbox link at the top counts unread alerts with unread messages. **Control Panel → Notifications** picks, for each kind, an alert in the Inbox (on unless you switch it off; errors for
+administrators can't be) and an e-mail (off unless you choose it). E-mail goes only to the members an alert is for: your
+own imports, or, for administrators, new members and errors. Sign-up validation and password reset always come by e-mail.
+The e-mail choices replace the old Email Preferences; what a member had chosen there carries over (migration
+`0015_notification_email`).
 
 ## Tests
 
