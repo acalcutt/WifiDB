@@ -1,0 +1,21 @@
+{
+  "_comment": "Upload type detection cases, shared by tests/Unit/ImportTypeTest.php and tests/js/import_type.test.js so lib/import_type.inc.php and lib/js/wifidb/import_type.js keep the same rules. head is the file's first bytes, base64.",
+  "cases": [
+    {"why": "a VS1", "name": "drive.VS1", "head": "IyBWaXN0dW1ibGVyIFZTMSAtIERldGFpbGVkIEV4cG9ydCBWZXJzaW9uIDQuMA0K", "type": "vistumbler"},
+    {"why": "a VS1 called .txt", "name": "old.txt", "head": "IyBWaXN0dW1ibGVyIFZTMQ0K", "type": "vistumbler"},
+    {"why": "Vistumbler's detailed CSV", "name": "export.csv", "head": "U1NJRCxCU1NJRCxNQU5VRkFDVFVSRVIsU0lHTkFMLEhpZ2ggU2lnbmFsDQo=", "type": "vistumbler"},
+    {"why": "a WiGLE CSV", "name": "WigleWifi_20260101.csv", "head": "V2lnbGVXaWZpLTEuNCxhcHBSZWxlYXNlPTIuNTMNCk1BQyxTU0lE", "type": "wiglewificsv"},
+    {"why": "a WiGLE CSV with a byte order mark", "name": "wigle.csv", "head": "77u/V2lnbGVXaWZpLTEuNg0K", "type": "wiglewificsv"},
+    {"why": "a gzipped WiGLE export", "name": "WigleWifi.csv.gz", "head": "H4sIAAAAAAAAAw==", "type": "wiglewificsv"},
+    {"why": "an SWardriving CSV", "name": "swardriving.csv", "head": "QlNTSUQsU1NJRCxBdXRoTW9kZSxjaGFubmVsLGZyZXF1ZW5jeQ0K", "type": "swardriving"},
+    {"why": "a Wardrive database", "name": "wardrive.db3", "head": "U1FMaXRlIGZvcm1hdCAzAA==", "type": "wardrive"},
+    {"why": "a Wardrive database with another name", "name": "backup.sqlite", "head": "U1FMaXRlIGZvcm1hdCAzAA==", "type": "wardrive"},
+    {"why": "a NetStumbler NS1", "name": "scan.ns1", "head": "TmV0Uw4AAAA=", "type": "ns1"},
+    {"why": "a Kismet netxml", "name": "Kismet-20260101.netxml", "head": "PD94bWwgdmVyc2lvbj0iMS4wIj8+CjxkZXRlY3Rpb24tcnVuIGtpc21ldC12ZXJzaW9uPSIyMDE2Ij4=", "type": "kismet"},
+    {"why": "a VSZ", "name": "drive.vsz", "head": "UEsDBBQAAAAIAA==", "type": "vistumbler"},
+    {"why": "a Vistumbler MDB", "name": "drive.mdb", "head": "AAEAAFN0YW5kYXJkIEpldCBEQgA=", "type": "vistumbler"},
+    {"why": "nothing in it says, the name does", "name": "Kismet.netxml", "head": "", "type": "kismet"},
+    {"why": "an XML file that isn't Kismet's", "name": "map.xml", "head": "PD94bWwgdmVyc2lvbj0iMS4wIj8+PGdweD4=", "type": null},
+    {"why": "neither says", "name": "photo.jpg", "head": "/9j/4AAQSkZJRg==", "type": null}
+  ]
+}

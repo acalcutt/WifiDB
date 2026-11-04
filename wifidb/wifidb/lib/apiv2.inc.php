@@ -572,6 +572,12 @@ class apiv2 extends dbcore
 				$type = "";
 			break;
 		}
+		# a CSV can be Vistumbler's, WiGLE's or SWardriving's: the file's first bytes say which
+		if($task === "import")
+		{
+			require_once dirname(__FILE__).'/import_type.inc.php';
+			$type = ImportType::GuessFile($file_orig, $upload) ?? $type;
+		}
 
 		switch($task)
 		{
