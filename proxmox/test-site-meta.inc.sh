@@ -77,6 +77,8 @@ log "the map's elevation tiles"
 # (searched in the container: the map page is bigger than one command-line argument may be)
 sm_map_has() { docker exec -e PAT="$1" -e CK="$tzc; wifidb_theme=vistumbler_mobile" "$ct" \
     sh -c 'curl -s -H "Cookie: $CK" "http://127.0.0.1/opt/map.php?func=wifidbmap" | grep -qF "$PAT"'; }
+# (the MariaDB boot test's settings form, sent with only some fields, has saved it empty by now: back to unset)
+sqlq "DELETE FROM site_settings WHERE name = 'map_dem_url'" >/dev/null
 check "the mobile map draws contours from tiles.wifidb.net unless told otherwise" sm_map_has "url: 'https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png'"
 sm_set 'array("map_dem_url" => "https://dem.example.test/{z}/{x}/{y}.png")'
 sm_map_given() { sm_map_has "url: 'https://dem.example.test/{z}/{x}/{y}.png'" && ! sm_map_has jaxa_terrarium; }
