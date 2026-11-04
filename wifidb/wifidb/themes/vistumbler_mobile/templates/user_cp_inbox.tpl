@@ -20,7 +20,7 @@ if not, write to the
 {include file="header.tpl"}
 			<div class="main">
 {include file="topmenu.tpl"}		
-				{if $func eq 'inbox'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=inbox">Received</a>{if $func eq 'inbox'}</b>{/if} | {if $func eq 'outbox'}<b>{/if}<a href="{$wifidb_host_url}cp/messages.php?func=outbox">Sent</a>{if $func eq 'outbox'}</b>{/if} | <a href="{$wifidb_host_url}cp/messages.php?func=sendmsg">Send Message</a> 
+{include file="user_cp_inbox_tabs.tpl"}
 				<table class="content_table"">
 					<tr class="header">
 						<td class="header">

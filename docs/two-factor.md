@@ -15,7 +15,7 @@ Open **User Control Panel → Security** (`cp/security.php`).
   for a code or passkey, on a page of its own, then takes you there. They stay open while you use them (10 minutes after
   the last page). **Remember this computer for 30 days** there skips the question on that computer, as at sign-in.
 - Removing a method, making new recovery codes and turning the sign-in question off all ask for your password again, and
-  each leaves a notice under Notifications. Removing the last method turns two-factor off.
+  each leaves an alert in your Inbox. Removing the last method turns two-factor off.
 - Ten wrong codes in ten minutes lock further tries for a while.
 
 ## Admin mode (administrators)
@@ -46,8 +46,9 @@ A member deleting their own imports is an ordinary action and does not need admi
 
 ## Notifications
 
-Control Panel → Notifications lists what happened: imports starting, finishing or failing (with the reason), new members
-and errors for administrators. Settings picks which kinds you want; errors for administrators can't be switched off.
+**Inbox → Alerts** lists what happened: imports starting, finishing or failing (with the reason), new members and errors
+for administrators. The Inbox link at the top counts unread alerts with unread messages. "Choose which alerts you get"
+picks which kinds you want; errors for administrators can't be switched off.
 E-mail is separate (Email Preferences), and sign-up validation and password reset always stay e-mail.
 
 ## Tests

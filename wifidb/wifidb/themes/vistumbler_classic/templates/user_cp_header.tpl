@@ -27,8 +27,6 @@ if not, write to the
 							|
 							<a href="?func=pref">Email Preferences</a>
 							|
-							<a href="{$wifidb_host_url}cp/notifications.php">Notifications</a>
-							|
 							<a href="{$wifidb_host_url}cp/security.php">Security</a>
 							|
 							<a href="?func=myimports">My Imports</a>

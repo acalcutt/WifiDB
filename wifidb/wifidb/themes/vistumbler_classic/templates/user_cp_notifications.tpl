@@ -1,5 +1,5 @@
 <!--
-Notifications: the member's in-app notifications. Changes are POSTs, see cp/notifications.php.
+Alerts, the Inbox's tab for what the site tells the member (cp/notifications.php). Changes are POSTs.
 This program is free software; you can redistribute it and/or modify it under the terms
 of the GNU General Public License as published by the Free Software Foundation; either
 version 2 of the License, or (at your option) any later version.
@@ -7,15 +7,15 @@ version 2 of the License, or (at your option) any later version.
 {include file="header.tpl"}
 			<div class="main">
 				{include file="topmenu.tpl"}
-{include file="user_cp_header.tpl"}
+{include file="user_cp_inbox_tabs.tpl"}
 				<table class="content_table">
 					<tr>
-						<td class="subheading" colspan="3">Notifications{if $notification_unread gt 0} ({$notification_unread} unread){/if}</td>
+						<td class="subheading" colspan="3">Alerts{if $notification_unread gt 0} ({$notification_unread} unread){/if}</td>
 					</tr>
 					<tr>
 						<td class="header" colspan="3">
 							<form method="post" action="{$wifidb_host_url}cp/notifications.php?func=markall" style="display:inline"><input type="submit" value="Mark all read"{if $notification_unread eq 0} disabled{/if}></form>
-							| <a href="{$wifidb_host_url}cp/notifications.php?func=settings">Settings</a>
+							| <a href="{$wifidb_host_url}cp/notifications.php?func=settings">Choose which alerts you get</a>
 						</td>
 					</tr>
 					{foreach item=n from=$notifications name=list}
@@ -32,7 +32,7 @@ version 2 of the License, or (at your option) any later version.
 					</tr>
 					{foreachelse}
 					<tr>
-						<td align="center" colspan="3">You have no notifications.</td>
+						<td align="center" colspan="3">You have no alerts.</td>
 					</tr>
 					{/foreach}
 					{if $notification_pages gt 1}

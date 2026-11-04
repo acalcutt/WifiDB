@@ -54,7 +54,8 @@ final class NotificationRenderTest extends TestCase
         $this->assertStringNotContainsString($evil, $html);
         $this->assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
         $this->assertStringContainsString('href="/x?a=1&amp;b=&quot;2&quot;"', $html, 'the link is escaped inside its attribute');
-        $this->assertStringContainsString('Notifications (1 unread)', $html);
+        $this->assertStringContainsString('Alerts (1 unread)', $html);
+        $this->assertStringContainsString('cp/messages.php?func=inbox">Received</a>', $html, 'a tab of the Inbox');
         $this->assertSame(1, substr_count($html, 'value="Mark read"'), 'only an unread one can be marked read');
         $this->assertSame(2, substr_count($html, 'value="Delete"'));
         $this->assertStringNotContainsString('method="get"', $html, 'changes are POSTs');
@@ -69,7 +70,7 @@ final class NotificationRenderTest extends TestCase
         $smarty->assign('notification_page', 1);
         $smarty->assign('notification_pages', 1);
         $html = $smarty->fetch('user_cp_notifications.tpl');
-        $this->assertStringContainsString('You have no notifications.', $html);
+        $this->assertStringContainsString('You have no alerts.', $html);
         $this->assertStringContainsString('value="Mark all read" disabled', $html);
     }
 

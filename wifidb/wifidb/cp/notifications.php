@@ -1,7 +1,7 @@
 <?php
 /*
-notifications.php, the member's in-app notifications (an import finished, a failure, a new member for administrators)
-and which kinds they want. Changes are made with POST; the cookie is SameSite=Lax, so another site cannot send one.
+notifications.php, the member's alerts, a tab of the Inbox (an import finished, a failure, a new member for
+administrators), and which kinds they want. Changes are made with POST; the cookie is SameSite=Lax, so another site cannot send one.
 Copyright (C) 2026 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -21,7 +21,8 @@ define("SWITCH_EXTRAS", "cp");
 include('../lib/init.inc.php');
 require_once dirname(__FILE__).'/../lib/notify.inc.php';
 
-$dbcore->smarty->assign('wifidb_page_label', 'Notifications');
+$dbcore->smarty->assign('wifidb_page_label', 'Alerts');
+$dbcore->smarty->assign('func', 'alerts');   # the Inbox tab that is open (user_cp_inbox_tabs.tpl)
 $func = filter_input(INPUT_GET, 'func', FILTER_SANITIZE_SPECIAL_CHARS);
 $username = $dbcore->sec->LoginUser;
 
