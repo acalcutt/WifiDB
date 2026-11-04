@@ -8,6 +8,9 @@ tr_flush() { docker exec "$ct" runuser -u www-data -- /opt/wifidb/tools/cron/tra
 tr_views() { sqlq "select coalesce(sum(pageviews), 0) from traffic_counts where kind = '$1' and item = '$2' and span = 'day'"; }
 tr_get() { docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc" "$@"; }
 spool=/srv/wifidb-data/log/traffic/pending.log
+# cron's own flush, each minute, would empty the spool whenever it falls between a page view and a check: held off
+# here, where the checks flush it themselves
+docker exec "$ct" systemctl stop cron
 tr_flush   # what the tests before counted, out of the way
 before=$(tr_views site '')
 for _ in 1 2 3; do tr_get -A 'Mozilla/5.0 (traffic test)' -H 'CF-IPCountry: SE' http://127.0.0.1/stats.php; done
@@ -29,3 +32,4 @@ page=$(docker exec "$ct" curl -s -H "Cookie: $tzc; WiFiDB_login_yes=$s4" http://
 check "...which in admin mode shows the counts" sh -c 'echo "$0" | grep -q "By day of the week" && echo "$0" | grep -q "<td>SE</td>" && echo "$0" | grep -q "Failed sign-ins"' "$page"
 check "...with no PHP errors" sh -c '! echo "$0" | grep -qE "Fatal error|Uncaught|Warning:|Deprecated:|SQLSTATE"' "$page"
 docker exec "$ct" curl -s -o /dev/null -H "Cookie: $tzc; WiFiDB_login_yes=$s4" 'http://127.0.0.1/cp/admin_mode.php?func=off'
+docker exec "$ct" systemctl start cron
