@@ -87,7 +87,7 @@ final class ServersTest extends TestCase
         $row = ['reported_at' => '2026-11-02 11:59:30', 'version' => '0.41.0', 'update_state' => 'done', 'update_message' => '',
             'info' => ['cpus' => 2, 'load' => [1, 1, 1], 'memory' => ['total' => 100, 'available' => 50],
                 'disks' => ['/srv/wifidb-data' => ['total' => 100, 'free' => 50]],
-                'services' => ['apache2' => 'active', 'wifidb-websocketd' => 'off']]];
+                'services' => ['apache2' => 'active', 'wifidb-monitord' => 'off']]];
         $this->assertSame([], ServerStatus::Warnings($row, $now, '0.41.0'), 'a healthy, current server; a daemon switched off is fine');
 
         $bad = $row;

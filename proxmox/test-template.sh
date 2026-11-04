@@ -71,7 +71,7 @@ start_container "$ct1"
 if wait_firstboot "$ct1"; then ok "first boot finished"; else bad "first boot did not finish"; fi
 
 log "checking the first container"
-for svc in apache2 cron wifidb-monitord wifidb-websocketd; do
+for svc in apache2 cron wifidb-monitord; do
     check "$svc is active" docker exec "$ct1" systemctl is-active --quiet "$svc" || {
         docker exec "$ct1" systemctl status "$svc" --no-pager 2>&1 | head -12 | sed "s/^/       /"
         docker exec "$ct1" journalctl -u "$svc" --no-pager 2>&1 | tail -12 | sed "s/^/       /"
@@ -79,13 +79,16 @@ for svc in apache2 cron wifidb-monitord wifidb-websocketd; do
 done
 # monitord records each daemon it finds a PID file for, with what ps says of it (the scheduling page's Daemon Status).
 # The template's procps-ng 4.0.4 refused the format it used to ask for, and every daemon showed as pid 0 with no data from ps.
-ws_pid=$(docker exec "$ct1" systemctl show -p MainPID --value wifidb-websocketd)
+# The daemons run from cron for a while at a time, so a stand-in with a PID file of its own:
+docker exec -d "$ct1" runuser -u www-data -- sh -c 'echo $$ > /run/wifidb/testd.pid; exec sleep 300'
 for _ in $(seq 20); do
-    rec=$(docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select concat(pid, '|', pidcmd) from daemon_pid_stats where pidfile = 'websocketd_$ws_pid.pid'" 2>/dev/null)
-    [ "${rec%%|*}" = "$ws_pid" ] && break
+    t_pid=$(docker exec "$ct1" cat /run/wifidb/testd.pid 2>/dev/null)
+    rec=$(docker exec "$db" mariadb -uwifidb -ptestpw wifi -N -e "select concat(pid, '|', pidcmd) from daemon_pid_stats where pidfile = 'testd.pid'" 2>/dev/null)
+    [ -n "$t_pid" ] && [ "${rec%%|*}" = "$t_pid" ] && break
     sleep 2
 done
-check "monitord records the websocket daemon's PID ($ws_pid) and command" sh -c 'test "${0%%|*}" = "$1" && echo "$0" | grep -q "websocketd.php"' "$rec" "$ws_pid"
+check "monitord records a daemon's PID ($t_pid) and command" sh -c 'test -n "$1" && test "${0%%|*}" = "$1" && echo "$0" | grep -q "sleep 300"' "$rec" "$t_pid"
+docker exec "$ct1" sh -c 'kill "$(cat /run/wifidb/testd.pid)"; rm -f /run/wifidb/testd.pid' 2>/dev/null || true
 check "php-fpm is active" docker exec "$ct1" sh -c 'systemctl is-active --quiet "php$(php -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")-fpm"'
 check "the site answers 200 on /" test "$(http "$ct1" http://127.0.0.1/)" = 200
 # A page can answer 200 and still carry a PHP error box (PHP 8 made an undefined constant fatal). Look at the text.
@@ -95,14 +98,6 @@ for page in / /login.php /stats.php /opt/map.php /opt/scheduling.php /opt/result
 done
 check "/health answers 200" test "$(http "$ct1" http://127.0.0.1/health)" = 200
 check "/health/ready answers 200 with the database up" test "$(http "$ct1" http://127.0.0.1/health/ready)" = 200
-# The first line a WebSocket server answers a handshake with: "HTTP/1.1 101 Switching Protocols"
-ws_status() {
-    docker exec "$ct1" curl -s -m 5 -i \
-        -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' \
-        -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' "$1" | head -1
-}
-check "the websocket daemon accepts a handshake" test "$(ws_status http://127.0.0.1:9000/wifidb/api/Scheduling | grep -c 101)" = 1
-check "...and Apache passes /ws/Scheduling to it" test "$(ws_status http://127.0.0.1/ws/Scheduling | grep -c 101)" = 1
 check "uploads are not served" test "$(http "$ct1" http://127.0.0.1/import/up/.htaccess)" = 403
 # The signal graph: an address as Vistumbler builds it (spaces are %20 here only because curl wants a valid URL)
 vq='SSID=My%20Net&Mac=00:11:22:33:44:55&Manuf=Cisco&Auth=WPA2-Personal&Encry=CCMP&radio=802.11n&Chn=6&Lat=N%2043.1234&Long=W%2070.1234&BTx=54&OTx=54&FA=2024-01-02%2010:11:12&LU=2024-01-02%2010:12:12&NT=Infrastructure&Label=Unknown&Sig=0-45-50-0-0-62-70'

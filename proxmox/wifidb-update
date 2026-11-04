@@ -61,7 +61,7 @@ function run($command, &$output = null)
 function services($action)
 {
 	$fpm = 'php'.PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION.'-fpm';
-	$units = $action === 'stop-site' ? array('apache2', $fpm) : array('cron', 'wifidb-monitord', 'wifidb-websocketd');
+	$units = $action === 'stop-site' ? array('apache2', $fpm) : array('cron', 'wifidb-monitord');
 	run('systemctl stop '.implode(' ', array_map('escapeshellarg', $units)));
 }
 
@@ -266,7 +266,7 @@ catch(Throwable $e)
 		// nothing was replaced: start again what was stopped
 		$state('failed', $why);
 		run('systemctl start cron');
-		foreach(array('wifidb-monitord', 'wifidb-websocketd') as $unit) { run("systemctl is-enabled -q $unit && systemctl start $unit"); }
+		run('systemctl is-enabled -q wifidb-monitord && systemctl start wifidb-monitord');
 	}
 	else
 	{

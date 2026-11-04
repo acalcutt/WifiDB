@@ -1,7 +1,7 @@
 # WiFiDB on Proxmox
 
 The Proxmox template is an Ubuntu LXC container with the whole site installed: Apache and PHP-FPM (with a separate
-pool for the heavy endpoints), the monitor and websocket daemons as systemd services, and the cron jobs. It has no
+pool for the heavy endpoints), the monitor daemon as a systemd service, and the cron jobs. It has no
 database of its own: it uses your MariaDB, SQL Server or PostgreSQL. It serves plain HTTP on port 80, for HAProxy (or any
 proxy) in front to do TLS.
 
@@ -99,7 +99,6 @@ In HAProxy:
 - the frontend has the certificate and sends `X-Forwarded-Proto: https`;
 - the backend is the container's address, port 80, with *forwardfor* on;
 - health check: `GET /health` (answers `ok`);
-- the live pages use websockets at `/ws/…`: give the backend a long tunnel timeout (an hour or so);
 - send the API's own names (`api.<site>` by default; `WIFIDB_API_HOST` takes several, such as
   `"api.wifidb.net api.vistumbler.net"`) to the same backend, with their certificates: the container serves the `api/`
   folder at the top of each, as `api.wifidb.net` always has. Any other name the proxy sends is served as the site.
@@ -109,8 +108,7 @@ unchanged and don't compress `.pbf`, `.mlt` or `.pmtiles` responses there.
 
 ## What runs
 
-- **Services** (systemd): `wifidb-monitord` (watches the other daemons) and `wifidb-websocketd` (live pages). Both
-  restart themselves. With `WIFIDB_SWARM=1`, also `pmtiles-swarm`, which shares the tile archives between the nodes
+- **Services** (systemd): `wifidb-monitord` (watches the other daemons), which restarts itself. With `WIFIDB_SWARM=1`, also `pmtiles-swarm`, which shares the tile archives between the nodes
   and serves tiles from them ([pmtiles-swarm.md](pmtiles-swarm.md)).
 - **Cron** (`/etc/cron.d/wifidb`): the imports, exports, statistics, admin jobs, the manufacturer and swarm updates,
   and the MVT and MLT tile builds, at the times wifidb.net uses. To keep different times across upgrades, copy the

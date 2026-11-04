@@ -31,7 +31,6 @@ $config = array
 	'root'				  =>   'wifidb',
 	'hosturl'			   =>   'https://wifidb.foo.lan/',
 	'tileserver_gl_url'		=>   'https://tiles.foo.lan',
-	'WebSocketURL'		  =>   'wss://wifidb.foo.lan/ws/',
 	'dim'				   =>   DIRECTORY_SEPARATOR,
 	'timetilldead'		  =>   2,
 	'config_fails'		  =>   3,

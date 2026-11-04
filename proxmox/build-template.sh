@@ -73,8 +73,8 @@ docker exec -i "$name" bash -s <<'FINALIZE'
 set -e
 phpver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;')
 # Nothing that needs the settings starts until wifidb-firstboot has run; it enables these again.
-systemctl stop apache2 "php${phpver}-fpm" cron wifidb-monitord wifidb-websocketd 2>/dev/null || true
-systemctl disable apache2 "php${phpver}-fpm" cron wifidb-monitord wifidb-websocketd 2>/dev/null || true
+systemctl stop apache2 "php${phpver}-fpm" cron wifidb-monitord 2>/dev/null || true
+systemctl disable apache2 "php${phpver}-fpm" cron wifidb-monitord 2>/dev/null || true
 systemctl enable wifidb-firstboot.service
 # per-container identity
 rm -f /etc/ssh/ssh_host_*
@@ -89,7 +89,6 @@ disable apache2.service
 disable php*-fpm.service
 disable cron.service
 disable wifidb-monitord.service
-disable wifidb-websocketd.service
 disable wifidb-update.timer
 PRESET
 install -d /etc/wifidb
@@ -137,10 +136,9 @@ WIFIDB_DB_TYPE=mariadb            # mariadb, sqlsrv for SQL Server, or pgsql for
 #WIFIDB_UPDATE_GITHUB_REPO=
 #WIFIDB_UPDATE_TOKEN=
 #
-# The two background daemons, on by default: the monitor (records the other daemons' status) and the websocket
-# daemon (live updates on the Import Status and Live APs pages). Set to 0 on a node that shouldn't run one.
+# The monitor daemon, on by default: it records the other daemons' status for the scheduling page. Set to 0 on a
+# node that shouldn't run it.
 #WIFIDB_MONITORD=1
-#WIFIDB_WEBSOCKETD=1
 #
 # pmtiles-swarm (docs/pmtiles-swarm.md): shares the map's tile archives over BitTorrent and serves tiles from them on
 # port 8090; point the proxy's data.<site> name (tile_swarm_url) at port 8090 of every node. Off by default. The node

@@ -58,7 +58,7 @@ return array (
 );
 ```
 
-Changes take effect on the next request and the next run of a cron job. The two services (`wifidb-monitord`, `wifidb-websocketd`) read the settings when they start, so restart them after a change: `systemctl restart wifidb-monitord wifidb-websocketd`.
+Changes take effect on the next request and the next run of a cron job. The monitor service (`wifidb-monitord`) reads the settings when it starts, so restart it after a change: `systemctl restart wifidb-monitord`.
 
 ## The settings
 

@@ -3,7 +3,7 @@
 #
 # Expects the source tree unpacked at /usr/local/src/wifidb (a `git archive` of the repository) and these files
 # beside this script: install-files.sh (the code and the system files, also used by updates), install-swarm.sh, wifidb-firstboot,
-# wifidb-firstboot.service, wifidb-monitord.service, wifidb-websocketd.service, wifidb-update and its units,
+# wifidb-firstboot.service, wifidb-monitord.service, wifidb-update and its units,
 # wifidb.cron and wifidb-apache.conf.
 #
 # Layout:

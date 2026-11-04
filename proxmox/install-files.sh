@@ -116,7 +116,11 @@ echo 'net.core.somaxconn = 4096' > /etc/sysctl.d/90-wifidb.conf
 
 log "services, cron jobs and the updater"
 install -m 0644 "$here/wifidb-monitord.service" /etc/systemd/system/wifidb-monitord.service
-install -m 0644 "$here/wifidb-websocketd.service" /etc/systemd/system/wifidb-websocketd.service
+# the websocket daemon is gone (after 1.0.0-rc.3): an update takes away the one an older version installed
+if [ -e /etc/systemd/system/wifidb-websocketd.service ]; then
+    systemctl disable --now wifidb-websocketd 2>/dev/null || true
+    rm -f /etc/systemd/system/wifidb-websocketd.service /run/wifidb/websocketd_*.pid
+fi
 install -m 0644 "$here/wifidb.cron" /etc/cron.d/wifidb
 echo 'd /run/wifidb 0775 www-data www-data -' > /etc/tmpfiles.d/wifidb.conf
 install -m 0755 "$here/wifidb-firstboot" /usr/local/sbin/wifidb-firstboot

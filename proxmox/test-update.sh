@@ -143,6 +143,9 @@ check "...with nothing of the attempt left" swarm_left
 
 log "v9.9.9, with a backup first"
 docker exec "$ct" systemctl start cron
+# the websocket daemon an older version installed and ran (a stand-in), for the update to take away
+docker exec "$ct" sh -c 'printf "[Service]\nExecStart=/bin/sleep infinity\n[Install]\nWantedBy=multi-user.target\n" > /etc/systemd/system/wifidb-websocketd.service &&
+    systemctl daemon-reload && systemctl enable --now -q wifidb-websocketd'
 update 9.9.9 1
 check "updated" sh -c 'echo "$0" | grep -q "^done|updated from"' "$(state)"
 check "...the new code, answering" test "$(cver)|$(home)" = "9.9.9|200"
@@ -150,7 +153,9 @@ check "...the old code kept aside" docker exec "$ct" grep -q "return '$was';" /v
 check "...uploads and generated files still on the data disk" docker exec "$ct" sh -c 'test -L /var/www/wifidb/import/up && test -L /var/www/wifidb/out && test -L /opt/wifidb/tools/log'
 # (they're in web.overrides.php on the data disk, which the new config.inc.php loads)
 check "...the site's settings kept" test "$(docker exec "$ct" php -r 'require "/var/www/wifidb/lib/config.inc.php"; echo $config["wifidb_nodename"];')" = testnode
-check "...cron and the daemons running" docker exec "$ct" systemctl is-active -q cron wifidb-monitord wifidb-websocketd
+check "...cron and the monitor running" docker exec "$ct" systemctl is-active -q cron wifidb-monitord
+check "...and the old websocket daemon stopped and taken away" sh -c \
+    '! docker exec "$0" systemctl is-active -q wifidb-websocketd && ! docker exec "$0" test -e /etc/systemd/system/wifidb-websocketd.service' "$ct"
 check "...and the backup made first" sh -c 'docker exec "$0" sh -c "ls /srv/wifidb-data/backups/wifidb-backup-*.tar" && test "$(echo "$1")" = 1' "$ct" "$(sqlq "select backup_taken from server_update_requests where version = '9.9.9'")"
 check "...the pmtiles-swarm release it goes with ($swarm_other), from npm" test "$(swarm_installed)|$(swarm_pinned)" = "$swarm_other|$swarm_other"
 check "...running and answering as that release" sh -c 'docker exec "$0" systemctl is-active -q pmtiles-swarm && docker exec "$0" curl -fs http://127.0.0.1:8090/health | grep -q "\"version\":\"$1\""' "$ct" "$swarm_other"

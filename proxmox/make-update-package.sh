@@ -40,7 +40,7 @@ for f in install-files.sh wifidb-firstboot wifidb-dkim wifidb-update; do
     install -m 0755 "$here/$f" "$stage/proxmox/$f"
 done
 for f in wifidb-apache.conf wifidb-slow-pool.conf wifidb-slow-pool-fpm.conf wifidb-health-pool-fpm.conf wifidb-backup-pool-fpm.conf \
-         wifidb-monitord.service wifidb-websocketd.service wifidb-firstboot.service wifidb-update.service wifidb-update.timer wifidb.cron; do
+         wifidb-monitord.service wifidb-firstboot.service wifidb-update.service wifidb-update.timer wifidb.cron; do
     install -m 0644 "$here/$f" "$stage/proxmox/$f"
 done
 

@@ -142,7 +142,6 @@ $web = array(
     'wifidb_install' => '/var/www/wifidb/',
     'root'          => $root,
     'hosturl'       => $hosturl,
-    'WebSocketURL'  => preg_replace('#^http#', 'ws', $site) . '/ws/',
     'wifidb_nodename' => $e('NODE'),   // the upload page marks what it queues with it (lib/import_queue.inc.php)
     'srvc'          => $e('DB_TYPE'),
     'driver'        => $e('DB_TYPE'),
@@ -160,8 +159,6 @@ $daemon = array(
     'daemon_log_folder'  => '/opt/wifidb/tools/log/',
     'wifidb_nodename'    => $e('NODE'),
     'pid_file_loc'       => '/run/wifidb/',
-    'WebSocketBindIP'    => '127.0.0.1',
-    'WebSocketPort'      => 9000,
 );
 $dir = $e('DATA') . '/config';
 // The key that encrypts saved authenticator secrets: WIFIDB_TWO_FACTOR_KEY when given (every node on one database
@@ -583,16 +580,13 @@ fi
 systemd-tmpfiles --create /etc/tmpfiles.d/wifidb.conf
 log "starting the services"
 systemctl enable --now "php${phpver}-fpm" apache2 cron
-# The two daemons can be switched off per node (WIFIDB_MONITORD=0, WIFIDB_WEBSOCKETD=0 in firstboot.env).
-for pair in "wifidb-monitord:${WIFIDB_MONITORD:-1}" "wifidb-websocketd:${WIFIDB_WEBSOCKETD:-1}"; do
-    unit=${pair%%:*}
-    if [ "${pair##*:}" = 0 ]; then
-        systemctl disable --now "$unit" 2>/dev/null || true
-        log "$unit is switched off"
-    else
-        systemctl enable --now "$unit"
-    fi
-done
+# The monitor can be switched off per node (WIFIDB_MONITORD=0 in firstboot.env).
+if [ "${WIFIDB_MONITORD:-1}" = 0 ]; then
+    systemctl disable --now wifidb-monitord 2>/dev/null || true
+    log "wifidb-monitord is switched off"
+else
+    systemctl enable --now wifidb-monitord
+fi
 systemctl reload apache2 || systemctl restart apache2
 
 rm -f "$PENDING"

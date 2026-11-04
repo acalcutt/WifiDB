@@ -21,7 +21,7 @@ class ServerStatus
 	/** The reports as they're kept: paths and addresses readable in the table */
 	const JSON = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 	/** The services a node is expected to run (the two daemons can be switched off per node). */
-	const SERVICES = array('apache2', 'php-fpm', 'cron', 'wifidb-monitord', 'wifidb-websocketd', 'wifidb-update.timer');
+	const SERVICES = array('apache2', 'php-fpm', 'cron', 'wifidb-monitord', 'wifidb-update.timer');
 	/** pmtiles-swarm's public port on the node itself (docs/pmtiles-swarm.md) */
 	const SWARM_URL = 'http://127.0.0.1:8090';
 	/** How long a node following the swarm may go without the building node's newest build of a category. */

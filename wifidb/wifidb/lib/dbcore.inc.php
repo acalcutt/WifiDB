@@ -32,7 +32,7 @@ class dbcore
 		$return_message, $root, $RunOnceThrough, $sec, $smarty_path, $Spawn, $sql, $StartDate, $supported_extentions,
 		$switches, $theme, $This_is_me, $thread_id, $tile_cache, $tile_max_gz_bytes, $tile_max_zoom, $tile_min_zoom,
 		$tileserver_gl_url, $time_format, $timeout, $TOOLS_PATH, $URL_PATH, $ver_array, $ver_str, $verbose, $vs1_htmlpath,
-		$vs1_out, $wdbmail, $WebSocketURL, $WEP_loc, $WPA_loc, $xml, $Zip;
+		$vs1_out, $wdbmail, $WEP_loc, $WPA_loc, $xml, $Zip;
 	// the tile settings the constructor copies from config by name, when config has them (lib/mvt.inc.php reads them)
 	public $tile_archive_dir, $tile_archive_generate, $tile_archive_keep, $tile_archive_url, $tile_mlt_archive_dir,
 		$tile_mlt_archive_generate, $tile_mlt_output_dir, $tile_output_dir, $tile_swarm_browser, $tile_swarm_category_prefix,
@@ -75,7 +75,6 @@ class dbcore
 		$this->apache_group			 = $config['apache_group'];
 
 		$this->dim					  = DIRECTORY_SEPARATOR;
-		$this->WebSocketURL            = $config['WebSocketURL'];
 		$this->HOSTURL				  = $config['hosturl'];
 		$this->root					 = $config['root'];
 		$this->URL_PATH				 = $this->HOSTURL.$this->root.'/';

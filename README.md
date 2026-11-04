@@ -16,7 +16,7 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
 * PHP 8.2 or later (8.3 or 8.4 recommended)  
 	* Use a release with the October 2026 security fixes (CVE-2026-109618 and CVE-2026-109619): 8.2.35, 8.3.36, 8.4.27, 8.5.12 or later, or your distribution's patched package.  
 	* PHP 8.1 and earlier, including 7.x, are not supported.  
-	* Extensions: gd, zip, bcmath, mbstring, curl, xml, sockets (the websocket daemon)  
+	* Extensions: gd, zip, bcmath, mbstring, curl, xml  
 	* A database driver, one of:  
 		* pdo_mysql (PHP's driver for MariaDB), for MariaDB  
 		* pdo_sqlsrv and Microsoft's ODBC Driver 18 for SQL Server (msodbcsql18), for SQL Server  
@@ -67,7 +67,8 @@ Vistumbler WiFiDB is a PHP set of scripts, backed by Microsoft SQL Server or Mar
   Daemons:  
 	The scripts in [tools]/daemon each run one background job: importd (imports uploaded files), exportd and  
 	geojsond (exports), statsd (caches the statistics), mvtd and mltd (map tiles), manufupd (MAC manufacturers),  
-	admind (clears stale daemon PID files) and websocketd. rund.php starts and stops them.  
+	admind (clears stale daemon PID files) and monitord (records the others' status for the scheduling page).  
+	rund.php starts and stops them.  
 
   Upgrading from an older install:  
 	* Install PHP 8.2 or later and make sure the extensions above are present.  
