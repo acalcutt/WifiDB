@@ -10,6 +10,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
+- **`api/geonames.php` finds the place nearest the point asked about.** It measured every place's distance from a point it never set, so the "nearest" was whichever place in the square came first; and a `lat` or `long` that isn't a number gave an error instead of saying so.
 - **WiGLE and SWardriving CSVs sent through `api/v2/import.php` import.** The API took every `.csv` for a Vistumbler one, and a `.wiglecsv` for a type the importer doesn't know; it now looks at what's in the file, as the upload page does.
 - **Update every server works on SQL Server.** Asking for an update from Admin > Servers failed with "That didn't work": the request named its `backup` column, a reserved word in SQL Server, without brackets.
 - **Big tile archives join the swarm in the browser again.** The map waited a fixed 30 seconds for an archive's torrent while the engine allows more for one with many pieces, so a large archive always fell back to plain HTTP. The engine's own budget is now the only one. pmtiles-torrent is 0.11.1, as wifidb.net already ran: it also asks for an archive's last piece first, where planetiler puts the directories, and gives a large archive's metadata longer.

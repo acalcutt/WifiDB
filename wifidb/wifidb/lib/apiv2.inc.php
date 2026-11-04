@@ -105,6 +105,10 @@ class apiv2 extends dbcore
 
 	public function GeoNames($lat, $long)
 	{
+		if(!is_numeric($lat) || !is_numeric($long)) { $this->mesg = "lat and long have to be numbers"; return 0; }
+		# the point the distances are measured from
+		$Latdd = (float)$lat;
+		$Londd = (float)$long;
 		$lat_search = bcdiv($lat, 1, 1);
 		$long_search = bcdiv($long, 1, 1);
 		

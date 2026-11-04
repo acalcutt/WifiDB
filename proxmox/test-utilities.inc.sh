@@ -59,6 +59,12 @@ if docker exec "$ct" curl -sf -m 30 -o /dev/null https://download.geonames.org/e
     check "...every country still once" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO) = 'US'")" = 1
     out=$(util load_geonames.php --geonames --set=cities15000 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --set=cities15000 (read from its zip)" "$out"
     check "...and loads the towns" test "$(sqlq 'select count(*) from geonames')" -gt 20000
+    near=$(docker exec "$ct" curl -s 'http://127.0.0.1/api/geonames.php?lat=42.3601&long=-71.0589')
+    check "api/geonames.php finds the nearest place, measured from the point asked about" \
+        sh -c 'echo "$0" | grep -q "\"Area Name\":\"Boston\"" && echo "$0" | grep -qE "\"miles\":\"?0\."' "$near" ||
+        echo "$near" | head -c 300 | sed 's/^/       /'
+    check "...and turns away a lat that isn't a number" sh -c 'echo "$0" | grep -q "have to be numbers"' \
+        "$(docker exec "$ct" curl -s 'http://127.0.0.1/api/geonames.php?lat=abc&long=-71')"
 else
     log "(download.geonames.org can't be reached from here: the GeoNames load is not tested)"
 fi
