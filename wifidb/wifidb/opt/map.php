@@ -913,12 +913,13 @@ switch($func)
 		if(@$_REQUEST['encry']){$encry = $_REQUEST['encry'];}else{$encry =  "";}
 		if(@$_REQUEST['sectype']){$sectype = $_REQUEST['sectype'];}else{$sectype =  "";}
 
-		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, 1, 1);
+		$ops = WifidbApSearch::Ops($_REQUEST);
+		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, 1, 1, $ops);
 		$results_all = $SearchArray['data'];
 		$ap_count = $SearchArray['count'];
 		$point_count = $SearchArray['total_rows'];
 		if($point_count > $inc){$ldivs = ceil($point_count / $inc);}else{$ldivs = 1;}
-		$export_url = "&ssid=$ssid&mac=$mac&radio=$radio&chan=$chan&auth=$auth&encry=$encry&sectype=$sectype";
+		$export_url = "&ssid=$ssid&mac=$mac&radio=$radio&chan=$chan&auth=$auth&encry=$encry&sectype=$sectype".WifidbApSearch::OpsQuery($ops);
 		
 
 		if($latitude == "" && $longitude== "")

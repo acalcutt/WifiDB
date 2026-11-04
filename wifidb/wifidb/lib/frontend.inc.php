@@ -219,6 +219,8 @@ class frontend extends dbcore
 		$this->smarty->assign('wifidb_google_verification', $settings->Get('google_site_verification'));
 		$this->smarty->assign('wifidb_bing_verification', $settings->Get('bing_site_verification'));
 		$this->smarty->assign('wifidb_site_origin', preg_replace('#^(https?://[^/]+).*$#i', '$1', $this->URL_PATH));
+		# where the map's contour lines get their elevation (Site Settings)
+		$this->smarty->assign('wifidb_map_dem_url', $settings->Get('map_dem_url'));
 	}
 
 	/**

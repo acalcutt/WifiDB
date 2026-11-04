@@ -105,40 +105,14 @@ class apiv2 extends dbcore
 
 	public function GeoNames($lat, $long)
 	{
-		$lat_search = bcdiv($lat, 1, 1);
-		$long_search = bcdiv($long, 1, 1);
-		
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
-					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS miles,\n"
-					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude)) * cos(radians(longitude) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude)))) AS kilometers\n"
-					. "FROM geonames \n"
-					. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC LIMIT 1";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT TOP 1 [id], [asciiname], [country_code], [admin1_code], [admin2_code], [timezone], [latitude], [longitude], \n"
-					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [miles],\n"
-					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [kilometers]\n"
-					. "FROM [geonames] \n"
-					. "WHERE [latitude] LIKE '".$lat_search."%' AND [longitude] LIKE '".$long_search."%' ORDER BY [kilometers] ASC";
-				#echo $sql;
-			}
-		else if($this->sql->service == "pgsql")
-			{
-				// geonames.latitude/longitude are varchar. MySQL and SQL Server
-				// implicitly convert them for radians(); Postgres does not, so the
-				// casts here are required, not cosmetic.
-				$sql = "SELECT id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
-					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS miles,\n"
-					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS kilometers\n"
-					. "FROM geonames \n"
-					. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC LIMIT 1";
-			}
-		$geoname_res = $this->sql->conn->query($sql);
-		$GeonamesArray = $geoname_res->fetch(2);
-		if($GeonamesArray['id'])
+		if(!is_numeric($lat) || !is_numeric($long)) { $this->mesg = "lat and long have to be numbers"; return 0; }
+		# the point the distances are measured from
+		$Latdd = (float)$lat;
+		$Londd = (float)$long;
+		# the nearest place, of any kind (lib/geonames.inc.php)
+		require_once dirname(__FILE__).'/geonames.inc.php';
+		$GeonamesArray = GeoNamesNearby::Nearest($this->sql->conn, $Latdd, $Londd, 1)[0] ?? false;
+		if($GeonamesArray && $GeonamesArray['id'])
 		{
 			$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
 			if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
@@ -571,6 +545,12 @@ class apiv2 extends dbcore
 				$task = "";
 				$type = "";
 			break;
+		}
+		# a CSV can be Vistumbler's, WiGLE's or SWardriving's: the file's first bytes say which
+		if($task === "import")
+		{
+			require_once dirname(__FILE__).'/import_type.inc.php';
+			$type = ImportType::GuessFile($file_orig, $upload) ?? $type;
 		}
 
 		switch($task)

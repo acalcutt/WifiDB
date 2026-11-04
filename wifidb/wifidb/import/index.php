@@ -147,6 +147,9 @@ switch($func)
 							else
 							{
 								chmod($uploadfile, 0600);
+								# the type picked on the form, or for an upload sent without one, what this file looks like
+								require_once '../lib/import_type.inc.php';
+								$file_type = isset(ImportType::TYPES[$type]) ? $type : (ImportType::GuessFile($filename_orig, $uploadfile) ?? 'vistumbler');
 								$hash = hash_file('md5', $uploadfile);
 								$filesize = filesize($uploadfile);
 
@@ -162,7 +165,7 @@ switch($func)
 								require_once '../lib/import_queue.inc.php';
 								list($queued, $import_number) = ImportQueue::Add($dbcore->sql->conn, $config, array('file_name' => $filename,
 									'file_orig' => $filename_orig, 'file_date' => $date, 'file_user' => $user, 'otherusers' => $otherusers,
-									'notes' => $notes, 'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $type), $uploadfile,
+									'notes' => $notes, 'title' => $title, 'size' => $size, 'hash' => $hash, 'type' => $file_type), $uploadfile,
 									function ($line) use ($dbcore) { $dbcore->logd($line, "error"); });
 								if($queued === 'waiting' || $queued === 'imported')
 								{

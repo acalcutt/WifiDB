@@ -20,10 +20,15 @@ This file expands the short summary into concrete parameter lists and examples f
 	- `chan` — numeric channel
 	- `auth` — authentication string (e.g., "WPA2")
 	- `encry` — encryption string (e.g., "AES")
+- How each field matches: `ssid_op`, `mac_op`, `radio_op`, `chan_op`, `auth_op`, `encry_op`, each `equals` (the
+  default), `contains`, `starts` or `ends`. `equals` and `starts` can use an index; `contains` and `ends` are slower
+  on a large table. A value with a `%` in it is a `LIKE` pattern as given, whatever its op, as before. A blank field
+  isn't searched on.
 - Notes: The endpoint rejects requests using `%` as a wildcard for all search fields simultaneously.
 
-Example:
+Examples:
 GET /api/search.php?ssid=CoffeeShop&chan=6
+GET /api/search.php?ssid=Coffee&ssid_op=contains
 
 4) `latest.php` (GET)
 - Purpose: return the newest AP as KML/KMZ.

@@ -69,6 +69,18 @@ final class ServersTest extends TestCase
         $this->assertSame('0.41.0', ServerStatus::LatestRequest($this->db)['version'], 'calling off the newest leaves the one before');
     }
 
+    public function testARequestOnSqlServerBracketsTheReservedBackupColumn(): void
+    {
+        $stmt = $this->createMock(PDOStatement::class);
+        $stmt->method('execute')->willReturn(true);
+        $conn = $this->createMock(PDO::class);
+        $conn->method('getAttribute')->with(PDO::ATTR_DRIVER_NAME)->willReturn('sqlsrv');
+        $conn->expects($this->once())->method('prepare')
+            ->with($this->stringContains('(version, [backup], backup_taken,'))->willReturn($stmt);
+        $conn->method('lastInsertId')->willReturn('7');
+        $this->assertSame(7, ServerStatus::Request($conn, '1.0.0', false, 'alice'));
+    }
+
     public function testWarningsSayWhatNeedsAnEye(): void
     {
         $now = strtotime('2026-11-02 12:00:00 UTC');

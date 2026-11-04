@@ -67,6 +67,16 @@ class SiteSettings
 			'The code in the HTML tag Search Console gives to prove the site is yours (or paste the whole tag).', ''),
 		'bing_site_verification'   => array('text', 'Bing Webmaster Tools verification',
 			'The code in the msvalidate.01 tag Bing gives (or paste the whole tag).', ''),
+		'geonames_refresh'  => array('choice', 'Refresh the GeoNames places',
+			"Downloads GeoNames' files again and brings the places nearby up to date (tools/cron/geonames, checked each night; one node does it). A refresh of every place downloads about 400 MB and takes a while, but the places stay in use throughout. Off: only when someone runs tools/utilites/load_geonames.php.",
+			'off', array('off' => 'Off', 'monthly' => 'Every month', 'quarterly' => 'Every 3 months')),
+		'geonames_set'      => array('choice', 'Which GeoNames places',
+			"What a refresh loads: every place GeoNames has (towns, landmarks, hills, lakes; about 12 million), or only towns with at least so many people.",
+			'allCountries', array('allCountries' => 'Every place', 'cities500' => 'Towns of 500 or more', 'cities1000' => 'Towns of 1,000 or more',
+				'cities5000' => 'Towns of 5,000 or more', 'cities15000' => 'Towns of 15,000 or more')),
+		'map_dem_url'       => array('text', 'Map elevation tiles',
+			"Where the mobile theme's map gets the elevation it draws contour lines from: the address of Terrarium-encoded PNG tiles, with {z}, {x} and {y} in it. Empty: no contour lines.",
+			'https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png'),
 		'analytics_consent' => array('choice', "Visitors' consent to analytics and ad cookies",
 			"Ask where it's required: only visitors in the EU and the rest of the European Economic Area, the UK and Switzerland see the cookie banner (by the country of their address, looked up on this server; anyone whose country can't be told is asked too); everyone else isn't asked. Ask every visitor: everyone sees the banner. Don't ask: nobody does, which is only allowed where consent isn't required. Until a visitor allows them, Google is told not to use cookies for analytics or personalized ads.",
 			'region', array('region' => "Ask where it's required", 'ask' => 'Ask every visitor', 'off' => "Don't ask")),
@@ -87,6 +97,9 @@ class SiteSettings
 				if(preg_match('/content\s*=\s*["\']([^"\']*)["\']/i', $value, $m)) { $value = trim($m[1]); }
 				return preg_match('/^[A-Za-z0-9_\-]{8,128}$/', $value) ? array($value, '')
 					: array($value, "That isn't a site verification code (letters, numbers, - and _).");
+			case 'map_dem_url':
+				return preg_match('#^https?://[^\s"\'<>\\\\]+$#i', $value) && strpos($value, '{z}') !== false && strpos($value, '{x}') !== false && strpos($value, '{y}') !== false
+					? array($value, '') : array($value, 'The elevation tiles need a web address with {z}, {x} and {y} in it.');
 			case 'site_description':
 				$value = trim(preg_replace('/\s+/u', ' ', strip_tags($value)));
 				return mb_strlen($value) <= 300 ? array($value, '') : array($value, 'The site description can be at most 300 characters.');

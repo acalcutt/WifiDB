@@ -18,6 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+require_once dirname(__FILE__).'/searchconditions.inc.php';
+
 class api extends dbcore
 {
 	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
@@ -48,40 +50,14 @@ class api extends dbcore
 
 	public function GeoNames($lat, $long)
 	{
-		$lat_search = bcdiv($lat, 1, 1);
-		$long_search = bcdiv($long, 1, 1);
-		
-		if($this->sql->service == "mysql")
-			{
-				$sql = "SELECT  id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
-					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(`latitude`)))) AS `miles`,\n"
-					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(`latitude`)) * cos(radians(`longitude`) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(`latitude`)))) AS `kilometers`\n"
-					. "FROM `geonames` \n"
-					. "WHERE `latitude` LIKE '".$lat_search."%' AND `longitude` LIKE '".$long_search."%' ORDER BY `kilometers` ASC LIMIT 1";
-			}
-		else if($this->sql->service == "sqlsrv")
-			{
-				$sql = "SELECT TOP 1 [id], [asciiname], [country_code], [admin1_code], [admin2_code], [timezone], [latitude], [longitude], \n"
-					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [miles],\n"
-					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians([latitude])) * cos(radians([longitude]) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians([latitude])))) AS [kilometers]\n"
-					. "FROM [geonames] \n"
-					. "WHERE [latitude] LIKE '".$lat_search."%' AND [longitude] LIKE '".$long_search."%' ORDER BY [kilometers] ASC";
-				#echo $sql;
-			}
-		else if($this->sql->service == "pgsql")
-			{
-				// geonames.latitude/longitude are varchar. MySQL and SQL Server
-				// implicitly convert them for radians(); Postgres does not, so the
-				// casts here are required, not cosmetic.
-				$sql = "SELECT id, asciiname, country_code, admin1_code, admin2_code, timezone, latitude, longitude, \n"
-					. "(3959 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS miles,\n"
-					. "(6371 * acos(cos(radians('".$Latdd."')) * cos(radians(latitude::double precision)) * cos(radians(longitude::double precision) - radians('".$Londd."')) + sin(radians('".$Latdd."')) * sin(radians(latitude::double precision)))) AS kilometers\n"
-					. "FROM geonames \n"
-					. "WHERE latitude LIKE '".$lat_search."%' AND longitude LIKE '".$long_search."%' ORDER BY kilometers ASC LIMIT 1";
-			}
-		$geoname_res = $this->sql->conn->query($sql);
-		$GeonamesArray = $geoname_res->fetch(2);
-		if($GeonamesArray['id'])
+		if(!is_numeric($lat) || !is_numeric($long)) { $this->mesg = "lat and long have to be numbers"; return 0; }
+		# the point the distances are measured from
+		$Latdd = (float)$lat;
+		$Londd = (float)$long;
+		# the nearest place, of any kind (lib/geonames.inc.php)
+		require_once dirname(__FILE__).'/geonames.inc.php';
+		$GeonamesArray = GeoNamesNearby::Nearest($this->sql->conn, $Latdd, $Londd, 1)[0] ?? false;
+		if($GeonamesArray && $GeonamesArray['id'])
 		{
 			$admin1 = $GeonamesArray['country_code'].".".$GeonamesArray['admin1_code'];
 			if($this->sql->service == "mysql")
@@ -692,15 +668,18 @@ class api extends dbcore
 		exit();
 	}
 
-	public function Search($ssid, $mac, $radio, $chan, $auth, $encry, $from = 0, $inc = 50000, $gpsOnly = false)
+	public function Search($ssid, $mac, $radio, $chan, $auth, $encry, $from = 0, $inc = 50000, $gpsOnly = false, $ops = array())
 	{
-		// Prepare parameters: if empty, search all ('%'); otherwise honor client-supplied value (including any % wildcards)
-		$ssid = ($ssid === "") ? '%' : $ssid;
-		$mac  = ($mac === "") ? '%' : $mac;
-		$radio= ($radio === "") ? '%' : $radio;
-		$chan = ($chan === "") ? '%' : $chan;
-		$auth = ($auth === "") ? '%' : $auth;
-		$encry= ($encry === "") ? '%' : $encry;
+		// A blank field matches everything; a value with % wildcards in it is a LIKE pattern as given; otherwise each
+		// field matches as its op says (WifidbApSearch::Ops(), equals by default)
+		$cond = WifidbApSearch::Conditions($this->sql->service, "wifi_ap",
+			array('ssid' => $ssid, 'mac' => $mac, 'radio' => $radio, 'chan' => $chan, 'auth' => $auth, 'encry' => $encry), $ops);
+		$where_sql = $cond['where'] ? implode(" AND ", $cond['where']) : "1=1";
+		$bind = function ($prep) use ($cond) {
+			$i = 1;
+			foreach($cond['params'] as $param){$prep->bindValue($i++, $param, PDO::PARAM_STR);}
+			return $i;
+		};
 
 		// optional gps-only clause
 		$gps_clause = "";
@@ -733,18 +712,13 @@ class api extends dbcore
 					   ROW_NUMBER() OVER (ORDER BY ModDate DESC) AS rn
 				FROM wifi_ap
 				LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID
-				WHERE ssid LIKE ? AND bssid LIKE ? AND wifi_ap.RADTYPE LIKE ? AND wifi_ap.CHAN LIKE ? AND wifi_ap.AUTH LIKE ? AND wifi_ap.ENCR LIKE ?" . $gps_clause . "
+				WHERE " . $where_sql . $gps_clause . "
 			) t WHERE t.rn > ? AND t.rn <= ?";
 
 			$prep2 = $this->sql->conn->prepare($sql2);
-			$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-			$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-			$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-			$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-			$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-			$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-			$prep2->bindParam(7, $rn_low, PDO::PARAM_INT);
-			$prep2->bindParam(8, $rn_high, PDO::PARAM_INT);
+			$i = $bind($prep2);
+			$prep2->bindValue($i, $rn_low, PDO::PARAM_INT);
+			$prep2->bindValue($i + 1, $rn_high, PDO::PARAM_INT);
 			$prep2->execute();
 		} else if ($this->sql->service == "pgsql") {
 			// Same shape as the MySQL query below, but every mixed-case column has
@@ -765,18 +739,13 @@ class api extends dbcore
 					   wifi_gps."Lat" AS gps_lat, wifi_gps."Lon" AS gps_lon
 				FROM wifi_ap
 				LEFT JOIN wifi_gps ON wifi_ap."HighGps_ID" = wifi_gps."GPS_ID"
-				WHERE wifi_ap."SSID" LIKE ? AND wifi_ap."BSSID" LIKE ? AND wifi_ap."RADTYPE" LIKE ? AND wifi_ap."CHAN"::text LIKE ? AND wifi_ap."AUTH" LIKE ? AND wifi_ap."ENCR" LIKE ?' . $gps_clause . '
+				WHERE ' . $where_sql . $gps_clause . '
 				ORDER BY wifi_ap."ModDate" DESC LIMIT ? OFFSET ?';
 
 			$prep2 = $this->sql->conn->prepare($sql2);
-			$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-			$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-			$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-			$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-			$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-			$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-			$prep2->bindParam(7, $inc, PDO::PARAM_INT);
-			$prep2->bindParam(8, $from, PDO::PARAM_INT);
+			$i = $bind($prep2);
+			$prep2->bindValue($i, (int)$inc, PDO::PARAM_INT);
+			$prep2->bindValue($i + 1, (int)$from, PDO::PARAM_INT);
 			$prep2->execute();
 		} else {
 			$sql2 = "SELECT
@@ -794,18 +763,13 @@ class api extends dbcore
 					   wifi_gps.Lat AS gps_lat, wifi_gps.Lon AS gps_lon
 				FROM wifi_ap
 				LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID
-				WHERE ssid LIKE ? AND bssid LIKE ? AND wifi_ap.RADTYPE LIKE ? AND wifi_ap.CHAN LIKE ? AND wifi_ap.AUTH LIKE ? AND wifi_ap.ENCR LIKE ?" . $gps_clause . "
+				WHERE " . $where_sql . $gps_clause . "
 				ORDER BY ModDate DESC LIMIT ?, ?";
 
 			$prep2 = $this->sql->conn->prepare($sql2);
-			$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-			$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-			$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-			$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-			$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-			$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-			$prep2->bindParam(7, $from, PDO::PARAM_INT);
-			$prep2->bindParam(8, $inc, PDO::PARAM_INT);
+			$i = $bind($prep2);
+			$prep2->bindValue($i, (int)$from, PDO::PARAM_INT);
+			$prep2->bindValue($i + 1, (int)$inc, PDO::PARAM_INT);
 			$prep2->execute();
 		}
 		$total_rows = $prep2->rowCount();

@@ -41,6 +41,9 @@ if (isset($_REQUEST['gpsonly'])) {
     if ($v === '1' || strtolower($v) === 'true') { $gpsonly = true; }
 }
 
-$dbcore->search($ssid, $mac, $radio, $chan, $auth, $encry, $from, $inc, $gpsonly);
+# optional per-field match: ssid_op, mac_op, ... = equals (the default), contains, starts or ends
+$ops = WifidbApSearch::Ops($_REQUEST);
+
+$dbcore->search($ssid, $mac, $radio, $chan, $auth, $encry, $from, $inc, $gpsonly, $ops);
 $dbcore->Output();
 ?>

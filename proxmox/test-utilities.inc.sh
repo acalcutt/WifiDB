@@ -39,14 +39,46 @@ out=$(util geojson.php); ran geojson.php "$out"
 check "...and writes the GeoJSON files by age, as JSON" docker exec "$ct" php -r 'foreach (array("0to1year", "1to2year", "2to3year", "Legacy") as $b) { $j = json_decode(file_get_contents("/var/www/wifidb/out/geojson/WifiDB_$b.json")); if (!is_object($j)) { exit(1); } }'
 
 # GeoNames, from the real download site (skipped if it can't be reached)
-if docker exec "$ct" curl -sf -m 60 -o /var/tmp/countryInfo.txt https://download.geonames.org/export/dump/countryInfo.txt \
-   && docker exec "$ct" curl -sf -m 60 -o /var/tmp/admin1CodesASCII.txt https://download.geonames.org/export/dump/admin1CodesASCII.txt; then
-    out=$(util load_geonames.php --countrynames --file=/var/tmp/countryInfo.txt --replace); ran "load_geonames.php (countryInfo.txt)" "$out"
+if docker exec "$ct" curl -sf -m 30 -o /dev/null https://download.geonames.org/export/dump/countryInfo.txt; then
+    out=$(util load_geonames.php --countrynames --admin1 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --download (countryInfo.txt, admin1CodesASCII.txt)" "$out"
     check "...and loads every country" test "$(sqlq 'select count(*) from geonames_country_names')" -gt 200
     check "...with the hyphenated and spaced columns filled" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO-Numeric) = '840' and $(Q 'Postal Code Format') = '#####-####'")" = 1
-    out=$(util load_geonames.php --admin1 --file=/var/tmp/admin1CodesASCII.txt --replace); ran "load_geonames.php (admin1CodesASCII.txt)" "$out"
-    check "...and loads the first-level regions" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
+    check "...and the first-level regions" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
     check "...names with apostrophes included" test "$(sqlq "select count(*) from geonames_admin1 where name like '%''%'")" -gt 0
+    regions=$(sqlq 'select count(*) from geonames_admin1')
+    sqlq "UPDATE geonames_admin1 SET name = 'Changed' WHERE admin1 = 'US.MA'" >/dev/null
+    sqlq "INSERT INTO geonames_admin1 (admin1, name, asciiname) VALUES ('ZZ.98', 'Gone', 'Gone')" >/dev/null
+    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt --keep); ran "load_geonames.php --file again, --keep" "$out"
+    check "...updates the regions in place: none twice" test "$(sqlq 'select count(*) from geonames_admin1')" = "$((regions + 1))"
+    check "...one that was changed is GeoNames' again" test "$(sqlq "select name from geonames_admin1 where admin1 = 'US.MA'")" = Massachusetts
+    check "...and with --keep, one GeoNames doesn't have stays" test "$(sqlq "select count(*) from geonames_admin1 where admin1 = 'ZZ.98'")" = 1
+    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt); ran "load_geonames.php --file again" "$out"
+    check "...without it, that one is taken out, and only that one" sh -c 'test "$0" = 0 && test "$1" = "$2"' \
+        "$(sqlq "select count(*) from geonames_admin1 where admin1 = 'ZZ.98'")" "$(sqlq 'select count(*) from geonames_admin1')" "$regions"
+    out=$(util load_geonames.php --countrynames --download --dir=/var/tmp/geonames); ran "load_geonames.php --countrynames again, without --replace" "$out"
+    check "...every country still once" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO) = 'US'")" = 1
+    out=$(util load_geonames.php --geonames --set=cities15000 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --set=cities15000 (read from its zip)" "$out"
+    check "...and loads the towns" test "$(sqlq 'select count(*) from geonames')" -gt 20000
+    near=$(docker exec "$ct" curl -s 'http://127.0.0.1/api/geonames.php?lat=42.3601&long=-71.0589')
+    check "api/geonames.php finds the nearest place, measured from the point asked about" \
+        sh -c 'echo "$0" | grep -q "\"Area Name\":\"Boston\"" && echo "$0" | grep -qE "\"miles\":\"?0\."' "$near" ||
+        echo "$near" | head -c 300 | sed 's/^/       /'
+    check "...and turns away a lat that isn't a number" sh -c 'echo "$0" | grep -q "have to be numbers"' \
+        "$(docker exec "$ct" curl -s 'http://127.0.0.1/api/geonames.php?lat=abc&long=-71')"
+    # the refresh from cron (tools/cron/geonames), as Site Settings sets it
+    check "a scheduled GeoNames refresh does nothing while Site Settings has them off" sh -c 'echo "$0" | grep -q "refreshes are off"' \
+        "$(util load_geonames.php --scheduled)"
+    sm_set 'array("geonames_refresh" => "monthly", "geonames_set" => "cities15000")'
+    check "...and with them on, nothing until one is due" sh -c 'echo "$0" | grep -q "not due yet"' "$(util load_geonames.php --scheduled)"
+    sqlq "UPDATE geonames SET loaded_at = '2020-01-01 00:00:00'" >/dev/null
+    docker exec "$ct" rm -f /srv/wifidb-data/log/geonames/geonames_$(date -u +%Y%m%d).log
+    docker exec "$ct" runuser -u www-data -- /opt/wifidb/tools/cron/geonames
+    glog=$(docker exec "$ct" sh -c 'cat /srv/wifidb-data/log/geonames/geonames_*.log' 2>&1)
+    check "...then the cron job downloads the places again and refreshes them" sh -c 'echo "$0" | grep -q "Refreshing GeoNames (cities15000)" && echo "$0" | grep -q "Downloaded cities15000.zip"' "$glog" ||
+        echo "$glog" | tail -5 | sed 's/^/       /'
+    check "...every place loaded anew" test "$(sqlq "select count(*) from geonames where loaded_at < '2025-01-01'")" = 0
+    check "...and the towns all still there" test "$(sqlq 'select count(*) from geonames')" -gt 20000
+    sm_set 'array("geonames_refresh" => "off", "geonames_set" => "allCountries")'
 else
     log "(download.geonames.org can't be reached from here: the GeoNames load is not tested)"
 fi

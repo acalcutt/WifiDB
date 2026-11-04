@@ -162,7 +162,7 @@ final class MigratorTest extends TestCase
                 foreach ($statements as $statement) {
                     // SQL Server batches keep their leading comment lines
                     $statement = preg_replace('/^(\s*--[^\n]*\n)+/', '', $statement);
-                    $this->assertMatchesRegularExpression('/^\s*(CREATE|ALTER|INSERT|UPDATE|DROP)\b/i', $statement, $file);
+                    $this->assertMatchesRegularExpression('/^\s*(CREATE|ALTER|INSERT|UPDATE|DELETE|WITH|DECLARE|DROP)\b/i', $statement, $file);
                 }
             }
         }

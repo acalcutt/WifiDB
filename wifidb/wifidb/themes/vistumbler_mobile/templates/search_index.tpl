@@ -29,36 +29,72 @@ if not, write to the
 									<th class="header">SSID:</th>
 									<th>
 										<input type="text" name="ssid" size="40" id="ssid" onkeyup="doCompletion();"/>
+										<select name="ssid_op" title="How to match SSID">
+											<option value="equals" selected>Equals</option>
+											<option value="contains">Contains</option>
+											<option value="starts">Starts with</option>
+											<option value="ends">Ends with</option>
+										</select>
 									</th>
 								</tr>
 								<tr>
 									<th class="header">MacAddress:</th>
 									<th>
 										<input type="text" name="mac" size="40" id="mac" onkeyup="doCompletion();"/>
+										<select name="mac_op" title="How to match MacAddress">
+											<option value="equals" selected>Equals</option>
+											<option value="contains">Contains</option>
+											<option value="starts">Starts with</option>
+											<option value="ends">Ends with</option>
+										</select>
 									</th>
 								</tr>
 								<tr>
 									<th class="header">Authentication:</th>
 									<th>
 										<input type="text" name="auth" size="40" id="auth" onkeyup="doCompletion();"/>
+										<select name="auth_op" title="How to match Authentication">
+											<option value="equals" selected>Equals</option>
+											<option value="contains">Contains</option>
+											<option value="starts">Starts with</option>
+											<option value="ends">Ends with</option>
+										</select>
 									</th>
 								</tr>
 								<tr>
 									<th class="header">Encryption:</th>
 									<th>
 										<input type="text" name="encry" size="40" id="encry" onkeyup="doCompletion();"/>
+										<select name="encry_op" title="How to match Encryption">
+											<option value="equals" selected>Equals</option>
+											<option value="contains">Contains</option>
+											<option value="starts">Starts with</option>
+											<option value="ends">Ends with</option>
+										</select>
 									</th>
 								</tr>
 								<tr>
 									<th class="header">Radio Type:</th>
 									<th>
 										<input type="text" name="radio" size="40" id="radio" onkeyup="doCompletion();"/>
+										<select name="radio_op" title="How to match Radio Type">
+											<option value="equals" selected>Equals</option>
+											<option value="contains">Contains</option>
+											<option value="starts">Starts with</option>
+											<option value="ends">Ends with</option>
+										</select>
 									</th>
 								</tr>
 								<tr>
 									<th class="header">Channel:</th>
 									<th>
 										<input type="text" name="chan" size="40" id="chan" onkeyup="doCompletion();"/>
+										<select name="chan_op" title="How to match Channel">
+											<option value="equals" selected>Equals</option>
+											<option value="contains">Contains</option>
+											<option value="starts">Starts with</option>
+											<option value="ends">Ends with</option>
+										</select>
 									</th>
 								</tr>
 								<tr>

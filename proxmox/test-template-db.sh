@@ -139,11 +139,18 @@ check "...their GPS points" test "$(sqlq 'select count(*) from wifi_gps')" -ge 3
 check "...the non-ASCII name intact" test "$(sqlq "select count(*) from wifi_ap where \"SSID\" = N'Café Ünïcode'")" = 1
 check "...and nothing went to the bad files" test "$(sqlq 'select count(*) from files_bad')" = 0
 if [ "$(sqlq 'select count(*) from wifi_ap')" != 2 ]; then echo "$imp" | tail -15 | sed 's/^/       /'; fi
+# an upload with no type (a script, an uploader): queued as what its contents say (lib/import_type.inc.php)
+docker exec "$ct" sh -c 'sed "s/00:11:22:33:44:0/00:11:22:33:45:0/" /var/tmp/wigle.csv > /var/tmp/upload.csv'
+docker exec "$ct" curl -s -o /dev/null -H "Cookie: $member" -F "upload[]=@/var/tmp/upload.csv" -F user=tuser -F title=notype \
+    'http://127.0.0.1/import/index.php?func=import'
+check "an upload sent without a type is queued as the WiGLE CSV it is" test "$(sqlq "select type from files_tmp where title = 'notype'")" = wiglewificsv
+sqlq "DELETE FROM files_tmp WHERE title = 'notype'" >/dev/null
 docker exec "$ct" systemctl start cron
 ap=$(sqlq 'select min("AP_ID") from wifi_ap')
 scan "$member" "/opt/fetch.php?id=$ap" "/opt/userstats.php?func=useraplist&row=1" '/all.php?sort=AP_ID&ord=DESC&from=0&inc=100' /stats.php \
     "/opt/map.php?func=user_list&id=1" '/opt/scheduling.php?func=done' "/graph/index.php?id=$ap" '/opt/results.php?ssid=Caf&sort=SSID&ord=ASC'
 check "the signal graph draws an imported access point" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.png?ap=$1" | head -c 8 | od -An -c | tr -d " " | grep -q "211PNG"' "$ct" "$ap"
+. "$(dirname "$(readlink -f "$0")")/test-search.inc.sh"
 
 if [ -n "${IMPORT_SAMPLES:-}" ]; then
     . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"

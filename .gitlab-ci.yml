@@ -205,4 +205,4 @@ js-tests:
   rules: *ci-rules
   script:
     - node --check wifidb/wifidb/lib/js/wifidb/signalchart.js
-    - node --test tests/js/signalchart.test.js tests/js/qrcode.test.js tests/js/passkeys.test.js
+    - node --test tests/js/signalchart.test.js tests/js/qrcode.test.js tests/js/passkeys.test.js tests/js/import_type.test.js

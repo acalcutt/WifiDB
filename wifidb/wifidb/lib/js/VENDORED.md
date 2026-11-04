@@ -12,7 +12,7 @@ licence, and the only directory here that may be edited.
 | `maplibre-contour/` | `maplibre-contour` | 0.1.1 |
 | `maplibre-gl/` | `maplibre-gl` | 6.16.0 |
 | `pmtiles/` | `pmtiles` | 4.5.0 |
-| `pmtiles-torrent/` | `pmtiles-torrent` | 0.4.4 |
+| `pmtiles-torrent/` | `pmtiles-torrent` | 0.11.1 |
 | `webtorrent/` | `webtorrent` | 3.0.21 |
 | `chart.min.js` (single file) | `chart.js`, `dist/chart.umd.min.js` | 4.6.1 |
 | `sceditor/minified/` | `sceditor` | 3.2.3 |

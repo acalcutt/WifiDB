@@ -293,8 +293,10 @@
 {else}
 		const swarmReady = Promise.resolve(null);
 {/if}
+{if $wifidb_map_dem_url}
+		// the elevation the contour lines are drawn from (Site Settings: Map elevation tiles)
 		var demSource = new mlcontour.DemSource({
-			url: 'https://tiles.wifidb.net/data/jaxa_terrarium/{literal}{z}/{x}/{y}{/literal}.png',
+			url: '{$wifidb_map_dem_url|escape:'javascript'}',
 			encoding: 'terrarium',
 			maxzoom: 11,
 			worker: true,
@@ -302,6 +304,7 @@
 			timeoutMs: 10_000
 		});
 		demSource.setupMaplibre(maplibregl);
+{/if}
 		maplibregl.setWorkerCount(6)
 
 		//Maplibre map object
@@ -933,6 +936,7 @@
 			}
 {$layer_source_all}
 			toggle_label();
+{if $wifidb_map_dem_url}
 
 			//Contour lines
 			var layers = map.getStyle().layers;
@@ -1006,6 +1010,7 @@
 				},
 				firstSymbolId
 			);
+{/if}
 		};
 
 		map.on('load', function () {

@@ -125,7 +125,9 @@ class ServerStatus
 	/** Asks every node to update to $version. @return int the request's id */
 	public static function Request(PDO $conn, $version, $backup, $user)
 	{
-		$conn->prepare("INSERT INTO server_update_requests (version, backup, backup_taken, requested_by, requested_at, cancelled) VALUES (?, ?, 0, ?, ?, 0)")
+		# BACKUP is a reserved word in SQL Server
+		$backup_col = $conn->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlsrv' ? '[backup]' : 'backup';
+		$conn->prepare("INSERT INTO server_update_requests (version, $backup_col, backup_taken, requested_by, requested_at, cancelled) VALUES (?, ?, 0, ?, ?, 0)")
 			->execute(array((string)$version, $backup ? 1 : 0, (string)$user, self::Now()));
 		return (int)$conn->lastInsertId();
 	}

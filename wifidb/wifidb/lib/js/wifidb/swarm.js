@@ -108,6 +108,11 @@ const METAINFO_TIMEOUT_MS = 5000;
  *
  * Costs nothing when it is wrong: the map has already drawn by then, and an
  * archive still arriving is simply one that has not started serving yet.
+ *
+ * Note this is a base rather than a ceiling. The engine adds an allowance per
+ * piece, so a large archive gets proportionally longer — which is the point,
+ * since a large archive is the one where seeding is worth having. What bounds
+ * the person's wait is BATCH_TIMEOUT_MS below, not this.
  */
 const METADATA_TIMEOUT_MS = 30000;
 /**
@@ -320,18 +325,6 @@ async function chooseTorrentId(block, bucket, log, localTorrent) {
 }
 
 /**
- * Rejects once the given number of milliseconds has passed.
- * @param {number} ms Delay.
- * @param {string} what Named in the rejection, for the log line.
- * @returns {Promise<never>} A promise that only ever rejects.
- */
-function expire(ms, what) {
-  return new Promise((_resolve, reject) => {
-    setTimeout(() => reject(new Error(`${what} timed out after ${ms}ms`)), ms);
-  });
-}
-
-/**
  * Destroys an engine without letting the failure become the caller's problem.
  * @param {object} engine The engine to release.
  * @returns {Promise<void>} Always resolves.
@@ -457,15 +450,17 @@ async function joinArchive(archive, client, lib, log, metadataTimeoutMs) {
     // touches node:fs, and leaving it unset is what lets the package run
     // unmodified in a browser.
     maxWebConns: MAX_WEB_CONNS,
-    readyTimeoutMs: METADATA_TIMEOUT_MS,
+    // The only budget for this wait. It used to be raced against an `expire`
+    // out here as well, and the two disagreed: the engine scales its own
+    // budget with the torrent's piece count, so a fixed race outside it
+    // silently capped every archive at the base figure. A 178,690-piece
+    // archive kept timing out at 30s while the engine was still waiting.
+    readyTimeoutMs: metadataTimeoutMs,
   });
 
   let info;
   try {
-    info = await Promise.race([
-      engine.ready(),
-      expire(metadataTimeoutMs, `${archive.bucket} metadata`),
-    ]);
+    info = await engine.ready();
   } catch (error) {
     log(`${archive.bucket}: ${error.message}, staying on HTTP`);
     await release(engine);
