@@ -39,14 +39,16 @@ out=$(util geojson.php); ran geojson.php "$out"
 check "...and writes the GeoJSON files by age, as JSON" docker exec "$ct" php -r 'foreach (array("0to1year", "1to2year", "2to3year", "Legacy") as $b) { $j = json_decode(file_get_contents("/var/www/wifidb/out/geojson/WifiDB_$b.json")); if (!is_object($j)) { exit(1); } }'
 
 # GeoNames, from the real download site (skipped if it can't be reached)
-if docker exec "$ct" curl -sf -m 60 -o /var/tmp/countryInfo.txt https://download.geonames.org/export/dump/countryInfo.txt \
-   && docker exec "$ct" curl -sf -m 60 -o /var/tmp/admin1CodesASCII.txt https://download.geonames.org/export/dump/admin1CodesASCII.txt; then
-    out=$(util load_geonames.php --countrynames --file=/var/tmp/countryInfo.txt --replace); ran "load_geonames.php (countryInfo.txt)" "$out"
+if docker exec "$ct" curl -sf -m 30 -o /dev/null https://download.geonames.org/export/dump/countryInfo.txt; then
+    out=$(util load_geonames.php --countrynames --admin1 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --download (countryInfo.txt, admin1CodesASCII.txt)" "$out"
     check "...and loads every country" test "$(sqlq 'select count(*) from geonames_country_names')" -gt 200
     check "...with the hyphenated and spaced columns filled" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO-Numeric) = '840' and $(Q 'Postal Code Format') = '#####-####'")" = 1
-    out=$(util load_geonames.php --admin1 --file=/var/tmp/admin1CodesASCII.txt --replace); ran "load_geonames.php (admin1CodesASCII.txt)" "$out"
-    check "...and loads the first-level regions" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
+    check "...and the first-level regions" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
     check "...names with apostrophes included" test "$(sqlq "select count(*) from geonames_admin1 where name like '%''%'")" -gt 0
+    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt --replace); ran "load_geonames.php --file (a file of one's own)" "$out"
+    check "...the same regions again" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
+    out=$(util load_geonames.php --geonames --set=cities15000 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --set=cities15000 (read from its zip)" "$out"
+    check "...and loads the towns" test "$(sqlq 'select count(*) from geonames')" -gt 20000
 else
     log "(download.geonames.org can't be reached from here: the GeoNames load is not tested)"
 fi
