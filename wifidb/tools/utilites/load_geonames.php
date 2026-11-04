@@ -15,9 +15,11 @@ container, else the temporary folder), and uses one already there instead of fet
 one). --set picks the places for --geonames: allCountries (the default: every place, about 12 million, a 400 MB download)
 or one of GeoNames' smaller lists, cities500, cities1000, cities5000 or cities15000 (the towns with at least that many
 people). Each line updates the row with its key (a place's geonameid, a region's code, a country's ISO code) or adds
-it, so loading again brings the tables up to date while the site goes on using them. --replace empties each table
-first instead, which also takes out what GeoNames has since removed. A zip is read without unpacking it, the file a
-line at a time (allCountries.txt is over a gigabyte), and a value longer than its column is cut to fit.
+it, so loading again brings the tables up to date while the site goes on using them; once the whole file is in, the
+rows it doesn't have (what GeoNames has since removed) are taken out, by the time each row was last loaded (loaded_at).
+So a table ends up as the file has it: a --set of towns leaves only those towns. --keep leaves those rows instead
+(adding to what's there); --replace empties each table first. A zip is read without unpacking it, the file a line at a
+time (allCountries.txt is over a gigabyte), and a value longer than its column is cut to fit.
 */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
@@ -38,7 +40,7 @@ $layouts = array(
 		"gtopo30", "timezone", "mod_date"), null),   # the set's zip
 );
 
-$loads = array(); $file = ''; $replace = false; $download = false; $dir = ''; $set = 'allCountries';
+$loads = array(); $file = ''; $replace = false; $keep = false; $download = false; $dir = ''; $set = 'allCountries';
 foreach(array_slice($argv, 1) as $arg)
 {
 	if(isset($layouts[ltrim($arg, '-')])) { $loads[] = ltrim($arg, '-'); }
@@ -48,13 +50,15 @@ foreach(array_slice($argv, 1) as $arg)
 	elseif(strpos($arg, '--set=') === 0) { $set = substr($arg, 6); }
 	elseif($arg === '--download') { $download = true; }
 	elseif($arg === '--replace') { $replace = true; }
+	elseif($arg === '--keep') { $keep = true; }
 }
 $loads = array_values(array_unique($loads));
 if(!$loads || ($download === ($file !== '')) || ($file !== '' && count($loads) > 1) || !in_array($set, GEONAMES_SETS, true))
 {
-	fwrite(STDERR, "Usage: php load_geonames.php --all --download [--replace] [--set=SET] [--dir=DIR]\n"
-		."       php load_geonames.php --geonames|--admin1|--admin2|--countrynames (--download | --file=FILE) [--replace] [--set=SET]\n"
+	fwrite(STDERR, "Usage: php load_geonames.php --all --download [--replace|--keep] [--set=SET] [--dir=DIR]\n"
+		."       php load_geonames.php --geonames|--admin1|--admin2|--countrynames (--download | --file=FILE) [--replace|--keep] [--set=SET]\n"
 		."--download fetches the files from ".GEONAMES_URL." into --dir; --file loads one you have (a .txt, or a .zip with it inside).\n"
+		."Each table ends up as the file has it; --keep leaves the rows the file doesn't have, --replace empties the table first.\n"
 		."SET is what --geonames loads: ".implode(', ', GEONAMES_SETS)." (allCountries, every place, is the default).\n");
 	exit(2);
 }
@@ -164,10 +168,13 @@ foreach($inputs as $load => $in)
 		echo "Emptied $table.\n";
 	}
 
-	# each line updates the row with its key (the first column), or adds it (the keys: sql/migrations/*/0011_geonames_keys.sql)
+	# each line updates the row with its key (the first column), or adds it (the keys: sql/migrations/*/0011_geonames_keys.sql),
+	# and stamps it with when this load started, so what the file no longer has is what's left with an older stamp
 	$key = $columns[0];
-	$insert_sql = "INSERT INTO ".$quote($table)." (".implode(", ", array_map($quote, $columns)).") VALUES (".implode(", ", array_fill(0, count($columns), "?")).")";
-	$others = array_slice($columns, 1);
+	$stamp = gmdate('Y-m-d H:i:s');
+	$written = array_merge($columns, array('loaded_at'));
+	$insert_sql = "INSERT INTO ".$quote($table)." (".implode(", ", array_map($quote, $written)).") VALUES (".implode(", ", array_fill(0, count($written), "?")).")";
+	$others = array_slice($written, 1);
 	$update = null;
 	if($service == "mysql")
 	{
@@ -183,7 +190,7 @@ foreach($inputs as $load => $in)
 		$insert = $conn->prepare($insert_sql);
 		$update = $conn->prepare("UPDATE ".$quote($table)." SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = ?"; }, $others))." WHERE ".$quote($key)." = ?");
 	}
-	$loaded = 0; $skipped = 0;
+	$loaded = 0; $skipped = 0; $failed = 0;
 	$conn->beginTransaction();
 	while(($line = fgets($in)) !== false)
 	{
@@ -199,6 +206,7 @@ foreach($inputs as $load => $in)
 			$values[] = ($v === '' && in_array($column, array('geonameid', 'geonamesid'), true)) ? null : $v;
 		}
 		if($values[0] === null || $values[0] === '') { $skipped++; continue; }   # no key: nothing to find it by again
+		$values[] = $stamp;
 		# PostgreSQL gives up on the whole transaction after one failed statement; a savepoint keeps it to the one line
 		if($service == "pgsql") { $conn->exec("SAVEPOINT geoline"); }
 		try
@@ -210,12 +218,24 @@ foreach($inputs as $load => $in)
 		catch(PDOException $e)
 		{
 			if($service == "pgsql") { $conn->exec("ROLLBACK TO SAVEPOINT geoline"); }
-			$skipped++;
+			$failed++;
 			fwrite(STDERR, "Skipped a line: ".$e->getMessage()."\n");
 		}
 		if($loaded % 1000 === 0) { $conn->commit(); $conn->beginTransaction(); echo "\r$loaded"; }
 	}
 	$conn->commit();
 	fclose($in);
-	echo "\rLoaded $loaded rows into $table".($skipped ? ", skipped $skipped" : "").".\n";
+	echo "\rLoaded $loaded rows into $table".($skipped + $failed ? ", skipped ".($skipped + $failed) : "").".\n";
+
+	# what this file no longer has: the rows this load didn't stamp. Only after the whole file went in, since a line that
+	# failed would take its row with it.
+	if($replace || $keep) { continue; }
+	if($failed)
+	{
+		echo "Not removing what $table had and this file doesn't: $failed lines couldn't be saved. Load it again once they can.\n";
+		continue;
+	}
+	$removed = $conn->prepare("DELETE FROM ".$quote($table)." WHERE ".$quote('loaded_at')." < ? OR ".$quote('loaded_at')." IS NULL");
+	$removed->execute(array($stamp));
+	if($removed->rowCount() > 0) { echo "Removed ".$removed->rowCount()." rows from $table that this file no longer has.\n"; }
 }

@@ -47,9 +47,14 @@ if docker exec "$ct" curl -sf -m 30 -o /dev/null https://download.geonames.org/e
     check "...names with apostrophes included" test "$(sqlq "select count(*) from geonames_admin1 where name like '%''%'")" -gt 0
     regions=$(sqlq 'select count(*) from geonames_admin1')
     sqlq "UPDATE geonames_admin1 SET name = 'Changed' WHERE admin1 = 'US.MA'" >/dev/null
-    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt); ran "load_geonames.php --file again, without --replace" "$out"
-    check "...updates the regions in place: none twice" test "$(sqlq 'select count(*) from geonames_admin1')" = "$regions"
-    check "...and one that was changed is GeoNames' again" test "$(sqlq "select name from geonames_admin1 where admin1 = 'US.MA'")" = Massachusetts
+    sqlq "INSERT INTO geonames_admin1 (admin1, name, asciiname) VALUES ('ZZ.98', 'Gone', 'Gone')" >/dev/null
+    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt --keep); ran "load_geonames.php --file again, --keep" "$out"
+    check "...updates the regions in place: none twice" test "$(sqlq 'select count(*) from geonames_admin1')" = "$((regions + 1))"
+    check "...one that was changed is GeoNames' again" test "$(sqlq "select name from geonames_admin1 where admin1 = 'US.MA'")" = Massachusetts
+    check "...and with --keep, one GeoNames doesn't have stays" test "$(sqlq "select count(*) from geonames_admin1 where admin1 = 'ZZ.98'")" = 1
+    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt); ran "load_geonames.php --file again" "$out"
+    check "...without it, that one is taken out, and only that one" sh -c 'test "$0" = 0 && test "$1" = "$2"' \
+        "$(sqlq "select count(*) from geonames_admin1 where admin1 = 'ZZ.98'")" "$(sqlq 'select count(*) from geonames_admin1')" "$regions"
     out=$(util load_geonames.php --countrynames --download --dir=/var/tmp/geonames); ran "load_geonames.php --countrynames again, without --replace" "$out"
     check "...every country still once" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO) = 'US'")" = 1
     out=$(util load_geonames.php --geonames --set=cities15000 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --set=cities15000 (read from its zip)" "$out"
