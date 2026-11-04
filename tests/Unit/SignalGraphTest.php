@@ -183,11 +183,10 @@ final class SignalGraphTest extends TestCase
     private function database(): PDO
     {
         $db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-        $db->exec("CREATE TABLE wifi_ap (AP_ID INTEGER PRIMARY KEY, BSSID TEXT, SSID TEXT, CHAN INTEGER, AUTH TEXT, ENCR TEXT, RADTYPE TEXT, NETTYPE TEXT, BTX TEXT, OTX TEXT, fa TEXT, la TEXT, HighGps_ID INTEGER)");
-        $db->exec("CREATE TABLE wifi_gps (GPS_ID INTEGER PRIMARY KEY, Lat TEXT, Lon TEXT)");
+        $db->exec("CREATE TABLE wifi_ap (AP_ID INTEGER PRIMARY KEY, BSSID TEXT, SSID TEXT, CHAN INTEGER, AUTH TEXT, ENCR TEXT, RADTYPE TEXT, NETTYPE TEXT, BTX TEXT, OTX TEXT, fa TEXT, la TEXT, HighGps_ID INTEGER, est_lat TEXT, est_lon TEXT)");
         $db->exec("CREATE TABLE wifi_hist (Hist_ID INTEGER PRIMARY KEY AUTOINCREMENT, AP_ID INTEGER, Sig INTEGER, Hist_Date TEXT)");
-        $db->exec("INSERT INTO wifi_gps VALUES (1, 'N 43.1234', 'W 70.1234')");
-        $db->exec("INSERT INTO wifi_ap VALUES (7, '00:11:22:33:44:55', 'Cafe <b>WiFi</b>', 11, 'WPA2-Personal', 'CCMP', '802.11n', 'Infrastructure', '54', '54', '2024-01-02 10:11:12.000', '2024-03-04 10:11:12.000', 1)");
+        // (the position is the access point's estimate, lib/position.inc.php)
+        $db->exec("INSERT INTO wifi_ap VALUES (7, '00:11:22:33:44:55', 'Cafe <b>WiFi</b>', 11, 'WPA2-Personal', 'CCMP', '802.11n', 'Infrastructure', '54', '54', '2024-01-02 10:11:12.000', '2024-03-04 10:11:12.000', 1, 'N 43.1234', 'W 70.1234')");
         foreach ([[7, 10, '2024-01-01 00:00:01'], [7, 80, '2024-01-01 00:00:02'], [7, 55, '2024-01-01 00:00:03'], [8, 99, '2024-01-01 00:00:09']] as $row) {
             $db->prepare("INSERT INTO wifi_hist (AP_ID, Sig, Hist_Date) VALUES (?, ?, ?)")->execute($row);
         }

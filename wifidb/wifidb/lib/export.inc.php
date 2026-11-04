@@ -78,28 +78,26 @@ class export extends dbcore
 		if($this->sql->service == "pgsql")
 		{
 			$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap."FLAGS", wap.fa, wap.la, wap.points, wap.high_sig, wap.high_gps_sig, wap.high_gps_rssi, wap.high_rssi,'."\n"
-				. 'wGPS."Lat" As "Lat",'."\n"
-				. 'wGPS."Lon" As "Lon",'."\n"
-				. 'wGPS."Alt" As "Alt",'."\n"
+				. 'wap.est_lat As "Lat",'."\n"
+				. 'wap.est_lon As "Lon",'."\n"
+				. 'wap.est_alt As "Alt",'."\n"
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
-				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
 				. 'WHERE wap."AP_ID" = ?';
-			if($valid_gps){$sql .= ' AND wap."HighGps_ID" IS NOT NULL';}
+			if($valid_gps){$sql .= ' AND wap.est_lat IS NOT NULL';}
 		}
 		else
 		{
 			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.OTX, wap.FLAGS, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_gps_sig, wap.high_gps_rssi, wap.high_rssi,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
+				. "wap.est_lat As Lat,\n"
+				. "wap.est_lon As Lon,\n"
+				. "wap.est_alt As Alt,\n"
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 				. "WHERE wap.AP_ID = ?";
-			if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
+			if($valid_gps){$sql .= " AND wap.est_lat IS NOT NULL";}
 		}
 
 		$prep = $this->sql->conn->prepare($sql);
@@ -229,38 +227,36 @@ class export extends dbcore
 		{
 			$sql = 'SELECT wh."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap."HighGps_ID",'."\n"
 				. "wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
-				. 'wGPS."Lat" As "Lat", wGPS."Lon" As "Lon", wGPS."Alt" As "Alt",'."\n"
+				. 'wap.est_lat As "Lat", wap.est_lon As "Lon", wap.est_alt As "Alt",'."\n"
 				. "wf.file_user AS file_user,\n"
 				. 'MAX(wh."New") AS new, COUNT(wh."Hist_Date") As list_points'."\n"
 				. "FROM wifi_hist AS wh\n"
 				. 'LEFT JOIN wifi_ap  AS wap  ON wh."AP_ID"    = wap."AP_ID"'."\n"
-				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 				. 'LEFT JOIN files    AS wf   ON wf.id       = wap."File_ID"'."\n"
 				. 'WHERE wh."File_ID" = ?';
 			if($only_new == 1){$sql .= ' AND wh."New" = 1';}
-			if($valid_gps){$sql .= ' AND wap."HighGps_ID" IS NOT NULL';}
+			if($valid_gps){$sql .= ' AND wap.est_lat IS NOT NULL';}
 			$sql .= "\n".'GROUP BY wh."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap."HighGps_ID",'."\n"
 				. "wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
-				. 'wGPS."Lat", wGPS."Lon", wGPS."Alt", wf.file_user'."\n"
+				. 'wap.est_lat, wap.est_lon, wap.est_alt, wf.file_user'."\n"
 				. "ORDER BY {$sort_sql} {$ord}";
 		}
 		else
 		{
 			$sql = "SELECT wh.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.HighGps_ID,\n"
 				. "wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
-				. "wGPS.Lat As Lat, wGPS.Lon As Lon, wGPS.Alt As Alt,\n"
+				. "wap.est_lat As Lat, wap.est_lon As Lon, wap.est_alt As Alt,\n"
 				. "wf.file_user AS file_user,\n"
 				. "MAX(wh.New) AS new, COUNT(wh.Hist_Date) As list_points\n"
 				. "FROM wifi_hist AS wh\n"
 				. "LEFT JOIN wifi_ap  AS wap  ON wh.AP_ID    = wap.AP_ID\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files    AS wf   ON wf.id       = wap.File_ID\n"
 				. "WHERE wh.File_ID = ?";
 			if($only_new == 1){$sql .= " AND wh.New = 1";}
-			if($valid_gps){$sql .= " AND wap.HighGps_ID IS NOT NULL";}
+			if($valid_gps){$sql .= " AND wap.est_lat IS NOT NULL";}
 			$sql .= "\nGROUP BY wh.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.HighGps_ID,\n"
 				. "wap.high_gps_sig, wap.high_gps_rssi, wap.high_sig, wap.high_rssi,\n"
-				. "wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.file_user\n"
+				. "wap.est_lat, wap.est_lon, wap.est_alt, wf.file_user\n"
 				. "ORDER BY {$sort_sql} {$ord}";
 		}
 		if($from !== NULL && $inc !== NULL){
@@ -344,14 +340,13 @@ class export extends dbcore
 				if($this->sql->service == "mysql")
 					{
 						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-							. "wGPS.Lat As Lat,\n"
-							. "wGPS.Lon As Lon,\n"
+							. "wap.est_lat As Lat,\n"
+							. "wap.est_lon As Lon,\n"
 							. "wf.file_user AS file_user\n"
 							. "FROM wifi_ap AS wap\n"
-							. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
-							. "    wap.HighGps_ID IS NOT NULL And\n"
+							. "    wap.est_lat IS NOT NULL And\n"
 							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user = ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 							if($from !== NULL && $inc !== NULL){$sql .=  " LIMIT ".$from.", ".$inc;}
@@ -359,14 +354,13 @@ class export extends dbcore
 				else if($this->sql->service == "sqlsrv")
 					{
 						$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-							. "wGPS.Lat As Lat,\n"
-							. "wGPS.Lon As Lon,\n"
+							. "wap.est_lat As Lat,\n"
+							. "wap.est_lon As Lon,\n"
 							. "wf.file_user AS file_user\n"
 							. "FROM wifi_ap AS wap\n"
-							. "LEFT JOIN wifi_gps As wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 							. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 							. "WHERE \n"
-							. "    wap.HighGps_ID IS NOT NULL And\n"
+							. "    wap.est_lat IS NOT NULL And\n"
 							. "    wap.File_ID IN (SELECT id FROM files WHERE ValidGPS = 1 AND file_user = ?)\n"
 							. "ORDER BY wap.ModDate DESC";
 						if($from !== NULL && $inc !== NULL){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
@@ -374,14 +368,13 @@ class export extends dbcore
 				else if($this->sql->service == "pgsql")
 					{
 						$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,'."\n"
-							. 'wGPS."Lat" As "Lat",'."\n"
-							. 'wGPS."Lon" As "Lon",'."\n"
+							. 'wap.est_lat As "Lat",'."\n"
+							. 'wap.est_lon As "Lon",'."\n"
 							. "wf.file_user AS file_user\n"
 							. "FROM wifi_ap AS wap\n"
-							. 'LEFT JOIN wifi_gps As wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 							. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
 							. "WHERE \n"
-							. '    wap."HighGps_ID" IS NOT NULL And'."\n"
+							. '    wap.est_lat IS NOT NULL And'."\n"
 							. '    wap."File_ID" IN (SELECT id FROM files WHERE "ValidGPS" = 1 AND file_user = ?)'."\n"
 							. 'ORDER BY wap."ModDate" DESC';
 						if($from !== NULL && $inc !== NULL){$sql .=  " LIMIT ".$inc." OFFSET ".$from;}
@@ -704,9 +697,8 @@ class export extends dbcore
 		$date_search = $date."%";
 		if($this->sql->service == "mysql")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.Alt, wf.file_user\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wap.est_lat AS Lat, wap.est_lon AS Lon, wap.est_alt AS Alt, wf.file_user\n"
 					. "FROM wifi_ap AS wap\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
 					. "WHERE AP_ID IN\n"
 					. "    (SELECT DISTINCT(wh.AP_ID)\n"
@@ -715,15 +707,14 @@ class export extends dbcore
 					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
 					. "		WHERE (wf.completed = 1) AND (wf.date BETWEEN ? AND ?)\n"
 					. "    )\n";
-				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
+				if($valid_gps){$sql .= "	AND wap.est_lat IS NOT NULL\n";}
 				$sql .= "ORDER BY la DESC";
 				
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wGPS.Lat, wGPS.Lon, wGPS.[Alt], wf.file_user\n"
+				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.FLAGS, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap.File_ID, wap.est_lat AS Lat, wap.est_lon AS Lon, wap.est_alt AS [Alt], wf.file_user\n"
 					. "FROM wifi_ap AS wap\n"
-					. "LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT OUTER JOIN files AS wf ON wf.id = wap.File_ID\n"
 					. "WHERE AP_ID IN\n"
 					. "    (SELECT DISTINCT(wh.AP_ID)\n"
@@ -732,16 +723,15 @@ class export extends dbcore
 					. "		INNER JOIN wifi_ap AS wap ON wap.AP_ID = wh.AP_ID\n"
 					. "		WHERE (wf.completed = 1) AND (wf.file_date >= ? AND wf.file_date <= ?)\n"
 					. "    )\n";
-				if($valid_gps){$sql .= "	AND wap.HighGps_ID IS NOT NULL\n";}
+				if($valid_gps){$sql .= "	AND wap.est_lat IS NOT NULL\n";}
 				$sql .= "ORDER BY la DESC";
 				if($from !== NULL){$sql .=  " OFFSET ".$from." ROWS";}
 				if($inc !== NULL){$sql .=  " FETCH NEXT ".$inc." ROWS ONLY";}
 			}
 		else if($this->sql->service == "pgsql")
 			{
-				$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."FLAGS", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap."File_ID", wGPS."Lat", wGPS."Lon", wGPS."Alt", wf.file_user'."\n"
+				$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."FLAGS", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_sig, wap.high_rssi, wap.high_gps_sig, wap.high_gps_rssi, wap."File_ID", wap.est_lat AS "Lat", wap.est_lon AS "Lon", wap.est_alt AS "Alt", wf.file_user'."\n"
 					. "FROM wifi_ap AS wap\n"
-					. 'LEFT OUTER JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 					. 'LEFT OUTER JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
 					. 'WHERE wap."AP_ID" IN'."\n"
 					. '    (SELECT DISTINCT(wh."AP_ID")'."\n"
@@ -753,7 +743,7 @@ class export extends dbcore
 					. '		INNER JOIN wifi_ap AS wap2 ON wap2."AP_ID" = wh."AP_ID"'."\n"
 					. "		WHERE (wf2.completed = 1) AND (wf2.file_date >= ? AND wf2.file_date <= ?)\n"
 					. "    )\n";
-				if($valid_gps){$sql .= '	AND wap."HighGps_ID" IS NOT NULL'."\n";}
+				if($valid_gps){$sql .= '	AND wap.est_lat IS NOT NULL'."\n";}
 				$sql .= "ORDER BY la DESC";
 				if($inc !== NULL){$sql .=  " LIMIT ".$inc;}
 				if($from !== NULL){$sql .=  " OFFSET ".$from;}
@@ -821,28 +811,26 @@ class export extends dbcore
 		if($this->sql->service == "pgsql")
 		{
 			$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,'."\n"
-				. 'wGPS."Lat" As "Lat",'."\n"
-				. 'wGPS."Lon" As "Lon",'."\n"
-				. 'wGPS."Alt" As "Alt",'."\n"
+				. 'wap.est_lat As "Lat",'."\n"
+				. 'wap.est_lon As "Lon",'."\n"
+				. 'wap.est_alt As "Alt",'."\n"
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
-				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
 				. 'WHERE wap."AP_ID" = ?';
-			if($valid_gps){$sql .= ' AND wap."HighGps_ID" IS NOT NULL';}
+			if($valid_gps){$sql .= ' AND wap.est_lat IS NOT NULL';}
 		}
 		else
 		{
 			$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
+				. "wap.est_lat As Lat,\n"
+				. "wap.est_lon As Lon,\n"
+				. "wap.est_alt As Alt,\n"
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
 				. "WHERE wap.AP_ID = ?";
-			if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
+			if($valid_gps){$sql .=" AND wap.est_lat IS NOT NULL";}
 		}
 
 		$prep = $this->sql->conn->prepare($sql);
@@ -945,12 +933,11 @@ class export extends dbcore
 		if($this->sql->service == "pgsql")
 		{
 			$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network, cell_carriers.country,\n"
-				. "wGPS.\"Lat\" As \"Lat\",\n"
-				. "wGPS.\"Lon\" As \"Lon\",\n"
-				. "wGPS.\"Alt\" As \"Alt\",\n"
+				. "cid.est_lat As \"Lat\",\n"
+				. "cid.est_lon As \"Lon\",\n"
+				. "cid.est_alt As \"Alt\",\n"
 				. "wf.file_user As file_user\n"
 				. "FROM cell_id AS cid\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.\"GPS_ID\" = cid.highgps_id\n"
 				. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 				. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = REPLACE(substring(cid.mac,4,3), '_', '')\n"
 				. "WHERE cid.cell_id = ?";
@@ -958,17 +945,16 @@ class export extends dbcore
 		else
 		{
 			$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points, cell_carriers.network, cell_carriers.country,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
+				. "cid.est_lat As Lat,\n"
+				. "cid.est_lon As Lon,\n"
+				. "cid.est_alt As Alt,\n"
 				. "wf.file_user As file_user\n"
 				. "FROM cell_id AS cid\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 				. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 				. "LEFT OUTER JOIN cell_carriers ON CAST(mcc AS varchar) = substring(cid.mac,0,4) AND CAST(mnc AS varchar) = REPLACE(substring(cid.mac,4,3), '_', '')\n"
 				. "WHERE cid.cell_id = ?";
 		}
-		if($valid_gps){$sql .=" AND cid.highgps_id IS NOT NULL";}
+		if($valid_gps){$sql .=" AND cid.est_lat IS NOT NULL";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $id, PDO::PARAM_INT);
 		$prep->execute();
@@ -1234,24 +1220,22 @@ class export extends dbcore
 			if($this->sql->service == "pgsql")
 			{
 				$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
-					. "wGPS.\"Lat\" As \"Lat\",\n"
-					. "wGPS.\"Lon\" As \"Lon\",\n"
-					. "wGPS.\"Alt\" As \"Alt\",\n"
+					. "cid.est_lat As \"Lat\",\n"
+					. "cid.est_lon As \"Lon\",\n"
+					. "cid.est_alt As \"Alt\",\n"
 					. "wf.file_user As file_user\n"
 					. "FROM cell_id AS cid\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.\"GPS_ID\" = cid.highgps_id\n"
 					. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 					. "WHERE cid.cell_id = ?";
 			}
 			else
 			{
 				$sql = "SELECT cid.cell_id, cid.mac, cid.authmode, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon,\n"
-					. "wGPS.Alt As Alt,\n"
+					. "cid.est_lat As Lat,\n"
+					. "cid.est_lon As Lon,\n"
+					. "cid.est_alt As Alt,\n"
 					. "wf.file_user As file_user\n"
 					. "FROM cell_id AS cid\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 					. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 					. "WHERE cid.cell_id = ?";
 			}
@@ -1319,28 +1303,26 @@ class export extends dbcore
 		if($this->sql->service == "pgsql")
 		{
 			$sql = "SELECT cid.cell_id, cid.mac, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
-				. "wGPS.\"Lat\" As \"Lat\",\n"
-				. "wGPS.\"Lon\" As \"Lon\",\n"
-				. "wGPS.\"Alt\" As \"Alt\",\n"
+				. "cid.est_lat As \"Lat\",\n"
+				. "cid.est_lon As \"Lon\",\n"
+				. "cid.est_alt As \"Alt\",\n"
 				. "wf.file_user As file_user\n"
 				. "FROM cell_id AS cid\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.\"GPS_ID\" = cid.highgps_id\n"
 				. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 				. "WHERE cid.cell_id = ?";
 		}
 		else
 		{
 			$sql = "SELECT cid.cell_id, cid.mac, cid.ssid, cid.chan, cid.authmode, cid.type, cid.high_rssi, cid.high_gps_rssi, cid.fa, cid.la, cid.points,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
+				. "cid.est_lat As Lat,\n"
+				. "cid.est_lon As Lon,\n"
+				. "cid.est_alt As Alt,\n"
 				. "wf.file_user As file_user\n"
 				. "FROM cell_id AS cid\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = cid.highgps_id\n"
 				. "LEFT JOIN files AS wf ON wf.id = cid.file_id\n"
 				. "WHERE cid.cell_id = ?";
 		}
-		if($valid_gps){$sql .=" AND cid.highgps_id IS NOT NULL";}
+		if($valid_gps){$sql .=" AND cid.est_lat IS NOT NULL";}
 		$prep = $this->sql->conn->prepare($sql);
 		$prep->bindParam(1, $cell_id, PDO::PARAM_INT);
 		$prep->execute();
@@ -1440,7 +1422,7 @@ class export extends dbcore
 			array('ssid' => $ssid, 'mac' => $mac, 'radio' => $radio, 'chan' => $chan, 'auth' => $auth, 'encry' => $encry), $ops);
 		$where = "wap.".$q("BSSID")." <> '00:00:00:00:00:00' AND wap.fa IS NOT NULL AND wap.fa != '1970-01-01 00:00:00.000'";
 		if($cond['where']){$where .= "\nAND ".implode("\nAND ", $cond['where']);}
-		if($valid_gps){$where .= "\nAND wap.".$q("HighGps_ID")." IS NOT NULL";}
+		if($valid_gps){$where .= "\nAND wap.est_lat IS NOT NULL";}
 		$params = $cond['params'];
 		if($sectype){$where .= "\nAND wap.".$q("SECTYPE")." = ?";}
 
@@ -1460,23 +1442,21 @@ class export extends dbcore
 		if($pg)
 		{
 			$sql = 'SELECT wap."ModDate", wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,'."\n"
-				. 'wGPS."Lat" As "Lat",'."\n"
-				. 'wGPS."Lon" As "Lon",'."\n"
-				. 'wGPS."Alt" As "Alt",'."\n"
+				. 'wap.est_lat As "Lat",'."\n"
+				. 'wap.est_lon As "Lon",'."\n"
+				. 'wap.est_alt As "Alt",'."\n"
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
-				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n";
 		}
 		else
 		{
 			$sql = "SELECT wap.ModDate, wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,\n"
-				. "wGPS.Lat As Lat,\n"
-				. "wGPS.Lon As Lon,\n"
-				. "wGPS.Alt As Alt,\n"
+				. "wap.est_lat As Lat,\n"
+				. "wap.est_lon As Lon,\n"
+				. "wap.est_alt As Alt,\n"
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
-				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n";
 		}
 		$sql .= "WHERE ".$where;

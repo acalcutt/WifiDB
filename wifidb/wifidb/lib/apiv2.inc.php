@@ -620,7 +620,7 @@ class apiv2 extends dbcore
 		{
 			if($this->sql->service == "mysql")
 				{
-					$sql = "SELECT wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.GPS_Date\n"
+					$sql = "SELECT wifi_ap.est_lat AS Lat, wifi_ap.est_lon AS Lon, wifi_ap.est_alt AS Alt, wifi_gps.NumOfSats, wifi_gps.GPS_Date\n"
 						. "FROM wifi_ap\n"
 						. "INNER JOIN wifi_gps ON wifi_gps.GPS_ID = wifi_ap.HighGps_ID\n"
 						. "WHERE wifi_ap.HighGps_ID IS NOT NULL AND wifi_ap.BSSID LIKE ?\n"
@@ -628,7 +628,7 @@ class apiv2 extends dbcore
 				}
 			else if($this->sql->service == "sqlsrv")
 				{
-					$sql = "SELECT TOP 1 wifi_gps.Lat, wifi_gps.Lon, wifi_gps.Alt, wifi_gps.NumOfSats, wifi_gps.GPS_Date\n"
+					$sql = "SELECT TOP 1 wifi_ap.est_lat AS Lat, wifi_ap.est_lon AS Lon, wifi_ap.est_alt AS Alt, wifi_gps.NumOfSats, wifi_gps.GPS_Date\n"
 						. "FROM wifi_ap\n"
 						. "INNER JOIN wifi_gps ON wifi_gps.GPS_ID = wifi_ap.HighGps_ID\n"
 						. "WHERE wifi_ap.HighGps_ID IS NOT NULL AND wifi_ap.BSSID LIKE ?\n"
@@ -636,7 +636,7 @@ class apiv2 extends dbcore
 				}
 			else if($this->sql->service == "pgsql")
 				{
-					$sql = 'SELECT wifi_gps."Lat", wifi_gps."Lon", wifi_gps."Alt", wifi_gps."NumOfSats", wifi_gps."GPS_Date"'."\n"
+					$sql = 'SELECT wifi_ap.est_lat AS "Lat", wifi_ap.est_lon AS "Lon", wifi_ap.est_alt AS "Alt", wifi_gps."NumOfSats", wifi_gps."GPS_Date"'."\n"
 						. "FROM wifi_ap\n"
 						. 'INNER JOIN wifi_gps ON wifi_gps."GPS_ID" = wifi_ap."HighGps_ID"'."\n"
 						. 'WHERE wifi_ap."HighGps_ID" IS NOT NULL AND wifi_ap."BSSID" LIKE ?'."\n"
@@ -868,9 +868,9 @@ class apiv2 extends dbcore
 		$gps_clause = "";
 		if ($gpsOnly) {
 			if ($this->sql->service == "pgsql") {
-				$gps_clause = ' AND wifi_ap."HighGps_ID" IS NOT NULL';
+				$gps_clause = ' AND wifi_ap.est_lat IS NOT NULL';
 			} else {
-				$gps_clause = " AND wifi_ap.HighGps_ID IS NOT NULL";
+				$gps_clause = " AND wifi_ap.est_lat IS NOT NULL";
 			}
 		}
 
@@ -891,10 +891,9 @@ class apiv2 extends dbcore
 					   wifi_ap.high_gps_sig AS high_gps_sig, wifi_ap.high_gps_rssi AS high_gps_rssi,
 					   wifi_ap.ap_hash AS ap_hash, wifi_ap.points AS points,
 					   wifi_ap.fa AS FA, wifi_ap.la AS LA, wifi_ap.ModDate AS ModDate,
-					   wifi_gps.Lat AS gps_lat, wifi_gps.Lon AS gps_lon,
+					   wifi_ap.est_lat AS gps_lat, wifi_ap.est_lon AS gps_lon,
 					   ROW_NUMBER() OVER (ORDER BY ModDate DESC) AS rn
 				FROM wifi_ap
-				LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID
 				WHERE ssid LIKE ? AND bssid LIKE ? AND wifi_ap.RADTYPE LIKE ? AND wifi_ap.CHAN LIKE ? AND wifi_ap.AUTH LIKE ? AND wifi_ap.ENCR LIKE ?" . $gps_clause . "
 			) t WHERE t.rn > ? AND t.rn <= ?";
 
@@ -924,9 +923,8 @@ class apiv2 extends dbcore
 					   wifi_ap.high_gps_sig AS high_gps_sig, wifi_ap.high_gps_rssi AS high_gps_rssi,
 					   wifi_ap.ap_hash AS ap_hash, wifi_ap.points AS points,
 					   wifi_ap.fa AS "FA", wifi_ap.la AS "LA", wifi_ap."ModDate" AS "ModDate",
-					   wifi_gps."Lat" AS gps_lat, wifi_gps."Lon" AS gps_lon
+					   wifi_ap.est_lat AS gps_lat, wifi_ap.est_lon AS gps_lon
 				FROM wifi_ap
-				LEFT JOIN wifi_gps ON wifi_ap."HighGps_ID" = wifi_gps."GPS_ID"
 				WHERE wifi_ap."SSID" LIKE ? AND wifi_ap."BSSID" LIKE ? AND wifi_ap."RADTYPE" LIKE ? AND wifi_ap."CHAN"::text LIKE ? AND wifi_ap."AUTH" LIKE ? AND wifi_ap."ENCR" LIKE ?' . $gps_clause . '
 				ORDER BY wifi_ap."ModDate" DESC LIMIT ? OFFSET ?';
 
@@ -953,9 +951,8 @@ class apiv2 extends dbcore
 					   wifi_ap.high_gps_sig AS high_gps_sig, wifi_ap.high_gps_rssi AS high_gps_rssi,
 					   wifi_ap.ap_hash AS ap_hash, wifi_ap.points AS points,
 					   wifi_ap.fa AS FA, wifi_ap.la AS LA, wifi_ap.ModDate AS ModDate,
-					   wifi_gps.Lat AS gps_lat, wifi_gps.Lon AS gps_lon
+					   wifi_ap.est_lat AS gps_lat, wifi_ap.est_lon AS gps_lon
 				FROM wifi_ap
-				LEFT JOIN wifi_gps ON wifi_ap.HighGps_ID = wifi_gps.GPS_ID
 				WHERE ssid LIKE ? AND bssid LIKE ? AND wifi_ap.RADTYPE LIKE ? AND wifi_ap.CHAN LIKE ? AND wifi_ap.AUTH LIKE ? AND wifi_ap.ENCR LIKE ?" . $gps_clause . "
 				ORDER BY ModDate DESC LIMIT ?, ?";
 

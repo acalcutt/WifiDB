@@ -37,11 +37,10 @@ $q = function ($name) use ($dbcore) { return $dbcore->sql->ident($name); };
 $sql = "SELECT wap.".$q('AP_ID').", wap.".$q('BSSID').", wap.".$q('SSID').", wap.".$q('CHAN').", wap.".$q('AUTH').", wap.".$q('ENCR').", wap.".$q('SECTYPE').", wap.".$q('RADTYPE').", wap.".$q('NETTYPE').", wap.".$q('BTX').", wap.".$q('OTX').", wap.".$q('FLAGS').", wap.ap_hash,\n"
 	. "wap.fa As ".$q('FA').",\n"
 	. "wap.la As ".$q('LA').",\n"
-	. "wGPS.".$q('Lat')." As ".$q('Lat').",\n"
-	. "wGPS.".$q('Lon')." As ".$q('Lon').",\n"
+	. "wap.est_lat As ".$q('Lat').",\n"
+	. "wap.est_lon As ".$q('Lon').",\n"
 	. "wf.file_user As file_user\n"
 	. "FROM wifi_ap AS wap\n"
-	. "LEFT JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = wap.".$q('HighGps_ID')."\n"
 	. "LEFT JOIN files AS wf ON wf.id = wap.".$q('File_ID')."\n"
 	. "WHERE wap.".$q('AP_ID')." = ?";
 $result = $dbcore->sql->conn->prepare($sql);

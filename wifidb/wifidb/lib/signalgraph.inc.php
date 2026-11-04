@@ -149,9 +149,9 @@ class SignalGraph
 		// mixed-case names are quoted on PostgreSQL, which would fold them to lower case; the others match them either way
 		$q = function ($name) use ($dialect) { return $dialect === 'pgsql' ? '"' . $name . '"' : $name; };
 		$cols = 'wap.' . $q('BSSID') . ', wap.' . $q('SSID') . ', wap.' . $q('CHAN') . ', wap.' . $q('AUTH') . ', wap.' . $q('ENCR') . ', wap.' . $q('RADTYPE')
-			. ', wap.' . $q('NETTYPE') . ', wap.' . $q('BTX') . ', wap.' . $q('OTX') . ', wap.fa, wap.la, g.' . $q('Lat') . ', g.' . $q('Lon') . ' ';
+			. ', wap.' . $q('NETTYPE') . ', wap.' . $q('BTX') . ', wap.' . $q('OTX') . ', wap.fa, wap.la, wap.est_lat AS ' . $q('Lat') . ', wap.est_lon AS ' . $q('Lon') . ' ';
 		$sql = ($dialect === 'sqlsrv') ? 'SELECT TOP 1 ' . $cols : 'SELECT ' . $cols;
-		$sql .= 'FROM wifi_ap AS wap LEFT JOIN wifi_gps AS g ON g.' . $q('GPS_ID') . ' = wap.' . $q('HighGps_ID') . ' WHERE wap.' . $q('AP_ID') . ' = ?';
+		$sql .= 'FROM wifi_ap AS wap WHERE wap.' . $q('AP_ID') . ' = ?';
 		if($dialect !== 'sqlsrv') { $sql .= ' LIMIT 1'; }
 		$prep = $conn->prepare($sql);
 		$prep->execute(array($id));

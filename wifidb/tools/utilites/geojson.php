@@ -17,11 +17,10 @@ $ago = function ($years) { return gmdate('Y-m-d H:i:s', strtotime("-$years year"
 
 $select = "SELECT wap.".$q('AP_ID').", wap.".$q('BSSID').", wap.".$q('SSID').", wap.".$q('CHAN').", wap.".$q('AUTH').", wap.".$q('ENCR')
 	.", wap.".$q('SECTYPE').", wap.".$q('RADTYPE').", wap.".$q('NETTYPE').", wap.".$q('BTX').", wap.".$q('OTX').", wap.fa, wap.la"
-	.", wGPS.".$q('Lat')." As ".$q('Lat').", wGPS.".$q('Lon')." As ".$q('Lon').", wGPS.".$q('Alt')." As ".$q('Alt').", wf.file_user"
+	.", wap.est_lat As ".$q('Lat').", wap.est_lon As ".$q('Lon').", wap.est_alt As ".$q('Alt').", wf.file_user"
 	." FROM wifi_ap AS wap"
-	." LEFT JOIN wifi_gps AS wGPS ON wGPS.".$q('GPS_ID')." = wap.".$q('HighGps_ID')
 	." LEFT JOIN files AS wf ON wf.id = wap.".$q('File_ID')
-	." WHERE wGPS.".$q('Lat')." IS NOT NULL AND wGPS.".$q('Lat')." != '0.0000'";
+	." WHERE wap.est_lat IS NOT NULL";
 # file => [the age condition, its bound dates]
 $exports = array(
 	"WifiDB_0to1year.json" => array(" AND wap.la >= ?", array($ago(1))),

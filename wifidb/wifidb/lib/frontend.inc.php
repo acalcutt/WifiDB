@@ -430,10 +430,9 @@ class frontend extends dbcore
 		if($this->sql->service == "pgsql")
 			{
 				$sql = 'SELECT wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points,'."\n"
-					. 'wGPS."Lat" As "Lat",'."\n"
-					. 'wGPS."Lon" As "Lon"'."\n"
+					. 'wap.est_lat As "Lat",'."\n"
+					. 'wap.est_lon As "Lon"'."\n"
 					. 'FROM wifi_ap AS wap'."\n"
-					. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
 					. 'LEFT JOIN files AS f ON f.id = wap."File_ID"'."\n"
 					. 'WHERE f.file_user = ? And f.completed = 1'."\n"
 					. "ORDER BY $sort_sql $ord\n";
@@ -441,10 +440,9 @@ class frontend extends dbcore
 		else
 			{
 				$sql = "SELECT wap.AP_ID, wap.BSSID, wap.SSID, wap.CHAN, wap.AUTH, wap.ENCR, wap.SECTYPE, wap.RADTYPE, wap.NETTYPE, wap.BTX, wap.OTX, wap.fa, wap.la, wap.points,\n"
-					. "wGPS.Lat As Lat,\n"
-					. "wGPS.Lon As Lon\n"
+					. "wap.est_lat As Lat,\n"
+					. "wap.est_lon As Lon\n"
 					. "FROM wifi_ap AS wap\n"
-					. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
 					. "LEFT JOIN files AS f ON f.id = wap.File_ID\n"
 					. "WHERE f.file_user = ? And f.completed = 1\n"
 					. "ORDER BY $sort_sql $ord\n";
