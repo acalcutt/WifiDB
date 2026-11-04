@@ -303,13 +303,16 @@ class api extends dbcore
 	public function InsertLiveAP($data = array())
 	{
 		if(empty($data)){$this->mesg = array("error"=>"Emtpy data set");return 0;}
+		# long and signal are reserved words in MariaDB
+		$lng = ($this->sql->service == "mysql") ? "`long`" : "long";
+		$sgn = ($this->sql->service == "mysql") ? "`signal`" : "signal";
 		$data['mac'] = preg_replace('/..(?!$)/', '$0:', $data['mac']);
 		$ap_hash = md5($data['ssid'].$data['mac'].$data['chan'].$data['sectype'].$data['auth'].$data['encry']);
 
 				
 		if($this->sql->service == "mysql" || $this->sql->service == "pgsql")
 			{
-				$sql = "SELECT id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, long FROM
+				$sql = "SELECT id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, {$lng} FROM
 						live_aps
 						WHERE ap_hash = ?
 						AND session_id = ?
@@ -317,7 +320,7 @@ class api extends dbcore
 			}
 		else if($this->sql->service == "sqlsrv")
 			{
-				$sql = "SELECT TOP 1 id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, long FROM
+				$sql = "SELECT TOP 1 id, ssid, mac, chan, sectype, auth, encry, radio, session_id, sig, lat, {$lng} FROM
 						live_aps
 						WHERE ap_hash = ?
 						AND session_id = ?
@@ -369,7 +372,7 @@ class api extends dbcore
 			if( (!strcmp($array['lat'], $data['lat'])) && (!strcmp($array['long'], $data['long'])) )
 			{
 				$sql_sig = "INSERT INTO live_signals
-						(signal, rssi, gps_id, ap_hash, time_stamp)
+						({$sgn}, rssi, gps_id, ap_hash, time_stamp)
 						VALUES (?, ?, ?, ?, ?)";
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
@@ -412,7 +415,7 @@ class api extends dbcore
 				$wifi_time	= $array['hist_date'];
 				$timecalc   = ($url_time - $wifi_time);
 				$this->mesg = "Oooo its time is newer o_0, lets go insert it ;)";
-				$sql = "INSERT INTO live_gps (lat, long, sats, hdp, alt, geo, kmh, mph, track, hist_date, session_id)
+				$sql = "INSERT INTO live_gps (lat, {$lng}, sats, hdp, alt, geo, kmh, mph, track, hist_date, session_id)
 						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 				$prep = $this->sql->conn->prepare($sql);
@@ -441,7 +444,7 @@ class api extends dbcore
 				}
 
 				$sql_sig = "INSERT INTO live_signals
-					(signal, rssi, gps_id, ap_hash, time_stamp)
+					({$sgn}, rssi, gps_id, ap_hash, time_stamp)
 					VALUES (?, ?, ?, ?, ?)";
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
@@ -463,7 +466,7 @@ class api extends dbcore
 
 				$sig = $all_sigs."~".$this->sql->conn->lastInsertId()."|".$gps_id;
 
-				$sql = "UPDATE live_aps SET sig = ?, ".$this->sql->ident('LA')." = ?, lat = ?, long = ? WHERE id = ?";
+				$sql = "UPDATE live_aps SET sig = ?, ".$this->sql->ident('LA')." = ?, lat = ?, {$lng} = ? WHERE id = ?";
 				#echo $sql."<br /><br />";
 				$prep = $this->sql->conn->prepare($sql);
 				$prep->bindParam(1, $sig, PDO::PARAM_STR);
@@ -485,7 +488,7 @@ class api extends dbcore
 		}else
 		{
 			$this->mesg = "Add new AP. :]";
-			$sql = "INSERT INTO live_gps (lat, long, sats, hdp, alt, geo, kmh, mph, track, hist_date, session_id)
+			$sql = "INSERT INTO live_gps (lat, {$lng}, sats, hdp, alt, geo, kmh, mph, track, hist_date, session_id)
 												   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 			$prep = $this->sql->conn->prepare($sql);
 			$prep->bindParam(1, $data['lat'], PDO::PARAM_STR);
@@ -514,7 +517,7 @@ class api extends dbcore
 			}
 
 			$sql_sig = "INSERT INTO live_signals
-						(signal, rssi, gps_id, ap_hash, time_stamp)
+						({$sgn}, rssi, gps_id, ap_hash, time_stamp)
 						VALUES (?, ?, ?, ?, ?)";
 			$prep_sig = $this->sql->conn->prepare($sql_sig);
 			$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
@@ -536,7 +539,7 @@ class api extends dbcore
 			$sig = $this->sql->conn->lastInsertId()."|".$gps_id;
 			$q = function ($name) { return $this->sql->ident($name); };   # live_aps's mixed-case columns, quoted on PostgreSQL
 			$sql = "INSERT INTO  live_aps ( ssid, mac,  chan, radio, auth, encry, sectype,
-				".$q('BTx').", ".$q('OTx').", ".$q('NT').", ".$q('Label').", sig, username, ".$q('FA').", ".$q('LA').", lat, long, session_id, ap_hash)
+				".$q('BTx').", ".$q('OTx').", ".$q('NT').", ".$q('Label').", sig, username, ".$q('FA').", ".$q('LA').", lat, {$lng}, session_id, ap_hash)
 											VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? )";
 			$chan = (int)$data['chan'];
 			$prep = $this->sql->conn->prepare($sql);
