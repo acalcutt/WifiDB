@@ -410,10 +410,6 @@ class api extends dbcore
 				}
 			}else
 			{
-				$this->mesg = "Lat/Long are different, what aboot the Sats and Date/Time, Eh?";
-				$url_time   = $data['hist_date'];
-				$wifi_time	= $array['hist_date'];
-				$timecalc   = ($url_time - $wifi_time);
 				$this->mesg = "Oooo its time is newer o_0, lets go insert it ;)";
 				$sql = "INSERT INTO live_gps (lat, {$lng}, sats, hdp, alt, geo, kmh, mph, track, hist_date, session_id)
 						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -449,7 +445,7 @@ class api extends dbcore
 				$prep_sig = $this->sql->conn->prepare($sql_sig);
 				$prep_sig->bindParam(1, $data['sig'], PDO::PARAM_INT);
 				$prep_sig->bindParam(2, $data['rssi'], PDO::PARAM_INT);
-				$prep_sig->bindParam(3, $data['gps_id'], PDO::PARAM_INT);
+				$prep_sig->bindParam(3, $gps_id, PDO::PARAM_INT);
 				$prep_sig->bindParam(4, $ap_hash, PDO::PARAM_STR);
 				$prep_sig->bindParam(5, $data['hist_date'], PDO::PARAM_INT);
 				$prep_sig->execute();
