@@ -143,11 +143,17 @@ final class TwoFactorRenderTest extends TestCase
         $smarty->assign('confirm_return', "/cp/index.php?func=pref&x='</script>");
         $smarty->assign('confirm_error', 'That code did not work.');
         $smarty->assign('confirm_has_passkey', true);
+        $smarty->assign('confirm_can_remember', true);
+        $smarty->assign('confirm_minutes', 10);
+        $smarty->assign('confirm_days', 30);
         $html = $smarty->fetch('user_cp_confirm.tpl');
         $this->assertStringNotContainsString("'</script>", $html);
         $this->assertStringContainsString('func=proc&amp;return=%2Fcp%2Findex.php%3Ffunc%3Dpref', $html);
         $this->assertStringContainsString('That code did not work.', $html);
         $this->assertStringContainsString('Use a passkey', $html);
+        $this->assertStringContainsString('name="remember"', $html);
+        $this->assertStringContainsString('Remember this computer for 30 days', $html);
+        $this->assertStringNotContainsString('func=myimports', $html, 'asked first, without the control panel tabs');
     }
 
     #[DataProvider('themes')]

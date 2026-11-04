@@ -5,9 +5,9 @@ two_factor.inc.php, two-factor sign-in and admin mode.
 Methods: authenticator apps (TOTP) and passkeys (WebAuthn), up to MAX_METHODS of each, and ten one-use recovery codes.
 Where a second factor is asked for:
   - signing in, if the member has turned that on (user_info.mfa_login; on when they add their first method)
-  - saving preferences, if they chose that (user_info.mfa_prefs)
+  - opening or saving preferences, if they chose that (user_info.mfa_prefs)
   - turning on admin mode, ALWAYS, and only for members with a method. This is its own check: a code entered to sign
-    in or in preferences never counts, and "remember this computer" doesn't apply. A code can't be used twice, so
+    in or in preferences never counts, and "remember this computer" (which skips the other two) doesn't apply. A code can't be used twice, so
     the code that signed you in can't turn admin mode on a moment later either.
 
 What a session knows is kept in its user_login_hashes row (on the server, so a cookie can't claim it):
@@ -28,9 +28,9 @@ class TwoFactor
 	const MAX_TRIES = 10;              // wrong codes per member per TRY_WINDOW seconds
 	const TRY_WINDOW = 600;
 	const CHALLENGE_TTL = 600;         // seconds a passkey or new-authenticator step may take
-	const DEVICE_DAYS = 30;            // "remember this computer"
+	const DEVICE_DAYS = 30;            // "remember this computer": no second factor at sign-in or for preferences
 	const MFA_REFRESH_DAYS = 30;       // a long-lived session asks again after this long
-	const PREFS_CONFIRM_MINUTES = 10;  // after confirming, preferences can be saved for this long
+	const PREFS_CONFIRM_MINUTES = 10;  // after confirming, preferences stay open this long after the last one opened
 	const ADMIN_MODE_MINUTES = 30;     // admin mode ends after this long without an admin page
 
 	private $conn;
@@ -228,12 +228,19 @@ class TwoFactor
 
 	// ── Confirming before preferences are saved ──────────────────────────────────────────────────────
 
-	/** Does saving preferences need a second factor right now? Only for a member who chose that and has a method. */
-	public function NeedsPreferencesCheck($username, $sessionHash)
+	/**
+	 * Do the preferences need a second factor right now? Only for a member who chose that and has a method, and not on a
+	 * computer they chose to remember ($deviceToken, the "remember this computer" cookie). Once confirmed, $slide = true
+	 * (a preferences page being opened) keeps them open another PREFS_CONFIRM_MINUTES, so they don't close while in use.
+	 */
+	public function NeedsPreferencesCheck($username, $sessionHash, $deviceToken = '', $slide = false)
 	{
 		if(!$this->AsksOnPreferences($username)) { return false; }
+		if($deviceToken !== '' && $this->DeviceTrusted($username, $deviceToken)) { return false; }
 		$until = $this->Run("SELECT prefs_until FROM user_login_hashes WHERE username = ? AND hash = ?", array($username, $sessionHash))->fetchColumn();
-		return !$until || $this->Parse($until) <= $this->Now();
+		if(!$until || $this->Parse($until) <= $this->Now()) { return true; }
+		if($slide) { $this->SetPreferencesConfirmed($username, $sessionHash); }
+		return false;
 	}
 
 	/** A code typed for this: an authenticator or recovery code. Does not turn on admin mode. @return array ok, error */

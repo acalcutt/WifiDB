@@ -435,6 +435,32 @@ final class TwoFactorTest extends TestCase
         $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH), 'closed again');
     }
 
+    public function testPreferencesInUseStayOpen(): void
+    {
+        [$secret] = $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $this->now += 60;
+        $this->assertTrue($this->tf->ConfirmPreferencesWithCode(self::USER, self::HASH, $this->code($secret))['ok']);
+        for($i = 0; $i < 3; $i++)
+        {
+            $this->now += 8 * 60;
+            $this->assertFalse($this->tf->NeedsPreferencesCheck(self::USER, self::HASH, '', true), 'a page opened keeps them open');
+        }
+        $this->now += 11 * 60;
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH, '', true), 'left alone, they close');
+    }
+
+    public function testARememberedComputerIsNotAskedForPreferences(): void
+    {
+        $this->enrollTotp();
+        $this->tf->SetAsks(self::USER, true, true);
+        $token = $this->tf->DeviceToken(self::USER);
+        $this->assertFalse($this->tf->NeedsPreferencesCheck(self::USER, self::HASH, $token));
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH, $token . 'x'), 'not with a token that was tampered with');
+        $this->now += (TwoFactor::DEVICE_DAYS + 1) * 86400;
+        $this->assertTrue($this->tf->NeedsPreferencesCheck(self::USER, self::HASH, $token), 'nor after 30 days');
+    }
+
     public function testAWrongCodeLeavesPreferencesClosed(): void
     {
         $this->enrollTotp();

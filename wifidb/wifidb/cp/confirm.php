@@ -1,8 +1,9 @@
 <?php
 /*
-confirm.php, the check before preferences are saved, for a member who chose that under Preferences -> Security.
-An authenticator or recovery code, or a passkey, and then the preferences open for PREFS_CONFIRM_MINUTES. This is its
-own check: it does not turn on admin mode, and a code that signed the member in cannot be reused here.
+confirm.php, the check before the preferences open, for a member who chose that under Preferences -> Security.
+An authenticator or recovery code, or a passkey, and then the preferences stay open while in use (PREFS_CONFIRM_MINUTES
+after the last page), or on this computer for 30 days if the member ticks "remember this computer". This is its own
+check: it does not turn on admin mode, and a code that signed the member in cannot be reused here.
 Copyright (C) 2026 Andrew Calcutt
 
 This program is free software; you can redistribute it and/or modify it under the terms
@@ -47,7 +48,12 @@ try
 		case 'proc':
 			if(!$post) { header('Location: confirm.php?return='.urlencode($return)); exit; }
 			$proof = $tf->ConfirmPreferencesWithCode($username, $session, isset($_POST['code']) ? $_POST['code'] : '');
-			if($proof['ok']) { header('Location: '.$return); exit; }
+			if($proof['ok'])
+			{
+				if(@$_POST['remember'] === 'yes') { $dbcore->sec->RememberThisComputer($username); }
+				header('Location: '.$return);
+				exit;
+			}
 			$dbcore->sec->logd("Preferences check failed for ".var_export($username, 1).": ".$proof['error'], "error");
 			header('Location: confirm.php?e='.urlencode($proof['error']).'&return='.urlencode($return));
 			exit;
@@ -60,11 +66,12 @@ try
 			$in = json_decode(file_get_contents('php://input'), true);
 			$in = is_array($in) ? $in : array();
 			$proof = $tf->ConfirmPreferencesWithPasskey($username, $session, (string)@$in['id'], (string)@$in['clientDataJSON'], (string)@$in['authenticatorData'], (string)@$in['signature']);
+			if($proof['ok'] && !empty($in['remember'])) { $dbcore->sec->RememberThisComputer($username); }
 			$json($proof['ok'] ? array('ok' => true, 'redirect' => $return) : array('ok' => false, 'error' => $proof['error']));
 			break;
 
 		default:
-			if(!$tf->NeedsPreferencesCheck($username, $session)) { header('Location: '.$return); exit; }
+			if(!$dbcore->sec->PreferencesNeedConfirmation()) { header('Location: '.$return); exit; }
 			$hasPasskey = false;
 			foreach($tf->Methods($username) as $method) { if($method['type'] === 'passkey') { $hasPasskey = true; } }
 			$errors = array(
@@ -76,6 +83,9 @@ try
 			$dbcore->smarty->assign('confirm_return', $return);
 			$dbcore->smarty->assign('confirm_error', isset($errors[$e]) ? $errors[$e] : '');
 			$dbcore->smarty->assign('confirm_has_passkey', $hasPasskey);
+			$dbcore->smarty->assign('confirm_can_remember', $tf->DeviceToken($username) !== '');
+			$dbcore->smarty->assign('confirm_minutes', TwoFactor::PREFS_CONFIRM_MINUTES);
+			$dbcore->smarty->assign('confirm_days', TwoFactor::DEVICE_DAYS);
 			$dbcore->smarty->display('user_cp_confirm.tpl');
 			break;
 	}

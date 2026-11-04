@@ -11,8 +11,9 @@ Open **User Control Panel → Security** (`cp/security.php`).
   lose your device; keep them somewhere safe. You can have up to ten authenticator apps and ten passkeys.
 - After the password, sign-in asks for a code or a passkey. **Remember this computer for 30 days** skips that on one
   computer; changing your password or your methods ends the remembering.
-- **Ask before I change my preferences** (off by default) makes the profile, e-mail and notification preferences ask for
-  a code or passkey first, then stay open for 10 minutes.
+- **Ask before I change my preferences** (off by default): opening your profile or notification preferences first asks
+  for a code or passkey, on a page of its own, then takes you there. They stay open while you use them (10 minutes after
+  the last page). **Remember this computer for 30 days** there skips the question on that computer, as at sign-in.
 - Removing a method, making new recovery codes and turning the sign-in question off all ask for your password again, and
   each leaves a notice under Notifications. Removing the last method turns two-factor off.
 - Ten wrong codes in ten minutes lock further tries for a while.

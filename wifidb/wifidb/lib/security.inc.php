@@ -725,7 +725,7 @@ class security
 		return false;
 	}
 
-	/** "Remember this computer": a signed cookie that lets this member skip the second factor at sign-in for 30 days. */
+	/** "Remember this computer": a signed cookie that lets this member skip the second factor at sign-in and for preferences for 30 days. */
 	public function RememberThisComputer($username)
 	{
 		$tf = $this->TwoFactor();
@@ -742,20 +742,24 @@ class security
 		setcookie('WiFiDB_device', '', array("expires" => time() - 3600, "path" => $path, "domain" => $this->domain, "secure" => (bool)$this->ssl, "httponly" => true, "samesite" => "Lax"));
 	}
 
-	/** Must this signed-in member confirm a second factor before saving preferences (their choice), and haven't yet? */
-	public function PreferencesNeedConfirmation()
+	/**
+	 * Must this signed-in member confirm a second factor before using their preferences (their choice), and haven't yet
+	 * (or on this computer, chose not to be asked)? $slide: a preferences page is being opened, which keeps them open.
+	 */
+	public function PreferencesNeedConfirmation($slide = false)
 	{
 		if(!$this->login_check || $this->SessionID === '') { return false; }
 		$tf = $this->TwoFactor();
 		if(!$tf) { return false; }
-		try { return $tf->NeedsPreferencesCheck($this->LoginUser, $this->SessionID); }
+		$device = isset($_COOKIE['WiFiDB_device']) && is_string($_COOKIE['WiFiDB_device']) ? $_COOKIE['WiFiDB_device'] : '';
+		try { return $tf->NeedsPreferencesCheck($this->LoginUser, $this->SessionID, $device, $slide); }
 		catch(Throwable $e) { return false; }
 	}
 
 	/** Sends the member to confirm, then back to where they were. Call before showing or saving a preferences page. */
 	public function RequirePreferencesConfirmation($postedBackTo = 'cp/index.php?func=profile')
 	{
-		if(!$this->PreferencesNeedConfirmation()) { return; }
+		if(!$this->PreferencesNeedConfirmation(true)) { return; }
 		$path = ($this->root != '') ? '/'.trim($this->root, '/').'/' : '/';
 		$back = ($_SERVER['REQUEST_METHOD'] === 'POST') ? $path.$postedBackTo : $_SERVER['REQUEST_URI'];   # a saved form can't be replayed after the check, so the page it came from
 		header('Location: '.$path.'cp/confirm.php?return='.urlencode($back));
