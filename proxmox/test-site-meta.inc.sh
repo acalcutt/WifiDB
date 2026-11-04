@@ -74,7 +74,7 @@ check "...and there's no sitemap" test "$(sm_code http://127.0.0.1/sitemap.xml)"
 sm_set 'array("search_noindex" => false, "adsense_client" => "", "ads_txt" => "", "google_site_verification" => "", "bing_site_verification" => "")'
 
 log "the map's elevation tiles"
-sm_map() { docker exec "$ct" curl -s -H "Cookie: $tzc; wifidb_theme=vistumbler_mobile" http://127.0.0.1/opt/map.php; }
+sm_map() { docker exec "$ct" curl -s -H "Cookie: $tzc; wifidb_theme=vistumbler_mobile" 'http://127.0.0.1/opt/map.php?func=wifidbmap'; }
 check "the mobile map draws contours from tiles.wifidb.net unless told otherwise" sh -c 'echo "$0" | grep -qF "url: '"'"'https://tiles.wifidb.net/data/jaxa_terrarium/{z}/{x}/{y}.png'"'"'"' "$(sm_map)"
 sm_set 'array("map_dem_url" => "https://dem.example.test/{z}/{x}/{y}.png")'
 check "...from the address Site Settings gives" sh -c 'echo "$0" | grep -q "dem.example.test" && ! echo "$0" | grep -q "jaxa_terrarium"' "$(sm_map)"
