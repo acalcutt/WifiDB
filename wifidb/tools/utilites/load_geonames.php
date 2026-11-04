@@ -217,7 +217,7 @@ foreach($inputs as $load => $in)
 		}
 		return "MERGE INTO ".$quote($table)." AS t USING (VALUES $rows) AS s ($cols_sql) ON t.".$quote($key)." = s.".$quote($key)
 			." WHEN MATCHED THEN UPDATE SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = s.".$quote($c); }, $others))
-			." WHEN NOT MATCHED THEN INSERT ($cols_sql) VALUES (".implode(", ", array_map(function ($c) use ($quote) { return "s.".$quote($c); }, $written))."));";
+			." WHEN NOT MATCHED THEN INSERT ($cols_sql) VALUES (".implode(", ", array_map(function ($c) use ($quote) { return "s.".$quote($c); }, $written)).");";
 	};
 	$per = ($service == "sqlsrv") ? max(1, intdiv(2000, count($written))) : 500;
 	$prepared = array();
