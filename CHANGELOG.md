@@ -6,6 +6,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
+- **`load_geonames.php` loads on SQL Server again.** The batched MERGE added in 1.0.0-rc.3 had one closing parenthesis too many, so on SQL Server every line was skipped and nothing was loaded.
 - **Live uploads work on MariaDB, and keep every reading.** On MariaDB no live access point could be stored (`long` and `signal` are reserved words there). On every database, an access point sent again from a new position failed under PHP 8, so only its first reading was kept.
 - _...Add new stuff here..._
 
