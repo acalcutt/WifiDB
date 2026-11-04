@@ -2,6 +2,13 @@
 
 ## master
 ### ✨ Features and improvements
+- _...Add new stuff here..._
+
+### 🐞 Bug fixes
+- _...Add new stuff here..._
+
+## 1.0.0-rc.4
+### ✨ Features and improvements
 - **Live uploads become imports of the member's (live API version 2).** `api/live.php?LiveVersion=1` answers `{"LiveVersion":2}`, so Vistumbler's Auto WiFiDB Upload starts a session with the member's username and API key and a title and notes, and gets back its `SessionID`. Every access point sent with that session is the member's, whatever username comes with it. When Vistumbler stops (`completed=1`), what the session sent is written out as a VS1 and put on the import queue with the session's title and notes, so it's imported as that member's like an upload would be; a finished session takes no more. A wrong API key starts nothing; no username at all starts an anonymous one (`AnonCoward`). A session ID WiFiDB didn't hand out is version 1's and works as before. Migration `0014_live_sessions`.
 - **Site Settings: the map's elevation tiles can be a TileJSON, with their encoding and highest zoom.** Map elevation tiles takes a TileJSON's address as well as a `{z}/{x}/{y}` one (a pmtiles-swarm `tiles.json`, `#torrent=` and all), and the map reads where the tiles are, their encoding and their maxzoom from it. Two new settings, Map elevation tiles: encoding (as the TileJSON says, Terrarium, or Terrain-RGB) and highest zoom, override it; before, the contours always read Terrarium tiles to zoom 11. PNG and WebP tiles both work. The contour lines read the tiles over HTTPS, not from the swarm.
 - **The old WebSocket scheduling page is gone.** `opt/scheduling.php?func=websockets` never drew its tables (the functions its `WebSockClient.js` called were never written) and reloaded itself, ad and all, every 15 seconds; nothing linked to it. The scheduling pages in the menu have updated themselves in place since February (`scheduling.live.js` and `opt/scheduling_api.php`), and that's how they stay.
@@ -11,12 +18,10 @@
 - **Notifications: the Inbox by default, e-mail if you choose it.** Control Panel → Notifications replaces Email Preferences: each kind (your import started, finished or failed, new map data exports, and for administrators new members and errors) has an Inbox box, on unless switched off, and an Email box, off unless chosen. E-mail goes only to the members the alert is for: before, choosing "import started" or "import finished" e-mail sent you everyone's imports, and administrators' error mail came with import mail. What members chose under Email Preferences carries over (migration `0015_notification_email`; run `tools/utilites/migrate.php`, which a Proxmox container's update does). Old `?func=pref` links still open the page. Notices raised from the admin pages themselves (settings, backups, servers) are Inbox alerts only for now.
 - **The API key can't be typed over; make a new one instead.** In the profile, the API key is shown read-only (it used to be a text box the profile form saved, so any text could become the key). **Make a new key** replaces it at once, so the old one stops working (for a key that got out, or a device you no longer have), and leaves an alert in your Inbox. Vistumbler and the app need the new key, or a new one-time link QR.
 - **Where each access point most likely is, from all its readings.** Every access point, cell tower and Bluetooth device gets an estimated position (`lib/position.inc.php`): the weighted centre of its strongest readings (those within 15 dB of the best, stronger ones and better GPS fixes counting for more, fixes worse than 100 m left out when there are better), with a rough accuracy in metres and how many readings it used, rather than the spot of the single strongest reading. Imports keep it up to date. Migration `0016_positions` adds `est_lat`, `est_lon`, `est_alt`, `est_accuracy` and `est_points` to `wifi_ap` and `cell_id` and fills them from the strongest reading, as before, so the maps look as they did until the new positions are in. A new cron job, `tools/cron/positions` (every 10 minutes, one node at a time), then works out the ones already in the database a few minutes at a time until they're all done; after that it finds nothing to do. Nothing to run by hand on a Proxmox container: the update brings the cron job. Other installs: add `*/10 * * * * www-data [tools]/cron/positions` to cron, or run `php tools/utilites/update_positions.php` and `php tools/utilites/update_positions.php --cells` (`--all` works them all out again; `--from`/`--to` split the work).
-- _...Add new stuff here..._
 
 ### 🐞 Bug fixes
 - **`load_geonames.php` loads on SQL Server again.** The batched MERGE added in 1.0.0-rc.3 had one closing parenthesis too many, so on SQL Server every line was skipped and nothing was loaded.
 - **Live uploads work on MariaDB, and keep every reading.** On MariaDB no live access point could be stored (`long` and `signal` are reserved words there). On every database, an access point sent again from a new position failed under PHP 8, so only its first reading was kept.
-- _...Add new stuff here..._
 
 ## 1.0.0-rc.3
 ### ✨ Features and improvements
