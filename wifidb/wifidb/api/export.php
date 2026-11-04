@@ -447,7 +447,7 @@ switch($func)
 			$ords=array("ASC","DESC");
 			if(!in_array($ord, $ords)){$ord = "DESC";}
 
-			$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1);
+			$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 1, WifidbApSearch::Ops($_REQUEST));
 			$AP_PlaceMarks = $dbcore->createKML->CreateApFeatureCollection($SearchArray['data']);
 			$name = "Search_".uniqid();
 			$results = $dbcore->createKML->createKMLstructure($name, $AP_PlaceMarks);

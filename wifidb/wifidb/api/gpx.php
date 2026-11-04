@@ -271,7 +271,7 @@ switch($func)
 		$ords=array("ASC","DESC");
 		if(!in_array($ord, $ords)){$ord = "DESC";}
 
-		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, $valid_gps);
+		$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, $valid_gps, WifidbApSearch::Ops($_REQUEST));
 		$results = $dbcore->createGPX->CreateApFeatureCollection($SearchArray['data']);
 		$results = $dbcore->createGPX->createGPXstructure($results);
 		if($labeled){$file_name = "Search_".uniqid()."_Labeled.gpx";}else{$file_name = "Search_".uniqid().".gpx";}

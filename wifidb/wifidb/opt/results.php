@@ -23,8 +23,12 @@ define("SWITCH_EXTRAS", "export");
 require '../lib/init.inc.php';
 
 $func	=   wifidb_input_string(INPUT_GET, 'func');
+# how each field matches (ssid_op, ...): equals, contains, starts or ends; equals when not given
+$ops = WifidbApSearch::Ops($_REQUEST);
+$blank = true;
+foreach(array_keys(WifidbApSearch::FIELDS) as $field) { if(trim((string)($_REQUEST[$field] ?? '')) !== '') { $blank = false; } }
 
-if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'] === "%" or @$_REQUEST['chan'] === "%" or @$_REQUEST['auth'] === "%" or @$_REQUEST['encry'] === "%" )
+if($blank or @$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'] === "%" or @$_REQUEST['chan'] === "%" or @$_REQUEST['auth'] === "%" or @$_REQUEST['encry'] === "%" )
 {
 	$dbcore->mesg = 'Come on man, you cant search for all of something, thats what <a class="links" href="../all.php">this page</a> is for!';
 	$dbcore->smarty->assign('mesg', $dbcore->mesg);
@@ -57,10 +61,10 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$new_icons = 0;
 	$to = ($from + $inc);
 	
-	$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 0);
+	$SearchArray = $dbcore->export->SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $labeled, $new_icons, $from, $inc, 0, $ops);
 	$results_all = $SearchArray['data'];
 	$total_rows = $SearchArray['total_rows'];
-	$page_func = "func=".$func."&ssid=".$ssid."&mac=".$mac."&radio=".$radio."&chan=".$chan."&auth=".$auth."&encry=".$encry."&sectype=".$sectype."&";
+	$page_func = "func=".$func."&ssid=".$ssid."&mac=".$mac."&radio=".$radio."&chan=".$chan."&auth=".$auth."&encry=".$encry."&sectype=".$sectype.WifidbApSearch::OpsQuery($ops)."&";
 	$dbcore->GeneratePages($total_rows, $from, $inc, $sort, $ord, $page_func, "", $ssid, $mac, $chan, $radio, $auth, $encry);
 	
 	if($total_rows === 0){$dbcore->smarty->assign('mesg', 'There where no results, please <a class="links" href="search.php" title="Search for Access Points">try again</a>');}
@@ -79,6 +83,8 @@ if(@$_REQUEST['ssid'] === "%" or @$_REQUEST['mac'] === "%" or @$_REQUEST['radio'
 	$dbcore->smarty->assign('auth_search', $auth);
 	$dbcore->smarty->assign('encry_search', $encry);
 	$dbcore->smarty->assign('sectype_search', $sectype);
+	$dbcore->smarty->assign('search_ops', $ops);
+	$dbcore->smarty->assign('search_ops_query', WifidbApSearch::OpsQuery($ops));
 	$dbcore->smarty->assign('results_all', $results_all);
 	$dbcore->smarty->display('search_results.tpl');
 }

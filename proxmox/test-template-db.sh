@@ -144,6 +144,7 @@ ap=$(sqlq 'select min("AP_ID") from wifi_ap')
 scan "$member" "/opt/fetch.php?id=$ap" "/opt/userstats.php?func=useraplist&row=1" '/all.php?sort=AP_ID&ord=DESC&from=0&inc=100' /stats.php \
     "/opt/map.php?func=user_list&id=1" '/opt/scheduling.php?func=done' "/graph/index.php?id=$ap" '/opt/results.php?ssid=Caf&sort=SSID&ord=ASC'
 check "the signal graph draws an imported access point" sh -c 'docker exec "$0" curl -s "http://127.0.0.1/api/wifi/signal.png?ap=$1" | head -c 8 | od -An -c | tr -d " " | grep -q "211PNG"' "$ct" "$ap"
+. "$(dirname "$(readlink -f "$0")")/test-search.inc.sh"
 
 if [ -n "${IMPORT_SAMPLES:-}" ]; then
     . "$(dirname "$(readlink -f "$0")")/test-imports.inc.sh"

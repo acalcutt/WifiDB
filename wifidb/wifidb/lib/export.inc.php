@@ -18,6 +18,8 @@ if not, write to the
    59 Temple Place, Suite 330,
    Boston, MA 02111-1307 USA
 */
+require_once dirname(__FILE__).'/searchconditions.inc.php';
+
 class export extends dbcore
 {
 	// Set by the constructor and the methods (PHP 8.2 deprecates making a property by assigning it)
@@ -1434,64 +1436,36 @@ class export extends dbcore
 		return $ret_data;
 	}
 
-	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0)
+	/**
+	 * The search page's results (opt/results.php) and its map and exports. $ops says how each field matches
+	 * (WifidbApSearch::Ops(); equals for one not given). Blank fields are left out of the query.
+	 */
+	public function SearchArray($ssid, $mac, $radio, $chan, $auth, $encry, $sectype, $ord, $sort, $named = 0, $new_ap = 0, $from = NULL, $inc = NULL, $valid_gps = 0, $ops = array())
 	{
-		$ssid = "%".$ssid."%";
-		$mac = "%".$mac."%";
-		$radio = "%".$radio."%";
-		$chan = "%".$chan."%";
-		$auth = "%".$auth."%";
-		$encry = "%".$encry."%";
-		
+		$pg = ($this->sql->service == "pgsql");
+		$q = function ($col) use ($pg) { return $pg ? '"'.$col.'"' : $col; };
+		$cond = WifidbApSearch::Conditions($this->sql->service, "wap",
+			array('ssid' => $ssid, 'mac' => $mac, 'radio' => $radio, 'chan' => $chan, 'auth' => $auth, 'encry' => $encry), $ops);
+		$where = "wap.".$q("BSSID")." <> '00:00:00:00:00:00' AND wap.fa IS NOT NULL AND wap.fa != '1970-01-01 00:00:00.000'";
+		if($cond['where']){$where .= "\nAND ".implode("\nAND ", $cond['where']);}
+		if($valid_gps){$where .= "\nAND wap.".$q("HighGps_ID")." IS NOT NULL";}
+		$params = $cond['params'];
+		if($sectype){$where .= "\nAND wap.".$q("SECTYPE")." = ?";}
 
-		if($this->sql->service == "pgsql")
-		{
-			// CHAN is an integer column; Postgres will not LIKE-compare it without
-			// an explicit cast, unlike MySQL and SQL Server.
-			$sql_count = 'SELECT COUNT("AP_ID") As "ApCount"'."\n"
-				. "FROM wifi_ap\n"
-				. "WHERE\n"
-				. '"BSSID" <> \'00:00:00:00:00:00\' AND'."\n"
-				. "fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND\n"
-				. '"SSID" LIKE ? AND'."\n"
-				. '"BSSID" LIKE ? AND'."\n"
-				. '"RADTYPE" LIKE ? AND'."\n"
-				. '"CHAN"::text LIKE ? AND'."\n"
-				. '"AUTH" LIKE ? AND'."\n"
-				. '"ENCR" LIKE ? '."\n";
-			if($valid_gps){$sql_count .= ' AND "HighGps_ID" IS NOT NULL';}
-			if($sectype){$sql_count .= ' AND "SECTYPE" =  ?';}
-		}
-		else
-		{
-			$sql_count = "SELECT COUNT(AP_ID) As ApCount\n"
-				. "FROM wifi_ap\n"
-				. "WHERE\n"
-				. "BSSID <> '00:00:00:00:00:00' AND\n"
-				. "fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND\n"
-				. "SSID LIKE ? AND\n"
-				. "BSSID LIKE ? AND\n"
-				. "RADTYPE LIKE ? AND\n"
-				. "CHAN LIKE ? AND\n"
-				. "AUTH LIKE ? AND\n"
-				. "ENCR LIKE ? \n";
-			if($valid_gps){$sql_count .=" AND HighGps_ID IS NOT NULL";}
-			if($sectype){$sql_count .=" AND SECTYPE =  ?";}
-		}
-		$prep1 = $this->sql->conn->prepare($sql_count);
-		$prep1->bindParam(1, $ssid, PDO::PARAM_STR);
-		$prep1->bindParam(2, $mac, PDO::PARAM_STR);
-		$prep1->bindParam(3, $radio, PDO::PARAM_STR);
-		$prep1->bindParam(4, $chan, PDO::PARAM_STR);
-		$prep1->bindParam(5, $auth, PDO::PARAM_STR);
-		$prep1->bindParam(6, $encry, PDO::PARAM_STR);
-		if($sectype){$prep1->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$bind = function ($prep) use ($params, $sectype) {
+			$i = 1;
+			foreach($params as $param){$prep->bindValue($i++, $param, PDO::PARAM_STR);}
+			if($sectype){$prep->bindValue($i, (int)$sectype, PDO::PARAM_INT);}
+		};
+
+		$prep1 = $this->sql->conn->prepare("SELECT COUNT(wap.".$q("AP_ID").") As ".$q("ApCount")."\nFROM wifi_ap AS wap\nWHERE ".$where);
+		$bind($prep1);
 		$prep1->execute();
 		$AP_ID_Count = $prep1->fetch(2);
 		$total_rows = $AP_ID_Count['ApCount'];
-		
+
 		$sort_sql = $this->sql->sortIdent($sort);
-		if($this->sql->service == "pgsql")
+		if($pg)
 		{
 			$sql = 'SELECT wap."ModDate", wap."AP_ID", wap."BSSID", wap."SSID", wap."CHAN", wap."AUTH", wap."ENCR", wap."SECTYPE", wap."RADTYPE", wap."NETTYPE", wap."BTX", wap."OTX", wap.fa, wap.la, wap.points, wap.high_gps_sig, wap.high_gps_rssi,'."\n"
 				. 'wGPS."Lat" As "Lat",'."\n"
@@ -1500,18 +1474,7 @@ class export extends dbcore
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
 				. 'LEFT JOIN wifi_gps AS wGPS ON wGPS."GPS_ID" = wap."HighGps_ID"'."\n"
-				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n"
-				. "WHERE\n"
-				. 'wap."BSSID" <> \'00:00:00:00:00:00\' AND'."\n"
-				. "wap.fa IS NOT NULL AND wap.fa != '1970-01-01 00:00:00.000' AND\n"
-				. 'wap."SSID" LIKE ? AND'."\n"
-				. 'wap."BSSID" LIKE ? AND'."\n"
-				. 'wap."RADTYPE" LIKE ? AND'."\n"
-				. 'wap."CHAN"::text LIKE ? AND'."\n"
-				. 'wap."AUTH" LIKE ? AND'."\n"
-				. 'wap."ENCR" LIKE ?'."\n";
-			if($valid_gps){$sql .= ' AND wap."HighGps_ID" IS NOT NULL';}
-			if($sectype){$sql .= ' AND wap."SECTYPE" =  ?';}
+				. 'LEFT JOIN files AS wf ON wf.id = wap."File_ID"'."\n";
 		}
 		else
 		{
@@ -1522,34 +1485,20 @@ class export extends dbcore
 				. "wf.file_user As file_user\n"
 				. "FROM wifi_ap AS wap\n"
 				. "LEFT JOIN wifi_gps AS wGPS ON wGPS.GPS_ID = wap.HighGps_ID\n"
-				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n"
-				. "WHERE\n"
-				. "BSSID <> '00:00:00:00:00:00' AND\n"
-				. "fa IS NOT NULL AND fa != '1970-01-01 00:00:00.000' AND\n"
-				. "wap.SSID LIKE ? AND\n"
-				. "wap.BSSID LIKE ? AND\n"
-				. "wap.RADTYPE LIKE ? AND\n"
-				. "wap.CHAN LIKE ? AND\n"
-				. "wap.AUTH LIKE ? AND\n"
-				. "wap.ENCR LIKE ?\n";
-			if($valid_gps){$sql .=" AND wap.HighGps_ID IS NOT NULL";}
-			if($sectype){$sql .=" AND wap.SECTYPE =  ?";}
+				. "LEFT JOIN files AS wf ON wf.id = wap.File_ID\n";
 		}
+		$sql .= "WHERE ".$where;
 		$sql .= " ORDER BY $sort_sql $ord";
 		if($from !== NULL && $inc !== NULL){
+			$from = (int)$from;
+			$inc = (int)$inc;
 			if($this->sql->service == "mysql"){$sql .=  " LIMIT ".$from.", ".$inc;}
 			else if($this->sql->service == "pgsql"){$sql .=  " LIMIT ".$inc." OFFSET ".$from;}
 			else if($this->sql->service == "sqlsrv"){$sql .=  " OFFSET ".$from." ROWS FETCH NEXT ".$inc." ROWS ONLY";}
 		}
 
 		$prep2 = $this->sql->conn->prepare($sql);
-		$prep2->bindParam(1, $ssid, PDO::PARAM_STR);
-		$prep2->bindParam(2, $mac, PDO::PARAM_STR);
-		$prep2->bindParam(3, $radio, PDO::PARAM_STR);
-		$prep2->bindParam(4, $chan, PDO::PARAM_STR);
-		$prep2->bindParam(5, $auth, PDO::PARAM_STR);
-		$prep2->bindParam(6, $encry, PDO::PARAM_STR);
-		if($sectype){$prep2->bindParam(7, $sectype, PDO::PARAM_INT);}
+		$bind($prep2);
 		$prep2->execute();
 
 		$latlon_array = array();
