@@ -318,7 +318,46 @@ function admind_move_to_deleted($dbcore, $file_info, $folder)
 /**
  * Process an admin job based on its type
  */
+/**
+ * Notes the access points and cells an import has readings for, before they are taken away, so admind_place_again()
+ * can work out where they are from what's left once the job is done (lib/position.inc.php).
+ */
+function admind_touched($dbcore, $file_id)
+{
+	global $admind_touched;
+	if(!$file_id) { return; }
+	try
+	{
+		require_once rtrim($dbcore->PATH, '/').'/lib/position.inc.php';
+		$t = (new ApPosition($dbcore->sql->conn, $dbcore->sql->service))->Touched($file_id);
+		$admind_touched['ap'] = array_merge($admind_touched['ap'] ?? array(), $t['ap']);
+		$admind_touched['cell'] = array_merge($admind_touched['cell'] ?? array(), $t['cell']);
+	}
+	catch(Throwable $e) { echo "Could not list what file $file_id placed: ".$e->getMessage()."\n"; }
+}
+
+function admind_place_again($dbcore)
+{
+	global $admind_touched;
+	if(empty($admind_touched)) { return; }
+	try
+	{
+		$touched = array('ap' => array_unique($admind_touched['ap'] ?? array()), 'cell' => array_unique($admind_touched['cell'] ?? array()));
+		$n = (new ApPosition($dbcore->sql->conn, $dbcore->sql->service))->UpdateAll($touched);
+		echo "Placed $n access points and cells again from their other readings.\n";
+	}
+	catch(Throwable $e) { echo "Could not place them again: ".$e->getMessage()."\n"; }
+	$admind_touched = array();
+}
+
 function process_admin_job($dbcore, $job)
+{
+	$result = run_admin_job($dbcore, $job);
+	admind_place_again($dbcore);
+	return $result;
+}
+
+function run_admin_job($dbcore, $job)
 {
 	$job_type = $job['job_type'];
 	$target_id = $job['target_id'];
@@ -457,6 +496,7 @@ function reset_file($dbcore, $File_ID)
 		$resgps->execute();
 
 		// Delete wifi_hist records
+		admind_touched($dbcore, $File_ID);   # placed again from what's left, after (lib/position.inc.php)
 		$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
@@ -606,6 +646,7 @@ function delete_file($dbcore, $File_ID, $deleted_folder = 'deleted')
 		}
 
 		// Delete records
+		admind_touched($dbcore, $File_ID);   # placed again from what's left, after (lib/position.inc.php)
 		$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 		$resgps = $dbcore->sql->conn->prepare($sqlhp);
 		$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);
@@ -777,6 +818,7 @@ function reset_failed_file($dbcore, $File_ID)
 				}
 
 				// Delete partial data for the found File ID
+				admind_touched($dbcore, $Partial_File_ID);   # placed again from what's left, after (lib/position.inc.php)
 				$tables = array(
 					"DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?",
 					"DELETE FROM wifi_ap WHERE ".$dbcore->sql->ident('File_ID')." = ?",
@@ -971,6 +1013,7 @@ function delete_failed_file($dbcore, $File_Import_ID)
 				}
 
 				// Delete wifi_hist records
+				admind_touched($dbcore, $File_ID);   # placed again from what's left, after (lib/position.inc.php)
 				$sqlhp = "DELETE FROM wifi_hist WHERE ".$dbcore->sql->ident('File_ID')." = ?";
 				$resgps = $dbcore->sql->conn->prepare($sqlhp);
 				$resgps->bindParam(1, $File_ID, PDO::PARAM_INT);

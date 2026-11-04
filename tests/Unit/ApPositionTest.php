@@ -110,5 +110,18 @@ final class ApPositionTest extends TestCase
 
         $this->assertNull($p->Update(2));
         $this->assertNull($db->query("SELECT est_lat FROM wifi_ap WHERE AP_ID = 2")->fetchColumn());
+
+        // an import taken away: what it touched is placed again from what's left
+        $db->exec("CREATE TABLE cell_id (cell_id INTEGER PRIMARY KEY, est_lat TEXT, est_lon TEXT, est_alt REAL, est_accuracy REAL, est_points INTEGER)");
+        $db->exec("CREATE TABLE cell_hist (cell_hist_id INTEGER PRIMARY KEY, cell_id INTEGER, gps_id INTEGER, rssi INTEGER, file_id INTEGER)");
+        $db->exec("ALTER TABLE wifi_hist ADD COLUMN File_ID INTEGER");
+        $db->exec("UPDATE wifi_hist SET File_ID = 1");
+        $db->exec("UPDATE wifi_hist SET File_ID = 2 WHERE GPS_ID = 2");
+        $touched = $p->Touched(2);
+        $this->assertSame(['ap' => [1], 'cell' => []], $touched);
+        $db->exec("DELETE FROM wifi_hist WHERE File_ID = 2");
+        $this->assertSame(1, $p->UpdateAll($touched));
+        $this->assertSame(1, (int)$db->query("SELECT est_points FROM wifi_ap WHERE AP_ID = 1")->fetchColumn());
+        $this->assertEqualsWithDelta(4306.0, (float)$db->query("SELECT est_lat FROM wifi_ap WHERE AP_ID = 1")->fetchColumn(), 0.00001, 'where the reading that is left was');
     }
 }

@@ -211,6 +211,31 @@ class ApPosition
 	}
 
 	/**
+	 * The access points and cell towers / Bluetooth devices an import has readings for: what to work out again after
+	 * its readings are taken away (a reset or a deleted import), with UpdateAll().
+	 * @return array ap => ids, cell => ids
+	 */
+	public function Touched($file_id)
+	{
+		$ap = $this->conn->prepare("SELECT DISTINCT ".$this->Q('AP_ID')." FROM wifi_hist WHERE ".$this->Q('File_ID')." = ?");
+		$ap->execute(array($file_id));
+		$cell = $this->conn->prepare("SELECT DISTINCT cell_id FROM cell_hist WHERE file_id = ?");
+		$cell->execute(array($file_id));
+		return array('ap' => array_map('intval', $ap->fetchAll(PDO::FETCH_COLUMN)), 'cell' => array_map('intval', $cell->fetchAll(PDO::FETCH_COLUMN)));
+	}
+
+	/** Update() for each of Touched()'s ids (one that has since been deleted changes nothing). @return int how many */
+	public function UpdateAll(array $touched)
+	{
+		$n = 0;
+		foreach(array('ap' => false, 'cell' => true) as $kind => $cell)
+		{
+			foreach(isset($touched[$kind]) ? $touched[$kind] : array() as $id) { $this->Update($id, $cell); $n++; }
+		}
+		return $n;
+	}
+
+	/**
 	 * Works out one device's position and stores it. With no reading that has a fix, the columns are emptied.
 	 * @return array|null what was stored (lat and lon in DDMM.MMMM), or null if there was nothing to go on
 	 */

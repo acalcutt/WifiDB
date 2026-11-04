@@ -243,6 +243,10 @@ class daemon extends wdbcli
 	{
 		$q = function ($name) { return $this->sql->ident($name); };
 		$run = function ($sql) use ($file_id) { $this->sql->conn->prepare($sql)->execute(array($file_id)); };
+		// the access points and cells it had readings for are placed again from what's left (lib/position.inc.php)
+		require_once rtrim($this->PATH, '/').'/lib/position.inc.php';
+		$position = new ApPosition($this->sql->conn, $this->sql->service);
+		try { $touched = $position->Touched($file_id); } catch(Throwable $e) { $touched = array(); }
 		$run("DELETE FROM wifi_hist WHERE ".$q('File_ID')." = ?");
 		$run("UPDATE wifi_ap SET ".$q('File_ID')." = (SELECT MIN(h.".$q('File_ID').") FROM wifi_hist h WHERE h.".$q('AP_ID')." = wifi_ap.".$q('AP_ID').") "
 			."WHERE ".$q('File_ID')." = ? AND EXISTS (SELECT 1 FROM wifi_hist h WHERE h.".$q('AP_ID')." = wifi_ap.".$q('AP_ID').")");
@@ -251,6 +255,7 @@ class daemon extends wdbcli
 		$run("DELETE FROM wifi_gps WHERE ".$q('File_ID')." = ?");
 		$run("DELETE FROM cell_hist WHERE file_id = ?");
 		$run("DELETE FROM cell_id WHERE file_id = ? AND NOT EXISTS (SELECT 1 FROM cell_hist h WHERE h.cell_id = cell_id.cell_id)");
+		try { $position->UpdateAll($touched); } catch(Throwable $e) { $this->verbosed("Could not place the access points again: ".$e->getMessage(), -1); }
 	}
 
 	# A run that died (it failed, or was killed by a restart mid-run) leaves its schedule row 'Running' with its pid, and
