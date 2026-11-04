@@ -14,8 +14,10 @@ load_geonames.php: loads a GeoNames dump file (https://download.geonames.org/exp
 container, else the temporary folder), and uses one already there instead of fetching it again (delete it for a new
 one). --set picks the places for --geonames: allCountries (the default: every place, about 12 million, a 400 MB download)
 or one of GeoNames' smaller lists, cities500, cities1000, cities5000 or cities15000 (the towns with at least that many
-people). --replace empties each table first. A zip is read without unpacking it, the file a line at a time
-(allCountries.txt is over a gigabyte), and a value longer than its column is cut to fit.
+people). Each line updates the row with its key (a place's geonameid, a region's code, a country's ISO code) or adds
+it, so loading again brings the tables up to date while the site goes on using them. --replace empties each table
+first instead, which also takes out what GeoNames has since removed. A zip is read without unpacking it, the file a
+line at a time (allCountries.txt is over a gigabyte), and a value longer than its column is cut to fit.
 */
 define("SWITCH_SCREEN", "CLI");
 define("SWITCH_EXTRAS", "cli");
@@ -23,7 +25,8 @@ define("SWITCH_EXTRAS", "cli");
 const GEONAMES_URL = 'https://download.geonames.org/export/dump/';
 const GEONAMES_SETS = array('allCountries', 'cities500', 'cities1000', 'cities5000', 'cities15000');
 
-# table => the table's columns, in the order the file's tab-separated fields come, and the file --download fetches
+# table => the table's columns, in the order the file's tab-separated fields come (the first is each row's key), and the
+# file --download fetches
 $layouts = array(
 	"countrynames" => array("geonames_country_names", array("ISO", "ISO3", "ISO-Numeric", "fips", "Country", "Capital", "Area", "Population",
 		"Continent", "tld", "CurrencyCode", "CurrencyName", "Phone", "Postal Code Format", "Postal Code Regex", "Languages", "geonamesid",
@@ -161,7 +164,25 @@ foreach($inputs as $load => $in)
 		echo "Emptied $table.\n";
 	}
 
-	$insert = $conn->prepare("INSERT INTO ".$quote($table)." (".implode(", ", array_map($quote, $columns)).") VALUES (".implode(", ", array_fill(0, count($columns), "?")).")");
+	# each line updates the row with its key (the first column), or adds it (the keys: sql/migrations/*/0011_geonames_keys.sql)
+	$key = $columns[0];
+	$insert_sql = "INSERT INTO ".$quote($table)." (".implode(", ", array_map($quote, $columns)).") VALUES (".implode(", ", array_fill(0, count($columns), "?")).")";
+	$others = array_slice($columns, 1);
+	$update = null;
+	if($service == "mysql")
+	{
+		$insert = $conn->prepare($insert_sql." ON DUPLICATE KEY UPDATE ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = VALUES(".$quote($c).")"; }, $others)));
+	}
+	elseif($service == "pgsql")
+	{
+		$insert = $conn->prepare($insert_sql." ON CONFLICT (".$quote($key).") DO UPDATE SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = EXCLUDED.".$quote($c); }, $others)));
+	}
+	else
+	{
+		# SQL Server: the update, and the insert when it found nothing
+		$insert = $conn->prepare($insert_sql);
+		$update = $conn->prepare("UPDATE ".$quote($table)." SET ".implode(", ", array_map(function ($c) use ($quote) { return $quote($c)." = ?"; }, $others))." WHERE ".$quote($key)." = ?");
+	}
 	$loaded = 0; $skipped = 0;
 	$conn->beginTransaction();
 	while(($line = fgets($in)) !== false)
@@ -177,11 +198,12 @@ foreach($inputs as $load => $in)
 			if(isset($lengths[$column]) && mb_strlen($v, 'UTF-8') > $lengths[$column]) { $v = mb_substr($v, 0, $lengths[$column], 'UTF-8'); }
 			$values[] = ($v === '' && in_array($column, array('geonameid', 'geonamesid'), true)) ? null : $v;
 		}
+		if($values[0] === null || $values[0] === '') { $skipped++; continue; }   # no key: nothing to find it by again
 		# PostgreSQL gives up on the whole transaction after one failed statement; a savepoint keeps it to the one line
 		if($service == "pgsql") { $conn->exec("SAVEPOINT geoline"); }
 		try
 		{
-			$insert->execute($values);
+			if(!$update || ($update->execute(array_merge(array_slice($values, 1), array($values[0]))) && $update->rowCount() === 0)) { $insert->execute($values); }
 			$loaded++;
 			if($service == "pgsql") { $conn->exec("RELEASE SAVEPOINT geoline"); }
 		}

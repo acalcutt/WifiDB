@@ -45,8 +45,13 @@ if docker exec "$ct" curl -sf -m 30 -o /dev/null https://download.geonames.org/e
     check "...with the hyphenated and spaced columns filled" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO-Numeric) = '840' and $(Q 'Postal Code Format') = '#####-####'")" = 1
     check "...and the first-level regions" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
     check "...names with apostrophes included" test "$(sqlq "select count(*) from geonames_admin1 where name like '%''%'")" -gt 0
-    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt --replace); ran "load_geonames.php --file (a file of one's own)" "$out"
-    check "...the same regions again" test "$(sqlq 'select count(*) from geonames_admin1')" -gt 3000
+    regions=$(sqlq 'select count(*) from geonames_admin1')
+    sqlq "UPDATE geonames_admin1 SET name = 'Changed' WHERE admin1 = 'US.MA'" >/dev/null
+    out=$(util load_geonames.php --admin1 --file=/var/tmp/geonames/admin1CodesASCII.txt); ran "load_geonames.php --file again, without --replace" "$out"
+    check "...updates the regions in place: none twice" test "$(sqlq 'select count(*) from geonames_admin1')" = "$regions"
+    check "...and one that was changed is GeoNames' again" test "$(sqlq "select name from geonames_admin1 where admin1 = 'US.MA'")" = Massachusetts
+    out=$(util load_geonames.php --countrynames --download --dir=/var/tmp/geonames); ran "load_geonames.php --countrynames again, without --replace" "$out"
+    check "...every country still once" test "$(sqlq "select count(*) from geonames_country_names where $(Q ISO) = 'US'")" = 1
     out=$(util load_geonames.php --geonames --set=cities15000 --download --dir=/var/tmp/geonames --replace); ran "load_geonames.php --set=cities15000 (read from its zip)" "$out"
     check "...and loads the towns" test "$(sqlq 'select count(*) from geonames')" -gt 20000
 else
