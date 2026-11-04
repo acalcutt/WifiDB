@@ -65,6 +65,20 @@ if docker exec "$ct" curl -sf -m 30 -o /dev/null https://download.geonames.org/e
         echo "$near" | head -c 300 | sed 's/^/       /'
     check "...and turns away a lat that isn't a number" sh -c 'echo "$0" | grep -q "have to be numbers"' \
         "$(docker exec "$ct" curl -s 'http://127.0.0.1/api/geonames.php?lat=abc&long=-71')"
+    # the refresh from cron (tools/cron/geonames), as Site Settings sets it
+    check "a scheduled GeoNames refresh does nothing while Site Settings has them off" sh -c 'echo "$0" | grep -q "refreshes are off"' \
+        "$(util load_geonames.php --scheduled)"
+    sm_set 'array("geonames_refresh" => "monthly", "geonames_set" => "cities15000")'
+    check "...and with them on, nothing until one is due" sh -c 'echo "$0" | grep -q "not due yet"' "$(util load_geonames.php --scheduled)"
+    sqlq "UPDATE geonames SET loaded_at = '2020-01-01 00:00:00'" >/dev/null
+    docker exec "$ct" rm -f /srv/wifidb-data/log/geonames/geonames_$(date -u +%Y%m%d).log
+    docker exec "$ct" runuser -u www-data -- /opt/wifidb/tools/cron/geonames
+    glog=$(docker exec "$ct" sh -c 'cat /srv/wifidb-data/log/geonames/geonames_*.log' 2>&1)
+    check "...then the cron job downloads the places again and refreshes them" sh -c 'echo "$0" | grep -q "Refreshing GeoNames (cities15000)" && echo "$0" | grep -q "Downloaded cities15000.zip"' "$glog" ||
+        echo "$glog" | tail -5 | sed 's/^/       /'
+    check "...every place loaded anew" test "$(sqlq "select count(*) from geonames where loaded_at < '2025-01-01'")" = 0
+    check "...and the towns all still there" test "$(sqlq 'select count(*) from geonames')" -gt 20000
+    sm_set 'array("geonames_refresh" => "off", "geonames_set" => "allCountries")'
 else
     log "(download.geonames.org can't be reached from here: the GeoNames load is not tested)"
 fi

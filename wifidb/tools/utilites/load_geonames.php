@@ -41,9 +41,12 @@ $layouts = array(
 );
 
 $loads = array(); $file = ''; $replace = false; $keep = false; $download = false; $dir = ''; $set = 'allCountries';
+$scheduled = false; $fresh = false;
 foreach(array_slice($argv, 1) as $arg)
 {
 	if(isset($layouts[ltrim($arg, '-')])) { $loads[] = ltrim($arg, '-'); }
+	elseif($arg === '--scheduled') { $scheduled = true; }
+	elseif($arg === '--fresh') { $fresh = true; }
 	elseif($arg === '--all') { $loads = array_keys($layouts); }
 	elseif(strpos($arg, '--file=') === 0) { $file = substr($arg, 7); }
 	elseif(strpos($arg, '--dir=') === 0) { $dir = rtrim(substr($arg, 6), '/'); }
@@ -53,11 +56,12 @@ foreach(array_slice($argv, 1) as $arg)
 	elseif($arg === '--keep') { $keep = true; }
 }
 $loads = array_values(array_unique($loads));
-if(!$loads || ($download === ($file !== '')) || ($file !== '' && count($loads) > 1) || !in_array($set, GEONAMES_SETS, true))
+if(!$scheduled && (!$loads || ($download === ($file !== '')) || ($file !== '' && count($loads) > 1) || !in_array($set, GEONAMES_SETS, true)))
 {
-	fwrite(STDERR, "Usage: php load_geonames.php --all --download [--replace|--keep] [--set=SET] [--dir=DIR]\n"
+	fwrite(STDERR, "Usage: php load_geonames.php --all --download [--fresh] [--replace|--keep] [--set=SET] [--dir=DIR]\n"
+		."       php load_geonames.php --scheduled [--dir=DIR]   (tools/cron/geonames: a refresh, when Site Settings says one is due)\n"
 		."       php load_geonames.php --geonames|--admin1|--admin2|--countrynames (--download | --file=FILE) [--replace|--keep] [--set=SET]\n"
-		."--download fetches the files from ".GEONAMES_URL." into --dir; --file loads one you have (a .txt, or a .zip with it inside).\n"
+		."--download fetches the files from ".GEONAMES_URL." into --dir (--fresh: again, even if they're there); --file loads one you have (a .txt, or a .zip with it inside).\n"
 		."Each table ends up as the file has it; --keep leaves the rows the file doesn't have, --replace empties the table first.\n"
 		."SET is what --geonames loads: ".implode(', ', GEONAMES_SETS)." (allCountries, every place, is the default).\n");
 	exit(2);
@@ -71,11 +75,14 @@ function geonames_dir($dir)
 	return $dir;
 }
 
-/** fetches GEONAMES_URL.$name into $dir, unless it's there already. @return string the file */
-function geonames_download($name, $dir)
+/**
+ * fetches GEONAMES_URL.$name into $dir, unless it's there already (or $fresh), replacing the one there only once the new
+ * one is whole. @return string the file
+ */
+function geonames_download($name, $dir, $fresh = false)
 {
 	$path = $dir.'/'.$name;
-	if(is_file($path) && filesize($path) > 0) { echo "Using $path, downloaded before (delete it for a new one).\n"; return $path; }
+	if(!$fresh && is_file($path) && filesize($path) > 0) { echo "Using $path, downloaded before (delete it, or --fresh, for a new one).\n"; return $path; }
 	echo "Downloading ".GEONAMES_URL."$name to $path\n";
 	$part = $path.'.part';
 	$out = @fopen($part, 'wb');
@@ -125,12 +132,35 @@ function geonames_open($file)
 	return $in;
 }
 
+if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to create and configure your [tools]/daemon.config.inc.php");}
+if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon.config.inc.php");}
+require $daemon_config['wifidb_install']."/lib/init.inc.php";
+
+$conn = $dbcore->sql->conn;
+$service = $dbcore->sql->service;
+
+# --scheduled (tools/cron/geonames, each night): everything, freshly downloaded, when Site Settings says a refresh is
+# due. Due is counted from the newest place's loaded_at, so a node that waited its turn (lock_run.php) behind another
+# finds the refresh done and leaves it.
+if($scheduled)
+{
+	require_once $daemon_config['wifidb_install'].'/lib/site_settings.inc.php';
+	$settings = new SiteSettings($conn, $config);
+	$every = array('monthly' => 28, 'quarterly' => 85)[$settings->Get('geonames_refresh')] ?? 0;
+	if(!$every) { echo "GeoNames refreshes are off (Site Settings).\n"; exit(0); }
+	$last = $conn->query("SELECT MAX(loaded_at) FROM geonames")->fetchColumn();
+	if($last && strtotime($last.' UTC') > time() - $every * 86400) { echo "GeoNames was refreshed at $last UTC: not due yet.\n"; exit(0); }
+	$loads = array_keys($layouts); $download = true; $fresh = true; $keep = false; $replace = false;
+	$set = $settings->Get('geonames_set');
+	echo "Refreshing GeoNames (".$set."), last refreshed ".($last ? "$last UTC" : "never").".\n";
+}
+
 # the files first, so a download that fails leaves the tables as they were
 $files = array();
 if($download)
 {
 	$dir = geonames_dir($dir);
-	foreach($loads as $load) { $files[$load] = geonames_download($layouts[$load][2] ?? $set.'.zip', $dir); }
+	foreach($loads as $load) { $files[$load] = geonames_download($layouts[$load][2] ?? $set.'.zip', $dir, $fresh); }
 }
 else
 {
@@ -138,13 +168,6 @@ else
 }
 $inputs = array();
 foreach($files as $load => $path) { $inputs[$load] = geonames_open($path); }
-
-if(!(require(dirname(__FILE__).'/../daemon.config.inc.php'))){die("You need to create and configure your [tools]/daemon.config.inc.php");}
-if($daemon_config['wifidb_install'] === ""){die("You need to edit your daemon config file first in: [tools dir]/daemon.config.inc.php");}
-require $daemon_config['wifidb_install']."/lib/init.inc.php";
-
-$conn = $dbcore->sql->conn;
-$service = $dbcore->sql->service;
 # some of these names have spaces and hyphens in them, so they're quoted on every database
 $quote = function ($name) use ($service) {
 	if($service == "mysql") { return '`'.$name.'`'; }

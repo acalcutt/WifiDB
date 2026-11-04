@@ -1,0 +1,11 @@
+#!/bin/bash
+# Refreshes the GeoNames places (the places nearby on an access point's page) when Site Settings says one is due:
+# monthly or every 3 months, off unless set. Each night from cron; load_geonames.php --scheduled decides whether it's
+# due, and lock_run.php has the nodes on one database take turns, so the first does it and the rest find it done.
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+cd ${0%/*}
+mkdir -p ../log/geonames
+php ../daemon/lock_run.php geonames php ../utilites/load_geonames.php --scheduled >> ../log/geonames/geonames_$(date -u +%Y%m%d).log 2>&1
+find ../log/geonames/ -mtime +120 -type f -delete
+exit 0
