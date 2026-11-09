@@ -2,13 +2,6 @@
 
 ## master
 ### ✨ Features and improvements
-- _...Add new stuff here..._
-
-### 🐞 Bug fixes
-- _...Add new stuff here..._
-
-## 1.0.0
-### ✨ Features and improvements
 - **An import whose daemon died shows red on Files Importing,** with the status "Failed: the import stopped before it finished", until it's re-imported or deleted. The importer now notes which run has each file, and `monitord` and the importer check that run is still there. Migration `0017_import_run`.
 
 ### 🐞 Bug fixes
