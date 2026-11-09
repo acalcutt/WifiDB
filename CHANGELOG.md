@@ -5,6 +5,7 @@
 - **An import whose daemon died shows red on Files Importing,** with the status "Failed: the import stopped before it finished", until it's re-imported or deleted. The importer now notes which run has each file, and `monitord` and the importer check that run is still there. Migration `0017_import_run`.
 
 ### 🐞 Bug fixes
+- **The export daemon makes the folders it saves to.** Nothing created `out/kmz` or `out/daemon`, so on a new install a full KML export built the whole database for hours, then died when it couldn't save the file and left its schedule row at Running. The folders are now made before the export starts.
 - **Each import run has its own log.** The two runners cron starts each minute could pick the same log name and write over each other's text.
 - **Re-importing a stuck file (↻ on Files Importing) takes it off that list.** It went back in the queue but its old row stayed there for good, shown as yellow "Processing". On MariaDB the reset also failed with an SQL error if the file had got as far as adding access points or cells.
 - **A file with only cell towers or Bluetooth devices in it imports, and no longer kills the import run.** With no access points the importer divided by zero, which stopped the run and left the file stuck in Files Importing. An error while finishing an import now sets the file aside in Files Bad, as one while reading it already did.

@@ -1699,7 +1699,7 @@ class export extends dbcore
 			{
 				$link = $this->daemon_out.basename($symlink_name);
 				$this->verbosed('Creating symlink from "'.$kmz_filepath.'" to "'.$link.'"');
-				unlink($link);
+				if(is_link($link) || file_exists($link)){unlink($link);}
 				symlink($kmz_filepath, $link);
 				chmod($link, 0664);
 			}
@@ -1886,11 +1886,30 @@ class export extends dbcore
 	}
 
 	/*
+	 * The folders the daily export writes to. Nothing else makes them, and a full export takes hours to find out
+	 * it has nowhere to save, so this is done before any of it starts.
+	 */
+	public function CreateDaemonFolders()
+	{
+		$kmz = $this->PATH.'out/kmz/';
+		$folders = array($kmz.'full/labeled', $kmz.'full/unlabeled', $kmz.'incremental/labeled', $kmz.'incremental/unlabeled', $this->daemon_out, $this->PATH.'out/daemon/history');
+		foreach($folders as $folder)
+		{
+			if(!is_dir($folder) && !@mkdir($folder, 0775, true) && !is_dir($folder))
+			{
+				$this->verbosed("Could not create the export folder ".$folder, -1);
+				throw new Exception("Could not create the export folder ".$folder);
+			}
+		}
+	}
+
+	/*
 	 * Generate the Daily Daemon KML files
 	 */
 	public function GenerateDaemonKMLData($verbose = 0)
 	{
 		$this->verbose = $verbose;
+		$this->CreateDaemonFolders();
 		$ForcedFullRun = 1;
 		$full_folder = $this->PATH.'out/kmz/full/';
 		$daily_folder = $this->PATH.'out/kmz/incremental/';
