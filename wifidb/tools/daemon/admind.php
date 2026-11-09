@@ -696,8 +696,8 @@ function reset_failed_file($dbcore, $File_ID)
 	try
 	{
 		// This reset is for an incomplete import: use the files_importing id to find file hash
-		// and cleanup any partial data in the `files`/`wifi_*`/`cell_*` tables, then leave
-		// the `files_importing` row so the daemon can re-import.
+		// and cleanup any partial data in the `files`/`wifi_*`/`cell_*` tables, then put
+		// the file back in `files_tmp` so the daemon can re-import it.
 
 		// Get hash from files_importing
 		if($dbcore->sql->service == "mysql")
@@ -747,7 +747,7 @@ function reset_failed_file($dbcore, $File_ID)
 					$AP_ID = $ap[0];
 
 					if($dbcore->sql->service == "mysql")
-						{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID != ? LIMIT 1";}
+						{$sqlhp = "SELECT `File_ID` FROM `wifi_hist` WHERE `AP_ID` = ? And `File_ID` != ? LIMIT 1";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$sqlhp = "SELECT TOP 1 [File_ID] FROM [wifi_hist] WHERE [AP_ID] = ? And [File_ID] != ?";}
 					else if($dbcore->sql->service == "pgsql")
@@ -790,7 +790,7 @@ function reset_failed_file($dbcore, $File_ID)
 					$cell_id = $ap[0];
 
 					if($dbcore->sql->service == "mysql")
-						{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? And `file_id != ? LIMIT 1";}
+						{$sqlhp = "SELECT `file_id` FROM `cell_hist` WHERE `cell_id` = ? And `file_id` != ? LIMIT 1";}
 					else if($dbcore->sql->service == "sqlsrv")
 						{$sqlhp = "SELECT TOP 1 [file_id] FROM [cell_hist] WHERE [cell_id] = ? And [file_id] != ?";}
 					else if($dbcore->sql->service == "pgsql")
@@ -871,8 +871,8 @@ function reset_failed_file($dbcore, $File_ID)
 			}
 		}
 
-		// Mark files_importing as not importing so daemon will pick it up again
-		$sql = "UPDATE files_importing SET importing = 0, tot = NULL, ap = NULL WHERE id = ?";
+		// The daemon makes a new files_importing row when it takes the file from files_tmp, so this one goes
+		$sql = "DELETE FROM files_importing WHERE id = ?";
 		$prep = $dbcore->sql->conn->prepare($sql);
 		$prep->bindParam(1, $File_ID, PDO::PARAM_INT);
 		$prep->execute();
