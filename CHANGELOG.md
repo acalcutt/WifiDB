@@ -5,7 +5,7 @@
 - _...Add new stuff here..._
 
 ### 🐞 Bug fixes
-- _...Add new stuff here..._
+- **`api/v2/schedule.php?func=importing` works.** It called a function that doesn't exist, and with nothing to list the `importing`, `finished` and `bad` lists failed on PHP 8 instead of answering "No Imports running."
 
 ## 1.0.0-rc.4
 ### ✨ Features and improvements

@@ -42,7 +42,7 @@ switch(strtolower($dbcore->Func))
         break;
 
     case "importing":
-        $result = $dbcore->GetImpotingScheduleTable();
+        $result = $dbcore->GetImportingScheduleTable();
         break;
 
     case "finished":
@@ -58,7 +58,7 @@ switch(strtolower($dbcore->Func))
         break;
 
     default:
-        $this->mesg['error'] = "Unknown Func parameter called.";
+        $dbcore->mesg['error'] = "Unknown Func parameter called.";
         $result = -1;
         break;
 }

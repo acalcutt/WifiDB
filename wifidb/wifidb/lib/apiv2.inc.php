@@ -215,7 +215,7 @@ class apiv2 extends dbcore
 		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
 		$return = $schedule_prep->fetch(2);
 
-		if(count($return) < 1)
+		if(empty($return))
 		{
 			$this->mesg['schedule'] = "No Imports running.";
 		}else
@@ -242,7 +242,7 @@ class apiv2 extends dbcore
 		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
 		$return = $schedule_prep->fetch(2);
 
-		if(count($return) < 1)
+		if(empty($return))
 		{
 			$this->mesg['schedule'] = "No Imports running.";
 		}else
@@ -269,7 +269,7 @@ class apiv2 extends dbcore
 		$this->sql->checkError($schedule_prep->execute(), __LINE__, __FILE__);
 		$return = $schedule_prep->fetch(2);
 
-		if(count($return) < 1)
+		if(empty($return))
 		{
 			$this->mesg['schedule'] = "No Imports running.";
 		}else
