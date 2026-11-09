@@ -5,6 +5,7 @@
 - **`api/v2/import.php` takes NetStumbler `.ns1` files**, as the upload page does. The API's list of extensions refused them before the file type detection got to look at them.
 
 ### 🐞 Bug fixes
+- **A file with only cell towers or Bluetooth devices in it imports, and no longer kills the import run.** With no access points the importer divided by zero, which stopped the run and left the file stuck in Files Importing. An error while finishing an import now sets the file aside in Files Bad, as one while reading it already did.
 - **The import page stays green and keeps showing the current access point.** After the first load, the live refresh drew every importing file as yellow "Processing", because it didn't read the file's progress.
 - **`api/v2/schedule.php?func=importing` works.** It called a function that doesn't exist, and with nothing to list the `importing`, `finished` and `bad` lists failed on PHP 8 instead of answering "No Imports running."
 

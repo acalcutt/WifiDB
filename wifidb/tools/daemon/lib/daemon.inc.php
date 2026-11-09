@@ -603,48 +603,74 @@ class daemon extends wdbcli
 				else
 				{
 					$this->verbosed("Finished Import of :".$file_name." | AP Count:".$tmp['aps']." - GPS Count: ".$tmp['gps']." - Cell Count: ".$tmp['gps']." - Cell Hist Count: ".$tmp['gps'], 3);
-					$NewAPPercent = (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 );
-					if($this->sql->service == "mysql")
-						{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, NewAPPercent = ?, completed = 1 WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$update_files_table_sql = "UPDATE [files] SET [aps] = ?, [gps] = ?, [NewAPPercent] = ?, [completed] = 1 WHERE [id] = ?";}
-					else if($this->sql->service == "pgsql")
-						{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, \"NewAPPercent\" = ?, completed = 1 WHERE id = ?";}
-					$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
-					$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
-					$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
-					$prep_update_files_table->bindParam(3, $NewAPPercent, PDO::PARAM_INT);
-					$prep_update_files_table->bindParam(4, $file_row, PDO::PARAM_INT);
-
-					$prep_update_files_table->execute();
-					$this->sql->checkError(__LINE__, __FILE__);
-					require_once $this->PATH.'lib/traffic.inc.php';
-					Traffic::Note(isset($GLOBALS['config']) ? $GLOBALS['config'] : null, 'import_done');   # admin/traffic.php
-
-					if($this->sql->service == "mysql")
-						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
-					else if($this->sql->service == "sqlsrv")
-						{$del_file_tmp = "DELETE FROM [files_importing] WHERE [id] = ?";}
-					else if($this->sql->service == "pgsql")
-						{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
-					#echo $del_file_tmp."\r\n";
-					$prep = $this->sql->conn->prepare($del_file_tmp);
-					$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
-					$prep->execute();
-					if($this->sql->checkError(__LINE__, __FILE__))
+					# as with the parsers above, an error finishing it sets this file aside rather than stopping the run
+					$finished = false;
+					try
 					{
-						$this->wdbmail->alert("Error removing file: $file_name ($importing_id)", "Error removing file: $file_name ($importing_id)", $this->URL_PATH."opt/scheduling.php");
-						//$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
-						$this->verbosed("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
-						Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
-					}else
-					{
-						$subject = "Vistumbler WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
-						$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n";
-						$this->wdbmail->notify('import_finished', $subject, $message, $this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row", array($file_user), "Import finished: ".($file_title ? $file_title : $file_name));
-						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
+						# a file can have only cell towers or Bluetooth devices in it, so no access points to divide by
+						$NewAPPercent = ($tmp['aps'] > 0) ? (int)( ( ( $tmp['newaps'] / $tmp['aps'] ) ) * 100 ) : 0;
+						if($this->sql->service == "mysql")
+							{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, NewAPPercent = ?, completed = 1 WHERE id = ?";}
+						else if($this->sql->service == "sqlsrv")
+							{$update_files_table_sql = "UPDATE [files] SET [aps] = ?, [gps] = ?, [NewAPPercent] = ?, [completed] = 1 WHERE [id] = ?";}
+						else if($this->sql->service == "pgsql")
+							{$update_files_table_sql = "UPDATE files SET aps = ?, gps = ?, \"NewAPPercent\" = ?, completed = 1 WHERE id = ?";}
+						$prep_update_files_table = $this->sql->conn->prepare($update_files_table_sql);
+						$prep_update_files_table->bindParam(1, $tmp['aps'], PDO::PARAM_STR);
+						$prep_update_files_table->bindParam(2, $tmp['gps'], PDO::PARAM_STR);
+						$prep_update_files_table->bindParam(3, $NewAPPercent, PDO::PARAM_INT);
+						$prep_update_files_table->bindParam(4, $file_row, PDO::PARAM_INT);
+
+						$prep_update_files_table->execute();
+						$this->sql->checkError(__LINE__, __FILE__);
+						require_once $this->PATH.'lib/traffic.inc.php';
+						Traffic::Note(isset($GLOBALS['config']) ? $GLOBALS['config'] : null, 'import_done');   # admin/traffic.php
+
+						if($this->sql->service == "mysql")
+							{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
+						else if($this->sql->service == "sqlsrv")
+							{$del_file_tmp = "DELETE FROM [files_importing] WHERE [id] = ?";}
+						else if($this->sql->service == "pgsql")
+							{$del_file_tmp = "DELETE FROM files_importing WHERE id = ?";}
+						#echo $del_file_tmp."\r\n";
+						$prep = $this->sql->conn->prepare($del_file_tmp);
+						$prep->bindParam(1, $importing_id, PDO::PARAM_INT);
+						$prep->execute();
+						if($this->sql->checkError(__LINE__, __FILE__))
+						{
+							$this->wdbmail->alert("Error removing file: $file_name ($importing_id)", "Error removing file: $file_name ($importing_id)", $this->URL_PATH."opt/scheduling.php");
+							//$this->logd("Error removing $source ($importing_id) from the Temp files table\r\n\t".var_export($this->sql->conn->errorInfo(),1),"Error", $this->This_is_me);
+							$this->verbosed("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1), -1);
+							Throw new ErrorException("Error removing $source ($importing_id) from the Temp files table\n\t".var_export($this->sql->conn->errorInfo(),1));
+						}
+						$finished = true;
 					}
-					$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];
+					catch(Throwable $e)
+					{
+						if($this->sql->conn->inTransaction()) { $this->sql->conn->rollBack(); }
+						$this->RemovePartialImport($file_row);
+						$reason = get_class($e).": ".$e->getMessage();
+						trigger_error("Import Error! Reason: $reason |=| $source Thread ID: ".$this->thread_id, E_USER_NOTICE);
+						$this->verbosed("Skipping Import \nReason: $reason\n".$file_name, -1);
+						$this->cleanBadImport($file_row, $importing_id, "Import Error! Reason: $reason |=| $source");
+					}
+
+					if($finished)
+					{
+						# it's imported by now: a failure telling the member about it doesn't undo that
+						try
+						{
+							$subject = "Vistumbler WifiDB - File Imported (User:$file_user FileID:$file_row Filename:$file_name)";
+							$message = "File has finished importing.\r\nUser: $file_user\r\nTitle: $file_title\r\nFile: $file_name ($file_row)\r\nList Information: ".$this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row \r\nMap: ".$this->URL_PATH."opt/map.php?func=user_list&id=$file_row \r\n";
+							$this->wdbmail->notify('import_finished', $subject, $message, $this->URL_PATH."opt/userstats.php?func=useraplist&row=$file_row", array($file_user), "Import finished: ".($file_title ? $file_title : $file_name));
+						}
+						catch(Throwable $e)
+						{
+							$this->verbosed("Could not tell the user their import finished: ".$e->getMessage(), -1);
+						}
+						$this->verbosed("Removed ".$importing_id." from the Importing files table.\n");
+						$this->return_message = $file_row.":".$tmp['aps'].":".$tmp['gps'];
+					}
 				}
 			}
 		}
