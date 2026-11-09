@@ -2,6 +2,13 @@
 
 ## master
 ### ✨ Features and improvements
+- _...Add new stuff here..._
+
+### 🐞 Bug fixes
+- _...Add new stuff here..._
+
+## 1.0.0-rc.5
+### ✨ Features and improvements
 - **`api/v2/import.php` takes NetStumbler `.ns1` files**, as the upload page does. The API's list of extensions refused them before the file type detection got to look at them.
 
 ### 🐞 Bug fixes
