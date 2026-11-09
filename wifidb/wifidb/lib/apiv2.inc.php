@@ -541,6 +541,10 @@ class apiv2 extends dbcore
 				$task = "import";
 				$type = "kismet";
 			break;
+			case "ns1":
+				$task = "import";
+				$type = "ns1";
+			break;
 			default:
 				$task = "";
 				$type = "";

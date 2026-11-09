@@ -2,7 +2,7 @@
 
 ## master
 ### ✨ Features and improvements
-- _...Add new stuff here..._
+- **`api/v2/import.php` takes NetStumbler `.ns1` files**, as the upload page does. The API's list of extensions refused them before the file type detection got to look at them.
 
 ### 🐞 Bug fixes
 - **`api/v2/schedule.php?func=importing` works.** It called a function that doesn't exist, and with nothing to list the `importing`, `finished` and `bad` lists failed on PHP 8 instead of answering "No Imports running."
