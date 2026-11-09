@@ -93,6 +93,8 @@ while(1)
 	$sql = "DELETE FROM daemon_pid_stats where date <> '$timestamp' AND nodename = '$node_name'";
 	$result_delete = $dbcore->sql->conn->query($sql);
 
+	$dbcore->MarkDeadImports();
+
 	sleep(10);
 }
 

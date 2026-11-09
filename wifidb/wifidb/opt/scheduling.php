@@ -943,6 +943,7 @@ switch($func)
 		$importing_row = array();
 		$n=0;
 
+		require_once '../lib/import_queue.inc.php';
 		$sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user, importing, ap, tot FROM files_importing ORDER BY {$sort} {$ord}";
 		if($dbcore->sql->service == "mysql"){$sql .= " LIMIT {$from},{$inc}";}
 	else if($dbcore->sql->service == "pgsql"){$sql .= " LIMIT {$inc} OFFSET {$from}";}
@@ -951,24 +952,8 @@ switch($func)
 		$result_1 = $dbcore->sql->conn->query($sql);
 		while ($newArray = $result_1->fetch(2))
 		{
-			if($newArray['importing'] == "1" ){$color = "lime";}else{$color = "yellow";}
-			if($newArray['ap'] == "" && $newArray['tot'] == "")
-			{
-				$ap_text = "";
-				$status_text = "Processing";
-			}
-			else if($newArray['tot'] == "Preparing for Import")
-			{
-				$ap_text = "";
-				$status_text = $newArray['tot'];
-			}
-			else
-			{
-				$ap_text = $dbcore->formatSSID($newArray['ap']);
-				$status_text = $newArray['tot'];
-			}
-			
-			$importing_row[$n]['color'] = $color;
+			$display = ImportQueue::Display($newArray, array($dbcore, 'formatSSID'));
+			$importing_row[$n]['color'] = $display['color'];
 			$importing_row[$n]['id'] = $newArray['id'];
 			$importing_row[$n]['file'] = $newArray['file_orig'];
 			$importing_row[$n]['title'] = $newArray['title'];
@@ -977,8 +962,8 @@ switch($func)
 			$importing_row[$n]['size'] = $newArray['size'];
 			$importing_row[$n]['hash'] = $newArray['hash'];
 			$importing_row[$n]['user'] = $newArray['file_user'];
-			$importing_row[$n]['ap'] = $ap_text;
-			$importing_row[$n]['status'] = $status_text;
+			$importing_row[$n]['ap'] = $display['ap'];
+			$importing_row[$n]['status'] = $display['status'];
 
 			$n++;
 		}

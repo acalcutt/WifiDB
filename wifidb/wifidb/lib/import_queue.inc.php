@@ -14,6 +14,9 @@ require_once dirname(__FILE__).'/shared_files.inc.php';
 
 class ImportQueue
 {
+	/** files_importing.importing for a file whose run died: 0 is waiting to start, 1 is being imported */
+	const FAILED = 2;
+
 	/** This node's name: config.inc.php's wifidb_nodename, else the daemons' (daemon.config.inc.php), else ''. */
 	public static function NodeName(array $config)
 	{
@@ -84,5 +87,56 @@ class ImportQueue
 		require_once dirname(__FILE__).'/traffic.inc.php';
 		Traffic::Note($config, $via);   # admin/traffic.php
 		return array('queued', $id);
+	}
+
+	/**
+	 * A run that dies part way (a crash, a restart) leaves its file marked as importing, and nothing would say otherwise.
+	 * The rows with this node's name are processes here, so one whose process is gone is marked as failed, until it's
+	 * re-imported or deleted. A row with no node is from before the run was kept (migration 0017).
+	 * @param callable|null $alive function ($pid), whether that process is still running
+	 * @return int how many were marked
+	 */
+	public static function MarkDead(PDO $conn, $node, $alive = null)
+	{
+		if(!$alive) { $alive = function ($pid) { return file_exists("/proc/$pid"); }; }
+		$prep = $conn->prepare("SELECT id, import_pid FROM files_importing WHERE importing = 1 AND (import_node = ? OR import_node IS NULL)");
+		$prep->execute(array($node));
+		$marked = 0;
+		foreach($prep->fetchAll(PDO::FETCH_ASSOC) as $row)
+		{
+			$pid = (int)$row['import_pid'];
+			if($pid > 0 && call_user_func($alive, $pid)) { continue; }
+			$conn->prepare("UPDATE files_importing SET importing = ".self::FAILED." WHERE id = ? AND importing = 1")->execute(array($row['id']));
+			$marked++;
+		}
+		return $marked;
+	}
+
+	/**
+	 * How a files_importing row shows on Files Importing, for the page and its live refresh (opt/scheduling_api.php).
+	 * @param array $row importing, ap, tot
+	 * @param callable $format_ssid function ($ssid), how an SSID is shown
+	 * @return array color, ap, status
+	 */
+	public static function Display(array $row, $format_ssid)
+	{
+		$color = ((int)$row['importing'] === self::FAILED) ? 'red' : (((int)$row['importing'] === 1) ? 'lime' : 'yellow');
+		if($row['ap'] == "" && $row['tot'] == "")
+		{
+			$ap = "";
+			$status = "Processing";
+		}
+		else if($row['tot'] == "Preparing for Import")
+		{
+			$ap = "";
+			$status = $row['tot'];
+		}
+		else
+		{
+			$ap = call_user_func($format_ssid, $row['ap']);
+			$status = $row['tot'];
+		}
+		if($color === 'red') { $status = "Failed: the import stopped before it finished"; }
+		return array('color' => $color, 'ap' => $ap, 'status' => $status);
 	}
 }

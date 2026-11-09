@@ -274,6 +274,22 @@ class daemon extends wdbcli
 		}
 	}
 
+	# Shows the files of runs that died as failed on Files Importing (lib/import_queue.inc.php): from importd, and from
+	# monitord every few seconds where that runs. Never stops the daemon calling it.
+	public function MarkDeadImports()
+	{
+		try
+		{
+			require_once $this->PATH.'lib/import_queue.inc.php';
+			$marked = ImportQueue::MarkDead($this->sql->conn, $this->node_name);
+			if($marked) { $this->verbosed("Marked $marked file(s) as failed: the run importing them is gone.", 1); }
+		}
+		catch(Throwable $e)
+		{
+			$this->verbosed("Could not check for imports whose run died: ".$e->getMessage(), -1);
+		}
+	}
+
 	public function GetNextImportID()
 	{
 		# Which waiting files this node may take: any, with the shared files bucket (it fetches what it hasn't got);
@@ -376,6 +392,13 @@ class daemon extends wdbcli
 		if(file_exists($source) && filesize($source) > 0)//make sure the file exists (by size: a zip or database file may have no line breaks in it)
 		{
 			$this->verbosed("Hey look! a file waiting to be imported, lets import it.", 1);
+			# Which run has it, so one that dies can be shown as failed (ImportQueue::MarkDead). Before importing is set, as a
+			# row marked importing with no run named counts as dead. In a try for a run between an update and its migration.
+			try
+			{
+				$this->sql->conn->prepare("UPDATE files_importing SET import_pid = ?, import_node = ? WHERE id = ?")->execute(array($this->This_is_me, $this->node_name, $importing_id));
+			}
+			catch(Throwable $e) { $this->verbosed("Could not note which run has this file: ".$e->getMessage(), -1); }
 			if($this->sql->service == "mysql")
 				{$update_tmp = "UPDATE files_importing SET tot = 'Preparing for Import', importing = '1' WHERE id = ?";}
 			else if($this->sql->service == "sqlsrv")

@@ -98,6 +98,7 @@ try {
         break;
 
         case 'importing':
+            require_once '../lib/import_queue.inc.php';
             $importing_row = array(); $n=0;
             if (strtolower($dbcore->sql->service) == 'mysql' || strtolower($dbcore->sql->service) == 'pgsql') {
                 $sql = "SELECT id, file_orig, title, notes, file_date, size, hash, file_user, importing, ap, tot FROM files_importing ORDER BY file_date DESC LIMIT 250";
@@ -106,18 +107,8 @@ try {
             }
             $result_1 = $dbcore->sql->conn->query($sql);
             while ($newArray = $result_1->fetch(2)) {
-                // as the first load of the page works it out (opt/scheduling.php)
-                if ($newArray['ap'] == "" && $newArray['tot'] == "") {
-                    $ap_text = "";
-                    $status_text = "Processing";
-                } else if ($newArray['tot'] == "Preparing for Import") {
-                    $ap_text = "";
-                    $status_text = $newArray['tot'];
-                } else {
-                    $ap_text = $dbcore->formatSSID($newArray['ap']);
-                    $status_text = $newArray['tot'];
-                }
-                $importing_row[$n]['color'] = ($newArray['importing'] == "1") ? 'lime' : 'yellow';
+                $display = ImportQueue::Display($newArray, array($dbcore, 'formatSSID'));
+                $importing_row[$n]['color'] = $display['color'];
                 $importing_row[$n]['id'] = $newArray['id'];
                 $importing_row[$n]['file'] = $newArray['file_orig'];
                 $importing_row[$n]['title'] = $newArray['title'];
@@ -126,8 +117,8 @@ try {
                 $importing_row[$n]['size'] = $newArray['size'];
                 $importing_row[$n]['hash'] = $newArray['hash'];
                 $importing_row[$n]['user'] = $newArray['file_user'];
-                $importing_row[$n]['ap'] = $ap_text;
-                $importing_row[$n]['status'] = $status_text;
+                $importing_row[$n]['ap'] = $display['ap'];
+                $importing_row[$n]['status'] = $display['status'];
                 $n++;
             }
             $dbcore->smarty->assign('wifidb_importing', $importing_row);

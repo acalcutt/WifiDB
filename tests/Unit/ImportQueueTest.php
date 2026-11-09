@@ -15,7 +15,7 @@ final class ImportQueueTest extends TestCase
         $this->db = new PDO('sqlite::memory:', null, null, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $cols = 'id INTEGER PRIMARY KEY, file_name TEXT, file_orig TEXT, file_date TEXT, file_user TEXT, otherusers TEXT, notes TEXT, title TEXT, size TEXT, hash TEXT, type TEXT, node_name TEXT';
         $this->db->exec("CREATE TABLE files_tmp ($cols)");
-        $this->db->exec("CREATE TABLE files_importing ($cols, tmp_id INTEGER)");
+        $this->db->exec("CREATE TABLE files_importing ($cols, tmp_id INTEGER, importing INTEGER DEFAULT 0, import_pid INTEGER, import_node TEXT)");
         $this->db->exec("CREATE TABLE files (id INTEGER PRIMARY KEY, hash TEXT)");
         $this->db->exec("CREATE TABLE site_settings (name TEXT PRIMARY KEY, value TEXT, updated_by TEXT, updated_at TEXT)");
         $this->dir = sys_get_temp_dir() . '/wifidb-queue-test-' . getmypid() . '-' . bin2hex(random_bytes(3));
@@ -72,6 +72,43 @@ final class ImportQueueTest extends TestCase
     {
         ImportQueue::Add($this->db, [], $this->upload('6_e.vs1', 'h6'), "$this->dir/6_e.vs1");
         $this->assertNull($this->db->query("SELECT node_name FROM files_tmp")->fetchColumn());
+    }
+
+    private function importing(int $id, int $importing, ?int $pid, ?string $node): void
+    {
+        $prep = $this->db->prepare("INSERT INTO files_importing (id, importing, import_pid, import_node) VALUES (?, ?, ?, ?)");
+        $prep->execute([$id, $importing, $pid, $node]);
+    }
+
+    private function state(int $id): int
+    {
+        return (int)$this->db->query("SELECT importing FROM files_importing WHERE id = $id")->fetchColumn();
+    }
+
+    public function testAFileWhoseRunIsGoneIsMarkedFailedAndOnlyThatOne(): void
+    {
+        $this->importing(1, 1, 100, 'node-a');   # its run is gone
+        $this->importing(2, 1, 200, 'node-a');   # still running
+        $this->importing(3, 1, 100, 'node-b');   # another node's: pid 100 means nothing here
+        $this->importing(4, 0, null, null);      # waiting to start
+        $this->importing(5, 1, null, null);      # from before the run was kept
+        $alive = function ($pid) { return $pid === 200; };
+
+        $this->assertSame(2, ImportQueue::MarkDead($this->db, 'node-a', $alive));
+        $this->assertSame([ImportQueue::FAILED, 1, 1, 0, ImportQueue::FAILED], array_map([$this, 'state'], [1, 2, 3, 4, 5]));
+        $this->assertSame(0, ImportQueue::MarkDead($this->db, 'node-a', $alive), 'a failed one is not counted again');
+    }
+
+    public function testHowARowShows(): void
+    {
+        $ssid = function ($s) { return "<$s>"; };
+        $this->assertSame(['color' => 'yellow', 'ap' => '', 'status' => 'Processing'], ImportQueue::Display(['importing' => 0, 'ap' => null, 'tot' => null], $ssid));
+        $this->assertSame(['color' => 'lime', 'ap' => '', 'status' => 'Preparing for Import'], ImportQueue::Display(['importing' => '1', 'ap' => null, 'tot' => 'Preparing for Import'], $ssid));
+        $this->assertSame(['color' => 'lime', 'ap' => '<net>', 'status' => '3 / 9'], ImportQueue::Display(['importing' => 1, 'ap' => 'net', 'tot' => '3 / 9'], $ssid));
+        $failed = ImportQueue::Display(['importing' => ImportQueue::FAILED, 'ap' => 'net', 'tot' => '3 / 9'], $ssid);
+        $this->assertSame('red', $failed['color']);
+        $this->assertSame('<net>', $failed['ap'], 'where it had got to');
+        $this->assertStringStartsWith('Failed', $failed['status']);
     }
 
     public function testTheNodeNameComesFromTheDaemonConfigWhenTheSiteConfigHasNone(): void
