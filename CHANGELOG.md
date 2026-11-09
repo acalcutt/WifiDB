@@ -5,6 +5,7 @@
 - **`api/v2/import.php` takes NetStumbler `.ns1` files**, as the upload page does. The API's list of extensions refused them before the file type detection got to look at them.
 
 ### 🐞 Bug fixes
+- **Each import run has its own log.** The two runners cron starts each minute could pick the same log name and write over each other's text.
 - **Re-importing a stuck file (↻ on Files Importing) takes it off that list.** It went back in the queue but its old row stayed there for good, shown as yellow "Processing". On MariaDB the reset also failed with an SQL error if the file had got as far as adding access points or cells.
 - **A file with only cell towers or Bluetooth devices in it imports, and no longer kills the import run.** With no access points the importer divided by zero, which stopped the run and left the file stuck in Files Importing. An error while finishing an import now sets the file aside in Files Bad, as one while reading it already did.
 - **The import page stays green and keeps showing the current access point.** After the first load, the live refresh drew every importing file as yellow "Processing", because it didn't read the file's progress.
